@@ -362,6 +362,47 @@ def test_ipf_report_includes_margin_summaries() -> None:
     ]
 
 
+def test_nonconverged_ipf_report_includes_actionable_issues() -> None:
+    control_table = ControlTable(
+        margins=(
+            ControlMargin(
+                name="age",
+                dimensions=("age",),
+                cells=(
+                    ControlCell({"age": "young"}, 50.0),
+                    ControlCell({"age": "old"}, 50.0),
+                ),
+            ),
+            ControlMargin(
+                name="sex",
+                dimensions=("sex",),
+                cells=(
+                    ControlCell({"sex": "F"}, 80.0),
+                    ControlCell({"sex": "M"}, 20.0),
+                ),
+            ),
+        ),
+        dimensions=("age", "sex"),
+    )
+    result = fit_ipf(
+        [
+            {"age": "young", "sex": "F"},
+            {"age": "old", "sex": "M"},
+        ],
+        control_table.to_ipf_margins(),
+        max_iterations=2,
+    )
+
+    report = build_ipf_fit_report(control_table, result)
+
+    assert report["converged"] is False
+    assert report["issues"][0]["kind"] == "cell_residual"
+    assert report["issues"][0]["margin"] == "age"
+    assert report["issues"][0]["categories"] == {"age": "young"}
+    assert report["issues"][0]["message"].startswith("Largest residual is 30")
+    assert "Check whether this control conflicts" in report["issues"][0]["tip"]
+
+
 def test_cli_prints_human_readable_ipf_report(tmp_path: Path, capsys) -> None:
     from synthpopcan.cli import main
 
@@ -373,6 +414,18 @@ def test_cli_prints_human_readable_ipf_report(tmp_path: Path, capsys) -> None:
                 "iterations": 3,
                 "max_abs_error": 0.0,
                 "seed_records": 4,
+                "issues": [
+                    {
+                        "severity": "warning",
+                        "kind": "cell_residual",
+                        "margin": "age",
+                        "categories": {"age": "young"},
+                        "message": "Largest residual is 30 for age=young.",
+                        "tip": (
+                            "Check whether this control conflicts with another margin."
+                        ),
+                    }
+                ],
                 "margin_summaries": [
                     {
                         "name": "age",
@@ -394,6 +447,8 @@ def test_cli_prints_human_readable_ipf_report(tmp_path: Path, capsys) -> None:
     output = capsys.readouterr().out
     assert "IPF Fit Report" in output
     assert "Converged" in output
+    assert "Fit Issues" in output
+    assert "Largest residual" in output
     assert "age" in output
     assert "100" in output
 
@@ -554,7 +609,7 @@ def test_cli_fit_fails_when_ipf_does_not_converge(tmp_path: Path) -> None:
         ],
     )
 
-    with pytest.raises(ClickException, match="IPF did not converge"):
+    with pytest.raises(ClickException, match="Largest residual"):
         main(
             [
                 "ipf",
@@ -567,6 +622,47 @@ def test_cli_fit_fails_when_ipf_does_not_converge(tmp_path: Path) -> None:
                 str(output_path),
                 "--max-iterations",
                 "2",
+            ]
+        )
+    assert not output_path.exists()
+
+
+def test_cli_fit_explains_unsupported_control_cells(tmp_path: Path) -> None:
+    from click.exceptions import ClickException
+
+    from synthpopcan.cli import main
+
+    seed_path = tmp_path / "seed.csv"
+    controls_path = tmp_path / "controls.csv"
+    output_path = tmp_path / "weights.csv"
+    write_csv(
+        seed_path,
+        ["id", "sex"],
+        [
+            {"id": "1", "sex": "F"},
+            {"id": "2", "sex": "F"},
+        ],
+    )
+    write_csv(
+        controls_path,
+        ["margin", "dimensions", "sex", "count"],
+        [
+            {"margin": "sex", "dimensions": "sex", "sex": "F", "count": "50"},
+            {"margin": "sex", "dimensions": "sex", "sex": "M", "count": "50"},
+        ],
+    )
+
+    with pytest.raises(ClickException, match="Seed records do not cover"):
+        main(
+            [
+                "ipf",
+                "fit",
+                "--seed",
+                str(seed_path),
+                "--controls",
+                str(controls_path),
+                "--out",
+                str(output_path),
             ]
         )
     assert not output_path.exists()

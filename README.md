@@ -135,6 +135,8 @@ Example report output:
 | Fit summary | Whether IPF converged, how many iterations ran, how many seed records were fitted, and the largest absolute error. |
 | Margin table | For each margin, the dimensions fitted, number of cells, target total, fitted total, largest absolute error, and largest relative error. |
 
+For non-converged fits, the report includes a `Fit Issues` table that points to the largest residual and suggests whether to check conflicting controls, sparse seed coverage, or category mappings.
+
 ```csv
 id,age,sex,weight
 1,young,F,30

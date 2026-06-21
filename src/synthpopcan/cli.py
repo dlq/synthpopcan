@@ -345,24 +345,21 @@ def fit_ipf_command(
     """Fit seed records to controls and write compact weights."""
     seed_rows = read_csv(seed_path)
     control_table = read_control_table(controls_path)
-    result = fit_ipf(
-        seed_rows,
-        control_table.to_ipf_margins(),
-        weight_field=weight_field,
-        max_iterations=max_iterations,
-        tolerance=tolerance,
-    )
+    try:
+        result = fit_ipf(
+            seed_rows,
+            control_table.to_ipf_margins(),
+            weight_field=weight_field,
+            max_iterations=max_iterations,
+            tolerance=tolerance,
+        )
+    except ValueError as exc:
+        raise click.ClickException(format_fit_value_error(exc)) from exc
+    report = build_ipf_fit_report(control_table, result)
     if report_path:
-        report_path.write_text(
-            json.dumps(build_ipf_fit_report(control_table, result), indent=2) + "\n"
-        )
+        report_path.write_text(json.dumps(report, indent=2) + "\n")
     if not result.converged and not allow_nonconverged:
-        raise click.ClickException(
-            "IPF did not converge "
-            f"after {result.iterations} iterations; "
-            f"max absolute error is {result.max_abs_error:.12g}. "
-            "Use --allow-nonconverged to write the fitted weights anyway."
-        )
+        raise click.ClickException(format_nonconvergence_message(report))
     write_weighted_seed(out_path, seed_rows, result.weights)
     if report_path:
         print_wrote(report_path)
@@ -573,7 +570,59 @@ def print_ipf_report_table(report: dict[str, object]) -> None:
         },
         title="IPF Fit Summary",
     )
+    print_ipf_issues_table(report.get("issues", []))
     print_table(table)
+
+
+def print_ipf_issues_table(issues: object) -> None:
+    if not isinstance(issues, list) or not issues:
+        return
+    table = Table(title="Fit Issues")
+    table.add_column("Severity")
+    table.add_column("Margin")
+    table.add_column("Problem")
+    table.add_column("Tip")
+    for issue in issues:
+        if not isinstance(issue, dict):
+            continue
+        table.add_row(
+            str(issue.get("severity", "")),
+            str(issue.get("margin", "")),
+            str(issue.get("message", "")),
+            str(issue.get("tip", "")),
+        )
+    print_table(table)
+
+
+def format_nonconvergence_message(report: dict[str, object]) -> str:
+    message = (
+        "IPF did not converge "
+        f"after {format_report_number(report.get('iterations'))} iterations; "
+        f"max absolute error is {format_report_number(report.get('max_abs_error'))}."
+    )
+    issue = first_report_issue(report)
+    if issue is not None:
+        message = f"{message} {issue.get('message', '')} {issue.get('tip', '')}"
+    return f"{message} Use --allow-nonconverged to write the fitted weights anyway."
+
+
+def first_report_issue(report: dict[str, object]) -> dict[str, object] | None:
+    issues = report.get("issues", [])
+    if not isinstance(issues, list) or not issues:
+        return None
+    issue = issues[0]
+    return issue if isinstance(issue, dict) else None
+
+
+def format_fit_value_error(exc: ValueError) -> str:
+    message = str(exc)
+    if "has no seed records" in message:
+        return (
+            "Seed records do not cover a positive control cell. "
+            f"{message}. Add seed rows for that category, use a broader seed "
+            "sample, or remap/drop zero-support control categories."
+        )
+    return message
 
 
 def format_report_number(value: object) -> str:
