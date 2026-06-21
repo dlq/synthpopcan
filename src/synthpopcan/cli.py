@@ -14,6 +14,7 @@ from synthpopcan import __version__
 from synthpopcan.controls import (
     read_control_margins,
     read_control_table,
+    read_wds_control_table,
     write_control_table,
 )
 from synthpopcan.diagnostics import build_ipf_fit_report
@@ -67,6 +68,44 @@ def validate_controls(path: Path) -> None:
 def normalize_controls_from_csv(source: Path, out_path: Path) -> None:
     """Normalize a local long control CSV."""
     table = read_control_table(source)
+    write_control_table(out_path, table)
+
+
+@controls.command("from-wds")
+@click.argument("source", type=PATH)
+@click.option(
+    "--dimensions",
+    required=True,
+    help="Comma-separated WDS columns to use as control dimensions.",
+)
+@click.option("--count-column", required=True, help="WDS column containing counts.")
+@click.option(
+    "--margin-name",
+    default="wds",
+    show_default=True,
+    help="Name for the generated control margin.",
+)
+@click.option(
+    "--out",
+    "out_path",
+    required=True,
+    type=PATH,
+    help="Output normalized controls CSV.",
+)
+def normalize_controls_from_wds(
+    source: Path,
+    dimensions: str,
+    count_column: str,
+    margin_name: str,
+    out_path: Path,
+) -> None:
+    """Normalize a local StatCan WDS CSV ZIP."""
+    table = read_wds_control_table(
+        source,
+        dimensions=parse_columns(dimensions),
+        count_column=count_column,
+        margin_name=margin_name,
+    )
     write_control_table(out_path, table)
 
 
@@ -288,6 +327,13 @@ class _StdoutWriter:
 def read_csv(path: Path) -> list[dict[str, str]]:
     with path.open(newline="") as handle:
         return list(csv.DictReader(handle))
+
+
+def parse_columns(value: str) -> tuple[str, ...]:
+    columns = tuple(part.strip() for part in value.split(",") if part.strip())
+    if not columns:
+        raise click.ClickException("at least one column is required")
+    return columns
 
 
 def read_weighted_seed(

@@ -112,13 +112,14 @@ Deliverables:
 - Parser for local StatCan table exports.
 - Generic `controls` CLI namespace for normalized control-table workflows.
 - `controls validate` for checking the normalized long control CSV format. Status: complete for normalized long CSVs.
-- `controls from-csv`, `controls from-wds`, and `controls from-census-profile` adapters. Status: `from-csv` complete for normalized long CSVs; WDS and Census Profile adapters pending.
+- `controls from-csv`, `controls from-wds`, and `controls from-census-profile` adapters. Status: `from-csv` complete for normalized long CSVs; `from-wds` complete for local WDS ZIPs with explicit dimensions/count mapping; Census Profile adapter pending.
 - Category mapping layer for converting source labels/codes into stable internal categories.
 - Validation for totals, missing categories, duplicated cells, and geography coverage.
 - CLI command:
 
 ```bash
 synthpopcan controls from-csv SOURCE --out controls.csv
+synthpopcan controls from-wds SOURCE.zip --dimensions "GEO,Age group,Sex" --count-column VALUE --out controls.csv
 ```
 
 Acceptance criteria:

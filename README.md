@@ -130,6 +130,18 @@ https://www150.statcan.gc.ca/t1/wds/rest/getFullTableDownloadCSV/{product_id}/{l
 
 The WDS response returns the actual CSV ZIP URL. SynthPopCan downloads that ZIP and writes a small JSON manifest beside it.
 
+Normalize a downloaded WDS ZIP into SynthPopCan controls with explicit table mapping:
+
+```bash
+synthpopcan controls from-wds data/raw/statscan/wds/14100287-eng.zip \
+  --dimensions "GEO,Age group,Sex" \
+  --count-column VALUE \
+  --margin-name population \
+  --out controls.csv
+```
+
+The first `from-wds` implementation intentionally requires the dimensions and count column. StatCan WDS tables differ in universe, measures, notes, and category layout, so arbitrary tables should not be guessed into controls without an explicit mapping.
+
 User story for finding a WDS table ID:
 
 1. The user starts with topic words, for example `population dwelling`, `age sex`, `household income`, or `labour force`.
