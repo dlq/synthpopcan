@@ -93,6 +93,17 @@ synthpopcan microdata export-seed hierarchical.csv \
 
 The export includes stable ID and weight columns from the adapter, plus the selected seed attributes.
 
+Check household-level columns before exporting them:
+
+```bash
+synthpopcan microdata check-seed hierarchical.csv \
+  --input-format statcan-2016-hierarchical \
+  --level household \
+  --columns TENUR,ROOMS
+```
+
+This prints a column-by-column check showing whether selected columns and `WEIGHT` are constant within each `HH_ID`, plus the derived `household_size` field that will appear in the export.
+
 Export household-level seed rows conservatively:
 
 ```bash

@@ -31,6 +31,7 @@ from synthpopcan.diagnostics import build_ipf_fit_report
 from synthpopcan.ipf import fit_ipf, integerize_weights
 from synthpopcan.localdata import inspect_local_data_layout
 from synthpopcan.microdata import (
+    check_statcan_2016_household_seed_columns,
     derive_statcan_2016_household_seed_sample,
     export_seed_rows,
     read_fixture_seed_sample,
@@ -318,6 +319,58 @@ def inspect_microdata(
     except ValueError as exc:
         raise click.ClickException(str(exc)) from exc
     write_output(sample.as_summary(), output_format, title="Microdata Summary")
+
+
+@microdata.command("check-seed")
+@click.argument("path", type=PATH)
+@click.option(
+    "--input-format",
+    "source_format",
+    required=True,
+    type=click.Choice(["statcan-2016-hierarchical"]),
+    help="Input microdata adapter format.",
+)
+@click.option(
+    "--level",
+    required=True,
+    type=click.Choice(["household"]),
+    help="Seed sample level to check.",
+)
+@click.option(
+    "--columns",
+    required=True,
+    help="Comma-separated columns to include as seed attributes.",
+)
+@click.option(
+    "--format",
+    "output_format",
+    default="table",
+    type=click.Choice(["json", "table"]),
+    show_default=True,
+    help="Output format for the seed check.",
+)
+def check_microdata_seed(
+    path: Path,
+    source_format: str,
+    level: str,
+    columns: str,
+    output_format: str,
+) -> None:
+    """Check whether selected microdata columns can be exported as seed rows."""
+    try:
+        selected_columns = parse_columns(columns)
+        sample = read_statcan_2016_hierarchical_seed_sample(path)
+        report = check_statcan_2016_household_seed_columns(
+            sample,
+            columns=selected_columns,
+        )
+    except ValueError as exc:
+        raise click.ClickException(str(exc)) from exc
+
+    if output_format == "json":
+        print(json.dumps(report, indent=2, sort_keys=True))
+        return
+    print_seed_check_table(report)
 
 
 @microdata.command("export-seed")
@@ -918,6 +971,39 @@ def print_validation_report_table(report: dict[str, object]) -> None:
         title="Validation Summary",
     )
     print_issues_table(report.get("issues", []), title="Validation Issues")
+    print_table(table)
+
+
+def print_seed_check_table(report: dict[str, object]) -> None:
+    print_summary_table(
+        {
+            "status": "Passed" if report.get("passed") else "Needs attention",
+            "source_format": report.get("source_format", ""),
+            "level": report.get("level", ""),
+            "households": report.get("households", ""),
+            "people": report.get("people", ""),
+        },
+        title="Seed Check Summary",
+    )
+
+    table = Table(title="Seed Column Check")
+    table.add_column("Column", no_wrap=True)
+    table.add_column("Role", no_wrap=True)
+    table.add_column("Status", no_wrap=True)
+    table.add_column("Detail")
+    for row in report.get("checks", []):
+        if not isinstance(row, dict):
+            continue
+        status = "OK" if row.get("status") == "ok" else "Problem"
+        role = str(row.get("role", ""))
+        if role == "selected household column":
+            role = "household column"
+        table.add_row(
+            str(row.get("column", "")),
+            role,
+            status,
+            str(row.get("detail", "")),
+        )
     print_table(table)
 
 

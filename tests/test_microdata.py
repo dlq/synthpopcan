@@ -5,6 +5,7 @@ from click import ClickException
 
 from synthpopcan.cli import main
 from synthpopcan.microdata import (
+    check_statcan_2016_household_seed_columns,
     derive_statcan_2016_household_seed_sample,
     export_seed_rows,
     read_fixture_seed_sample,
@@ -326,6 +327,130 @@ def test_cli_exports_household_seed_csv_from_statcan_2016_hierarchical(
     payload = json.loads(capsys.readouterr().out)
     assert payload["level"] == "household"
     assert payload["columns"] == ["HH_ID", "TENUR", "household_size", "WEIGHT"]
+
+
+def test_checks_household_seed_columns_before_export(tmp_path) -> None:
+    source = tmp_path / "hierarchical.csv"
+    source.write_text(
+        "HH_ID,EF_ID,CF_ID,PP_ID,WEIGHT,TENUR,ROOMS\n"
+        "1,11,111,11101,100.5,owner,5\n"
+        "1,11,111,11102,100.5,owner,6\n"
+        "2,21,211,21101,81.25,renter,3\n"
+    )
+    sample = read_statcan_2016_hierarchical_seed_sample(source)
+
+    report = check_statcan_2016_household_seed_columns(
+        sample,
+        columns=("TENUR", "ROOMS"),
+    )
+
+    assert report == {
+        "source_format": "statcan-2016-hierarchical",
+        "level": "household",
+        "households": 2,
+        "people": 3,
+        "passed": False,
+        "checks": [
+            {
+                "column": "TENUR",
+                "role": "selected household column",
+                "status": "ok",
+                "detail": "constant within each HH_ID",
+                "problem_households": 0,
+            },
+            {
+                "column": "ROOMS",
+                "role": "selected household column",
+                "status": "problem",
+                "detail": "varies within 1 household",
+                "problem_households": 1,
+            },
+            {
+                "column": "WEIGHT",
+                "role": "weight",
+                "status": "ok",
+                "detail": "constant within each HH_ID",
+                "problem_households": 0,
+            },
+            {
+                "column": "household_size",
+                "role": "derived",
+                "status": "ok",
+                "detail": "derived from row count per HH_ID",
+                "problem_households": 0,
+            },
+        ],
+    }
+
+
+def test_cli_checks_household_seed_columns_as_json(tmp_path, capsys) -> None:
+    source = tmp_path / "hierarchical.csv"
+    source.write_text(
+        "HH_ID,EF_ID,CF_ID,PP_ID,WEIGHT,TENUR,ROOMS\n"
+        "1,11,111,11101,100.5,owner,5\n"
+        "1,11,111,11102,100.5,owner,6\n"
+    )
+
+    assert (
+        main(
+            [
+                "microdata",
+                "check-seed",
+                str(source),
+                "--input-format",
+                "statcan-2016-hierarchical",
+                "--level",
+                "household",
+                "--columns",
+                "TENUR,ROOMS",
+                "--format",
+                "json",
+            ]
+        )
+        == 0
+    )
+
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["passed"] is False
+    assert payload["checks"][0]["column"] == "TENUR"
+    assert payload["checks"][0]["status"] == "ok"
+    assert payload["checks"][1]["column"] == "ROOMS"
+    assert payload["checks"][1]["status"] == "problem"
+    assert payload["checks"][1]["detail"] == "varies within 1 household"
+
+
+def test_cli_checks_household_seed_columns_as_readable_table(tmp_path, capsys) -> None:
+    source = tmp_path / "hierarchical.csv"
+    source.write_text(
+        "HH_ID,EF_ID,CF_ID,PP_ID,WEIGHT,TENUR,ROOMS\n"
+        "1,11,111,11101,100.5,owner,5\n"
+        "1,11,111,11102,100.5,owner,6\n"
+    )
+
+    assert (
+        main(
+            [
+                "microdata",
+                "check-seed",
+                str(source),
+                "--input-format",
+                "statcan-2016-hierarchical",
+                "--level",
+                "household",
+                "--columns",
+                "TENUR,ROOMS",
+            ]
+        )
+        == 0
+    )
+
+    output = capsys.readouterr().out
+    assert "Seed Column Check" in output
+    assert "TENUR" in output
+    assert "OK" in output
+    assert "ROOMS" in output
+    assert "Problem" in output
+    assert "varies within 1 household" in output
 
 
 def test_household_seed_export_rejects_conflicting_household_attributes(

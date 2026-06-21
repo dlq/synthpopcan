@@ -154,12 +154,7 @@ def derive_statcan_2016_household_seed_sample(
         raise ValueError("at least one household column is required")
     validate_columns(sample.columns, required=("HH_ID", "WEIGHT", *columns))
 
-    records_by_household: dict[str, list[dict[str, str]]] = {}
-    for record in sample.records:
-        household_id = record.get("HH_ID", "")
-        if not household_id:
-            raise ValueError("household derivation requires non-empty HH_ID values")
-        records_by_household.setdefault(household_id, []).append(record)
+    records_by_household = group_records_by_household(sample.records)
 
     household_records: list[dict[str, str]] = []
     for household_id, records in records_by_household.items():
@@ -194,6 +189,80 @@ def derive_statcan_2016_household_seed_sample(
             "derivation": "one row per HH_ID with constant selected household columns",
         },
     )
+
+
+def check_statcan_2016_household_seed_columns(
+    sample: SeedSample,
+    *,
+    columns: tuple[str, ...],
+) -> dict[str, object]:
+    if sample.source_format != "statcan-2016-hierarchical":
+        raise ValueError("household seed checks require statcan-2016-hierarchical")
+    if not columns:
+        raise ValueError("at least one household column is required")
+    validate_columns(sample.columns, required=("HH_ID", "WEIGHT", *columns))
+
+    records_by_household = group_records_by_household(sample.records)
+    checks = [
+        household_column_check(records_by_household, column) for column in columns
+    ]
+    checks.append(household_column_check(records_by_household, "WEIGHT", role="weight"))
+    checks.append(
+        {
+            "column": "household_size",
+            "role": "derived",
+            "status": "ok",
+            "detail": "derived from row count per HH_ID",
+            "problem_households": 0,
+        }
+    )
+
+    return {
+        "source_format": sample.source_format,
+        "level": "household",
+        "households": len(records_by_household),
+        "people": len(sample.records),
+        "passed": all(check["status"] == "ok" for check in checks),
+        "checks": checks,
+    }
+
+
+def group_records_by_household(
+    records: tuple[dict[str, str], ...],
+) -> dict[str, list[dict[str, str]]]:
+    records_by_household: dict[str, list[dict[str, str]]] = {}
+    for record in records:
+        household_id = record.get("HH_ID", "")
+        if not household_id:
+            raise ValueError("household derivation requires non-empty HH_ID values")
+        records_by_household.setdefault(household_id, []).append(record)
+    return records_by_household
+
+
+def household_column_check(
+    records_by_household: dict[str, list[dict[str, str]]],
+    column: str,
+    *,
+    role: str = "selected household column",
+) -> dict[str, object]:
+    problem_households = sum(
+        1
+        for records in records_by_household.values()
+        if len({record.get(column, "") for record in records}) != 1
+    )
+    status = "problem" if problem_households else "ok"
+    if problem_households:
+        detail = f"varies within {problem_households:,} "
+        detail += "household" if problem_households == 1 else "households"
+    else:
+        detail = "constant within each HH_ID"
+    return {
+        "column": column,
+        "role": role,
+        "status": status,
+        "detail": detail,
+        "problem_households": problem_households,
+    }
 
 
 def unique_household_value(
