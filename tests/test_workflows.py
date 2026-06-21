@@ -1,5 +1,6 @@
 import csv
 import json
+import shutil
 from pathlib import Path
 
 from synthpopcan.cli import main
@@ -94,3 +95,82 @@ def test_microdata_seed_to_validated_ipf_weights_workflow(
     assert [row["weight"] for row in weight_rows] == ["100", "100"]
     assert json.loads(report_path.read_text())["converged"] is True
     assert validation_report["passed"] is True
+
+
+def test_tracked_microdata_ipf_tutorial_fixture_workflow(
+    tmp_path: Path,
+    capsys,
+) -> None:
+    fixture_root = Path("tests/fixtures/workflows/microdata_ipf")
+    microdata_path = tmp_path / "hierarchical.csv"
+    controls_path = tmp_path / "controls.csv"
+    seed_path = tmp_path / "seed.csv"
+    weights_path = tmp_path / "weights.csv"
+    report_path = tmp_path / "fit-report.json"
+
+    shutil.copyfile(fixture_root / "hierarchical.csv", microdata_path)
+    shutil.copyfile(fixture_root / "controls.csv", controls_path)
+
+    assert (
+        main(
+            [
+                "microdata",
+                "export-seed",
+                str(microdata_path),
+                "--input-format",
+                "statcan-2016-hierarchical",
+                "--columns",
+                "AGEGRP,SEX",
+                "--out",
+                str(seed_path),
+                "--format",
+                "json",
+            ]
+        )
+        == 0
+    )
+    capsys.readouterr()
+
+    assert seed_path.read_text() == (fixture_root / "expected-seed.csv").read_text()
+
+    assert (
+        main(
+            [
+                "ipf",
+                "fit",
+                "--seed",
+                str(seed_path),
+                "--controls",
+                str(controls_path),
+                "--weight-field",
+                "WEIGHT",
+                "--out",
+                str(weights_path),
+                "--report",
+                str(report_path),
+            ]
+        )
+        == 0
+    )
+    capsys.readouterr()
+
+    assert (
+        main(
+            [
+                "validate",
+                "controls",
+                "--population",
+                str(weights_path),
+                "--controls",
+                str(controls_path),
+                "--kind",
+                "weights",
+                "--format",
+                "json",
+            ]
+        )
+        == 0
+    )
+
+    report = json.loads(capsys.readouterr().out)
+    assert report["passed"] is True

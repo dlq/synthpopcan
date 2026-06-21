@@ -1,0 +1,5 @@
+margin,dimensions,AGEGRP,SEX,count
+age,AGEGRP,adult,,100
+age,AGEGRP,child,,100
+sex,SEX,,F,100
+sex,SEX,,M,100

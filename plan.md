@@ -347,6 +347,7 @@ Deliverables:
 - User-oriented CLI guides for IPF, StatCan source discovery, local data setup, and microdata inspection.
 - API reference generated from library docstrings for stable public modules.
 - Data access notes that explain which sources are public fetches, which require local/private files, and how ignored data roots should be organized.
+- Keep README examples short; move reproducible workflow guides into `docs/workflows/` so they can be adopted by the Sphinx site later.
 
 Acceptance criteria:
 

@@ -141,6 +141,8 @@ synthpopcan validate controls \
 
 The seed file contains one row per source person with stable IDs, selected attributes, and the source `WEIGHT`. The fitted weights file keeps the seed attributes and adds the fitted `weight` column used for validation or later expansion.
 
+A tracked tiny version of this workflow lives in `docs/workflows/microdata-to-ipf.md`.
+
 ## IPF CLI
 
 The first implemented workflow fits seed records to one-way or multi-way margin tables stored as CSV.
