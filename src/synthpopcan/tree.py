@@ -10,6 +10,9 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Literal
 
+import numpy as np
+from sklearn.tree import DecisionTreeClassifier
+
 TreeLevel = Literal["household", "person"]
 
 
@@ -188,6 +191,145 @@ class FrequencyTreeModel:
         )
 
 
+@dataclass(frozen=True)
+class CartTreeModel:
+    spec: TreeModelSpec
+    feature_categories: dict[str, tuple[str, ...]]
+    target_classes: tuple[dict[str, str], ...]
+    children_left: tuple[int, ...]
+    children_right: tuple[int, ...]
+    feature: tuple[int, ...]
+    threshold: tuple[float, ...]
+    value: tuple[tuple[float, ...], ...]
+    n_node_samples: tuple[int, ...]
+    weighted_n_node_samples: tuple[float, ...]
+    source_format: str
+    records_trained: int
+    min_samples_leaf: int
+    max_depth: int | None
+    release_class: str = "private_working"
+    model_type: str = "cart"
+
+    @property
+    def feature_names(self) -> tuple[str, ...]:
+        return tuple(
+            f"{column}={category}"
+            for column in self.spec.conditioning_columns
+            for category in self.feature_categories[column]
+        )
+
+    def to_dict(self) -> dict[str, object]:
+        leaf_supports = [
+            support
+            for left, right, support in zip(
+                self.children_left,
+                self.children_right,
+                self.n_node_samples,
+                strict=True,
+            )
+            if left == right
+        ]
+        minimum_leaf_support = min(leaf_supports, default=0)
+        leaves_below_threshold = sum(
+            1 for support in leaf_supports if support < self.min_samples_leaf
+        )
+        return {
+            "schema_version": "synthpopcan-tree-model-v1",
+            "model_type": self.model_type,
+            "release_class": self.release_class,
+            "spec": self.spec.as_summary(),
+            "source_format": self.source_format,
+            "records_trained": self.records_trained,
+            "feature_categories": {
+                column: list(categories)
+                for column, categories in self.feature_categories.items()
+            },
+            "target_classes": list(self.target_classes),
+            "cart": {
+                "feature_names": list(self.feature_names),
+                "children_left": list(self.children_left),
+                "children_right": list(self.children_right),
+                "feature": list(self.feature),
+                "threshold": list(self.threshold),
+                "value": [list(node_value) for node_value in self.value],
+                "n_node_samples": list(self.n_node_samples),
+                "weighted_n_node_samples": list(self.weighted_n_node_samples),
+                "max_depth": self.max_depth,
+            },
+            "privacy": {
+                "contains_raw_rows": False,
+                "contains_source_identifiers": False,
+                "min_samples_leaf": self.min_samples_leaf,
+                "minimum_leaf_support": minimum_leaf_support,
+                "leaves_below_threshold": leaves_below_threshold,
+                "publishable": False,
+            },
+        }
+
+    @classmethod
+    def from_dict(cls, payload: dict[str, object]) -> CartTreeModel:
+        if payload.get("schema_version") != "synthpopcan-tree-model-v1":
+            raise ValueError("unsupported tree model schema")
+        if payload.get("model_type") != "cart":
+            raise ValueError("unsupported tree model type")
+        spec_payload = payload["spec"]
+        if not isinstance(spec_payload, dict):
+            raise ValueError("tree model spec must be an object")
+        cart_payload = payload["cart"]
+        if not isinstance(cart_payload, dict):
+            raise ValueError("cart model payload must be an object")
+        privacy_payload = payload["privacy"]
+        if not isinstance(privacy_payload, dict):
+            raise ValueError("tree model privacy payload must be an object")
+        spec = TreeModelSpec(
+            level=spec_payload["level"],  # type: ignore[arg-type]
+            target_columns=tuple(spec_payload["target_columns"]),  # type: ignore[arg-type]
+            conditioning_columns=tuple(spec_payload["conditioning_columns"]),  # type: ignore[arg-type]
+            geography_column=spec_payload.get("geography_column"),  # type: ignore[arg-type]
+            weight_column=spec_payload.get("weight_column"),  # type: ignore[arg-type]
+            random_seed=int(spec_payload.get("random_seed", 0)),
+            model_family=str(spec_payload.get("model_family", "tree-based")),
+        )
+        feature_categories_payload = payload["feature_categories"]
+        if not isinstance(feature_categories_payload, dict):
+            raise ValueError("feature categories must be an object")
+        return cls(
+            spec=spec,
+            feature_categories={
+                str(column): tuple(categories)  # type: ignore[arg-type]
+                for column, categories in feature_categories_payload.items()
+            },
+            target_classes=tuple(
+                dict(target_class)
+                for target_class in payload["target_classes"]  # type: ignore[index]
+            ),
+            children_left=tuple(int(value) for value in cart_payload["children_left"]),
+            children_right=tuple(
+                int(value) for value in cart_payload["children_right"]
+            ),
+            feature=tuple(int(value) for value in cart_payload["feature"]),
+            threshold=tuple(float(value) for value in cart_payload["threshold"]),
+            value=tuple(
+                tuple(float(class_value) for class_value in node_value)
+                for node_value in cart_payload["value"]
+            ),
+            n_node_samples=tuple(
+                int(value) for value in cart_payload["n_node_samples"]
+            ),
+            weighted_n_node_samples=tuple(
+                float(value) for value in cart_payload["weighted_n_node_samples"]
+            ),
+            source_format=str(payload["source_format"]),
+            records_trained=int(payload["records_trained"]),
+            min_samples_leaf=int(privacy_payload["min_samples_leaf"]),
+            max_depth=cart_payload.get("max_depth"),  # type: ignore[arg-type]
+            release_class=str(payload.get("release_class", "private_working")),
+        )
+
+
+TreeModel = FrequencyTreeModel | CartTreeModel
+
+
 def read_tree_training_sample(
     path: Path,
     *,
@@ -228,6 +370,86 @@ def read_tree_training_sample(
         conditioning_columns=conditioning_columns,
         geography_column=geography_column,
         weight_column=weight_column,
+    )
+
+
+def train_cart_model(
+    sample: TreeTrainingSample,
+    *,
+    random_seed: int = 0,
+    min_samples_leaf: int = 5,
+    max_depth: int | None = None,
+) -> CartTreeModel:
+    if min_samples_leaf < 1:
+        raise ValueError("min_samples_leaf must be greater than zero")
+    feature_categories = {
+        column: tuple(sorted({record[column] for record in sample.records}))
+        for column in sample.conditioning_columns
+    }
+    target_keys = [
+        tuple(record[column] for column in sample.target_columns)
+        for record in sample.records
+    ]
+    target_classes = tuple(
+        dict(zip(sample.target_columns, target_key, strict=True))
+        for target_key in sorted(set(target_keys))
+    )
+    class_lookup = {
+        tuple(target_class[column] for column in sample.target_columns): index
+        for index, target_class in enumerate(target_classes)
+    }
+    x = np.asarray(
+        [
+            encode_conditions(record, sample.conditioning_columns, feature_categories)
+            for record in sample.records
+        ],
+        dtype=float,
+    )
+    y = np.asarray([class_lookup[target_key] for target_key in target_keys], dtype=int)
+    weights = np.asarray(
+        [
+            read_record_weight(record, sample.weight_column, row_number)
+            for row_number, record in enumerate(sample.records, start=2)
+        ],
+        dtype=float,
+    )
+    classifier = DecisionTreeClassifier(
+        random_state=random_seed,
+        min_samples_leaf=min_samples_leaf,
+        max_depth=max_depth,
+    )
+    classifier.fit(x, y, sample_weight=weights)
+    tree = classifier.tree_
+    values = tree.value
+    if values.ndim == 3:
+        values = values[:, 0, :]
+    return CartTreeModel(
+        spec=TreeModelSpec(
+            level=sample.level,
+            target_columns=sample.target_columns,
+            conditioning_columns=sample.conditioning_columns,
+            geography_column=sample.geography_column,
+            weight_column=sample.weight_column,
+            random_seed=random_seed,
+        ),
+        feature_categories=feature_categories,
+        target_classes=target_classes,
+        children_left=tuple(int(value) for value in tree.children_left.tolist()),
+        children_right=tuple(int(value) for value in tree.children_right.tolist()),
+        feature=tuple(int(value) for value in tree.feature.tolist()),
+        threshold=tuple(float(value) for value in tree.threshold.tolist()),
+        value=tuple(
+            tuple(float(class_value) for class_value in node_value)
+            for node_value in values.tolist()
+        ),
+        n_node_samples=tuple(int(value) for value in tree.n_node_samples.tolist()),
+        weighted_n_node_samples=tuple(
+            float(value) for value in tree.weighted_n_node_samples.tolist()
+        ),
+        source_format=sample.source_format,
+        records_trained=len(sample.records),
+        min_samples_leaf=min_samples_leaf,
+        max_depth=max_depth,
     )
 
 
@@ -276,6 +498,74 @@ def train_frequency_model(
     )
 
 
+def generate_tree_rows(
+    model: TreeModel,
+    *,
+    rows: int,
+    conditions: dict[str, str] | None = None,
+    random_seed: int | None = None,
+) -> list[dict[str, str]]:
+    if isinstance(model, FrequencyTreeModel):
+        return generate_frequency_rows(
+            model,
+            rows=rows,
+            conditions=conditions,
+            random_seed=random_seed,
+        )
+    return generate_cart_rows(
+        model,
+        rows=rows,
+        conditions=conditions,
+        random_seed=random_seed,
+    )
+
+
+def generate_cart_rows(
+    model: CartTreeModel,
+    *,
+    rows: int,
+    conditions: dict[str, str] | None = None,
+    random_seed: int | None = None,
+) -> list[dict[str, str]]:
+    if rows <= 0:
+        raise ValueError("rows must be greater than zero")
+    requested_conditions = conditions or {}
+    validate_condition_columns(model.spec.conditioning_columns, requested_conditions)
+    rng = random.Random(model.spec.random_seed if random_seed is None else random_seed)
+    feature_row = {
+        column: requested_conditions.get(column, "")
+        for column in model.spec.conditioning_columns
+    }
+    encoded = encode_conditions(
+        feature_row,
+        model.spec.conditioning_columns,
+        model.feature_categories,
+    )
+    leaf_id = cart_leaf_id(model, encoded)
+    outcomes = tuple(
+        FrequencyOutcome(values=target_class, weight=weight)
+        for target_class, weight in zip(
+            model.target_classes,
+            model.value[leaf_id],
+            strict=True,
+        )
+        if weight > 0
+    )
+    if not outcomes:
+        raise ValueError("selected CART leaf has no positive target probabilities")
+    generated_rows: list[dict[str, str]] = []
+    for index in range(1, rows + 1):
+        outcome = choose_outcome(outcomes, rng)
+        generated_rows.append(
+            {
+                "synthetic_id": str(index),
+                **feature_row,
+                **outcome.values,
+            }
+        )
+    return generated_rows
+
+
 def generate_frequency_rows(
     model: FrequencyTreeModel,
     *,
@@ -305,12 +595,34 @@ def write_frequency_model(path: Path, model: FrequencyTreeModel) -> None:
     path.write_text(json.dumps(model.to_dict(), indent=2, sort_keys=True) + "\n")
 
 
-def read_frequency_model(path: Path) -> FrequencyTreeModel:
+def write_tree_model(path: Path, model: TreeModel) -> None:
+    path.write_text(json.dumps(model.to_dict(), indent=2, sort_keys=True) + "\n")
+
+
+def read_tree_model(path: Path) -> TreeModel:
     try:
         payload = json.loads(path.read_text())
     except json.JSONDecodeError as exc:
         raise ValueError(f"{path} is not valid JSON") from exc
-    return FrequencyTreeModel.from_dict(payload)
+    if payload.get("model_type") == "conditional-frequency":
+        return FrequencyTreeModel.from_dict(payload)
+    if payload.get("model_type") == "cart":
+        return CartTreeModel.from_dict(payload)
+    raise ValueError("unsupported tree model type")
+
+
+def read_frequency_model(path: Path) -> FrequencyTreeModel:
+    payload = read_tree_model(path)
+    if not isinstance(payload, FrequencyTreeModel):
+        raise ValueError("tree model is not a conditional-frequency model")
+    return payload
+
+
+def read_cart_model(path: Path) -> CartTreeModel:
+    payload = read_tree_model(path)
+    if not isinstance(payload, CartTreeModel):
+        raise ValueError("tree model is not a CART model")
+    return payload
 
 
 def write_generated_rows(path: Path, rows: list[dict[str, str]]) -> None:
@@ -355,6 +667,41 @@ def validate_columns(columns: tuple[str, ...], *, required: tuple[str, ...]) -> 
     missing = [column for column in required if column not in columns]
     if missing:
         raise ValueError(f"missing required columns: {', '.join(missing)}")
+
+
+def encode_conditions(
+    record: dict[str, str],
+    conditioning_columns: tuple[str, ...],
+    feature_categories: dict[str, tuple[str, ...]],
+) -> list[float]:
+    encoded: list[float] = []
+    for column in conditioning_columns:
+        value = record.get(column, "")
+        encoded.extend(
+            1.0 if value == category else 0.0 for category in feature_categories[column]
+        )
+    return encoded
+
+
+def validate_condition_columns(
+    conditioning_columns: tuple[str, ...],
+    conditions: dict[str, str],
+) -> None:
+    missing = [column for column in conditions if column not in conditioning_columns]
+    if missing:
+        raise ValueError(f"unknown conditioning columns: {', '.join(missing)}")
+
+
+def cart_leaf_id(model: CartTreeModel, encoded: list[float]) -> int:
+    node_id = 0
+    while model.children_left[node_id] != model.children_right[node_id]:
+        feature_index = model.feature[node_id]
+        threshold = model.threshold[node_id]
+        if encoded[feature_index] <= threshold:
+            node_id = model.children_left[node_id]
+        else:
+            node_id = model.children_right[node_id]
+    return node_id
 
 
 def read_record_weight(

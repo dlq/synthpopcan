@@ -1,0 +1,4 @@
+PP_ID,HH_ID,TENUR,household_size,AGEGRP,SEX,WEIGHT
+11101,1,owner,2,adult,F,2
+11102,1,owner,2,child,M,1
+21101,2,renter,1,adult,F,1

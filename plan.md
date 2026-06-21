@@ -264,9 +264,10 @@ Acceptance criteria:
 Current implementation notes:
 
 - The `synthpopcan.tree` module defines the first tree-generator contract objects: `TreeTrainingSample`, `TreeModelSpec`, `TreeGenerationRequest`, and a CSV training-sample reader with validation for target, conditioning, geography, and weight columns.
-- `synthpopcan tree train` and `synthpopcan tree generate` run a first transparent conditional-frequency model on fixture-style CSV training samples. This is intentionally a simple, auditable baseline before adding CART/random-forest backends.
+- `synthpopcan tree train` and `synthpopcan tree generate` run transparent conditional-frequency and sklearn CART models on fixture-style CSV training samples. Conditional-frequency remains the default; CART is selected with `--method cart`.
 - The current tree CLI does not assume the real 2016 hierarchical PUMF is a clean people CSV. Real 2016 usage should flow through microdata adapters that derive household/person training views from the mixed hierarchical file, then pass those views into the tree training contract.
 - The first model artifact records privacy-oriented metadata including source format, trained record count, minimum support, groups below support threshold, release class, and explicit `contains_raw_rows: false` / `contains_source_identifiers: false` flags. It is still marked `private_working`, not publishable.
+- Initial benchmark on the local 2016 hierarchical PUMF person file (343,330 rows, 116 source columns) with target `AGEGRP,SEX` and conditioning `PR,TENUR,household_size`: read hierarchical sample 3.7s, derive person training rows 1.0s, write 15.7 MB training CSV 0.5s, read training CSV 1.3s, train conditional-frequency 0.3s, train CART with `min_samples_leaf=50,max_depth=8` 1.5s. Peak process memory was about 2.4 GiB because the current adapter reads the full source CSV into Python dictionaries; streaming/narrow-column loading should be planned before web-app use.
 
 Household/person linkage design:
 

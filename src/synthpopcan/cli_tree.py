@@ -8,13 +8,14 @@ import click
 
 from synthpopcan.console import print_wrote
 from synthpopcan.tree import (
-    generate_frequency_rows,
+    generate_tree_rows,
     parse_conditions,
-    read_frequency_model,
+    read_tree_model,
     read_tree_training_sample,
+    train_cart_model,
     train_frequency_model,
-    write_frequency_model,
     write_generated_rows,
+    write_tree_model,
 )
 
 PATH = click.Path(path_type=Path)
@@ -27,6 +28,13 @@ def tree() -> None:
 
 @tree.command("train")
 @click.argument("source", type=PATH)
+@click.option(
+    "--method",
+    default="conditional-frequency",
+    type=click.Choice(["conditional-frequency", "cart"]),
+    show_default=True,
+    help="Training backend.",
+)
 @click.option(
     "--level",
     required=True,
@@ -56,8 +64,11 @@ def tree() -> None:
 @click.option("--out", "out_path", required=True, type=PATH, help="Output model JSON.")
 @click.option("--random-seed", default=0, type=int, show_default=True)
 @click.option("--min-support", default=5, type=int, show_default=True)
+@click.option("--min-samples-leaf", default=5, type=int, show_default=True)
+@click.option("--max-depth", default=None, type=int)
 def train_tree_generator(
     source: Path,
+    method: str,
     level: str,
     target_columns: str,
     conditioning_columns: str,
@@ -66,8 +77,10 @@ def train_tree_generator(
     out_path: Path,
     random_seed: int,
     min_support: int,
+    min_samples_leaf: int,
+    max_depth: int | None,
 ) -> None:
-    """Train a transparent conditional-frequency model from a CSV sample."""
+    """Train a tree generator model from a CSV sample."""
     try:
         sample = read_tree_training_sample(
             source,
@@ -80,14 +93,22 @@ def train_tree_generator(
             geography_column=geography_column,
             weight_column=weight_column,
         )
-        model = train_frequency_model(
-            sample,
-            random_seed=random_seed,
-            min_support=min_support,
-        )
+        if method == "cart":
+            model = train_cart_model(
+                sample,
+                random_seed=random_seed,
+                min_samples_leaf=min_samples_leaf,
+                max_depth=max_depth,
+            )
+        else:
+            model = train_frequency_model(
+                sample,
+                random_seed=random_seed,
+                min_support=min_support,
+            )
     except ValueError as exc:
         raise click.ClickException(str(exc)) from exc
-    write_frequency_model(out_path, model)
+    write_tree_model(out_path, model)
     print_wrote(out_path)
 
 
@@ -111,11 +132,11 @@ def generate_tree_population(
     out_path: Path,
     random_seed: int | None,
 ) -> None:
-    """Generate synthetic rows from a conditional-frequency model."""
+    """Generate synthetic rows from a tree model."""
     try:
-        model = read_frequency_model(model_path)
+        model = read_tree_model(model_path)
         conditions = parse_conditions(condition_values)
-        generated_rows = generate_frequency_rows(
+        generated_rows = generate_tree_rows(
             model,
             rows=rows,
             conditions=conditions,

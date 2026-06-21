@@ -174,3 +174,110 @@ def test_tracked_microdata_ipf_tutorial_fixture_workflow(
 
     report = json.loads(capsys.readouterr().out)
     assert report["passed"] is True
+
+
+def test_tracked_microdata_tree_tutorial_fixture_workflow(
+    tmp_path: Path,
+    capsys,
+) -> None:
+    fixture_root = Path("tests/fixtures/workflows/microdata_tree")
+    microdata_path = tmp_path / "hierarchical.csv"
+    training_path = tmp_path / "person-training.csv"
+    model_path = tmp_path / "person-model.json"
+    generated_path = tmp_path / "synthetic-people.csv"
+
+    shutil.copyfile(fixture_root / "hierarchical.csv", microdata_path)
+
+    assert (
+        main(
+            [
+                "microdata",
+                "export-training",
+                str(microdata_path),
+                "--input-format",
+                "statcan-2016-hierarchical",
+                "--level",
+                "person",
+                "--target-columns",
+                "AGEGRP,SEX",
+                "--conditioning-columns",
+                "TENUR,household_size",
+                "--out",
+                str(training_path),
+                "--format",
+                "json",
+            ]
+        )
+        == 0
+    )
+    capsys.readouterr()
+
+    assert (
+        training_path.read_text()
+        == (fixture_root / "expected-person-training.csv").read_text()
+    )
+
+    assert (
+        main(
+            [
+                "tree",
+                "train",
+                str(training_path),
+                "--level",
+                "person",
+                "--target-columns",
+                "AGEGRP,SEX",
+                "--conditioning-columns",
+                "TENUR,household_size",
+                "--weight-column",
+                "WEIGHT",
+                "--out",
+                str(model_path),
+                "--random-seed",
+                "7",
+            ]
+        )
+        == 0
+    )
+    capsys.readouterr()
+
+    model = json.loads(model_path.read_text())
+    assert model["model_type"] == "conditional-frequency"
+    assert model["privacy"]["contains_raw_rows"] is False
+
+    assert (
+        main(
+            [
+                "tree",
+                "generate",
+                str(model_path),
+                "--rows",
+                "2",
+                "--condition",
+                "TENUR=owner",
+                "--condition",
+                "household_size=2",
+                "--out",
+                str(generated_path),
+            ]
+        )
+        == 0
+    )
+
+    generated_rows = list(csv.DictReader(generated_path.open(newline="")))
+    assert generated_rows == [
+        {
+            "synthetic_id": "1",
+            "TENUR": "owner",
+            "household_size": "2",
+            "AGEGRP": "adult",
+            "SEX": "F",
+        },
+        {
+            "synthetic_id": "2",
+            "TENUR": "owner",
+            "household_size": "2",
+            "AGEGRP": "adult",
+            "SEX": "F",
+        },
+    ]

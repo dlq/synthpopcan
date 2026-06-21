@@ -9,7 +9,9 @@ from synthpopcan.tree import (
     TreeModelSpec,
     TreeTrainingSample,
     generate_frequency_rows,
+    generate_tree_rows,
     read_tree_training_sample,
+    train_cart_model,
     train_frequency_model,
 )
 
@@ -219,6 +221,88 @@ def test_generates_frequency_rows_for_condition() -> None:
     ]
 
 
+def test_trains_cart_model_without_raw_rows(tmp_path) -> None:
+    source = tmp_path / "derived-person-training.csv"
+    source.write_text(
+        "person_id,geo,household_size,age_group,sex,weight\n"
+        "p1,QC,2,adult,F,2\n"
+        "p2,QC,2,adult,F,1\n"
+        "p3,QC,1,child,M,1\n"
+        "p4,ON,1,senior,F,1\n"
+    )
+    sample = read_tree_training_sample(
+        source,
+        level="person",
+        target_columns=("age_group", "sex"),
+        conditioning_columns=("geo", "household_size"),
+        geography_column="geo",
+        weight_column="weight",
+    )
+
+    model = train_cart_model(
+        sample,
+        random_seed=7,
+        min_samples_leaf=2,
+        max_depth=3,
+    )
+
+    payload = model.to_dict()
+    assert payload["model_type"] == "cart"
+    assert payload["privacy"]["contains_raw_rows"] is False
+    assert payload["privacy"]["contains_source_identifiers"] is False
+    assert payload["privacy"]["min_samples_leaf"] == 2
+    assert payload["privacy"]["minimum_leaf_support"] >= 2
+    serialized = json.dumps(payload)
+    assert "person_id" not in serialized
+    assert "p1" not in serialized
+    assert payload["cart"]["feature_names"]
+    assert payload["cart"]["children_left"]
+
+
+def test_generates_cart_rows_for_condition(tmp_path) -> None:
+    source = tmp_path / "derived-person-training.csv"
+    source.write_text(
+        "geo,household_size,age_group,sex,weight\n"
+        "QC,2,adult,F,2\n"
+        "QC,2,adult,F,1\n"
+        "QC,1,child,M,1\n"
+        "ON,1,senior,F,1\n"
+    )
+    sample = read_tree_training_sample(
+        source,
+        level="person",
+        target_columns=("age_group", "sex"),
+        conditioning_columns=("geo", "household_size"),
+        geography_column="geo",
+        weight_column="weight",
+    )
+    model = train_cart_model(sample, random_seed=7, min_samples_leaf=2, max_depth=3)
+
+    generated = generate_tree_rows(
+        model,
+        rows=2,
+        conditions={"geo": "QC", "household_size": "2"},
+        random_seed=11,
+    )
+
+    assert generated == [
+        {
+            "synthetic_id": "1",
+            "geo": "QC",
+            "household_size": "2",
+            "age_group": "adult",
+            "sex": "F",
+        },
+        {
+            "synthetic_id": "2",
+            "geo": "QC",
+            "household_size": "2",
+            "age_group": "adult",
+            "sex": "F",
+        },
+    ]
+
+
 def test_cli_trains_and_generates_tree_model(tmp_path) -> None:
     source = tmp_path / "derived-person-training.csv"
     model_path = tmp_path / "person-model.json"
@@ -294,6 +378,76 @@ def test_cli_trains_and_generates_tree_model(tmp_path) -> None:
             "sex": "F",
         },
     ]
+
+
+def test_cli_trains_and_generates_cart_tree_model(tmp_path) -> None:
+    source = tmp_path / "derived-person-training.csv"
+    model_path = tmp_path / "person-cart-model.json"
+    output_path = tmp_path / "synthetic-people.csv"
+    source.write_text(
+        "geo,household_size,age_group,sex,weight\n"
+        "QC,2,adult,F,2\n"
+        "QC,2,adult,F,1\n"
+        "QC,1,child,M,1\n"
+        "ON,1,senior,F,1\n"
+    )
+
+    assert (
+        main(
+            [
+                "tree",
+                "train",
+                str(source),
+                "--method",
+                "cart",
+                "--level",
+                "person",
+                "--target-columns",
+                "age_group,sex",
+                "--conditioning-columns",
+                "geo,household_size",
+                "--geography-column",
+                "geo",
+                "--weight-column",
+                "weight",
+                "--out",
+                str(model_path),
+                "--random-seed",
+                "7",
+                "--min-samples-leaf",
+                "2",
+                "--max-depth",
+                "3",
+            ]
+        )
+        == 0
+    )
+    model_payload = json.loads(model_path.read_text())
+    assert model_payload["model_type"] == "cart"
+
+    assert (
+        main(
+            [
+                "tree",
+                "generate",
+                str(model_path),
+                "--rows",
+                "2",
+                "--condition",
+                "geo=QC",
+                "--condition",
+                "household_size=2",
+                "--out",
+                str(output_path),
+            ]
+        )
+        == 0
+    )
+
+    with output_path.open(newline="") as handle:
+        rows = list(csv.DictReader(handle))
+    assert rows[0]["age_group"] == "adult"
+    assert rows[0]["sex"] == "F"
 
 
 def train_frequency_model_from_rows(
