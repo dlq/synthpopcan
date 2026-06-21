@@ -75,6 +75,7 @@ synthpopcan ipf expand --weights weights.csv --out synthetic.csv
 ```
 
 `ipf expand` uses `fitted_weight` when present, otherwise `weight`. Use `--weight-field` to choose a different column. By default, `ipf fit` fails without writing an output file if the fit does not converge; pass `--allow-nonconverged` only when you intentionally want to inspect a failed fit.
+Expansion streams rows directly to the output CSV instead of holding the full synthetic population in memory.
 
 Expanded output has one row per generated synthetic record:
 

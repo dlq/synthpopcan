@@ -384,6 +384,49 @@ def test_cli_expands_fitted_weight_when_seed_has_initial_weight(tmp_path: Path) 
     assert count_rows(rows, "age") == {"young": 10, "old": 20}
 
 
+def test_cli_expands_rows_without_materializing_population(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from synthpopcan.cli import main
+
+    weights_path = tmp_path / "weights.csv"
+    output_path = tmp_path / "synthetic.csv"
+    write_csv(
+        weights_path,
+        ["id", "age", "weight"],
+        [
+            {"id": "1", "age": "young", "weight": "2"},
+            {"id": "2", "age": "old", "weight": "1"},
+        ],
+    )
+
+    def fail_if_materialized(*_args: object, **_kwargs: object) -> None:
+        raise AssertionError("expand_records should not be used by CLI expansion")
+
+    monkeypatch.setattr("synthpopcan.ipf.expand_records", fail_if_materialized)
+
+    assert (
+        main(
+            [
+                "ipf",
+                "expand",
+                "--weights",
+                str(weights_path),
+                "--out",
+                str(output_path),
+            ]
+        )
+        == 0
+    )
+
+    rows = list(csv.DictReader(output_path.open(newline="")))
+    assert rows == [
+        {"synthetic_id": "1", "source_id": "1", "age": "young"},
+        {"synthetic_id": "2", "source_id": "1", "age": "young"},
+        {"synthetic_id": "3", "source_id": "2", "age": "old"},
+    ]
+
+
 def test_cli_fit_fails_when_ipf_does_not_converge(tmp_path: Path) -> None:
     from click.exceptions import ClickException
 

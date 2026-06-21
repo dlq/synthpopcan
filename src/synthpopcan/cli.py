@@ -17,7 +17,7 @@ from synthpopcan.controls import (
     write_control_table,
 )
 from synthpopcan.diagnostics import build_ipf_fit_report
-from synthpopcan.ipf import expand_records, fit_ipf
+from synthpopcan.ipf import fit_ipf, integerize_weights
 from synthpopcan.statcan import (
     fetch_census_profile_2016,
     fetch_wds_metadata,
@@ -335,14 +335,30 @@ def write_weighted_seed(
 def write_expanded_seed(
     path: Path, rows: list[dict[str, str]], weights: list[float]
 ) -> None:
-    expanded = expand_records(rows, weights)
-    if not expanded:
+    counts = integerize_weights(weights)
+    if sum(counts) == 0:
         raise ValueError("expanded synthetic population is empty")
-    fieldnames = list(expanded[0].keys())
+    fieldnames = [
+        "synthetic_id",
+        "source_id",
+        *(field for field in rows[0] if field != "id"),
+    ]
     with path.open("w", newline="") as handle:
         writer = csv.DictWriter(handle, fieldnames=fieldnames)
         writer.writeheader()
-        writer.writerows(expanded)
+        synthetic_id = 1
+        for source_index, row in enumerate(rows, start=1):
+            source_id = str(row.get("id", source_index))
+            attributes = {key: value for key, value in row.items() if key != "id"}
+            for _ in range(counts[source_index - 1]):
+                writer.writerow(
+                    {
+                        "synthetic_id": str(synthetic_id),
+                        "source_id": source_id,
+                        **attributes,
+                    }
+                )
+                synthetic_id += 1
 
 
 def format_weight(weight: float) -> str:

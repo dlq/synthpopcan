@@ -156,7 +156,7 @@ Current implementation notes:
 
 - `synthpopcan ipf fit` writes compact fitted seed weights because expanded synthetic rows can become very large quickly.
 - `synthpopcan ipf fit --report` writes JSON diagnostics with convergence status, iterations, max absolute error, and per-cell residuals.
-- `synthpopcan ipf expand` turns fitted weights into full synthetic rows for demos, exploratory work, and agent-based-model inputs.
+- `synthpopcan ipf expand` streams fitted weights into full synthetic rows for demos, exploratory work, and agent-based-model inputs.
 - The CLI now rejects non-converged fits by default before writing weights; `--allow-nonconverged` is available for explicit inspection runs.
 - Normalized control table parsing lives in `synthpopcan.controls`, not in the CLI, so StatCan normalizers and the future web app can reuse the same contract.
 - The first implementation used a simple record-oriented IPF loop. That was useful for correctness tests, but it repeatedly scanned every seed record for each target category.
@@ -179,7 +179,7 @@ Near-term IPF performance tasks:
 1. Use fitted weights as the default CLI output. Status: complete.
 2. Keep expanded output explicit through a separate `ipf expand` command. Status: complete.
 3. Precompute record membership indexes for each margin cell. Status: complete in the pure-Python fitter.
-4. Stream expanded rows directly to CSV instead of building the full expanded population in memory. Status: pending.
+4. Stream expanded rows directly to CSV instead of building the full expanded population in memory. Status: complete.
 5. Add benchmarks or performance tests for easy, moderate, and high-cardinality fixtures. Status: pending.
 6. Improve non-convergence diagnostics and CLI reporting. Status: partially complete; the CLI now fails closed on non-convergence and can write JSON fit diagnostics, but richer validation reports are still pending.
 7. Consider NumPy, Polars, and possibly sparse arrays after the pure-Python indexed version establishes the right data contracts. Status: pending.
