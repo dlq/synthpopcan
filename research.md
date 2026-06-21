@@ -222,6 +222,133 @@ Tree models alone will not guarantee tract-level margins. For this project they 
 - integerization,
 - or local repair to match margins.
 
+### Privacy And Publishable Tabular Tree Models
+
+For SynthPopCan, the privacy question is specifically about whether trained
+tabular tree models can be distributed without leaking restricted Canadian
+microdata. The short answer from the literature and guidance is: possibly, but
+only after treating model artifacts as disclosure-risk objects in their own
+right. A trained tree model is not automatically safe merely because it does not
+look like a CSV of raw records.
+
+Relevant work:
+
+- `synthpop` is directly relevant because its CART synthesis method uses
+  terminal tree nodes to draw synthetic values from observed donors in that
+  node. Its documentation explicitly lists `minbucket`, the minimum number of
+  observations in a terminal node, and notes that larger `minbucket` values can
+  reduce disclosure risk. This maps closely to the proposed SynthPopCan
+  publishable-model rule: no terminal leaf should be based on too few source
+  records, and donor-based generation should not be publishable unless the donor
+  mechanism itself is audited.
+- scikit-learn tree artifacts expose split features, thresholds, node sample
+  counts, weighted sample counts, impurity, and per-node class/value summaries.
+  They normally do not store raw rows, but they can still encode rare paths and
+  leaf summaries that reveal very small subgroups. The default parameters can
+  grow unpruned trees unless `max_depth`, `min_samples_leaf`, `max_leaf_nodes`,
+  or pruning controls are set deliberately.
+- ICO guidance on AI and data protection identifies model inversion and
+  membership inference as privacy attacks against trained models. It also makes
+  an important distribution distinction: if a whole model is given to a third
+  party, white-box attacks must be considered, and models that contain examples
+  from training data by default should be treated as transfers of personal data.
+- Membership inference remains an active risk for tabular synthetic data. Recent
+  tabular studies show that attacks can identify whether records were used to
+  train tabular synthesis models, with different attack signals working better
+  for different architectures and datasets. One 2026 survey highlights
+  "single-outs" or unique-signature records as especially vulnerable even when
+  aggregate attack performance is mixed.
+- Differentially private tabular synthesis is the strongest formal privacy
+  direction, but it is not a free replacement for the first tree workflow. NIST
+  SP 800-226 frames differential privacy as a way to quantify privacy loss, and
+  NIST challenge work such as Private-PGM/MST shows a practical pattern:
+  privately measure low-dimensional marginals, then synthesize from those noisy
+  measurements. This is closer to a DP margin/IPF engine than to releasing a
+  raw trained CART/random-forest model.
+- Model cards provide a useful documentation pattern for publishable artifacts:
+  every model package should include intended use, out-of-scope use, training
+  source description, model type, parameters, evaluation results, limitations,
+  and caveats. For SynthPopCan, privacy-audit results should be part of that
+  model card rather than a separate optional note.
+
+Design implications for SynthPopCan:
+
+- Treat trained models as three possible release classes:
+  - **Private working model**: trained from restricted microdata, may contain
+    detailed trees, local encoders, diagnostics, and audit traces; not
+    distributable.
+  - **Audited publishable model**: contains only the allowed model
+    representation, has no raw rows or source identifiers, satisfies minimum
+    support and rare-combination checks, and ships with provenance plus a model
+    card.
+  - **DP or aggregate-trained model**: trained from public/open or
+    differentially private aggregate measurements; preferred for broad public
+    distribution once that machinery exists.
+- For CART/random-forest style models, privacy checks should inspect the actual
+  artifact, not only the training options. The audit should report minimum leaf
+  support, number of leaves below threshold, deepest paths, highly pure leaves,
+  rare target values, geography-specific leaves, and whether any serialized
+  object contains source rows, row IDs, bootstrap indices, household IDs, or
+  donor lists.
+- Use conservative training defaults for any model that might later be
+  packaged: non-trivial `min_samples_leaf`, maximum depth or maximum leaves,
+  pruning, category coarsening, no KNN/SVM-style retained examples, and no
+  donor lists in the exported artifact.
+- Household/person linkage raises the bar. A linked household composition can
+  be identifying even when each person-level field looks ordinary. Model audits
+  should therefore check rare linked household signatures: household attributes
+  plus ordered or summarized person composition, not just person rows one at a
+  time.
+- Geography should be part of the release policy. Canada-level and
+  province-level models are the first plausible publishable targets. Smaller
+  geographies should fail by default until support thresholds and rare-linked
+  signature checks show that release risk is acceptable.
+- The CLI should make this workflow explicit:
+
+```bash
+synthpopcan tree train ...
+synthpopcan tree audit-model model.spcmodel --training-sample private.csv
+synthpopcan tree package-model model.spcmodel --require-privacy-pass
+```
+
+The public-facing claim should be deliberately narrow: a publishable model has
+passed SynthPopCan disclosure-risk checks and contains no intentionally stored
+raw training rows. It should not claim absolute anonymity or legal privacy
+safety, especially for restricted-source models.
+
+Sources:
+
+- synthpop resources and disclosure-risk publications:
+  https://www.synthpop.org.uk/resources.html
+- synthpop package documentation, especially `syn.ctree`, `syn.cart`, and
+  `minbucket`: https://cran.r-project.org/web/packages/synthpop/synthpop.pdf
+- scikit-learn `DecisionTreeClassifier` parameters:
+  https://scikit-learn.org/stable/modules/generated/sklearn.tree.DecisionTreeClassifier.html
+- scikit-learn tree structure internals:
+  https://scikit-learn.org/stable/auto_examples/tree/plot_unveil_tree_structure.html
+- scikit-learn `RandomForestClassifier` parameters:
+  https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestClassifier.html
+- ICO guidance on model inversion, membership inference, and white-box model
+  release:
+  https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/artificial-intelligence/guidance-on-ai-and-data-protection/how-should-we-assess-security-and-data-minimisation-in-ai/
+- Shokri et al., "Membership Inference Attacks against Machine Learning
+  Models" (2016): https://arxiv.org/abs/1610.05820
+- Choquette-Choo et al., "Label-Only Membership Inference Attacks" (2020):
+  https://arxiv.org/abs/2007.14321
+- Hyeong et al., "An Empirical Study on the Membership Inference Attack against
+  Tabular Data Synthesis Models" (2022): https://arxiv.org/abs/2208.08114
+- Ward et al., "Ensembling Membership Inference Attacks Against Tabular
+  Generative Models" (2025): https://arxiv.org/abs/2509.05350
+- Pera et al., "SoK: Challenges in Tabular Membership Inference Attacks"
+  (2026): https://arxiv.org/abs/2601.15874
+- NIST SP 800-226, "Guidelines for Evaluating Differential Privacy Guarantees"
+  (2025): https://csrc.nist.gov/pubs/sp/800/226/final
+- McKenna et al., "Winning the NIST Contest: A scalable and general approach to
+  differentially private synthetic data" (2021):
+  https://arxiv.org/abs/2108.04978
+- Mitchell et al., "Model Cards for Model Reporting" (2019):
+  https://arxiv.org/abs/1810.03993
+
 ### Deep And Hybrid Population Synthesis
 
 The last five years have seen active work on generative models for household/person population synthesis:
