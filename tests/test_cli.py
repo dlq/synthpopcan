@@ -1,3 +1,6 @@
+import pytest
+from click import ClickException
+
 from synthpopcan.cli import main
 
 
@@ -16,3 +19,26 @@ def test_controls_validate_accepts_long_control_csv(tmp_path) -> None:
     )
 
     assert main(["controls", "validate", str(controls_path)]) == 0
+
+
+def test_tree_commands_are_visible_in_help(capsys) -> None:
+    assert main(["tree", "--help"]) == 0
+
+    output = capsys.readouterr().out
+    assert "Tree-based synthetic population generator" in output
+    assert "train" in output
+    assert "generate" in output
+
+
+def test_tree_train_is_clear_placeholder() -> None:
+    with pytest.raises(
+        ClickException, match="Tree generator training is not implemented"
+    ):
+        main(["tree", "train"])
+
+
+def test_tree_generate_is_clear_placeholder() -> None:
+    with pytest.raises(
+        ClickException, match="Tree generator output is not implemented"
+    ):
+        main(["tree", "generate"])

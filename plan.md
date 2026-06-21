@@ -259,6 +259,10 @@ Acceptance criteria:
 - Metrics compare generated distributions against source controls.
 - Model artifacts and generated outputs include provenance and random seed metadata.
 
+Current implementation notes:
+
+- The `synthpopcan tree` CLI namespace exists as a placeholder with `train` and `generate` commands that fail clearly until the tree generator contract is implemented.
+
 ### 7. CLI Workflow
 
 Make the CLI useful for actual work before the web app starts.
