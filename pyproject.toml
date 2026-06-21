@@ -23,7 +23,9 @@ classifiers = [
   "Programming Language :: Python :: 3.12",
   "Topic :: Scientific/Engineering :: Information Analysis",
 ]
-dependencies = []
+dependencies = [
+    "rich>=15.0.0",
+]
 
 [project.scripts]
 synthpopcan = "synthpopcan.cli:main"
@@ -31,6 +33,7 @@ synthpopcan = "synthpopcan.cli:main"
 [dependency-groups]
 dev = [
   "pytest>=8.0",
+  "ruff>=0.15.18",
 ]
 
 [build-system]
@@ -39,6 +42,13 @@ build-backend = "hatchling.build"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 88
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
 
 [tool.uv]
 package = true
