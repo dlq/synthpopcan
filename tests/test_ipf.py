@@ -43,7 +43,7 @@ def test_fit_ipf_reports_missing_seed_cells() -> None:
         fit_ipf(records, margins)
 
 
-def test_expand_records_integerizes_weights_with_source_ids() -> None:
+def test_expand_records_integerizes_weights_with_seed_ids() -> None:
     records = [
         {"id": "a", "age": "young", "sex": "F"},
         {"id": "b", "age": "old", "sex": "M"},
@@ -52,10 +52,10 @@ def test_expand_records_integerizes_weights_with_source_ids() -> None:
     expanded = expand_records(records, [1.2, 2.8])
 
     assert expanded == [
-        {"synthetic_id": "1", "source_id": "a", "age": "young", "sex": "F"},
-        {"synthetic_id": "2", "source_id": "b", "age": "old", "sex": "M"},
-        {"synthetic_id": "3", "source_id": "b", "age": "old", "sex": "M"},
-        {"synthetic_id": "4", "source_id": "b", "age": "old", "sex": "M"},
+        {"synthetic_id": "1", "seed_id": "a", "age": "young", "sex": "F"},
+        {"synthetic_id": "2", "seed_id": "b", "age": "old", "sex": "M"},
+        {"synthetic_id": "3", "seed_id": "b", "age": "old", "sex": "M"},
+        {"synthetic_id": "4", "seed_id": "b", "age": "old", "sex": "M"},
     ]
 
 
@@ -146,7 +146,7 @@ def test_cli_runs_ipf_from_csv_files_as_expanded_synthetic_data(
     rows = list(csv.DictReader(output_path.open(newline="")))
     assert rows[0] == {
         "synthetic_id": "1",
-        "source_id": "1",
+        "seed_id": "1",
         "age": "young",
         "sex": "F",
     }
@@ -421,9 +421,9 @@ def test_cli_expands_rows_without_materializing_population(
 
     rows = list(csv.DictReader(output_path.open(newline="")))
     assert rows == [
-        {"synthetic_id": "1", "source_id": "1", "age": "young"},
-        {"synthetic_id": "2", "source_id": "1", "age": "young"},
-        {"synthetic_id": "3", "source_id": "2", "age": "old"},
+        {"synthetic_id": "1", "seed_id": "1", "age": "young"},
+        {"synthetic_id": "2", "seed_id": "1", "age": "young"},
+        {"synthetic_id": "3", "seed_id": "2", "age": "old"},
     ]
 
 

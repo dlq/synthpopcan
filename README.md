@@ -5,7 +5,7 @@ SynthPopCan is an early-stage project for building Canadian synthetic population
 Near-term goals:
 
 1. Provide a Python library and CLI that can create synthetic populations through IPF from Statistics Canada margin/control tables.
-2. Build census microdata workflows for household- and person-level synthetic populations using tree-based models plus calibration. The local 2016 Census material is the first available microdata source, but the tooling should be census-year agnostic.
+2. Build census microdata workflows for household- and person-level synthetic populations using a tree-based synthetic population generator plus calibration. The local 2016 Census material is the first available microdata source, but the tooling should be census-year agnostic.
 3. Add a web app for configuring runs, inspecting controls, validating outputs, and downloading results.
 
 Broader SynthEco-style enrichment with cohort, environmental, school, healthcare, and food-access layers is intentionally deferred until the base population synthesis workflow is stable.
@@ -92,7 +92,7 @@ Expansion streams rows directly to the output CSV instead of holding the full sy
 Expanded output has one row per generated synthetic record:
 
 ```csv
-synthetic_id,source_id,age,sex
+synthetic_id,seed_id,age,sex
 1,1,young,F
 2,1,young,F
 ...
@@ -105,7 +105,7 @@ synthetic_id,source_id,age,sex
 The expanded shape is:
 
 - `synthetic_id`: new row ID for the generated synthetic record.
-- `source_id`: seed row ID copied from the seed `id` column, or the seed row number when no `id` column exists.
+- `seed_id`: seed row ID copied from the seed `id` column, or the seed row number when no `id` column exists.
 - all remaining seed attributes, such as `age` and `sex`.
 
 For this toy example the expanded output has 100 rows. Its marginal counts match the controls: 60 young, 40 old, 50 female, and 50 male.

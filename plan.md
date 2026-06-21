@@ -10,7 +10,7 @@ Build SynthPopCan as a Python library, CLI, and eventually web app for Canadian 
 The near-term scope is deliberately narrower than the full proposal:
 
 1. Build synthetic populations through iterative proportional fitting from StatCan margin/control tables.
-2. Build household- and person-level synthetic populations from tree-based models using pluggable census microdata sources. The Canadian 2016 Census material staged locally is the first available microdata source, not the tool boundary.
+2. Build household- and person-level synthetic populations with a tree-based synthetic population generator using pluggable census microdata sources. The Canadian 2016 Census material staged locally is the first available microdata source, not the tool boundary.
 3. Keep environmental, school, healthcare, food, and broader enrichment data as later extensions unless they are needed for validation or demos.
 
 ## Principles
@@ -37,7 +37,7 @@ SynthPopCan should eventually have four layers:
    - Inspect local source files.
    - Normalize margins.
    - Run IPF synthesis.
-   - Train or apply tree-based models.
+   - Train or apply the tree-based synthetic population generator.
    - Validate and export generated populations.
 
 3. Local data workspace
@@ -85,6 +85,7 @@ Current implementation notes:
 
 - `ControlTable`, `ControlMargin`, and `ControlCell` are implemented in `synthpopcan.controls` for normalized controls.
 - `ControlTable` can convert to the IPF engine's `IPFMargin` objects, keeping the IPF algorithm decoupled from CSV parsing.
+- `SeedSample` is implemented in `synthpopcan.census_microdata` as the stable seed/training record contract for IPF and future tree-based synthetic population generator adapters.
 
 ### 2. Local Source Inspection
 
@@ -207,6 +208,11 @@ Deliverables:
 - Create loading adapters that are explicit about census year and source format.
 - Normalize key variables needed for the first household/person synthesis prototype.
 - Document assumptions in `research.md` or a future data-access note when source interpretation matters.
+- CLI command:
+
+```bash
+synthpopcan microdata inspect sample.csv --input-format fixture-v1 --level person --format json
+```
 
 Acceptance criteria:
 
@@ -214,9 +220,14 @@ Acceptance criteria:
 - Full-data paths remain configurable and ignored.
 - The loader exposes useful diagnostics for row counts, weights, geography, and missing values.
 
-### 6. Tree-Based Synthesis Prototype
+Current implementation notes:
 
-Build the first tree-based generator for household and person attributes.
+- `fixture-v1` is the first tiny adapter used only for tests and demos.
+- Real Pritchard-era, 2016, and later census microdata formats should be added as separate adapters that emit `SeedSample`.
+
+### 6. Tree-Based Synthetic Population Generator Prototype
+
+Build the first tree-based synthetic population generator for household and person attributes.
 
 Deliverables:
 
@@ -246,7 +257,7 @@ synthpopcan controls from-wds ...
 synthpopcan controls from-census-profile ...
 synthpopcan ipf fit ...
 synthpopcan ipf expand ...
-synthpopcan census-microdata inspect ...
+synthpopcan microdata inspect ...
 synthpopcan tree train ...
 synthpopcan tree generate ...
 synthpopcan validate ...

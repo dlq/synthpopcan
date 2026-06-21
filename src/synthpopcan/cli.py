@@ -11,6 +11,7 @@ from rich.console import Console
 from rich.table import Table
 
 from synthpopcan import __version__
+from synthpopcan.census_microdata import read_fixture_seed_sample
 from synthpopcan.controls import (
     read_category_mapping,
     read_control_margins,
@@ -110,6 +111,68 @@ def sample_source(
 @cli.group()
 def controls() -> None:
     """Normalize and validate IPF control tables."""
+
+
+@cli.group(name="microdata")
+def microdata() -> None:
+    """Inspect and normalize census microdata seed samples."""
+
+
+@microdata.command("inspect")
+@click.argument("path", type=PATH)
+@click.option(
+    "--input-format",
+    "source_format",
+    required=True,
+    type=click.Choice(["fixture-v1"]),
+    help="Input microdata adapter format.",
+)
+@click.option(
+    "--level",
+    required=True,
+    type=click.Choice(["household", "person"]),
+    help="Seed sample level.",
+)
+@click.option("--weight-column", default=None, help="Optional weight column.")
+@click.option(
+    "--geography-columns",
+    default="",
+    help="Comma-separated geography columns.",
+)
+@click.option("--id-columns", default="", help="Comma-separated ID columns.")
+@click.option(
+    "--format",
+    "output_format",
+    default="table",
+    type=click.Choice(["json", "table"]),
+    show_default=True,
+    help="Output format for the inspection summary.",
+)
+def inspect_census_microdata(
+    path: Path,
+    source_format: str,
+    level: str,
+    weight_column: str | None,
+    geography_columns: str,
+    id_columns: str,
+    output_format: str,
+) -> None:
+    """Inspect a census microdata seed sample without printing rows."""
+    try:
+        if source_format != "fixture-v1":
+            raise click.ClickException(
+                f"unsupported microdata format {source_format!r}"
+            )
+        sample = read_fixture_seed_sample(
+            path,
+            level=level,  # type: ignore[arg-type]
+            weight_column=weight_column,
+            geography_columns=parse_optional_columns(geography_columns),
+            id_columns=parse_optional_columns(id_columns),
+        )
+    except ValueError as exc:
+        raise click.ClickException(str(exc)) from exc
+    write_output(sample.as_summary(), output_format)
 
 
 @controls.command("validate")
@@ -427,6 +490,10 @@ def parse_columns(value: str) -> tuple[str, ...]:
     return columns
 
 
+def parse_optional_columns(value: str) -> tuple[str, ...]:
+    return tuple(part.strip() for part in value.split(",") if part.strip())
+
+
 def read_weighted_seed(
     path: Path, weight_field: str
 ) -> tuple[list[dict[str, str]], list[float]]:
@@ -477,7 +544,7 @@ def write_expanded_seed(
         raise ValueError("expanded synthetic population is empty")
     fieldnames = [
         "synthetic_id",
-        "source_id",
+        "seed_id",
         *(field for field in rows[0] if field != "id"),
     ]
     with path.open("w", newline="") as handle:
@@ -485,13 +552,13 @@ def write_expanded_seed(
         writer.writeheader()
         synthetic_id = 1
         for source_index, row in enumerate(rows, start=1):
-            source_id = str(row.get("id", source_index))
+            seed_id = str(row.get("id", source_index))
             attributes = {key: value for key, value in row.items() if key != "id"}
             for _ in range(counts[source_index - 1]):
                 writer.writerow(
                     {
                         "synthetic_id": str(synthetic_id),
-                        "source_id": source_id,
+                        "seed_id": seed_id,
                         **attributes,
                     }
                 )

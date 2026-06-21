@@ -59,7 +59,7 @@ def expand_records(
     synthetic_id = 1
 
     for source_index, record in enumerate(records, start=1):
-        source_id = str(record.get(id_field, source_index))
+        seed_id = str(record.get(id_field, source_index))
         attributes = {
             str(key): str(value) for key, value in record.items() if key != id_field
         }
@@ -67,7 +67,7 @@ def expand_records(
             expanded.append(
                 {
                     "synthetic_id": str(synthetic_id),
-                    "source_id": source_id,
+                    "seed_id": seed_id,
                     **attributes,
                 }
             )

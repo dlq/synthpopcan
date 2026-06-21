@@ -7,7 +7,7 @@ Date: 2026-06-21
 This note synthesizes the local material currently in `~/Downloads` and recent external work relevant to a narrower near-term goal:
 
 1. Build a Python library, CLI, and web app that can create a synthetic population through IPF from arbitrary Statistics Canada margin/control tables.
-2. Build a second workflow that creates household- and person-level synthetic populations from tree-based models for geographic subregions using Canadian 2016 Census data.
+2. Build a second workflow that creates household- and person-level synthetic populations with a tree-based synthetic population generator for geographic subregions using Canadian 2016 Census data.
 3. Leave broader SynthEco ecosystem enrichment, cohort attachment, and simulation work for later.
 
 The main conclusion is that these should be treated as two related but distinct engines:
