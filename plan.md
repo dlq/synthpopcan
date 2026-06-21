@@ -309,6 +309,24 @@ Deferred until needed:
 - Large-data upload management.
 - Hosted public deployment.
 
+### 10. Documentation Site
+
+Build a documentation site once the CLI and library surfaces have enough stable shape to document.
+
+Deliverables:
+
+- Sphinx documentation scaffold under `docs/`.
+- Read the Docs configuration for hosted documentation builds.
+- User-oriented CLI guides for IPF, StatCan source discovery, local data setup, and microdata inspection.
+- API reference generated from library docstrings for stable public modules.
+- Data access notes that explain which sources are public fetches, which require local/private files, and how ignored data roots should be organized.
+
+Acceptance criteria:
+
+- Documentation builds locally without warnings for tracked pages.
+- Read the Docs can build the docs from a clean checkout without private data.
+- README links to the hosted docs once the public site is available.
+
 ## Near-Term Slice
 
 The next implementation slice should be small and testable:
@@ -337,6 +355,7 @@ Other deferred work:
 - School, healthcare, and food-access enrichment.
 - Scenario simulation.
 - Privacy risk assessment for generated outputs.
+- Sphinx and Read the Docs setup once the core CLI workflows are stable enough to document.
 - Packaging and publishing.
 
 ## Testing Policy
