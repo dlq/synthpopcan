@@ -392,9 +392,10 @@ Every new feature should include tests at the smallest practical scale:
 - Unit tests for pure transformations and algorithms.
 - CLI tests for command behavior and output files.
 - Fixture-based integration tests for one complete workflow.
+- Coverage measurement with `pytest-cov` or an equivalent tool once the core workflow surface stabilizes.
 - No tests should require full private or raw data caches.
 
-Full-data smoke tests can be added later as optional local commands, documented separately from the default test suite.
+Full-data smoke tests can be added later as optional local commands, documented separately from the default test suite. A modest coverage gate should wait until the public API and CLI command families stop shifting rapidly; until then, use coverage reports to find blind spots rather than as a hard release criterion.
 
 ## Data Policy
 
