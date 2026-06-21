@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from synthpopcan.controls import ControlTable
-from synthpopcan.ipf import IPFResult, weighted_totals
+from synthpopcan.ipf import IPFResult, Record, category_key, weighted_totals
 
 
 def build_ipf_fit_report(
@@ -98,6 +98,105 @@ def build_ipf_fit_report(
         "margin_summaries": margin_summaries,
         "margins": margins,
     }
+
+
+def build_ipf_input_report(
+    seed_rows: list[Record],
+    control_table: ControlTable,
+) -> dict[str, Any]:
+    dimensions = [
+        build_dimension_input_check(seed_rows, control_table, dimension)
+        for dimension in control_table.dimensions
+    ]
+    unsupported_cells = find_unsupported_control_cells(seed_rows, control_table)
+    return {
+        "passed": all(check["status"] == "ok" for check in dimensions)
+        and not unsupported_cells,
+        "seed_records": len(seed_rows),
+        "control_margins": len(control_table.margins),
+        "dimensions": dimensions,
+        "unsupported_cells": unsupported_cells,
+    }
+
+
+def build_dimension_input_check(
+    seed_rows: list[Record],
+    control_table: ControlTable,
+    dimension: str,
+) -> dict[str, Any]:
+    control_categories = sorted(
+        control_categories_for_dimension(control_table, dimension)
+    )
+    if any(dimension not in row for row in seed_rows):
+        return {
+            "dimension": dimension,
+            "status": "problem",
+            "seed_column": "missing",
+            "control_categories": control_categories,
+            "seed_categories": [],
+            "missing_categories": control_categories,
+            "unused_seed_categories": [],
+            "detail": "seed column is missing",
+        }
+
+    seed_categories = sorted(str(row.get(dimension, "")) for row in seed_rows)
+    seed_category_set = set(seed_categories)
+    control_category_set = set(control_categories)
+    missing = sorted(control_category_set - seed_category_set)
+    unused = sorted(seed_category_set - control_category_set)
+    details: list[str] = []
+    if missing:
+        details.append(f"missing control categories: {', '.join(missing)}")
+    if unused:
+        details.append(f"unused seed categories: {', '.join(unused)}")
+    return {
+        "dimension": dimension,
+        "status": "problem" if details else "ok",
+        "seed_column": "found",
+        "control_categories": control_categories,
+        "seed_categories": sorted(seed_category_set),
+        "missing_categories": missing,
+        "unused_seed_categories": unused,
+        "detail": "; ".join(details) if details else "seed and controls match",
+    }
+
+
+def control_categories_for_dimension(
+    control_table: ControlTable, dimension: str
+) -> set[str]:
+    categories: set[str] = set()
+    for margin in control_table.margins:
+        if dimension not in margin.dimensions:
+            continue
+        for cell in margin.cells:
+            categories.add(cell.categories[dimension])
+    return categories
+
+
+def find_unsupported_control_cells(
+    seed_rows: list[Record],
+    control_table: ControlTable,
+) -> list[dict[str, Any]]:
+    unsupported: list[dict[str, Any]] = []
+    for margin in control_table.margins:
+        seed_keys = set()
+        if all(
+            all(dimension in row for dimension in margin.dimensions)
+            for row in seed_rows
+        ):
+            seed_keys = {category_key(row, margin.dimensions) for row in seed_rows}
+        for cell in margin.cells:
+            key = tuple(cell.categories[dimension] for dimension in margin.dimensions)
+            if cell.count > 0 and key not in seed_keys:
+                unsupported.append(
+                    {
+                        "margin": margin.name,
+                        "dimensions": list(margin.dimensions),
+                        "categories": dict(cell.categories),
+                        "target": cell.count,
+                    }
+                )
+    return unsupported
 
 
 def relative_error(abs_error: float, target: float) -> float:

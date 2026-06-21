@@ -150,6 +150,7 @@ Deliverables:
 - CLI command:
 
 ```bash
+synthpopcan ipf check-inputs --seed seed.csv --controls controls.csv
 synthpopcan ipf fit --seed seed.csv --controls controls.csv --out weights.csv
 synthpopcan ipf fit --seed seed.csv --controls controls.csv --out weights.csv --report fit-report.json
 synthpopcan ipf expand --weights weights.csv --out population.csv
@@ -166,6 +167,7 @@ Current implementation notes:
 - `synthpopcan ipf fit` writes compact fitted seed weights because expanded synthetic rows can become very large quickly.
 - `synthpopcan ipf fit --report` writes JSON diagnostics with convergence status, iterations, max absolute error, per-margin summaries, and per-cell residuals.
 - `synthpopcan ipf report fit-report.json` prints a human-readable fit summary and margin table for non-programmatic review.
+- `synthpopcan ipf check-inputs` previews whether seed columns and categories cover the normalized controls before fitting.
 - `synthpopcan ipf expand` streams fitted weights into full synthetic rows for demos, exploratory work, and agent-based-model inputs.
 - The CLI now rejects non-converged fits by default before writing weights; `--allow-nonconverged` is available for explicit inspection runs.
 - Normalized control table parsing lives in `synthpopcan.controls`, not in the CLI, so StatCan normalizers and the future web app can reuse the same contract.
@@ -384,6 +386,7 @@ Other deferred work:
 - Scenario simulation.
 - Privacy risk assessment for generated outputs.
 - Sphinx and Read the Docs setup once the core CLI workflows are stable enough to document.
+- Project icon and lightweight visual identity for the eventual docs site and web app.
 - Packaging and publishing.
 
 ## Testing Policy

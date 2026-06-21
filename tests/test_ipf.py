@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 
 from synthpopcan.controls import ControlCell, ControlMargin, ControlTable
-from synthpopcan.diagnostics import build_ipf_fit_report
+from synthpopcan.diagnostics import build_ipf_fit_report, build_ipf_input_report
 from synthpopcan.ipf import IPFMargin, expand_records, fit_ipf
 
 
@@ -43,6 +43,56 @@ def test_fit_ipf_reports_missing_seed_cells() -> None:
 
     with pytest.raises(ValueError, match="no seed records"):
         fit_ipf(records, margins)
+
+
+def test_ipf_input_report_finds_missing_and_unused_seed_categories() -> None:
+    control_table = ControlTable(
+        margins=(
+            ControlMargin(
+                name="sex",
+                dimensions=("sex",),
+                cells=(
+                    ControlCell({"sex": "F"}, 50.0),
+                    ControlCell({"sex": "M"}, 50.0),
+                ),
+            ),
+        ),
+        dimensions=("sex",),
+    )
+
+    report = build_ipf_input_report(
+        [
+            {"id": "1", "sex": "F"},
+            {"id": "2", "sex": "X"},
+        ],
+        control_table,
+    )
+
+    assert report == {
+        "passed": False,
+        "seed_records": 2,
+        "control_margins": 1,
+        "dimensions": [
+            {
+                "dimension": "sex",
+                "status": "problem",
+                "seed_column": "found",
+                "control_categories": ["F", "M"],
+                "seed_categories": ["F", "X"],
+                "missing_categories": ["M"],
+                "unused_seed_categories": ["X"],
+                "detail": "missing control categories: M; unused seed categories: X",
+            }
+        ],
+        "unsupported_cells": [
+            {
+                "margin": "sex",
+                "dimensions": ["sex"],
+                "categories": {"sex": "M"},
+                "target": 50.0,
+            }
+        ],
+    }
 
 
 def test_expand_records_integerizes_weights_with_seed_ids() -> None:
@@ -666,6 +716,107 @@ def test_cli_fit_explains_unsupported_control_cells(tmp_path: Path) -> None:
             ]
         )
     assert not output_path.exists()
+
+
+def test_cli_checks_ipf_inputs_as_json(tmp_path: Path, capsys) -> None:
+    from synthpopcan.cli import main
+
+    seed_path = tmp_path / "seed.csv"
+    controls_path = tmp_path / "controls.csv"
+    write_csv(
+        seed_path,
+        ["id", "sex"],
+        [
+            {"id": "1", "sex": "F"},
+            {"id": "2", "sex": "X"},
+        ],
+    )
+    write_csv(
+        controls_path,
+        ["margin", "dimensions", "sex", "count"],
+        [
+            {"margin": "sex", "dimensions": "sex", "sex": "F", "count": "50"},
+            {"margin": "sex", "dimensions": "sex", "sex": "M", "count": "50"},
+        ],
+    )
+
+    assert (
+        main(
+            [
+                "ipf",
+                "check-inputs",
+                "--seed",
+                str(seed_path),
+                "--controls",
+                str(controls_path),
+                "--format",
+                "json",
+            ]
+        )
+        == 0
+    )
+
+    report = json.loads(capsys.readouterr().out)
+    assert report["passed"] is False
+    assert report["dimensions"][0]["dimension"] == "sex"
+    assert report["dimensions"][0]["missing_categories"] == ["M"]
+    assert report["dimensions"][0]["unused_seed_categories"] == ["X"]
+
+
+def test_cli_checks_ipf_inputs_as_readable_table(tmp_path: Path, capsys) -> None:
+    from synthpopcan.cli import main
+
+    seed_path = tmp_path / "seed.csv"
+    controls_path = tmp_path / "controls.csv"
+    write_csv(
+        seed_path,
+        ["id", "age"],
+        [
+            {"id": "1", "age": "young"},
+        ],
+    )
+    write_csv(
+        controls_path,
+        ["margin", "dimensions", "age", "sex", "count"],
+        [
+            {
+                "margin": "age",
+                "dimensions": "age",
+                "age": "young",
+                "sex": "",
+                "count": "50",
+            },
+            {
+                "margin": "sex",
+                "dimensions": "sex",
+                "age": "",
+                "sex": "F",
+                "count": "50",
+            },
+        ],
+    )
+
+    assert (
+        main(
+            [
+                "ipf",
+                "check-inputs",
+                "--seed",
+                str(seed_path),
+                "--controls",
+                str(controls_path),
+            ]
+        )
+        == 0
+    )
+
+    output = capsys.readouterr().out
+    assert "IPF Input Check" in output
+    assert "Needs attention" in output
+    assert "age" in output
+    assert "OK" in output
+    assert "sex" in output
+    assert "Missing column" in output
 
 
 def count_rows(rows: list[dict[str, str]], field: str) -> dict[str, int]:

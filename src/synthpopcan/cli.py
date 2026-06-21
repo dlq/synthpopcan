@@ -27,7 +27,7 @@ from synthpopcan.controls import (
     read_wds_control_table,
     write_control_table,
 )
-from synthpopcan.diagnostics import build_ipf_fit_report
+from synthpopcan.diagnostics import build_ipf_fit_report, build_ipf_input_report
 from synthpopcan.ipf import fit_ipf, integerize_weights
 from synthpopcan.localdata import inspect_local_data_layout
 from synthpopcan.microdata import (
@@ -656,6 +656,37 @@ def ipf() -> None:
     """Run IPF workflows."""
 
 
+@ipf.command("check-inputs")
+@click.option("--seed", "seed_path", required=True, type=PATH, help="Seed records CSV.")
+@click.option(
+    "--controls",
+    "controls_path",
+    required=True,
+    type=PATH,
+    help="Control totals CSV in long margin format.",
+)
+@click.option(
+    "--format",
+    "output_format",
+    default="table",
+    type=click.Choice(["json", "table"]),
+    show_default=True,
+)
+def check_ipf_inputs(
+    seed_path: Path,
+    controls_path: Path,
+    output_format: str,
+) -> None:
+    """Check whether seed records cover the control dimensions and categories."""
+    seed_rows = read_csv(seed_path)
+    control_table = read_control_table(controls_path)
+    report = build_ipf_input_report(seed_rows, control_table)
+    if output_format == "json":
+        print(json.dumps(report, indent=2, sort_keys=True))
+        return
+    print_ipf_input_check_table(report)
+
+
 @ipf.command("fit")
 @click.option("--seed", "seed_path", required=True, type=PATH, help="Seed records CSV.")
 @click.option(
@@ -934,6 +965,43 @@ def print_ipf_report_table(report: dict[str, object]) -> None:
         title="IPF Fit Summary",
     )
     print_issues_table(report.get("issues", []), title="Fit Issues")
+    print_table(table)
+
+
+def print_ipf_input_check_table(report: dict[str, object]) -> None:
+    print_summary_table(
+        {
+            "status": "Passed" if report.get("passed") else "Needs attention",
+            "seed_records": report.get("seed_records", ""),
+            "control_margins": report.get("control_margins", ""),
+            "unsupported_cells": len(report.get("unsupported_cells", [])),
+        },
+        title="IPF Input Summary",
+    )
+
+    table = Table(title="IPF Input Check")
+    table.add_column("Dimension", no_wrap=True)
+    table.add_column("Status", no_wrap=True)
+    table.add_column("Seed Column", no_wrap=True)
+    table.add_column("Miss")
+    table.add_column("Unused")
+    table.add_column("Detail", no_wrap=True)
+    for row in report.get("dimensions", []):
+        if not isinstance(row, dict):
+            continue
+        status = "OK" if row.get("status") == "ok" else "Problem"
+        if row.get("seed_column") == "missing":
+            seed_column = "Missing column"
+        else:
+            seed_column = "Found"
+        table.add_row(
+            str(row.get("dimension", "")),
+            status,
+            seed_column,
+            ", ".join(str(value) for value in row.get("missing_categories", [])),
+            ", ".join(str(value) for value in row.get("unused_seed_categories", [])),
+            str(row.get("detail", "")),
+        )
     print_table(table)
 
 

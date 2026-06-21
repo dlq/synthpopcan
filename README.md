@@ -179,6 +179,12 @@ Normalize a local long controls CSV into SynthPopCan's canonical long format wit
 synthpopcan controls from-csv source-controls.csv --out controls.csv
 ```
 
+Check that seed columns and categories cover the controls before fitting:
+
+```bash
+synthpopcan ipf check-inputs --seed seed.csv --controls controls.csv
+```
+
 Run IPF with:
 
 ```bash

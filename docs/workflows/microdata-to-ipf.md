@@ -16,6 +16,10 @@ synthpopcan microdata export-seed tests/fixtures/workflows/microdata_ipf/hierarc
   --columns AGEGRP,SEX \
   --out seed.csv
 
+synthpopcan ipf check-inputs \
+  --seed seed.csv \
+  --controls tests/fixtures/workflows/microdata_ipf/controls.csv
+
 synthpopcan ipf fit \
   --seed seed.csv \
   --controls tests/fixtures/workflows/microdata_ipf/controls.csv \
