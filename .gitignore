@@ -1,0 +1,31 @@
+# Local data and reference corpora copied from Downloads.
+/data/
+/references/
+
+# Python/cache/build artifacts.
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+dist/
+build/
+*.egg-info/
+
+# Virtual environments and local environment files.
+.venv/
+venv/
+.env
+.env.*
+
+# OS/editor noise.
+.DS_Store
+.idea/
+.vscode/
+
+# Future run outputs and notebooks checkpoints.
+/runs/
+/outputs/
+.ipynb_checkpoints/

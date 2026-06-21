@@ -1,0 +1,547 @@
+# SynthPopCan Research Notes
+
+Date: 2026-06-21
+
+## Purpose
+
+This note synthesizes the local material currently in `~/Downloads` and recent external work relevant to a narrower near-term goal:
+
+1. Build a Python library, CLI, and web app that can create a synthetic population through IPF from arbitrary Statistics Canada margin/control tables.
+2. Build a second workflow that creates household- and person-level synthetic populations from tree-based models for geographic subregions using Canadian 2016 Census data.
+3. Leave broader SynthEco ecosystem enrichment, cohort attachment, and simulation work for later.
+
+The main conclusion is that these should be treated as two related but distinct engines:
+
+- A **general margin-table IPF engine** for arbitrary StatsCan tables, where the user supplies or selects a margin table and the system constructs a fitted joint distribution against a seed sample or prior.
+- A **2016 Census household/person engine** that uses the Canadian 2016 PUMF individual and hierarchical files, Census Profile controls, and geography-specific constraints. Tree models should generate realistic conditional household/person records, but they should be followed by calibration or constrained sampling so outputs match census controls.
+
+## Local Material In Downloads
+
+### Proposal And Product Intent
+
+Relevant files:
+
+- `/Users/dlq/Downloads/Proposal/CIHR Operating Research Grant 01.10.2018_PROPOSAL.pdf`
+- `/Users/dlq/Downloads/Proposal/CIHR Operating Research Grant 01.10.2018_APPENDIX.pdf`
+- `/Users/dlq/Downloads/Papers/SynthEco platform methods paper - 06 Aug 2020.docx`
+
+The proposal describes SynthEco as a platform for creating, visualizing, and downloading "Synthetic Ecosystems": synthetic populations embedded in real geographic/environmental context. The near-term subset in this repo should focus only on the base population construction layer.
+
+Important project requirements from the proposal/methods document:
+
+- Use Python for the new toolkit.
+- Ingest Statistics Canada census information in native formats as much as possible.
+- Use Montreal as the exemplar geography.
+- Produce households and persons with linking identifiers.
+- Resolve geography at census tract level where possible.
+- Make outputs usable outside the platform, preferably as CSV/Parquet tables plus metadata.
+- Defer environmental components and cohort enrichment until the base synthetic population is solid.
+
+The 2020 SynthEco methods draft is especially useful because it already translates the proposal into an implementation narrative:
+
+- Base SE generation is a two-step process: census/built-environment base, then cohort/environment enhancement.
+- Canadian inputs are described as Basic Summary Tables or profile-style aggregates plus PUMF microdata.
+- IPF is used to fit disaggregate PUMF-like records to census tract controls.
+- Pritchard and Miller's sparse list representation is explicitly called out as the memory-saving strategy.
+- Canadian PUMF limitations are central: person and household samples are not always linked in the way US PUMS-style workflows assume.
+
+### Pritchard Paper And Code
+
+Relevant files:
+
+- `/Users/dlq/Downloads/Papers/PritchardDissertation.pdf`
+- `/Users/dlq/Downloads/Papers/Pritchard-Miller2012_Article_AdvancesInPopulationSynthesisF.pdf`
+- `/Users/dlq/Downloads/Papers/drpritch_popsyn_200910/`
+
+The Pritchard/Miller method is the strongest local algorithmic reference for the IPF side. Its core ideas are directly relevant:
+
+- Use a sparse/list-based IPF rather than dense multidimensional arrays.
+- Keep microdata records as rows with fitted expansion weights.
+- Support many categorical attributes without materializing the full Cartesian product.
+- Fit household and person controls simultaneously or in coordinated stages.
+- Use conditional Monte Carlo allocation to turn fitted weights into integer household/person populations.
+
+The code in `drpritch_popsyn_200910` is not a direct implementation target. It is old R code, tied to 1986 Ontario census data, RODBC, PostgreSQL/PostGIS, compiled `.so` helpers, and specific ILUTE/TTS geographies. It is still valuable as a reference design.
+
+Key files:
+
+- `synthesize.R`: first-stage IPF fitting.
+- `synthesize2.R`: second-stage Monte Carlo allocation into dwellings, families, persons, and collective persons.
+- `ipf_list.R`: sparse/list-based IPF.
+- `IpfConstraint.R`: margin constraints with optional min/max tolerances.
+- `pum86.R`: PUMF recoding and category collapsing.
+- `censusTTS.R`: geography overlap allocation.
+- `pop.sql`: merging multiple regional outputs with non-colliding IDs.
+
+Design implications:
+
+- Reimplement the algorithmic concepts in Python; do not port the R code line-for-line.
+- Keep category recoding and margin definitions as explicit metadata, not as hardcoded procedural transformations.
+- Preserve the two-phase distinction: fitting/calibration first, integer realization second.
+- Expect geography-specific edge cases and suppressed/rounded controls.
+
+### Canadian 2016 Census Data
+
+Relevant root:
+
+- `/Users/dlq/Downloads/Canadian 2016 Census`
+
+Inventory observed locally:
+
+- Census Profile Quebec CSD data:
+  - `Census Profile Quebec/98-401-X2016065_English_CSV_data.csv`
+  - about 2,887,395 data rows
+  - 1,285 geographies
+  - 1,135 distinct profile characteristics observed in the local file
+- Montreal Census Tract profile subset:
+  - `Census Tract Summaries 2016/98-401-X2016043_eng_CSV/98-401-X2016043_English_montreal.csv`
+  - about 2,181,837 data rows
+  - 971 geographies, including the Montreal CMA row plus 970 census tracts
+  - same profile characteristic structure
+- Flattened tract summary:
+  - `Census Tract Summaries 2016/98-401-X2016043_eng_CSV/2016_SummaryTables_Flattened.csv`
+  - 5,770 rows
+  - 6,749 columns
+- Individual PUMF:
+  - `PUMF Census 2016/pumf-98M0001-E-2016-individuals/`
+  - Montreal subset: `pumf-2016-Montreal-i.csv`, 108,580 rows, 141 columns
+  - Quebec subset: `pumf-2016-Quebec-i.csv`, 215,042 rows, 141 columns
+  - full individual file: `pumf-98M0001-E-2016-individuals_F1.csv`, 930,422 rows
+- Hierarchical PUMF:
+  - `PUMF Census 2016/pumf-98M0002-E-2016-hierarchical/`
+  - `pumf-98M0002-E-2016-hierarchical_F1.csv`, 343,330 rows, 116 columns
+  - includes `HH_ID`, `EF_ID`, `CF_ID`, and `PP_ID`, making it crucial for household/person relationship modeling.
+
+The Census Profile CSVs are long tables. Each row is one geography-characteristic combination with total/male/female values. For general IPF, this is not automatically a ready-to-fit control table; the library needs a normalization step that maps profile rows to a small explicit control schema such as:
+
+- geography id
+- geography level
+- characteristic id/name
+- sex dimension if present
+- value
+- universe/denominator
+- sample basis, quality flags, notes, and suppression markers
+
+The PUMF files contain many coded variables. A serious implementation needs codebook-driven recoding before modeling. The local PUMF PDFs/documentation identify variables across demography, mobility, Indigenous population, ethnicity/visible minority, language, place of birth/immigration/citizenship, education, labour, commute, income, family composition, households, dwellings, geography, identifiers, and weights.
+
+### Canadian 2011 Census And SPEW-Prepared Material
+
+Relevant root:
+
+- `/Users/dlq/Downloads/Canadian 2011 Census`
+
+This appears to contain prior SPEW-oriented Montreal preprocessing:
+
+- `MontrealFiles/counts_montreal.csv`
+- `MontrealFiles/heir_montreal.csv`
+- `MontrealFiles/montreal_pop_table.csv`
+- `MontrealFiles/spew_files/pums/pums_h.csv`
+- `MontrealFiles/spew_files/pums/pums_p.csv`
+- Montreal shapefiles
+
+This is useful as an example of how a finished data package can be organized, but the near-term target should use the 2016 Census files as the primary source.
+
+### Derived GIS And Existing Synthetic-Looking Outputs
+
+Relevant root:
+
+- `/Users/dlq/Downloads/Derived GeoJSON GIS`
+
+Useful observed files:
+
+- `Montreal Census Tracts.geojson`: 970 features, aligning with the Montreal tract profile subset.
+- `Canada Census Tracts.geojson`: 5,721 features.
+- `Canada Census Subdivisions.geojson`: 5,162 features.
+- `Canada Census Divisions.geojson`: 293 features.
+- `Canada Census Metropolitan Areas.geojson`: 156 features.
+- `SynthEco_MoNNET20200714.geojson`: 2,707 features.
+- `syntheco_montreal.geojson`: 39,999 features with household/person-style fields such as `HH_ID`, `EF_ID`, `CF_ID`, `PP_ID`, and demographic variables.
+
+These should not drive the first population synthesis engine, but they are valuable for:
+
+- validating geography joins,
+- designing output schemas,
+- checking how previous SynthEco work represented people,
+- later web-app map previews.
+
+## Recent External Work, 2021-2026
+
+### Production IPF And Calibration Tools
+
+PopulationSim is the closest production-grade Python reference for an open population synthesis CLI. Its documentation frames population synthesis as expanding seed/reference samples to match marginal controls, producing household and person tables, and supporting controls at multiple geographic levels. It also notes limitations of simple IPF for simultaneous household/person fitting and describes entropy/list-balancing and integerization steps.
+
+Sources:
+
+- https://activitysim.github.io/populationsim/
+- https://github.com/ActivitySim/populationsim
+
+Relevance:
+
+- Strong reference for CLI shape, configuration-driven workflows, validation summaries, and multi-geography controls.
+- Less directly aligned with Canadian Census data quirks; designed mainly around US transportation planning inputs.
+- Its current direction suggests the Python library should not expose only a black-box web workflow. It should also have reproducible config files.
+
+Design implication:
+
+- Use PopulationSim as a benchmark for user ergonomics: `synthpopcan run -c config -d data -o output`.
+- Do not clone its model wholesale unless the Canadian PUMF/profile constraints fit cleanly. The Canadian household/person linkage problem and 2016 Census profile format justify a narrower custom core.
+
+### Tree-Based Synthetic Microdata
+
+The R `synthpop` package is the strongest reference for tree-based synthetic microdata. Its default synthesis method uses CART classification/regression trees, and its resources discuss utility, disclosure risk, and comparisons of tree-based methods including bagging and random forests.
+
+Sources:
+
+- https://www.synthpop.org.uk/
+- https://www.synthpop.org.uk/get-started.html
+- https://www.synthpop.org.uk/resources.html
+- https://cran.r-project.org/web/packages/synthpop/synthpop.pdf
+
+Relevance:
+
+- Very relevant for the tree-based part of the proposed library.
+- It targets synthetic versions of sensitive microdata, not geographically constrained full-population realization.
+- Its sequential conditional modeling idea maps well to Canadian 2016 PUMF records: generate variables in an order, using previously generated variables as predictors.
+
+Design implication:
+
+- A Python tree engine should behave more like "conditional record generator plus calibration" than pure CART synthesis.
+- Candidate methods:
+  - CART/decision tree classifiers for categorical variables.
+  - Random forests or gradient boosted trees when CART is too unstable.
+  - Sequential conditional synthesis with explicit predictor matrices.
+  - Rule constraints for impossible records.
+  - Post-generation calibration against census margins.
+
+Tree models alone will not guarantee tract-level margins. For this project they should be used to generate plausible records, then constrained by:
+
+- IPF/raking weights,
+- constrained sampling,
+- integerization,
+- or local repair to match margins.
+
+### Deep And Hybrid Population Synthesis
+
+The last five years have seen active work on generative models for household/person population synthesis:
+
+- Kim and Bansal, "A Deep Generative Model for Feasible and Diverse Population Synthesis" (2022), proposes GAN/VAE regularization to reduce structural zeros while recovering sampling zeros.
+- Neekhra et al., "Synthpop++: A Hybrid Framework for Generating A Country-scale Synthetic Population" (2023), combines multiple surveys and maintains family structures, demographics, socioeconomic, health, and geolocation attributes.
+- Qian et al., "A Deep Generative Framework for Joint Households and Individuals Population Synthesis" (2024), uses a VAE-style framework for household-individual and individual-individual relationships, with transfer learning and tract-level marginal alignment.
+- Yang et al., "Deep and diverse population synthesis for multi-person households using generative models" (2025), uses generative models for multi-person household diversity and margin fit.
+- Tulchinsky et al., "Generating geographically and economically realistic large-scale synthetic contact networks" (2024), starts with households from census data and then assigns schools/workplaces/contact networks.
+
+Sources:
+
+- https://arxiv.org/abs/2208.01403
+- https://arxiv.org/abs/2304.12284
+- https://arxiv.org/abs/2407.01643
+- https://arxiv.org/abs/2508.09964
+- https://arxiv.org/abs/2406.14698
+
+Relevance:
+
+- These papers confirm that household/person relationship modeling is the hard part.
+- They also show that modern work is moving beyond pure IPF, especially for high-dimensional records and household member relationships.
+- However, deep models are likely too much for the first version of a transparent StatsCan-focused Python library.
+
+Design implication:
+
+- Keep the first release explainable and auditable: IPF, tree models, constrained sampling, and validation.
+- Reserve deep generative models as a later plugin interface once the data normalization and validation layers exist.
+- Borrow evaluation ideas: structural-zero checks, diversity/sampling-zero metrics, marginal fit, household relationship realism, and external benchmark validation.
+
+### Statistics Canada Data Access
+
+Statistics Canada's Web Data Service (WDS) is the current official API for data and metadata released through Statistics Canada. It exposes metadata, vectors, cube/table downloads, and full-table CSV downloads.
+
+Sources:
+
+- https://www.statcan.gc.ca/en/developers/wds
+- https://www.statcan.gc.ca/en/developers/wds/user-guide
+
+Important WDS facts for this project:
+
+- WDS is REST/JSON and intended for technical users.
+- It supports metadata lookup and full table CSV download methods.
+- It uses product IDs, cube/table metadata, coordinates, and vectors.
+- It has request-rate limits and is not intended for huge point-by-point bulk extraction.
+
+Design implication:
+
+- The library should support both:
+  - remote WDS/table-download ingestion for current StatsCan tables,
+  - local bulk CSV ingestion for downloaded 2016 Census files.
+- "Any margin table on the StatsCan site" should be interpreted as: any table that can be normalized into a declared control schema. Arbitrary tables may need user mapping because table dimensions, universes, notes, and geography columns differ.
+
+## Proposed System Shape
+
+### Python Library
+
+Suggested package boundary:
+
+```text
+synthpopcan/
+  data/
+    statcan_wds.py
+    census_profile.py
+    pumf.py
+    geography.py
+  controls/
+    schema.py
+    normalize.py
+    validate.py
+  ipf/
+    dense.py
+    sparse_list.py
+    integerize.py
+  tree/
+    sequence.py
+    models.py
+    constraints.py
+    calibrate.py
+  synth/
+    household_person.py
+    margin_only.py
+  validation/
+    margins.py
+    household_structure.py
+    structural_zeros.py
+    reports.py
+  io/
+    metadata.py
+    exports.py
+```
+
+Core abstractions:
+
+- `ControlTable`: normalized margins/targets with dimensions, geography, value, flags, universe, source metadata.
+- `SeedSample`: microdata rows, weights, variable metadata, and geography coverage.
+- `FitResult`: fitted fractional weights or fitted joint distribution with diagnostics.
+- `SyntheticPopulation`: realized person/household tables plus metadata and validation.
+- `VariableSpec`: variable type, categories, missing/suppression codes, recodes, structural rules.
+- `GeographySpec`: geography id, level, parent/child relationships, geometry path if available.
+
+Storage choices:
+
+- Use Parquet internally for large normalized tables.
+- Use CSV for user-facing exports where requested.
+- Use JSON/YAML for configs and metadata.
+- Consider DuckDB or Polars for large local Census Profile scans; Pandas alone will work for prototypes but will become memory-heavy.
+
+### CLI
+
+Suggested commands:
+
+```bash
+synthpopcan statcan download --product-id ... --out data/raw
+synthpopcan census normalize-profile --input ... --geo-level ct --out data/normalized
+synthpopcan pumf normalize --input ... --dictionary ... --out data/normalized
+synthpopcan ipf fit --controls controls.yaml --seed seed.parquet --out runs/run_id
+synthpopcan synth realize --fit runs/run_id/fit.parquet --method integerize --out runs/run_id
+synthpopcan tree train --config tree.yaml --pumf data/normalized/pumf.parquet --out models/tree
+synthpopcan tree synthesize --model models/tree --controls controls.yaml --geo ... --out runs/run_id
+synthpopcan validate --population runs/run_id --controls controls.yaml --out runs/run_id/report
+```
+
+The CLI should treat configs as first-class artifacts so every run is reproducible.
+
+### Web App
+
+The web app should not own the synthesis logic. It should orchestrate the library/CLI.
+
+First useful web app scope:
+
+- Upload/select StatsCan CSV or WDS product.
+- Preview inferred dimensions and geography.
+- Map table dimensions into `ControlTable`.
+- Select seed sample and variables.
+- Run IPF or tree workflow.
+- Show validation: margin error, geography coverage, impossible-record checks, household/person consistency.
+- Download CSV/Parquet/metadata bundle.
+
+Avoid in the first web version:
+
+- cohort attachment,
+- school/workplace assignment,
+- interactive agent-level map rendering for millions of people,
+- deep model training.
+
+### Engine 1: General StatsCan Margin-Table IPF
+
+Inputs:
+
+- StatsCan table from WDS/full-table download or local CSV.
+- User-selected dimensions to control.
+- Optional seed sample; if none is supplied, the engine can fit a joint table but cannot create rich individual records beyond the table dimensions.
+- Geography mapping.
+
+Algorithm:
+
+1. Normalize StatsCan table to `ControlTable`.
+2. Validate that selected controls share compatible universes.
+3. Build seed/prior table from seed microdata or uniform/smoothed prior.
+4. Run dense IPF for small low-dimensional problems; run sparse/list IPF for high-dimensional microdata.
+5. Integerize fitted weights.
+6. Sample or replicate records.
+7. Validate all controlled margins.
+
+Hard parts:
+
+- StatsCan tables often mix universes, notes, sex dimensions, percentages, totals, and suppressed values.
+- IPF requires compatible margins. "Any table" is possible only after schema mapping and validation.
+- Random rounding and suppression mean exact equality is not always the right target; tolerances matter.
+
+Near-term implementation stance:
+
+- Make arbitrary StatsCan ingestion flexible, but require explicit config for any table that is not a known Census Profile shape.
+- Provide strong diagnostics when margins are incompatible.
+
+### Engine 2: 2016 Census Tree-Based Household/Person Synthesis
+
+Inputs:
+
+- 2016 individual PUMF.
+- 2016 hierarchical PUMF.
+- 2016 Census Profile controls for Montreal/Quebec.
+- Census tract geographies.
+- Variable recode/config specs.
+
+Proposed model:
+
+1. Normalize PUMF files and recode variables into analysis categories.
+2. Train household-level sequential tree models from hierarchical PUMF:
+   - household size,
+   - dwelling type,
+   - tenure,
+   - household income,
+   - family/economic-family structure,
+   - other selected household variables.
+3. Train person-level sequential tree models conditional on household variables and previously generated person variables:
+   - age group,
+   - sex,
+   - marital/family status,
+   - education,
+   - labour force,
+   - income,
+   - language/immigration variables where supported.
+4. For each target geography, generate candidate households/persons.
+5. Calibrate candidate weights or sample candidates so controlled household and person margins match Census Profile controls.
+6. Realize integer households and linked persons.
+7. Validate household-person consistency and controlled margins.
+
+Why tree models:
+
+- They handle mixed categorical/numeric predictors.
+- They capture nonlinear conditional relationships without requiring hand-written parametric models.
+- CART-style models are easy to inspect.
+- Ensembles improve quality but reduce interpretability.
+
+Risks:
+
+- Tree models can reproduce PUMF geography-level biases if trained only at coarse geography.
+- They can generate plausible records that still fail local tract margins.
+- They need explicit structural rules to avoid impossible household/person combinations.
+- Some 2016 controls are profile rows, percentages, or long-form sample estimates rather than direct count controls.
+
+Recommendation:
+
+- Start with a small controlled variable set:
+  - household: household size, dwelling type, tenure, household income band if reliable.
+  - person: age group, sex, family/marital status, labour force status, education band.
+- Validate on Montreal tracts.
+- Add variables only after margin fit and household consistency are stable.
+
+## Validation Requirements
+
+Every run should emit machine-readable and human-readable validation:
+
+- Total population and households by geography.
+- Absolute and relative margin error by control.
+- Worst controls and worst geographies.
+- Household size distribution.
+- Person count per household sanity checks.
+- Family/person role consistency checks.
+- Structural-zero checks.
+- Seed coverage and zero-cell diagnostics.
+- Suppression/rounding notes.
+- Random seed and reproducibility metadata.
+
+Minimum acceptance criteria for a first serious run:
+
+- Controlled margins match within explicit tolerance.
+- No orphaned persons or households.
+- Household size equals linked person count, unless a documented collective/non-private household path exists.
+- All output records carry source/run metadata.
+
+## Recommended Near-Term Roadmap
+
+### Phase 1: Data Normalization
+
+- Create normalized readers for 2016 Census Profile long CSV.
+- Create normalized readers for 2016 individual and hierarchical PUMF.
+- Create codebook/recode metadata for a small first variable set.
+- Join Montreal tract controls to `Montreal Census Tracts.geojson` IDs.
+
+### Phase 2: General IPF Prototype
+
+- Implement dense IPF for small margin tables.
+- Implement sparse/list IPF for PUMF rows.
+- Add integerization and reproducible sampling.
+- Add validation reports.
+
+### Phase 3: 2016 Household/Person Prototype
+
+- Build a household/person output schema.
+- Train a basic CART/random-forest sequential generator on hierarchical PUMF.
+- Constrain/calibrate generated records to selected tract controls.
+- Validate Montreal tract outputs.
+
+### Phase 4: CLI And Reproducibility
+
+- Add config-driven CLI commands.
+- Store outputs under run directories.
+- Emit metadata and validation summaries.
+
+### Phase 5: Web App
+
+- Build a thin orchestration app around existing library commands.
+- Prioritize control-table mapping, run management, validation viewing, and downloads.
+
+## Open Questions
+
+- Which exact first geography should be targeted: Montreal CMA, city of Montreal, all Montreal tracts, or selected pilot tracts?
+- Should the first output represent private households only, or also collective/non-private populations?
+- Which variables are mandatory for the first useful population?
+- Should the first tree engine use decision trees for interpretability or random forests/gradient boosting for quality?
+- How much exact margin fit is required given Census random rounding and suppression?
+- Should the first web app run locally only, or be deployable for remote users?
+
+## Source List
+
+Local sources:
+
+- `/Users/dlq/Downloads/Proposal/CIHR Operating Research Grant 01.10.2018_PROPOSAL.pdf`
+- `/Users/dlq/Downloads/Proposal/CIHR Operating Research Grant 01.10.2018_APPENDIX.pdf`
+- `/Users/dlq/Downloads/Papers/SynthEco platform methods paper - 06 Aug 2020.docx`
+- `/Users/dlq/Downloads/Papers/PritchardDissertation.pdf`
+- `/Users/dlq/Downloads/Papers/Pritchard-Miller2012_Article_AdvancesInPopulationSynthesisF.pdf`
+- `/Users/dlq/Downloads/Papers/drpritch_popsyn_200910/`
+- `/Users/dlq/Downloads/Canadian 2016 Census/`
+- `/Users/dlq/Downloads/Canadian 2011 Census/`
+- `/Users/dlq/Downloads/Derived GeoJSON GIS/`
+
+External sources checked:
+
+- PopulationSim documentation: https://activitysim.github.io/populationsim/
+- PopulationSim GitHub: https://github.com/ActivitySim/populationsim
+- Statistics Canada WDS: https://www.statcan.gc.ca/en/developers/wds
+- Statistics Canada WDS user guide: https://www.statcan.gc.ca/en/developers/wds/user-guide
+- synthpop package site: https://www.synthpop.org.uk/
+- synthpop get started: https://www.synthpop.org.uk/get-started.html
+- synthpop resources: https://www.synthpop.org.uk/resources.html
+- synthpop CRAN manual: https://cran.r-project.org/web/packages/synthpop/synthpop.pdf
+- Kim and Bansal, 2022: https://arxiv.org/abs/2208.01403
+- Neekhra et al., 2023: https://arxiv.org/abs/2304.12284
+- Qian et al., 2024: https://arxiv.org/abs/2407.01643
+- Tulchinsky et al., 2024: https://arxiv.org/abs/2406.14698
+- Yang et al., 2025: https://arxiv.org/abs/2508.09964
