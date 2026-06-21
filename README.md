@@ -137,10 +137,28 @@ synthpopcan controls from-wds data/raw/statscan/wds/14100287-eng.zip \
   --dimensions "GEO,Age group,Sex" \
   --count-column VALUE \
   --margin-name population \
+  --mapping categories.json \
   --out controls.csv
 ```
 
 The first `from-wds` implementation intentionally requires the dimensions and count column. StatCan WDS tables differ in universe, measures, notes, and category layout, so arbitrary tables should not be guessed into controls without an explicit mapping.
+
+The optional category mapping file is a JSON object keyed by source dimension:
+
+```json
+{
+  "Age group": {
+    "0 to 4 years": "age_000_004",
+    "5 to 9 years": "age_005_009"
+  },
+  "Sex": {
+    "Female": "female",
+    "Male": "male"
+  }
+}
+```
+
+When a mapping is provided for a dimension, unmapped values in that dimension fail the normalization run.
 
 User story for finding a WDS table ID:
 

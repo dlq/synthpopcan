@@ -12,6 +12,7 @@ from rich.table import Table
 
 from synthpopcan import __version__
 from synthpopcan.controls import (
+    read_category_mapping,
     read_control_margins,
     read_control_table,
     read_wds_control_table,
@@ -86,6 +87,9 @@ def normalize_controls_from_csv(source: Path, out_path: Path) -> None:
     help="Name for the generated control margin.",
 )
 @click.option(
+    "--mapping", "mapping_path", type=PATH, help="Optional category mapping JSON."
+)
+@click.option(
     "--out",
     "out_path",
     required=True,
@@ -97,15 +101,22 @@ def normalize_controls_from_wds(
     dimensions: str,
     count_column: str,
     margin_name: str,
+    mapping_path: Path | None,
     out_path: Path,
 ) -> None:
     """Normalize a local StatCan WDS CSV ZIP."""
-    table = read_wds_control_table(
-        source,
-        dimensions=parse_columns(dimensions),
-        count_column=count_column,
-        margin_name=margin_name,
-    )
+    try:
+        table = read_wds_control_table(
+            source,
+            dimensions=parse_columns(dimensions),
+            count_column=count_column,
+            margin_name=margin_name,
+            category_mapping=read_category_mapping(mapping_path)
+            if mapping_path
+            else None,
+        )
+    except ValueError as exc:
+        raise click.ClickException(str(exc)) from exc
     write_control_table(out_path, table)
 
 

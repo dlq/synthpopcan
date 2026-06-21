@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import csv
+import json
 from dataclasses import dataclass
 from io import TextIOWrapper
 from pathlib import Path
@@ -49,6 +50,9 @@ class ControlTable:
 
     def to_ipf_margins(self) -> list[IPFMargin]:
         return [margin.to_ipf_margin() for margin in self.margins]
+
+
+CategoryMapping = dict[str, dict[str, str]]
 
 
 def read_control_table(path: Path) -> ControlTable:
@@ -119,6 +123,7 @@ def read_wds_control_table(
     dimensions: tuple[str, ...],
     count_column: str,
     margin_name: str,
+    category_mapping: CategoryMapping | None = None,
 ) -> ControlTable:
     if not dimensions:
         raise ValueError("WDS controls require at least one dimension")
@@ -153,7 +158,13 @@ def read_wds_control_table(
                 cells.append(
                     ControlCell(
                         categories={
-                            dimension: row[dimension] for dimension in dimensions
+                            dimension: map_category(
+                                dimension,
+                                row[dimension],
+                                category_mapping,
+                                row_number,
+                            )
+                            for dimension in dimensions
                         },
                         count=count,
                     )
@@ -176,6 +187,40 @@ def find_wds_csv_member(archive: ZipFile) -> str:
     if len(csv_names) > 1:
         raise ValueError("WDS ZIP contains multiple CSV files")
     return csv_names[0]
+
+
+def read_category_mapping(path: Path) -> CategoryMapping:
+    payload = json.loads(path.read_text())
+    if not isinstance(payload, dict):
+        raise ValueError("category mapping must be a JSON object")
+
+    mapping: CategoryMapping = {}
+    for dimension, values in payload.items():
+        if not isinstance(dimension, str) or not isinstance(values, dict):
+            raise ValueError("category mapping must map dimension names to objects")
+        mapping[dimension] = {}
+        for source, target in values.items():
+            if not isinstance(source, str) or not isinstance(target, str):
+                raise ValueError("category mapping values must be strings")
+            mapping[dimension][source] = target
+    return mapping
+
+
+def map_category(
+    dimension: str,
+    value: str,
+    category_mapping: CategoryMapping | None,
+    row_number: int,
+) -> str:
+    if category_mapping is None or dimension not in category_mapping:
+        return value
+    try:
+        return category_mapping[dimension][value]
+    except KeyError as exc:
+        raise ValueError(
+            f"WDS row {row_number} has unmapped category {value!r} "
+            f"for dimension {dimension!r}"
+        ) from exc
 
 
 def write_control_table(path: Path, table: ControlTable) -> None:
