@@ -151,10 +151,10 @@ def fetch_wds_metadata(product_id: str) -> dict[str, Any]:
     product = int(normalize_product_id(product_id))
     response = post_json(wds_metadata_url(), [{"productId": product}])
     if not response:
-        raise ValueError(f"StatsCan WDS returned no metadata for {product_id}")
+        raise ValueError(f"StatCan WDS returned no metadata for {product_id}")
     first = response[0]
     if first.get("status") != "SUCCESS" or not first.get("object"):
-        raise ValueError(f"StatsCan WDS metadata lookup failed for {product_id}")
+        raise ValueError(f"StatCan WDS metadata lookup failed for {product_id}")
     return dict(first["object"])
 
 
@@ -162,7 +162,7 @@ def fetch_wds_table(product_id: str, out_dir: Path, lang: str = "en") -> Path:
     source_url = wds_download_url(product_id, lang)
     response = fetch_json(source_url)
     if response.get("status") != "SUCCESS" or not response.get("object"):
-        raise ValueError(f"StatsCan WDS did not return a download URL for {product_id}")
+        raise ValueError(f"StatCan WDS did not return a download URL for {product_id}")
 
     download_source = str(response["object"])
     destination = out_dir / Path(download_source).name
@@ -234,7 +234,7 @@ def write_manifest(path: Path, data: dict[str, Any]) -> None:
 def normalize_product_id(product_id: str) -> str:
     product = product_id.strip()
     if not product.isdigit():
-        raise ValueError("StatsCan product ID must contain only digits")
+        raise ValueError("StatCan product ID must contain only digits")
     return product
 
 

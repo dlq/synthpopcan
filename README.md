@@ -40,6 +40,12 @@ Validate a normalized controls file with:
 synthpopcan controls validate controls.csv
 ```
 
+Normalize a local long controls CSV into SynthPopCan's canonical long format with:
+
+```bash
+synthpopcan controls from-csv source-controls.csv --out controls.csv
+```
+
 Run IPF with:
 
 ```bash
@@ -86,7 +92,7 @@ The expanded shape is:
 
 For this toy example the expanded output has 100 rows. Its marginal counts match the controls: 60 young, 40 old, 50 female, and 50 male.
 
-## StatsCan Source Fetching
+## StatCan Source Fetching
 
 SynthPopCan has two initial source-fetch paths.
 
@@ -128,7 +134,7 @@ User story for finding a WDS table ID:
 6. The user runs `synthpopcan statcan wds fetch PRODUCT_ID --out-dir ...`.
 7. If the table is not suitable as a margin table, the later normalization step should fail with a clear explanation of which dimensions or measures are missing.
 
-The CLI-assisted search uses StatsCan's `getAllCubesListLite` endpoint. Metadata inspection uses `getCubeMetadata`.
+The CLI-assisted search uses StatCan's `getAllCubesListLite` endpoint. Metadata inspection uses `getCubeMetadata`.
 
 #### Example: choosing a WDS table
 
@@ -143,7 +149,7 @@ synthpopcan statcan wds search "population dwelling" --limit 5
 Default shell output is a Rich table:
 
 ```text
-                              StatsCan WDS Tables
+                              StatCan WDS Tables
 ┏━━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃ Product ID ┃ CANSIM ID ┃ Date Range               ┃ Title                    ┃
 ┡━━━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━┩
@@ -250,7 +256,7 @@ The manifest records the WDS API URL and the actual ZIP URL:
 }
 ```
 
-The next step, not implemented yet, is a normalizer that reads the downloaded StatsCan CSV package and turns selected dimensions and measures into SynthPopCan's long control format for `synthpopcan ipf fit`.
+The next step, not implemented yet, is a normalizer that reads the downloaded StatCan CSV package and turns selected dimensions and measures into SynthPopCan's long control format for `synthpopcan ipf fit`.
 
 ### Census Profile bulk CSVs
 

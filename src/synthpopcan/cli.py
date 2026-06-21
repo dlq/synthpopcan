@@ -11,7 +11,11 @@ from rich.console import Console
 from rich.table import Table
 
 from synthpopcan import __version__
-from synthpopcan.controls import read_control_margins
+from synthpopcan.controls import (
+    read_control_margins,
+    read_control_table,
+    write_control_table,
+)
 from synthpopcan.ipf import expand_records, fit_ipf
 from synthpopcan.statcan import (
     fetch_census_profile_2016,
@@ -48,6 +52,21 @@ def controls() -> None:
 def validate_controls(path: Path) -> None:
     """Validate a normalized long control CSV."""
     read_control_margins(path)
+
+
+@controls.command("from-csv")
+@click.argument("source", type=PATH)
+@click.option(
+    "--out",
+    "out_path",
+    required=True,
+    type=PATH,
+    help="Output normalized controls CSV.",
+)
+def normalize_controls_from_csv(source: Path, out_path: Path) -> None:
+    """Normalize a local long control CSV."""
+    table = read_control_table(source)
+    write_control_table(out_path, table)
 
 
 @cli.group()
@@ -228,7 +247,7 @@ def write_wds_search_tsv(rows: list[dict[str, str]]) -> None:
 
 
 def write_wds_search_table(rows: list[dict[str, str]]) -> None:
-    table = Table(title="StatsCan WDS Tables")
+    table = Table(title="StatCan WDS Tables")
     table.add_column("Product ID", no_wrap=True)
     table.add_column("CANSIM ID", no_wrap=True)
     table.add_column("Date Range", no_wrap=True)

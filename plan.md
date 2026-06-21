@@ -9,7 +9,7 @@ Build SynthPopCan as a Python library, CLI, and eventually web app for Canadian 
 
 The near-term scope is deliberately narrower than the full proposal:
 
-1. Build synthetic populations through iterative proportional fitting from StatsCan margin/control tables.
+1. Build synthetic populations through iterative proportional fitting from StatCan margin/control tables.
 2. Build household- and person-level synthetic populations from tree-based models using pluggable census microdata sources. The Canadian 2016 Census material staged locally is the first available microdata source, not the tool boundary.
 3. Keep environmental, school, healthcare, food, and broader enrichment data as later extensions unless they are needed for validation or demos.
 
@@ -28,7 +28,7 @@ SynthPopCan should eventually have four layers:
 
 1. `synthpopcan` Python library
    - Data schemas and validation.
-   - StatsCan table normalization.
+   - StatCan table normalization.
    - IPF and integerization.
    - Tree-based household/person synthesis.
    - Validation and reporting primitives.
@@ -81,6 +81,11 @@ Notes:
 - Use plain dataclasses or lightweight typed models first. Avoid a heavy dependency until the shape stabilizes.
 - Include serialization helpers for CSV/Parquet-friendly structures once dependencies are chosen.
 
+Current implementation notes:
+
+- `ControlTable`, `ControlMargin`, and `ControlCell` are implemented in `synthpopcan.controls` for normalized controls.
+- `ControlTable` can convert to the IPF engine's `IPFMargin` objects, keeping the IPF algorithm decoupled from CSV parsing.
+
 ### 2. Local Source Inspection
 
 Build tools that can inspect staged census microdata and public aggregate source caches without loading everything into memory.
@@ -100,14 +105,14 @@ Acceptance criteria:
 
 ### 3. Control Table Normalization
 
-Implement the path from StatsCan-style margin/control tables, Census Profile downloads, and user-provided CSVs to normalized controls.
+Implement the path from StatCan-style margin/control tables, Census Profile downloads, and user-provided CSVs to normalized controls.
 
 Deliverables:
 
-- Parser for local StatsCan table exports.
+- Parser for local StatCan table exports.
 - Generic `controls` CLI namespace for normalized control-table workflows.
-- `controls validate` for checking the normalized long control CSV format.
-- `controls from-csv`, `controls from-wds`, and `controls from-census-profile` adapters.
+- `controls validate` for checking the normalized long control CSV format. Status: complete for normalized long CSVs.
+- `controls from-csv`, `controls from-wds`, and `controls from-census-profile` adapters. Status: `from-csv` complete for normalized long CSVs; WDS and Census Profile adapters pending.
 - Category mapping layer for converting source labels/codes into stable internal categories.
 - Validation for totals, missing categories, duplicated cells, and geography coverage.
 - CLI command:
@@ -121,7 +126,7 @@ Acceptance criteria:
 - A toy fixture can be normalized into a `ControlTable`.
 - A normalized control CSV can be validated with `synthpopcan controls validate controls.csv`.
 - Validation errors are actionable and include source rows/columns.
-- The code is ready to add live StatsCan fetch support later, but does not require network access.
+- The code is ready to add live StatCan fetch support later, but does not require network access.
 
 ### 4. IPF Engine
 
@@ -151,7 +156,7 @@ Current implementation notes:
 - `synthpopcan ipf fit` writes compact fitted seed weights because expanded synthetic rows can become very large quickly.
 - `synthpopcan ipf expand` turns fitted weights into full synthetic rows for demos, exploratory work, and agent-based-model inputs.
 - The CLI now rejects non-converged fits by default before writing weights; `--allow-nonconverged` is available for explicit inspection runs.
-- Normalized control table parsing lives in `synthpopcan.controls`, not in the CLI, so StatsCan normalizers and the future web app can reuse the same contract.
+- Normalized control table parsing lives in `synthpopcan.controls`, not in the CLI, so StatCan normalizers and the future web app can reuse the same contract.
 - The first implementation used a simple record-oriented IPF loop. That was useful for correctness tests, but it repeatedly scanned every seed record for each target category.
 - The next implementation direction is indexed IPF: precompute the seed-record indexes belonging to each margin cell, then reuse those indexes during each fitting iteration.
 
@@ -299,7 +304,7 @@ Data-source and data-access documentation needs a dedicated pass. It should cove
 - Which sources are fetched live or downloaded on demand.
 - Which local caches are acceptable in `data/raw` and `data/private`.
 - Which datasets require access controls or special handling.
-- Stable URLs, APIs, and citation requirements for StatsCan, open.canada.ca, donneesquebec.ca, and related portals.
+- Stable URLs, APIs, and citation requirements for StatCan, open.canada.ca, donneesquebec.ca, and related portals.
 - How the Google Drive source bundle maps to reproducible public sources.
 
 Other deferred work:
@@ -343,7 +348,7 @@ Ignored:
 
 - Exact dependency stack for arrays/tables/models: likely NumPy, pandas or Polars, scikit-learn, and optional PyArrow.
 - Whether schemas should remain dataclasses or move to Pydantic once the API surface stabilizes.
-- First supported StatsCan table format and access path.
+- First supported StatCan table format and access path.
 - First supported census microdata household/person files, starting with available 2016 files.
 - Integerization method for the first IPF engine.
 - Whether the web app should be Streamlit/FastAPI-first or built as a richer frontend once workflows settle.

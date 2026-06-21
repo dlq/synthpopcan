@@ -12,7 +12,7 @@ This note synthesizes the local material currently in `~/Downloads` and recent e
 
 The main conclusion is that these should be treated as two related but distinct engines:
 
-- A **general margin-table IPF engine** for arbitrary StatsCan tables, where the user supplies or selects a margin table and the system constructs a fitted joint distribution against a seed sample or prior.
+- A **general margin-table IPF engine** for arbitrary StatCan tables, where the user supplies or selects a margin table and the system constructs a fitted joint distribution against a seed sample or prior.
 - A **2016 Census household/person engine** that uses the Canadian 2016 PUMF individual and hierarchical files, Census Profile controls, and geography-specific constraints. Tree models should generate realistic conditional household/person records, but they should be followed by calibration or constrained sampling so outputs match census controls.
 
 ## Local Material In Downloads
@@ -242,7 +242,7 @@ Relevance:
 
 - These papers confirm that household/person relationship modeling is the hard part.
 - They also show that modern work is moving beyond pure IPF, especially for high-dimensional records and household member relationships.
-- However, deep models are likely too much for the first version of a transparent StatsCan-focused Python library.
+- However, deep models are likely too much for the first version of a transparent StatCan-focused Python library.
 
 Design implication:
 
@@ -270,7 +270,7 @@ What does exist is a set of adjacent implementation families:
 
 Design implications for SynthPopCan:
 
-- There is room for a Canadian-focused library; the search did not reveal an obvious maintained competitor that solves the same StatsCan/PUMF problem.
+- There is room for a Canadian-focused library; the search did not reveal an obvious maintained competitor that solves the same StatCan/PUMF problem.
 - The first deliverable should stay focused on the hard missing piece: Canadian data ingestion, margin normalization, household/person synthesis, calibration, validation, and export.
 - Later ecosystem layers should be modular rather than embedded in the core synthesis engine. Useful future modules are `schools`, `workplaces`, `healthcare`, `food_environment`, `road_network`, and `contacts`.
 - Output schemas should anticipate downstream simulation consumers: stable person and household IDs, optional location/activity tables, deterministic run metadata, and validation artifacts.
@@ -310,9 +310,9 @@ Important WDS facts for this project:
 Design implication:
 
 - The library should support both:
-  - remote WDS/table-download ingestion for current StatsCan tables,
+  - remote WDS/table-download ingestion for current StatCan tables,
   - local bulk CSV ingestion for downloaded 2016 Census files.
-- "Any margin table on the StatsCan site" should be interpreted as: any table that can be normalized into a declared control schema. Arbitrary tables may need user mapping because table dimensions, universes, notes, and geography columns differ.
+- "Any margin table on the StatCan site" should be interpreted as: any table that can be normalized into a declared control schema. Arbitrary tables may need user mapping because table dimensions, universes, notes, and geography columns differ.
 
 ## Proposed System Shape
 
@@ -392,7 +392,7 @@ The web app should not own the synthesis logic. It should orchestrate the librar
 
 First useful web app scope:
 
-- Upload/select StatsCan CSV or WDS product.
+- Upload/select StatCan CSV or WDS product.
 - Preview inferred dimensions and geography.
 - Map table dimensions into `ControlTable`.
 - Select seed sample and variables.
@@ -407,18 +407,18 @@ Avoid in the first web version:
 - interactive agent-level map rendering for millions of people,
 - deep model training.
 
-### Engine 1: General StatsCan Margin-Table IPF
+### Engine 1: General StatCan Margin-Table IPF
 
 Inputs:
 
-- StatsCan table from WDS/full-table download or local CSV.
+- StatCan table from WDS/full-table download or local CSV.
 - User-selected dimensions to control.
 - Optional seed sample; if none is supplied, the engine can fit a joint table but cannot create rich individual records beyond the table dimensions.
 - Geography mapping.
 
 Algorithm:
 
-1. Normalize StatsCan table to `ControlTable`.
+1. Normalize StatCan table to `ControlTable`.
 2. Validate that selected controls share compatible universes.
 3. Build seed/prior table from seed microdata or uniform/smoothed prior.
 4. Run dense IPF for small low-dimensional problems; run sparse/list IPF for high-dimensional microdata.
@@ -428,13 +428,13 @@ Algorithm:
 
 Hard parts:
 
-- StatsCan tables often mix universes, notes, sex dimensions, percentages, totals, and suppressed values.
+- StatCan tables often mix universes, notes, sex dimensions, percentages, totals, and suppressed values.
 - IPF requires compatible margins. "Any table" is possible only after schema mapping and validation.
 - Random rounding and suppression mean exact equality is not always the right target; tolerances matter.
 
 Near-term implementation stance:
 
-- Make arbitrary StatsCan ingestion flexible, but require explicit config for any table that is not a known Census Profile shape.
+- Make arbitrary StatCan ingestion flexible, but require explicit config for any table that is not a known Census Profile shape.
 - Provide strong diagnostics when margins are incompatible.
 
 ### Engine 2: 2016 Census Tree-Based Household/Person Synthesis
