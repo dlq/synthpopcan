@@ -107,7 +107,44 @@ def read_statcan_2016_hierarchical_seed_sample(path: Path) -> SeedSample:
     )
 
 
+def export_seed_rows(
+    sample: SeedSample,
+    *,
+    columns: tuple[str, ...],
+) -> tuple[list[dict[str, str]], dict[str, object]]:
+    if not columns:
+        raise ValueError("at least one seed column is required")
+    validate_columns(sample.columns, required=columns)
+
+    output_columns = unique_columns(
+        (*sample.id_columns, *sample.geography_columns, *columns, sample.weight_column)
+    )
+    rows = [
+        {column: record.get(column, "") for column in output_columns}
+        for record in sample.records
+    ]
+    return rows, {
+        "source_format": sample.source_format,
+        "level": sample.level,
+        "rows_read": len(sample.records),
+        "rows_written": len(rows),
+        "columns": list(output_columns),
+        "selected_columns": list(columns),
+        "id_columns": list(sample.id_columns),
+        "geography_columns": list(sample.geography_columns),
+        "weight_column": sample.weight_column,
+    }
+
+
 def validate_columns(columns: tuple[str, ...], *, required: tuple[str, ...]) -> None:
     missing = [column for column in required if column not in columns]
     if missing:
         raise ValueError(f"missing required columns: {', '.join(missing)}")
+
+
+def unique_columns(columns: tuple[str | None, ...]) -> tuple[str, ...]:
+    output: list[str] = []
+    for column in columns:
+        if column and column not in output:
+            output.append(column)
+    return tuple(output)

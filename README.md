@@ -82,6 +82,17 @@ synthpopcan microdata inspect hierarchical.csv \
 
 The 2016 hierarchical PUMF is a single person-row file with household and family identifiers such as `HH_ID`, `EF_ID`, `CF_ID`, and `PP_ID`. SynthPopCan treats separate household/person CSVs as a derived or fixture shape, not the expected StatCan input shape.
 
+Export selected person-level columns as an IPF seed CSV:
+
+```bash
+synthpopcan microdata export-seed hierarchical.csv \
+  --input-format statcan-2016-hierarchical \
+  --columns AGEGRP,SEX \
+  --out seed.csv
+```
+
+The export includes stable ID and weight columns from the adapter, plus the selected seed attributes. Household-level export from hierarchical microdata is deferred until household aggregation rules are defined.
+
 ## IPF CLI
 
 The first implemented workflow fits seed records to one-way or multi-way margin tables stored as CSV.

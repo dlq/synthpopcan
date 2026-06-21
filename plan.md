@@ -210,12 +210,14 @@ Deliverables:
 - Create loading adapters that are explicit about census year and source format.
 - Derive household, person, and link views from one hierarchical file when a format carries `HH_ID`/`PP_ID`-style identifiers.
 - Normalize key variables needed for the first household/person synthesis prototype.
+- Export selected person-level microdata columns to IPF seed CSVs.
 - Document assumptions in `research.md` or a future data-access note when source interpretation matters.
 - CLI commands:
 
 ```bash
 synthpopcan microdata inspect sample.csv --input-format fixture-v1 --level person --format json
 synthpopcan microdata inspect hierarchical.csv --input-format statcan-2016-hierarchical --format table
+synthpopcan microdata export-seed hierarchical.csv --input-format statcan-2016-hierarchical --columns AGEGRP,SEX --out seed.csv
 ```
 
 Acceptance criteria:
@@ -228,6 +230,8 @@ Current implementation notes:
 
 - `fixture-v1` is the first tiny adapter used only for tests and demos.
 - `statcan-2016-hierarchical` inspects a single hierarchical PUMF-style CSV with `HH_ID`, `EF_ID`, `CF_ID`, `PP_ID`, and `WEIGHT`.
+- `microdata export-seed` exports selected person-level columns from fixture and `statcan-2016-hierarchical` inputs for use by `ipf fit`.
+- Household-level seed export from hierarchical microdata is deferred until household aggregation rules are defined.
 - Real Pritchard-era, individual-only 2016 PUMF, and later census microdata formats should be added as separate adapters that emit `SeedSample` or derived household/person views.
 
 ### 6. Tree-Based Synthetic Population Generator Prototype

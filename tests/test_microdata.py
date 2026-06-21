@@ -5,6 +5,7 @@ from click import ClickException
 
 from synthpopcan.cli import main
 from synthpopcan.microdata import (
+    export_seed_rows,
     read_fixture_seed_sample,
     read_statcan_2016_hierarchical_seed_sample,
 )
@@ -163,6 +164,91 @@ def test_cli_inspects_statcan_2016_hierarchical_microdata(tmp_path, capsys) -> N
     assert payload["households"] == 2
     assert payload["people"] == 3
     assert payload["average_household_size"] == 1.5
+
+
+def test_exports_selected_seed_rows_from_fixture_sample(tmp_path) -> None:
+    source = tmp_path / "people.csv"
+    source.write_text(
+        "person_id,geo,age_group,sex,weight,extra\n"
+        "p1,QC,age_000_004,female,1,ignored\n"
+        "p2,QC,age_005_009,male,2,ignored\n"
+    )
+    sample = read_fixture_seed_sample(
+        source,
+        level="person",
+        weight_column="weight",
+        geography_columns=("geo",),
+        id_columns=("person_id",),
+    )
+
+    rows, summary = export_seed_rows(
+        sample,
+        columns=("age_group", "sex"),
+    )
+
+    assert rows == [
+        {
+            "person_id": "p1",
+            "geo": "QC",
+            "age_group": "age_000_004",
+            "sex": "female",
+            "weight": "1",
+        },
+        {
+            "person_id": "p2",
+            "geo": "QC",
+            "age_group": "age_005_009",
+            "sex": "male",
+            "weight": "2",
+        },
+    ]
+    assert summary == {
+        "source_format": "fixture-v1",
+        "level": "person",
+        "rows_read": 2,
+        "rows_written": 2,
+        "columns": ["person_id", "geo", "age_group", "sex", "weight"],
+        "selected_columns": ["age_group", "sex"],
+        "id_columns": ["person_id"],
+        "geography_columns": ["geo"],
+        "weight_column": "weight",
+    }
+
+
+def test_cli_exports_seed_csv_from_statcan_2016_hierarchical(tmp_path, capsys) -> None:
+    source = tmp_path / "hierarchical.csv"
+    output = tmp_path / "seed.csv"
+    source.write_text(
+        "HH_ID,EF_ID,CF_ID,PP_ID,WEIGHT,AGEGRP,SEX,TENUR\n"
+        "1,11,111,11101,100.5,adult,F,owner\n"
+        "1,11,111,11102,100.5,child,M,owner\n"
+    )
+
+    assert (
+        main(
+            [
+                "microdata",
+                "export-seed",
+                str(source),
+                "--input-format",
+                "statcan-2016-hierarchical",
+                "--columns",
+                "AGEGRP,SEX",
+                "--out",
+                str(output),
+                "--format",
+                "json",
+            ]
+        )
+        == 0
+    )
+
+    assert output.read_text() == (
+        "PP_ID,AGEGRP,SEX,WEIGHT\n11101,adult,F,100.5\n11102,child,M,100.5\n"
+    )
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["rows_written"] == 2
+    assert payload["columns"] == ["PP_ID", "AGEGRP", "SEX", "WEIGHT"]
 
 
 def test_cli_inspects_microdata_as_readable_table(tmp_path, capsys) -> None:

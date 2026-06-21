@@ -31,6 +31,7 @@ from synthpopcan.diagnostics import build_ipf_fit_report
 from synthpopcan.ipf import fit_ipf, integerize_weights
 from synthpopcan.localdata import inspect_local_data_layout
 from synthpopcan.microdata import (
+    export_seed_rows,
     read_fixture_seed_sample,
     read_statcan_2016_hierarchical_seed_sample,
 )
@@ -316,6 +317,83 @@ def inspect_microdata(
     except ValueError as exc:
         raise click.ClickException(str(exc)) from exc
     write_output(sample.as_summary(), output_format, title="Microdata Summary")
+
+
+@microdata.command("export-seed")
+@click.argument("path", type=PATH)
+@click.option(
+    "--input-format",
+    "source_format",
+    required=True,
+    type=click.Choice(["fixture-v1", "statcan-2016-hierarchical"]),
+    help="Input microdata adapter format.",
+)
+@click.option(
+    "--level",
+    default=None,
+    type=click.Choice(["household", "person"]),
+    help="Seed sample level for fixture-v1.",
+)
+@click.option(
+    "--columns",
+    required=True,
+    help="Comma-separated columns to include as seed attributes.",
+)
+@click.option("--weight-column", default=None, help="Optional fixture weight column.")
+@click.option(
+    "--geography-columns",
+    default="",
+    help="Comma-separated fixture geography columns.",
+)
+@click.option("--id-columns", default="", help="Comma-separated fixture ID columns.")
+@click.option("--out", "out_path", required=True, type=PATH)
+@click.option(
+    "--format",
+    "output_format",
+    default="table",
+    type=click.Choice(["json", "table"]),
+    show_default=True,
+    help="Output format for the export summary.",
+)
+def export_microdata_seed(
+    path: Path,
+    source_format: str,
+    level: str | None,
+    columns: str,
+    weight_column: str | None,
+    geography_columns: str,
+    id_columns: str,
+    out_path: Path,
+    output_format: str,
+) -> None:
+    """Export selected microdata columns as an IPF seed CSV."""
+    try:
+        if source_format == "fixture-v1":
+            if level is None:
+                raise click.ClickException("fixture-v1 requires --level")
+            sample = read_fixture_seed_sample(
+                path,
+                level=level,
+                weight_column=weight_column,
+                geography_columns=parse_optional_columns(geography_columns),
+                id_columns=parse_optional_columns(id_columns),
+            )
+        else:
+            if level == "household":
+                raise click.ClickException(
+                    "statcan-2016-hierarchical household seed export is not "
+                    "implemented yet"
+                )
+            sample = read_statcan_2016_hierarchical_seed_sample(path)
+        rows, summary = export_seed_rows(sample, columns=parse_columns(columns))
+    except ValueError as exc:
+        raise click.ClickException(str(exc)) from exc
+    write_rows(out_path, rows)
+    if output_format == "json":
+        print(json.dumps(summary, indent=2, sort_keys=True))
+        return
+    print_summary_table(summary, title="Seed Export Summary")
+    print_wrote(out_path)
 
 
 @controls.command("validate")
@@ -980,6 +1058,15 @@ def read_population_artifact(
         rows = read_csv(path)
         return rows, [1.0 for _row in rows]
     raise ValueError(f"unknown population artifact kind {artifact_kind!r}")
+
+
+def write_rows(path: Path, rows: list[dict[str, str]]) -> None:
+    if not rows:
+        raise ValueError("cannot write empty CSV output")
+    with path.open("w", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=list(rows[0].keys()))
+        writer.writeheader()
+        writer.writerows(rows)
 
 
 def write_weighted_seed(
