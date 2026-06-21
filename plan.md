@@ -264,6 +264,32 @@ Current implementation notes:
 - The `synthpopcan.tree` module defines the first tree-generator contract objects: `TreeTrainingSample`, `TreeModelSpec`, `TreeGenerationRequest`, and a CSV training-sample reader with validation for target, conditioning, geography, and weight columns.
 - The `synthpopcan tree` CLI namespace exists as a placeholder with `train` and `generate` commands that fail clearly until model training and generation are implemented.
 
+Household/person linkage design:
+
+- Treat tree-based generation as a hierarchical workflow, not as independent household and person generators.
+- Generate synthetic households first. Each household record receives household-level attributes such as geography, household size, tenure, dwelling type, income band if available, and family or household structure.
+- Generate people second, conditional on each generated household. The person generator should receive household context such as geography, household size, tenure, household or family type, and any other household attributes used during training.
+- Preserve linkage through generated identifiers: `synthetic_household_id` on household rows and both `synthetic_person_id` and `synthetic_household_id` on person rows.
+- Validate both levels: household outputs against household margins, person outputs against person margins, and linked outputs against structural checks such as household size matching the number of generated people.
+
+Model distribution and privacy-release design:
+
+- Support two model artifact modes:
+  - Private working models: trained locally from restricted microdata, useful for experimentation, and not marked as publishable.
+  - Publishable models: packaged only after passing SynthPopCan disclosure-risk checks, with no raw source records and clear provenance metadata.
+- Add release-oriented commands such as `synthpopcan tree audit-model ...` and `synthpopcan tree package-model ... --require-privacy-pass` before encouraging public model sharing.
+- A trained model from restricted microdata is not automatically safe to publish just because it is a model. The tool should make accidental publication of a leaky model difficult.
+- Privacy checks for publishable model artifacts should include:
+  - No raw rows, source identifiers, household identifiers, bootstrap sample indices, cached training data, or debug example records stored in the package.
+  - Minimum support thresholds for terminal leaves or model-equivalent subgroups.
+  - Rare-combination checks so generated rows do not reproduce rare exact combinations from the source microdata, especially for linked household/person records.
+  - Category coarsening recommendations or requirements when fields create overly specific combinations.
+  - Geography thresholding, with Canada and province-level models treated as the likely first distributable targets and smaller geographies requiring stronger checks.
+  - Person-household linkage checks, because rare household structures plus person compositions can become identifying even when individual rows look ordinary.
+  - Provenance metadata covering source description, columns used, geography level, training parameters, random seed, package date, privacy-audit result, and warnings.
+  - Model simplification constraints such as minimum leaf size, pruning, maximum depth, or equivalent constraints depending on the chosen estimator.
+- Avoid claiming that these checks make a model absolutely privacy safe. The intended claim is narrower: publishable model artifacts have passed SynthPopCan disclosure-risk checks and still require appropriate review before public distribution when trained from restricted sources.
+
 ### 7. CLI Workflow
 
 Make the CLI useful for actual work before the web app starts.
