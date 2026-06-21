@@ -297,6 +297,7 @@ Usability helper principle:
 Current implementation notes:
 
 - A fixture integration test covers `microdata export-seed -> ipf fit --report -> validate controls` for a tiny `statcan-2016-hierarchical` person-level workflow.
+- CLI refactoring has gone far enough for the current pass; revisit command-module boundaries after the first tree-based generator pass is complete.
 
 ### 8. Validation Reports
 
