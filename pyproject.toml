@@ -29,7 +29,7 @@ dependencies = [
 ]
 
 [project.scripts]
-synthpopcan = "synthpopcan.cli:main"
+synthpopcan = "synthpopcan.cli:cli"
 
 [dependency-groups]
 dev = [

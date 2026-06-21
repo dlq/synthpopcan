@@ -150,6 +150,8 @@ Current implementation notes:
 
 - `synthpopcan ipf fit` writes compact fitted seed weights because expanded synthetic rows can become very large quickly.
 - `synthpopcan ipf expand` turns fitted weights into full synthetic rows for demos, exploratory work, and agent-based-model inputs.
+- The CLI now rejects non-converged fits by default before writing weights; `--allow-nonconverged` is available for explicit inspection runs.
+- Normalized control table parsing lives in `synthpopcan.controls`, not in the CLI, so StatsCan normalizers and the future web app can reuse the same contract.
 - The first implementation used a simple record-oriented IPF loop. That was useful for correctness tests, but it repeatedly scanned every seed record for each target category.
 - The next implementation direction is indexed IPF: precompute the seed-record indexes belonging to each margin cell, then reuse those indexes during each fitting iteration.
 
@@ -172,7 +174,7 @@ Near-term IPF performance tasks:
 3. Precompute record membership indexes for each margin cell. Status: complete in the pure-Python fitter.
 4. Stream expanded rows directly to CSV instead of building the full expanded population in memory. Status: pending.
 5. Add benchmarks or performance tests for easy, moderate, and high-cardinality fixtures. Status: pending.
-6. Improve non-convergence diagnostics and CLI reporting. Status: pending.
+6. Improve non-convergence diagnostics and CLI reporting. Status: partially complete; the CLI now fails closed on non-convergence, but richer reports are still pending.
 7. Consider NumPy, Polars, and possibly sparse arrays after the pure-Python indexed version establishes the right data contracts. Status: pending.
 
 Local timing evidence after indexing:

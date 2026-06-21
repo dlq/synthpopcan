@@ -47,6 +47,7 @@ synthpopcan ipf fit --seed seed.csv --controls controls.csv --out weights.csv
 ```
 
 The output is compact fitted seed weights: one row per seed record with a fitted `weight`.
+If the seed already has a `weight` column, fitted weights are written as `fitted_weight`.
 
 ```csv
 id,age,sex,weight
@@ -61,6 +62,8 @@ Expand fitted weights explicitly when you want a full synthetic CSV to inspect o
 ```bash
 synthpopcan ipf expand --weights weights.csv --out synthetic.csv
 ```
+
+`ipf expand` uses `fitted_weight` when present, otherwise `weight`. Use `--weight-field` to choose a different column. By default, `ipf fit` fails without writing an output file if the fit does not converge; pass `--allow-nonconverged` only when you intentionally want to inspect a failed fit.
 
 Expanded output has one row per generated synthetic record:
 

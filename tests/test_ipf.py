@@ -226,6 +226,137 @@ def test_cli_runs_ipf_from_csv_files_as_weights_by_default(tmp_path: Path) -> No
     assert [row["weight"] for row in rows] == ["30", "30", "20", "20"]
 
 
+def test_cli_expands_fitted_weight_when_seed_has_initial_weight(tmp_path: Path) -> None:
+    from synthpopcan.cli import main
+
+    seed_path = tmp_path / "seed.csv"
+    controls_path = tmp_path / "controls.csv"
+    weights_path = tmp_path / "weights.csv"
+    output_path = tmp_path / "synthetic.csv"
+
+    write_csv(
+        seed_path,
+        ["id", "age", "weight"],
+        [
+            {"id": "1", "age": "young", "weight": "1"},
+            {"id": "2", "age": "old", "weight": "1"},
+        ],
+    )
+    write_csv(
+        controls_path,
+        ["margin", "dimensions", "age", "count"],
+        [
+            {"margin": "age", "dimensions": "age", "age": "young", "count": "10"},
+            {"margin": "age", "dimensions": "age", "age": "old", "count": "20"},
+        ],
+    )
+
+    assert (
+        main(
+            [
+                "ipf",
+                "fit",
+                "--seed",
+                str(seed_path),
+                "--controls",
+                str(controls_path),
+                "--out",
+                str(weights_path),
+                "--weight-field",
+                "weight",
+            ]
+        )
+        == 0
+    )
+    assert (
+        main(
+            [
+                "ipf",
+                "expand",
+                "--weights",
+                str(weights_path),
+                "--out",
+                str(output_path),
+            ]
+        )
+        == 0
+    )
+
+    rows = list(csv.DictReader(output_path.open(newline="")))
+    assert len(rows) == 30
+    assert count_rows(rows, "age") == {"young": 10, "old": 20}
+
+
+def test_cli_fit_fails_when_ipf_does_not_converge(tmp_path: Path) -> None:
+    from click.exceptions import ClickException
+
+    from synthpopcan.cli import main
+
+    seed_path = tmp_path / "seed.csv"
+    controls_path = tmp_path / "controls.csv"
+    output_path = tmp_path / "weights.csv"
+
+    write_csv(
+        seed_path,
+        ["id", "age", "sex"],
+        [
+            {"id": "1", "age": "young", "sex": "F"},
+            {"id": "2", "age": "old", "sex": "M"},
+        ],
+    )
+    write_csv(
+        controls_path,
+        ["margin", "dimensions", "age", "sex", "count"],
+        [
+            {
+                "margin": "age",
+                "dimensions": "age",
+                "age": "young",
+                "sex": "",
+                "count": "50",
+            },
+            {
+                "margin": "age",
+                "dimensions": "age",
+                "age": "old",
+                "sex": "",
+                "count": "50",
+            },
+            {
+                "margin": "sex",
+                "dimensions": "sex",
+                "age": "",
+                "sex": "F",
+                "count": "80",
+            },
+            {
+                "margin": "sex",
+                "dimensions": "sex",
+                "age": "",
+                "sex": "M",
+                "count": "20",
+            },
+        ],
+    )
+
+    with pytest.raises(ClickException, match="IPF did not converge"):
+        main(
+            [
+                "ipf",
+                "fit",
+                "--seed",
+                str(seed_path),
+                "--controls",
+                str(controls_path),
+                "--out",
+                str(output_path),
+                "--max-iterations",
+                "2",
+            ]
+        )
+    assert not output_path.exists()
+
+
 def count_rows(rows: list[dict[str, str]], field: str) -> dict[str, int]:
     counts: dict[str, int] = {}
     for row in rows:

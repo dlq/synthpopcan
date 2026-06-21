@@ -11,7 +11,8 @@ from rich.console import Console
 from rich.table import Table
 
 from synthpopcan import __version__
-from synthpopcan.ipf import IPFMargin, expand_records, fit_ipf
+from synthpopcan.controls import read_control_margins
+from synthpopcan.ipf import expand_records, fit_ipf
 from synthpopcan.statcan import (
     fetch_census_profile_2016,
     fetch_wds_metadata,
@@ -73,6 +74,11 @@ def ipf() -> None:
 )
 @click.option("--max-iterations", default=100, type=int, show_default=True)
 @click.option("--tolerance", default=1e-6, type=float, show_default=True)
+@click.option(
+    "--allow-nonconverged",
+    is_flag=True,
+    help="Write weights even when IPF does not meet the convergence tolerance.",
+)
 def fit_ipf_command(
     seed_path: Path,
     controls_path: Path,
@@ -80,6 +86,7 @@ def fit_ipf_command(
     weight_field: str | None,
     max_iterations: int,
     tolerance: float,
+    allow_nonconverged: bool,
 ) -> None:
     """Fit seed records to controls and write compact weights."""
     seed_rows = read_csv(seed_path)
@@ -91,6 +98,13 @@ def fit_ipf_command(
         max_iterations=max_iterations,
         tolerance=tolerance,
     )
+    if not result.converged and not allow_nonconverged:
+        raise click.ClickException(
+            "IPF did not converge "
+            f"after {result.iterations} iterations; "
+            f"max absolute error is {result.max_abs_error:.12g}. "
+            "Use --allow-nonconverged to write the fitted weights anyway."
+        )
     write_weighted_seed(out_path, seed_rows, result.weights)
 
 
@@ -257,8 +271,13 @@ def read_weighted_seed(
     weights: list[float] = []
     with path.open(newline="") as handle:
         for row_number, row in enumerate(csv.DictReader(handle), start=2):
+            selected_weight_field = (
+                "fitted_weight"
+                if weight_field == "weight" and "fitted_weight" in row
+                else weight_field
+            )
             try:
-                weight_value = row.pop(weight_field)
+                weight_value = row.pop(selected_weight_field)
             except KeyError as exc:
                 raise ValueError(
                     f"weights CSV requires a {weight_field!r} column"
@@ -271,33 +290,6 @@ def read_weighted_seed(
                 ) from exc
             rows.append(row)
     return rows, weights
-
-
-def read_control_margins(path: Path) -> list[IPFMargin]:
-    grouped: dict[tuple[str, ...], dict[tuple[str, ...], float]] = {}
-    with path.open(newline="") as handle:
-        for row_number, row in enumerate(csv.DictReader(handle), start=2):
-            dimensions = parse_dimensions(row.get("dimensions", ""))
-            if not dimensions:
-                raise ValueError(f"controls row {row_number} has no dimensions")
-            try:
-                count = float(row["count"])
-            except KeyError as exc:
-                raise ValueError("controls CSV requires a count column") from exc
-            except ValueError as exc:
-                raise ValueError(
-                    f"controls row {row_number} has invalid count"
-                ) from exc
-
-            key = tuple(row.get(dimension, "") for dimension in dimensions)
-            grouped.setdefault(dimensions, {})[key] = count
-
-    return [IPFMargin(dimensions, targets) for dimensions, targets in grouped.items()]
-
-
-def parse_dimensions(value: str) -> tuple[str, ...]:
-    separator = "|" if "|" in value else ","
-    return tuple(part.strip() for part in value.split(separator) if part.strip())
 
 
 def write_weighted_seed(
