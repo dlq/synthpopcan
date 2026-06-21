@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-import argparse
 import csv
 import json
 from pathlib import Path
 
+import click
 from rich.console import Console
 from rich.table import Table
 
@@ -19,131 +19,136 @@ from synthpopcan.statcan import (
     search_wds_tables,
 )
 
-
-def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(
-        prog="synthpopcan",
-        description="Canadian synthetic population tooling.",
-    )
-    parser.add_argument(
-        "--version",
-        action="version",
-        version=f"%(prog)s {__version__}",
-    )
-    subparsers = parser.add_subparsers(dest="command")
-
-    ipf_parser = subparsers.add_parser("ipf", help="Run IPF workflows.")
-    ipf_subparsers = ipf_parser.add_subparsers(dest="ipf_command")
-    ipf_run = ipf_subparsers.add_parser("run", help="Fit seed records to controls.")
-    ipf_run.add_argument("--seed", required=True, type=Path, help="Seed records CSV.")
-    ipf_run.add_argument(
-        "--controls",
-        required=True,
-        type=Path,
-        help="Control totals CSV in long margin format.",
-    )
-    ipf_run.add_argument("--out", required=True, type=Path, help="Output weighted CSV.")
-    ipf_run.add_argument(
-        "--weight-field",
-        default=None,
-        help="Optional seed CSV column containing initial weights.",
-    )
-    ipf_run.add_argument("--max-iterations", default=100, type=int)
-    ipf_run.add_argument("--tolerance", default=1e-6, type=float)
-    ipf_run.set_defaults(func=run_ipf)
-
-    statcan_parser = subparsers.add_parser(
-        "statcan", help="Fetch Statistics Canada data."
-    )
-    statcan_subparsers = statcan_parser.add_subparsers(dest="statcan_command")
-
-    wds_parser = statcan_subparsers.add_parser("wds", help="Fetch WDS table data.")
-    wds_subparsers = wds_parser.add_subparsers(dest="wds_command")
-    wds_fetch = wds_subparsers.add_parser(
-        "fetch", help="Download a full WDS table CSV ZIP by product ID."
-    )
-    wds_fetch.add_argument("product_id", help="StatsCan WDS product/table ID.")
-    wds_fetch.add_argument("--lang", default="en", choices=["en", "fr"])
-    wds_fetch.add_argument("--out-dir", required=True, type=Path)
-    wds_fetch.set_defaults(func=run_statcan_wds_fetch)
-    wds_search = wds_subparsers.add_parser(
-        "search", help="Search the WDS table inventory."
-    )
-    wds_search.add_argument("query", help="Search terms for table titles or IDs.")
-    wds_search.add_argument("--limit", default=10, type=int)
-    wds_search.add_argument(
-        "--format",
-        choices=["table", "tsv", "json"],
-        default="table",
-        help="Output format for search results.",
-    )
-    wds_search.set_defaults(func=run_statcan_wds_search)
-    wds_metadata = wds_subparsers.add_parser(
-        "metadata", help="Fetch WDS cube metadata by product ID."
-    )
-    wds_metadata.add_argument("product_id", help="StatsCan WDS product/table ID.")
-    wds_metadata.add_argument("--out", type=Path, help="Optional JSON output path.")
-    wds_metadata.set_defaults(func=run_statcan_wds_metadata)
-
-    census_parser = statcan_subparsers.add_parser(
-        "census-profile", help="Fetch Census Profile bulk downloads."
-    )
-    census_subparsers = census_parser.add_subparsers(dest="census_profile_command")
-    census_fetch = census_subparsers.add_parser(
-        "fetch", help="Download a known Census Profile bulk CSV."
-    )
-    census_fetch.add_argument("--year", required=True, choices=["2016"])
-    census_fetch.add_argument("--geo-level", required=True)
-    census_fetch.add_argument("--out-dir", required=True, type=Path)
-    census_fetch.set_defaults(func=run_statcan_census_profile_fetch)
-    return parser
+PATH = click.Path(path_type=Path)
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = build_parser()
-    args = parser.parse_args(argv)
-    if hasattr(args, "func"):
-        args.func(args)
+    cli.main(args=argv, standalone_mode=False)
     return 0
 
 
-def run_ipf(args: argparse.Namespace) -> None:
-    seed_rows = read_csv(args.seed)
-    margins = read_control_margins(args.controls)
+@click.group(
+    context_settings={"help_option_names": ["-h", "--help"]},
+    invoke_without_command=True,
+    no_args_is_help=False,
+)
+@click.version_option(__version__, prog_name="synthpopcan")
+def cli() -> None:
+    """Canadian synthetic population tooling."""
+
+
+@cli.group()
+def ipf() -> None:
+    """Run IPF workflows."""
+
+
+@ipf.command("run")
+@click.option("--seed", "seed_path", required=True, type=PATH, help="Seed records CSV.")
+@click.option(
+    "--controls",
+    "controls_path",
+    required=True,
+    type=PATH,
+    help="Control totals CSV in long margin format.",
+)
+@click.option(
+    "--out", "out_path", required=True, type=PATH, help="Output weighted CSV."
+)
+@click.option(
+    "--weight-field",
+    default=None,
+    help="Optional seed CSV column containing initial weights.",
+)
+@click.option("--max-iterations", default=100, type=int, show_default=True)
+@click.option("--tolerance", default=1e-6, type=float, show_default=True)
+def run_ipf(
+    seed_path: Path,
+    controls_path: Path,
+    out_path: Path,
+    weight_field: str | None,
+    max_iterations: int,
+    tolerance: float,
+) -> None:
+    """Fit seed records to controls."""
+    seed_rows = read_csv(seed_path)
+    margins = read_control_margins(controls_path)
     result = fit_ipf(
         seed_rows,
         margins,
-        weight_field=args.weight_field,
-        max_iterations=args.max_iterations,
-        tolerance=args.tolerance,
+        weight_field=weight_field,
+        max_iterations=max_iterations,
+        tolerance=tolerance,
     )
-    write_weighted_seed(args.out, seed_rows, result.weights)
+    write_weighted_seed(out_path, seed_rows, result.weights)
 
 
-def run_statcan_wds_fetch(args: argparse.Namespace) -> None:
-    fetch_wds_table(args.product_id, args.out_dir, args.lang)
+@cli.group()
+def statcan() -> None:
+    """Fetch Statistics Canada data."""
 
 
-def run_statcan_wds_search(args: argparse.Namespace) -> None:
+@statcan.group()
+def wds() -> None:
+    """Fetch WDS table data."""
+
+
+@wds.command("fetch")
+@click.argument("product_id")
+@click.option(
+    "--lang", default="en", type=click.Choice(["en", "fr"]), show_default=True
+)
+@click.option("--out-dir", required=True, type=PATH)
+def run_statcan_wds_fetch(product_id: str, out_dir: Path, lang: str) -> None:
+    """Download a full WDS table CSV ZIP by product ID."""
+    fetch_wds_table(product_id, out_dir, lang)
+
+
+@wds.command("search")
+@click.argument("query")
+@click.option("--limit", default=10, type=int, show_default=True)
+@click.option(
+    "--format",
+    "output_format",
+    default="table",
+    type=click.Choice(["table", "tsv", "json"]),
+    show_default=True,
+    help="Output format for search results.",
+)
+def run_statcan_wds_search(query: str, limit: int, output_format: str) -> None:
+    """Search the WDS table inventory."""
     write_wds_search_results(
-        search_wds_tables_for_cli(args.query, args.limit),
-        args.format,
+        search_wds_tables_for_cli(query, limit),
+        output_format,
     )
 
 
-def run_statcan_wds_metadata(args: argparse.Namespace) -> None:
-    metadata = fetch_wds_metadata(args.product_id)
+@wds.command("metadata")
+@click.argument("product_id")
+@click.option("--out", "out_path", type=PATH, help="Optional JSON output path.")
+def run_statcan_wds_metadata(product_id: str, out_path: Path | None) -> None:
+    """Fetch WDS cube metadata by product ID."""
+    metadata = fetch_wds_metadata(product_id)
     payload = json.dumps(metadata, indent=2, sort_keys=True) + "\n"
-    if args.out:
-        args.out.write_text(payload)
+    if out_path:
+        out_path.write_text(payload)
     else:
         print(payload, end="")
 
 
-def run_statcan_census_profile_fetch(args: argparse.Namespace) -> None:
-    if args.year != "2016":
+@statcan.group(name="census-profile")
+def census_profile() -> None:
+    """Fetch Census Profile bulk downloads."""
+
+
+@census_profile.command("fetch")
+@click.option("--year", required=True, type=click.Choice(["2016"]))
+@click.option("--geo-level", required=True)
+@click.option("--out-dir", required=True, type=PATH)
+def run_statcan_census_profile_fetch(year: str, geo_level: str, out_dir: Path) -> None:
+    """Download a known Census Profile bulk CSV."""
+    if year != "2016":
         raise ValueError("only the 2016 Census Profile registry is currently supported")
-    fetch_census_profile_2016(args.geo_level, args.out_dir)
+    fetch_census_profile_2016(geo_level, out_dir)
 
 
 def search_wds_tables_for_cli(query: str, limit: int) -> list[dict[str, str]]:
