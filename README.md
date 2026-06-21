@@ -91,7 +91,19 @@ synthpopcan microdata export-seed hierarchical.csv \
   --out seed.csv
 ```
 
-The export includes stable ID and weight columns from the adapter, plus the selected seed attributes. Household-level export from hierarchical microdata is deferred until household aggregation rules are defined.
+The export includes stable ID and weight columns from the adapter, plus the selected seed attributes.
+
+Export household-level seed rows conservatively:
+
+```bash
+synthpopcan microdata export-seed hierarchical.csv \
+  --input-format statcan-2016-hierarchical \
+  --level household \
+  --columns TENUR \
+  --out household-seed.csv
+```
+
+For `statcan-2016-hierarchical`, household export creates one row per `HH_ID`, includes `household_size`, and requires selected household columns and `WEIGHT` to be constant within each household. Conflicts fail clearly instead of guessing.
 
 ## IPF CLI
 

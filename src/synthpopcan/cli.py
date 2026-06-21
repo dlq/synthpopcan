@@ -31,6 +31,7 @@ from synthpopcan.diagnostics import build_ipf_fit_report
 from synthpopcan.ipf import fit_ipf, integerize_weights
 from synthpopcan.localdata import inspect_local_data_layout
 from synthpopcan.microdata import (
+    derive_statcan_2016_household_seed_sample,
     export_seed_rows,
     read_fixture_seed_sample,
     read_statcan_2016_hierarchical_seed_sample,
@@ -368,6 +369,7 @@ def export_microdata_seed(
 ) -> None:
     """Export selected microdata columns as an IPF seed CSV."""
     try:
+        selected_columns = parse_columns(columns)
         if source_format == "fixture-v1":
             if level is None:
                 raise click.ClickException("fixture-v1 requires --level")
@@ -379,13 +381,13 @@ def export_microdata_seed(
                 id_columns=parse_optional_columns(id_columns),
             )
         else:
-            if level == "household":
-                raise click.ClickException(
-                    "statcan-2016-hierarchical household seed export is not "
-                    "implemented yet"
-                )
             sample = read_statcan_2016_hierarchical_seed_sample(path)
-        rows, summary = export_seed_rows(sample, columns=parse_columns(columns))
+            if level == "household":
+                sample = derive_statcan_2016_household_seed_sample(
+                    sample,
+                    columns=selected_columns,
+                )
+        rows, summary = export_seed_rows(sample, columns=selected_columns)
     except ValueError as exc:
         raise click.ClickException(str(exc)) from exc
     write_rows(out_path, rows)

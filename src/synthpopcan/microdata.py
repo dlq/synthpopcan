@@ -116,8 +116,15 @@ def export_seed_rows(
         raise ValueError("at least one seed column is required")
     validate_columns(sample.columns, required=columns)
 
+    derived_columns = ("household_size",) if "household_size" in sample.columns else ()
     output_columns = unique_columns(
-        (*sample.id_columns, *sample.geography_columns, *columns, sample.weight_column)
+        (
+            *sample.id_columns,
+            *sample.geography_columns,
+            *columns,
+            *derived_columns,
+            sample.weight_column,
+        )
     )
     rows = [
         {column: record.get(column, "") for column in output_columns}
@@ -134,6 +141,71 @@ def export_seed_rows(
         "geography_columns": list(sample.geography_columns),
         "weight_column": sample.weight_column,
     }
+
+
+def derive_statcan_2016_household_seed_sample(
+    sample: SeedSample,
+    *,
+    columns: tuple[str, ...],
+) -> SeedSample:
+    if sample.source_format != "statcan-2016-hierarchical":
+        raise ValueError("household derivation requires statcan-2016-hierarchical")
+    if not columns:
+        raise ValueError("at least one household column is required")
+    validate_columns(sample.columns, required=("HH_ID", "WEIGHT", *columns))
+
+    records_by_household: dict[str, list[dict[str, str]]] = {}
+    for record in sample.records:
+        household_id = record.get("HH_ID", "")
+        if not household_id:
+            raise ValueError("household derivation requires non-empty HH_ID values")
+        records_by_household.setdefault(household_id, []).append(record)
+
+    household_records: list[dict[str, str]] = []
+    for household_id, records in records_by_household.items():
+        household_record = {"HH_ID": household_id}
+        for column in columns:
+            household_record[column] = unique_household_value(
+                records,
+                column,
+                household_id,
+                "household column",
+            )
+        household_record["household_size"] = str(len(records))
+        household_record["WEIGHT"] = unique_household_value(
+            records,
+            "WEIGHT",
+            household_id,
+            "household weight",
+        )
+        household_records.append(household_record)
+
+    return SeedSample(
+        level="household",
+        source_format=sample.source_format,
+        records=tuple(household_records),
+        columns=("HH_ID", *columns, "household_size", "WEIGHT"),
+        weight_column="WEIGHT",
+        geography_columns=(),
+        id_columns=("HH_ID",),
+        metadata={
+            "households": len(household_records),
+            "people": len(sample.records),
+            "derivation": "one row per HH_ID with constant selected household columns",
+        },
+    )
+
+
+def unique_household_value(
+    records: list[dict[str, str]],
+    column: str,
+    household_id: str,
+    label: str,
+) -> str:
+    values = {record.get(column, "") for record in records}
+    if len(values) != 1:
+        raise ValueError(f"conflicting {label} {column!r} for HH_ID {household_id!r}")
+    return next(iter(values))
 
 
 def validate_columns(columns: tuple[str, ...], *, required: tuple[str, ...]) -> None:

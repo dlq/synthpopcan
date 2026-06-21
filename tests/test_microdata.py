@@ -5,6 +5,7 @@ from click import ClickException
 
 from synthpopcan.cli import main
 from synthpopcan.microdata import (
+    derive_statcan_2016_household_seed_sample,
     export_seed_rows,
     read_fixture_seed_sample,
     read_statcan_2016_hierarchical_seed_sample,
@@ -249,6 +250,110 @@ def test_cli_exports_seed_csv_from_statcan_2016_hierarchical(tmp_path, capsys) -
     payload = json.loads(capsys.readouterr().out)
     assert payload["rows_written"] == 2
     assert payload["columns"] == ["PP_ID", "AGEGRP", "SEX", "WEIGHT"]
+
+
+def test_derives_household_seed_rows_from_statcan_2016_hierarchical(tmp_path) -> None:
+    source = tmp_path / "hierarchical.csv"
+    source.write_text(
+        "HH_ID,EF_ID,CF_ID,PP_ID,WEIGHT,AGEGRP,SEX,TENUR\n"
+        "1,11,111,11101,100.5,adult,F,owner\n"
+        "1,11,111,11102,100.5,child,M,owner\n"
+        "2,21,211,21101,81.25,adult,F,renter\n"
+    )
+    sample = read_statcan_2016_hierarchical_seed_sample(source)
+
+    household_sample = derive_statcan_2016_household_seed_sample(
+        sample,
+        columns=("TENUR",),
+    )
+    rows, summary = export_seed_rows(household_sample, columns=("TENUR",))
+
+    assert rows == [
+        {
+            "HH_ID": "1",
+            "TENUR": "owner",
+            "household_size": "2",
+            "WEIGHT": "100.5",
+        },
+        {
+            "HH_ID": "2",
+            "TENUR": "renter",
+            "household_size": "1",
+            "WEIGHT": "81.25",
+        },
+    ]
+    assert summary["level"] == "household"
+    assert summary["rows_read"] == 2
+    assert summary["rows_written"] == 2
+
+
+def test_cli_exports_household_seed_csv_from_statcan_2016_hierarchical(
+    tmp_path, capsys
+) -> None:
+    source = tmp_path / "hierarchical.csv"
+    output = tmp_path / "households.csv"
+    source.write_text(
+        "HH_ID,EF_ID,CF_ID,PP_ID,WEIGHT,AGEGRP,SEX,TENUR\n"
+        "1,11,111,11101,100.5,adult,F,owner\n"
+        "1,11,111,11102,100.5,child,M,owner\n"
+        "2,21,211,21101,81.25,adult,F,renter\n"
+    )
+
+    assert (
+        main(
+            [
+                "microdata",
+                "export-seed",
+                str(source),
+                "--input-format",
+                "statcan-2016-hierarchical",
+                "--level",
+                "household",
+                "--columns",
+                "TENUR",
+                "--out",
+                str(output),
+                "--format",
+                "json",
+            ]
+        )
+        == 0
+    )
+
+    assert output.read_text() == (
+        "HH_ID,TENUR,household_size,WEIGHT\n1,owner,2,100.5\n2,renter,1,81.25\n"
+    )
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["level"] == "household"
+    assert payload["columns"] == ["HH_ID", "TENUR", "household_size", "WEIGHT"]
+
+
+def test_household_seed_export_rejects_conflicting_household_attributes(
+    tmp_path,
+) -> None:
+    source = tmp_path / "hierarchical.csv"
+    source.write_text(
+        "HH_ID,EF_ID,CF_ID,PP_ID,WEIGHT,TENUR\n"
+        "1,11,111,11101,100.5,owner\n"
+        "1,11,111,11102,100.5,renter\n"
+    )
+    sample = read_statcan_2016_hierarchical_seed_sample(source)
+
+    with pytest.raises(ValueError, match="conflicting household column 'TENUR'"):
+        derive_statcan_2016_household_seed_sample(sample, columns=("TENUR",))
+
+
+def test_household_seed_export_rejects_conflicting_household_weights(tmp_path) -> None:
+    source = tmp_path / "hierarchical.csv"
+    source.write_text(
+        "HH_ID,EF_ID,CF_ID,PP_ID,WEIGHT,TENUR\n"
+        "1,11,111,11101,100.5,owner\n"
+        "1,11,111,11102,99.0,owner\n"
+    )
+    sample = read_statcan_2016_hierarchical_seed_sample(source)
+
+    with pytest.raises(ValueError, match="conflicting household weight"):
+        derive_statcan_2016_household_seed_sample(sample, columns=("TENUR",))
 
 
 def test_cli_inspects_microdata_as_readable_table(tmp_path, capsys) -> None:
