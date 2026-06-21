@@ -1,6 +1,3 @@
-import pytest
-from click import ClickException
-
 from synthpopcan.cli import main
 
 
@@ -30,15 +27,19 @@ def test_tree_commands_are_visible_in_help(capsys) -> None:
     assert "generate" in output
 
 
-def test_tree_train_is_clear_placeholder() -> None:
-    with pytest.raises(
-        ClickException, match="Tree generator training is not implemented"
-    ):
-        main(["tree", "train"])
+def test_tree_train_help_shows_core_options(capsys) -> None:
+    assert main(["tree", "train", "--help"]) == 0
+
+    output = capsys.readouterr().out
+    assert "--target-columns" in output
+    assert "--conditioning-columns" in output
+    assert "--min-support" in output
 
 
-def test_tree_generate_is_clear_placeholder() -> None:
-    with pytest.raises(
-        ClickException, match="Tree generator output is not implemented"
-    ):
-        main(["tree", "generate"])
+def test_tree_generate_help_shows_core_options(capsys) -> None:
+    assert main(["tree", "generate", "--help"]) == 0
+
+    output = capsys.readouterr().out
+    assert "--rows" in output
+    assert "--condition" in output
+    assert "--out" in output

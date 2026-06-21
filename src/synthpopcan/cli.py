@@ -18,6 +18,7 @@ from synthpopcan.cli_output import (
     write_output,
     write_wds_search_results,
 )
+from synthpopcan.cli_tree import tree
 from synthpopcan.console import print_checks_table, print_wrote
 from synthpopcan.controls import (
     census_profile_template,
@@ -64,6 +65,7 @@ def cli() -> None:
 
 cli.add_command(microdata)
 cli.add_command(ipf)
+cli.add_command(tree)
 
 
 @cli.group()
@@ -192,29 +194,6 @@ def resolve_data_root(data_root: Path | None) -> Path:
 @cli.group()
 def sources() -> None:
     """Inspect local source files safely."""
-
-
-@cli.group()
-def tree() -> None:
-    """Tree-based synthetic population generator."""
-
-
-@tree.command("train")
-def train_tree_generator() -> None:
-    """Train a tree-based generator model."""
-    raise click.ClickException(
-        "Tree generator training is not implemented yet. "
-        "The TreeTrainingSample contract is defined, but model training is not built."
-    )
-
-
-@tree.command("generate")
-def generate_tree_population() -> None:
-    """Generate synthetic rows from a trained tree-based model."""
-    raise click.ClickException(
-        "Tree generator output is not implemented yet. "
-        "The TreeGenerationRequest contract is defined, but generation is not built."
-    )
 
 
 @sources.command("inspect")

@@ -262,7 +262,9 @@ Acceptance criteria:
 Current implementation notes:
 
 - The `synthpopcan.tree` module defines the first tree-generator contract objects: `TreeTrainingSample`, `TreeModelSpec`, `TreeGenerationRequest`, and a CSV training-sample reader with validation for target, conditioning, geography, and weight columns.
-- The `synthpopcan tree` CLI namespace exists as a placeholder with `train` and `generate` commands that fail clearly until model training and generation are implemented.
+- `synthpopcan tree train` and `synthpopcan tree generate` run a first transparent conditional-frequency model on fixture-style CSV training samples. This is intentionally a simple, auditable baseline before adding CART/random-forest backends.
+- The current tree CLI does not assume the real 2016 hierarchical PUMF is a clean people CSV. Real 2016 usage should flow through microdata adapters that derive household/person training views from the mixed hierarchical file, then pass those views into the tree training contract.
+- The first model artifact records privacy-oriented metadata including source format, trained record count, minimum support, groups below support threshold, release class, and explicit `contains_raw_rows: false` / `contains_source_identifiers: false` flags. It is still marked `private_working`, not publishable.
 
 Household/person linkage design:
 
