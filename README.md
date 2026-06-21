@@ -10,6 +10,16 @@ Near-term goals:
 
 Broader SynthEco-style enrichment with cohort, environmental, school, healthcare, and food-access layers is intentionally deferred until the base population synthesis workflow is stable.
 
+## Developer Benchmarks
+
+IPF benchmark fixtures are available as developer tooling, not as a normal user workflow:
+
+```bash
+uv run python scripts/benchmark_ipf.py
+```
+
+Use `--seed-records` for smaller or larger local runs while checking performance changes.
+
 ## Local Data Setup
 
 SynthPopCan expects local data and metadata under `data/` by default. Raw and private data are ignored by git.

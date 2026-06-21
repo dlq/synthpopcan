@@ -190,7 +190,7 @@ Near-term IPF performance tasks:
 2. Keep expanded output explicit through a separate `ipf expand` command. Status: complete.
 3. Precompute record membership indexes for each margin cell. Status: complete in the pure-Python fitter.
 4. Stream expanded rows directly to CSV instead of building the full expanded population in memory. Status: complete.
-5. Add benchmarks or performance tests for easy, moderate, and high-cardinality fixtures. Status: pending.
+5. Add benchmarks or performance tests for easy, moderate, and high-cardinality fixtures. Status: complete for developer-facing `scripts/benchmark_ipf.py`; not exposed as a user CLI workflow.
 6. Improve non-convergence diagnostics and CLI reporting. Status: partially complete; the CLI now fails closed on non-convergence, can write JSON fit diagnostics, can print a human-readable report table, and reports the largest residual with a plain-language tip. Richer validation reports that explain whole-run inconsistency patterns are still pending.
 7. Consider NumPy, Polars, and possibly sparse arrays after the pure-Python indexed version establishes the right data contracts. Status: pending.
 
@@ -274,6 +274,11 @@ Acceptance criteria:
 - Commands write explicit output files rather than hidden state.
 - Tests cover command parsing and one tiny end-to-end IPF run.
 
+Usability helper principle:
+
+- For every workflow that requires source-specific knowledge, add companion helper commands before expecting users to hand-author configuration. Prefer discoverable helpers such as `inspect`, `search`, `template`, `doctor`, `explain`, `preview`, and dry-run/JSON output modes. This is especially important for digital humanities users who may understand the research question well but not the StatCan file formats or package internals.
+- Each complex normalization workflow should answer three questions from the CLI: what is in this source file, what starter configuration can I use, and what will be produced before I run the full synthesis step?
+
 ### 8. Validation Reports
 
 Add repeatable validation before building a web UI around the workflow.
@@ -302,6 +307,14 @@ Likely first version:
 - Configure an IPF run.
 - Show run progress and validation summaries.
 - Download generated population and report artifacts.
+
+Performance and runtime concerns:
+
+- Prefer a browser-first web app that does as much work as possible in-browser and avoids a backend unless a workflow clearly needs one.
+- Define practical time guarantees for web-app workflows before exposing long-running synthesis operations to users.
+- Use the developer IPF benchmarks as early regression checks, then add user-facing estimates or previews for large/sparse runs.
+- Evaluate browser-side Pyodide/WebAssembly as the preferred runtime for demos and small-to-moderate local workflows. Compare it against a local Python backend or server-side job process only where data size, memory pressure, or run time breaks the browser-first model.
+- Keep heavy full-data runs out of the browser unless benchmarks show predictable memory and runtime behavior.
 
 Deferred until needed:
 
