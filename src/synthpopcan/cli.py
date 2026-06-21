@@ -11,7 +11,7 @@ from rich.console import Console
 from rich.table import Table
 
 from synthpopcan import __version__
-from synthpopcan.ipf import IPFMargin, fit_ipf
+from synthpopcan.ipf import IPFMargin, expand_records, fit_ipf
 from synthpopcan.statcan import (
     fetch_census_profile_2016,
     fetch_wds_metadata,
@@ -38,11 +38,23 @@ def cli() -> None:
 
 
 @cli.group()
+def controls() -> None:
+    """Normalize and validate IPF control tables."""
+
+
+@controls.command("validate")
+@click.argument("path", type=PATH)
+def validate_controls(path: Path) -> None:
+    """Validate a normalized long control CSV."""
+    read_control_margins(path)
+
+
+@cli.group()
 def ipf() -> None:
     """Run IPF workflows."""
 
 
-@ipf.command("run")
+@ipf.command("fit")
 @click.option("--seed", "seed_path", required=True, type=PATH, help="Seed records CSV.")
 @click.option(
     "--controls",
@@ -61,7 +73,7 @@ def ipf() -> None:
 )
 @click.option("--max-iterations", default=100, type=int, show_default=True)
 @click.option("--tolerance", default=1e-6, type=float, show_default=True)
-def run_ipf(
+def fit_ipf_command(
     seed_path: Path,
     controls_path: Path,
     out_path: Path,
@@ -69,7 +81,7 @@ def run_ipf(
     max_iterations: int,
     tolerance: float,
 ) -> None:
-    """Fit seed records to controls."""
+    """Fit seed records to controls and write compact weights."""
     seed_rows = read_csv(seed_path)
     margins = read_control_margins(controls_path)
     result = fit_ipf(
@@ -80,6 +92,29 @@ def run_ipf(
         tolerance=tolerance,
     )
     write_weighted_seed(out_path, seed_rows, result.weights)
+
+
+@ipf.command("expand")
+@click.option(
+    "--weights",
+    "weights_path",
+    required=True,
+    type=PATH,
+    help="Fitted seed weights CSV from ipf fit.",
+)
+@click.option(
+    "--out", "out_path", required=True, type=PATH, help="Output synthetic CSV."
+)
+@click.option(
+    "--weight-field",
+    default="weight",
+    show_default=True,
+    help="Column containing fitted weights.",
+)
+def expand_ipf(weights_path: Path, out_path: Path, weight_field: str) -> None:
+    """Expand fitted weights into full synthetic rows."""
+    seed_rows, weights = read_weighted_seed(weights_path, weight_field)
+    write_expanded_seed(out_path, seed_rows, weights)
 
 
 @cli.group()
@@ -215,6 +250,29 @@ def read_csv(path: Path) -> list[dict[str, str]]:
         return list(csv.DictReader(handle))
 
 
+def read_weighted_seed(
+    path: Path, weight_field: str
+) -> tuple[list[dict[str, str]], list[float]]:
+    rows: list[dict[str, str]] = []
+    weights: list[float] = []
+    with path.open(newline="") as handle:
+        for row_number, row in enumerate(csv.DictReader(handle), start=2):
+            try:
+                weight_value = row.pop(weight_field)
+            except KeyError as exc:
+                raise ValueError(
+                    f"weights CSV requires a {weight_field!r} column"
+                ) from exc
+            try:
+                weights.append(float(weight_value))
+            except ValueError as exc:
+                raise ValueError(
+                    f"weights row {row_number} has invalid weight"
+                ) from exc
+            rows.append(row)
+    return rows, weights
+
+
 def read_control_margins(path: Path) -> list[IPFMargin]:
     grouped: dict[tuple[str, ...], dict[tuple[str, ...], float]] = {}
     with path.open(newline="") as handle:
@@ -254,6 +312,19 @@ def write_weighted_seed(
         writer.writeheader()
         for row, weight in zip(rows, weights, strict=True):
             writer.writerow({**row, weight_column: format_weight(weight)})
+
+
+def write_expanded_seed(
+    path: Path, rows: list[dict[str, str]], weights: list[float]
+) -> None:
+    expanded = expand_records(rows, weights)
+    if not expanded:
+        raise ValueError("expanded synthetic population is empty")
+    fieldnames = list(expanded[0].keys())
+    with path.open("w", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(expanded)
 
 
 def format_weight(weight: float) -> str:

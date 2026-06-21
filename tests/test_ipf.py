@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from synthpopcan.ipf import IPFMargin, fit_ipf
+from synthpopcan.ipf import IPFMargin, expand_records, fit_ipf
 
 
 def test_fit_ipf_matches_two_one_way_margins() -> None:
@@ -42,7 +42,119 @@ def test_fit_ipf_reports_missing_seed_cells() -> None:
         fit_ipf(records, margins)
 
 
-def test_cli_runs_ipf_from_csv_files(tmp_path: Path) -> None:
+def test_expand_records_integerizes_weights_with_source_ids() -> None:
+    records = [
+        {"id": "a", "age": "young", "sex": "F"},
+        {"id": "b", "age": "old", "sex": "M"},
+    ]
+
+    expanded = expand_records(records, [1.2, 2.8])
+
+    assert expanded == [
+        {"synthetic_id": "1", "source_id": "a", "age": "young", "sex": "F"},
+        {"synthetic_id": "2", "source_id": "b", "age": "old", "sex": "M"},
+        {"synthetic_id": "3", "source_id": "b", "age": "old", "sex": "M"},
+        {"synthetic_id": "4", "source_id": "b", "age": "old", "sex": "M"},
+    ]
+
+
+def test_cli_runs_ipf_from_csv_files_as_expanded_synthetic_data(
+    tmp_path: Path,
+) -> None:
+    from synthpopcan.cli import main
+
+    seed_path = tmp_path / "seed.csv"
+    controls_path = tmp_path / "controls.csv"
+    weights_path = tmp_path / "weights.csv"
+    output_path = tmp_path / "synthetic.csv"
+
+    write_csv(
+        seed_path,
+        ["id", "age", "sex"],
+        [
+            {"id": "1", "age": "young", "sex": "F"},
+            {"id": "2", "age": "young", "sex": "M"},
+            {"id": "3", "age": "old", "sex": "F"},
+            {"id": "4", "age": "old", "sex": "M"},
+        ],
+    )
+    write_csv(
+        controls_path,
+        ["margin", "dimensions", "age", "sex", "count"],
+        [
+            {
+                "margin": "age",
+                "dimensions": "age",
+                "age": "young",
+                "sex": "",
+                "count": "60",
+            },
+            {
+                "margin": "age",
+                "dimensions": "age",
+                "age": "old",
+                "sex": "",
+                "count": "40",
+            },
+            {
+                "margin": "sex",
+                "dimensions": "sex",
+                "age": "",
+                "sex": "F",
+                "count": "50",
+            },
+            {
+                "margin": "sex",
+                "dimensions": "sex",
+                "age": "",
+                "sex": "M",
+                "count": "50",
+            },
+        ],
+    )
+
+    assert (
+        main(
+            [
+                "ipf",
+                "fit",
+                "--seed",
+                str(seed_path),
+                "--controls",
+                str(controls_path),
+                "--out",
+                str(weights_path),
+            ]
+        )
+        == 0
+    )
+    assert (
+        main(
+            [
+                "ipf",
+                "expand",
+                "--weights",
+                str(weights_path),
+                "--out",
+                str(output_path),
+            ]
+        )
+        == 0
+    )
+
+    rows = list(csv.DictReader(output_path.open(newline="")))
+    assert rows[0] == {
+        "synthetic_id": "1",
+        "source_id": "1",
+        "age": "young",
+        "sex": "F",
+    }
+    assert len(rows) == 100
+    assert count_rows(rows, "age") == {"young": 60, "old": 40}
+    assert count_rows(rows, "sex") == {"F": 50, "M": 50}
+
+
+def test_cli_runs_ipf_from_csv_files_as_weights_by_default(tmp_path: Path) -> None:
     from synthpopcan.cli import main
 
     seed_path = tmp_path / "seed.csv"
@@ -98,7 +210,7 @@ def test_cli_runs_ipf_from_csv_files(tmp_path: Path) -> None:
         main(
             [
                 "ipf",
-                "run",
+                "fit",
                 "--seed",
                 str(seed_path),
                 "--controls",
@@ -112,6 +224,13 @@ def test_cli_runs_ipf_from_csv_files(tmp_path: Path) -> None:
 
     rows = list(csv.DictReader(output_path.open(newline="")))
     assert [row["weight"] for row in rows] == ["30", "30", "20", "20"]
+
+
+def count_rows(rows: list[dict[str, str]], field: str) -> dict[str, int]:
+    counts: dict[str, int] = {}
+    for row in rows:
+        counts[row[field]] = counts.get(row[field], 0) + 1
+    return counts
 
 
 def write_csv(path: Path, fieldnames: list[str], rows: list[dict[str, str]]) -> None:

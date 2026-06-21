@@ -10,7 +10,7 @@ Build SynthPopCan as a Python library, CLI, and eventually web app for Canadian 
 The near-term scope is deliberately narrower than the full proposal:
 
 1. Build synthetic populations through iterative proportional fitting from StatsCan margin/control tables.
-2. Build household- and person-level synthetic populations from tree-based models using the Canadian 2016 Census material already staged locally.
+2. Build household- and person-level synthetic populations from tree-based models using pluggable census microdata sources. The Canadian 2016 Census material staged locally is the first available microdata source, not the tool boundary.
 3. Keep environmental, school, healthcare, food, and broader enrichment data as later extensions unless they are needed for validation or demos.
 
 ## Principles
@@ -19,7 +19,7 @@ The near-term scope is deliberately narrower than the full proposal:
 - Prefer public fetches for public geography and service layers rather than storing copies in the project.
 - Make the library usable without the web app. The CLI should expose the same core workflows as the Python API.
 - Treat geography, variables, margins, seed samples, weights, and generated populations as explicit typed concepts.
-- Build from small, inspectable test fixtures before operating on full 2016 Census files.
+- Build from small, inspectable test fixtures before operating on full census files.
 - Preserve provenance for every generated output: source tables, geography, variables, filters, model version, random seed, and validation metrics.
 
 ## Architecture Target
@@ -83,7 +83,7 @@ Notes:
 
 ### 2. Local Source Inspection
 
-Build tools that can inspect the staged 2016 Census material without loading everything into memory.
+Build tools that can inspect staged census microdata and public aggregate source caches without loading everything into memory.
 
 Deliverables:
 
@@ -94,28 +94,32 @@ Deliverables:
 
 Acceptance criteria:
 
-- Works against the ignored local `data/raw/statscan/2016-census` cache.
+- Works against ignored local census microdata caches, starting with the available 2016 material.
 - Produces no private-data output by default.
 - Has tests using tiny fixtures only.
 
-### 3. StatsCan Margin Normalization
+### 3. Control Table Normalization
 
-Implement the path from StatsCan-style margin/control tables to normalized controls.
+Implement the path from StatsCan-style margin/control tables, Census Profile downloads, and user-provided CSVs to normalized controls.
 
 Deliverables:
 
 - Parser for local StatsCan table exports.
+- Generic `controls` CLI namespace for normalized control-table workflows.
+- `controls validate` for checking the normalized long control CSV format.
+- `controls from-csv`, `controls from-wds`, and `controls from-census-profile` adapters.
 - Category mapping layer for converting source labels/codes into stable internal categories.
 - Validation for totals, missing categories, duplicated cells, and geography coverage.
 - CLI command:
 
 ```bash
-synthpopcan margins normalize SOURCE --out controls.csv
+synthpopcan controls from-csv SOURCE --out controls.csv
 ```
 
 Acceptance criteria:
 
 - A toy fixture can be normalized into a `ControlTable`.
+- A normalized control CSV can be validated with `synthpopcan controls validate controls.csv`.
 - Validation errors are actionable and include source rows/columns.
 - The code is ready to add live StatsCan fetch support later, but does not require network access.
 
@@ -132,7 +136,8 @@ Deliverables:
 - CLI command:
 
 ```bash
-synthpopcan ipf run --seed seed.csv --controls controls.csv --out population.csv
+synthpopcan ipf fit --seed seed.csv --controls controls.csv --out weights.csv
+synthpopcan ipf expand --weights weights.csv --out population.csv
 ```
 
 Acceptance criteria:
@@ -141,14 +146,49 @@ Acceptance criteria:
 - Outputs include fit metrics by geography and variable.
 - Non-convergence is reported as a useful error or warning, not a silent failure.
 
-### 5. 2016 Census Household/Person Ingestion
+Current implementation notes:
 
-Turn the staged 2016 Census data into usable seed and training inputs.
+- `synthpopcan ipf fit` writes compact fitted seed weights because expanded synthetic rows can become very large quickly.
+- `synthpopcan ipf expand` turns fitted weights into full synthetic rows for demos, exploratory work, and agent-based-model inputs.
+- The first implementation used a simple record-oriented IPF loop. That was useful for correctness tests, but it repeatedly scanned every seed record for each target category.
+- The next implementation direction is indexed IPF: precompute the seed-record indexes belonging to each margin cell, then reuse those indexes during each fitting iteration.
+
+Production-grade IPF means more than using a faster table library. It should include:
+
+- Indexed or vectorized updates rather than repeated full-record scans per target category.
+- Sparse/high-cardinality margin handling.
+- Clear treatment of structural zeros and impossible controls.
+- Convergence diagnostics that explain whether a run converged, stalled, or has inconsistent controls.
+- Numerical stability for large populations, small cells, and large fitted weights.
+- Streaming expanded output so full synthetic datasets do not need to be held in memory.
+- Benchmark tests on realistic seed sizes, target counts, and population sizes.
+- Validation reports comparing generated outputs back to controls.
+- Deterministic reproducibility for fitted weights, integerization, and expanded rows.
+
+Near-term IPF performance tasks:
+
+1. Use fitted weights as the default CLI output. Status: complete.
+2. Keep expanded output explicit through a separate `ipf expand` command. Status: complete.
+3. Precompute record membership indexes for each margin cell. Status: complete in the pure-Python fitter.
+4. Stream expanded rows directly to CSV instead of building the full expanded population in memory. Status: pending.
+5. Add benchmarks or performance tests for easy, moderate, and high-cardinality fixtures. Status: pending.
+6. Improve non-convergence diagnostics and CLI reporting. Status: pending.
+7. Consider NumPy, Polars, and possibly sparse arrays after the pure-Python indexed version establishes the right data contracts. Status: pending.
+
+Local timing evidence after indexing:
+
+- Easy balanced fixture, 50,000 seed records to 500,000 expanded rows: fitting about 0.03 seconds, expansion about 0.14 seconds.
+- High-cardinality inconsistent fixture, 50,000 seed records, 72 target cells, 100 iterations: fitting about 1.0 second, down from about 54.5 seconds in the naive repeated-scan version.
+- The high-cardinality fixture still does not converge because its controls are deliberately inconsistent, so diagnostics are still required.
+
+### 5. Census Household/Person Microdata Ingestion
+
+Turn staged census microdata into usable seed and training inputs. The currently available 2016 microdata is the first adapter target; the design should support later 2021 or other census-year microdata where access is available.
 
 Deliverables:
 
-- Identify the exact household-level and person-level files to support first.
-- Create loading adapters for those files.
+- Identify the exact household-level and person-level files to support first for 2016.
+- Create loading adapters that are explicit about census year and source format.
 - Normalize key variables needed for the first household/person synthesis prototype.
 - Document assumptions in `research.md` or a future data-access note when source interpretation matters.
 
@@ -184,9 +224,13 @@ Initial command families:
 
 ```bash
 synthpopcan sources inspect ...
-synthpopcan margins normalize ...
-synthpopcan ipf run ...
-synthpopcan census2016 inspect ...
+synthpopcan controls validate ...
+synthpopcan controls from-csv ...
+synthpopcan controls from-wds ...
+synthpopcan controls from-census-profile ...
+synthpopcan ipf fit ...
+synthpopcan ipf expand ...
+synthpopcan census-microdata inspect ...
 synthpopcan tree train ...
 synthpopcan tree generate ...
 synthpopcan validate ...
@@ -241,7 +285,7 @@ The next implementation slice should be small and testable:
 1. Add initial typed data structures for variables, geography, controls, seed samples, and generated populations.
 2. Add fixture-based tests for a tiny control table and seed sample.
 3. Add a `sources inspect` or equivalent CLI command for local file/header inspection.
-4. Add the first `margins normalize` fixture workflow.
+4. Add the first `controls from-csv` fixture workflow.
 5. Add a minimal two-margin IPF implementation and test it end to end.
 
 This gets the project from documentation scaffold to usable computational core without depending on the full Census data volume.
@@ -298,7 +342,7 @@ Ignored:
 - Exact dependency stack for arrays/tables/models: likely NumPy, pandas or Polars, scikit-learn, and optional PyArrow.
 - Whether schemas should remain dataclasses or move to Pydantic once the API surface stabilizes.
 - First supported StatsCan table format and access path.
-- First supported 2016 Census household/person files.
+- First supported census microdata household/person files, starting with available 2016 files.
 - Integerization method for the first IPF engine.
 - Whether the web app should be Streamlit/FastAPI-first or built as a richer frontend once workflows settle.
 
@@ -309,6 +353,6 @@ The first useful version is done when a user can:
 1. Point the CLI at a small seed sample and normalized control table.
 2. Generate a synthetic population through IPF.
 3. Validate the output against controls.
-4. Inspect and normalize a small 2016 Census-style household/person fixture.
+4. Inspect and normalize a small census-style household/person fixture.
 5. Run an initial tree-based household/person synthesis prototype.
 6. Reproduce the run from tracked code and ignored local data caches.

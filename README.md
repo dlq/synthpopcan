@@ -5,7 +5,7 @@ SynthPopCan is an early-stage project for building Canadian synthetic population
 Near-term goals:
 
 1. Provide a Python library and CLI that can create synthetic populations through IPF from Statistics Canada margin/control tables.
-2. Build a Canadian 2016 Census workflow for household- and person-level synthetic populations using tree-based models plus calibration.
+2. Build census microdata workflows for household- and person-level synthetic populations using tree-based models plus calibration. The local 2016 Census material is the first available microdata source, but the tooling should be census-year agnostic.
 3. Add a web app for configuring runs, inspecting controls, validating outputs, and downloading results.
 
 Broader SynthEco-style enrichment with cohort, environmental, school, healthcare, and food-access layers is intentionally deferred until the base population synthesis workflow is stable.
@@ -34,13 +34,54 @@ sex,sex,,F,50
 sex,sex,,M,50
 ```
 
+Validate a normalized controls file with:
+
+```bash
+synthpopcan controls validate controls.csv
+```
+
 Run IPF with:
 
 ```bash
-synthpopcan ipf run --seed seed.csv --controls controls.csv --out weights.csv
+synthpopcan ipf fit --seed seed.csv --controls controls.csv --out weights.csv
 ```
 
-The output is the seed CSV with a fitted `weight` column appended.
+The output is compact fitted seed weights: one row per seed record with a fitted `weight`.
+
+```csv
+id,age,sex,weight
+1,young,F,30
+2,young,M,30
+3,old,F,20
+4,old,M,20
+```
+
+Expand fitted weights explicitly when you want a full synthetic CSV to inspect or pass to a downstream model:
+
+```bash
+synthpopcan ipf expand --weights weights.csv --out synthetic.csv
+```
+
+Expanded output has one row per generated synthetic record:
+
+```csv
+synthetic_id,source_id,age,sex
+1,1,young,F
+2,1,young,F
+...
+30,1,young,F
+31,2,young,M
+...
+100,4,old,M
+```
+
+The expanded shape is:
+
+- `synthetic_id`: new row ID for the generated synthetic record.
+- `source_id`: seed row ID copied from the seed `id` column, or the seed row number when no `id` column exists.
+- all remaining seed attributes, such as `age` and `sex`.
+
+For this toy example the expanded output has 100 rows. Its marginal counts match the controls: 60 young, 40 old, 50 female, and 50 male.
 
 ## StatsCan Source Fetching
 
@@ -206,11 +247,11 @@ The manifest records the WDS API URL and the actual ZIP URL:
 }
 ```
 
-The next step, not implemented yet, is a normalizer that reads the downloaded StatsCan CSV package and turns selected dimensions and measures into SynthPopCan's long control format for `synthpopcan ipf run`.
+The next step, not implemented yet, is a normalizer that reads the downloaded StatsCan CSV package and turns selected dimensions and measures into SynthPopCan's long control format for `synthpopcan ipf fit`.
 
-### 2016 Census Profile bulk CSVs
+### Census Profile bulk CSVs
 
-Use this for known archived 2016 Census Profile bulk downloads by geography level:
+Use this for known public Census Profile bulk downloads by geography level. The current implementation starts with the 2016 registry; 2021 should be added as a year-aware registry rather than as a separate product path.
 
 ```bash
 synthpopcan statcan census-profile fetch \
@@ -231,7 +272,7 @@ The Census Profile archive currently exposes these as listed CSV download links.
 
 Large, raw, private, or access-controlled data are not tracked in git.
 
-- `data/raw/` is a local ignored cache for central raw inputs, currently the 2016 Census/PUMF working set.
+- `data/raw/` is a local ignored cache for central raw inputs, including public Census Profile and WDS downloads.
 - `data/private/` is a local ignored cache for access-controlled or sensitive later-use datasets.
 - `references/` is a local ignored cache for copied papers, proposals, and legacy code references.
 

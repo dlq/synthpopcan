@@ -42,6 +42,60 @@ class IPFResult:
         return totals
 
 
+@dataclass(frozen=True)
+class IndexedMargin:
+    margin: IPFMargin
+    record_indexes: Mapping[CategoryKey, tuple[int, ...]]
+
+
+def expand_records(
+    records: Sequence[Record],
+    weights: Sequence[float],
+    *,
+    id_field: str = "id",
+) -> list[dict[str, str]]:
+    counts = integerize_weights(weights)
+    expanded: list[dict[str, str]] = []
+    synthetic_id = 1
+
+    for source_index, record in enumerate(records, start=1):
+        source_id = str(record.get(id_field, source_index))
+        attributes = {
+            str(key): str(value) for key, value in record.items() if key != id_field
+        }
+        for _ in range(counts[source_index - 1]):
+            expanded.append(
+                {
+                    "synthetic_id": str(synthetic_id),
+                    "source_id": source_id,
+                    **attributes,
+                }
+            )
+            synthetic_id += 1
+
+    return expanded
+
+
+def integerize_weights(weights: Sequence[float]) -> list[int]:
+    if any(weight < 0 for weight in weights):
+        raise ValueError("weights must be non-negative")
+
+    floors = [int(weight) for weight in weights]
+    target_total = round(sum(weights))
+    remaining = target_total - sum(floors)
+    if remaining < 0:
+        raise ValueError("integerized total cannot be negative")
+
+    remainders = sorted(
+        enumerate(weight - int(weight) for weight in weights),
+        key=lambda item: (-item[1], item[0]),
+    )
+    counts = floors[:]
+    for index, _remainder in remainders[:remaining]:
+        counts[index] += 1
+    return counts
+
+
 def fit_ipf(
     records: Sequence[Record],
     margins: Sequence[IPFMargin],
@@ -60,27 +114,26 @@ def fit_ipf(
         raise ValueError("tolerance must be non-negative")
 
     weights = initial_weights(records, weight_field)
-    validate_margin_coverage(records, margins)
+    indexed_margins = index_margins(records, margins)
 
     max_abs_error = float("inf")
     for iteration in range(1, max_iterations + 1):
-        for margin in margins:
-            totals = weighted_totals(records, weights, margin.dimensions)
-            for key, target in margin.targets.items():
-                current = totals.get(key, 0.0)
+        for indexed_margin in indexed_margins:
+            for key, target in indexed_margin.margin.targets.items():
+                indexes = indexed_margin.record_indexes.get(key, ())
+                current = sum(weights[index] for index in indexes)
                 if current == 0.0:
                     if target == 0.0:
                         continue
                     raise ValueError(
-                        f"margin {margin.dimensions!r} target {key!r} "
+                        f"margin {indexed_margin.margin.dimensions!r} target {key!r} "
                         "has no seed records"
                     )
                 ratio = target / current
-                for index, record in enumerate(records):
-                    if category_key(record, margin.dimensions) == key:
-                        weights[index] *= ratio
+                for index in indexes:
+                    weights[index] *= ratio
 
-        max_abs_error = calculate_max_abs_error(records, weights, margins)
+        max_abs_error = calculate_indexed_max_abs_error(weights, indexed_margins)
         if max_abs_error <= tolerance:
             return IPFResult(records, weights, True, iteration, max_abs_error)
 
@@ -103,16 +156,34 @@ def initial_weights(records: Sequence[Record], weight_field: str | None) -> list
     return weights
 
 
-def validate_margin_coverage(
+def index_margins(
     records: Sequence[Record], margins: Sequence[IPFMargin]
-) -> None:
+) -> list[IndexedMargin]:
+    indexed_margins: list[IndexedMargin] = []
     for margin in margins:
-        observed = {category_key(record, margin.dimensions) for record in records}
+        indexes: dict[CategoryKey, list[int]] = {}
+        for index, record in enumerate(records):
+            key = category_key(record, margin.dimensions)
+            indexes.setdefault(key, []).append(index)
+
         for key, target in margin.targets.items():
-            if target > 0 and key not in observed:
+            if target > 0 and key not in indexes:
                 raise ValueError(
                     f"margin {margin.dimensions!r} target {key!r} has no seed records"
                 )
+        indexed_margins.append(
+            IndexedMargin(
+                margin,
+                {key: tuple(value) for key, value in indexes.items()},
+            )
+        )
+    return indexed_margins
+
+
+def validate_margin_coverage(
+    records: Sequence[Record], margins: Sequence[IPFMargin]
+) -> None:
+    index_margins(records, margins)
 
 
 def weighted_totals(
@@ -137,6 +208,20 @@ def calculate_max_abs_error(
         totals = weighted_totals(records, weights, margin.dimensions)
         for key, target in margin.targets.items():
             max_abs_error = max(max_abs_error, abs(totals.get(key, 0.0) - target))
+    return max_abs_error
+
+
+def calculate_indexed_max_abs_error(
+    weights: Sequence[float],
+    indexed_margins: Sequence[IndexedMargin],
+) -> float:
+    max_abs_error = 0.0
+    for indexed_margin in indexed_margins:
+        for key, target in indexed_margin.margin.targets.items():
+            total = sum(
+                weights[index] for index in indexed_margin.record_indexes.get(key, ())
+            )
+            max_abs_error = max(max_abs_error, abs(total - target))
     return max_abs_error
 
 
