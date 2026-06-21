@@ -285,16 +285,16 @@ Add repeatable validation before building a web UI around the workflow.
 
 Deliverables:
 
-- Marginal fit tables.
+- Marginal fit tables. Status: complete for validating IPF weights and expanded rows against normalized controls.
 - Distribution comparisons.
 - Geography-level diagnostics.
 - Household/person consistency checks.
-- Machine-readable JSON plus human-readable Markdown or HTML report output.
+- Machine-readable JSON plus human-readable Markdown or HTML report output. Status: JSON and Rich table output complete for control validation; Markdown/HTML reports pending.
 
 Acceptance criteria:
 
-- Every synthesis run can produce a validation report.
-- Failed validation thresholds can return a non-zero CLI exit code for automation.
+- Every synthesis run can produce a validation report. Status: complete for `synthpopcan validate controls`.
+- Failed validation thresholds can return a non-zero CLI exit code for automation. Status: complete for `synthpopcan validate controls`.
 
 ### 9. Web App
 

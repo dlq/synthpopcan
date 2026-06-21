@@ -185,6 +185,17 @@ The expanded shape is:
 
 For this toy example the expanded output has 100 rows. Its marginal counts match the controls: 60 young, 40 old, 50 female, and 50 male.
 
+Validate a generated artifact against the controls after fitting, expansion, copying, or filtering:
+
+```bash
+synthpopcan validate controls \
+  --population weights.csv \
+  --controls controls.csv \
+  --kind weights
+```
+
+Use `--kind expanded` for a full synthetic CSV from `ipf expand`. Validation recomputes marginal totals and reports pass/fail status, worst errors, and per-margin summaries.
+
 ## StatCan Source Fetching
 
 SynthPopCan has two initial source-fetch paths.

@@ -46,6 +46,7 @@ from synthpopcan.statcan import (
     fetch_wds_table,
     search_wds_tables,
 )
+from synthpopcan.validation import build_control_validation_report
 
 PATH = click.Path(path_type=Path)
 
@@ -63,6 +64,85 @@ def main(argv: list[str] | None = None) -> int:
 @click.version_option(__version__, prog_name="synthpopcan")
 def cli() -> None:
     """Canadian synthetic population tooling."""
+
+
+@cli.group()
+def validate() -> None:
+    """Validate generated artifacts against controls."""
+
+
+@validate.command("controls")
+@click.option(
+    "--population",
+    "population_path",
+    required=True,
+    type=PATH,
+    help="Weights or expanded synthetic population CSV.",
+)
+@click.option(
+    "--controls",
+    "controls_path",
+    required=True,
+    type=PATH,
+    help="Normalized controls CSV.",
+)
+@click.option(
+    "--kind",
+    "artifact_kind",
+    required=True,
+    type=click.Choice(["weights", "expanded"]),
+    help="Population artifact type.",
+)
+@click.option(
+    "--weight-field",
+    default="weight",
+    show_default=True,
+    help="Weight column for --kind weights.",
+)
+@click.option("--tolerance", default=1e-6, type=float, show_default=True)
+@click.option(
+    "--format",
+    "output_format",
+    default="table",
+    type=click.Choice(["json", "table"]),
+    show_default=True,
+)
+def validate_controls_output(
+    population_path: Path,
+    controls_path: Path,
+    artifact_kind: str,
+    weight_field: str,
+    tolerance: float,
+    output_format: str,
+) -> None:
+    """Validate a generated population against normalized controls."""
+    try:
+        control_table = read_control_table(controls_path)
+        rows, weights = read_population_artifact(
+            population_path,
+            artifact_kind,
+            weight_field,
+        )
+        report = build_control_validation_report(
+            control_table,
+            rows,
+            weights,
+            tolerance=tolerance,
+            artifact_kind=artifact_kind,
+        )
+    except ValueError as exc:
+        raise click.ClickException(str(exc)) from exc
+
+    if output_format == "json":
+        print(json.dumps(report, indent=2, sort_keys=True))
+    else:
+        print_validation_report_table(report)
+
+    if not report["passed"]:
+        raise click.ClickException(
+            "Validation failed; generated artifact does not match controls "
+            f"within tolerance {format_report_number(tolerance)}."
+        )
 
 
 @cli.group(name="data")
@@ -720,14 +800,51 @@ def print_ipf_report_table(report: dict[str, object]) -> None:
         },
         title="IPF Fit Summary",
     )
-    print_ipf_issues_table(report.get("issues", []))
+    print_issues_table(report.get("issues", []), title="Fit Issues")
     print_table(table)
 
 
-def print_ipf_issues_table(issues: object) -> None:
+def print_validation_report_table(report: dict[str, object]) -> None:
+    table = Table(title="Control Validation")
+    table.add_column("Margin")
+    table.add_column("Dimensions")
+    table.add_column("Cells", justify="right")
+    table.add_column("Target", justify="right")
+    table.add_column("Actual", justify="right")
+    table.add_column("Max Error", justify="right")
+    table.add_column("Max Rel. Error", justify="right")
+
+    for row in report.get("margin_summaries", []):
+        if not isinstance(row, dict):
+            continue
+        table.add_row(
+            str(row.get("name", "")),
+            ", ".join(str(value) for value in row.get("dimensions", [])),
+            format_report_number(row.get("cells")),
+            format_report_number(row.get("target_total")),
+            format_report_number(row.get("actual_total")),
+            format_report_number(row.get("max_abs_error")),
+            format_report_percent(row.get("max_relative_error")),
+        )
+
+    print_summary_table(
+        {
+            "status": "Passed" if report.get("passed") else "Failed",
+            "artifact_kind": report.get("artifact_kind", ""),
+            "population_records": report.get("population_records", ""),
+            "max_abs_error": format_report_number(report.get("max_abs_error")),
+            "tolerance": format_report_number(report.get("tolerance")),
+        },
+        title="Validation Summary",
+    )
+    print_issues_table(report.get("issues", []), title="Validation Issues")
+    print_table(table)
+
+
+def print_issues_table(issues: object, *, title: str) -> None:
     if not isinstance(issues, list) or not issues:
         return
-    table = Table(title="Fit Issues")
+    table = Table(title=title)
     table.add_column("Severity")
     table.add_column("Margin")
     table.add_column("Problem")
@@ -850,6 +967,19 @@ def read_weighted_seed(
                 ) from exc
             rows.append(row)
     return rows, weights
+
+
+def read_population_artifact(
+    path: Path,
+    artifact_kind: str,
+    weight_field: str,
+) -> tuple[list[dict[str, str]], list[float]]:
+    if artifact_kind == "weights":
+        return read_weighted_seed(path, weight_field)
+    if artifact_kind == "expanded":
+        rows = read_csv(path)
+        return rows, [1.0 for _row in rows]
+    raise ValueError(f"unknown population artifact kind {artifact_kind!r}")
 
 
 def write_weighted_seed(
