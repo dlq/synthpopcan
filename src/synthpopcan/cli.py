@@ -204,7 +204,7 @@ def train_tree_generator() -> None:
     """Train a tree-based generator model."""
     raise click.ClickException(
         "Tree generator training is not implemented yet. "
-        "Use the IPF workflow while the tree prototype contract is being defined."
+        "The TreeTrainingSample contract is defined, but model training is not built."
     )
 
 
@@ -213,7 +213,7 @@ def generate_tree_population() -> None:
     """Generate synthetic rows from a trained tree-based model."""
     raise click.ClickException(
         "Tree generator output is not implemented yet. "
-        "Use the IPF workflow while the tree prototype contract is being defined."
+        "The TreeGenerationRequest contract is defined, but generation is not built."
     )
 
 

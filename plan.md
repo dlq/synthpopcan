@@ -261,7 +261,8 @@ Acceptance criteria:
 
 Current implementation notes:
 
-- The `synthpopcan tree` CLI namespace exists as a placeholder with `train` and `generate` commands that fail clearly until the tree generator contract is implemented.
+- The `synthpopcan.tree` module defines the first tree-generator contract objects: `TreeTrainingSample`, `TreeModelSpec`, `TreeGenerationRequest`, and a CSV training-sample reader with validation for target, conditioning, geography, and weight columns.
+- The `synthpopcan tree` CLI namespace exists as a placeholder with `train` and `generate` commands that fail clearly until model training and generation are implemented.
 
 ### 7. CLI Workflow
 
