@@ -14,6 +14,7 @@ from synthpopcan.microdata import (
     check_statcan_2016_household_seed_columns,
     derive_statcan_2016_household_seed_sample,
     export_seed_rows,
+    export_training_rows,
     read_fixture_seed_sample,
     read_statcan_2016_hierarchical_seed_sample,
 )
@@ -211,6 +212,68 @@ def export_microdata_seed(
         print(json.dumps(summary, indent=2, sort_keys=True))
         return
     print_summary_table(summary, title="Seed Export Summary")
+    print_wrote(out_path)
+
+
+@microdata.command("export-training")
+@click.argument("path", type=PATH)
+@click.option(
+    "--input-format",
+    "source_format",
+    required=True,
+    type=click.Choice(["statcan-2016-hierarchical"]),
+    help="Input microdata adapter format.",
+)
+@click.option(
+    "--level",
+    required=True,
+    type=click.Choice(["household", "person"]),
+    help="Training row level.",
+)
+@click.option(
+    "--target-columns",
+    required=True,
+    help="Comma-separated columns the tree model should generate.",
+)
+@click.option(
+    "--conditioning-columns",
+    required=True,
+    help="Comma-separated columns used to condition tree generation.",
+)
+@click.option("--out", "out_path", required=True, type=PATH)
+@click.option(
+    "--format",
+    "output_format",
+    default="table",
+    type=click.Choice(["json", "table"]),
+    show_default=True,
+    help="Output format for the export summary.",
+)
+def export_microdata_training(
+    path: Path,
+    source_format: str,
+    level: str,
+    target_columns: str,
+    conditioning_columns: str,
+    out_path: Path,
+    output_format: str,
+) -> None:
+    """Export selected microdata columns as tree training rows."""
+    try:
+        sample = read_statcan_2016_hierarchical_seed_sample(path)
+        rows, summary = export_training_rows(
+            sample,
+            level=level,  # type: ignore[arg-type]
+            target_columns=parse_columns(target_columns),
+            conditioning_columns=parse_columns(conditioning_columns),
+        )
+    except ValueError as exc:
+        raise click.ClickException(str(exc)) from exc
+    write_rows(out_path, rows)
+    if output_format == "json":
+        print(json.dumps(summary, indent=2, sort_keys=True))
+        return
+    print_summary_table(summary, title="Training Export Summary")
     print_wrote(out_path)
 
 

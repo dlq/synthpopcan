@@ -143,6 +143,126 @@ def export_seed_rows(
     }
 
 
+def export_training_rows(
+    sample: SeedSample,
+    *,
+    level: SeedLevel,
+    target_columns: tuple[str, ...],
+    conditioning_columns: tuple[str, ...],
+) -> tuple[list[dict[str, str]], dict[str, object]]:
+    if sample.source_format != "statcan-2016-hierarchical":
+        raise ValueError("training export requires statcan-2016-hierarchical")
+    if not target_columns:
+        raise ValueError("at least one target column is required")
+    if not conditioning_columns:
+        raise ValueError("at least one conditioning column is required")
+    if level == "person":
+        return export_statcan_2016_person_training_rows(
+            sample,
+            target_columns=target_columns,
+            conditioning_columns=conditioning_columns,
+        )
+    return export_statcan_2016_household_training_rows(
+        sample,
+        target_columns=target_columns,
+        conditioning_columns=conditioning_columns,
+    )
+
+
+def export_statcan_2016_person_training_rows(
+    sample: SeedSample,
+    *,
+    target_columns: tuple[str, ...],
+    conditioning_columns: tuple[str, ...],
+) -> tuple[list[dict[str, str]], dict[str, object]]:
+    validate_columns(sample.columns, required=("PP_ID", "HH_ID", "WEIGHT"))
+    source_columns = tuple(
+        column
+        for column in (*conditioning_columns, *target_columns)
+        if column != "household_size"
+    )
+    validate_columns(sample.columns, required=source_columns)
+
+    household_sizes = household_size_lookup(sample.records)
+    output_columns = unique_columns(
+        ("PP_ID", "HH_ID", *conditioning_columns, *target_columns, "WEIGHT")
+    )
+    rows = [
+        {
+            column: training_value(
+                record,
+                column,
+                household_sizes=household_sizes,
+            )
+            for column in output_columns
+        }
+        for record in sample.records
+    ]
+    return rows, training_export_summary(
+        sample,
+        level="person",
+        rows_written=len(rows),
+        output_columns=output_columns,
+        target_columns=target_columns,
+        conditioning_columns=conditioning_columns,
+        id_columns=("PP_ID", "HH_ID"),
+    )
+
+
+def export_statcan_2016_household_training_rows(
+    sample: SeedSample,
+    *,
+    target_columns: tuple[str, ...],
+    conditioning_columns: tuple[str, ...],
+) -> tuple[list[dict[str, str]], dict[str, object]]:
+    selected_columns = unique_columns((*conditioning_columns, *target_columns))
+    household_sample = derive_statcan_2016_household_seed_sample(
+        sample,
+        columns=tuple(
+            column for column in selected_columns if column != "household_size"
+        ),
+    )
+    output_columns = unique_columns(
+        ("HH_ID", *conditioning_columns, *target_columns, "WEIGHT")
+    )
+    rows = [
+        {column: record[column] for column in output_columns}
+        for record in household_sample.records
+    ]
+    return rows, training_export_summary(
+        sample,
+        level="household",
+        rows_written=len(rows),
+        output_columns=output_columns,
+        target_columns=target_columns,
+        conditioning_columns=conditioning_columns,
+        id_columns=("HH_ID",),
+    )
+
+
+def training_export_summary(
+    sample: SeedSample,
+    *,
+    level: SeedLevel,
+    rows_written: int,
+    output_columns: tuple[str, ...],
+    target_columns: tuple[str, ...],
+    conditioning_columns: tuple[str, ...],
+    id_columns: tuple[str, ...],
+) -> dict[str, object]:
+    return {
+        "source_format": sample.source_format,
+        "level": level,
+        "rows_read": len(sample.records),
+        "rows_written": rows_written,
+        "columns": list(output_columns),
+        "target_columns": list(target_columns),
+        "conditioning_columns": list(conditioning_columns),
+        "id_columns": list(id_columns),
+        "weight_column": "WEIGHT",
+    }
+
+
 def derive_statcan_2016_household_seed_sample(
     sample: SeedSample,
     *,
@@ -237,6 +357,26 @@ def group_records_by_household(
             raise ValueError("household derivation requires non-empty HH_ID values")
         records_by_household.setdefault(household_id, []).append(record)
     return records_by_household
+
+
+def household_size_lookup(records: tuple[dict[str, str], ...]) -> dict[str, str]:
+    return {
+        household_id: str(len(household_records))
+        for household_id, household_records in group_records_by_household(
+            records
+        ).items()
+    }
+
+
+def training_value(
+    record: dict[str, str],
+    column: str,
+    *,
+    household_sizes: dict[str, str],
+) -> str:
+    if column == "household_size":
+        return household_sizes[record["HH_ID"]]
+    return record[column]
 
 
 def household_column_check(

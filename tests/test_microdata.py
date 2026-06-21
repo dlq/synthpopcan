@@ -8,6 +8,7 @@ from synthpopcan.microdata import (
     check_statcan_2016_household_seed_columns,
     derive_statcan_2016_household_seed_sample,
     export_seed_rows,
+    export_training_rows,
     read_fixture_seed_sample,
     read_statcan_2016_hierarchical_seed_sample,
 )
@@ -327,6 +328,155 @@ def test_cli_exports_household_seed_csv_from_statcan_2016_hierarchical(
     payload = json.loads(capsys.readouterr().out)
     assert payload["level"] == "household"
     assert payload["columns"] == ["HH_ID", "TENUR", "household_size", "WEIGHT"]
+
+
+def test_exports_person_training_rows_from_statcan_2016_hierarchical(tmp_path) -> None:
+    source = tmp_path / "hierarchical.csv"
+    source.write_text(
+        "HH_ID,EF_ID,CF_ID,PP_ID,WEIGHT,AGEGRP,SEX,TENUR\n"
+        "1,11,111,11101,100.5,adult,F,owner\n"
+        "1,11,111,11102,100.5,child,M,owner\n"
+        "2,21,211,21101,81.25,adult,F,renter\n"
+    )
+    sample = read_statcan_2016_hierarchical_seed_sample(source)
+
+    rows, summary = export_training_rows(
+        sample,
+        level="person",
+        target_columns=("AGEGRP", "SEX"),
+        conditioning_columns=("TENUR", "household_size"),
+    )
+
+    assert rows == [
+        {
+            "PP_ID": "11101",
+            "HH_ID": "1",
+            "TENUR": "owner",
+            "household_size": "2",
+            "AGEGRP": "adult",
+            "SEX": "F",
+            "WEIGHT": "100.5",
+        },
+        {
+            "PP_ID": "11102",
+            "HH_ID": "1",
+            "TENUR": "owner",
+            "household_size": "2",
+            "AGEGRP": "child",
+            "SEX": "M",
+            "WEIGHT": "100.5",
+        },
+        {
+            "PP_ID": "21101",
+            "HH_ID": "2",
+            "TENUR": "renter",
+            "household_size": "1",
+            "AGEGRP": "adult",
+            "SEX": "F",
+            "WEIGHT": "81.25",
+        },
+    ]
+    assert summary == {
+        "source_format": "statcan-2016-hierarchical",
+        "level": "person",
+        "rows_read": 3,
+        "rows_written": 3,
+        "columns": [
+            "PP_ID",
+            "HH_ID",
+            "TENUR",
+            "household_size",
+            "AGEGRP",
+            "SEX",
+            "WEIGHT",
+        ],
+        "target_columns": ["AGEGRP", "SEX"],
+        "conditioning_columns": ["TENUR", "household_size"],
+        "id_columns": ["PP_ID", "HH_ID"],
+        "weight_column": "WEIGHT",
+    }
+
+
+def test_cli_exports_training_csv_from_statcan_2016_hierarchical(
+    tmp_path, capsys
+) -> None:
+    source = tmp_path / "hierarchical.csv"
+    output = tmp_path / "person-training.csv"
+    source.write_text(
+        "HH_ID,EF_ID,CF_ID,PP_ID,WEIGHT,AGEGRP,SEX,TENUR\n"
+        "1,11,111,11101,100.5,adult,F,owner\n"
+        "1,11,111,11102,100.5,child,M,owner\n"
+    )
+
+    assert (
+        main(
+            [
+                "microdata",
+                "export-training",
+                str(source),
+                "--input-format",
+                "statcan-2016-hierarchical",
+                "--level",
+                "person",
+                "--target-columns",
+                "AGEGRP,SEX",
+                "--conditioning-columns",
+                "TENUR,household_size",
+                "--out",
+                str(output),
+                "--format",
+                "json",
+            ]
+        )
+        == 0
+    )
+
+    assert output.read_text() == (
+        "PP_ID,HH_ID,TENUR,household_size,AGEGRP,SEX,WEIGHT\n"
+        "11101,1,owner,2,adult,F,100.5\n"
+        "11102,1,owner,2,child,M,100.5\n"
+    )
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["level"] == "person"
+    assert payload["target_columns"] == ["AGEGRP", "SEX"]
+    assert payload["conditioning_columns"] == ["TENUR", "household_size"]
+
+
+def test_exports_household_training_rows_from_statcan_2016_hierarchical(
+    tmp_path,
+) -> None:
+    source = tmp_path / "hierarchical.csv"
+    source.write_text(
+        "HH_ID,EF_ID,CF_ID,PP_ID,WEIGHT,TENUR\n"
+        "1,11,111,11101,100.5,owner\n"
+        "1,11,111,11102,100.5,owner\n"
+        "2,21,211,21101,81.25,renter\n"
+    )
+    sample = read_statcan_2016_hierarchical_seed_sample(source)
+
+    rows, summary = export_training_rows(
+        sample,
+        level="household",
+        target_columns=("TENUR",),
+        conditioning_columns=("household_size",),
+    )
+
+    assert rows == [
+        {
+            "HH_ID": "1",
+            "household_size": "2",
+            "TENUR": "owner",
+            "WEIGHT": "100.5",
+        },
+        {
+            "HH_ID": "2",
+            "household_size": "1",
+            "TENUR": "renter",
+            "WEIGHT": "81.25",
+        },
+    ]
+    assert summary["level"] == "household"
+    assert summary["columns"] == ["HH_ID", "household_size", "TENUR", "WEIGHT"]
 
 
 def test_checks_household_seed_columns_before_export(tmp_path) -> None:
