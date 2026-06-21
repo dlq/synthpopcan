@@ -3,11 +3,11 @@ import json
 import pytest
 from click import ClickException
 
-from synthpopcan.census_microdata import (
+from synthpopcan.cli import main
+from synthpopcan.microdata import (
     read_fixture_seed_sample,
     read_statcan_2016_hierarchical_seed_sample,
 )
-from synthpopcan.cli import main
 
 
 def test_reads_fixture_seed_sample_contract(tmp_path) -> None:
@@ -35,7 +35,7 @@ def test_reads_fixture_seed_sample_contract(tmp_path) -> None:
     assert len(sample.records) == 2
 
 
-def test_cli_inspects_fixture_census_microdata(tmp_path, capsys) -> None:
+def test_cli_inspects_fixture_microdata(tmp_path, capsys) -> None:
     source = tmp_path / "people.csv"
     source.write_text(
         "person_id,geo,age_group,sex,weight\n"

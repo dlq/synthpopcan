@@ -11,10 +11,6 @@ from rich.console import Console
 from rich.table import Table
 
 from synthpopcan import __version__
-from synthpopcan.census_microdata import (
-    read_fixture_seed_sample,
-    read_statcan_2016_hierarchical_seed_sample,
-)
 from synthpopcan.controls import (
     read_category_mapping,
     read_control_margins,
@@ -24,6 +20,10 @@ from synthpopcan.controls import (
 )
 from synthpopcan.diagnostics import build_ipf_fit_report
 from synthpopcan.ipf import fit_ipf, integerize_weights
+from synthpopcan.microdata import (
+    read_fixture_seed_sample,
+    read_statcan_2016_hierarchical_seed_sample,
+)
 from synthpopcan.sources import (
     inspect_source_root,
     is_private_path,
@@ -151,7 +151,7 @@ def microdata() -> None:
     show_default=True,
     help="Output format for the inspection summary.",
 )
-def inspect_census_microdata(
+def inspect_microdata(
     path: Path,
     source_format: str,
     level: str,

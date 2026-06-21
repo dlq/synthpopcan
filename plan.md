@@ -85,7 +85,7 @@ Current implementation notes:
 
 - `ControlTable`, `ControlMargin`, and `ControlCell` are implemented in `synthpopcan.controls` for normalized controls.
 - `ControlTable` can convert to the IPF engine's `IPFMargin` objects, keeping the IPF algorithm decoupled from CSV parsing.
-- `SeedSample` is implemented in `synthpopcan.census_microdata` as the stable seed/training record contract for IPF and future tree-based synthetic population generator adapters.
+- `SeedSample` is implemented in `synthpopcan.microdata` as the stable seed/training record contract for IPF and future tree-based synthetic population generator adapters.
 
 ### 2. Local Source Inspection
 
