@@ -20,6 +20,12 @@ from synthpopcan.controls import (
 )
 from synthpopcan.diagnostics import build_ipf_fit_report
 from synthpopcan.ipf import fit_ipf, integerize_weights
+from synthpopcan.sources import (
+    inspect_source_root,
+    is_private_path,
+    read_source_sample,
+    read_source_schema,
+)
 from synthpopcan.statcan import (
     fetch_census_profile_2016,
     fetch_wds_metadata,
@@ -43,6 +49,62 @@ def main(argv: list[str] | None = None) -> int:
 @click.version_option(__version__, prog_name="synthpopcan")
 def cli() -> None:
     """Canadian synthetic population tooling."""
+
+
+@cli.group()
+def sources() -> None:
+    """Inspect local source files safely."""
+
+
+@sources.command("inspect")
+@click.argument("root", type=PATH)
+@click.option(
+    "--format",
+    "output_format",
+    default="table",
+    type=click.Choice(["json", "table"]),
+    show_default=True,
+)
+def inspect_sources(root: Path, output_format: str) -> None:
+    """Summarize files under a local source root."""
+    write_output(inspect_source_root(root), output_format)
+
+
+@sources.command("schema")
+@click.argument("path", type=PATH)
+@click.option(
+    "--format",
+    "output_format",
+    default="table",
+    type=click.Choice(["json", "table"]),
+    show_default=True,
+)
+def inspect_source_schema(path: Path, output_format: str) -> None:
+    """Inspect source file columns without printing rows."""
+    write_output(read_source_schema(path), output_format)
+
+
+@sources.command("sample")
+@click.argument("path", type=PATH)
+@click.option("--rows", default=5, type=int, show_default=True)
+@click.option("--allow-private", is_flag=True, help="Allow sampling private paths.")
+@click.option(
+    "--format",
+    "output_format",
+    default="table",
+    type=click.Choice(["json", "table"]),
+    show_default=True,
+)
+def sample_source(
+    path: Path, rows: int, allow_private: bool, output_format: str
+) -> None:
+    """Print a small source file sample."""
+    if is_private_path(path) and not allow_private:
+        raise click.ClickException("sampling private data requires --allow-private")
+    try:
+        write_output(read_source_sample(path, rows), output_format)
+    except ValueError as exc:
+        raise click.ClickException(str(exc)) from exc
 
 
 @cli.group()
@@ -278,6 +340,24 @@ def run_statcan_census_profile_fetch(year: str, geo_level: str, out_dir: Path) -
 
 def search_wds_tables_for_cli(query: str, limit: int) -> list[dict[str, str]]:
     return [result.as_dict() for result in search_wds_tables(query, limit)]
+
+
+def write_output(payload: object, output_format: str) -> None:
+    if output_format == "json":
+        print(json.dumps(payload, indent=2, sort_keys=True))
+        return
+    if isinstance(payload, dict):
+        table = Table()
+        table.add_column("Field")
+        table.add_column("Value")
+        for key, value in payload.items():
+            display_value = (
+                json.dumps(value) if isinstance(value, (dict, list)) else str(value)
+            )
+            table.add_row(str(key), display_value)
+        Console().print(table)
+        return
+    print(payload)
 
 
 def write_wds_search_results(rows: list[dict[str, str]], output_format: str) -> None:

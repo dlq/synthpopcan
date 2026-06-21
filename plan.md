@@ -103,6 +103,12 @@ Acceptance criteria:
 - Produces no private-data output by default.
 - Has tests using tiny fixtures only.
 
+Current implementation notes:
+
+- `sources inspect`, `sources schema`, and `sources sample` provide structural inspection for local files.
+- `sources sample` refuses paths under `data/private` unless `--allow-private` is provided.
+- Census microdata formats should be handled with explicit source adapters by year/product/format. Pritchard-era inputs, the available 2016 files, and later 2021-style files should route through separate adapters that produce the same internal `SeedSample` contract.
+
 ### 3. Control Table Normalization
 
 Implement the path from StatCan-style margin/control tables, Census Profile downloads, and user-provided CSVs to normalized controls.

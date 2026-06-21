@@ -10,6 +10,18 @@ Near-term goals:
 
 Broader SynthEco-style enrichment with cohort, environmental, school, healthcare, and food-access layers is intentionally deferred until the base population synthesis workflow is stable.
 
+## Source Inspection
+
+Use source inspection before writing adapters for new StatCan, Census Profile, or microdata formats:
+
+```bash
+synthpopcan sources inspect data/raw --format json
+synthpopcan sources schema data/raw/example.csv --format json
+synthpopcan sources sample data/raw/example.csv --rows 5 --format json
+```
+
+Sampling paths under `data/private` requires `--allow-private`. Census microdata formats vary by source year and access product, so SynthPopCan should inspect structure first and then route files through explicit source adapters rather than relying on one generic census parser.
+
 ## IPF CLI
 
 The first implemented workflow fits seed records to one-way or multi-way margin tables stored as CSV.
