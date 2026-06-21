@@ -122,6 +122,19 @@ The output is compact fitted seed weights: one row per seed record with a fitted
 If the seed already has a `weight` column, fitted weights are written as `fitted_weight`.
 The optional JSON report records convergence status, iterations, max error, and per-margin fitted residuals.
 
+Read the fit report as a lightweight table:
+
+```bash
+synthpopcan ipf report fit-report.json
+```
+
+Example report output:
+
+| Section | What it tells you |
+| --- | --- |
+| Fit summary | Whether IPF converged, how many iterations ran, how many seed records were fitted, and the largest absolute error. |
+| Margin table | For each margin, the dimensions fitted, number of cells, target total, fitted total, largest absolute error, and largest relative error. |
+
 ```csv
 id,age,sex,weight
 1,young,F,30

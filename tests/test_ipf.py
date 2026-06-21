@@ -4,6 +4,8 @@ from pathlib import Path
 
 import pytest
 
+from synthpopcan.controls import ControlCell, ControlMargin, ControlTable
+from synthpopcan.diagnostics import build_ipf_fit_report
 from synthpopcan.ipf import IPFMargin, expand_records, fit_ipf
 
 
@@ -321,6 +323,79 @@ def test_cli_fit_writes_diagnostics_report(tmp_path: Path) -> None:
             },
         ],
     }
+
+
+def test_ipf_report_includes_margin_summaries() -> None:
+    control_table = ControlTable(
+        margins=(
+            ControlMargin(
+                name="age",
+                dimensions=("age",),
+                cells=(
+                    ControlCell({"age": "young"}, 60.0),
+                    ControlCell({"age": "old"}, 40.0),
+                ),
+            ),
+        ),
+        dimensions=("age",),
+    )
+    result = fit_ipf(
+        [
+            {"age": "young"},
+            {"age": "old"},
+        ],
+        [IPFMargin(("age",), {("young",): 60.0, ("old",): 40.0})],
+    )
+
+    report = build_ipf_fit_report(control_table, result)
+
+    assert report["margin_summaries"] == [
+        {
+            "name": "age",
+            "dimensions": ["age"],
+            "cells": 2,
+            "target_total": 100.0,
+            "fitted_total": 100.0,
+            "max_abs_error": 0.0,
+            "max_relative_error": 0.0,
+        }
+    ]
+
+
+def test_cli_prints_human_readable_ipf_report(tmp_path: Path, capsys) -> None:
+    from synthpopcan.cli import main
+
+    report_path = tmp_path / "fit-report.json"
+    report_path.write_text(
+        json.dumps(
+            {
+                "converged": True,
+                "iterations": 3,
+                "max_abs_error": 0.0,
+                "seed_records": 4,
+                "margin_summaries": [
+                    {
+                        "name": "age",
+                        "dimensions": ["age"],
+                        "cells": 2,
+                        "target_total": 100.0,
+                        "fitted_total": 100.0,
+                        "max_abs_error": 0.0,
+                        "max_relative_error": 0.0,
+                    }
+                ],
+                "margins": [],
+            }
+        )
+    )
+
+    assert main(["ipf", "report", str(report_path)]) == 0
+
+    output = capsys.readouterr().out
+    assert "IPF Fit Report" in output
+    assert "Converged" in output
+    assert "age" in output
+    assert "100" in output
 
 
 def test_cli_expands_fitted_weight_when_seed_has_initial_weight(tmp_path: Path) -> None:

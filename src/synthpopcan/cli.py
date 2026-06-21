@@ -393,6 +393,27 @@ def expand_ipf(weights_path: Path, out_path: Path, weight_field: str) -> None:
     print_wrote(out_path)
 
 
+@ipf.command("report")
+@click.argument("path", type=PATH)
+@click.option(
+    "--format",
+    "output_format",
+    default="table",
+    type=click.Choice(["json", "table"]),
+    show_default=True,
+)
+def report_ipf(path: Path, output_format: str) -> None:
+    """Print a fit report summary from ipf fit --report JSON."""
+    try:
+        report = json.loads(path.read_text())
+    except json.JSONDecodeError as exc:
+        raise click.ClickException(f"{path} is not valid JSON") from exc
+    if output_format == "json":
+        print(json.dumps(report, indent=2, sort_keys=True))
+        return
+    print_ipf_report_table(report)
+
+
 @cli.group()
 def statcan() -> None:
     """Fetch Statistics Canada data."""
@@ -518,6 +539,60 @@ def write_wds_search_table(rows: list[dict[str, str]]) -> None:
         )
 
     print_table(table)
+
+
+def print_ipf_report_table(report: dict[str, object]) -> None:
+    table = Table(title="IPF Fit Report")
+    table.add_column("Margin")
+    table.add_column("Dimensions")
+    table.add_column("Cells", justify="right")
+    table.add_column("Target", justify="right")
+    table.add_column("Fitted", justify="right")
+    table.add_column("Max Error", justify="right")
+    table.add_column("Max Rel. Error", justify="right")
+
+    for row in report.get("margin_summaries", []):
+        if not isinstance(row, dict):
+            continue
+        table.add_row(
+            str(row.get("name", "")),
+            ", ".join(str(value) for value in row.get("dimensions", [])),
+            format_report_number(row.get("cells")),
+            format_report_number(row.get("target_total")),
+            format_report_number(row.get("fitted_total")),
+            format_report_number(row.get("max_abs_error")),
+            format_report_percent(row.get("max_relative_error")),
+        )
+
+    print_summary_table(
+        {
+            "status": "Converged" if report.get("converged") else "Not converged",
+            "iterations": report.get("iterations", ""),
+            "seed_records": report.get("seed_records", ""),
+            "max_abs_error": format_report_number(report.get("max_abs_error")),
+        },
+        title="IPF Fit Summary",
+    )
+    print_table(table)
+
+
+def format_report_number(value: object) -> str:
+    if isinstance(value, int):
+        return f"{value:,}"
+    if isinstance(value, float):
+        rounded = round(value)
+        if abs(value - rounded) < 1e-9:
+            return f"{rounded:,}"
+        return f"{value:.6g}"
+    return str(value) if value is not None else ""
+
+
+def format_report_percent(value: object) -> str:
+    if not isinstance(value, int | float):
+        return ""
+    if value == float("inf"):
+        return "inf"
+    return f"{value * 100:.6g}%"
 
 
 def format_date_range(start_date: str, end_date: str) -> str:

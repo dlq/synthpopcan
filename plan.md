@@ -163,7 +163,8 @@ Acceptance criteria:
 Current implementation notes:
 
 - `synthpopcan ipf fit` writes compact fitted seed weights because expanded synthetic rows can become very large quickly.
-- `synthpopcan ipf fit --report` writes JSON diagnostics with convergence status, iterations, max absolute error, and per-cell residuals.
+- `synthpopcan ipf fit --report` writes JSON diagnostics with convergence status, iterations, max absolute error, per-margin summaries, and per-cell residuals.
+- `synthpopcan ipf report fit-report.json` prints a human-readable fit summary and margin table for non-programmatic review.
 - `synthpopcan ipf expand` streams fitted weights into full synthetic rows for demos, exploratory work, and agent-based-model inputs.
 - The CLI now rejects non-converged fits by default before writing weights; `--allow-nonconverged` is available for explicit inspection runs.
 - Normalized control table parsing lives in `synthpopcan.controls`, not in the CLI, so StatCan normalizers and the future web app can reuse the same contract.
@@ -189,7 +190,7 @@ Near-term IPF performance tasks:
 3. Precompute record membership indexes for each margin cell. Status: complete in the pure-Python fitter.
 4. Stream expanded rows directly to CSV instead of building the full expanded population in memory. Status: complete.
 5. Add benchmarks or performance tests for easy, moderate, and high-cardinality fixtures. Status: pending.
-6. Improve non-convergence diagnostics and CLI reporting. Status: partially complete; the CLI now fails closed on non-convergence and can write JSON fit diagnostics, but richer validation reports are still pending.
+6. Improve non-convergence diagnostics and CLI reporting. Status: partially complete; the CLI now fails closed on non-convergence, can write JSON fit diagnostics, and can print a human-readable report table. Richer validation reports that explain inconsistent controls and unsupported cells are still pending.
 7. Consider NumPy, Polars, and possibly sparse arrays after the pure-Python indexed version establishes the right data contracts. Status: pending.
 
 Local timing evidence after indexing:
