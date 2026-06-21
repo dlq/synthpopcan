@@ -49,11 +49,16 @@ synthpopcan controls from-csv source-controls.csv --out controls.csv
 Run IPF with:
 
 ```bash
-synthpopcan ipf fit --seed seed.csv --controls controls.csv --out weights.csv
+synthpopcan ipf fit \
+  --seed seed.csv \
+  --controls controls.csv \
+  --out weights.csv \
+  --report fit-report.json
 ```
 
 The output is compact fitted seed weights: one row per seed record with a fitted `weight`.
 If the seed already has a `weight` column, fitted weights are written as `fitted_weight`.
+The optional JSON report records convergence status, iterations, max error, and per-margin fitted residuals.
 
 ```csv
 id,age,sex,weight

@@ -1,4 +1,5 @@
 import csv
+import json
 from pathlib import Path
 
 import pytest
@@ -224,6 +225,102 @@ def test_cli_runs_ipf_from_csv_files_as_weights_by_default(tmp_path: Path) -> No
 
     rows = list(csv.DictReader(output_path.open(newline="")))
     assert [row["weight"] for row in rows] == ["30", "30", "20", "20"]
+
+
+def test_cli_fit_writes_diagnostics_report(tmp_path: Path) -> None:
+    from synthpopcan.cli import main
+
+    seed_path = tmp_path / "seed.csv"
+    controls_path = tmp_path / "controls.csv"
+    output_path = tmp_path / "weights.csv"
+    report_path = tmp_path / "fit-report.json"
+
+    write_csv(
+        seed_path,
+        ["id", "age", "sex"],
+        [
+            {"id": "1", "age": "young", "sex": "F"},
+            {"id": "2", "age": "young", "sex": "M"},
+            {"id": "3", "age": "old", "sex": "F"},
+            {"id": "4", "age": "old", "sex": "M"},
+        ],
+    )
+    write_csv(
+        controls_path,
+        ["margin", "dimensions", "age", "sex", "count"],
+        [
+            {
+                "margin": "age",
+                "dimensions": "age",
+                "age": "young",
+                "sex": "",
+                "count": "60",
+            },
+            {
+                "margin": "age",
+                "dimensions": "age",
+                "age": "old",
+                "sex": "",
+                "count": "40",
+            },
+            {
+                "margin": "sex",
+                "dimensions": "sex",
+                "age": "",
+                "sex": "F",
+                "count": "50",
+            },
+            {
+                "margin": "sex",
+                "dimensions": "sex",
+                "age": "",
+                "sex": "M",
+                "count": "50",
+            },
+        ],
+    )
+
+    assert (
+        main(
+            [
+                "ipf",
+                "fit",
+                "--seed",
+                str(seed_path),
+                "--controls",
+                str(controls_path),
+                "--out",
+                str(output_path),
+                "--report",
+                str(report_path),
+            ]
+        )
+        == 0
+    )
+
+    report = json.loads(report_path.read_text())
+    assert report["converged"] is True
+    assert report["iterations"] > 0
+    assert report["max_abs_error"] == pytest.approx(0.0)
+    assert report["seed_records"] == 4
+    assert report["margins"][0] == {
+        "name": "age",
+        "dimensions": ["age"],
+        "cells": [
+            {
+                "categories": {"age": "young"},
+                "target": 60.0,
+                "fitted": 60.0,
+                "residual": 0.0,
+            },
+            {
+                "categories": {"age": "old"},
+                "target": 40.0,
+                "fitted": 40.0,
+                "residual": 0.0,
+            },
+        ],
+    }
 
 
 def test_cli_expands_fitted_weight_when_seed_has_initial_weight(tmp_path: Path) -> None:

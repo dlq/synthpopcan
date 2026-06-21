@@ -16,6 +16,7 @@ from synthpopcan.controls import (
     read_control_table,
     write_control_table,
 )
+from synthpopcan.diagnostics import build_ipf_fit_report
 from synthpopcan.ipf import expand_records, fit_ipf
 from synthpopcan.statcan import (
     fetch_census_profile_2016,
@@ -98,6 +99,7 @@ def ipf() -> None:
     is_flag=True,
     help="Write weights even when IPF does not meet the convergence tolerance.",
 )
+@click.option("--report", "report_path", type=PATH, help="Optional JSON fit report.")
 def fit_ipf_command(
     seed_path: Path,
     controls_path: Path,
@@ -106,17 +108,22 @@ def fit_ipf_command(
     max_iterations: int,
     tolerance: float,
     allow_nonconverged: bool,
+    report_path: Path | None,
 ) -> None:
     """Fit seed records to controls and write compact weights."""
     seed_rows = read_csv(seed_path)
-    margins = read_control_margins(controls_path)
+    control_table = read_control_table(controls_path)
     result = fit_ipf(
         seed_rows,
-        margins,
+        control_table.to_ipf_margins(),
         weight_field=weight_field,
         max_iterations=max_iterations,
         tolerance=tolerance,
     )
+    if report_path:
+        report_path.write_text(
+            json.dumps(build_ipf_fit_report(control_table, result), indent=2) + "\n"
+        )
     if not result.converged and not allow_nonconverged:
         raise click.ClickException(
             "IPF did not converge "
