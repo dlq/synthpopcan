@@ -5,7 +5,14 @@ from zipfile import ZipFile
 import pytest
 from click.exceptions import ClickException
 
-from synthpopcan.controls import ControlCell, read_control_margins, read_control_table
+from synthpopcan.controls import (
+    ControlCell,
+    census_profile_template,
+    inspect_census_profile_characteristics,
+    read_census_profile_control_table,
+    read_control_margins,
+    read_control_table,
+)
 
 
 def test_reads_normalized_controls_as_control_table(tmp_path: Path) -> None:
@@ -202,3 +209,198 @@ def test_cli_fails_on_unmapped_wds_category(tmp_path: Path) -> None:
                 str(output_path),
             ]
         )
+
+
+def test_reads_census_profile_controls_with_explicit_mapping(tmp_path: Path) -> None:
+    profile_path = tmp_path / "profile.csv"
+    mapping_path = tmp_path / "mapping.json"
+    profile_path.write_text(
+        "GEO_CODE,CHARACTERISTIC_NAME,C1_COUNT_TOTAL\n"
+        "1001,0 to 4 years,12\n"
+        "1001,5 to 9 years,14\n"
+        "1002,0 to 4 years,8\n"
+        "1002,5 to 9 years,9\n"
+    )
+    mapping_path.write_text(
+        json.dumps(
+            {
+                "geography": {"column": "GEO_CODE", "dimension": "geo"},
+                "characteristic_column": "CHARACTERISTIC_NAME",
+                "count_column": "C1_COUNT_TOTAL",
+                "margins": [
+                    {
+                        "name": "age",
+                        "dimensions": ["geo", "age"],
+                        "categories": {
+                            "0 to 4 years": {"age": "age_000_004"},
+                            "5 to 9 years": {"age": "age_005_009"},
+                        },
+                    }
+                ],
+            }
+        )
+    )
+
+    table = read_census_profile_control_table(profile_path, mapping_path)
+
+    assert table.dimensions == ("geo", "age")
+    assert table.margins[0].name == "age"
+    assert table.margins[0].cells == (
+        ControlCell({"geo": "1001", "age": "age_000_004"}, 12.0),
+        ControlCell({"geo": "1001", "age": "age_005_009"}, 14.0),
+        ControlCell({"geo": "1002", "age": "age_000_004"}, 8.0),
+        ControlCell({"geo": "1002", "age": "age_005_009"}, 9.0),
+    )
+
+
+def test_cli_normalizes_controls_from_census_profile(tmp_path: Path) -> None:
+    from synthpopcan.cli import main
+
+    profile_path = tmp_path / "profile.csv"
+    mapping_path = tmp_path / "mapping.json"
+    output_path = tmp_path / "controls.csv"
+    profile_path.write_text(
+        "GEO_CODE,CHARACTERISTIC_NAME,C1_COUNT_TOTAL\n"
+        "1001,0 to 4 years,12\n"
+        "1001,5 to 9 years,14\n"
+    )
+    mapping_path.write_text(
+        json.dumps(
+            {
+                "geography": {"column": "GEO_CODE", "dimension": "geo"},
+                "characteristic_column": "CHARACTERISTIC_NAME",
+                "count_column": "C1_COUNT_TOTAL",
+                "margins": [
+                    {
+                        "name": "age",
+                        "dimensions": ["geo", "age"],
+                        "categories": {
+                            "0 to 4 years": {"age": "age_000_004"},
+                            "5 to 9 years": {"age": "age_005_009"},
+                        },
+                    }
+                ],
+            }
+        )
+    )
+
+    assert (
+        main(
+            [
+                "controls",
+                "from-census-profile",
+                str(profile_path),
+                "--mapping",
+                str(mapping_path),
+                "--out",
+                str(output_path),
+            ]
+        )
+        == 0
+    )
+
+    assert output_path.read_text() == (
+        "margin,dimensions,geo,age,count\n"
+        'age,"geo,age",1001,age_000_004,12\n'
+        'age,"geo,age",1001,age_005_009,14\n'
+    )
+
+
+def test_inspects_census_profile_characteristics(tmp_path: Path) -> None:
+    profile_path = tmp_path / "profile.csv"
+    profile_path.write_text(
+        "GEO_CODE,CHARACTERISTIC_NAME,C1_COUNT_TOTAL\n"
+        "1001,Population,100\n"
+        "1001,0 to 4 years,12\n"
+        "1001,5 to 9 years,14\n"
+        "1002,0 to 4 years,8\n"
+    )
+
+    rows = inspect_census_profile_characteristics(
+        profile_path,
+        characteristic_column="CHARACTERISTIC_NAME",
+        count_column="C1_COUNT_TOTAL",
+        search="years",
+    )
+
+    assert rows == [
+        {
+            "characteristic": "0 to 4 years",
+            "example_count": "12",
+            "rows": "2",
+        },
+        {
+            "characteristic": "5 to 9 years",
+            "example_count": "14",
+            "rows": "1",
+        },
+    ]
+
+
+def test_cli_inspects_census_profile_characteristics(tmp_path: Path, capsys) -> None:
+    from synthpopcan.cli import main
+
+    profile_path = tmp_path / "profile.csv"
+    profile_path.write_text(
+        "GEO_CODE,CHARACTERISTIC_NAME,C1_COUNT_TOTAL\n"
+        "1001,Population,100\n"
+        "1001,0 to 4 years,12\n"
+    )
+
+    assert (
+        main(
+            [
+                "controls",
+                "census-profile",
+                "inspect",
+                str(profile_path),
+                "--search",
+                "years",
+            ]
+        )
+        == 0
+    )
+
+    output = capsys.readouterr().out
+    assert "Census Profile Characteristics" in output
+    assert "0 to 4 years" in output
+    assert "12" in output
+
+
+def test_builds_census_profile_age_template() -> None:
+    template = census_profile_template("age5")
+
+    assert template["geography"] == {"column": "GEO_CODE", "dimension": "geo"}
+    assert template["characteristic_column"] == "CHARACTERISTIC_NAME"
+    assert template["count_column"] == "C1_COUNT_TOTAL"
+    assert template["margins"][0]["name"] == "age"
+    assert template["margins"][0]["categories"]["0 to 4 years"] == {
+        "age": "age_000_004"
+    }
+
+
+def test_cli_writes_census_profile_template(tmp_path: Path) -> None:
+    from synthpopcan.cli import main
+
+    output_path = tmp_path / "mapping.json"
+
+    assert (
+        main(
+            [
+                "controls",
+                "census-profile",
+                "template",
+                "sex",
+                "--out",
+                str(output_path),
+            ]
+        )
+        == 0
+    )
+
+    payload = json.loads(output_path.read_text())
+    assert payload["margins"][0]["name"] == "sex"
+    assert payload["margins"][0]["categories"] == {
+        "Female": {"sex": "female"},
+        "Male": {"sex": "male"},
+    }

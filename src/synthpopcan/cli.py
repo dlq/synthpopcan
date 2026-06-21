@@ -18,7 +18,10 @@ from synthpopcan.console import (
     print_wrote,
 )
 from synthpopcan.controls import (
+    census_profile_template,
+    inspect_census_profile_characteristics,
     read_category_mapping,
+    read_census_profile_control_table,
     read_control_margins,
     read_control_table,
     read_wds_control_table,
@@ -167,6 +170,11 @@ def controls() -> None:
     """Normalize and validate IPF control tables."""
 
 
+@controls.group(name="census-profile")
+def census_profile_controls() -> None:
+    """Inspect Census Profile files and mapping templates."""
+
+
 @cli.group(name="microdata")
 def microdata() -> None:
     """Inspect and normalize census microdata seed samples."""
@@ -299,6 +307,134 @@ def normalize_controls_from_wds(
     except ValueError as exc:
         raise click.ClickException(str(exc)) from exc
     write_control_table(out_path, table)
+    print_wrote(out_path)
+
+
+@controls.command("from-census-profile")
+@click.argument("source", type=PATH)
+@click.option(
+    "--mapping",
+    "mapping_path",
+    required=True,
+    type=PATH,
+    help="JSON mapping from Census Profile rows to control categories.",
+)
+@click.option(
+    "--out",
+    "out_path",
+    required=True,
+    type=PATH,
+    help="Output normalized controls CSV.",
+)
+def normalize_controls_from_census_profile(
+    source: Path,
+    mapping_path: Path,
+    out_path: Path,
+) -> None:
+    """Normalize a local StatCan Census Profile CSV."""
+    try:
+        table = read_census_profile_control_table(source, mapping_path)
+    except ValueError as exc:
+        raise click.ClickException(str(exc)) from exc
+    write_control_table(out_path, table)
+    print_wrote(out_path)
+
+
+@census_profile_controls.command("inspect")
+@click.argument("source", type=PATH)
+@click.option(
+    "--characteristic-column",
+    default="CHARACTERISTIC_NAME",
+    show_default=True,
+    help="Column containing Census Profile characteristic labels.",
+)
+@click.option(
+    "--count-column",
+    default="C1_COUNT_TOTAL",
+    show_default=True,
+    help="Column containing counts to preview.",
+)
+@click.option("--search", default=None, help="Filter characteristic labels.")
+@click.option("--limit", default=25, type=int, show_default=True)
+@click.option(
+    "--format",
+    "output_format",
+    default="table",
+    type=click.Choice(["json", "table"]),
+    show_default=True,
+)
+def inspect_census_profile_controls(
+    source: Path,
+    characteristic_column: str,
+    count_column: str,
+    search: str | None,
+    limit: int,
+    output_format: str,
+) -> None:
+    """List candidate Census Profile characteristic rows."""
+    try:
+        rows = inspect_census_profile_characteristics(
+            source,
+            characteristic_column=characteristic_column,
+            count_column=count_column,
+            search=search,
+            limit=limit,
+        )
+    except ValueError as exc:
+        raise click.ClickException(str(exc)) from exc
+    if output_format == "json":
+        print(json.dumps(rows, indent=2, sort_keys=True))
+        return
+    print_census_profile_characteristics_table(rows)
+
+
+@census_profile_controls.command("template")
+@click.argument("name", type=click.Choice(["age5", "sex"]))
+@click.option(
+    "--geo-column",
+    default="GEO_CODE",
+    show_default=True,
+    help="Census Profile geography code column.",
+)
+@click.option(
+    "--geo-dimension",
+    default="geo",
+    show_default=True,
+    help="Output control dimension name for geography.",
+)
+@click.option(
+    "--characteristic-column",
+    default="CHARACTERISTIC_NAME",
+    show_default=True,
+    help="Census Profile characteristic label column.",
+)
+@click.option(
+    "--count-column",
+    default="C1_COUNT_TOTAL",
+    show_default=True,
+    help="Census Profile count column.",
+)
+@click.option("--out", "out_path", required=True, type=PATH)
+def write_census_profile_template(
+    name: str,
+    geo_column: str,
+    geo_dimension: str,
+    characteristic_column: str,
+    count_column: str,
+    out_path: Path,
+) -> None:
+    """Write a starter Census Profile mapping JSON."""
+    try:
+        payload = census_profile_template(
+            name,
+            geography_column=geo_column,
+            geography_dimension=geo_dimension,
+            characteristic_column=characteristic_column,
+            count_column=count_column,
+        )
+    except ValueError as exc:
+        raise click.ClickException(str(exc)) from exc
+    out_path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n")
     print_wrote(out_path)
 
 
@@ -535,6 +671,20 @@ def write_wds_search_table(rows: list[dict[str, str]]) -> None:
             row.get("title_en", ""),
         )
 
+    print_table(table)
+
+
+def print_census_profile_characteristics_table(rows: list[dict[str, str]]) -> None:
+    table = Table(title="Census Profile Characteristics")
+    table.add_column("Characteristic")
+    table.add_column("Example Count", justify="right")
+    table.add_column("Rows", justify="right")
+    for row in rows:
+        table.add_row(
+            row.get("characteristic", ""),
+            row.get("example_count", ""),
+            row.get("rows", ""),
+        )
     print_table(table)
 
 

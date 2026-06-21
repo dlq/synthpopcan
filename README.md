@@ -237,6 +237,52 @@ The optional category mapping file is a JSON object keyed by source dimension:
 
 When a mapping is provided for a dimension, unmapped values in that dimension fail the normalization run.
 
+### Census Profile CSVs
+
+Start by searching the characteristic labels in a local Census Profile CSV:
+
+```bash
+synthpopcan controls census-profile inspect profile.csv --search "years"
+```
+
+This prints a small table of matching Census Profile rows with example counts, which helps you decide which rows belong in an IPF control.
+
+Write a starter mapping template:
+
+```bash
+synthpopcan controls census-profile template age5 --out census-profile-mapping.json
+```
+
+Available starter templates are `age5` and `sex`. The mapping file names the geography, characteristic, and count columns, then maps selected profile characteristic rows into control categories:
+
+```json
+{
+  "geography": {"column": "GEO_CODE", "dimension": "geo"},
+  "characteristic_column": "CHARACTERISTIC_NAME",
+  "count_column": "C1_COUNT_TOTAL",
+  "margins": [
+    {
+      "name": "age",
+      "dimensions": ["geo", "age"],
+      "categories": {
+        "0 to 4 years": {"age": "age_000_004"},
+        "5 to 9 years": {"age": "age_005_009"}
+      }
+    }
+  ]
+}
+```
+
+Edit the template if the Census Profile labels or output category names need to change, then normalize:
+
+```bash
+synthpopcan controls from-census-profile profile.csv \
+  --mapping census-profile-mapping.json \
+  --out controls.csv
+```
+
+This first adapter intentionally reads local downloaded CSVs and selected rows only. It helps inspect and template mappings, but it does not infer which Census Profile characteristics are suitable IPF controls.
+
 User story for finding a WDS table ID:
 
 1. The user starts with topic words, for example `population dwelling`, `age sex`, `household income`, or `labour force`.
