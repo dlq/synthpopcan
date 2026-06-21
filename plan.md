@@ -281,12 +281,16 @@ Acceptance criteria:
 
 - Each command has help text and clear failure messages.
 - Commands write explicit output files rather than hidden state.
-- Tests cover command parsing and one tiny end-to-end IPF run.
+- Tests cover command parsing and one tiny end-to-end IPF run from exported microdata seed rows through validation.
 
 Usability helper principle:
 
 - For every workflow that requires source-specific knowledge, add companion helper commands before expecting users to hand-author configuration. Prefer discoverable helpers such as `inspect`, `search`, `template`, `doctor`, `explain`, `preview`, and dry-run/JSON output modes. This is especially important for digital humanities users who may understand the research question well but not the StatCan file formats or package internals.
 - Each complex normalization workflow should answer three questions from the CLI: what is in this source file, what starter configuration can I use, and what will be produced before I run the full synthesis step?
+
+Current implementation notes:
+
+- A fixture integration test covers `microdata export-seed -> ipf fit --report -> validate controls` for a tiny `statcan-2016-hierarchical` person-level workflow.
 
 ### 8. Validation Reports
 

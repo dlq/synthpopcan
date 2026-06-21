@@ -116,6 +116,31 @@ synthpopcan microdata export-seed hierarchical.csv \
 
 For `statcan-2016-hierarchical`, household export creates one row per `HH_ID`, includes `household_size`, and requires selected household columns and `WEIGHT` to be constant within each household. Conflicts fail clearly instead of guessing.
 
+## Microdata to IPF Workflow
+
+A minimal person-level workflow is:
+
+```bash
+synthpopcan microdata export-seed hierarchical.csv \
+  --input-format statcan-2016-hierarchical \
+  --columns AGEGRP,SEX \
+  --out seed.csv
+
+synthpopcan ipf fit \
+  --seed seed.csv \
+  --controls controls.csv \
+  --weight-field WEIGHT \
+  --out weights.csv \
+  --report fit-report.json
+
+synthpopcan validate controls \
+  --population weights.csv \
+  --controls controls.csv \
+  --kind weights
+```
+
+The seed file contains one row per source person with stable IDs, selected attributes, and the source `WEIGHT`. The fitted weights file keeps the seed attributes and adds the fitted `weight` column used for validation or later expansion.
+
 ## IPF CLI
 
 The first implemented workflow fits seed records to one-way or multi-way margin tables stored as CSV.
