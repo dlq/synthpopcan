@@ -165,6 +165,39 @@ def test_cli_inspects_statcan_2016_hierarchical_microdata(tmp_path, capsys) -> N
     assert payload["average_household_size"] == 1.5
 
 
+def test_cli_inspects_microdata_as_readable_table(tmp_path, capsys) -> None:
+    source = tmp_path / "hierarchical.csv"
+    rows = [
+        f"{household_id},11,111,{household_id:04d}{person_id:02d},100.5,adult,F,owner\n"
+        for household_id in range(1, 618)
+        for person_id in (1, 2)
+    ]
+    source.write_text(
+        "HH_ID,EF_ID,CF_ID,PP_ID,WEIGHT,AGEGRP,SEX,TENUR\n" + "".join(rows)
+    )
+
+    assert (
+        main(
+            [
+                "microdata",
+                "inspect",
+                str(source),
+                "--input-format",
+                "statcan-2016-hierarchical",
+            ]
+        )
+        == 0
+    )
+
+    output = capsys.readouterr().out
+    assert "Microdata Summary" in output
+    assert "Records" in output
+    assert "1,234" in output
+    assert "Households" in output
+    assert "617" in output
+    assert "Average household size" in output
+
+
 def test_statcan_2016_hierarchical_requires_known_identifier_columns(tmp_path) -> None:
     source = tmp_path / "hierarchical.csv"
     source.write_text("HH_ID,PP_ID,WEIGHT\n1,11101,100.5\n")

@@ -7,10 +7,10 @@ import json
 from pathlib import Path
 
 import click
-from rich.console import Console
 from rich.table import Table
 
 from synthpopcan import __version__
+from synthpopcan.console import print_summary_table, print_table, print_wrote
 from synthpopcan.controls import (
     read_category_mapping,
     read_control_margins,
@@ -176,7 +176,7 @@ def inspect_microdata(
             sample = read_statcan_2016_hierarchical_seed_sample(path)
     except ValueError as exc:
         raise click.ClickException(str(exc)) from exc
-    write_output(sample.as_summary(), output_format)
+    write_output(sample.as_summary(), output_format, title="Microdata Summary")
 
 
 @controls.command("validate")
@@ -199,6 +199,7 @@ def normalize_controls_from_csv(source: Path, out_path: Path) -> None:
     """Normalize a local long control CSV."""
     table = read_control_table(source)
     write_control_table(out_path, table)
+    print_wrote(out_path)
 
 
 @controls.command("from-wds")
@@ -247,6 +248,7 @@ def normalize_controls_from_wds(
     except ValueError as exc:
         raise click.ClickException(str(exc)) from exc
     write_control_table(out_path, table)
+    print_wrote(out_path)
 
 
 @cli.group()
@@ -311,6 +313,9 @@ def fit_ipf_command(
             "Use --allow-nonconverged to write the fitted weights anyway."
         )
     write_weighted_seed(out_path, seed_rows, result.weights)
+    if report_path:
+        print_wrote(report_path)
+    print_wrote(out_path)
 
 
 @ipf.command("expand")
@@ -334,6 +339,7 @@ def expand_ipf(weights_path: Path, out_path: Path, weight_field: str) -> None:
     """Expand fitted weights into full synthetic rows."""
     seed_rows, weights = read_weighted_seed(weights_path, weight_field)
     write_expanded_seed(out_path, seed_rows, weights)
+    print_wrote(out_path)
 
 
 @cli.group()
@@ -354,7 +360,7 @@ def wds() -> None:
 @click.option("--out-dir", required=True, type=PATH)
 def run_statcan_wds_fetch(product_id: str, out_dir: Path, lang: str) -> None:
     """Download a full WDS table CSV ZIP by product ID."""
-    fetch_wds_table(product_id, out_dir, lang)
+    print_wrote(fetch_wds_table(product_id, out_dir, lang))
 
 
 @wds.command("search")
@@ -385,6 +391,7 @@ def run_statcan_wds_metadata(product_id: str, out_path: Path | None) -> None:
     payload = json.dumps(metadata, indent=2, sort_keys=True) + "\n"
     if out_path:
         out_path.write_text(payload)
+        print_wrote(out_path)
     else:
         print(payload, end="")
 
@@ -402,27 +409,21 @@ def run_statcan_census_profile_fetch(year: str, geo_level: str, out_dir: Path) -
     """Download a known Census Profile bulk CSV."""
     if year != "2016":
         raise ValueError("only the 2016 Census Profile registry is currently supported")
-    fetch_census_profile_2016(geo_level, out_dir)
+    print_wrote(fetch_census_profile_2016(geo_level, out_dir))
 
 
 def search_wds_tables_for_cli(query: str, limit: int) -> list[dict[str, str]]:
     return [result.as_dict() for result in search_wds_tables(query, limit)]
 
 
-def write_output(payload: object, output_format: str) -> None:
+def write_output(
+    payload: object, output_format: str, *, title: str | None = None
+) -> None:
     if output_format == "json":
         print(json.dumps(payload, indent=2, sort_keys=True))
         return
     if isinstance(payload, dict):
-        table = Table()
-        table.add_column("Field")
-        table.add_column("Value")
-        for key, value in payload.items():
-            display_value = (
-                json.dumps(value) if isinstance(value, (dict, list)) else str(value)
-            )
-            table.add_row(str(key), display_value)
-        Console().print(table)
+        print_summary_table(payload, title=title)
         return
     print(payload)
 
@@ -465,7 +466,7 @@ def write_wds_search_table(rows: list[dict[str, str]]) -> None:
             row.get("title_en", ""),
         )
 
-    Console().print(table)
+    print_table(table)
 
 
 def format_date_range(start_date: str, end_date: str) -> str:

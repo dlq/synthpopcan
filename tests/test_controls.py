@@ -39,7 +39,7 @@ def test_control_margin_label_must_use_consistent_dimensions(tmp_path: Path) -> 
         read_control_margins(controls_path)
 
 
-def test_cli_normalizes_controls_from_csv(tmp_path: Path) -> None:
+def test_cli_normalizes_controls_from_csv(tmp_path: Path, capsys) -> None:
     from synthpopcan.cli import main
 
     source_path = tmp_path / "source.csv"
@@ -72,6 +72,9 @@ def test_cli_normalizes_controls_from_csv(tmp_path: Path) -> None:
         "age,age,young,,60\n"
         "age,age,old,,40\n"
     )
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert f"Wrote {output_path}" in captured.err
 
 
 def test_cli_normalizes_controls_from_wds_zip(tmp_path: Path) -> None:
