@@ -11,7 +11,10 @@ from rich.console import Console
 from rich.table import Table
 
 from synthpopcan import __version__
-from synthpopcan.census_microdata import read_fixture_seed_sample
+from synthpopcan.census_microdata import (
+    read_fixture_seed_sample,
+    read_statcan_2016_hierarchical_seed_sample,
+)
 from synthpopcan.controls import (
     read_category_mapping,
     read_control_margins,
@@ -124,12 +127,12 @@ def microdata() -> None:
     "--input-format",
     "source_format",
     required=True,
-    type=click.Choice(["fixture-v1"]),
+    type=click.Choice(["fixture-v1", "statcan-2016-hierarchical"]),
     help="Input microdata adapter format.",
 )
 @click.option(
     "--level",
-    required=True,
+    default=None,
     type=click.Choice(["household", "person"]),
     help="Seed sample level.",
 )
@@ -159,17 +162,18 @@ def inspect_census_microdata(
 ) -> None:
     """Inspect a census microdata seed sample without printing rows."""
     try:
-        if source_format != "fixture-v1":
-            raise click.ClickException(
-                f"unsupported microdata format {source_format!r}"
+        if source_format == "fixture-v1":
+            if level is None:
+                raise click.ClickException("fixture-v1 requires --level")
+            sample = read_fixture_seed_sample(
+                path,
+                level=level,
+                weight_column=weight_column,
+                geography_columns=parse_optional_columns(geography_columns),
+                id_columns=parse_optional_columns(id_columns),
             )
-        sample = read_fixture_seed_sample(
-            path,
-            level=level,  # type: ignore[arg-type]
-            weight_column=weight_column,
-            geography_columns=parse_optional_columns(geography_columns),
-            id_columns=parse_optional_columns(id_columns),
-        )
+        else:
+            sample = read_statcan_2016_hierarchical_seed_sample(path)
     except ValueError as exc:
         raise click.ClickException(str(exc)) from exc
     write_output(sample.as_summary(), output_format)

@@ -1,6 +1,12 @@
 import json
 
-from synthpopcan.census_microdata import read_fixture_seed_sample
+import pytest
+from click import ClickException
+
+from synthpopcan.census_microdata import (
+    read_fixture_seed_sample,
+    read_statcan_2016_hierarchical_seed_sample,
+)
 from synthpopcan.cli import main
 
 
@@ -97,3 +103,87 @@ def test_cli_inspects_fixture_without_optional_seed_columns(tmp_path, capsys) ->
     assert payload["geography_columns"] == []
     assert payload["id_columns"] == []
     assert payload["weight_column"] is None
+
+
+def test_reads_statcan_2016_hierarchical_seed_sample(tmp_path) -> None:
+    source = tmp_path / "hierarchical.csv"
+    source.write_text(
+        "HH_ID,EF_ID,CF_ID,PP_ID,WEIGHT,AGEGRP,SEX,TENUR\n"
+        "1,11,111,11101,100.5,adult,F,owner\n"
+        "1,11,111,11102,100.5,child,M,owner\n"
+        "2,21,211,21101,81.25,adult,F,renter\n"
+    )
+
+    sample = read_statcan_2016_hierarchical_seed_sample(source)
+
+    assert sample.source_format == "statcan-2016-hierarchical"
+    assert sample.level == "person"
+    assert sample.weight_column == "WEIGHT"
+    assert sample.id_columns == ("PP_ID",)
+    assert sample.metadata == {
+        "household_id_column": "HH_ID",
+        "economic_family_id_column": "EF_ID",
+        "census_family_id_column": "CF_ID",
+        "person_id_column": "PP_ID",
+        "households": 2,
+        "people": 3,
+        "average_household_size": 1.5,
+        "duplicate_person_ids": 0,
+    }
+
+
+def test_cli_inspects_statcan_2016_hierarchical_microdata(tmp_path, capsys) -> None:
+    source = tmp_path / "hierarchical.csv"
+    source.write_text(
+        "HH_ID,EF_ID,CF_ID,PP_ID,WEIGHT,AGEGRP,SEX,TENUR\n"
+        "1,11,111,11101,100.5,adult,F,owner\n"
+        "1,11,111,11102,100.5,child,M,owner\n"
+        "2,21,211,21101,81.25,adult,F,renter\n"
+    )
+
+    assert (
+        main(
+            [
+                "microdata",
+                "inspect",
+                str(source),
+                "--input-format",
+                "statcan-2016-hierarchical",
+                "--format",
+                "json",
+            ]
+        )
+        == 0
+    )
+
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["source_format"] == "statcan-2016-hierarchical"
+    assert payload["level"] == "person"
+    assert payload["records"] == 3
+    assert payload["households"] == 2
+    assert payload["people"] == 3
+    assert payload["average_household_size"] == 1.5
+
+
+def test_statcan_2016_hierarchical_requires_known_identifier_columns(tmp_path) -> None:
+    source = tmp_path / "hierarchical.csv"
+    source.write_text("HH_ID,PP_ID,WEIGHT\n1,11101,100.5\n")
+
+    with pytest.raises(ValueError, match="missing required columns: EF_ID, CF_ID"):
+        read_statcan_2016_hierarchical_seed_sample(source)
+
+
+def test_fixture_inspection_still_requires_level(tmp_path) -> None:
+    source = tmp_path / "people.csv"
+    source.write_text("person_id,age_group\np1,adult\n")
+
+    with pytest.raises(ClickException, match="fixture-v1 requires --level"):
+        main(
+            [
+                "microdata",
+                "inspect",
+                str(source),
+                "--input-format",
+                "fixture-v1",
+            ]
+        )

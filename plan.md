@@ -204,26 +204,29 @@ Turn staged census microdata into usable seed and training inputs. The currently
 
 Deliverables:
 
-- Identify the exact household-level and person-level files to support first for 2016.
+- Support the 2016 hierarchical PUMF as the first real microdata adapter.
 - Create loading adapters that are explicit about census year and source format.
+- Derive household, person, and link views from one hierarchical file when a format carries `HH_ID`/`PP_ID`-style identifiers.
 - Normalize key variables needed for the first household/person synthesis prototype.
 - Document assumptions in `research.md` or a future data-access note when source interpretation matters.
-- CLI command:
+- CLI commands:
 
 ```bash
 synthpopcan microdata inspect sample.csv --input-format fixture-v1 --level person --format json
+synthpopcan microdata inspect hierarchical.csv --input-format statcan-2016-hierarchical --format table
 ```
 
 Acceptance criteria:
 
-- A small fixture can represent household/person joins.
+- A small fixture can represent a person-row hierarchical file with household/person identifiers.
 - Full-data paths remain configurable and ignored.
-- The loader exposes useful diagnostics for row counts, weights, geography, and missing values.
+- The loader exposes useful diagnostics for row counts, household counts, weights, geography, duplicate IDs, and missing values.
 
 Current implementation notes:
 
 - `fixture-v1` is the first tiny adapter used only for tests and demos.
-- Real Pritchard-era, 2016, and later census microdata formats should be added as separate adapters that emit `SeedSample`.
+- `statcan-2016-hierarchical` inspects a single hierarchical PUMF-style CSV with `HH_ID`, `EF_ID`, `CF_ID`, `PP_ID`, and `WEIGHT`.
+- Real Pritchard-era, individual-only 2016 PUMF, and later census microdata formats should be added as separate adapters that emit `SeedSample` or derived household/person views.
 
 ### 6. Tree-Based Synthetic Population Generator Prototype
 
@@ -369,7 +372,7 @@ Ignored:
 - Exact dependency stack for arrays/tables/models: likely NumPy, pandas or Polars, scikit-learn, and optional PyArrow.
 - Whether schemas should remain dataclasses or move to Pydantic once the API surface stabilizes.
 - First supported StatCan table format and access path.
-- First supported census microdata household/person files, starting with available 2016 files.
+- First derived household/person output schema from the single-file 2016 hierarchical PUMF.
 - Integerization method for the first IPF engine.
 - Whether the web app should be Streamlit/FastAPI-first or built as a richer frontend once workflows settle.
 

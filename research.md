@@ -112,6 +112,8 @@ Inventory observed locally:
   - `pumf-98M0002-E-2016-hierarchical_F1.csv`, 343,330 rows, 116 columns
   - includes `HH_ID`, `EF_ID`, `CF_ID`, and `PP_ID`, making it crucial for household/person relationship modeling.
 
+The 2016 hierarchical PUMF should be treated as the first real household/person microdata input shape: a single person-row file with household, economic-family, census-family, and person identifiers. Separate household/person CSVs are useful as normalized outputs or small fixtures, but they should not be the assumed StatCan input shape.
+
 The Census Profile CSVs are long tables. Each row is one geography-characteristic combination with total/male/female values. For general IPF, this is not automatically a ready-to-fit control table; the library needs a normalization step that maps profile rows to a small explicit control schema such as:
 
 - geography id

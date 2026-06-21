@@ -22,6 +22,18 @@ synthpopcan sources sample data/raw/example.csv --rows 5 --format json
 
 Sampling paths under `data/private` requires `--allow-private`. Census microdata formats vary by source year and access product, so SynthPopCan should inspect structure first and then route files through explicit source adapters rather than relying on one generic census parser.
 
+## Microdata CLI
+
+Inspect a StatCan 2016 hierarchical PUMF file without printing private rows:
+
+```bash
+synthpopcan microdata inspect hierarchical.csv \
+  --input-format statcan-2016-hierarchical \
+  --format table
+```
+
+The 2016 hierarchical PUMF is a single person-row file with household and family identifiers such as `HH_ID`, `EF_ID`, `CF_ID`, and `PP_ID`. SynthPopCan treats separate household/person CSVs as a derived or fixture shape, not the expected StatCan input shape.
+
 ## IPF CLI
 
 The first implemented workflow fits seed records to one-way or multi-way margin tables stored as CSV.
