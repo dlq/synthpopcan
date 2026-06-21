@@ -250,6 +250,47 @@ Design implication:
 - Reserve deep generative models as a later plugin interface once the data normalization and validation layers exist.
 - Borrow evaluation ideas: structural-zero checks, diversity/sampling-zero metrics, marginal fit, household relationship realism, and external benchmark validation.
 
+### Wider SynthEco-Style Implementation Scan
+
+A wider search for "SynthEco-style" work from roughly 2020-2026 did not turn up a direct modern equivalent of the original SynthEco proposal: a maintained open-source system that ingests Canadian census/PUMF data, generates household/person synthetic populations, attaches local environment/cohort layers, and exposes this as a reusable library, CLI, and web platform.
+
+What does exist is a set of adjacent implementation families:
+
+1. **SPEW remains the closest conceptual ancestor, but it is older.** SPEW is explicitly a synthetic ecosystems package and directly matches the language of the original SynthEco proposal. It is implemented as an R package, with a GitHub repository and CRAN-style installation, but the public GitHub release appears to date from 2017. It is still useful as a conceptual and packaging reference, especially for the distinction between agent generation, geographic regions, and environment components. It should not be treated as a current implementation base.
+
+2. **SynthPops is a useful public-health contact-network generator, but not a census-table IPF toolkit.** SynthPops is a Python package for synthetic populations used in COVID-19 epidemic analyses. It creates populations with multilayer contact networks and includes household, school, workplace, and long-term-care-facility logic. The repository and documentation indicate that it is no longer actively maintained, but its module boundaries are instructive: separate concerns for data distributions, households, schools, workplaces, contact networks, and plotting. It is a useful design reference for later environment/contact layers, not a fit for the near-term Canadian IPF/table-ingestion core.
+
+3. **Recent open contact-network work covers later SynthEco layers.** Tulchinsky et al. (2024) describe an open-source pipeline that first creates a household synthetic population from public census data, then assigns people to schools and workplaces and builds a contact network. This is close to the later "ecosystem" part of SynthEco: households plus schools/workplaces plus network edges. It is US-focused and appears more concerned with epidemic contact networks than reusable census ingestion, but it is a strong reference for the future stage where SynthPopCan assigns schools/workplaces and constructs interaction layers.
+
+4. **BESSIE and FRED show how synthetic populations are consumed by simulators.** BESSIE is an open agent-based epidemic simulator that uses a synthetic population with demographic attributes, households, activities, and location visits. Recent FRED-related papers also use US census-derived synthetic populations as simulation baselines. These are not population-synthesis libraries, but they clarify downstream expectations: stable agent IDs, household IDs, location/activity tables, schedules or visit layers, and reproducible scenario comparisons.
+
+5. **Starsim and Vivarium are relevant as simulation frameworks, not input-data builders.** Starsim is an actively maintained Python/R agent-based disease modeling framework with dynamic transmission networks, calibration support, and population/network abstractions. Vivarium is a Python microsimulation framework that has moved into a renamed suite. These frameworks reinforce the value of clean population-table boundaries and calibration hooks, but they do not replace the need for a Canadian census-specific population builder.
+
+6. **pseudopeople is relevant for synthetic records and entity-resolution testing.** `pseudopeople` is a Python package for generating realistic simulated data about a fictional US population for record-linkage and data-science testing. It is not a geographic synthetic ecosystem builder, but it is a useful reminder that synthetic population outputs may be valuable beyond simulation: record linkage, privacy-preserving software tests, QA fixtures, and scalable algorithm testing.
+
+Design implications for SynthPopCan:
+
+- There is room for a Canadian-focused library; the search did not reveal an obvious maintained competitor that solves the same StatsCan/PUMF problem.
+- The first deliverable should stay focused on the hard missing piece: Canadian data ingestion, margin normalization, household/person synthesis, calibration, validation, and export.
+- Later ecosystem layers should be modular rather than embedded in the core synthesis engine. Useful future modules are `schools`, `workplaces`, `healthcare`, `food_environment`, `road_network`, and `contacts`.
+- Output schemas should anticipate downstream simulation consumers: stable person and household IDs, optional location/activity tables, deterministic run metadata, and validation artifacts.
+- The web app should expose data mapping and validation first. Rich ecosystem/contact-network visualization can wait until the core population is reproducible.
+
+Sources:
+
+- SPEW paper: https://arxiv.org/abs/1701.02383
+- SPEW GitHub: https://github.com/leerichardson/spew
+- SynthPops GitHub: https://github.com/synthpops/synthpops
+- SynthPops documentation: https://docs.idmod.org/projects/synthpops/en/latest/
+- Open synthetic contact networks paper: https://arxiv.org/abs/2406.14698
+- BESSIE paper: https://arxiv.org/abs/2203.11414
+- FRED-related synthetic-population use: https://arxiv.org/abs/2307.12186
+- FRED-related intervention modeling: https://arxiv.org/abs/2308.13040
+- Starsim GitHub: https://github.com/starsimhub/starsim
+- Starsim documentation: https://starsim.org/
+- Vivarium GitHub: https://github.com/ihmeuw/vivarium
+- pseudopeople GitHub: https://github.com/ihmeuw/pseudopeople
+
 ### Statistics Canada Data Access
 
 Statistics Canada's Web Data Service (WDS) is the current official API for data and metadata released through Statistics Canada. It exposes metadata, vectors, cube/table downloads, and full-table CSV downloads.
@@ -545,3 +586,13 @@ External sources checked:
 - Qian et al., 2024: https://arxiv.org/abs/2407.01643
 - Tulchinsky et al., 2024: https://arxiv.org/abs/2406.14698
 - Yang et al., 2025: https://arxiv.org/abs/2508.09964
+- SPEW GitHub: https://github.com/leerichardson/spew
+- SynthPops GitHub: https://github.com/synthpops/synthpops
+- SynthPops documentation: https://docs.idmod.org/projects/synthpops/en/latest/
+- BESSIE paper: https://arxiv.org/abs/2203.11414
+- FRED-related synthetic-population use: https://arxiv.org/abs/2307.12186
+- FRED-related intervention modeling: https://arxiv.org/abs/2308.13040
+- Starsim GitHub: https://github.com/starsimhub/starsim
+- Starsim documentation: https://starsim.org/
+- Vivarium GitHub: https://github.com/ihmeuw/vivarium
+- pseudopeople GitHub: https://github.com/ihmeuw/pseudopeople
