@@ -24,6 +24,22 @@ def print_table(table: Table) -> None:
     Console().print(table)
 
 
+def print_checks_table(rows: list[dict[str, str]], *, title: str) -> None:
+    table = Table(title=title)
+    table.add_column("Check")
+    table.add_column("Status")
+    table.add_column("Detail")
+    table.add_column("Tip")
+    for row in rows:
+        table.add_row(
+            row.get("name", ""),
+            format_status(row.get("status", "")),
+            row.get("detail", ""),
+            row.get("tip", ""),
+        )
+    Console().print(table)
+
+
 def print_success(message: str) -> None:
     Console(stderr=True, soft_wrap=True).print(message, style="green")
 
@@ -48,3 +64,13 @@ def format_display_value(value: object) -> str:
 
 def format_field_label(value: str) -> str:
     return value.replace("_", " ").capitalize()
+
+
+def format_status(value: str) -> str:
+    if value == "found":
+        return "Found"
+    if value == "missing":
+        return "Missing"
+    if value == "problem":
+        return "Problem"
+    return format_field_label(value)

@@ -10,6 +10,44 @@ Near-term goals:
 
 Broader SynthEco-style enrichment with cohort, environmental, school, healthcare, and food-access layers is intentionally deferred until the base population synthesis workflow is stable.
 
+## Local Data Setup
+
+SynthPopCan expects local data and metadata under `data/` by default. Raw and private data are ignored by git.
+
+```text
+data/
+  raw/
+    statscan/
+      2016-census/
+        metadata/
+          statcan-2016-hierarchical-pumf/
+            variable-labels.json
+          statcan-2016-individual-pumf/
+            variable-labels.json
+  private/
+```
+
+Check whether the expected files are in place with:
+
+```bash
+synthpopcan data doctor
+```
+
+Use `--data-root PATH` when your local data directory lives somewhere else:
+
+```bash
+synthpopcan data doctor --data-root /path/to/data
+```
+
+For repeated work, set `SYNTHPOPCAN_DATA_ROOT`:
+
+```bash
+export SYNTHPOPCAN_DATA_ROOT=/path/to/data
+synthpopcan data doctor
+```
+
+Command-line options take priority over `SYNTHPOPCAN_DATA_ROOT`; if neither is set, SynthPopCan uses `data/`.
+
 ## Source Inspection
 
 Use source inspection before writing adapters for new StatCan, Census Profile, or microdata formats:

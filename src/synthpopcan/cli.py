@@ -4,13 +4,19 @@ from __future__ import annotations
 
 import csv
 import json
+import os
 from pathlib import Path
 
 import click
 from rich.table import Table
 
 from synthpopcan import __version__
-from synthpopcan.console import print_summary_table, print_table, print_wrote
+from synthpopcan.console import (
+    print_checks_table,
+    print_summary_table,
+    print_table,
+    print_wrote,
+)
 from synthpopcan.controls import (
     read_category_mapping,
     read_control_margins,
@@ -20,6 +26,7 @@ from synthpopcan.controls import (
 )
 from synthpopcan.diagnostics import build_ipf_fit_report
 from synthpopcan.ipf import fit_ipf, integerize_weights
+from synthpopcan.localdata import inspect_local_data_layout
 from synthpopcan.microdata import (
     read_fixture_seed_sample,
     read_statcan_2016_hierarchical_seed_sample,
@@ -53,6 +60,50 @@ def main(argv: list[str] | None = None) -> int:
 @click.version_option(__version__, prog_name="synthpopcan")
 def cli() -> None:
     """Canadian synthetic population tooling."""
+
+
+@cli.group(name="data")
+def data_group() -> None:
+    """Check local data and metadata setup."""
+
+
+@data_group.command("doctor")
+@click.option(
+    "--data-root",
+    type=PATH,
+    default=None,
+    help=(
+        "Local data directory to check. Defaults to SYNTHPOPCAN_DATA_ROOT, then data/."
+    ),
+)
+@click.option(
+    "--format",
+    "output_format",
+    default="table",
+    type=click.Choice(["json", "table"]),
+    show_default=True,
+)
+def data_doctor(data_root: Path, output_format: str) -> None:
+    """Check whether expected local data files are available."""
+    data_root = resolve_data_root(data_root)
+    checks = inspect_local_data_layout(data_root)
+    payload = {
+        "data_root": str(data_root),
+        "checks": [check.as_dict() for check in checks],
+    }
+    if output_format == "json":
+        print(json.dumps(payload, indent=2, sort_keys=True))
+        return
+    print_checks_table(payload["checks"], title="Local Data Check")
+
+
+def resolve_data_root(data_root: Path | None) -> Path:
+    if data_root is not None:
+        return data_root
+    env_value = os.environ.get("SYNTHPOPCAN_DATA_ROOT")
+    if env_value:
+        return Path(env_value)
+    return Path("data")
 
 
 @cli.group()
