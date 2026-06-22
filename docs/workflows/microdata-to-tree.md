@@ -243,6 +243,15 @@ synthpopcan tree package-linked-models \
   --max-purity 0.95
 ```
 
+Inspect the package before sharing it or loading it into another tool:
+
+```bash
+synthpopcan tree inspect-package linked-model-package.json
+```
+
+Use `--format json` when another script or app needs the same compact package
+summary.
+
 Packaging is intentionally strict. It refuses models that still have warnings or
 errors, validates that the household model is a household model, validates that
 the person model is a person model, checks the household-size linkage column, and

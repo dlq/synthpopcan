@@ -272,6 +272,7 @@ Current implementation notes:
 - `synthpopcan tree package-model` is a strict first packaging gate: it refuses to write a package if the audit has any warnings or errors. Current `private_working` models therefore cannot be packaged until a later reviewed publishable-candidate workflow exists.
 - `synthpopcan tree prepare-model-release` writes a publishable-candidate copy of a model only when the release audit has no blocking issues beyond the expected `private_working` release-class warning. It can write a release manifest with thresholds, audit output, source/output model paths, and a human review note.
 - `synthpopcan tree package-linked-models` packages household and person models together only after both audits pass without warnings. It validates household/person model levels and the household-size linkage column, requires linked training-manifest provenance, reviewed source provenance, and a human review note, checks manifest model paths against the packaged models or verifies release manifests connecting private source models to publishable release copies, embeds both model artifacts and both audit reports, and marks the package as a publishable candidate only when both model audits say so.
+- `synthpopcan tree inspect-package` provides a compact reader-facing package summary as a Rich table or JSON, including source provenance, geography/profile, privacy flags, model sizes, audit summaries, release manifests, and review note without dumping the embedded full model payloads.
 - Initial audit on the local 2016-derived models with `min_support=50,max_purity=0.95`: conditional-frequency had 157 groups, minimum support about 503.7, no low-support groups, and 2 pure groups; CART had 58 leaves, minimum support 81, no low-support or high-purity leaves. Both remained `private_working` and `publishable_candidate: false`.
 - `synthpopcan tree generate-linked` performs the first household-then-person generation pass from separate household and person models, writing linked `synthetic_household_id` and `synthetic_person_id` CSV outputs.
 - `synthpopcan tree generate` and `synthpopcan tree generate-linked` accept `--manifest-out` for a lightweight JSON provenance sidecar with model path, model type, release class, output paths, conditions, requested random seed, and effective random seed.
@@ -486,7 +487,9 @@ Next active tree model packaging/distribution slice:
    packaged model paths or release manifests connecting private source models to
    reviewed publishable copies. `tree package-linked-models` also requires
    source provenance with title, provider, access class, citation, and
-   redistribution-note fields.
+   redistribution-note fields. `tree inspect-package` now summarizes linked
+   packages for human review and automation without exposing full embedded model
+   payloads.
 2. Add a release-readiness report that can be run before packaging Canada,
    province/territory, and large-CMA model candidates. It should explain whether
    the candidate is likely publishable, likely private-only, or needs pruning,

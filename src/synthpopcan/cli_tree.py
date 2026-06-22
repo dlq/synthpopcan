@@ -7,9 +7,10 @@ from dataclasses import replace
 from pathlib import Path
 
 import click
+from rich.table import Table
 
 from synthpopcan.cli_output import write_output
-from synthpopcan.console import print_wrote
+from synthpopcan.console import print_table, print_wrote
 from synthpopcan.microdata import (
     SeedSample,
     export_training_rows,
@@ -847,6 +848,32 @@ def package_linked_tree_models_command(
     print_wrote(out_path)
 
 
+@tree.command("inspect-package")
+@click.argument("package_path", type=PATH)
+@click.option(
+    "--format",
+    "output_format",
+    default="table",
+    type=click.Choice(["json", "table"]),
+    show_default=True,
+)
+def inspect_linked_tree_package_command(
+    package_path: Path,
+    output_format: str,
+) -> None:
+    """Inspect a linked household/person model package."""
+    try:
+        package = read_linked_model_package(package_path)
+        report = build_linked_package_inspection(package, package_path)
+    except ValueError as exc:
+        raise click.ClickException(str(exc)) from exc
+
+    if output_format == "json":
+        write_output(report, "json")
+    else:
+        print_linked_package_inspection_table(report)
+
+
 def parse_column_list(value: str, label: str) -> tuple[str, ...]:
     columns = tuple(column.strip() for column in value.split(",") if column.strip())
     if not columns:
@@ -1048,6 +1075,227 @@ def read_source_provenance(path: Path) -> dict[str, object]:
         if isinstance(value, str) and value.strip():
             provenance[optional_field] = value.strip()
     return provenance
+
+
+def read_linked_model_package(path: Path) -> dict[str, object]:
+    try:
+        payload = json.loads(path.read_text())
+    except json.JSONDecodeError as exc:
+        raise ValueError(f"{path} is not valid JSON") from exc
+    if not isinstance(payload, dict):
+        raise ValueError("linked model package must be a JSON object")
+    if payload.get("schema_version") != "synthpopcan-linked-tree-package-v1":
+        raise ValueError("unsupported linked model package schema")
+    return payload
+
+
+def build_linked_package_inspection(
+    package: dict[str, object],
+    package_path: Path,
+) -> dict[str, object]:
+    training_manifest = object_or_empty(package.get("training_manifest"))
+    source_provenance = object_or_empty(package.get("source_provenance"))
+    privacy = object_or_empty(package.get("privacy"))
+    thresholds = object_or_empty(package.get("thresholds"))
+    model_summaries = object_or_empty(package.get("model_summaries"))
+    audits = object_or_empty(package.get("audits"))
+    release_manifests = object_or_empty(package.get("release_manifests"))
+
+    return {
+        "schema_version": "synthpopcan-linked-tree-package-inspection-v1",
+        "package_path": str(package_path),
+        "package_type": package.get("package_type"),
+        "package_schema_version": package.get("schema_version"),
+        "household_size_column": package.get("household_size_column"),
+        "review_note": package.get("review_note", ""),
+        "source": {
+            "title": source_provenance.get("title"),
+            "provider": source_provenance.get("provider"),
+            "access_class": source_provenance.get("access_class"),
+            "citation": source_provenance.get("citation"),
+            "redistribution_note": source_provenance.get("redistribution_note"),
+            "url": source_provenance.get("url"),
+        },
+        "training": {
+            "target_profile": training_manifest.get("target_profile"),
+            "geography_filter": training_manifest.get("geography_filter"),
+            "method": training_manifest.get("method"),
+            "random_seed": training_manifest.get("random_seed"),
+            "source": training_manifest.get("source"),
+        },
+        "privacy": {
+            "publishable_candidate": privacy.get("publishable_candidate"),
+            "contains_raw_rows": privacy.get("contains_raw_rows"),
+            "contains_source_identifiers": privacy.get("contains_source_identifiers"),
+        },
+        "thresholds": thresholds,
+        "models": summarize_package_models(model_summaries),
+        "audits": summarize_package_audits(audits),
+        "release_manifests": summarize_release_manifests(release_manifests),
+    }
+
+
+def object_or_empty(value: object) -> dict[str, object]:
+    return value if isinstance(value, dict) else {}
+
+
+def summarize_package_models(
+    model_summaries: dict[str, object],
+) -> dict[str, dict[str, object]]:
+    summaries: dict[str, dict[str, object]] = {}
+    for level in ("household", "person"):
+        summary = object_or_empty(model_summaries.get(level))
+        summaries[level] = {
+            "level": summary.get("level"),
+            "model_type": summary.get("model_type"),
+            "release_class": summary.get("release_class"),
+            "records_trained": summary.get("records_trained"),
+            "bytes": summary.get("bytes"),
+            "target_columns": summary.get("target_columns"),
+            "conditioning_columns": summary.get("conditioning_columns"),
+        }
+    return summaries
+
+
+def summarize_package_audits(
+    audits: dict[str, object],
+) -> dict[str, dict[str, object]]:
+    summaries: dict[str, dict[str, object]] = {}
+    for level in ("household", "person"):
+        audit = object_or_empty(audits.get(level))
+        summary = object_or_empty(audit.get("summary"))
+        issues = audit.get("issues")
+        summaries[level] = {
+            "passed": audit.get("passed"),
+            "publishable_candidate": audit.get("publishable_candidate"),
+            "release_class": audit.get("release_class"),
+            "issue_count": len(issues) if isinstance(issues, list) else None,
+            "groups_or_leaves": summary.get("groups_or_leaves"),
+            "minimum_support": summary.get("minimum_support"),
+            "below_min_support": summary.get("below_min_support"),
+            "above_max_purity": summary.get("above_max_purity"),
+        }
+    return summaries
+
+
+def summarize_release_manifests(
+    release_manifests: dict[str, object],
+) -> dict[str, dict[str, object]]:
+    summaries: dict[str, dict[str, object]] = {}
+    for level in ("household", "person"):
+        manifest = object_or_empty(release_manifests.get(level))
+        summaries[level] = {
+            "path": manifest.get("path"),
+            "source_model": manifest.get("source_model"),
+            "output_model": manifest.get("output_model"),
+            "release_class": manifest.get("release_class"),
+            "review_note": manifest.get("review_note"),
+        }
+    return summaries
+
+
+def print_linked_package_inspection_table(report: dict[str, object]) -> None:
+    table = Table(title="Linked Model Package")
+    table.add_column("Field", no_wrap=True)
+    table.add_column("Value")
+
+    source = object_or_empty(report.get("source"))
+    training = object_or_empty(report.get("training"))
+    privacy = object_or_empty(report.get("privacy"))
+    models = object_or_empty(report.get("models"))
+    audits = object_or_empty(report.get("audits"))
+
+    table.add_row("Package", str(report.get("package_path", "")))
+    table.add_row("Type", str(report.get("package_type", "")))
+    table.add_row("Source", format_source_label(source))
+    table.add_row("Access", str(source.get("access_class", "")))
+    table.add_row("Redistribution", str(source.get("redistribution_note", "")))
+    table.add_row(
+        "Geography", format_geography_filter(training.get("geography_filter"))
+    )
+    table.add_row("Target profile", str(training.get("target_profile", "")))
+    table.add_row("Method", str(training.get("method", "")))
+    table.add_row("Privacy", format_privacy_summary(privacy))
+    table.add_row("Household model", format_model_summary(models.get("household")))
+    table.add_row("Person model", format_model_summary(models.get("person")))
+    table.add_row("Household audit", format_audit_summary(audits.get("household")))
+    table.add_row("Person audit", format_audit_summary(audits.get("person")))
+    table.add_row("Review note", str(report.get("review_note", "")))
+    print_table(table)
+
+
+def format_source_label(source: dict[str, object]) -> str:
+    title = source.get("title") or ""
+    provider = source.get("provider") or ""
+    return f"{provider}: {title}" if provider else str(title)
+
+
+def format_geography_filter(value: object) -> str:
+    if not isinstance(value, dict):
+        return ""
+    column = value.get("column")
+    filter_value = value.get("value")
+    if column and filter_value:
+        return f"{column}={filter_value}"
+    return ""
+
+
+def format_privacy_summary(privacy: dict[str, object]) -> str:
+    status = (
+        "publishable_candidate"
+        if privacy.get("publishable_candidate")
+        else "not_publishable"
+    )
+    raw_rows = privacy.get("contains_raw_rows")
+    source_ids = privacy.get("contains_source_identifiers")
+    return f"{status}; raw_rows={raw_rows}; source_ids={source_ids}"
+
+
+def format_model_summary(value: object) -> str:
+    model = object_or_empty(value)
+    target_columns = model.get("target_columns")
+    targets = len(target_columns) if isinstance(target_columns, list) else 0
+    return (
+        f"{model.get('release_class', '')}; "
+        f"{format_int_or_blank(model.get('records_trained'))} records; "
+        f"{format_bytes_or_blank(model.get('bytes'))}; "
+        f"{targets} targets"
+    )
+
+
+def format_audit_summary(value: object) -> str:
+    audit = object_or_empty(value)
+    return (
+        f"passed={audit.get('passed')}; "
+        f"issues={format_int_or_blank(audit.get('issue_count'))}; "
+        f"min_support={format_number_or_blank(audit.get('minimum_support'))}; "
+        f"high_purity={format_int_or_blank(audit.get('above_max_purity'))}"
+    )
+
+
+def format_bytes_or_blank(value: object) -> str:
+    if not isinstance(value, int | float):
+        return ""
+    bytes_value = float(value)
+    for unit in ("B", "KiB", "MiB", "GiB"):
+        if bytes_value < 1024 or unit == "GiB":
+            return (
+                f"{bytes_value:.1f} {unit}" if unit != "B" else f"{int(bytes_value)} B"
+            )
+        bytes_value /= 1024
+    raise AssertionError("unreachable")
+
+
+def format_int_or_blank(value: object) -> str:
+    if isinstance(value, int | float):
+        return f"{int(value):,}"
+    return ""
+
+
+def format_number_or_blank(value: object) -> str:
+    if isinstance(value, int | float):
+        return f"{float(value):,.6g}"
+    return ""
 
 
 def release_manifest_matches_model_paths(

@@ -907,6 +907,128 @@ def test_cli_packages_release_copies_with_model_release_manifests(tmp_path) -> N
     )
 
 
+def test_cli_inspects_linked_model_package_as_json(tmp_path, capsys) -> None:
+    household_model_path, person_model_path = _write_publishable_linked_model_fixtures(
+        tmp_path
+    )
+    training_manifest_path = tmp_path / "linked-training-manifest.json"
+    source_provenance_path = tmp_path / "source-provenance.json"
+    package_path = tmp_path / "linked-model-package.json"
+    _write_linked_training_manifest(
+        training_manifest_path,
+        household_model_path=household_model_path,
+        person_model_path=person_model_path,
+    )
+    _write_source_provenance(source_provenance_path)
+    assert (
+        main(
+            [
+                "tree",
+                "package-linked-models",
+                "--household-model",
+                str(household_model_path),
+                "--person-model",
+                str(person_model_path),
+                "--training-manifest",
+                str(training_manifest_path),
+                "--source-provenance",
+                str(source_provenance_path),
+                "--review-note",
+                "reviewed fixture package",
+                "--out",
+                str(package_path),
+                "--min-support",
+                "1",
+                "--max-purity",
+                "1",
+            ]
+        )
+        == 0
+    )
+    capsys.readouterr()
+
+    assert (
+        main(
+            [
+                "tree",
+                "inspect-package",
+                str(package_path),
+                "--format",
+                "json",
+            ]
+        )
+        == 0
+    )
+
+    report = json.loads(capsys.readouterr().out)
+    assert report["schema_version"] == "synthpopcan-linked-tree-package-inspection-v1"
+    assert report["package_type"] == "linked_household_person"
+    assert report["source"]["provider"] == "Statistics Canada"
+    assert report["source"]["access_class"] == "restricted"
+    assert (
+        report["source"]["redistribution_note"]
+        == "Do not redistribute source microdata."
+    )
+    assert report["training"]["target_profile"] == "minimal"
+    assert report["training"]["geography_filter"] == {"column": "PR", "value": "24"}
+    assert report["privacy"]["publishable_candidate"] is True
+    assert report["models"]["household"]["level"] == "household"
+    assert report["models"]["person"]["level"] == "person"
+    assert report["audits"]["household"]["passed"] is True
+    assert report["audits"]["person"]["passed"] is True
+    assert report["review_note"] == "reviewed fixture package"
+    assert "embedded_model_payloads" not in report
+
+
+def test_cli_inspects_linked_model_package_as_table(tmp_path, capsys) -> None:
+    household_model_path, person_model_path = _write_publishable_linked_model_fixtures(
+        tmp_path
+    )
+    training_manifest_path = tmp_path / "linked-training-manifest.json"
+    source_provenance_path = tmp_path / "source-provenance.json"
+    package_path = tmp_path / "linked-model-package.json"
+    _write_linked_training_manifest(
+        training_manifest_path,
+        household_model_path=household_model_path,
+        person_model_path=person_model_path,
+    )
+    _write_source_provenance(source_provenance_path)
+    assert (
+        main(
+            [
+                "tree",
+                "package-linked-models",
+                "--household-model",
+                str(household_model_path),
+                "--person-model",
+                str(person_model_path),
+                "--training-manifest",
+                str(training_manifest_path),
+                "--source-provenance",
+                str(source_provenance_path),
+                "--review-note",
+                "reviewed fixture package",
+                "--out",
+                str(package_path),
+                "--min-support",
+                "1",
+                "--max-purity",
+                "1",
+            ]
+        )
+        == 0
+    )
+    capsys.readouterr()
+
+    assert main(["tree", "inspect-package", str(package_path)]) == 0
+
+    output = capsys.readouterr().out
+    assert "Linked Model Package" in output
+    assert "Statistics Canada" in output
+    assert "publishable_candidate" in output
+    assert "Do not redistribute source microdata." in output
+
+
 def test_cli_requires_source_provenance_for_linked_model_packages(tmp_path) -> None:
     from click import ClickException
 
