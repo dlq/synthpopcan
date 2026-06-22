@@ -31,9 +31,22 @@ def test_runs_linked_tree_benchmark_fixture(tmp_path) -> None:
     assert summary["source"]["households"] == 3
     assert summary["generation"]["households"] == 2
     assert summary["generation"]["persons"] >= 2
+    assert summary["generation"]["average_household_size"] == round(
+        summary["generation"]["persons"] / summary["generation"]["households"],
+        4,
+    )
     assert summary["linked_validation"]["passed"] is True
     assert summary["distribution_validation"]["training_household_records"] == 2
     assert summary["distribution_validation"]["training_person_records"] == 3
+    assert summary["distribution_validation"]["training_average_household_size"] == 1.5
+    assert "household_max_delta" in summary["distribution_validation"]
+    assert "person_max_delta" in summary["distribution_validation"]
+    assert summary["distribution_validation"]["household_warnings"] >= 0
+    assert summary["distribution_validation"]["person_warnings"] >= 0
+    assert summary["artifact_sizes_bytes"]["household_model"] > 0
+    assert summary["artifact_sizes_bytes"]["person_model"] > 0
+    assert summary["artifact_sizes_bytes"]["synthetic_households"] > 0
+    assert summary["artifact_sizes_bytes"]["synthetic_persons"] > 0
     assert summary["outputs"] == {
         "household_training": str(output_dir / "household-training.csv"),
         "person_training": str(output_dir / "person-training.csv"),

@@ -103,6 +103,7 @@ def print_summary(summary: dict[str, object]) -> None:
     timings = summary["timings"]
     linked_validation = summary["linked_validation"]
     distribution_validation = summary["distribution_validation"]
+    artifact_sizes = summary["artifact_sizes_bytes"]
     if not isinstance(source, dict):
         raise ValueError("benchmark summary source must be an object")
     if not isinstance(generation, dict):
@@ -113,11 +114,17 @@ def print_summary(summary: dict[str, object]) -> None:
         raise ValueError("benchmark summary linked validation must be an object")
     if not isinstance(distribution_validation, dict):
         raise ValueError("benchmark summary distribution validation must be an object")
+    if not isinstance(artifact_sizes, dict):
+        raise ValueError("benchmark summary artifact sizes must be an object")
 
     table.add_row("Source records", format_int(source["records"]))
     table.add_row("Source households", format_int(source["households"]))
     table.add_row("Generated households", format_int(generation["households"]))
     table.add_row("Generated persons", format_int(generation["persons"]))
+    table.add_row(
+        "Generated avg household size",
+        format_float(generation["average_household_size"]),
+    )
     table.add_row("Linked validation passed", str(linked_validation["passed"]))
     table.add_row(
         "Household distribution passed",
@@ -126,6 +133,32 @@ def print_summary(summary: dict[str, object]) -> None:
     table.add_row(
         "Person distribution passed",
         str(distribution_validation["person_passed"]),
+    )
+    table.add_row(
+        "Household max delta",
+        format_percent(distribution_validation["household_max_delta"]),
+    )
+    table.add_row(
+        "Person max delta",
+        format_percent(distribution_validation["person_max_delta"]),
+    )
+    table.add_row(
+        "Distribution warnings",
+        format_int(distribution_validation["household_warnings"])
+        + " household / "
+        + format_int(distribution_validation["person_warnings"])
+        + " person",
+    )
+    table.add_row(
+        "Training subset records",
+        format_int(distribution_validation["training_household_records"])
+        + " household / "
+        + format_int(distribution_validation["training_person_records"])
+        + " person",
+    )
+    table.add_row(
+        "Training avg household size",
+        format_float(distribution_validation["training_average_household_size"]),
     )
     table.add_row("Read source seconds", format_float(timings["read_source_seconds"]))
     table.add_row(
@@ -139,6 +172,16 @@ def print_summary(summary: dict[str, object]) -> None:
     if not isinstance(outputs, dict):
         raise ValueError("benchmark summary outputs must be an object")
     table.add_row("Peak RSS", format_bytes(summary["peak_rss_bytes"]))
+    table.add_row("Household model", format_bytes(artifact_sizes["household_model"]))
+    table.add_row("Person model", format_bytes(artifact_sizes["person_model"]))
+    table.add_row(
+        "Synthetic households CSV",
+        format_bytes(artifact_sizes["synthetic_households"]),
+    )
+    table.add_row(
+        "Synthetic persons CSV",
+        format_bytes(artifact_sizes["synthetic_persons"]),
+    )
     table.add_row("Summary JSON", str(outputs["summary"]))
 
     Console(width=120).print(table)
@@ -150,6 +193,10 @@ def format_int(value: object) -> str:
 
 def format_float(value: object) -> str:
     return f"{float(value):.6g}"
+
+
+def format_percent(value: object) -> str:
+    return f"{float(value):.2%}"
 
 
 def format_bytes(value: object) -> str:

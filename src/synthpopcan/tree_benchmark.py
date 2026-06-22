@@ -155,6 +155,7 @@ def run_linked_tree_benchmark(
         "generation": {
             "households": len(synthetic_households),
             "persons": len(synthetic_persons),
+            "average_household_size": average_household_size(synthetic_households),
         },
         "linked_validation": {
             "passed": linked_validation["passed"],
@@ -163,12 +164,24 @@ def run_linked_tree_benchmark(
         "distribution_validation": {
             "household_passed": household_distribution_validation["passed"],
             "person_passed": person_distribution_validation["passed"],
+            "household_max_delta": household_distribution_validation[
+                "max_abs_proportion_delta"
+            ],
+            "person_max_delta": person_distribution_validation[
+                "max_abs_proportion_delta"
+            ],
+            "household_warnings": len(household_distribution_validation["issues"]),
+            "person_warnings": len(person_distribution_validation["issues"]),
             "training_household_records": len(household_validation_rows),
             "training_person_records": len(person_validation_rows),
+            "training_average_household_size": average_household_size(
+                household_validation_rows
+            ),
             "tolerance": tolerance,
         },
         "timings": timings,
         "peak_rss_bytes": peak_rss_bytes(),
+        "artifact_sizes_bytes": artifact_sizes(paths),
         "outputs": {key: str(path) for key, path in paths.items()},
     }
     write_json(paths["summary"], summary)
@@ -252,6 +265,21 @@ def filter_rows(
         for row in rows
         if all(row.get(column) == value for column, value in conditions.items())
     ]
+
+
+def average_household_size(rows: list[dict[str, str]]) -> float:
+    if not rows:
+        return 0.0
+    total = sum(int(row["household_size"]) for row in rows)
+    return round(total / len(rows), 4)
+
+
+def artifact_sizes(paths: dict[str, Path]) -> dict[str, int]:
+    return {
+        key: path.stat().st_size
+        for key, path in paths.items()
+        if key != "summary" and path.exists()
+    }
 
 
 def elapsed_seconds(start: float) -> float:
