@@ -111,8 +111,11 @@ def run_linked_tree_benchmark(
         synthetic_households,
         synthetic_persons,
     )
+    validation_conditions = conditions or {}
+    household_validation_rows = filter_rows(household_rows, validation_conditions)
+    person_validation_rows = filter_rows(person_rows, validation_conditions)
     household_distribution_validation = build_tree_output_validation_report(
-        training_rows=household_rows,
+        training_rows=household_validation_rows,
         generated_rows=synthetic_households,
         target_columns=household_target_columns,
         conditioning_columns=household_conditioning_columns,
@@ -120,7 +123,7 @@ def run_linked_tree_benchmark(
         tolerance=tolerance,
     )
     person_distribution_validation = build_tree_output_validation_report(
-        training_rows=person_rows,
+        training_rows=person_validation_rows,
         generated_rows=synthetic_persons,
         target_columns=person_target_columns,
         conditioning_columns=person_conditioning_columns,
@@ -160,6 +163,8 @@ def run_linked_tree_benchmark(
         "distribution_validation": {
             "household_passed": household_distribution_validation["passed"],
             "person_passed": person_distribution_validation["passed"],
+            "training_household_records": len(household_validation_rows),
+            "training_person_records": len(person_validation_rows),
             "tolerance": tolerance,
         },
         "timings": timings,
@@ -234,6 +239,19 @@ def write_csv(path: Path, rows: list[dict[str, str]]) -> None:
 
 def write_json(path: Path, payload: dict[str, object]) -> None:
     path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n")
+
+
+def filter_rows(
+    rows: list[dict[str, str]],
+    conditions: dict[str, str],
+) -> list[dict[str, str]]:
+    if not conditions:
+        return rows
+    return [
+        row
+        for row in rows
+        if all(row.get(column) == value for column, value in conditions.items())
+    ]
 
 
 def elapsed_seconds(start: float) -> float:

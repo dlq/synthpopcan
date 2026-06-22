@@ -12,6 +12,7 @@ def test_runs_linked_tree_benchmark_fixture(tmp_path) -> None:
         "1,11,111,11101,1,24,owner,adult,F\n"
         "1,11,111,11102,1,24,owner,child,M\n"
         "2,21,211,21101,1,24,renter,adult,F\n"
+        "3,31,311,31101,1,35,renter,adult,M\n"
     )
 
     summary = run_linked_tree_benchmark(
@@ -26,11 +27,13 @@ def test_runs_linked_tree_benchmark_fixture(tmp_path) -> None:
         random_seed=7,
     )
 
-    assert summary["source"]["records"] == 3
-    assert summary["source"]["households"] == 2
+    assert summary["source"]["records"] == 4
+    assert summary["source"]["households"] == 3
     assert summary["generation"]["households"] == 2
     assert summary["generation"]["persons"] >= 2
     assert summary["linked_validation"]["passed"] is True
+    assert summary["distribution_validation"]["training_household_records"] == 2
+    assert summary["distribution_validation"]["training_person_records"] == 3
     assert summary["outputs"] == {
         "household_training": str(output_dir / "household-training.csv"),
         "person_training": str(output_dir / "person-training.csv"),
