@@ -655,7 +655,7 @@ def test_cli_refuses_to_package_model_with_audit_warnings(tmp_path) -> None:
     assert not package_path.exists()
 
 
-def test_cli_packages_publishable_linked_models(tmp_path) -> None:
+def _write_publishable_linked_model_fixtures(tmp_path):
     household_model = replace(
         train_frequency_model_from_rows(
             TreeModelSpec(
@@ -696,31 +696,53 @@ def test_cli_packages_publishable_linked_models(tmp_path) -> None:
     )
     household_model_path = tmp_path / "household-model.json"
     person_model_path = tmp_path / "person-model.json"
-    training_manifest_path = tmp_path / "linked-training-manifest.json"
-    package_path = tmp_path / "linked-model-package.json"
     write_tree_model(household_model_path, household_model)
     write_tree_model(person_model_path, person_model)
-    training_manifest_path.write_text(
-        json.dumps(
-            {
-                "schema_version": "synthpopcan-linked-tree-training-v1",
-                "source": {
-                    "path": "data/private/census/hierarchical.csv",
-                    "source_format": "statcan-2016-hierarchical",
-                    "records": 100,
-                    "households": 40,
-                },
-                "target_profile": "minimal",
-                "geography_filter": {"column": "PR", "value": "24"},
-                "method": "conditional-frequency",
-                "random_seed": 7,
-                "training": {
-                    "household": {"records": 40},
-                    "person": {"records": 100},
-                },
-            }
-        )
-        + "\n"
+    return household_model_path, person_model_path
+
+
+def _write_linked_training_manifest(
+    path,
+    *,
+    household_model_path=None,
+    person_model_path=None,
+) -> None:
+    payload = {
+        "schema_version": "synthpopcan-linked-tree-training-v1",
+        "source": {
+            "path": "data/private/census/hierarchical.csv",
+            "source_format": "statcan-2016-hierarchical",
+            "records": 100,
+            "households": 40,
+        },
+        "target_profile": "minimal",
+        "geography_filter": {"column": "PR", "value": "24"},
+        "method": "conditional-frequency",
+        "random_seed": 7,
+        "training": {
+            "household": {"records": 40},
+            "person": {"records": 100},
+        },
+    }
+    if household_model_path is not None or person_model_path is not None:
+        payload["models"] = {}
+        if household_model_path is not None:
+            payload["models"]["household"] = {"path": str(household_model_path)}
+        if person_model_path is not None:
+            payload["models"]["person"] = {"path": str(person_model_path)}
+    path.write_text(json.dumps(payload) + "\n")
+
+
+def test_cli_packages_publishable_linked_models(tmp_path) -> None:
+    household_model_path, person_model_path = _write_publishable_linked_model_fixtures(
+        tmp_path
+    )
+    training_manifest_path = tmp_path / "linked-training-manifest.json"
+    package_path = tmp_path / "linked-model-package.json"
+    _write_linked_training_manifest(
+        training_manifest_path,
+        household_model_path=household_model_path,
+        person_model_path=person_model_path,
     )
 
     assert (
@@ -768,6 +790,120 @@ def test_cli_packages_publishable_linked_models(tmp_path) -> None:
     assert package["privacy"]["publishable_candidate"] is True
 
 
+def test_cli_requires_training_manifest_for_linked_model_packages(tmp_path) -> None:
+    from click import ClickException
+
+    household_model_path, person_model_path = _write_publishable_linked_model_fixtures(
+        tmp_path
+    )
+    package_path = tmp_path / "linked-model-package.json"
+
+    with pytest.raises(ClickException, match="requires --training-manifest"):
+        main(
+            [
+                "tree",
+                "package-linked-models",
+                "--household-model",
+                str(household_model_path),
+                "--person-model",
+                str(person_model_path),
+                "--review-note",
+                "reviewed fixture package",
+                "--out",
+                str(package_path),
+                "--min-support",
+                "1",
+                "--max-purity",
+                "1",
+            ]
+        )
+
+    assert not package_path.exists()
+
+
+def test_cli_requires_review_note_for_linked_model_packages(tmp_path) -> None:
+    from click import ClickException
+
+    household_model_path, person_model_path = _write_publishable_linked_model_fixtures(
+        tmp_path
+    )
+    training_manifest_path = tmp_path / "linked-training-manifest.json"
+    package_path = tmp_path / "linked-model-package.json"
+    _write_linked_training_manifest(
+        training_manifest_path,
+        household_model_path=household_model_path,
+        person_model_path=person_model_path,
+    )
+
+    with pytest.raises(ClickException, match="requires --review-note"):
+        main(
+            [
+                "tree",
+                "package-linked-models",
+                "--household-model",
+                str(household_model_path),
+                "--person-model",
+                str(person_model_path),
+                "--training-manifest",
+                str(training_manifest_path),
+                "--review-note",
+                "   ",
+                "--out",
+                str(package_path),
+                "--min-support",
+                "1",
+                "--max-purity",
+                "1",
+            ]
+        )
+
+    assert not package_path.exists()
+
+
+def test_cli_checks_training_manifest_model_paths_for_linked_packages(
+    tmp_path,
+) -> None:
+    from click import ClickException
+
+    household_model_path, person_model_path = _write_publishable_linked_model_fixtures(
+        tmp_path
+    )
+    training_manifest_path = tmp_path / "linked-training-manifest.json"
+    package_path = tmp_path / "linked-model-package.json"
+    _write_linked_training_manifest(
+        training_manifest_path,
+        household_model_path=tmp_path / "other-household-model.json",
+        person_model_path=person_model_path,
+    )
+
+    with pytest.raises(
+        ClickException,
+        match="training manifest household model path does not match",
+    ):
+        main(
+            [
+                "tree",
+                "package-linked-models",
+                "--household-model",
+                str(household_model_path),
+                "--person-model",
+                str(person_model_path),
+                "--training-manifest",
+                str(training_manifest_path),
+                "--review-note",
+                "reviewed fixture package",
+                "--out",
+                str(package_path),
+                "--min-support",
+                "1",
+                "--max-purity",
+                "1",
+            ]
+        )
+
+    assert not package_path.exists()
+
+
 def test_cli_refuses_to_package_private_linked_models(tmp_path) -> None:
     from click import ClickException
 
@@ -797,9 +933,15 @@ def test_cli_refuses_to_package_private_linked_models(tmp_path) -> None:
     )
     household_model_path = tmp_path / "household-model.json"
     person_model_path = tmp_path / "person-model.json"
+    training_manifest_path = tmp_path / "linked-training-manifest.json"
     package_path = tmp_path / "linked-model-package.json"
     write_tree_model(household_model_path, household_model)
     write_tree_model(person_model_path, person_model)
+    _write_linked_training_manifest(
+        training_manifest_path,
+        household_model_path=household_model_path,
+        person_model_path=person_model_path,
+    )
 
     with pytest.raises(ClickException, match="Linked model audit did not pass"):
         main(
@@ -810,6 +952,10 @@ def test_cli_refuses_to_package_private_linked_models(tmp_path) -> None:
                 str(household_model_path),
                 "--person-model",
                 str(person_model_path),
+                "--training-manifest",
+                str(training_manifest_path),
+                "--review-note",
+                "reviewed fixture package",
                 "--out",
                 str(package_path),
                 "--min-support",

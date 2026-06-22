@@ -229,9 +229,12 @@ synthpopcan tree package-linked-models \
 Packaging is intentionally strict. It refuses models that still have warnings or
 errors, validates that the household model is a household model, validates that
 the person model is a person model, checks the household-size linkage column, and
-embeds both audit reports in the package. When provided, the final package also
-includes the training-manifest provenance, model summaries with file sizes,
-audit thresholds, and the human review note.
+embeds both audit reports in the package. It also requires the linked training
+manifest from `tree train-linked --manifest-out`, checks that the manifest's
+model paths match the household and person model paths being packaged, and
+requires a non-empty human review note. The final package includes the
+training-manifest provenance, model summaries with file sizes, audit thresholds,
+and review note.
 
 These checks do not prove that a model is absolutely privacy safe. They are a
 guardrail so a prepared package carries model provenance, release metadata, and a

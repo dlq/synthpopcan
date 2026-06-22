@@ -700,7 +700,7 @@ def linked_tree_release_readiness_command(
     "--training-manifest",
     type=PATH,
     default=None,
-    help="Optional linked tree training manifest JSON for provenance.",
+    help="Linked tree training manifest JSON for package provenance.",
 )
 @click.option(
     "--review-note",
@@ -727,6 +727,19 @@ def package_linked_tree_models_command(
     max_purity: float,
 ) -> None:
     """Package linked household/person models after clean privacy audits."""
+    if training_manifest is None:
+        raise click.ClickException(
+            "Packaging linked models requires --training-manifest. Use the "
+            "manifest written by `tree train-linked --manifest-out` so the "
+            "package carries source, geography, target-profile, and model "
+            "provenance."
+        )
+    if not review_note.strip():
+        raise click.ClickException(
+            "Packaging linked models requires --review-note with a short human "
+            "review note, for example who reviewed the package and why it is "
+            "being prepared for distribution."
+        )
     try:
         household_model_payload = read_tree_model(household_model)
         person_model_payload = read_tree_model(person_model)
@@ -746,6 +759,11 @@ def package_linked_tree_models_command(
             max_purity=max_purity,
         )
         training_provenance = read_linked_training_manifest(training_manifest)
+        validate_linked_training_manifest_model_paths(
+            training_provenance,
+            household_model_path=household_model,
+            person_model_path=person_model,
+        )
     except ValueError as exc:
         raise click.ClickException(str(exc)) from exc
     if household_audit["issues"] or person_audit["issues"]:
@@ -758,7 +776,7 @@ def package_linked_tree_models_command(
         "schema_version": "synthpopcan-linked-tree-package-v1",
         "package_type": "linked_household_person",
         "household_size_column": household_size_column,
-        "review_note": review_note,
+        "review_note": review_note.strip(),
         "thresholds": {
             "min_support": min_support,
             "max_purity": max_purity,
@@ -869,7 +887,7 @@ def read_linked_training_manifest(path: Path | None) -> dict[str, object] | None
         raise ValueError("training manifest must be a JSON object")
     if payload.get("schema_version") != "synthpopcan-linked-tree-training-v1":
         raise ValueError("unsupported linked tree training manifest schema")
-    return {
+    provenance = {
         "path": str(path),
         "schema_version": payload.get("schema_version"),
         "source": payload.get("source"),
@@ -880,6 +898,46 @@ def read_linked_training_manifest(path: Path | None) -> dict[str, object] | None
         "random_seed": payload.get("random_seed"),
         "training": payload.get("training"),
     }
+    if "models" in payload:
+        provenance["models"] = payload.get("models")
+    return provenance
+
+
+def validate_linked_training_manifest_model_paths(
+    training_provenance: dict[str, object] | None,
+    *,
+    household_model_path: Path,
+    person_model_path: Path,
+) -> None:
+    if training_provenance is None:
+        raise ValueError("linked model package requires a training manifest")
+
+    models = training_provenance.get("models")
+    if not isinstance(models, dict):
+        raise ValueError(
+            "training manifest must include models.household.path and "
+            "models.person.path; rerun `tree train-linked --manifest-out` or "
+            "use a reviewed manifest with model provenance"
+        )
+    expected = {
+        "household": household_model_path,
+        "person": person_model_path,
+    }
+    for level, actual_path in expected.items():
+        entry = models.get(level)
+        if not isinstance(entry, dict) or not entry.get("path"):
+            raise ValueError(f"training manifest must include models.{level}.path")
+        recorded_path = Path(str(entry["path"]))
+        if not same_model_path(recorded_path, actual_path):
+            raise ValueError(
+                f"training manifest {level} model path does not match --{level}-model"
+            )
+
+
+def same_model_path(left: Path, right: Path) -> bool:
+    return left.expanduser().resolve(strict=False) == right.expanduser().resolve(
+        strict=False
+    )
 
 
 def classify_linked_release_readiness(

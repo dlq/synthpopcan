@@ -271,7 +271,7 @@ Current implementation notes:
 - `synthpopcan tree audit-model` performs the first artifact-level disclosure-risk check for private working models, including raw-row/source-id flags, minimum support, high-purity groups/leaves with dominant outcomes, release class, and publishable-candidate status. It is an advisory gate, not a claim of privacy safety.
 - `synthpopcan tree package-model` is a strict first packaging gate: it refuses to write a package if the audit has any warnings or errors. Current `private_working` models therefore cannot be packaged until a later reviewed publishable-candidate workflow exists.
 - `synthpopcan tree prepare-model-release` writes a publishable-candidate copy of a model only when the release audit has no blocking issues beyond the expected `private_working` release-class warning. It can write a release manifest with thresholds, audit output, source/output model paths, and a human review note.
-- `synthpopcan tree package-linked-models` packages household and person models together only after both audits pass without warnings. It validates household/person model levels and the household-size linkage column, embeds both model artifacts and both audit reports, and marks the package as a publishable candidate only when both model audits say so.
+- `synthpopcan tree package-linked-models` packages household and person models together only after both audits pass without warnings. It validates household/person model levels and the household-size linkage column, requires linked training-manifest provenance plus a human review note, checks manifest model paths against the packaged models, embeds both model artifacts and both audit reports, and marks the package as a publishable candidate only when both model audits say so.
 - Initial audit on the local 2016-derived models with `min_support=50,max_purity=0.95`: conditional-frequency had 157 groups, minimum support about 503.7, no low-support groups, and 2 pure groups; CART had 58 leaves, minimum support 81, no low-support or high-purity leaves. Both remained `private_working` and `publishable_candidate: false`.
 - `synthpopcan tree generate-linked` performs the first household-then-person generation pass from separate household and person models, writing linked `synthetic_household_id` and `synthetic_person_id` CSV outputs.
 - `synthpopcan tree generate` and `synthpopcan tree generate-linked` accept `--manifest-out` for a lightweight JSON provenance sidecar with model path, model type, release class, output paths, conditions, requested random seed, and effective random seed.
@@ -477,7 +477,9 @@ Next active tree model packaging/distribution slice:
    and human review notes. Status: partially complete; `tree release-readiness`
    and `tree package-linked-models` can carry linked training-manifest
    provenance, audit thresholds, model summaries with file sizes, and human
-   review notes. Stronger source/provenance requirements are still pending.
+   review notes. `tree package-linked-models` now requires a training manifest,
+   requires a non-empty review note, and checks manifest model paths against the
+   packaged model paths. Stronger source citation requirements are still pending.
 2. Add a release-readiness report that can be run before packaging Canada,
    province/territory, and large-CMA model candidates. It should explain whether
    the candidate is likely publishable, likely private-only, or needs pruning,
@@ -487,11 +489,12 @@ Next active tree model packaging/distribution slice:
    publishable candidates, so users cannot accidentally distribute models that
    have not passed disclosure-risk checks. Status: partially complete; readiness
    reports and package commands distinguish private working models from
-   publishable candidates, but reviewed source/provenance requirements need
-   stronger manifest checks.
+   publishable candidates, and linked packages now require reviewed provenance
+   inputs before writing an artifact. Stronger source citation requirements are
+   still pending.
 4. Add fixture tests for a linked model package manifest and release-readiness
    report before running more full-data candidate-model experiments. Status:
-   release-readiness fixture test added.
+   release-readiness and strict linked-package manifest fixture tests added.
 5. Keep the web app boundary intact: the first web app consumes prepared model
    artifacts and does not expose training from restricted microdata.
 
