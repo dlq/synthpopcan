@@ -202,11 +202,19 @@ Local timing evidence after indexing:
 - Easy balanced fixture, 50,000 seed records to 500,000 expanded rows: fitting about 0.03 seconds, expansion about 0.14 seconds.
 - High-cardinality inconsistent fixture, 50,000 seed records, 72 target cells, 100 iterations: fitting about 1.0 second, down from about 54.5 seconds in the naive repeated-scan version.
 - The high-cardinality fixture still does not converge because its controls are deliberately inconsistent, so diagnostics are still required.
-- Experimental backend comparison at 50,000 seed records:
-  - Easy balanced, one iteration: current Python about 0.023 seconds, NumPy about 0.032 seconds, SciPy CSR about 0.037 seconds.
-  - Moderate three-margin, one iteration: current Python about 0.037 seconds, NumPy about 0.047 seconds, SciPy CSR about 0.064 seconds, Polars via temporary `uv --with polars` about 0.049 seconds.
-  - High-cardinality inconsistent, 100 iterations: current Python about 0.62-0.67 seconds, NumPy about 0.11 seconds, SciPy CSR about 0.09-0.12 seconds, Polars about 0.73 seconds.
-- Experimental high-cardinality comparison at 200,000 seed records and 100 iterations: current Python about 2.8 seconds, NumPy about 0.44 seconds, SciPy CSR about 0.36 seconds.
+- Experimental backend comparison results:
+
+  | Seed rows | Case | Iterations | Current Python | NumPy `bincount` | SciPy CSR | Polars `group_by` |
+  | ---: | --- | ---: | ---: | ---: | ---: | ---: |
+  | 50,000 | easy balanced | 1 | ~0.023s | ~0.032s | ~0.037s | ~0.046s |
+  | 50,000 | moderate three-margin | 1 | ~0.037s | ~0.047s | ~0.056-0.064s | ~0.035-0.049s |
+  | 50,000 | high-cardinality inconsistent | 100 | ~0.62-0.67s | ~0.11s | ~0.09-0.12s | ~0.69-0.73s |
+  | 200,000 | high-cardinality inconsistent | 100 | ~2.8s | ~0.44s | ~0.36s | not rerun |
+
+  Current decision: keep pure Python as the default for simple dense controls,
+  prototype SciPy CSR later for large/sparse/repeated-update fits, and treat
+  Polars as a likely table-ingestion/prep tool rather than the IPF update
+  kernel.
 
 ### 5. Census Household/Person Microdata Ingestion
 
