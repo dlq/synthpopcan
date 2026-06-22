@@ -373,6 +373,171 @@ def read_tree_training_sample(
     )
 
 
+def audit_tree_model(
+    model: TreeModel,
+    *,
+    min_support: float = 50,
+    max_purity: float = 0.95,
+) -> dict[str, object]:
+    if min_support <= 0:
+        raise ValueError("min_support must be greater than zero")
+    if not 0 < max_purity <= 1:
+        raise ValueError("max_purity must be between 0 and 1")
+
+    units = audit_units(model)
+    below_min_support = [unit for unit in units if unit["support"] < min_support]
+    above_max_purity = [unit for unit in units if unit["purity"] > max_purity]
+    payload = model.to_dict()
+    privacy = payload.get("privacy", {})
+    contains_raw_rows = bool(
+        isinstance(privacy, dict) and privacy.get("contains_raw_rows", True)
+    )
+    contains_source_identifiers = bool(
+        isinstance(privacy, dict) and privacy.get("contains_source_identifiers", True)
+    )
+
+    issues: list[dict[str, object]] = []
+    if model.release_class != "publishable_candidate":
+        issues.append(
+            {
+                "severity": "warning",
+                "kind": "private_working_release_class",
+                "message": (
+                    "Model is not marked as a publishable candidate; keep it "
+                    "private unless a packaging workflow changes its release class."
+                ),
+            }
+        )
+    if contains_raw_rows:
+        issues.append(
+            {
+                "severity": "error",
+                "kind": "contains_raw_rows",
+                "message": "Model privacy metadata indicates raw rows may be present.",
+            }
+        )
+    if contains_source_identifiers:
+        issues.append(
+            {
+                "severity": "error",
+                "kind": "contains_source_identifiers",
+                "message": (
+                    "Model privacy metadata indicates source identifiers may "
+                    "be present."
+                ),
+            }
+        )
+    issues.extend(support_issue(unit, min_support) for unit in below_min_support[:10])
+    issues.extend(purity_issue(unit, max_purity) for unit in above_max_purity[:10])
+
+    return {
+        "passed": not any(issue["severity"] == "error" for issue in issues),
+        "publishable_candidate": False,
+        "model_type": model.model_type,
+        "release_class": model.release_class,
+        "thresholds": {
+            "min_support": min_support,
+            "max_purity": max_purity,
+        },
+        "summary": {
+            "records_trained": model.records_trained,
+            "groups_or_leaves": len(units),
+            "minimum_support": min((unit["support"] for unit in units), default=0.0),
+            "below_min_support": len(below_min_support),
+            "above_max_purity": len(above_max_purity),
+            "contains_raw_rows": contains_raw_rows,
+            "contains_source_identifiers": contains_source_identifiers,
+        },
+        "issues": issues,
+    }
+
+
+def audit_units(model: TreeModel) -> list[dict[str, object]]:
+    if isinstance(model, FrequencyTreeModel):
+        return [
+            {
+                "label": f"group {index}",
+                "support": group.support,
+                "purity": outcome_purity(
+                    tuple(outcome.weight for outcome in group.outcomes)
+                ),
+                "dominant_outcome": dominant_frequency_outcome(group.outcomes),
+                "conditions": group.conditions,
+            }
+            for index, group in enumerate(model.groups, start=1)
+        ]
+    return [
+        {
+            "label": f"leaf {node_id}",
+            "support": float(support),
+            "purity": outcome_purity(model.value[node_id]),
+            "dominant_outcome": dominant_cart_outcome(model, node_id),
+            "conditions": {},
+        }
+        for node_id, support in enumerate(model.n_node_samples)
+        if model.children_left[node_id] == model.children_right[node_id]
+    ]
+
+
+def outcome_purity(weights: tuple[float, ...]) -> float:
+    total = sum(weights)
+    if total <= 0:
+        return 0.0
+    return max(weights) / total
+
+
+def dominant_frequency_outcome(
+    outcomes: tuple[FrequencyOutcome, ...],
+) -> dict[str, str] | None:
+    if not outcomes:
+        return None
+    return max(outcomes, key=lambda outcome: outcome.weight).values
+
+
+def dominant_cart_outcome(
+    model: CartTreeModel,
+    node_id: int,
+) -> dict[str, str] | None:
+    values = model.value[node_id]
+    if not values:
+        return None
+    dominant_index = max(range(len(values)), key=lambda index: values[index])
+    return model.target_classes[dominant_index]
+
+
+def support_issue(unit: dict[str, object], min_support: float) -> dict[str, object]:
+    return {
+        "severity": "error",
+        "kind": "below_min_support",
+        "message": (
+            f"{unit['label']} has support {unit['support']}, below minimum "
+            f"{min_support}."
+        ),
+        "label": unit["label"],
+        "support": unit["support"],
+        "threshold": min_support,
+        "purity": unit["purity"],
+        "dominant_outcome": unit["dominant_outcome"],
+        "conditions": unit["conditions"],
+    }
+
+
+def purity_issue(unit: dict[str, object], max_purity: float) -> dict[str, object]:
+    return {
+        "severity": "warning",
+        "kind": "above_max_purity",
+        "message": (
+            f"{unit['label']} has purity {unit['purity']}, above maximum {max_purity}."
+        ),
+        "label": unit["label"],
+        "support": unit["support"],
+        "purity": unit["purity"],
+        "threshold": max_purity,
+        "dominant_outcome": unit["dominant_outcome"],
+        "conditions": unit["conditions"],
+    }
+
+
 def train_cart_model(
     sample: TreeTrainingSample,
     *,

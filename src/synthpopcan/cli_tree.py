@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import click
 
+from synthpopcan.cli_output import write_output
 from synthpopcan.console import print_wrote
 from synthpopcan.tree import (
+    audit_tree_model,
     generate_tree_rows,
     parse_conditions,
     read_tree_model,
@@ -145,6 +148,71 @@ def generate_tree_population(
         write_generated_rows(out_path, generated_rows)
     except ValueError as exc:
         raise click.ClickException(str(exc)) from exc
+    print_wrote(out_path)
+
+
+@tree.command("audit-model")
+@click.argument("model_path", type=PATH)
+@click.option("--min-support", default=50.0, type=float, show_default=True)
+@click.option("--max-purity", default=0.95, type=float, show_default=True)
+@click.option(
+    "--format",
+    "output_format",
+    default="table",
+    type=click.Choice(["json", "table"]),
+    show_default=True,
+)
+def audit_tree_model_command(
+    model_path: Path,
+    min_support: float,
+    max_purity: float,
+    output_format: str,
+) -> None:
+    """Audit a tree model artifact for release-oriented disclosure risks."""
+    try:
+        model = read_tree_model(model_path)
+        report = audit_tree_model(
+            model,
+            min_support=min_support,
+            max_purity=max_purity,
+        )
+    except ValueError as exc:
+        raise click.ClickException(str(exc)) from exc
+    write_output(report, output_format, title="Tree Model Audit")
+
+
+@tree.command("package-model")
+@click.argument("model_path", type=PATH)
+@click.option("--out", "out_path", required=True, type=PATH)
+@click.option("--min-support", default=50.0, type=float, show_default=True)
+@click.option("--max-purity", default=0.95, type=float, show_default=True)
+def package_tree_model_command(
+    model_path: Path,
+    out_path: Path,
+    min_support: float,
+    max_purity: float,
+) -> None:
+    """Package a tree model only after a clean audit."""
+    try:
+        model = read_tree_model(model_path)
+        audit = audit_tree_model(
+            model,
+            min_support=min_support,
+            max_purity=max_purity,
+        )
+    except ValueError as exc:
+        raise click.ClickException(str(exc)) from exc
+    if audit["issues"]:
+        raise click.ClickException(
+            "Model audit did not pass without warnings; inspect audit-model "
+            "output before packaging."
+        )
+    package = {
+        "schema_version": "synthpopcan-tree-package-v1",
+        "model": model.to_dict(),
+        "audit": audit,
+    }
+    out_path.write_text(json.dumps(package, indent=2, sort_keys=True) + "\n")
     print_wrote(out_path)
 
 

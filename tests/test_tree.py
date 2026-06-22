@@ -8,6 +8,7 @@ from synthpopcan.tree import (
     TreeGenerationRequest,
     TreeModelSpec,
     TreeTrainingSample,
+    audit_tree_model,
     generate_frequency_rows,
     generate_tree_rows,
     read_tree_training_sample,
@@ -448,6 +449,183 @@ def test_cli_trains_and_generates_cart_tree_model(tmp_path) -> None:
         rows = list(csv.DictReader(handle))
     assert rows[0]["age_group"] == "adult"
     assert rows[0]["sex"] == "F"
+
+
+def test_audits_frequency_model_support_and_purity(tmp_path) -> None:
+    source = tmp_path / "derived-person-training.csv"
+    source.write_text(
+        "geo,household_size,age_group,sex,weight\nQC,2,adult,F,3\nON,1,senior,M,1\n"
+    )
+    sample = read_tree_training_sample(
+        source,
+        level="person",
+        target_columns=("age_group", "sex"),
+        conditioning_columns=("geo", "household_size"),
+        geography_column="geo",
+        weight_column="weight",
+    )
+    model = train_frequency_model(sample, random_seed=7, min_support=2)
+
+    report = audit_tree_model(model, min_support=2, max_purity=0.95)
+
+    assert report["passed"] is False
+    assert report["model_type"] == "conditional-frequency"
+    assert report["release_class"] == "private_working"
+    assert report["publishable_candidate"] is False
+    assert report["summary"]["groups_or_leaves"] == 2
+    assert report["summary"]["minimum_support"] == 1.0
+    assert report["summary"]["below_min_support"] == 1
+    assert report["summary"]["above_max_purity"] == 2
+    assert {issue["kind"] for issue in report["issues"]} == {
+        "private_working_release_class",
+        "below_min_support",
+        "above_max_purity",
+    }
+    purity_issue = next(
+        issue
+        for issue in report["issues"]
+        if issue["kind"] == "above_max_purity"
+        and issue["conditions"] == {"geo": "QC", "household_size": "2"}
+    )
+    assert purity_issue["support"] == 3.0
+    assert purity_issue["dominant_outcome"] == {
+        "age_group": "adult",
+        "sex": "F",
+    }
+    assert purity_issue["conditions"] == {"geo": "QC", "household_size": "2"}
+
+
+def test_audits_cart_model_support_and_purity(tmp_path) -> None:
+    source = tmp_path / "derived-person-training.csv"
+    source.write_text(
+        "geo,household_size,age_group,sex,weight\n"
+        "QC,2,adult,F,2\n"
+        "QC,2,adult,F,1\n"
+        "QC,1,child,M,1\n"
+        "ON,1,senior,F,1\n"
+    )
+    sample = read_tree_training_sample(
+        source,
+        level="person",
+        target_columns=("age_group", "sex"),
+        conditioning_columns=("geo", "household_size"),
+        geography_column="geo",
+        weight_column="weight",
+    )
+    model = train_cart_model(sample, random_seed=7, min_samples_leaf=2, max_depth=3)
+
+    report = audit_tree_model(model, min_support=2, max_purity=0.99)
+
+    assert report["model_type"] == "cart"
+    assert report["summary"]["groups_or_leaves"] >= 1
+    assert report["summary"]["minimum_support"] >= 2
+    assert report["summary"]["contains_raw_rows"] is False
+    assert report["summary"]["contains_source_identifiers"] is False
+
+
+def test_cli_audits_tree_model_as_json(tmp_path, capsys) -> None:
+    source = tmp_path / "derived-person-training.csv"
+    model_path = tmp_path / "person-model.json"
+    source.write_text(
+        "geo,household_size,age_group,sex,weight\nQC,2,adult,F,3\nON,1,senior,M,1\n"
+    )
+
+    assert (
+        main(
+            [
+                "tree",
+                "train",
+                str(source),
+                "--level",
+                "person",
+                "--target-columns",
+                "age_group,sex",
+                "--conditioning-columns",
+                "geo,household_size",
+                "--weight-column",
+                "weight",
+                "--out",
+                str(model_path),
+                "--random-seed",
+                "7",
+                "--min-support",
+                "2",
+            ]
+        )
+        == 0
+    )
+    capsys.readouterr()
+
+    assert (
+        main(
+            [
+                "tree",
+                "audit-model",
+                str(model_path),
+                "--min-support",
+                "2",
+                "--max-purity",
+                "0.95",
+                "--format",
+                "json",
+            ]
+        )
+        == 0
+    )
+
+    report = json.loads(capsys.readouterr().out)
+    assert report["passed"] is False
+    assert report["summary"]["below_min_support"] == 1
+
+
+def test_cli_refuses_to_package_model_with_audit_warnings(tmp_path) -> None:
+    from click import ClickException
+
+    source = tmp_path / "derived-person-training.csv"
+    model_path = tmp_path / "person-model.json"
+    package_path = tmp_path / "person-model-package.json"
+    source.write_text(
+        "geo,household_size,age_group,sex,weight\nQC,2,adult,F,3\nON,1,senior,M,1\n"
+    )
+    assert (
+        main(
+            [
+                "tree",
+                "train",
+                str(source),
+                "--level",
+                "person",
+                "--target-columns",
+                "age_group,sex",
+                "--conditioning-columns",
+                "geo,household_size",
+                "--weight-column",
+                "weight",
+                "--out",
+                str(model_path),
+                "--min-support",
+                "2",
+            ]
+        )
+        == 0
+    )
+
+    with pytest.raises(ClickException, match="Model audit did not pass"):
+        main(
+            [
+                "tree",
+                "package-model",
+                str(model_path),
+                "--out",
+                str(package_path),
+                "--min-support",
+                "2",
+                "--max-purity",
+                "0.95",
+            ]
+        )
+
+    assert not package_path.exists()
 
 
 def train_frequency_model_from_rows(

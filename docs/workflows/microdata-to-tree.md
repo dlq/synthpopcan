@@ -24,6 +24,15 @@ synthpopcan tree train person-training.csv \
   --weight-column WEIGHT \
   --out person-model.json
 
+synthpopcan tree audit-model person-model.json \
+  --min-support 50 \
+  --max-purity 0.95
+
+synthpopcan tree package-model person-model.json \
+  --out person-model-package.json \
+  --min-support 50 \
+  --max-purity 0.95
+
 synthpopcan tree generate person-model.json \
   --rows 10 \
   --condition TENUR=owner \
@@ -58,3 +67,7 @@ synthpopcan tree train person-training.csv \
 CART model artifacts are JSON, not pickle files. They store tree structure, category metadata, class distributions, and disclosure-risk metadata, but not raw training rows.
 
 The validation step compares generated-row distributions against the derived training view. It reports target-column distributions, the joint target distribution, optional conditioning-column distributions, and generated category combinations that were not present in the training view. This tiny example generates only one conditioned subset, so it uses a loose tolerance; larger unfiltered runs should use a tighter tolerance.
+
+The audit step is a release-oriented check on the model artifact itself. It does not make the model publishable; it reports support, purity, dominant outcomes for high-purity groups/leaves, raw-row/source-id flags, release class, and issues that should be reviewed before any packaging or distribution workflow.
+
+The package step is intentionally strict. It refuses to write a package while the audit has any warnings or errors, including the default `private_working` release class warning. Later packaging work should define how a reviewed model becomes a publishable candidate.
