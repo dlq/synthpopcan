@@ -10,6 +10,10 @@ StatCan table includes a useful dimension that is not in the generated output,
 add that column first with a model, recoding step, lookup, or future enrichment
 workflow. Then run IPF.
 
+This workflow is useful when generated model output has the right columns but
+the totals need to be nudged toward a public aggregate table. It is not a
+shortcut for adding attributes the model did not generate.
+
 ## 1. Generate Candidate Rows
 
 Start from a reviewed linked model package:
@@ -51,6 +55,10 @@ reports generated columns that are plausible household controls, common useful
 controls that are missing and would require enrichment first, geography columns
 to check against the model scope, and next commands for StatCan WDS discovery.
 
+Treat the suggestions as a reading aid. They help you see what the generated
+file can support, but you still choose controls based on the research question,
+geography, source reliability, and interpretability.
+
 For a generated household file with `geo`, `household_size`, and `tenure`, the
 useful part of the output is shaped like this:
 
@@ -87,6 +95,11 @@ If the report says a control column is missing, do not try to force that table
 through IPF. `check-inputs` will label that path as needing enrichment/modeling
 because IPF cannot create the absent variable. Add the missing attribute first,
 or choose controls that match the generated columns.
+
+If the report says categories differ, keep the source meaning in view. Some
+differences are harmless label differences, such as `Female` and `F`. Others
+may indicate different universes, age bands, geographies, or household
+definitions.
 
 ## 4. Fit Household Weights
 
@@ -147,3 +160,7 @@ independent person weighting can break household membership.
 For now, treat person controls as validation targets unless the person output
 already has the controlled columns and the calibration strategy preserves
 household links.
+
+When writing up results, be explicit about this distinction. A calibrated
+household file and a linked person file are not the same thing as an independently
+calibrated person population.

@@ -10,6 +10,21 @@ settling. The repository root ``README.md`` remains the short project overview.
 
 .. toctree::
    :maxdepth: 2
+   :caption: Start Here
+
+   installation
+   getting-started
+   concepts
+   data-and-privacy
+   control-tables
+   provenance
+   cli-guide
+   examples
+   troubleshooting
+   api
+
+.. toctree::
+   :maxdepth: 2
    :caption: Workflows
 
    workflows/microdata-to-ipf

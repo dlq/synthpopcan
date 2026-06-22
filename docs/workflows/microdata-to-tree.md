@@ -9,6 +9,15 @@ The tracked fixture under `tests/fixtures/workflows/linked_tree/hierarchical.csv
 is deliberately tiny. It is useful for learning the command flow without touching
 private or full-size data.
 
+Use this workflow when the relationship between households and people matters.
+For example, a household-level output may need a household size, tenure, and
+geography, while the linked person output needs each generated person to belong
+to one generated household.
+
+Because tree models learn from source records, treat models trained from
+restricted microdata as private working artifacts until they pass an explicit
+audit and release review.
+
 ## 1. Inspect Suggested Column Blocks
 
 Start by asking SynthPopCan what it can safely use from the source file:
@@ -29,6 +38,10 @@ For the 2016 hierarchical profile, the first blocks are:
 The helper excludes identifiers, weights, and replicate weights. It also drops
 profile columns that are not present in the inspected file, so the same block
 names can work on a tiny fixture and on a fuller local file.
+
+Column suggestions are a starting point, not a final research design. Review the
+meaning of each column before training, especially if categories are broad,
+source-specific, or sensitive.
 
 ## 2. Check Geography Feasibility
 
@@ -128,12 +141,20 @@ The command reads the source once, derives a household training view and a perso
 training view, trains both models, and writes a manifest. The default blocks are
 `household_core` and `person_demographics`.
 
+The manifest is important. Keep it with the model outputs because it records how
+the training files were derived, which blocks were used, and which random seed
+or filters shaped the result.
+
 For full-size local 2016 data, a recent benchmark with those default blocks used
 343,330 source person rows and 140,720 derived household rows. Training completed
 in about 12 seconds on this development machine. The household model was about
 95.5 MB and the person model about 3.5 MB. That model size is a signal that
 broader household target blocks may need pruning or coarsening before packaging
 for distribution.
+
+If a model becomes very large, do not treat that only as a performance problem.
+It can also be a sign that the target columns are too detailed for a shareable
+or interpretable model.
 
 ## 4. Generate Linked Synthetic Rows
 
@@ -155,6 +176,9 @@ The household output has one row per generated household with
 `synthetic_household_id`. The person output has one row per generated person with
 `synthetic_person_id` and the household's `synthetic_household_id`.
 
+Use a random seed when you want a run to be reproducible. Change the seed when
+you intentionally want a different generated draw from the same model.
+
 ## 5. Validate Linkage
 
 Always validate the linked files before using them downstream:
@@ -172,6 +196,10 @@ linked to it.
 In the same full-size 2016 QC run noted above, generating 1,000 households with
 `PR=24` produced 2,300 people. Linked validation passed with no unknown
 households and no household-size mismatches.
+
+Validation does not prove that the generated population is substantively good.
+It checks that the files are internally consistent. You still need source-aware
+review of variables, geography, distributions, and model release status.
 
 ## 6. Release Review and Packaging
 
@@ -280,6 +308,16 @@ sizes, audit thresholds, and review note.
 These checks do not prove that a model is absolutely privacy safe. They are a
 guardrail so a prepared package carries model provenance, release metadata, and a
 review trail before it is considered for sharing or web-app use.
+
+For a project note or publication appendix, record:
+
+- source product and access class;
+- geography filter;
+- target profile and suggested blocks;
+- audit thresholds;
+- review note;
+- validation result;
+- known exclusions or aggregations.
 
 ## Advanced Manual Training Views
 
