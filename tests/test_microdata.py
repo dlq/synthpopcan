@@ -746,10 +746,23 @@ def test_builds_tree_geography_feasibility_report(tmp_path) -> None:
     assert regions["24"]["household_rows"] == 2
     assert regions["24"]["tier"] == "likely"
     assert regions["24"]["suggested_action"] == "candidate for full block review"
+    assert regions["24"]["model_design"]["scope"] == "separate_geography_model"
+    assert regions["24"]["model_design"]["block_strategy"] == "use_requested_blocks"
+    assert (
+        "Train and audit this geography separately."
+        in regions["24"]["model_design"]["next_steps"]
+    )
     assert regions["11"]["person_rows"] == 1
     assert regions["11"]["household_rows"] == 1
     assert regions["11"]["tier"] == "unlikely"
     assert "too few person rows" in regions["11"]["reasons"]
+    assert regions["11"]["model_design"]["scope"] == "aggregate_geography_model"
+    assert "Atlantic aggregate" in regions["11"]["model_design"]["aggregation_hint"]
+    assert regions["11"]["model_design"]["household_targets"] == [
+        "household_size",
+        "TENUR",
+    ]
+    assert regions["11"]["model_design"]["person_targets"] == ["AGEGRP", "SEX"]
 
 
 def test_cli_reports_tree_geography_feasibility_as_json(tmp_path, capsys) -> None:

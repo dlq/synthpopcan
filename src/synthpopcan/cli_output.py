@@ -126,11 +126,15 @@ def print_tree_geography_feasibility_table(report: dict[str, object]) -> None:
     table.add_column("Households", justify="right")
     table.add_column("Person Min Support", justify="right")
     table.add_column("Max Purity", justify="right")
-    table.add_column("Action")
+    table.add_column("First Move")
+    table.add_column("Aggregation Hint")
 
     for region in report.get("regions", []):
         if not isinstance(region, dict):
             continue
+        model_design = region.get("model_design", {})
+        if not isinstance(model_design, dict):
+            model_design = {}
         table.add_row(
             str(region.get("geography", "")),
             str(region.get("tier", "")),
@@ -138,10 +142,22 @@ def print_tree_geography_feasibility_table(report: dict[str, object]) -> None:
             format_report_number(region.get("household_rows")),
             format_report_number(region.get("person_min_support")),
             format_report_percent(region.get("person_max_purity")),
-            str(region.get("suggested_action", "")),
+            first_model_design_move(model_design),
+            str(model_design.get("aggregation_hint", "")),
         )
 
     print_table(table)
+
+
+def first_model_design_move(model_design: dict[str, object]) -> str:
+    strategy = str(model_design.get("block_strategy", ""))
+    if strategy == "use_requested_blocks":
+        return "train and audit requested blocks"
+    if strategy == "start_with_reduced_blocks":
+        return "start with reduced target set"
+    if strategy == "minimal_or_aggregate":
+        return "aggregate or use minimal targets"
+    return strategy
 
 
 def print_ipf_report_table(report: dict[str, object]) -> None:

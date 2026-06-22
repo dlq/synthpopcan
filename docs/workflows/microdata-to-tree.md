@@ -49,9 +49,18 @@ support and purity thresholds.
 
 The report is a planning helper, not a privacy decision. It uses source row
 counts, derived household counts, weighted totals, conditioning-cell support, and
-target-outcome purity risk for the selected household/person blocks. A `likely`
-geography is a candidate for training and audit; it still needs the normal model
-audit and release workflow.
+target-outcome purity risk for the selected household/person blocks. It also
+returns a model-design recommendation for each geography:
+
+- whether to train a separate model, use a reduced target set, or aggregate the
+  geography;
+- household and person target columns to start with;
+- columns to review or coarsen first;
+- Canadian census-specific aggregation hints, such as Atlantic or territories
+  aggregation for small provinces and territories.
+
+A `likely` geography is a candidate for training and audit; it still needs the
+normal model audit and release workflow.
 
 ## 3. Train Linked Models
 

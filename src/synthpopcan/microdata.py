@@ -742,6 +742,18 @@ def geography_feasibility_region(
         "tier": tier,
         "reasons": reasons,
         "suggested_action": suggested_feasibility_action(tier),
+        "model_design": model_design_advice(
+            tier=tier,
+            geography=geography,
+            geography_column=geography_column,
+            reasons=reasons,
+            household_records=household_records,
+            person_records=person_records,
+            household_target_columns=household_target_columns,
+            person_target_columns=person_target_columns,
+            household_conditioning_columns=household_conditioning_columns,
+            person_conditioning_columns=person_conditioning_columns,
+        ),
     }
 
 
@@ -831,6 +843,159 @@ def suggested_feasibility_action(tier: str) -> str:
     if tier == "borderline":
         return "coarsen targets or review before training"
     return "aggregate geography or use a simpler model"
+
+
+def model_design_advice(
+    *,
+    tier: str,
+    geography: str,
+    geography_column: str,
+    reasons: list[str],
+    household_records: list[dict[str, str]],
+    person_records: list[dict[str, str]],
+    household_target_columns: tuple[str, ...],
+    person_target_columns: tuple[str, ...],
+    household_conditioning_columns: tuple[str, ...],
+    person_conditioning_columns: tuple[str, ...],
+) -> dict[str, object]:
+    household_review = columns_to_review(
+        household_records,
+        household_target_columns,
+        preferred_review_columns=(
+            "VALUE",
+            "SHELCO",
+            "ROOM",
+            "BEDRM",
+            "PRESMORTG",
+            "SUBSIDY",
+        ),
+    )
+    person_review = columns_to_review(
+        person_records,
+        person_target_columns,
+        preferred_review_columns=("IMMSTAT", "MarStH"),
+    )
+    if tier == "likely":
+        return {
+            "scope": "separate_geography_model",
+            "block_strategy": "use_requested_blocks",
+            "household_targets": list(household_target_columns),
+            "person_targets": list(person_target_columns),
+            "conditioning_columns": sorted(
+                set(household_conditioning_columns) | set(person_conditioning_columns)
+            ),
+            "columns_to_review_first": household_review + person_review,
+            "aggregation_hint": "",
+            "next_steps": [
+                "Train and audit this geography separately.",
+                "Run release audit before packaging or sharing.",
+                "Compare generated distributions against census controls.",
+            ],
+        }
+    if tier == "borderline":
+        return {
+            "scope": "separate_geography_model_with_coarsening",
+            "block_strategy": "start_with_reduced_blocks",
+            "household_targets": reduced_household_targets(household_target_columns),
+            "person_targets": reduced_person_targets(person_target_columns),
+            "conditioning_columns": reduced_conditioning_columns(
+                household_conditioning_columns,
+                person_conditioning_columns,
+                geography_column=geography_column,
+            ),
+            "columns_to_review_first": household_review + person_review,
+            "aggregation_hint": canadian_aggregation_hint(geography_column, geography),
+            "next_steps": [
+                "Try a reduced target set before training the full block.",
+                (
+                    "Coarsen household size and dwelling/economic categories "
+                    "if audit fails."
+                ),
+                "Aggregate with a neighbouring region if support remains low.",
+            ],
+        }
+    return {
+        "scope": "aggregate_geography_model",
+        "block_strategy": "minimal_or_aggregate",
+        "household_targets": minimal_household_targets(household_target_columns),
+        "person_targets": minimal_person_targets(person_target_columns),
+        "conditioning_columns": reduced_conditioning_columns(
+            household_conditioning_columns,
+            person_conditioning_columns,
+            geography_column=geography_column,
+        ),
+        "columns_to_review_first": household_review + person_review,
+        "aggregation_hint": canadian_aggregation_hint(geography_column, geography),
+        "next_steps": [
+            "Do not publish a rich separate model without manual review.",
+            "Prefer an aggregate geography model or a much simpler target set.",
+            "Use external census margins to calibrate outputs after generation.",
+        ],
+    }
+
+
+def columns_to_review(
+    rows: list[dict[str, str]],
+    target_columns: tuple[str, ...],
+    *,
+    preferred_review_columns: tuple[str, ...],
+) -> list[str]:
+    if not rows:
+        return list(preferred_review_columns)
+    review: list[str] = [
+        column for column in preferred_review_columns if column in target_columns
+    ]
+    for column in target_columns:
+        distinct_values = {row.get(column, "") for row in rows}
+        if len(distinct_values) > max(3, len(rows) // 4) and column not in review:
+            review.append(column)
+    return review
+
+
+def reduced_household_targets(target_columns: tuple[str, ...]) -> list[str]:
+    preferred = ("household_size", "TENUR", "DTYPE", "ROOM", "BEDRM")
+    return [column for column in preferred if column in target_columns]
+
+
+def reduced_person_targets(target_columns: tuple[str, ...]) -> list[str]:
+    preferred = ("AGEGRP", "SEX", "MarStH")
+    return [column for column in preferred if column in target_columns]
+
+
+def minimal_household_targets(target_columns: tuple[str, ...]) -> list[str]:
+    preferred = ("household_size", "TENUR")
+    return [column for column in preferred if column in target_columns]
+
+
+def minimal_person_targets(target_columns: tuple[str, ...]) -> list[str]:
+    preferred = ("AGEGRP", "SEX")
+    return [column for column in preferred if column in target_columns]
+
+
+def reduced_conditioning_columns(
+    household_conditioning_columns: tuple[str, ...],
+    person_conditioning_columns: tuple[str, ...],
+    *,
+    geography_column: str,
+) -> list[str]:
+    preferred = (geography_column, "household_size", "TENUR")
+    available = set(household_conditioning_columns) | set(person_conditioning_columns)
+    return [column for column in preferred if column in available]
+
+
+def canadian_aggregation_hint(geography_column: str, geography: str) -> str:
+    if geography_column == "PR":
+        if geography == "11":
+            return "Use an Atlantic aggregate or national/province-family model."
+        if geography == "70":
+            return "Use a territories or northern aggregate model."
+        if geography in {"10", "12", "13"}:
+            return "Review as an Atlantic province; aggregate if audit fails."
+    if geography_column == "CMA":
+        if geography == "999":
+            return "Treat as non-CMA/rest-of-region, not a single agglomeration."
+        return "Use only for the large CMA codes exposed by the PUMF."
+    return "Aggregate with a larger census geography if audit support is weak."
 
 
 def columns_except(columns: tuple[str, ...], excluded: str) -> tuple[str, ...]:
