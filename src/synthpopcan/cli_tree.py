@@ -703,6 +703,18 @@ def linked_tree_release_readiness_command(
     help="Linked tree training manifest JSON for package provenance.",
 )
 @click.option(
+    "--household-release-manifest",
+    type=PATH,
+    default=None,
+    help="Optional household model release manifest from prepare-model-release.",
+)
+@click.option(
+    "--person-release-manifest",
+    type=PATH,
+    default=None,
+    help="Optional person model release manifest from prepare-model-release.",
+)
+@click.option(
     "--review-note",
     default="",
     help="Short human review note to store in the linked package.",
@@ -720,6 +732,8 @@ def package_linked_tree_models_command(
     household_model: Path,
     person_model: Path,
     training_manifest: Path | None,
+    household_release_manifest: Path | None,
+    person_release_manifest: Path | None,
     review_note: str,
     out_path: Path,
     household_size_column: str,
@@ -759,10 +773,15 @@ def package_linked_tree_models_command(
             max_purity=max_purity,
         )
         training_provenance = read_linked_training_manifest(training_manifest)
+        release_manifests = {
+            "household": read_model_release_manifest(household_release_manifest),
+            "person": read_model_release_manifest(person_release_manifest),
+        }
         validate_linked_training_manifest_model_paths(
             training_provenance,
             household_model_path=household_model,
             person_model_path=person_model,
+            release_manifests=release_manifests,
         )
     except ValueError as exc:
         raise click.ClickException(str(exc)) from exc
@@ -782,6 +801,7 @@ def package_linked_tree_models_command(
             "max_purity": max_purity,
         },
         "training_manifest": training_provenance,
+        "release_manifests": release_manifests,
         "model_summaries": {
             "household": {
                 **model_manifest(household_model_payload, household_model),
@@ -908,6 +928,7 @@ def validate_linked_training_manifest_model_paths(
     *,
     household_model_path: Path,
     person_model_path: Path,
+    release_manifests: dict[str, dict[str, object] | None] | None = None,
 ) -> None:
     if training_provenance is None:
         raise ValueError("linked model package requires a training manifest")
@@ -928,10 +949,68 @@ def validate_linked_training_manifest_model_paths(
         if not isinstance(entry, dict) or not entry.get("path"):
             raise ValueError(f"training manifest must include models.{level}.path")
         recorded_path = Path(str(entry["path"]))
-        if not same_model_path(recorded_path, actual_path):
+        if same_model_path(recorded_path, actual_path):
+            continue
+        release_manifest = (release_manifests or {}).get(level)
+        if release_manifest_matches_model_paths(
+            release_manifest,
+            source_model_path=recorded_path,
+            output_model_path=actual_path,
+        ):
+            continue
+        if release_manifest is None:
             raise ValueError(
-                f"training manifest {level} model path does not match --{level}-model"
+                f"training manifest {level} model path does not match --{level}-model; "
+                f"pass --{level}-release-manifest from `tree prepare-model-release` "
+                "when packaging reviewed release copies"
             )
+        else:
+            raise ValueError(
+                f"{level} release manifest does not connect the training manifest "
+                f"model path to --{level}-model"
+            )
+
+
+def read_model_release_manifest(path: Path | None) -> dict[str, object] | None:
+    if path is None:
+        return None
+    try:
+        payload = json.loads(path.read_text())
+    except json.JSONDecodeError as exc:
+        raise ValueError(f"{path} is not valid JSON") from exc
+    if not isinstance(payload, dict):
+        raise ValueError("model release manifest must be a JSON object")
+    if payload.get("schema_version") != "synthpopcan-tree-release-manifest-v1":
+        raise ValueError("unsupported tree release manifest schema")
+    return {
+        "path": str(path),
+        "schema_version": payload.get("schema_version"),
+        "command": payload.get("command"),
+        "source_model": payload.get("source_model"),
+        "output_model": payload.get("output_model"),
+        "release_class": payload.get("release_class"),
+        "review_note": payload.get("review_note"),
+        "thresholds": payload.get("thresholds"),
+        "audit": payload.get("audit"),
+    }
+
+
+def release_manifest_matches_model_paths(
+    release_manifest: dict[str, object] | None,
+    *,
+    source_model_path: Path,
+    output_model_path: Path,
+) -> bool:
+    if release_manifest is None:
+        return False
+    source_model = release_manifest.get("source_model")
+    output_model = release_manifest.get("output_model")
+    if not isinstance(source_model, str) or not isinstance(output_model, str):
+        return False
+    return same_model_path(Path(source_model), source_model_path) and same_model_path(
+        Path(output_model),
+        output_model_path,
+    )
 
 
 def same_model_path(left: Path, right: Path) -> bool:

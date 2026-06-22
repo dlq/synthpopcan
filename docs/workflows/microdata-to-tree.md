@@ -220,6 +220,8 @@ synthpopcan tree package-linked-models \
   --household-model household-model-publishable.json \
   --person-model person-model-publishable.json \
   --training-manifest linked-training.manifest.json \
+  --household-release-manifest household-model-release.manifest.json \
+  --person-release-manifest person-model-release.manifest.json \
   --review-note "Reviewed for release after readiness report." \
   --out linked-model-package.json \
   --min-support 50 \
@@ -231,10 +233,12 @@ errors, validates that the household model is a household model, validates that
 the person model is a person model, checks the household-size linkage column, and
 embeds both audit reports in the package. It also requires the linked training
 manifest from `tree train-linked --manifest-out`, checks that the manifest's
-model paths match the household and person model paths being packaged, and
-requires a non-empty human review note. The final package includes the
-training-manifest provenance, model summaries with file sizes, audit thresholds,
-and review note.
+model paths match the household and person model paths being packaged, or that
+release manifests from `tree prepare-model-release` connect the original private
+models to the reviewed publishable copies. It also requires a non-empty human
+review note. The final package includes the training-manifest provenance, model
+release manifests, model summaries with file sizes, audit thresholds, and review
+note.
 
 These checks do not prove that a model is absolutely privacy safe. They are a
 guardrail so a prepared package carries model provenance, release metadata, and a

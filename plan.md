@@ -271,7 +271,7 @@ Current implementation notes:
 - `synthpopcan tree audit-model` performs the first artifact-level disclosure-risk check for private working models, including raw-row/source-id flags, minimum support, high-purity groups/leaves with dominant outcomes, release class, and publishable-candidate status. It is an advisory gate, not a claim of privacy safety.
 - `synthpopcan tree package-model` is a strict first packaging gate: it refuses to write a package if the audit has any warnings or errors. Current `private_working` models therefore cannot be packaged until a later reviewed publishable-candidate workflow exists.
 - `synthpopcan tree prepare-model-release` writes a publishable-candidate copy of a model only when the release audit has no blocking issues beyond the expected `private_working` release-class warning. It can write a release manifest with thresholds, audit output, source/output model paths, and a human review note.
-- `synthpopcan tree package-linked-models` packages household and person models together only after both audits pass without warnings. It validates household/person model levels and the household-size linkage column, requires linked training-manifest provenance plus a human review note, checks manifest model paths against the packaged models, embeds both model artifacts and both audit reports, and marks the package as a publishable candidate only when both model audits say so.
+- `synthpopcan tree package-linked-models` packages household and person models together only after both audits pass without warnings. It validates household/person model levels and the household-size linkage column, requires linked training-manifest provenance plus a human review note, checks manifest model paths against the packaged models or verifies release manifests connecting private source models to publishable release copies, embeds both model artifacts and both audit reports, and marks the package as a publishable candidate only when both model audits say so.
 - Initial audit on the local 2016-derived models with `min_support=50,max_purity=0.95`: conditional-frequency had 157 groups, minimum support about 503.7, no low-support groups, and 2 pure groups; CART had 58 leaves, minimum support 81, no low-support or high-purity leaves. Both remained `private_working` and `publishable_candidate: false`.
 - `synthpopcan tree generate-linked` performs the first household-then-person generation pass from separate household and person models, writing linked `synthetic_household_id` and `synthetic_person_id` CSV outputs.
 - `synthpopcan tree generate` and `synthpopcan tree generate-linked` accept `--manifest-out` for a lightweight JSON provenance sidecar with model path, model type, release class, output paths, conditions, requested random seed, and effective random seed.
@@ -284,6 +284,10 @@ Current implementation notes:
 - `synthpopcan microdata suggest-tree-columns` advises broad staged column blocks through a source-specific suggestion profile. The first profile, `statcan-2016-hierarchical`, covers household core, person demographics, person identity/language, and person education/work/income. It excludes identifiers, weights, and replicate weights, reports geography context columns, and only includes target columns present in the inspected file. The profile registry is the first step toward supporting other census years or microdata layouts without rewriting the command.
 - `synthpopcan microdata tree-geography-feasibility` estimates which PR or CMA geographies are plausible candidates for publishable linked tree models before training many artifacts. It reports person rows, derived household rows, weighted totals, conditioning support, outcome purity risk, a likely/borderline/unlikely tier, and a model-design recommendation with scope, reduced/minimal target sets, columns to review first, Canadian aggregation hints, and next steps. On the local 2016 hierarchical PUMF with default `household_core` plus `person_demographics`, PR 35/24/59/48/46/47 are likely, PR 12/13/10 are borderline, and PR 11/70 are unlikely under the current thresholds. The exposed CMA buckets 999/535/462/933/825/835 are likely under the same first-pass criteria.
 - `scripts/benchmark_tree_linked.py --suggested-blocks` can now run the linked benchmark from named suggestion-profile blocks, defaulting to `household_core` plus `person_demographics`. This keeps the fuller benchmark path aligned with `synthpopcan microdata suggest-tree-columns` and avoids long manual column lists while preserving the explicit-column mode for experiments.
+- Full local release-workflow experiment on the 2016 hierarchical PUMF:
+  - PR=24 full suggested profile trained in about 6.2 seconds wall-clock from 79,498 person rows and 35,306 households. After `tree prepare-model-release`, `tree release-readiness` classified the pair as `likely_publishable`; both audits had zero issues, no low-support groups, and no high-purity groups. The household model was about 21 MB, the person model about 567 KB, and the linked package about 25 MB. Generating 1,000 households with `PR=24` produced 2,300 people; `validate linked-output` passed with no unknown households and no household-size mismatches.
+  - PR=11 minimal profile trained in about 5.1 seconds wall-clock from 1,401 person rows and 597 households. After `tree prepare-model-release`, `tree release-readiness` also classified the pair as `likely_publishable` under the current first-pass model-artifact checks; both audits had zero issues, no low-support groups, and no high-purity groups. The household model was about 4.7 KB, the person model about 41 KB, and the linked package about 64 KB. Generating 1,000 households with `PR=11` produced 2,388 people; `validate linked-output` passed. This is useful as a technical smoke test, but the earlier geography advisor still recommends aggregate or minimal-only caution for small geographies before distribution.
+  - The real run exposed a necessary workflow distinction: linked training manifests point at the original private working models, while packages usually embed reviewed publishable copies. `tree package-linked-models` now accepts `--household-release-manifest` and `--person-release-manifest` so the package can verify that provenance chain without requiring hand-edited manifests.
 
 Household/person linkage design:
 
@@ -479,7 +483,9 @@ Next active tree model packaging/distribution slice:
    provenance, audit thresholds, model summaries with file sizes, and human
    review notes. `tree package-linked-models` now requires a training manifest,
    requires a non-empty review note, and checks manifest model paths against the
-   packaged model paths. Stronger source citation requirements are still pending.
+   packaged model paths or release manifests connecting private source models to
+   reviewed publishable copies. Stronger source citation requirements are still
+   pending.
 2. Add a release-readiness report that can be run before packaging Canada,
    province/territory, and large-CMA model candidates. It should explain whether
    the candidate is likely publishable, likely private-only, or needs pruning,
@@ -490,8 +496,8 @@ Next active tree model packaging/distribution slice:
    have not passed disclosure-risk checks. Status: partially complete; readiness
    reports and package commands distinguish private working models from
    publishable candidates, and linked packages now require reviewed provenance
-   inputs before writing an artifact. Stronger source citation requirements are
-   still pending.
+   inputs plus release-copy provenance before writing an artifact. Stronger
+   source citation requirements are still pending.
 4. Add fixture tests for a linked model package manifest and release-readiness
    report before running more full-data candidate-model experiments. Status:
    release-readiness and strict linked-package manifest fixture tests added.

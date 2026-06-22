@@ -733,6 +733,24 @@ def _write_linked_training_manifest(
     path.write_text(json.dumps(payload) + "\n")
 
 
+def _write_model_release_manifest(
+    path, *, source_model_path, output_model_path
+) -> None:
+    path.write_text(
+        json.dumps(
+            {
+                "schema_version": "synthpopcan-tree-release-manifest-v1",
+                "command": "tree prepare-model-release",
+                "source_model": str(source_model_path),
+                "output_model": str(output_model_path),
+                "release_class": "publishable_candidate",
+                "review_note": "reviewed fixture model",
+            }
+        )
+        + "\n"
+    )
+
+
 def test_cli_packages_publishable_linked_models(tmp_path) -> None:
     household_model_path, person_model_path = _write_publishable_linked_model_fixtures(
         tmp_path
@@ -788,6 +806,77 @@ def test_cli_packages_publishable_linked_models(tmp_path) -> None:
     assert package["audits"]["household"]["passed"] is True
     assert package["audits"]["person"]["passed"] is True
     assert package["privacy"]["publishable_candidate"] is True
+
+
+def test_cli_packages_release_copies_with_model_release_manifests(tmp_path) -> None:
+    household_model_path, person_model_path = _write_publishable_linked_model_fixtures(
+        tmp_path
+    )
+    household_release_model_path = tmp_path / "household-model-publishable.json"
+    person_release_model_path = tmp_path / "person-model-publishable.json"
+    household_release_manifest_path = tmp_path / "household-release-manifest.json"
+    person_release_manifest_path = tmp_path / "person-release-manifest.json"
+    training_manifest_path = tmp_path / "linked-training-manifest.json"
+    package_path = tmp_path / "linked-model-package.json"
+    household_release_model_path.write_text(household_model_path.read_text())
+    person_release_model_path.write_text(person_model_path.read_text())
+    _write_linked_training_manifest(
+        training_manifest_path,
+        household_model_path=household_model_path,
+        person_model_path=person_model_path,
+    )
+    _write_model_release_manifest(
+        household_release_manifest_path,
+        source_model_path=household_model_path,
+        output_model_path=household_release_model_path,
+    )
+    _write_model_release_manifest(
+        person_release_manifest_path,
+        source_model_path=person_model_path,
+        output_model_path=person_release_model_path,
+    )
+
+    assert (
+        main(
+            [
+                "tree",
+                "package-linked-models",
+                "--household-model",
+                str(household_release_model_path),
+                "--person-model",
+                str(person_release_model_path),
+                "--training-manifest",
+                str(training_manifest_path),
+                "--household-release-manifest",
+                str(household_release_manifest_path),
+                "--person-release-manifest",
+                str(person_release_manifest_path),
+                "--review-note",
+                "reviewed fixture package",
+                "--out",
+                str(package_path),
+                "--min-support",
+                "1",
+                "--max-purity",
+                "1",
+            ]
+        )
+        == 0
+    )
+
+    package = json.loads(package_path.read_text())
+    assert package["release_manifests"]["household"]["source_model"] == str(
+        household_model_path
+    )
+    assert package["release_manifests"]["household"]["output_model"] == str(
+        household_release_model_path
+    )
+    assert package["release_manifests"]["person"]["source_model"] == str(
+        person_model_path
+    )
+    assert package["release_manifests"]["person"]["output_model"] == str(
+        person_release_model_path
+    )
 
 
 def test_cli_requires_training_manifest_for_linked_model_packages(tmp_path) -> None:
