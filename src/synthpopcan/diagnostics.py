@@ -210,7 +210,7 @@ def build_dimension_input_check(
             "seed_categories": [],
             "missing_categories": control_categories,
             "unused_seed_categories": [],
-            "detail": "seed column is missing",
+            "detail": "seed column is missing; add this attribute before IPF",
         }
 
     seed_categories = sorted(str(row.get(dimension, "")) for row in seed_rows)
@@ -243,9 +243,12 @@ def suggest_ipf_input_next_steps(dimension_checks: list[dict[str, Any]]) -> list
         dimension = str(check["dimension"])
         if check["seed_column"] == "missing":
             steps.append(
-                f"Missing seed column for dimension '{dimension}': export a seed "
-                f"column named '{dimension}', or normalize controls so their "
-                "dimension name matches an existing seed column."
+                f"Missing seed column for dimension '{dimension}': IPF cannot "
+                "create this variable. Add it first with an enrichment/modeling "
+                f"step, export a seed column named '{dimension}', or choose "
+                "controls whose dimensions already exist in the seed. Run "
+                "`synthpopcan ipf suggest-controls --seed seed.csv` to inspect "
+                "usable calibration columns."
             )
             continue
         missing = check.get("missing_categories", [])

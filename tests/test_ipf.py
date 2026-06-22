@@ -104,6 +104,44 @@ def test_ipf_input_report_finds_missing_and_unused_seed_categories() -> None:
     }
 
 
+def test_ipf_input_report_explains_missing_columns_as_enrichment_needed() -> None:
+    control_table = ControlTable(
+        margins=(
+            ControlMargin(
+                name="education",
+                dimensions=("education",),
+                cells=(
+                    ControlCell({"education": "university"}, 120.0),
+                    ControlCell({"education": "no_university"}, 180.0),
+                ),
+            ),
+        ),
+        dimensions=("education",),
+    )
+
+    report = build_ipf_input_report(
+        [
+            {"id": "1", "age": "adult", "sex": "F"},
+            {"id": "2", "age": "adult", "sex": "M"},
+        ],
+        control_table,
+    )
+
+    assert report["dimensions"][0]["detail"] == (
+        "seed column is missing; add this attribute before IPF"
+    )
+    assert report["suggested_next_steps"] == [
+        (
+            "Missing seed column for dimension 'education': IPF cannot create "
+            "this variable. Add it first with an enrichment/modeling step, "
+            "export a seed column named 'education', or choose controls whose "
+            "dimensions already exist in the seed. Run `synthpopcan ipf "
+            "suggest-controls --seed seed.csv` to inspect usable calibration "
+            "columns."
+        )
+    ]
+
+
 def test_expand_records_integerizes_weights_with_seed_ids() -> None:
     records = [
         {"id": "a", "age": "young", "sex": "F"},
@@ -1031,9 +1069,9 @@ def test_cli_checks_ipf_inputs_as_readable_table(tmp_path: Path, capsys) -> None
     assert "age" in output
     assert "OK" in output
     assert "sex" in output
-    assert "Missing column" in output
     assert "Next Steps" in output
-    assert "export a seed column named 'sex'" in output
+    assert "IPF cannot create this variable" in output
+    assert "suggest-controls" in output
 
 
 def count_rows(rows: list[dict[str, str]], field: str) -> dict[str, int]:

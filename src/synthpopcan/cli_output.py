@@ -308,7 +308,7 @@ def print_ipf_input_check_table(report: dict[str, object]) -> None:
             continue
         status = "OK" if row.get("status") == "ok" else "Problem"
         if row.get("seed_column") == "missing":
-            seed_column = "Missing column"
+            seed_column = "Needs enrichment"
         else:
             seed_column = "Found"
         table.add_row(
