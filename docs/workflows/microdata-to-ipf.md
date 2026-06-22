@@ -35,7 +35,7 @@ synthpopcan validate controls \
 
 The controls use `AGEGRP` and `SEX` because those are the exported seed columns. The category values also match: `adult`, `child`, `F`, and `M`. If either the column names or category labels differ, IPF cannot fit the controls without a mapping step.
 
-## Choose and Inspect a StatCan WDS Table
+## Choose a StatCan WDS Table
 
 Once a search result gives you a product ID, explain the table before
 downloading it:
@@ -48,18 +48,31 @@ The explanation summarizes the table title, date range, available dimensions,
 a short member preview, whether it looks plausible as an IPF control source,
 and the next commands to run.
 
-When you have downloaded a full StatCan WDS table ZIP, inspect it before
-normalizing controls:
+If the table looks useful, fetch it and normalize the dimensions you need:
 
 ```bash
-synthpopcan controls wds inspect 98100001-eng.zip
+synthpopcan statcan wds fetch 98100001 --out-dir data/raw/statcan/wds
+synthpopcan controls from-wds data/raw/statcan/wds/98100001-eng.zip \
+  --dimensions 'GEO,Age group,Sex' \
+  --count-column VALUE \
+  --margin-name wds \
+  --out controls.csv
+```
+
+Then run `ipf check-inputs` to confirm that the seed file has matching columns
+and category values.
+
+If you are unsure which columns to use, inspect the downloaded ZIP:
+
+```bash
+synthpopcan controls wds inspect data/raw/statcan/wds/98100001-eng.zip
 ```
 
 The inspection reports the CSV member, columns, row count, likely count column,
 likely dimension columns, and a starter command:
 
 ```bash
-synthpopcan controls from-wds 98100001-eng.zip \
+synthpopcan controls from-wds data/raw/statcan/wds/98100001-eng.zip \
   --dimensions 'GEO,Age group,Sex' \
   --count-column VALUE \
   --margin-name wds \
@@ -69,11 +82,11 @@ synthpopcan controls from-wds 98100001-eng.zip \
 Treat the suggested dimensions as a starting point. Drop columns that are not
 part of the margin you want to fit.
 
-If source labels need to be converted to seed categories, write a starter
+If source labels need to be converted to seed categories, create a starter
 mapping template:
 
 ```bash
-synthpopcan controls wds mapping-template 98100001-eng.zip \
+synthpopcan controls wds mapping-template data/raw/statcan/wds/98100001-eng.zip \
   --dimensions 'Age group,Sex' \
   --out categories.json
 ```
@@ -92,9 +105,6 @@ fill in:
   }
 }
 ```
-
-After normalization, run `ipf check-inputs` to confirm that the seed file has
-matching columns and category values.
 
 When columns or categories do not line up, the report includes next steps. For
 example, it may suggest exporting a seed column with the same name as a control

@@ -309,15 +309,7 @@ https://www150.statcan.gc.ca/t1/wds/rest/getFullTableDownloadCSV/{product_id}/{l
 
 The WDS response returns the actual CSV ZIP URL. SynthPopCan downloads that ZIP and writes a small JSON manifest beside it.
 
-Create a starter category mapping when WDS labels need to match seed categories:
-
-```bash
-synthpopcan controls wds mapping-template data/raw/statscan/wds/14100287-eng.zip \
-  --dimensions "Age group,Sex" \
-  --out categories.json
-```
-
-Normalize a downloaded WDS ZIP into SynthPopCan controls with explicit table mapping:
+Normalize a downloaded WDS ZIP into SynthPopCan controls:
 
 ```bash
 synthpopcan controls from-wds data/raw/statscan/wds/14100287-eng.zip \
@@ -328,24 +320,9 @@ synthpopcan controls from-wds data/raw/statscan/wds/14100287-eng.zip \
   --out controls.csv
 ```
 
-The first `from-wds` implementation intentionally requires the dimensions and count column. StatCan WDS tables differ in universe, measures, notes, and category layout, so arbitrary tables should not be guessed into controls without an explicit mapping.
-
-The optional category mapping file is a JSON object keyed by source dimension:
-
-```json
-{
-  "Age group": {
-    "0 to 4 years": "age_000_004",
-    "5 to 9 years": "age_005_009"
-  },
-  "Sex": {
-    "Female": "female",
-    "Male": "male"
-  }
-}
-```
-
-When a mapping is provided for a dimension, unmapped values in that dimension fail the normalization run.
+The WDS workflow can also inspect downloaded ZIPs and create starter mapping
+templates when source labels need to match seed categories. See
+`docs/workflows/microdata-to-ipf.md` for the fuller walkthrough.
 
 ### Census Profile CSVs
 
@@ -393,145 +370,22 @@ synthpopcan controls from-census-profile profile.csv \
 
 This first adapter intentionally reads local downloaded CSVs and selected rows only. It helps inspect and template mappings, but it does not infer which Census Profile characteristics are suitable IPF controls.
 
-User story for finding a WDS table ID:
+Short user story for finding a WDS table ID:
 
-1. The user starts with topic words, for example `population dwelling`, `age sex`, `household income`, or `labour force`.
-2. The user runs `synthpopcan statcan wds search "TOPIC WORDS" --limit 10`.
-3. The CLI prints matching WDS tables with product ID, CANSIM ID when available, date range, and English title.
-4. The user runs `synthpopcan statcan wds explain PRODUCT_ID`.
-5. The CLI summarizes the dimensions, previews a few member labels, reports whether the table looks plausible for IPF controls, and prints the next commands.
-6. The user runs `synthpopcan statcan wds fetch PRODUCT_ID --out-dir ...`.
-7. If the table is not suitable as a margin table, the later normalization step should fail with a clear explanation of which dimensions or measures are missing.
+1. The user searches with plain topic words, for example `population dwelling`.
+2. The CLI shows matching StatCan WDS tables and their product IDs.
+3. The user explains one promising product ID before downloading it.
+4. The explanation previews the dimensions, a few member labels, and whether
+   the table looks useful as an IPF control source.
+5. If it looks useful, the user fetches it and follows the printed next command.
+
+If the downloaded table later needs column or label cleanup, SynthPopCan can
+inspect the ZIP and create a starter mapping template.
 
 The CLI-assisted search uses StatCan's `getAllCubesListLite` endpoint. Metadata inspection uses `getCubeMetadata`.
 
-#### Example: choosing a WDS table
-
-Suppose the user wants a simple population/dwelling count source to begin testing control-table normalization.
-
-Search WDS tables:
-
-```bash
-synthpopcan statcan wds search "population dwelling" --limit 5
-```
-
-Default shell output is a Rich table:
-
-```text
-                              StatCan WDS Tables
-┏━━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃ Product ID ┃ CANSIM ID ┃ Date Range               ┃ Title                    ┃
-┡━━━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━┩
-│ 38100170   │ None      │ 2016-01-01 to 2021-01-01 │ Coastal population and   │
-│            │           │                          │ dwellings by elevation   │
-│            │           │                          │ and distance from        │
-│            │           │                          │ coastline                │
-│ 98100001   │ None      │ 2021-01-01               │ Population and dwelling  │
-│            │           │                          │ counts: Canada,          │
-│            │           │                          │ provinces and            │
-│            │           │                          │ territories              │
-│ 98100002   │ None      │ 2021-01-01               │ Population and dwelling  │
-│            │           │                          │ counts: Canada and       │
-│            │           │                          │ census subdivisions      │
-│            │           │                          │ (municipalities)         │
-└────────────┴───────────┴──────────────────────────┴──────────────────────────┘
-```
-
-The same search can use script-friendly output:
-
-```bash
-synthpopcan statcan wds search "population dwelling" --limit 5 --format tsv
-synthpopcan statcan wds search "population dwelling" --limit 5 --format json
-```
-
-The same results as a lightweight documentation table:
-
-| Product ID | CANSIM ID | Date Range | Title |
-| --- | --- | --- | --- |
-| `38100170` | None | 2016-01-01 to 2021-01-01 | Coastal population and dwellings by elevation and distance from coastline |
-| `98100001` | None | 2021-01-01 | Population and dwelling counts: Canada, provinces and territories |
-| `98100002` | None | 2021-01-01 | Population and dwelling counts: Canada and census subdivisions (municipalities) |
-| `98100003` | None | 2021-01-01 | Population and dwelling counts: Census metropolitan areas, census agglomerations and census subdivisions (municipalities) |
-| `98100004` | None | 2021-01-01 | Population and dwelling counts: Canada, provinces and territories, census divisions, census subdivisions (municipalities) and designated places |
-
-The user picks `98100001` because the title says it contains population and dwelling counts for Canada, provinces, and territories.
-
-Explain the table:
-
-```bash
-synthpopcan statcan wds explain 98100001
-```
-
-Use raw metadata when you need the full StatCan payload:
-
-```bash
-synthpopcan statcan wds metadata 98100001 --out 98100001-metadata.json
-```
-
-Useful raw metadata excerpt:
-
-```json
-{
-  "productId": "98100001",
-  "cubeTitleEn": "Population and dwelling counts: Canada, provinces and territories",
-  "cubeStartDate": "2021-01-01",
-  "cubeEndDate": "2021-01-01",
-  "dimensions": [
-    {
-      "name": "Geographic name",
-      "members": [
-        "Canada",
-        "Newfoundland and Labrador",
-        "Prince Edward Island",
-        "Nova Scotia",
-        "New Brunswick",
-        "Quebec"
-      ]
-    },
-    {
-      "name": "Population and dwelling counts (11)",
-      "members": [
-        "Population, 2021",
-        "Population, 2016",
-        "Population percentage change, 2016 to 2021",
-        "Total private dwellings, 2021",
-        "Total private dwellings, 2016",
-        "Total private dwellings percentage change, 2016 to 2021"
-      ]
-    }
-  ]
-}
-```
-
-This is useful because it tells the user what the table can and cannot do before downloading it. This table has geography and population/dwelling measures, so it is a plausible source for total population controls by province or territory. It is not enough for age-by-sex IPF because the metadata does not include age or sex dimensions.
-
-Download the table:
-
-```bash
-synthpopcan statcan wds fetch 98100001 --lang en --out-dir data/raw/statscan/wds
-```
-
-The command is quiet on success and creates:
-
-```text
-data/raw/statscan/wds/98100001-eng.zip
-data/raw/statscan/wds/98100001-eng.json
-```
-
-The manifest records the WDS API URL and the actual ZIP URL:
-
-```json
-{
-  "download_url": "https://www150.statcan.gc.ca/n1/tbl/csv/98100001-eng.zip",
-  "language": "en",
-  "path": "data/raw/statscan/wds/98100001-eng.zip",
-  "product_id": "98100001",
-  "source": "Statistics Canada WDS",
-  "source_url": "https://www150.statcan.gc.ca/t1/wds/rest/getFullTableDownloadCSV/98100001/en"
-}
-```
-
-The next step, not implemented yet, is a normalizer that reads the downloaded StatCan CSV package and turns selected dimensions and measures into SynthPopCan's long control format for `synthpopcan ipf fit`.
+For detailed examples, optional metadata export, ZIP inspection, and label
+mapping, use `docs/workflows/microdata-to-ipf.md`.
 
 ### Census Profile bulk CSVs
 
