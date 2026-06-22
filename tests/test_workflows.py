@@ -2,6 +2,7 @@ import csv
 import json
 import shutil
 from pathlib import Path
+from zipfile import ZipFile
 
 from synthpopcan.cli import main
 
@@ -174,6 +175,130 @@ def test_tracked_microdata_ipf_tutorial_fixture_workflow(
 
     report = json.loads(capsys.readouterr().out)
     assert report["passed"] is True
+
+
+def test_tracked_wds_ipf_mapping_tutorial_fixture_workflow(
+    tmp_path: Path,
+    capsys,
+) -> None:
+    fixture_root = Path("tests/fixtures/workflows/wds_ipf")
+    wds_zip_path = tmp_path / "wds.zip"
+    mapping_template_path = tmp_path / "categories-template.json"
+    mapping_path = tmp_path / "categories.json"
+    controls_path = tmp_path / "controls.csv"
+    weights_path = tmp_path / "weights.csv"
+    report_path = tmp_path / "fit-report.json"
+    seed_path = tmp_path / "seed.csv"
+
+    shutil.copyfile(fixture_root / "seed.csv", seed_path)
+    shutil.copyfile(fixture_root / "categories-filled.json", mapping_path)
+    with ZipFile(wds_zip_path, "w") as archive:
+        archive.write(fixture_root / "wds-table.csv", "wds-table.csv")
+
+    assert (
+        main(
+            [
+                "controls",
+                "wds",
+                "mapping-template",
+                str(wds_zip_path),
+                "--dimensions",
+                "Sex",
+                "--out",
+                str(mapping_template_path),
+            ]
+        )
+        == 0
+    )
+    capsys.readouterr()
+    assert json.loads(mapping_template_path.read_text()) == json.loads(
+        (fixture_root / "categories-template.json").read_text()
+    )
+
+    assert (
+        main(
+            [
+                "controls",
+                "from-wds",
+                str(wds_zip_path),
+                "--dimensions",
+                "Sex",
+                "--count-column",
+                "VALUE",
+                "--margin-name",
+                "sex",
+                "--mapping",
+                str(mapping_path),
+                "--out",
+                str(controls_path),
+            ]
+        )
+        == 0
+    )
+    capsys.readouterr()
+    assert (
+        controls_path.read_text()
+        == (fixture_root / "expected-controls.csv").read_text()
+    )
+
+    assert (
+        main(
+            [
+                "ipf",
+                "check-inputs",
+                "--seed",
+                str(seed_path),
+                "--controls",
+                str(controls_path),
+                "--format",
+                "json",
+            ]
+        )
+        == 0
+    )
+    input_report = json.loads(capsys.readouterr().out)
+    assert input_report["passed"] is True
+    assert input_report["suggested_next_steps"] == []
+
+    assert (
+        main(
+            [
+                "ipf",
+                "fit",
+                "--seed",
+                str(seed_path),
+                "--controls",
+                str(controls_path),
+                "--out",
+                str(weights_path),
+                "--report",
+                str(report_path),
+            ]
+        )
+        == 0
+    )
+    capsys.readouterr()
+    assert json.loads(report_path.read_text())["converged"] is True
+
+    assert (
+        main(
+            [
+                "validate",
+                "controls",
+                "--population",
+                str(weights_path),
+                "--controls",
+                str(controls_path),
+                "--kind",
+                "weights",
+                "--format",
+                "json",
+            ]
+        )
+        == 0
+    )
+    validation_report = json.loads(capsys.readouterr().out)
+    assert validation_report["passed"] is True
 
 
 def test_tracked_microdata_tree_tutorial_fixture_workflow(

@@ -100,3 +100,48 @@ When columns or categories do not line up, the report includes next steps. For
 example, it may suggest exporting a seed column with the same name as a control
 dimension, or using `controls wds mapping-template` when WDS labels such as
 `Female` need to be mapped to seed labels such as `F`.
+
+## Tiny WDS-to-IPF Fixture
+
+The tracked files under `tests/fixtures/workflows/wds_ipf/` show the WDS label
+mapping loop with a deliberately small sex margin:
+
+- `wds-table.csv`: source-style WDS rows with `Female` and `Male`.
+- `seed.csv`: seed rows with `F` and `M`.
+- `categories-template.json`: blank template produced by
+  `controls wds mapping-template`.
+- `categories-filled.json`: completed mapping from WDS labels to seed labels.
+- `expected-controls.csv`: normalized controls after `controls from-wds`.
+
+Create the ZIP, generate the template, normalize controls, check inputs, fit,
+and validate:
+
+```bash
+zip -j wds.zip tests/fixtures/workflows/wds_ipf/wds-table.csv
+
+synthpopcan controls wds mapping-template wds.zip \
+  --dimensions Sex \
+  --out categories-template.json
+
+synthpopcan controls from-wds wds.zip \
+  --dimensions Sex \
+  --count-column VALUE \
+  --margin-name sex \
+  --mapping tests/fixtures/workflows/wds_ipf/categories-filled.json \
+  --out controls.csv
+
+synthpopcan ipf check-inputs \
+  --seed tests/fixtures/workflows/wds_ipf/seed.csv \
+  --controls controls.csv
+
+synthpopcan ipf fit \
+  --seed tests/fixtures/workflows/wds_ipf/seed.csv \
+  --controls controls.csv \
+  --out weights.csv \
+  --report fit-report.json
+
+synthpopcan validate controls \
+  --population weights.csv \
+  --controls controls.csv \
+  --kind weights
+```

@@ -448,7 +448,9 @@ for non-specialist users:
    `suggested_next_steps` guidance added for missing seed columns and category
    mismatches, including WDS mapping-template hints.
 5. Keep README examples short and move reproducible walkthroughs into
-   `docs/workflows/`.
+   `docs/workflows/`. Status: WDS-to-IPF fixture workflow added to verify
+   mapping-template, mapped WDS controls, input checks, fitting, and validation
+   compose end to end.
 
 ## Deferred Work
 
