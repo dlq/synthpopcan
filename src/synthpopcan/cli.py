@@ -18,6 +18,7 @@ from synthpopcan.cli_output import (
     print_tree_output_validation_report_table,
     print_validation_report_table,
     print_wds_inspection_table,
+    print_wds_metadata_explanation_table,
     write_output,
     write_wds_search_results,
 )
@@ -46,6 +47,7 @@ from synthpopcan.statcan import (
     fetch_wds_metadata,
     fetch_wds_table,
     search_wds_tables,
+    summarize_wds_metadata,
 )
 from synthpopcan.tree import validate_linked_population
 from synthpopcan.validation import (
@@ -700,6 +702,27 @@ def run_statcan_wds_metadata(product_id: str, out_path: Path | None) -> None:
         print_wrote(out_path)
     else:
         print(payload, end="")
+
+
+@wds.command("explain")
+@click.argument("product_id")
+@click.option(
+    "--format",
+    "output_format",
+    default="table",
+    type=click.Choice(["json", "table"]),
+    show_default=True,
+)
+def run_statcan_wds_explain(product_id: str, output_format: str) -> None:
+    """Explain a WDS table and show next IPF-control commands."""
+    try:
+        summary = summarize_wds_metadata(fetch_wds_metadata(product_id))
+    except ValueError as exc:
+        raise click.ClickException(str(exc)) from exc
+    if output_format == "json":
+        print(json.dumps(summary, indent=2, sort_keys=True))
+        return
+    print_wds_metadata_explanation_table(summary)
 
 
 @statcan.group(name="census-profile")

@@ -437,6 +437,8 @@ for non-specialist users:
    helper added for local WDS ZIPs.
 2. Improve the WDS metadata/search path so users can choose plausible product
    IDs and understand whether a table has useful dimensions before downloading.
+   Status: first `statcan wds explain` helper added for product-ID summaries,
+   IPF suitability hints, and next commands.
 3. Add starter mapping/template helpers for common StatCan dimensions such as
    age, sex, geography, and household structure where stable labels exist.
 4. Make `ipf check-inputs` the expected next step after control normalization,

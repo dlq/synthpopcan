@@ -286,10 +286,10 @@ Search for candidate Statistics Canada WDS product/table IDs:
 synthpopcan statcan wds search "population dwelling" --limit 10
 ```
 
-Inspect a candidate table before downloading it:
+Explain a candidate table before downloading it:
 
 ```bash
-synthpopcan statcan wds metadata 14100287 --out 14100287-metadata.json
+synthpopcan statcan wds explain 14100287
 ```
 
 Download the table CSV ZIP:
@@ -387,8 +387,8 @@ User story for finding a WDS table ID:
 1. The user starts with topic words, for example `population dwelling`, `age sex`, `household income`, or `labour force`.
 2. The user runs `synthpopcan statcan wds search "TOPIC WORDS" --limit 10`.
 3. The CLI prints matching WDS tables with product ID, CANSIM ID when available, date range, and English title.
-4. The user runs `synthpopcan statcan wds metadata PRODUCT_ID --out metadata.json`.
-5. The user inspects the metadata dimensions, geography members, measures, date range, and title to decide whether the table can be normalized into margin controls.
+4. The user runs `synthpopcan statcan wds explain PRODUCT_ID`.
+5. The CLI summarizes the dimensions, date range, whether the table looks plausible for IPF controls, and the next commands.
 6. The user runs `synthpopcan statcan wds fetch PRODUCT_ID --out-dir ...`.
 7. If the table is not suitable as a margin table, the later normalization step should fail with a clear explanation of which dimensions or measures are missing.
 
@@ -445,13 +445,19 @@ The same results as a lightweight documentation table:
 
 The user picks `98100001` because the title says it contains population and dwelling counts for Canada, provinces, and territories.
 
-Inspect the metadata:
+Explain the table:
+
+```bash
+synthpopcan statcan wds explain 98100001
+```
+
+Use raw metadata when you need the full StatCan payload:
 
 ```bash
 synthpopcan statcan wds metadata 98100001 --out 98100001-metadata.json
 ```
 
-Useful metadata excerpt:
+Useful raw metadata excerpt:
 
 ```json
 {

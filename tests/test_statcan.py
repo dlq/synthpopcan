@@ -6,6 +6,7 @@ from synthpopcan.statcan import (
     CENSUS_PROFILE_2016_DOWNLOADS,
     fetch_wds_metadata,
     search_wds_tables,
+    summarize_wds_metadata,
     wds_download_url,
 )
 
@@ -271,3 +272,69 @@ def test_cli_writes_wds_metadata_json(tmp_path: Path, monkeypatch) -> None:
     payload = json.loads(output_path.read_text())
     assert payload["productId"] == "14100287"
     assert payload["dimension"][0]["dimensionNameEn"] == "Geography"
+
+
+def test_summarizes_wds_metadata_for_ipf_use() -> None:
+    summary = summarize_wds_metadata(
+        {
+            "productId": "98100001",
+            "cubeTitleEn": "Population and dwelling counts: Canada",
+            "cubeStartDate": "2021-01-01",
+            "cubeEndDate": "2021-01-01",
+            "dimension": [
+                {"dimensionNameEn": "Geography"},
+                {"dimensionNameEn": "Age group"},
+                {"dimensionNameEn": "Sex"},
+            ],
+        }
+    )
+
+    assert summary == {
+        "product_id": "98100001",
+        "title_en": "Population and dwelling counts: Canada",
+        "date_range": "2021-01-01 to 2021-01-01",
+        "dimensions": ["Geography", "Age group", "Sex"],
+        "ipf_hint": (
+            "Plausible IPF control table: choose dimensions that match your "
+            "seed columns, then inspect the downloaded ZIP before normalizing."
+        ),
+        "next_commands": [
+            "synthpopcan statcan wds fetch 98100001 --out-dir data/raw/statcan/wds",
+            ("synthpopcan controls wds inspect data/raw/statcan/wds/98100001-eng.zip"),
+            (
+                "synthpopcan controls from-wds "
+                "data/raw/statcan/wds/98100001-eng.zip "
+                "--dimensions 'Geography,Age group,Sex' "
+                "--count-column VALUE "
+                "--out controls.csv"
+            ),
+            "synthpopcan ipf check-inputs --seed seed.csv --controls controls.csv",
+        ],
+    }
+
+
+def test_cli_explains_wds_metadata_as_json(capsys, monkeypatch) -> None:
+    def fake_metadata(product_id: str) -> dict[str, object]:
+        assert product_id == "98100001"
+        return {
+            "productId": "98100001",
+            "cubeTitleEn": "Population and dwelling counts: Canada",
+            "cubeStartDate": "2021-01-01",
+            "cubeEndDate": "2021-01-01",
+            "dimension": [
+                {"dimensionNameEn": "Geography"},
+                {"dimensionNameEn": "Age group"},
+                {"dimensionNameEn": "Sex"},
+            ],
+        }
+
+    monkeypatch.setattr("synthpopcan.cli.fetch_wds_metadata", fake_metadata)
+
+    assert main(["statcan", "wds", "explain", "98100001", "--format", "json"]) == 0
+
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["product_id"] == "98100001"
+    assert payload["dimensions"] == ["Geography", "Age group", "Sex"]
+    assert payload["next_commands"][-1] == (
+        "synthpopcan ipf check-inputs --seed seed.csv --controls controls.csv"
+    )

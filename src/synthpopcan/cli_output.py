@@ -63,6 +63,27 @@ def write_wds_search_table(rows: list[dict[str, str]]) -> None:
     print_table(table)
 
 
+def print_wds_metadata_explanation_table(summary: dict[str, object]) -> None:
+    print_summary_table(
+        {
+            "product_id": summary.get("product_id", ""),
+            "date_range": summary.get("date_range", ""),
+            "dimensions": ", ".join(
+                str(value) for value in summary.get("dimensions", [])
+            ),
+            "ipf_hint": summary.get("ipf_hint", ""),
+        },
+        title="StatCan WDS Table",
+    )
+
+    table = Table(title="Next Commands")
+    table.add_column("Step", justify="right", no_wrap=True)
+    table.add_column("Command")
+    for index, command in enumerate(summary.get("next_commands", []), start=1):
+        table.add_row(str(index), str(command))
+    print_table(table)
+
+
 def print_census_profile_characteristics_table(rows: list[dict[str, str]]) -> None:
     table = Table(title="Census Profile Characteristics")
     table.add_column("Characteristic")

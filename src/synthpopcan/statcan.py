@@ -158,6 +158,66 @@ def fetch_wds_metadata(product_id: str) -> dict[str, Any]:
     return dict(first["object"])
 
 
+def summarize_wds_metadata(metadata: dict[str, Any]) -> dict[str, object]:
+    product_id = normalize_product_id(str(metadata.get("productId", "")))
+    dimensions = extract_wds_dimension_names(metadata)
+    dimensions_arg = ",".join(dimensions)
+    zip_path = f"data/raw/statcan/wds/{product_id}-eng.zip"
+    return {
+        "product_id": product_id,
+        "title_en": str(metadata.get("cubeTitleEn", "")),
+        "date_range": format_metadata_date_range(
+            metadata.get("cubeStartDate"),
+            metadata.get("cubeEndDate"),
+        ),
+        "dimensions": dimensions,
+        "ipf_hint": (
+            "Plausible IPF control table: choose dimensions that match your "
+            "seed columns, then inspect the downloaded ZIP before normalizing."
+        ),
+        "next_commands": [
+            (
+                f"synthpopcan statcan wds fetch {product_id} "
+                "--out-dir data/raw/statcan/wds"
+            ),
+            f"synthpopcan controls wds inspect {zip_path}",
+            (
+                f"synthpopcan controls from-wds {zip_path} "
+                f"--dimensions '{dimensions_arg}' "
+                "--count-column VALUE "
+                "--out controls.csv"
+            ),
+            "synthpopcan ipf check-inputs --seed seed.csv --controls controls.csv",
+        ],
+    }
+
+
+def extract_wds_dimension_names(metadata: dict[str, Any]) -> list[str]:
+    names: list[str] = []
+    dimensions = metadata.get("dimension") or metadata.get("dimensions", [])
+    if not isinstance(dimensions, list):
+        return names
+    for dimension in dimensions:
+        if not isinstance(dimension, dict):
+            continue
+        name = (
+            dimension.get("dimensionNameEn")
+            or dimension.get("dimensionName")
+            or dimension.get("name")
+        )
+        if isinstance(name, str) and name:
+            names.append(name)
+    return names
+
+
+def format_metadata_date_range(start: Any, end: Any) -> str:
+    start_text = str(start or "")
+    end_text = str(end or "")
+    if start_text and end_text:
+        return f"{start_text} to {end_text}"
+    return start_text or end_text
+
+
 def fetch_wds_table(product_id: str, out_dir: Path, lang: str = "en") -> Path:
     source_url = wds_download_url(product_id, lang)
     response = fetch_json(source_url)
