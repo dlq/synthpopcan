@@ -183,10 +183,10 @@ IPF and attribute coverage:
   be treated as enrichment or modelling candidates, not direct IPF controls.
   A separate model, lookup, public cross-tab, or recoding step must add the
   column first; IPF can then calibrate the enriched rows.
-- `ipf check-inputs` should keep making this distinction explicit for users:
-  usable controls, missing-column controls, category mismatches, and possible
-  enrichment candidates. This is especially important for humanities users
-  exploring unfamiliar StatCan tables.
+- `ipf check-inputs` keeps making this distinction explicit for users: usable
+  controls, missing-column controls, category mismatches, and enrichment/modeling
+  next steps for absent attributes. This is especially important for humanities
+  users exploring unfamiliar StatCan tables.
 - Output metadata should eventually track column provenance: source microdata,
   recoded source column, model-generated column, enriched public-data column,
   IPF weight/calibration output, and synthetic identifier.
@@ -535,7 +535,9 @@ Remaining StatCan/IPF follow-up backlog:
   `ipf report` next-step rendering.
 - Add concise next-step hints where they remove friction without adding noise.
   Status: first `controls from-wds` error hints added for missing WDS columns
-  and unmapped category labels.
+  and unmapped category labels; `ipf check-inputs` now labels absent control
+  dimensions as needing enrichment/modeling before IPF and points users to
+  `ipf suggest-controls`.
 - Add an explicit generate-then-calibrate workflow that uses prepared tree model
   outputs as IPF seed rows: `tree generate-from-package`, `ipf check-inputs`,
   `ipf fit`, `ipf expand`, and `validate controls`. This should document that

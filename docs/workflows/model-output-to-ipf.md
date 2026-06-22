@@ -51,6 +51,24 @@ reports generated columns that are plausible household controls, common useful
 controls that are missing and would require enrichment first, geography columns
 to check against the model scope, and next commands for StatCan WDS discovery.
 
+For a generated household file with `geo`, `household_size`, and `tenure`, the
+useful part of the output is shaped like this:
+
+| Column | Status | What it means |
+| --- | --- | --- |
+| `household_size` | usable if categories match | Look for a household-size margin and check that categories can be mapped. |
+| `tenure` | usable if categories match | Look for a tenure or housing-tenure margin. |
+| `dwelling_type` | needs enrichment/modeling | Do not use dwelling-type controls until generated rows include that column. |
+
+The next commands point you toward StatCan table discovery and a compatibility
+check:
+
+```bash
+synthpopcan statcan wds search household size
+synthpopcan statcan wds explain PRODUCT_ID
+synthpopcan ipf check-inputs --seed candidate-households.csv --controls controls.csv
+```
+
 ## 3. Check Control Compatibility
 
 Normalize or prepare the StatCan controls you want to use, then check whether
@@ -66,8 +84,9 @@ Use this command before fitting. It tells you whether controls are usable as-is
 or whether a control dimension is missing from the generated rows.
 
 If the report says a control column is missing, do not try to force that table
-through IPF. Add the missing attribute first, or choose controls that match the
-generated columns.
+through IPF. `check-inputs` will label that path as needing enrichment/modeling
+because IPF cannot create the absent variable. Add the missing attribute first,
+or choose controls that match the generated columns.
 
 ## 4. Fit Household Weights
 
