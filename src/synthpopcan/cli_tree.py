@@ -618,6 +618,70 @@ def prepare_tree_model_release_command(
         print_wrote(manifest_out)
 
 
+@tree.command("release-readiness")
+@click.option(
+    "--household-model", required=True, type=PATH, help="Household model JSON."
+)
+@click.option("--person-model", required=True, type=PATH, help="Person model JSON.")
+@click.option(
+    "--household-size-column",
+    default="household_size",
+    show_default=True,
+    help="Household size linkage column expected by linked generation.",
+)
+@click.option("--min-support", default=50.0, type=float, show_default=True)
+@click.option("--max-purity", default=0.95, type=float, show_default=True)
+@click.option(
+    "--format",
+    "output_format",
+    default="table",
+    type=click.Choice(["json", "table"]),
+    show_default=True,
+)
+def linked_tree_release_readiness_command(
+    household_model: Path,
+    person_model: Path,
+    household_size_column: str,
+    min_support: float,
+    max_purity: float,
+    output_format: str,
+) -> None:
+    """Report whether linked models are ready for release packaging."""
+    try:
+        household_model_payload = read_tree_model(household_model)
+        person_model_payload = read_tree_model(person_model)
+        validate_linked_model_package_inputs(
+            household_model_payload,
+            person_model_payload,
+            household_size_column=household_size_column,
+        )
+        household_audit = audit_tree_model(
+            household_model_payload,
+            min_support=min_support,
+            max_purity=max_purity,
+        )
+        person_audit = audit_tree_model(
+            person_model_payload,
+            min_support=min_support,
+            max_purity=max_purity,
+        )
+    except ValueError as exc:
+        raise click.ClickException(str(exc)) from exc
+
+    report = build_linked_release_readiness_report(
+        household_model=household_model_payload,
+        person_model=person_model_payload,
+        household_model_path=household_model,
+        person_model_path=person_model,
+        household_audit=household_audit,
+        person_audit=person_audit,
+        household_size_column=household_size_column,
+        min_support=min_support,
+        max_purity=max_purity,
+    )
+    write_output(report, output_format, title="Linked Model Release Readiness")
+
+
 @tree.command("package-linked-models")
 @click.option(
     "--household-model", required=True, type=PATH, help="Household model JSON."
@@ -708,6 +772,82 @@ def release_blocking_issues(audit: dict[str, object]) -> list[dict[str, object]]
         for issue in issues
         if isinstance(issue, dict)
         and issue.get("kind") != "private_working_release_class"
+    ]
+
+
+def build_linked_release_readiness_report(
+    *,
+    household_model,
+    person_model,
+    household_model_path: Path,
+    person_model_path: Path,
+    household_audit: dict[str, object],
+    person_audit: dict[str, object],
+    household_size_column: str,
+    min_support: float,
+    max_purity: float,
+) -> dict[str, object]:
+    readiness = classify_linked_release_readiness(household_audit, person_audit)
+    return {
+        "schema_version": "synthpopcan-linked-tree-readiness-v1",
+        "command": "tree release-readiness",
+        "package_type": "linked_household_person",
+        "readiness": readiness,
+        "package_allowed": readiness == "likely_publishable",
+        "household_size_column": household_size_column,
+        "thresholds": {
+            "min_support": min_support,
+            "max_purity": max_purity,
+        },
+        "models": {
+            "household": {
+                **model_manifest(household_model, household_model_path),
+                "bytes": household_model_path.stat().st_size,
+            },
+            "person": {
+                **model_manifest(person_model, person_model_path),
+                "bytes": person_model_path.stat().st_size,
+            },
+        },
+        "audits": {
+            "household": household_audit,
+            "person": person_audit,
+        },
+        "next_steps": linked_release_next_steps(readiness),
+    }
+
+
+def classify_linked_release_readiness(
+    household_audit: dict[str, object],
+    person_audit: dict[str, object],
+) -> str:
+    blocking_issues = [
+        *release_blocking_issues(household_audit),
+        *release_blocking_issues(person_audit),
+    ]
+    if blocking_issues:
+        return "needs_changes"
+    if (
+        household_audit["publishable_candidate"]
+        and person_audit["publishable_candidate"]
+    ):
+        return "likely_publishable"
+    return "private_working"
+
+
+def linked_release_next_steps(readiness: str) -> list[str]:
+    if readiness == "likely_publishable":
+        return ["Package the reviewed models with `tree package-linked-models`."]
+    if readiness == "needs_changes":
+        return [
+            "Review audit issues, then prune, coarsen, aggregate, or retrain before "
+            "preparing publishable-candidate models."
+        ]
+    return [
+        (
+            "Prepare reviewed publishable-candidate copies with "
+            "`tree prepare-model-release`, then rerun this readiness report."
+        )
     ]
 
 

@@ -785,6 +785,72 @@ def test_cli_refuses_to_package_private_linked_models(tmp_path) -> None:
     assert not package_path.exists()
 
 
+def test_cli_reports_linked_model_release_readiness(tmp_path, capsys) -> None:
+    household_model = train_frequency_model_from_rows(
+        TreeModelSpec(
+            level="household",
+            target_columns=("household_size", "tenure"),
+            conditioning_columns=("geo",),
+        ),
+        rows=({"geo": "QC", "household_size": "2", "tenure": "owner"},),
+    )
+    person_model = train_frequency_model_from_rows(
+        TreeModelSpec(
+            level="person",
+            target_columns=("age_group", "sex"),
+            conditioning_columns=("geo", "household_size", "tenure"),
+        ),
+        rows=(
+            {
+                "geo": "QC",
+                "household_size": "2",
+                "tenure": "owner",
+                "age_group": "adult",
+                "sex": "F",
+            },
+        ),
+    )
+    household_model_path = tmp_path / "household-model.json"
+    person_model_path = tmp_path / "person-model.json"
+    write_tree_model(household_model_path, household_model)
+    write_tree_model(person_model_path, person_model)
+
+    assert (
+        main(
+            [
+                "tree",
+                "release-readiness",
+                "--household-model",
+                str(household_model_path),
+                "--person-model",
+                str(person_model_path),
+                "--min-support",
+                "1",
+                "--max-purity",
+                "1",
+                "--format",
+                "json",
+            ]
+        )
+        == 0
+    )
+
+    report = json.loads(capsys.readouterr().out)
+    assert report["schema_version"] == "synthpopcan-linked-tree-readiness-v1"
+    assert report["readiness"] == "private_working"
+    assert report["package_allowed"] is False
+    assert report["models"]["household"]["release_class"] == "private_working"
+    assert report["models"]["person"]["release_class"] == "private_working"
+    assert report["audits"]["household"]["passed"] is True
+    assert report["audits"]["person"]["passed"] is True
+    assert report["next_steps"] == [
+        (
+            "Prepare reviewed publishable-candidate copies with "
+            "`tree prepare-model-release`, then rerun this readiness report."
+        )
+    ]
+
+
 def test_cli_prepares_publishable_candidate_model(tmp_path) -> None:
     source_model = train_frequency_model_from_rows(
         TreeModelSpec(

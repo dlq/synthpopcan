@@ -201,6 +201,18 @@ synthpopcan tree prepare-model-release household-model.json \
 Repeat that review for the person model, then package the pair:
 
 ```bash
+synthpopcan tree release-readiness \
+  --household-model household-model-publishable.json \
+  --person-model person-model-publishable.json \
+  --min-support 50 \
+  --max-purity 0.95
+```
+
+The readiness report distinguishes private working models, likely publishable
+candidates, and candidates that need pruning, coarsening, aggregation, or
+review before packaging.
+
+```bash
 synthpopcan tree package-linked-models \
   --household-model household-model-publishable.json \
   --person-model person-model-publishable.json \

@@ -474,16 +474,23 @@ Next active tree model packaging/distribution slice:
 1. Define a clear publishable model package manifest for linked household/person
    models, including source description, geography scope, target profile,
    training parameters, audit thresholds, model sizes, release class, warnings,
-   and human review notes.
+   and human review notes. Status: partially complete for linked package and
+   readiness-report metadata; geography scope, source description, and target
+   profile still need to be carried through from training manifests.
 2. Add a release-readiness report that can be run before packaging Canada,
    province/territory, and large-CMA model candidates. It should explain whether
    the candidate is likely publishable, likely private-only, or needs pruning,
-   coarsening, aggregation, or review.
+   coarsening, aggregation, or review. Status: first `tree release-readiness`
+   command added for linked household/person model pairs.
 3. Make the release workflow explicitly separate private working models from
    publishable candidates, so users cannot accidentally distribute models that
-   have not passed disclosure-risk checks.
+   have not passed disclosure-risk checks. Status: partially complete; readiness
+   reports and package commands distinguish private working models from
+   publishable candidates, but reviewed source/provenance requirements need
+   stronger manifest checks.
 4. Add fixture tests for a linked model package manifest and release-readiness
-   report before running more full-data candidate-model experiments.
+   report before running more full-data candidate-model experiments. Status:
+   release-readiness fixture test added.
 5. Keep the web app boundary intact: the first web app consumes prepared model
    artifacts and does not expose training from restricted microdata.
 
