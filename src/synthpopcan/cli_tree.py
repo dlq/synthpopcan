@@ -11,6 +11,7 @@ from synthpopcan.cli_output import write_output
 from synthpopcan.console import print_wrote
 from synthpopcan.tree import (
     audit_tree_model,
+    generate_linked_population,
     generate_tree_rows,
     parse_conditions,
     read_tree_model,
@@ -149,6 +150,70 @@ def generate_tree_population(
     except ValueError as exc:
         raise click.ClickException(str(exc)) from exc
     print_wrote(out_path)
+
+
+@tree.command("generate-linked")
+@click.option(
+    "--household-model", required=True, type=PATH, help="Household model JSON."
+)
+@click.option("--person-model", required=True, type=PATH, help="Person model JSON.")
+@click.option(
+    "--households",
+    required=True,
+    type=int,
+    help="Number of synthetic households to generate.",
+)
+@click.option(
+    "--condition",
+    "condition_values",
+    multiple=True,
+    help="Condition household generation with COLUMN=VALUE. Repeat as needed.",
+)
+@click.option(
+    "--households-out",
+    required=True,
+    type=PATH,
+    help="Output household CSV.",
+)
+@click.option(
+    "--persons-out",
+    required=True,
+    type=PATH,
+    help="Output person CSV.",
+)
+@click.option(
+    "--household-size-column",
+    default="household_size",
+    show_default=True,
+    help="Household column used as the number of persons to generate.",
+)
+@click.option("--random-seed", default=None, type=int)
+def generate_linked_tree_population(
+    household_model: Path,
+    person_model: Path,
+    households: int,
+    condition_values: tuple[str, ...],
+    households_out: Path,
+    persons_out: Path,
+    household_size_column: str,
+    random_seed: int | None,
+) -> None:
+    """Generate linked household and person CSVs from two tree models."""
+    try:
+        generated_households, generated_persons = generate_linked_population(
+            read_tree_model(household_model),
+            read_tree_model(person_model),
+            households=households,
+            household_conditions=parse_conditions(condition_values),
+            household_size_column=household_size_column,
+            random_seed=random_seed,
+        )
+        write_generated_rows(households_out, generated_households)
+        write_generated_rows(persons_out, generated_persons)
+    except ValueError as exc:
+        raise click.ClickException(str(exc)) from exc
+    print_wrote(households_out)
+    print_wrote(persons_out)
 
 
 @tree.command("audit-model")

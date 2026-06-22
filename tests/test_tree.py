@@ -10,10 +10,13 @@ from synthpopcan.tree import (
     TreeTrainingSample,
     audit_tree_model,
     generate_frequency_rows,
+    generate_linked_population,
     generate_tree_rows,
     read_tree_training_sample,
     train_cart_model,
     train_frequency_model,
+    validate_linked_population,
+    write_tree_model,
 )
 
 
@@ -626,6 +629,247 @@ def test_cli_refuses_to_package_model_with_audit_warnings(tmp_path) -> None:
         )
 
     assert not package_path.exists()
+
+
+def test_generates_linked_households_and_persons() -> None:
+    household_model = train_frequency_model_from_rows(
+        TreeModelSpec(
+            level="household",
+            target_columns=("household_size", "tenure"),
+            conditioning_columns=("geo",),
+            geography_column="geo",
+            random_seed=7,
+        ),
+        rows=(
+            {
+                "geo": "QC",
+                "household_size": "2",
+                "tenure": "owner",
+            },
+        ),
+    )
+    person_model = train_frequency_model_from_rows(
+        TreeModelSpec(
+            level="person",
+            target_columns=("age_group", "sex"),
+            conditioning_columns=("geo", "household_size", "tenure"),
+            geography_column="geo",
+            random_seed=11,
+        ),
+        rows=(
+            {
+                "geo": "QC",
+                "household_size": "2",
+                "tenure": "owner",
+                "age_group": "adult",
+                "sex": "F",
+            },
+        ),
+    )
+
+    households, persons = generate_linked_population(
+        household_model,
+        person_model,
+        households=2,
+        household_conditions={"geo": "QC"},
+        random_seed=13,
+    )
+
+    assert households == [
+        {
+            "synthetic_household_id": "1",
+            "geo": "QC",
+            "household_size": "2",
+            "tenure": "owner",
+        },
+        {
+            "synthetic_household_id": "2",
+            "geo": "QC",
+            "household_size": "2",
+            "tenure": "owner",
+        },
+    ]
+    assert persons == [
+        {
+            "synthetic_person_id": "1",
+            "synthetic_household_id": "1",
+            "geo": "QC",
+            "household_size": "2",
+            "tenure": "owner",
+            "age_group": "adult",
+            "sex": "F",
+        },
+        {
+            "synthetic_person_id": "2",
+            "synthetic_household_id": "1",
+            "geo": "QC",
+            "household_size": "2",
+            "tenure": "owner",
+            "age_group": "adult",
+            "sex": "F",
+        },
+        {
+            "synthetic_person_id": "3",
+            "synthetic_household_id": "2",
+            "geo": "QC",
+            "household_size": "2",
+            "tenure": "owner",
+            "age_group": "adult",
+            "sex": "F",
+        },
+        {
+            "synthetic_person_id": "4",
+            "synthetic_household_id": "2",
+            "geo": "QC",
+            "household_size": "2",
+            "tenure": "owner",
+            "age_group": "adult",
+            "sex": "F",
+        },
+    ]
+
+
+def test_validates_linked_population_household_sizes() -> None:
+    report = validate_linked_population(
+        households=[
+            {"synthetic_household_id": "1", "household_size": "2"},
+            {"synthetic_household_id": "2", "household_size": "1"},
+        ],
+        persons=[
+            {"synthetic_person_id": "1", "synthetic_household_id": "1"},
+            {"synthetic_person_id": "2", "synthetic_household_id": "2"},
+        ],
+    )
+
+    assert report["passed"] is False
+    assert report["summary"] == {
+        "households": 2,
+        "persons": 2,
+        "households_with_size_mismatches": 1,
+        "persons_with_unknown_households": 0,
+    }
+    assert report["issues"] == [
+        {
+            "severity": "error",
+            "kind": "household_size_mismatch",
+            "household_id": "1",
+            "expected_persons": 2,
+            "actual_persons": 1,
+            "message": "household 1 expected 2 persons but has 1.",
+        },
+    ]
+
+
+def test_cli_generates_linked_households_and_persons(tmp_path) -> None:
+    household_model = train_frequency_model_from_rows(
+        TreeModelSpec(
+            level="household",
+            target_columns=("household_size", "tenure"),
+            conditioning_columns=("geo",),
+            geography_column="geo",
+        ),
+        rows=(
+            {
+                "geo": "QC",
+                "household_size": "2",
+                "tenure": "owner",
+            },
+        ),
+    )
+    person_model = train_frequency_model_from_rows(
+        TreeModelSpec(
+            level="person",
+            target_columns=("age_group", "sex"),
+            conditioning_columns=("geo", "household_size", "tenure"),
+            geography_column="geo",
+        ),
+        rows=(
+            {
+                "geo": "QC",
+                "household_size": "2",
+                "tenure": "owner",
+                "age_group": "adult",
+                "sex": "F",
+            },
+        ),
+    )
+    household_model_path = tmp_path / "household-model.json"
+    person_model_path = tmp_path / "person-model.json"
+    households_out = tmp_path / "synthetic-households.csv"
+    persons_out = tmp_path / "synthetic-persons.csv"
+    write_tree_model(household_model_path, household_model)
+    write_tree_model(person_model_path, person_model)
+
+    assert (
+        main(
+            [
+                "tree",
+                "generate-linked",
+                "--household-model",
+                str(household_model_path),
+                "--person-model",
+                str(person_model_path),
+                "--households",
+                "1",
+                "--condition",
+                "geo=QC",
+                "--households-out",
+                str(households_out),
+                "--persons-out",
+                str(persons_out),
+            ]
+        )
+        == 0
+    )
+
+    with households_out.open(newline="") as handle:
+        household_rows = list(csv.DictReader(handle))
+    with persons_out.open(newline="") as handle:
+        person_rows = list(csv.DictReader(handle))
+    assert household_rows == [
+        {
+            "synthetic_household_id": "1",
+            "geo": "QC",
+            "household_size": "2",
+            "tenure": "owner",
+        },
+    ]
+    assert [person["synthetic_household_id"] for person in person_rows] == ["1", "1"]
+    assert [person["synthetic_person_id"] for person in person_rows] == ["1", "2"]
+
+
+def test_cli_validates_linked_output(tmp_path, capsys) -> None:
+    households_path = tmp_path / "synthetic-households.csv"
+    persons_path = tmp_path / "synthetic-persons.csv"
+    households_path.write_text("synthetic_household_id,household_size\n1,2\n2,1\n")
+    persons_path.write_text(
+        "synthetic_person_id,synthetic_household_id\n1,1\n2,1\n3,2\n"
+    )
+
+    assert (
+        main(
+            [
+                "validate",
+                "linked-output",
+                "--households",
+                str(households_path),
+                "--persons",
+                str(persons_path),
+                "--format",
+                "json",
+            ]
+        )
+        == 0
+    )
+
+    report = json.loads(capsys.readouterr().out)
+    assert report["passed"] is True
+    assert report["summary"] == {
+        "households": 2,
+        "persons": 3,
+        "households_with_size_mismatches": 0,
+        "persons_with_unknown_households": 0,
+    }
 
 
 def train_frequency_model_from_rows(

@@ -271,6 +271,7 @@ Current implementation notes:
 - `synthpopcan tree audit-model` performs the first artifact-level disclosure-risk check for private working models, including raw-row/source-id flags, minimum support, high-purity groups/leaves with dominant outcomes, release class, and publishable-candidate status. It is an advisory gate, not a claim of privacy safety.
 - `synthpopcan tree package-model` is a strict first packaging gate: it refuses to write a package if the audit has any warnings or errors. Current `private_working` models therefore cannot be packaged until a later reviewed publishable-candidate workflow exists.
 - Initial audit on the local 2016-derived models with `min_support=50,max_purity=0.95`: conditional-frequency had 157 groups, minimum support about 503.7, no low-support groups, and 2 pure groups; CART had 58 leaves, minimum support 81, no low-support or high-purity leaves. Both remained `private_working` and `publishable_candidate: false`.
+- `synthpopcan tree generate-linked` performs the first household-then-person generation pass from separate household and person models, writing linked `synthetic_household_id` and `synthetic_person_id` CSV outputs.
 
 Household/person linkage design:
 
@@ -278,7 +279,7 @@ Household/person linkage design:
 - Generate synthetic households first. Each household record receives household-level attributes such as geography, household size, tenure, dwelling type, income band if available, and family or household structure.
 - Generate people second, conditional on each generated household. The person generator should receive household context such as geography, household size, tenure, household or family type, and any other household attributes used during training.
 - Preserve linkage through generated identifiers: `synthetic_household_id` on household rows and both `synthetic_person_id` and `synthetic_household_id` on person rows.
-- Validate both levels: household outputs against household margins, person outputs against person margins, and linked outputs against structural checks such as household size matching the number of generated people.
+- Validate both levels: household outputs against household margins, person outputs against person margins, and linked outputs against structural checks such as household size matching the number of generated people. Status: `synthpopcan validate linked-output` checks that person rows reference known households and that `household_size` matches the number of linked people.
 
 Model distribution and privacy-release design:
 
@@ -343,8 +344,8 @@ Deliverables:
 - Marginal fit tables. Status: complete for validating IPF weights and expanded rows against normalized controls.
 - Distribution comparisons.
 - Geography-level diagnostics.
-- Household/person consistency checks.
 - Tree output distribution checks. Status: complete for comparing generated tree rows to training-view distributions with target, joint-target, conditioning, and unknown-category checks.
+- Household/person consistency checks. Status: complete for linked tree outputs with `synthpopcan validate linked-output`.
 - Machine-readable JSON plus human-readable Markdown or HTML report output. Status: JSON and Rich table output complete for control validation; Markdown/HTML reports pending.
 
 Acceptance criteria:
@@ -352,6 +353,7 @@ Acceptance criteria:
 - Every synthesis run can produce a validation report. Status: complete for `synthpopcan validate controls`.
 - Failed validation thresholds can return a non-zero CLI exit code for automation. Status: complete for `synthpopcan validate controls`.
 - Tree-generated flat outputs can be checked with `synthpopcan validate tree-output --generated ... --training ... --target-columns ...`.
+- Linked household/person outputs can be checked with `synthpopcan validate linked-output --households ... --persons ...`.
 
 ### 9. Web App
 

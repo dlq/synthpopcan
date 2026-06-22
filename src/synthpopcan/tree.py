@@ -685,6 +685,185 @@ def generate_tree_rows(
     )
 
 
+def generate_linked_population(
+    household_model: TreeModel,
+    person_model: TreeModel,
+    *,
+    households: int,
+    household_conditions: dict[str, str] | None = None,
+    household_size_column: str = "household_size",
+    random_seed: int | None = None,
+) -> tuple[list[dict[str, str]], list[dict[str, str]]]:
+    if household_model.spec.level != "household":
+        raise ValueError("household model must have level 'household'")
+    if person_model.spec.level != "person":
+        raise ValueError("person model must have level 'person'")
+    if households <= 0:
+        raise ValueError("households must be greater than zero")
+
+    seed_rng = random.Random(random_seed)
+    generated_households = generate_tree_rows(
+        household_model,
+        rows=households,
+        conditions=household_conditions,
+        random_seed=random_seed,
+    )
+
+    linked_households: list[dict[str, str]] = []
+    linked_persons: list[dict[str, str]] = []
+    next_person_id = 1
+    for household_index, generated_household in enumerate(
+        generated_households,
+        start=1,
+    ):
+        household_id = str(household_index)
+        household_row = {
+            "synthetic_household_id": household_id,
+            **strip_synthetic_id(generated_household),
+        }
+        linked_households.append(household_row)
+        household_size = read_household_size(household_row, household_size_column)
+        person_conditions = household_conditions_for_person_model(
+            household_row,
+            person_model,
+        )
+        generated_persons = generate_tree_rows(
+            person_model,
+            rows=household_size,
+            conditions=person_conditions,
+            random_seed=seed_rng.randrange(1, 2**31),
+        )
+        for generated_person in generated_persons:
+            linked_persons.append(
+                {
+                    "synthetic_person_id": str(next_person_id),
+                    "synthetic_household_id": household_id,
+                    **strip_synthetic_id(generated_person),
+                }
+            )
+            next_person_id += 1
+
+    return linked_households, linked_persons
+
+
+def validate_linked_population(
+    households: list[dict[str, str]],
+    persons: list[dict[str, str]],
+    *,
+    household_id_column: str = "synthetic_household_id",
+    person_household_id_column: str = "synthetic_household_id",
+    household_size_column: str = "household_size",
+) -> dict[str, object]:
+    household_counts: dict[str, int] = defaultdict(int)
+    household_ids = {
+        household.get(household_id_column, "") for household in households
+    } - {""}
+    unknown_person_households = 0
+    for person in persons:
+        household_id = person.get(person_household_id_column, "")
+        if household_id not in household_ids:
+            unknown_person_households += 1
+            continue
+        household_counts[household_id] += 1
+
+    issues: list[dict[str, object]] = []
+    for household in households:
+        household_id = household.get(household_id_column, "")
+        try:
+            expected_persons = read_household_size(household, household_size_column)
+        except ValueError as exc:
+            issues.append(
+                {
+                    "severity": "error",
+                    "kind": "invalid_household_size",
+                    "household_id": household_id,
+                    "message": str(exc),
+                }
+            )
+            continue
+        actual_persons = household_counts.get(household_id, 0)
+        if expected_persons != actual_persons:
+            issues.append(
+                {
+                    "severity": "error",
+                    "kind": "household_size_mismatch",
+                    "household_id": household_id,
+                    "expected_persons": expected_persons,
+                    "actual_persons": actual_persons,
+                    "message": (
+                        f"household {household_id} expected {expected_persons} "
+                        f"persons but has {actual_persons}."
+                    ),
+                }
+            )
+
+    if unknown_person_households:
+        issues.append(
+            {
+                "severity": "error",
+                "kind": "unknown_person_household",
+                "persons": unknown_person_households,
+                "message": (
+                    f"{unknown_person_households} person rows reference unknown "
+                    "households."
+                ),
+            }
+        )
+
+    size_mismatches = sum(
+        1 for issue in issues if issue["kind"] == "household_size_mismatch"
+    )
+    return {
+        "passed": not issues,
+        "summary": {
+            "households": len(households),
+            "persons": len(persons),
+            "households_with_size_mismatches": size_mismatches,
+            "persons_with_unknown_households": unknown_person_households,
+        },
+        "household_id_column": household_id_column,
+        "person_household_id_column": person_household_id_column,
+        "household_size_column": household_size_column,
+        "issues": issues,
+    }
+
+
+def strip_synthetic_id(row: dict[str, str]) -> dict[str, str]:
+    return {column: value for column, value in row.items() if column != "synthetic_id"}
+
+
+def read_household_size(row: dict[str, str], household_size_column: str) -> int:
+    value = row.get(household_size_column)
+    if value is None:
+        raise ValueError(f"missing household size column: {household_size_column}")
+    try:
+        household_size = int(value)
+    except ValueError as exc:
+        raise ValueError(f"household size {value!r} is not a whole number") from exc
+    if household_size <= 0:
+        raise ValueError("household size must be greater than zero")
+    return household_size
+
+
+def household_conditions_for_person_model(
+    household: dict[str, str],
+    person_model: TreeModel,
+) -> dict[str, str]:
+    missing = [
+        column
+        for column in person_model.spec.conditioning_columns
+        if column not in household
+    ]
+    if missing:
+        raise ValueError(
+            "household rows cannot condition the person model; missing columns: "
+            + ", ".join(missing)
+        )
+    return {
+        column: household[column] for column in person_model.spec.conditioning_columns
+    }
+
+
 def generate_cart_rows(
     model: CartTreeModel,
     *,

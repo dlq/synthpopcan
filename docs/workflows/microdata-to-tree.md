@@ -50,6 +50,24 @@ synthpopcan validate tree-output \
 
 The important boundary is the first command. The 2016 hierarchical PUMF-style source is one mixed person-row file with household identifiers and household context. `microdata export-training` derives the training view that `tree train` expects, including `household_size`.
 
+For linked household/person generation, train a household model and a person model from compatible training views. The person model's conditioning columns must be present on the generated household rows.
+
+```bash
+synthpopcan tree generate-linked \
+  --household-model household-model.json \
+  --person-model person-model.json \
+  --households 100 \
+  --condition PR=24 \
+  --households-out synthetic-households.csv \
+  --persons-out synthetic-persons.csv
+
+synthpopcan validate linked-output \
+  --households synthetic-households.csv \
+  --persons synthetic-persons.csv
+```
+
+The household output has one row per generated household with `synthetic_household_id`. The person output has one row per generated person with `synthetic_person_id` and the household's `synthetic_household_id`. The linked validator checks that each person's household exists and that each household's `household_size` equals the number of generated people linked to it.
+
 `tree train` defaults to the transparent conditional-frequency backend. To train the first sklearn CART backend instead:
 
 ```bash

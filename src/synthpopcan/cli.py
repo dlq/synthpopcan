@@ -45,6 +45,7 @@ from synthpopcan.statcan import (
     fetch_wds_table,
     search_wds_tables,
 )
+from synthpopcan.tree import validate_linked_population
 from synthpopcan.validation import (
     build_control_validation_report,
     build_tree_output_validation_report,
@@ -149,6 +150,74 @@ def validate_controls_output(
         raise click.ClickException(
             "Validation failed; generated artifact does not match controls "
             f"within tolerance {format_report_number(tolerance)}."
+        )
+
+
+@validate.command("linked-output")
+@click.option(
+    "--households",
+    "households_path",
+    required=True,
+    type=PATH,
+    help="Generated household CSV.",
+)
+@click.option(
+    "--persons",
+    "persons_path",
+    required=True,
+    type=PATH,
+    help="Generated person CSV.",
+)
+@click.option(
+    "--household-id-column",
+    default="synthetic_household_id",
+    show_default=True,
+    help="Household identifier column in the household CSV.",
+)
+@click.option(
+    "--person-household-id-column",
+    default="synthetic_household_id",
+    show_default=True,
+    help="Household identifier column in the person CSV.",
+)
+@click.option(
+    "--household-size-column",
+    default="household_size",
+    show_default=True,
+    help="Household column containing the expected number of persons.",
+)
+@click.option(
+    "--format",
+    "output_format",
+    default="table",
+    type=click.Choice(["json", "table"]),
+    show_default=True,
+)
+def validate_linked_output(
+    households_path: Path,
+    persons_path: Path,
+    household_id_column: str,
+    person_household_id_column: str,
+    household_size_column: str,
+    output_format: str,
+) -> None:
+    """Validate person rows are linked to generated households."""
+    try:
+        report = validate_linked_population(
+            households=read_csv(households_path),
+            persons=read_csv(persons_path),
+            household_id_column=household_id_column,
+            person_household_id_column=person_household_id_column,
+            household_size_column=household_size_column,
+        )
+    except ValueError as exc:
+        raise click.ClickException(str(exc)) from exc
+
+    write_output(report, output_format, title="Linked Output Validation")
+
+    if not report["passed"]:
+        raise click.ClickException(
+            "Linked output validation found household/person linkage problems."
         )
 
 
