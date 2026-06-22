@@ -812,8 +812,35 @@ def test_cli_reports_linked_model_release_readiness(tmp_path, capsys) -> None:
     )
     household_model_path = tmp_path / "household-model.json"
     person_model_path = tmp_path / "person-model.json"
+    training_manifest_path = tmp_path / "linked-training-manifest.json"
     write_tree_model(household_model_path, household_model)
     write_tree_model(person_model_path, person_model)
+    training_manifest_path.write_text(
+        json.dumps(
+            {
+                "schema_version": "synthpopcan-linked-tree-training-v1",
+                "source": {
+                    "path": "data/private/census/hierarchical.csv",
+                    "source_format": "statcan-2016-hierarchical",
+                    "records": 100,
+                    "households": 40,
+                },
+                "column_source": {
+                    "household_block": "household_core",
+                    "person_block": "person_demographics",
+                },
+                "target_profile": "minimal",
+                "geography_filter": {"column": "PR", "value": "24"},
+                "method": "conditional-frequency",
+                "random_seed": 7,
+                "training": {
+                    "household": {"records": 40},
+                    "person": {"records": 100},
+                },
+            }
+        )
+        + "\n"
+    )
 
     assert (
         main(
@@ -824,6 +851,8 @@ def test_cli_reports_linked_model_release_readiness(tmp_path, capsys) -> None:
                 str(household_model_path),
                 "--person-model",
                 str(person_model_path),
+                "--training-manifest",
+                str(training_manifest_path),
                 "--min-support",
                 "1",
                 "--max-purity",
@@ -841,6 +870,28 @@ def test_cli_reports_linked_model_release_readiness(tmp_path, capsys) -> None:
     assert report["package_allowed"] is False
     assert report["models"]["household"]["release_class"] == "private_working"
     assert report["models"]["person"]["release_class"] == "private_working"
+    assert report["training_manifest"] == {
+        "path": str(training_manifest_path),
+        "schema_version": "synthpopcan-linked-tree-training-v1",
+        "source": {
+            "path": "data/private/census/hierarchical.csv",
+            "source_format": "statcan-2016-hierarchical",
+            "records": 100,
+            "households": 40,
+        },
+        "column_source": {
+            "household_block": "household_core",
+            "person_block": "person_demographics",
+        },
+        "target_profile": "minimal",
+        "geography_filter": {"column": "PR", "value": "24"},
+        "method": "conditional-frequency",
+        "random_seed": 7,
+        "training": {
+            "household": {"records": 40},
+            "person": {"records": 100},
+        },
+    }
     assert report["audits"]["household"]["passed"] is True
     assert report["audits"]["person"]["passed"] is True
     assert report["next_steps"] == [

@@ -204,13 +204,16 @@ Repeat that review for the person model, then package the pair:
 synthpopcan tree release-readiness \
   --household-model household-model-publishable.json \
   --person-model person-model-publishable.json \
+  --training-manifest linked-training.manifest.json \
   --min-support 50 \
   --max-purity 0.95
 ```
 
 The readiness report distinguishes private working models, likely publishable
 candidates, and candidates that need pruning, coarsening, aggregation, or
-review before packaging.
+review before packaging. When a linked training manifest is provided, it also
+includes the source summary, column source, target profile, geography filter,
+method, random seed, and household/person training summaries.
 
 ```bash
 synthpopcan tree package-linked-models \

@@ -624,6 +624,12 @@ def prepare_tree_model_release_command(
 )
 @click.option("--person-model", required=True, type=PATH, help="Person model JSON.")
 @click.option(
+    "--training-manifest",
+    type=PATH,
+    default=None,
+    help="Optional linked tree training manifest JSON for provenance.",
+)
+@click.option(
     "--household-size-column",
     default="household_size",
     show_default=True,
@@ -641,6 +647,7 @@ def prepare_tree_model_release_command(
 def linked_tree_release_readiness_command(
     household_model: Path,
     person_model: Path,
+    training_manifest: Path | None,
     household_size_column: str,
     min_support: float,
     max_purity: float,
@@ -665,6 +672,7 @@ def linked_tree_release_readiness_command(
             min_support=min_support,
             max_purity=max_purity,
         )
+        training_provenance = read_linked_training_manifest(training_manifest)
     except ValueError as exc:
         raise click.ClickException(str(exc)) from exc
 
@@ -675,6 +683,7 @@ def linked_tree_release_readiness_command(
         person_model_path=person_model,
         household_audit=household_audit,
         person_audit=person_audit,
+        training_provenance=training_provenance,
         household_size_column=household_size_column,
         min_support=min_support,
         max_purity=max_purity,
@@ -783,6 +792,7 @@ def build_linked_release_readiness_report(
     person_model_path: Path,
     household_audit: dict[str, object],
     person_audit: dict[str, object],
+    training_provenance: dict[str, object] | None,
     household_size_column: str,
     min_support: float,
     max_purity: float,
@@ -813,7 +823,32 @@ def build_linked_release_readiness_report(
             "household": household_audit,
             "person": person_audit,
         },
+        "training_manifest": training_provenance,
         "next_steps": linked_release_next_steps(readiness),
+    }
+
+
+def read_linked_training_manifest(path: Path | None) -> dict[str, object] | None:
+    if path is None:
+        return None
+    try:
+        payload = json.loads(path.read_text())
+    except json.JSONDecodeError as exc:
+        raise ValueError(f"{path} is not valid JSON") from exc
+    if not isinstance(payload, dict):
+        raise ValueError("training manifest must be a JSON object")
+    if payload.get("schema_version") != "synthpopcan-linked-tree-training-v1":
+        raise ValueError("unsupported linked tree training manifest schema")
+    return {
+        "path": str(path),
+        "schema_version": payload.get("schema_version"),
+        "source": payload.get("source"),
+        "column_source": payload.get("column_source"),
+        "target_profile": payload.get("target_profile"),
+        "geography_filter": payload.get("geography_filter"),
+        "method": payload.get("method"),
+        "random_seed": payload.get("random_seed"),
+        "training": payload.get("training"),
     }
 
 
