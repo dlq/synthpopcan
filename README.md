@@ -10,6 +10,10 @@ Near-term goals:
 
 Broader SynthEco-style enrichment with cohort, environmental, school, healthcare, and food-access layers is intentionally deferred until the base population synthesis workflow is stable.
 
+Workflow guides live under `docs/workflows/`. Start with
+`docs/workflows/microdata-to-ipf.md` for IPF and
+`docs/workflows/microdata-to-tree.md` for linked household/person tree models.
+
 ## Developer Benchmarks
 
 IPF benchmark fixtures are available as developer tooling, not as a normal user workflow:

@@ -13,6 +13,7 @@ htmlcov/
 dist/
 build/
 *.egg-info/
+/docs/_build/
 
 # Virtual environments and local environment files.
 .venv/

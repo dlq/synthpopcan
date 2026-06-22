@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from dataclasses import replace
 from pathlib import Path
 
 import click
@@ -511,6 +512,72 @@ def package_tree_model_command(
     print_wrote(out_path)
 
 
+@tree.command("prepare-model-release")
+@click.argument("model_path", type=PATH)
+@click.option("--out", "out_path", required=True, type=PATH)
+@click.option(
+    "--manifest-out",
+    type=PATH,
+    default=None,
+    help="Optional release-review manifest JSON.",
+)
+@click.option("--min-support", default=50.0, type=float, show_default=True)
+@click.option("--max-purity", default=0.95, type=float, show_default=True)
+@click.option(
+    "--review-note",
+    default="",
+    help="Short human review note to store in the release manifest.",
+)
+def prepare_tree_model_release_command(
+    model_path: Path,
+    out_path: Path,
+    manifest_out: Path | None,
+    min_support: float,
+    max_purity: float,
+    review_note: str,
+) -> None:
+    """Write a publishable-candidate copy after release audit checks."""
+    try:
+        model = read_tree_model(model_path)
+        audit = audit_tree_model(
+            model,
+            min_support=min_support,
+            max_purity=max_purity,
+        )
+    except ValueError as exc:
+        raise click.ClickException(str(exc)) from exc
+
+    blocking_issues = release_blocking_issues(audit)
+    if blocking_issues:
+        raise click.ClickException(
+            "Model release audit has blocking issues; inspect audit-model output "
+            "before preparing a publishable candidate."
+        )
+
+    candidate = replace(model, release_class="publishable_candidate")
+    write_tree_model(out_path, candidate)
+    if manifest_out:
+        write_tree_generation_manifest(
+            manifest_out,
+            {
+                "schema_version": "synthpopcan-tree-release-manifest-v1",
+                "command": "tree prepare-model-release",
+                "source_model": str(model_path),
+                "output_model": str(out_path),
+                "release_class": "publishable_candidate",
+                "review_note": review_note,
+                "thresholds": {
+                    "min_support": min_support,
+                    "max_purity": max_purity,
+                },
+                "audit": audit,
+            },
+        )
+    print_wrote(out_path)
+    if manifest_out:
+        print_wrote(manifest_out)
+
+
 @tree.command("package-linked-models")
 @click.option(
     "--household-model", required=True, type=PATH, help="Household model JSON."
@@ -590,6 +657,18 @@ def parse_column_list(value: str, label: str) -> tuple[str, ...]:
     if not columns:
         raise ValueError(f"at least one {label} value is required")
     return columns
+
+
+def release_blocking_issues(audit: dict[str, object]) -> list[dict[str, object]]:
+    issues = audit["issues"]
+    if not isinstance(issues, list):
+        raise ValueError("model audit issues must be a list")
+    return [
+        issue
+        for issue in issues
+        if isinstance(issue, dict)
+        and issue.get("kind") != "private_working_release_class"
+    ]
 
 
 def validate_linked_model_package_inputs(

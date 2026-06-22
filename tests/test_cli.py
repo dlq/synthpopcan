@@ -26,6 +26,7 @@ def test_tree_commands_are_visible_in_help(capsys) -> None:
     assert "train" in output
     assert "train-linked" in output
     assert "generate" in output
+    assert "prepare-model-release" in output
     assert "package-linked-models" in output
 
 

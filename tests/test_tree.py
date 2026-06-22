@@ -785,6 +785,97 @@ def test_cli_refuses_to_package_private_linked_models(tmp_path) -> None:
     assert not package_path.exists()
 
 
+def test_cli_prepares_publishable_candidate_model(tmp_path) -> None:
+    source_model = train_frequency_model_from_rows(
+        TreeModelSpec(
+            level="household",
+            target_columns=("household_size", "tenure"),
+            conditioning_columns=("geo",),
+        ),
+        rows=({"geo": "QC", "household_size": "2", "tenure": "owner"},),
+    )
+    source_model_path = tmp_path / "household-model.json"
+    candidate_model_path = tmp_path / "household-model-publishable.json"
+    manifest_path = tmp_path / "household-model-publishable.manifest.json"
+    write_tree_model(source_model_path, source_model)
+
+    assert (
+        main(
+            [
+                "tree",
+                "prepare-model-release",
+                str(source_model_path),
+                "--out",
+                str(candidate_model_path),
+                "--manifest-out",
+                str(manifest_path),
+                "--min-support",
+                "1",
+                "--max-purity",
+                "1",
+                "--review-note",
+                "fixture release review",
+            ]
+        )
+        == 0
+    )
+
+    candidate_model = json.loads(candidate_model_path.read_text())
+    manifest = json.loads(manifest_path.read_text())
+    assert candidate_model["release_class"] == "publishable_candidate"
+    assert candidate_model["privacy"]["publishable"] is True
+    assert manifest["schema_version"] == "synthpopcan-tree-release-manifest-v1"
+    assert manifest["source_model"] == str(source_model_path)
+    assert manifest["output_model"] == str(candidate_model_path)
+    assert manifest["release_class"] == "publishable_candidate"
+    assert manifest["review_note"] == "fixture release review"
+    assert manifest["audit"]["issues"] == [
+        {
+            "severity": "warning",
+            "kind": "private_working_release_class",
+            "message": (
+                "Model is not marked as a publishable candidate; keep it "
+                "private unless a packaging workflow changes its release class."
+            ),
+        }
+    ]
+
+
+def test_cli_refuses_to_prepare_model_release_with_blocking_audit_issue(
+    tmp_path,
+) -> None:
+    from click import ClickException
+
+    source_model = train_frequency_model_from_rows(
+        TreeModelSpec(
+            level="household",
+            target_columns=("household_size", "tenure"),
+            conditioning_columns=("geo",),
+        ),
+        rows=({"geo": "QC", "household_size": "2", "tenure": "owner"},),
+    )
+    source_model_path = tmp_path / "household-model.json"
+    candidate_model_path = tmp_path / "household-model-publishable.json"
+    write_tree_model(source_model_path, source_model)
+
+    with pytest.raises(ClickException, match="Model release audit has blocking issues"):
+        main(
+            [
+                "tree",
+                "prepare-model-release",
+                str(source_model_path),
+                "--out",
+                str(candidate_model_path),
+                "--min-support",
+                "2",
+                "--max-purity",
+                "1",
+            ]
+        )
+
+    assert not candidate_model_path.exists()
+
+
 def test_cli_trains_linked_models_from_suggested_blocks(tmp_path) -> None:
     source = tmp_path / "hierarchical.csv"
     household_model_path = tmp_path / "household-model.json"
