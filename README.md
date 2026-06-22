@@ -183,6 +183,13 @@ Normalize a local long controls CSV into SynthPopCan's canonical long format wit
 synthpopcan controls from-csv source-controls.csv --out controls.csv
 ```
 
+For a downloaded StatCan WDS ZIP, inspect the table first so the CLI can suggest
+the likely count and dimension columns:
+
+```bash
+synthpopcan controls wds inspect 98100001-eng.zip
+```
+
 Check that seed columns and categories cover the controls before fitting:
 
 ```bash

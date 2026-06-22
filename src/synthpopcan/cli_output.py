@@ -77,6 +77,30 @@ def print_census_profile_characteristics_table(rows: list[dict[str, str]]) -> No
     print_table(table)
 
 
+def print_wds_inspection_table(report: dict[str, object]) -> None:
+    print_summary_table(
+        {
+            "csv_member": report.get("csv_member", ""),
+            "rows": report.get("row_count", ""),
+            "columns": len(report.get("columns", [])),
+            "count_candidates": ", ".join(
+                str(value) for value in report.get("count_column_candidates", [])
+            ),
+        },
+        title="WDS Table Inspection",
+    )
+
+    table = Table(title="Starter Normalization Settings")
+    table.add_column("Setting", no_wrap=True)
+    table.add_column("Value")
+    table.add_row(
+        "Dimensions",
+        ", ".join(str(value) for value in report.get("dimension_candidates", [])),
+    )
+    table.add_row("Command", str(report.get("suggested_command", "")))
+    print_table(table)
+
+
 def print_tree_column_suggestions_table(report: dict[str, object]) -> None:
     table = Table(title="Tree Column Suggestions")
     table.add_column("Block")

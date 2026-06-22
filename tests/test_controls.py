@@ -125,6 +125,70 @@ def test_cli_normalizes_controls_from_wds_zip(tmp_path: Path) -> None:
     )
 
 
+def test_cli_inspects_wds_zip_and_suggests_normalization_command(
+    tmp_path: Path, capsys
+) -> None:
+    from synthpopcan.cli import main
+
+    zip_path = tmp_path / "98100001-eng.zip"
+    with ZipFile(zip_path, "w") as archive:
+        archive.writestr(
+            "98100001.csv",
+            "GEO,Age group,Sex,VALUE,STATUS,SYMBOL\n"
+            "Canada,0 to 4 years,Female,100,,\n"
+            "Canada,0 to 4 years,Male,105,,\n",
+        )
+
+    assert (
+        main(
+            [
+                "controls",
+                "wds",
+                "inspect",
+                str(zip_path),
+                "--format",
+                "json",
+            ]
+        )
+        == 0
+    )
+
+    report = json.loads(capsys.readouterr().out)
+    assert report == {
+        "csv_member": "98100001.csv",
+        "columns": ["GEO", "Age group", "Sex", "VALUE", "STATUS", "SYMBOL"],
+        "row_count": 2,
+        "count_column_candidates": ["VALUE"],
+        "dimension_candidates": ["GEO", "Age group", "Sex"],
+        "sample_rows": [
+            {
+                "GEO": "Canada",
+                "Age group": "0 to 4 years",
+                "Sex": "Female",
+                "VALUE": "100",
+                "STATUS": "",
+                "SYMBOL": "",
+            },
+            {
+                "GEO": "Canada",
+                "Age group": "0 to 4 years",
+                "Sex": "Male",
+                "VALUE": "105",
+                "STATUS": "",
+                "SYMBOL": "",
+            },
+        ],
+        "suggested_command": (
+            "synthpopcan controls from-wds "
+            f"{zip_path} "
+            "--dimensions 'GEO,Age group,Sex' "
+            "--count-column VALUE "
+            "--margin-name wds "
+            "--out controls.csv"
+        ),
+    }
+
+
 def test_cli_applies_category_mapping_to_wds_controls(tmp_path: Path) -> None:
     from synthpopcan.cli import main
 

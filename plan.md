@@ -425,15 +425,24 @@ Acceptance criteria:
 
 ## Near-Term Slice
 
-The next implementation slice should be small and testable:
+Current active slice: StatCan/IPF usability.
 
-1. Add initial typed data structures for variables, geography, controls, seed samples, and generated populations.
-2. Add fixture-based tests for a tiny control table and seed sample.
-3. Add a `sources inspect` or equivalent CLI command for local file/header inspection.
-4. Add the first `controls from-csv` fixture workflow.
-5. Add a minimal two-margin IPF implementation and test it end to end.
+The original near-term computational core is complete: typed controls and seed
+samples, local source inspection, `controls from-csv`, and the first IPF engine
+are all in place. The next work should make the public-data-to-IPF path easier
+for non-specialist users:
 
-This gets the project from documentation scaffold to usable computational core without depending on the full Census data volume.
+1. Add helper commands that inspect downloaded StatCan WDS tables and suggest
+   starter `controls from-wds` settings. Status: first `controls wds inspect`
+   helper added for local WDS ZIPs.
+2. Improve the WDS metadata/search path so users can choose plausible product
+   IDs and understand whether a table has useful dimensions before downloading.
+3. Add starter mapping/template helpers for common StatCan dimensions such as
+   age, sex, geography, and household structure where stable labels exist.
+4. Make `ipf check-inputs` the expected next step after control normalization,
+   with clearer category-mismatch guidance for humanities users.
+5. Keep README examples short and move reproducible walkthroughs into
+   `docs/workflows/`.
 
 ## Deferred Work
 

@@ -53,6 +53,18 @@ class ControlTable:
 
 
 CategoryMapping = dict[str, dict[str, str]]
+WDS_METADATA_COLUMNS = {
+    "STATUS",
+    "SYMBOL",
+    "TERMINATED",
+    "DECIMALS",
+    "SCALAR_FACTOR",
+    "VECTOR",
+    "COORDINATE",
+    "DGUID",
+    "UOM",
+    "UOM_ID",
+}
 CENSUS_PROFILE_AGE5_CATEGORIES = {
     "0 to 4 years": {"age": "age_000_004"},
     "5 to 9 years": {"age": "age_005_009"},
@@ -198,6 +210,58 @@ def read_wds_control_table(
         margins=(ControlMargin(margin_name, dimensions, tuple(cells)),),
         dimensions=dimensions,
     )
+
+
+def inspect_wds_zip(path: Path, *, sample_rows: int = 5) -> dict[str, object]:
+    if sample_rows < 1:
+        raise ValueError("sample rows must be at least 1")
+    with ZipFile(path) as archive:
+        csv_name = find_wds_csv_member(archive)
+        with archive.open(csv_name) as raw_handle:
+            handle = TextIOWrapper(raw_handle, encoding="utf-8-sig", newline="")
+            reader = csv.DictReader(handle)
+            columns = list(reader.fieldnames or [])
+            rows: list[dict[str, str]] = []
+            numeric_probe_values = {column: [] for column in columns}
+            row_count = 0
+            for row in reader:
+                row_count += 1
+                if len(rows) < sample_rows:
+                    rows.append(row)
+                for column in columns:
+                    value = row.get(column, "")
+                    if value and len(numeric_probe_values[column]) < 25:
+                        numeric_probe_values[column].append(value)
+
+    value_columns = [column for column in columns if column.upper() == "VALUE"]
+    count_candidates = value_columns or [
+        column
+        for column in columns
+        if column.upper() not in WDS_METADATA_COLUMNS
+        and values_are_numeric(numeric_probe_values[column])
+    ]
+    dimension_candidates = [
+        column
+        for column in columns
+        if column not in count_candidates and column.upper() not in WDS_METADATA_COLUMNS
+    ]
+    dimensions_arg = ",".join(dimension_candidates)
+    count_column = count_candidates[0] if count_candidates else "VALUE"
+    return {
+        "csv_member": csv_name,
+        "columns": columns,
+        "row_count": row_count,
+        "count_column_candidates": count_candidates,
+        "dimension_candidates": dimension_candidates,
+        "sample_rows": rows[:sample_rows],
+        "suggested_command": (
+            f"synthpopcan controls from-wds {path} "
+            f"--dimensions '{dimensions_arg}' "
+            f"--count-column {count_column} "
+            "--margin-name wds "
+            "--out controls.csv"
+        ),
+    }
 
 
 def read_census_profile_control_table(
@@ -441,6 +505,17 @@ def find_wds_csv_member(archive: ZipFile) -> str:
     if len(csv_names) > 1:
         raise ValueError("WDS ZIP contains multiple CSV files")
     return csv_names[0]
+
+
+def values_are_numeric(values: list[str]) -> bool:
+    if not values:
+        return False
+    for value in values[:25]:
+        try:
+            float(value)
+        except ValueError:
+            return False
+    return True
 
 
 def read_category_mapping(path: Path) -> CategoryMapping:

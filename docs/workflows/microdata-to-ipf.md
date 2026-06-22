@@ -34,3 +34,27 @@ synthpopcan validate controls \
 ```
 
 The controls use `AGEGRP` and `SEX` because those are the exported seed columns. The category values also match: `adult`, `child`, `F`, and `M`. If either the column names or category labels differ, IPF cannot fit the controls without a mapping step.
+
+## Inspect a Downloaded StatCan WDS Table
+
+When you have downloaded a full StatCan WDS table ZIP, inspect it before
+normalizing controls:
+
+```bash
+synthpopcan controls wds inspect 98100001-eng.zip
+```
+
+The inspection reports the CSV member, columns, row count, likely count column,
+likely dimension columns, and a starter command:
+
+```bash
+synthpopcan controls from-wds 98100001-eng.zip \
+  --dimensions 'GEO,Age group,Sex' \
+  --count-column VALUE \
+  --margin-name wds \
+  --out controls.csv
+```
+
+Treat the suggested dimensions as a starting point. Drop columns that are not
+part of the margin you want to fit, then run `ipf check-inputs` to confirm that
+the seed file has matching columns and category values.

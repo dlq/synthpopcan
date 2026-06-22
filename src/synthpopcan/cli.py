@@ -17,6 +17,7 @@ from synthpopcan.cli_output import (
     print_census_profile_characteristics_table,
     print_tree_output_validation_report_table,
     print_validation_report_table,
+    print_wds_inspection_table,
     write_output,
     write_wds_search_results,
 )
@@ -25,6 +26,7 @@ from synthpopcan.console import print_checks_table, print_wrote
 from synthpopcan.controls import (
     census_profile_template,
     inspect_census_profile_characteristics,
+    inspect_wds_zip,
     read_category_mapping,
     read_census_profile_control_table,
     read_control_margins,
@@ -419,6 +421,11 @@ def census_profile_controls() -> None:
     """Inspect Census Profile files and mapping templates."""
 
 
+@controls.group(name="wds")
+def wds_controls() -> None:
+    """Inspect local StatCan WDS ZIPs before normalization."""
+
+
 @controls.command("validate")
 @click.argument("path", type=PATH)
 def validate_controls(path: Path) -> None:
@@ -489,6 +496,28 @@ def normalize_controls_from_wds(
         raise click.ClickException(str(exc)) from exc
     write_control_table(out_path, table)
     print_wrote(out_path)
+
+
+@wds_controls.command("inspect")
+@click.argument("source", type=PATH)
+@click.option("--sample-rows", default=5, type=int, show_default=True)
+@click.option(
+    "--format",
+    "output_format",
+    default="table",
+    type=click.Choice(["json", "table"]),
+    show_default=True,
+)
+def inspect_wds_controls(source: Path, sample_rows: int, output_format: str) -> None:
+    """Inspect a local StatCan WDS ZIP and suggest a controls command."""
+    try:
+        report = inspect_wds_zip(source, sample_rows=sample_rows)
+    except ValueError as exc:
+        raise click.ClickException(str(exc)) from exc
+    if output_format == "json":
+        print(json.dumps(report, indent=2, sort_keys=True))
+        return
+    print_wds_inspection_table(report)
 
 
 @controls.command("from-census-profile")
