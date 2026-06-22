@@ -88,20 +88,21 @@ mapping template:
 ```bash
 synthpopcan controls wds mapping-template data/raw/statcan/wds/98100001-eng.zip \
   --dimensions 'Age group,Sex' \
+  --preset canonical \
   --out categories.json
 ```
 
-The template lists observed source labels with blank target values for you to
-fill in:
+The `canonical` preset fills common StatCan labels that SynthPopCan already
+recognizes and leaves anything else blank for review:
 
 ```json
 {
   "Age group": {
-    "0 to 4 years": ""
+    "0 to 4 years": "age_000_004"
   },
   "Sex": {
-    "Female": "",
-    "Male": ""
+    "Female": "female",
+    "Male": "male"
   }
 }
 ```

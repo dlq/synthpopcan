@@ -470,6 +470,9 @@ Remaining StatCan/IPF follow-up backlog:
   dimension/member previews and an IPF suitability status from WDS metadata.
 - Add common mapping presets for recurring StatCan categories such as age, sex,
   geography, household size, and tenure when stable labels are available.
+  Status: first WDS `canonical` preset added for common age and sex labels;
+  broader geography, household-size, and tenure presets still need source-label
+  review before they should be exposed.
 - Add optional live smoke tests against one or two public WDS tables when
   network access is explicitly enabled.
 - Explore NumPy, Polars, PyArrow, or sparse-array implementations after the

@@ -530,10 +530,18 @@ def inspect_wds_controls(source: Path, sample_rows: int, output_format: str) -> 
     required=True,
     help="Comma-separated WDS columns whose categories need mapping.",
 )
+@click.option(
+    "--preset",
+    default="blank",
+    type=click.Choice(["blank", "canonical"]),
+    show_default=True,
+    help="Optionally prefill common StatCan labels.",
+)
 @click.option("--out", "out_path", required=True, type=PATH)
 def write_wds_mapping_template(
     source: Path,
     dimensions: str,
+    preset: str,
     out_path: Path,
 ) -> None:
     """Write a starter WDS category mapping JSON."""
@@ -541,6 +549,7 @@ def write_wds_mapping_template(
         payload = build_wds_category_mapping_template(
             source,
             dimensions=parse_columns(dimensions),
+            preset=preset,
         )
     except ValueError as exc:
         raise click.ClickException(str(exc)) from exc

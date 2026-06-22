@@ -268,9 +268,12 @@ def build_wds_category_mapping_template(
     path: Path,
     *,
     dimensions: tuple[str, ...],
+    preset: str = "blank",
 ) -> CategoryMapping:
     if not dimensions:
         raise ValueError("WDS mapping template requires at least one dimension")
+    if preset not in {"blank", "canonical"}:
+        raise ValueError("known WDS mapping presets: blank, canonical")
     categories: dict[str, set[str]] = {dimension: set() for dimension in dimensions}
     with ZipFile(path) as archive:
         csv_name = find_wds_csv_member(archive)
@@ -290,9 +293,28 @@ def build_wds_category_mapping_template(
                         categories[dimension].add(value)
 
     return {
-        dimension: {value: "" for value in sorted(values)}
+        dimension: {
+            value: preset_wds_category(dimension, value, preset)
+            for value in sorted(values)
+        }
         for dimension, values in categories.items()
     }
+
+
+def preset_wds_category(dimension: str, value: str, preset: str) -> str:
+    if preset == "blank":
+        return ""
+
+    dimension_key = dimension.casefold()
+    if "age" in dimension_key:
+        categories = CENSUS_PROFILE_AGE5_CATEGORIES.get(value)
+        if categories:
+            return categories["age"]
+    if dimension_key in {"sex", "gender"}:
+        categories = CENSUS_PROFILE_SEX_CATEGORIES.get(value)
+        if categories:
+            return categories["sex"]
+    return ""
 
 
 def read_census_profile_control_table(

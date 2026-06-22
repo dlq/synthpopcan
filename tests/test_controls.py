@@ -231,6 +231,54 @@ def test_cli_writes_wds_category_mapping_template(tmp_path: Path) -> None:
     }
 
 
+def test_cli_writes_wds_category_mapping_template_with_canonical_preset(
+    tmp_path: Path,
+) -> None:
+    from synthpopcan.cli import main
+
+    zip_path = tmp_path / "wds.zip"
+    output_path = tmp_path / "categories.json"
+    with ZipFile(zip_path, "w") as archive:
+        archive.writestr(
+            "table.csv",
+            "Age group,Sex,VALUE\n"
+            "0 to 4 years,Female,100\n"
+            "5 to 9 years,Male,105\n"
+            "10 to 14 years,Another response,3\n",
+        )
+
+    assert (
+        main(
+            [
+                "controls",
+                "wds",
+                "mapping-template",
+                str(zip_path),
+                "--dimensions",
+                "Age group,Sex",
+                "--preset",
+                "canonical",
+                "--out",
+                str(output_path),
+            ]
+        )
+        == 0
+    )
+
+    assert json.loads(output_path.read_text()) == {
+        "Age group": {
+            "0 to 4 years": "age_000_004",
+            "5 to 9 years": "age_005_009",
+            "10 to 14 years": "age_010_014",
+        },
+        "Sex": {
+            "Another response": "",
+            "Female": "female",
+            "Male": "male",
+        },
+    }
+
+
 def test_cli_applies_category_mapping_to_wds_controls(tmp_path: Path) -> None:
     from synthpopcan.cli import main
 
