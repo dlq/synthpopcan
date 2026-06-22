@@ -26,27 +26,33 @@ export function normalizeWdsRows(
     throw new Error("Choose at least one WDS dimension.");
   }
   const seen = new Set();
-  return rows
-    .filter((row) => row[countColumn] !== "")
-    .map((row, index) => {
-      const count = Number(row[countColumn]);
-      if (!Number.isFinite(count)) {
-        throw new Error(`WDS row ${index + 2} has invalid count.`);
-      }
-      const key = JSON.stringify(
-        outputDimensions.map((dimension) => row[dimension] ?? ""),
-      );
-      if (seen.has(key)) {
-        throw new Error(`WDS row ${index + 2} duplicates control cell ${key}.`);
-      }
-      seen.add(key);
-      return Object.fromEntries([
+  const controlRows = [];
+  rows.forEach((row, index) => {
+    const rowNumber = index + 2;
+    if (row[countColumn] === "") {
+      return;
+    }
+    const count = Number(row[countColumn]);
+    if (!Number.isFinite(count)) {
+      throw new Error(`WDS row ${rowNumber} has invalid count.`);
+    }
+    const key = JSON.stringify(
+      outputDimensions.map((dimension) => row[dimension] ?? ""),
+    );
+    if (seen.has(key)) {
+      throw new Error(`WDS row ${rowNumber} duplicates control cell ${key}.`);
+    }
+    seen.add(key);
+    controlRows.push(
+      Object.fromEntries([
         ["margin", marginName],
         ["dimensions", outputDimensions.join(",")],
         ...outputDimensions.map((dimension) => [dimension, row[dimension] ?? ""]),
         ["count", String(count)],
-      ]);
-    });
+      ]),
+    );
+  });
+  return controlRows;
 }
 
 export function buildSeedRowsFromControlRows(controlRows) {

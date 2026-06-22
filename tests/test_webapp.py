@@ -6,6 +6,8 @@ from threading import Thread
 from urllib.request import urlopen
 from zipfile import ZipFile
 
+import pytest
+
 from synthpopcan.cli import main
 from synthpopcan.webapp import (
     build_webapp_server,
@@ -191,6 +193,25 @@ def test_webapp_wds_generation_defaults_to_latest_snapshot_without_ref_date() ->
     assert generated["dimensions"] == ["GEO", "Sex"]
     assert generated["seedRows"] == 2
     assert generated["controlRows"] == 2
+
+
+def test_webapp_wds_generation_reports_original_row_after_snapshot() -> None:
+    zip_bytes = build_wds_zip(
+        {
+            "table.csv": (
+                "REF_DATE,GEO,Sex,VALUE,STATUS\n"
+                "1979,Canada,Female,100,\n"
+                "1980,Canada,Female,not-a-number,\n"
+            ),
+        }
+    )
+
+    with pytest.raises(ValueError, match="WDS row 3 has invalid count"):
+        generate_wds_seed_controls_from_zip_bytes(
+            zip_bytes,
+            dimensions=("GEO", "Sex"),
+            count_column="VALUE",
+        )
 
 
 def test_webapp_demo_model_catalogue_serves_safe_linked_package() -> None:

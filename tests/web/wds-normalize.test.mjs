@@ -50,6 +50,22 @@ test("normalizes WDS rows into controls and compatible seed rows", () => {
   ]);
 });
 
+test("reports original WDS row numbers after skipped blank counts", () => {
+  const rows = parseCsv(
+    "GEO,Sex,VALUE\n" + "Canada,Female,\n" + "Canada,Male,not-a-number\n",
+  );
+
+  assert.throws(
+    () =>
+      normalizeWdsRows(rows, {
+        dimensions: ["GEO", "Sex"],
+        countColumn: "VALUE",
+        marginName: "population",
+      }),
+    /WDS row 3 has invalid count/,
+  );
+});
+
 test("suggests WDS dimensions and value column", () => {
   const rows = parseCsv(
     "GEO,Age group,Sex,VALUE,STATUS\nCanada,0 to 4 years,Female,100,\n",

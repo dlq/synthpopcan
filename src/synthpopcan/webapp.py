@@ -31,6 +31,8 @@ WDS_METADATA_COLUMNS = {
     "UOM",
     "UOM_ID",
 }
+WDS_FETCH_TIMEOUT_SECONDS = 30
+WdsRow = tuple[int, dict[str, str]]
 
 
 class WebAppServer(Protocol):
@@ -157,7 +159,7 @@ def fetch_wds_zip_bytes(product_id: str, lang: str = "en") -> tuple[bytes, str]:
     if response.get("status") != "SUCCESS" or not response.get("object"):
         raise ValueError(f"StatCan WDS did not return a download URL for {product_id}")
     download_url = str(response["object"])
-    with urlopen(download_url) as handle:
+    with urlopen(download_url, timeout=WDS_FETCH_TIMEOUT_SECONDS) as handle:
         return handle.read(), download_url
 
 
@@ -352,10 +354,13 @@ def generate_wds_seed_controls_from_zip_bytes(
 
     if not rows:
         raise ValueError("WDS table has no rows")
+    numbered_rows = list(enumerate(rows, start=2))
     resolved_dimensions = resolve_wds_dimensions(rows, dimensions)
     if not resolved_dimensions:
         resolved_dimensions = suggest_wds_dimensions(rows, count_column)
-    snapshot_rows, reference_period = snapshot_wds_rows(rows, resolved_dimensions)
+    snapshot_rows, reference_period = snapshot_wds_rows(
+        numbered_rows, resolved_dimensions
+    )
     control_rows = normalize_wds_rows(
         snapshot_rows,
         dimensions=resolved_dimensions,
@@ -426,20 +431,24 @@ def suggest_wds_dimensions(
 
 
 def snapshot_wds_rows(
-    rows: list[dict[str, str]], dimensions: tuple[str, ...]
-) -> tuple[list[dict[str, str]], str | None]:
-    if "REF_DATE" not in rows[0] or "REF_DATE" in dimensions:
+    rows: list[WdsRow], dimensions: tuple[str, ...]
+) -> tuple[list[WdsRow], str | None]:
+    first_row = rows[0][1]
+    if "REF_DATE" not in first_row or "REF_DATE" in dimensions:
         return rows, None
     reference_periods = sorted(
-        {row["REF_DATE"] for row in rows if row.get("REF_DATE")},
+        {row["REF_DATE"] for _, row in rows if row.get("REF_DATE")},
         key=reference_period_sort_key,
     )
     if not reference_periods:
         return rows, None
     reference_period = reference_periods[-1]
-    return [
-        row for row in rows if row.get("REF_DATE") == reference_period
-    ], reference_period
+    snapshot_rows = [
+        (row_number, row)
+        for row_number, row in rows
+        if row.get("REF_DATE") == reference_period
+    ]
+    return snapshot_rows, reference_period
 
 
 def reference_period_sort_key(value: str) -> tuple[int, float | str]:
@@ -450,11 +459,11 @@ def reference_period_sort_key(value: str) -> tuple[int, float | str]:
 
 
 def normalize_wds_rows(
-    rows: list[dict[str, str]], *, dimensions: tuple[str, ...], count_column: str
+    rows: list[WdsRow], *, dimensions: tuple[str, ...], count_column: str
 ) -> list[dict[str, str]]:
     seen: set[tuple[str, ...]] = set()
     control_rows: list[dict[str, str]] = []
-    for row_number, row in enumerate(rows, start=2):
+    for row_number, row in rows:
         if row.get(count_column, "") == "":
             continue
         missing = [

@@ -527,7 +527,12 @@ function showWdsSearchResults(element, rows) {
     const item = document.createElement("button");
     item.className = "result-item";
     item.type = "button";
-    item.innerHTML = `<strong>${escapeHtml(row.productId)} · ${escapeHtml(row.title)}</strong><span>${escapeHtml(row.cansimId)} · ${escapeHtml(row.startDate)} to ${escapeHtml(row.endDate)}</span>`;
+    item.append(
+      resultText(
+        `${row.productId} · ${row.title}`,
+        `${row.cansimId} · ${row.startDate} to ${row.endDate}`,
+      ),
+    );
     item.addEventListener("click", () => {
       document.querySelector("#wds-product-id").value = row.productId;
     });
@@ -617,8 +622,18 @@ function modelOverviewText(summary) {
 function resultItem(title, text) {
   const item = document.createElement("div");
   item.className = "result-item";
-  item.innerHTML = `<strong>${escapeHtml(title)}</strong><span>${escapeHtml(text)}</span>`;
+  item.append(resultText(title, text));
   return item;
+}
+
+function resultText(title, text) {
+  const fragment = document.createDocumentFragment();
+  const titleElement = document.createElement("strong");
+  titleElement.textContent = title;
+  const textElement = document.createElement("span");
+  textElement.textContent = text;
+  fragment.append(titleElement, textElement);
+  return fragment;
 }
 
 async function readFileText(selector) {
@@ -758,12 +773,4 @@ function revokeDownloads(element) {
   element.querySelectorAll("[data-object-url]").forEach((link) => {
     URL.revokeObjectURL(link.dataset.objectUrl);
   });
-}
-
-function escapeHtml(value) {
-  return String(value)
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;");
 }
