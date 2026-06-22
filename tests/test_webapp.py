@@ -9,11 +9,10 @@ from zipfile import ZipFile
 import pytest
 
 from synthpopcan.cli import main
+from synthpopcan.web_demo_models import demo_model_catalogue, demo_model_payload
+from synthpopcan.web_wds import generate_wds_seed_controls_from_zip_bytes
 from synthpopcan.webapp import (
     build_webapp_server,
-    demo_model_catalogue,
-    demo_model_payload,
-    generate_wds_seed_controls_from_zip_bytes,
     get_webapp_root,
     serve_webapp,
     webapp_url,

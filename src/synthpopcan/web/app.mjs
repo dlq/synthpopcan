@@ -1,5 +1,13 @@
+import { runBrowserJob } from "./browser-job.mjs";
 import { parseCsv, stringifyCsv } from "./csv.mjs";
-import { previewCsv } from "./preview.mjs";
+import {
+  appendDownloads,
+  resultItem,
+  revokeDownloads,
+  showDownloads,
+  showError,
+  showStatus,
+} from "./result-ui.mjs";
 import {
   buildAgeSexControlRows,
   buildAgeSexSeedRows,
@@ -17,6 +25,11 @@ import {
   snapshotWdsRows,
   suggestWdsColumns,
 } from "./wds-normalize.mjs";
+import {
+  showModelSummary,
+  showWdsMetadata,
+  showWdsSearchResults,
+} from "./workflow-views.mjs";
 import { csvEntries, readZipEntries } from "./zip.mjs";
 
 const workflowButtons = document.querySelectorAll("[data-workflow-tab]");
@@ -27,7 +40,6 @@ const wdsSearchForm = document.querySelector("#wds-search-form");
 const wdsExplainForm = document.querySelector("#wds-explain-form");
 let selectedModelText = null;
 let selectedModelLabel = null;
-let nextJobId = 1;
 
 workflowButtons.forEach((button) => {
   button.addEventListener("click", () => {
@@ -243,32 +255,6 @@ document.querySelector("#load-premade-model").addEventListener("click", async ()
     showError(resultBox, error);
   }
 });
-
-function runBrowserJob(job) {
-  return new Promise((resolve, reject) => {
-    const id = nextJobId;
-    nextJobId += 1;
-    const worker = new Worker(new URL("./worker.mjs", import.meta.url), {
-      type: "module",
-    });
-    worker.addEventListener("message", (event) => {
-      if (event.data.id !== id) {
-        return;
-      }
-      worker.terminate();
-      if (event.data.ok) {
-        resolve(event.data.result);
-      } else {
-        reject(new Error(event.data.error));
-      }
-    });
-    worker.addEventListener("error", (error) => {
-      worker.terminate();
-      reject(error);
-    });
-    worker.postMessage({ id, job });
-  });
-}
 
 async function fetchWdsZip(productId) {
   const downloadUrl = await fetchWdsDownloadUrl(productId);
@@ -513,129 +499,6 @@ function downloadText(filename, text, type) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-function showWdsSearchResults(element, rows) {
-  revokeDownloads(element);
-  element.className = "result-box success";
-  if (rows.length === 0) {
-    element.textContent = "No matching WDS tables found.";
-    return;
-  }
-  element.textContent = "Matching WDS tables. Select a result to fill Product ID.";
-  const list = document.createElement("div");
-  list.className = "result-list";
-  rows.forEach((row) => {
-    const item = document.createElement("button");
-    item.className = "result-item";
-    item.type = "button";
-    item.append(
-      resultText(
-        `${row.productId} · ${row.title}`,
-        `${row.cansimId} · ${row.startDate} to ${row.endDate}`,
-      ),
-    );
-    item.addEventListener("click", () => {
-      document.querySelector("#wds-product-id").value = row.productId;
-    });
-    list.append(item);
-  });
-  element.append(list);
-}
-
-function showWdsMetadata(element, summary) {
-  revokeDownloads(element);
-  element.className = "result-box success";
-  element.textContent = `${summary.productId}: ${summary.title}`;
-  const list = document.createElement("div");
-  list.className = "result-list wds-metadata-list";
-  list.append(
-    resultItem("Dates", summary.dateRange),
-    resultItem("Dimensions", summary.dimensions.join(", ")),
-    resultItem("IPF note", summary.hint),
-    resultItem(
-      "Next",
-      "Use Generate from Product ID to fill the IPF inputs. Downloaded StatCan ZIP is only for tables you already have or for static deployments without the local helper.",
-    ),
-  );
-  element.append(list);
-  document.querySelector("#starter-dimensions").value =
-    summary.suggestedControlColumns.join(", ");
-  document.querySelector("#wds-dimensions").value =
-    summary.suggestedControlColumns.join(", ");
-}
-
-function showModelSummary(element, summary, sourceLabel = null) {
-  revokeDownloads(element);
-  element.className = "result-box success";
-  element.textContent = sourceLabel
-    ? `${sourceLabel}: ${summary.kind}. ${summary.outputs}.`
-    : `${summary.kind}. ${summary.outputs}.`;
-  const overview = document.createElement("div");
-  overview.className = "model-overview-note";
-  overview.append(resultItem("Package summary", modelOverviewText(summary)));
-  element.append(overview);
-  if (summary.linkage) {
-    const linkage = document.createElement("div");
-    linkage.className = "model-linkage-note";
-    linkage.append(resultItem("How household/person linkage works", summary.linkage));
-    element.append(linkage);
-  }
-  const modelDetails = document.createElement("div");
-  modelDetails.className = "model-detail-list";
-  const heading = document.createElement("strong");
-  heading.textContent = "Included models";
-  modelDetails.append(heading);
-  summary.models.forEach((model) => {
-    modelDetails.append(resultItem(model.name, model.text));
-  });
-  element.append(modelDetails);
-  const terms = document.createElement("div");
-  terms.className = "model-terms-list";
-  const termsHeading = document.createElement("strong");
-  termsHeading.textContent = "Terms used";
-  terms.append(
-    termsHeading,
-    resultItem(
-      "Publishable candidate",
-      "A model package marked as suitable for sharing after privacy checks; it should not contain raw training rows.",
-    ),
-    resultItem(
-      "Conditions",
-      "Optional input columns used to filter generation, such as geo or household_size.",
-    ),
-    resultItem("Targets", "Columns the model generates in the synthetic output."),
-    resultItem(
-      "Conditional-frequency",
-      "A simple tabular model that samples from observed category frequencies within matching condition groups.",
-    ),
-  );
-  element.append(terms);
-}
-
-function modelOverviewText(summary) {
-  const conditions =
-    summary.conditions.length > 0
-      ? summary.conditions.join(", ")
-      : "no required conditioning columns";
-  return `${summary.privacy}; release ${summary.release}; ${summary.rowsLabel.toLowerCase()}; generates ${summary.outputs}; conditions: ${conditions}.`;
-}
-
-function resultItem(title, text) {
-  const item = document.createElement("div");
-  item.className = "result-item";
-  item.append(resultText(title, text));
-  return item;
-}
-
-function resultText(title, text) {
-  const fragment = document.createDocumentFragment();
-  const titleElement = document.createElement("strong");
-  titleElement.textContent = title;
-  const textElement = document.createElement("span");
-  textElement.textContent = text;
-  fragment.append(titleElement, textElement);
-  return fragment;
-}
-
 async function readFileText(selector) {
   const input = document.querySelector(selector);
   const file = input.files?.[0];
@@ -657,120 +520,4 @@ function numberValue(selector) {
     throw new Error(`${input.labels?.[0]?.textContent.trim()} must be a number.`);
   }
   return value;
-}
-
-function showStatus(element, message) {
-  revokeDownloads(element);
-  element.className = "result-box";
-  element.textContent = message;
-}
-
-function showError(element, error) {
-  revokeDownloads(element);
-  element.className = "result-box error";
-  element.textContent = error instanceof Error ? error.message : String(error);
-}
-
-function showDownloads(element, { message, downloads }) {
-  revokeDownloads(element);
-  element.className = "result-box success";
-  const messageElement = document.createElement("p");
-  messageElement.className = "result-message";
-  messageElement.textContent = message;
-  element.replaceChildren(messageElement);
-  appendDownloads(element, downloads);
-  appendPreviews(element, downloads);
-}
-
-function appendDownloads(element, downloads) {
-  const list = document.createElement("div");
-  list.className = "download-list";
-  downloads.forEach((download) => {
-    const url = URL.createObjectURL(new Blob([download.text], { type: download.type }));
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = download.filename;
-    link.className = "download-link";
-    link.textContent = `Download ${download.filename}`;
-    link.dataset.objectUrl = url;
-    list.append(link);
-  });
-  element.append(list);
-}
-
-function appendPreviews(element, downloads) {
-  const previews = document.createElement("div");
-  previews.className = "preview-list";
-  downloads.forEach((download) => {
-    previews.append(previewBlock(download));
-  });
-  element.append(previews);
-}
-
-function previewBlock(download) {
-  const preview = previewCsv(download.text);
-  const block = document.createElement("section");
-  block.className = "preview-block";
-  const heading = document.createElement("h4");
-  heading.textContent = `Preview: ${download.filename}`;
-  const note = document.createElement("p");
-  note.className = "preview-note";
-  note.textContent = previewNote(preview);
-  block.append(heading, note);
-  if (preview.columns.length === 0 || preview.rows.length === 0) {
-    const empty = document.createElement("p");
-    empty.className = "preview-note";
-    empty.textContent = "No rows to preview.";
-    block.append(empty);
-    return block;
-  }
-  const tableWrap = document.createElement("div");
-  tableWrap.className = "preview-table-wrap";
-  const table = document.createElement("table");
-  table.className = "preview-table";
-  table.append(previewHead(preview.columns), previewBody(preview));
-  tableWrap.append(table);
-  block.append(tableWrap);
-  return block;
-}
-
-function previewNote(preview) {
-  const columnNote =
-    preview.hiddenColumnCount > 0
-      ? ` Showing ${preview.columns.length} columns; ${preview.hiddenColumnCount} more column(s) are in the CSV.`
-      : "";
-  const rowNote = preview.hasMoreRows ? " More rows are in the CSV." : "";
-  return `First ${Math.min(preview.rowLimit, preview.rows.length)} row(s).${columnNote}${rowNote}`;
-}
-
-function previewHead(columns) {
-  const head = document.createElement("thead");
-  const row = document.createElement("tr");
-  columns.forEach((column) => {
-    const cell = document.createElement("th");
-    cell.textContent = column;
-    row.append(cell);
-  });
-  head.append(row);
-  return head;
-}
-
-function previewBody(preview) {
-  const body = document.createElement("tbody");
-  preview.rows.forEach((previewRow) => {
-    const row = document.createElement("tr");
-    preview.columns.forEach((column) => {
-      const cell = document.createElement("td");
-      cell.textContent = previewRow[column] ?? "";
-      row.append(cell);
-    });
-    body.append(row);
-  });
-  return body;
-}
-
-function revokeDownloads(element) {
-  element.querySelectorAll("[data-object-url]").forEach((link) => {
-    URL.revokeObjectURL(link.dataset.objectUrl);
-  });
 }
