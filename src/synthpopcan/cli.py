@@ -496,9 +496,28 @@ def normalize_controls_from_wds(
             else None,
         )
     except ValueError as exc:
-        raise click.ClickException(str(exc)) from exc
+        raise click.ClickException(format_wds_control_error(exc, source)) from exc
     write_control_table(out_path, table)
     print_wrote(out_path)
+
+
+def format_wds_control_error(exc: ValueError, source: Path) -> str:
+    message = str(exc)
+    if "unmapped category" in message:
+        return (
+            f"{message}\n"
+            "Next step: regenerate or edit the category mapping, for example "
+            f"`synthpopcan controls wds mapping-template {source} "
+            '--dimensions "COLUMN" --preset canonical --out categories.json`.'
+        )
+    if "missing columns" in message:
+        return (
+            f"{message}\n"
+            "Next step: inspect the ZIP column names with "
+            f"`synthpopcan controls wds inspect {source}` and rerun "
+            "`controls from-wds` with the displayed dimension and count columns."
+        )
+    return message
 
 
 @wds_controls.command("inspect")

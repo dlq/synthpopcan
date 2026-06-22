@@ -483,6 +483,9 @@ Remaining StatCan/IPF follow-up backlog:
   patterns. Status: first pass added fit-report control-total checks,
   inconsistent-control-total issues, report-level next steps, and Rich
   `ipf report` next-step rendering.
+- Add concise next-step hints where they remove friction without adding noise.
+  Status: first `controls from-wds` error hints added for missing WDS columns
+  and unmapped category labels.
 
 Completed tree model packaging/distribution first pass:
 

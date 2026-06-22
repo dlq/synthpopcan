@@ -347,7 +347,7 @@ def test_cli_fails_on_unmapped_wds_category(tmp_path: Path) -> None:
         )
     )
 
-    with pytest.raises(ClickException, match="unmapped category"):
+    with pytest.raises(ClickException) as excinfo:
         main(
             [
                 "controls",
@@ -363,6 +363,44 @@ def test_cli_fails_on_unmapped_wds_category(tmp_path: Path) -> None:
                 str(output_path),
             ]
         )
+    message = str(excinfo.value)
+    assert "unmapped category" in message
+    assert "Next step:" in message
+    assert "controls wds mapping-template" in message
+    assert "--preset canonical" in message
+
+
+def test_cli_fails_on_missing_wds_columns_with_inspection_next_step(
+    tmp_path: Path,
+) -> None:
+    from synthpopcan.cli import main
+
+    zip_path = tmp_path / "wds.zip"
+    output_path = tmp_path / "controls.csv"
+    with ZipFile(zip_path, "w") as archive:
+        archive.writestr(
+            "table.csv",
+            "Geography,VALUE\nCanada,100\n",
+        )
+
+    with pytest.raises(ClickException) as excinfo:
+        main(
+            [
+                "controls",
+                "from-wds",
+                str(zip_path),
+                "--dimensions",
+                "GEO,Sex",
+                "--count-column",
+                "VALUE",
+                "--out",
+                str(output_path),
+            ]
+        )
+    message = str(excinfo.value)
+    assert "missing columns" in message
+    assert "Next step:" in message
+    assert "controls wds inspect" in message
 
 
 def test_reads_census_profile_controls_with_explicit_mapping(tmp_path: Path) -> None:
