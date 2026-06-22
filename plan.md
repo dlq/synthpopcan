@@ -194,7 +194,7 @@ Near-term IPF performance tasks:
 4. Stream expanded rows directly to CSV instead of building the full expanded population in memory. Status: complete.
 5. Add benchmarks or performance tests for easy, moderate, and high-cardinality fixtures. Status: complete for developer-facing `scripts/benchmark_ipf.py`; not exposed as a user CLI workflow.
 6. Improve non-convergence diagnostics and CLI reporting. Status: partially complete; the CLI now fails closed on non-convergence, can write JSON fit diagnostics, can print a human-readable report table, and reports the largest residual with a plain-language tip. Richer validation reports that explain whole-run inconsistency patterns are still pending.
-7. Consider NumPy, Polars, and possibly sparse arrays after the pure-Python indexed version establishes the right data contracts. Status: pending.
+7. Consider NumPy, Polars, and possibly sparse arrays after the pure-Python indexed version establishes the right data contracts. Status: first benchmark characterization tests added; cases now report average records per margin cell plus a dependency hint, and an opt-in timing test runs with `SYNTHPOPCAN_PERF_TESTS=1 uv run pytest tests/test_benchmarks.py -m performance`.
 
 Local timing evidence after indexing:
 

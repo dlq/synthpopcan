@@ -51,6 +51,7 @@ build-backend = "hatchling.build"
 testpaths = ["tests"]
 markers = [
   "live_statcan: opt-in tests that call live Statistics Canada WDS services",
+  "performance: opt-in timing-sensitive tests for local performance checks",
 ]
 
 [tool.ruff]

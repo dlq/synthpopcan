@@ -30,6 +30,7 @@ def main() -> int:
     table.add_column("Max Error", justify="right")
     table.add_column("Fit Seconds", justify="right")
     table.add_column("Expanded Rows", justify="right")
+    table.add_column("Hint")
 
     for row in rows:
         table.add_row(
@@ -41,6 +42,7 @@ def main() -> int:
             format_float(row["max_abs_error"]),
             format_float(row["fit_seconds"]),
             format_int(row["expanded_rows"]),
+            str(row["dependency_hint"]),
         )
 
     Console(width=120).print(table)

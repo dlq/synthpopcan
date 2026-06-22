@@ -32,6 +32,34 @@ def build_ipf_benchmark_cases(seed_records: int = 50_000) -> list[IPFBenchmarkCa
     ]
 
 
+def assess_ipf_benchmark_case(
+    case: IPFBenchmarkCase,
+) -> dict[str, int | float | str]:
+    record_memberships = len(case.records) * len(case.margins)
+    average_records_per_margin_cell = record_memberships / case.margin_cell_count
+    return {
+        "case": case.name,
+        "seed_records": len(case.records),
+        "margin_count": len(case.margins),
+        "margin_cells": case.margin_cell_count,
+        "record_memberships": record_memberships,
+        "average_records_per_margin_cell": average_records_per_margin_cell,
+        "dependency_hint": classify_ipf_dependency_need(
+            case.margin_cell_count,
+            average_records_per_margin_cell,
+        ),
+    }
+
+
+def classify_ipf_dependency_need(
+    margin_cells: int,
+    average_records_per_margin_cell: float,
+) -> str:
+    if margin_cells >= 32 or average_records_per_margin_cell < 10:
+        return "consider_sparse_or_vectorized"
+    return "pure_python_ok"
+
+
 def build_easy_balanced_case(seed_records: int) -> IPFBenchmarkCase:
     records = [
         {
@@ -116,6 +144,7 @@ def build_high_cardinality_inconsistent_case(seed_records: int) -> IPFBenchmarkC
 
 
 def run_ipf_benchmark(case: IPFBenchmarkCase) -> dict[str, int | float | str | bool]:
+    assessment = assess_ipf_benchmark_case(case)
     start = perf_counter()
     result = fit_ipf(
         case.records,
@@ -134,6 +163,10 @@ def run_ipf_benchmark(case: IPFBenchmarkCase) -> dict[str, int | float | str | b
         "max_abs_error": result.max_abs_error,
         "fit_seconds": fit_seconds,
         "expanded_rows": sum(integerize_weights(result.weights)),
+        "average_records_per_margin_cell": assessment[
+            "average_records_per_margin_cell"
+        ],
+        "dependency_hint": assessment["dependency_hint"],
     }
 
 
