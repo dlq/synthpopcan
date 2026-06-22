@@ -252,6 +252,18 @@ synthpopcan tree inspect-package linked-model-package.json
 Use `--format json` when another script or app needs the same compact package
 summary.
 
+Generate directly from a reviewed linked package:
+
+```bash
+synthpopcan tree generate-from-package linked-model-package.json \
+  --households 1000 \
+  --condition PR=24 \
+  --households-out synthetic-households.csv \
+  --persons-out synthetic-persons.csv \
+  --manifest-out synthetic-linked.manifest.json \
+  --random-seed 13
+```
+
 Packaging is intentionally strict. It refuses models that still have warnings or
 errors, validates that the household model is a household model, validates that
 the person model is a person model, checks the household-size linkage column, and

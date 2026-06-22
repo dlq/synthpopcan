@@ -1029,6 +1029,153 @@ def test_cli_inspects_linked_model_package_as_table(tmp_path, capsys) -> None:
     assert "Do not redistribute source microdata." in output
 
 
+def test_cli_generates_linked_population_from_package(tmp_path) -> None:
+    household_model_path, person_model_path = _write_publishable_linked_model_fixtures(
+        tmp_path
+    )
+    training_manifest_path = tmp_path / "linked-training-manifest.json"
+    source_provenance_path = tmp_path / "source-provenance.json"
+    package_path = tmp_path / "linked-model-package.json"
+    households_path = tmp_path / "synthetic-households.csv"
+    persons_path = tmp_path / "synthetic-persons.csv"
+    manifest_path = tmp_path / "synthetic-linked-manifest.json"
+    _write_linked_training_manifest(
+        training_manifest_path,
+        household_model_path=household_model_path,
+        person_model_path=person_model_path,
+    )
+    _write_source_provenance(source_provenance_path)
+    assert (
+        main(
+            [
+                "tree",
+                "package-linked-models",
+                "--household-model",
+                str(household_model_path),
+                "--person-model",
+                str(person_model_path),
+                "--training-manifest",
+                str(training_manifest_path),
+                "--source-provenance",
+                str(source_provenance_path),
+                "--review-note",
+                "reviewed fixture package",
+                "--out",
+                str(package_path),
+                "--min-support",
+                "1",
+                "--max-purity",
+                "1",
+            ]
+        )
+        == 0
+    )
+
+    assert (
+        main(
+            [
+                "tree",
+                "generate-from-package",
+                str(package_path),
+                "--households",
+                "3",
+                "--condition",
+                "geo=QC",
+                "--households-out",
+                str(households_path),
+                "--persons-out",
+                str(persons_path),
+                "--manifest-out",
+                str(manifest_path),
+                "--random-seed",
+                "13",
+            ]
+        )
+        == 0
+    )
+
+    with households_path.open(newline="") as handle:
+        households = list(csv.DictReader(handle))
+    with persons_path.open(newline="") as handle:
+        persons = list(csv.DictReader(handle))
+    report = validate_linked_population(
+        households,
+        persons,
+        household_size_column="household_size",
+    )
+    manifest = json.loads(manifest_path.read_text())
+    assert report["passed"] is True
+    assert len(households) == 3
+    assert len(persons) == 6
+    assert manifest["command"] == "tree generate-from-package"
+    assert manifest["package"]["package_path"] == str(package_path)
+    assert manifest["package"]["source"]["provider"] == "Statistics Canada"
+    assert manifest["household_conditions"] == {"geo": "QC"}
+    assert manifest["effective_random_seed"] == 13
+
+
+def test_cli_refuses_generation_from_non_publishable_package(tmp_path) -> None:
+    from click import ClickException
+
+    household_model_path, person_model_path = _write_publishable_linked_model_fixtures(
+        tmp_path
+    )
+    training_manifest_path = tmp_path / "linked-training-manifest.json"
+    source_provenance_path = tmp_path / "source-provenance.json"
+    package_path = tmp_path / "linked-model-package.json"
+    households_path = tmp_path / "synthetic-households.csv"
+    persons_path = tmp_path / "synthetic-persons.csv"
+    _write_linked_training_manifest(
+        training_manifest_path,
+        household_model_path=household_model_path,
+        person_model_path=person_model_path,
+    )
+    _write_source_provenance(source_provenance_path)
+    assert (
+        main(
+            [
+                "tree",
+                "package-linked-models",
+                "--household-model",
+                str(household_model_path),
+                "--person-model",
+                str(person_model_path),
+                "--training-manifest",
+                str(training_manifest_path),
+                "--source-provenance",
+                str(source_provenance_path),
+                "--review-note",
+                "reviewed fixture package",
+                "--out",
+                str(package_path),
+                "--min-support",
+                "1",
+                "--max-purity",
+                "1",
+            ]
+        )
+        == 0
+    )
+    package = json.loads(package_path.read_text())
+    package["privacy"]["publishable_candidate"] = False
+    package_path.write_text(json.dumps(package) + "\n")
+
+    with pytest.raises(ClickException, match="publishable candidate"):
+        main(
+            [
+                "tree",
+                "generate-from-package",
+                str(package_path),
+                "--households",
+                "3",
+                "--households-out",
+                str(households_path),
+                "--persons-out",
+                str(persons_path),
+            ]
+        )
+
+
 def test_cli_requires_source_provenance_for_linked_model_packages(tmp_path) -> None:
     from click import ClickException
 

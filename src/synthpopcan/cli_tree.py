@@ -22,6 +22,8 @@ from synthpopcan.microdata import (
     resolve_tree_column_block_pair,
 )
 from synthpopcan.tree import (
+    CartTreeModel,
+    FrequencyTreeModel,
     TreeTrainingSample,
     audit_tree_model,
     generate_linked_population,
@@ -478,6 +480,103 @@ def generate_linked_tree_population(
                         household_model,
                     ),
                     "person_model": model_manifest(person_model_payload, person_model),
+                },
+            )
+    except ValueError as exc:
+        raise click.ClickException(str(exc)) from exc
+    print_wrote(households_out)
+    print_wrote(persons_out)
+    if manifest_out:
+        print_wrote(manifest_out)
+
+
+@tree.command("generate-from-package")
+@click.argument("package_path", type=PATH)
+@click.option(
+    "--households",
+    required=True,
+    type=int,
+    help="Number of synthetic households to generate.",
+)
+@click.option(
+    "--condition",
+    "condition_values",
+    multiple=True,
+    help="Condition household generation with COLUMN=VALUE. Repeat as needed.",
+)
+@click.option(
+    "--households-out",
+    required=True,
+    type=PATH,
+    help="Output household CSV.",
+)
+@click.option(
+    "--persons-out",
+    required=True,
+    type=PATH,
+    help="Output person CSV.",
+)
+@click.option(
+    "--household-size-column",
+    default=None,
+    help="Override package household-size linkage column.",
+)
+@click.option(
+    "--manifest-out",
+    type=PATH,
+    default=None,
+    help="Optional output JSON manifest with package and seed provenance.",
+)
+@click.option("--random-seed", default=None, type=int)
+def generate_linked_tree_population_from_package(
+    package_path: Path,
+    households: int,
+    condition_values: tuple[str, ...],
+    households_out: Path,
+    persons_out: Path,
+    household_size_column: str | None,
+    manifest_out: Path | None,
+    random_seed: int | None,
+) -> None:
+    """Generate linked household/person CSVs from a package."""
+    try:
+        package = read_linked_model_package(package_path)
+        validate_package_allows_generation(package)
+        package_inspection = build_linked_package_inspection(package, package_path)
+        household_model_payload, person_model_payload = package_models(package)
+        effective_household_size_column = household_size_column or str(
+            package.get("household_size_column", "household_size")
+        )
+        household_conditions = parse_conditions(condition_values)
+        generated_households, generated_persons = generate_linked_population(
+            household_model_payload,
+            person_model_payload,
+            households=households,
+            household_conditions=household_conditions,
+            household_size_column=effective_household_size_column,
+            random_seed=random_seed,
+        )
+        write_generated_rows(households_out, generated_households)
+        write_generated_rows(persons_out, generated_persons)
+        if manifest_out:
+            write_tree_generation_manifest(
+                manifest_out,
+                {
+                    "schema_version": "synthpopcan-tree-generation-manifest-v1",
+                    "command": "tree generate-from-package",
+                    "outputs": {
+                        "households": str(households_out),
+                        "persons": str(persons_out),
+                    },
+                    "households": households,
+                    "household_conditions": household_conditions,
+                    "household_size_column": effective_household_size_column,
+                    "random_seed": random_seed,
+                    "effective_random_seed": effective_random_seed(
+                        household_model_payload,
+                        random_seed,
+                    ),
+                    "package": package_inspection,
                 },
             )
     except ValueError as exc:
@@ -1087,6 +1186,35 @@ def read_linked_model_package(path: Path) -> dict[str, object]:
     if payload.get("schema_version") != "synthpopcan-linked-tree-package-v1":
         raise ValueError("unsupported linked model package schema")
     return payload
+
+
+def validate_package_allows_generation(package: dict[str, object]) -> None:
+    privacy = object_or_empty(package.get("privacy"))
+    if privacy.get("publishable_candidate") is not True:
+        raise ValueError(
+            "linked package is not marked as a publishable candidate; inspect the "
+            "package before generating from it"
+        )
+
+
+def package_models(package: dict[str, object]):
+    models = object_or_empty(package.get("models"))
+    household_model = object_or_empty(models.get("household"))
+    person_model = object_or_empty(models.get("person"))
+    if not household_model or not person_model:
+        raise ValueError("linked package must include household and person models")
+    return tree_model_from_payload(household_model), tree_model_from_payload(
+        person_model
+    )
+
+
+def tree_model_from_payload(payload: dict[str, object]):
+    model_type = payload.get("model_type")
+    if model_type == "conditional-frequency":
+        return FrequencyTreeModel.from_dict(payload)
+    if model_type == "cart":
+        return CartTreeModel.from_dict(payload)
+    raise ValueError("unsupported tree model type in linked package")
 
 
 def build_linked_package_inspection(
