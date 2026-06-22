@@ -194,13 +194,18 @@ Near-term IPF performance tasks:
 4. Stream expanded rows directly to CSV instead of building the full expanded population in memory. Status: complete.
 5. Add benchmarks or performance tests for easy, moderate, and high-cardinality fixtures. Status: complete for developer-facing `scripts/benchmark_ipf.py`; not exposed as a user CLI workflow.
 6. Improve non-convergence diagnostics and CLI reporting. Status: partially complete; the CLI now fails closed on non-convergence, can write JSON fit diagnostics, can print a human-readable report table, and reports the largest residual with a plain-language tip. Richer validation reports that explain whole-run inconsistency patterns are still pending.
-7. Consider NumPy, Polars, and possibly sparse arrays after the pure-Python indexed version establishes the right data contracts. Status: first benchmark characterization tests added; cases now report average records per margin cell plus a dependency hint, and an opt-in timing test runs with `SYNTHPOPCAN_PERF_TESTS=1 uv run pytest tests/test_benchmarks.py -m performance`.
+7. Consider NumPy, Polars, and possibly sparse arrays after the pure-Python indexed version establishes the right data contracts. Status: first benchmark characterization tests added; cases now report average records per margin cell plus a dependency hint, and an opt-in timing test runs with `SYNTHPOPCAN_PERF_TESTS=1 uv run pytest tests/test_benchmarks.py -m performance`. Experimental backend benchmarks show current pure Python remains fastest for one-iteration dense cases, while NumPy `bincount` and SciPy CSR are much faster for repeated high-cardinality updates; Polars appears better suited to table ingestion/prep than the iterative IPF update kernel.
 
 Local timing evidence after indexing:
 
 - Easy balanced fixture, 50,000 seed records to 500,000 expanded rows: fitting about 0.03 seconds, expansion about 0.14 seconds.
 - High-cardinality inconsistent fixture, 50,000 seed records, 72 target cells, 100 iterations: fitting about 1.0 second, down from about 54.5 seconds in the naive repeated-scan version.
 - The high-cardinality fixture still does not converge because its controls are deliberately inconsistent, so diagnostics are still required.
+- Experimental backend comparison at 50,000 seed records:
+  - Easy balanced, one iteration: current Python about 0.023 seconds, NumPy about 0.032 seconds, SciPy CSR about 0.037 seconds.
+  - Moderate three-margin, one iteration: current Python about 0.037 seconds, NumPy about 0.047 seconds, SciPy CSR about 0.064 seconds, Polars via temporary `uv --with polars` about 0.049 seconds.
+  - High-cardinality inconsistent, 100 iterations: current Python about 0.62-0.67 seconds, NumPy about 0.11 seconds, SciPy CSR about 0.09-0.12 seconds, Polars about 0.73 seconds.
+- Experimental high-cardinality comparison at 200,000 seed records and 100 iterations: current Python about 2.8 seconds, NumPy about 0.44 seconds, SciPy CSR about 0.36 seconds.
 
 ### 5. Census Household/Person Microdata Ingestion
 
