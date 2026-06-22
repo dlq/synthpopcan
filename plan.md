@@ -474,7 +474,9 @@ Remaining StatCan/IPF follow-up backlog:
   broader geography, household-size, and tenure presets still need source-label
   review before they should be exposed.
 - Add optional live smoke tests against one or two public WDS tables when
-  network access is explicitly enabled.
+  network access is explicitly enabled. Status: first opt-in smoke tests added
+  behind `SYNTHPOPCAN_LIVE_STATCAN=1` for WDS search, metadata/explain summary,
+  and download-URL resolution without downloading a full ZIP.
 - Explore NumPy, Polars, PyArrow, or sparse-array implementations after the
   pure-Python indexed fitter remains stable under more realistic controls.
 - Add richer reports for inconsistent controls and whole-run non-convergence

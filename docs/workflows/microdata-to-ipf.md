@@ -112,6 +112,20 @@ example, it may suggest exporting a seed column with the same name as a control
 dimension, or using `controls wds mapping-template` when WDS labels such as
 `Female` need to be mapped to seed labels such as `F`.
 
+## Optional Live StatCan Check
+
+The default test suite does not call StatCan. To check whether the current WDS
+service still matches SynthPopCan's assumptions, run the opt-in live smoke
+tests:
+
+```bash
+SYNTHPOPCAN_LIVE_STATCAN=1 uv run pytest tests/test_statcan_live.py
+```
+
+These tests search for a stable public population/dwelling table, fetch its WDS
+metadata, build an `explain` summary, and confirm that the WDS download endpoint
+still resolves to a CSV ZIP URL. They do not download the full table ZIP.
+
 ## Tiny WDS-to-IPF Fixture
 
 The tracked files under `tests/fixtures/workflows/wds_ipf/` show the WDS label

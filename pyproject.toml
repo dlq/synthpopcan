@@ -49,6 +49,9 @@ build-backend = "hatchling.build"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+markers = [
+  "live_statcan: opt-in tests that call live Statistics Canada WDS services",
+]
 
 [tool.ruff]
 target-version = "py311"
