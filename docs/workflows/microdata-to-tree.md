@@ -30,7 +30,30 @@ The helper excludes identifiers, weights, and replicate weights. It also drops
 profile columns that are not present in the inspected file, so the same block
 names can work on a tiny fixture and on a fuller local file.
 
-## 2. Train Linked Models
+## 2. Check Geography Feasibility
+
+Before training one model per province, territory, or agglomeration, run a
+feasibility report:
+
+```bash
+synthpopcan microdata tree-geography-feasibility \
+  tests/fixtures/workflows/linked_tree/hierarchical.csv \
+  --input-format statcan-2016-hierarchical \
+  --geography-column PR
+```
+
+Use `--geography-column CMA` for the agglomeration codes exposed by the local
+PUMF. The report classifies each geography as `likely`, `borderline`, or
+`unlikely` for a publishable-candidate model under the current first-pass
+support and purity thresholds.
+
+The report is a planning helper, not a privacy decision. It uses source row
+counts, derived household counts, weighted totals, conditioning-cell support, and
+target-outcome purity risk for the selected household/person blocks. A `likely`
+geography is a candidate for training and audit; it still needs the normal model
+audit and release workflow.
+
+## 3. Train Linked Models
 
 Use `tree train-linked` when you have the mixed hierarchical microdata file and
 want compatible household and person models:
@@ -58,7 +81,7 @@ in about 12 seconds on this development machine. The household model was about
 broader household target blocks may need pruning or coarsening before packaging
 for distribution.
 
-## 3. Generate Linked Synthetic Rows
+## 4. Generate Linked Synthetic Rows
 
 Generate households first, then people conditioned on each generated household:
 
@@ -78,7 +101,7 @@ The household output has one row per generated household with
 `synthetic_household_id`. The person output has one row per generated person with
 `synthetic_person_id` and the household's `synthetic_household_id`.
 
-## 4. Validate Linkage
+## 5. Validate Linkage
 
 Always validate the linked files before using them downstream:
 
@@ -96,7 +119,7 @@ In the same full-size 2016 QC run noted above, generating 1,000 households with
 `PR=24` produced 2,300 people. Linked validation passed with no unknown
 households and no household-size mismatches.
 
-## 5. Release Review and Packaging
+## 6. Release Review and Packaging
 
 Models trained from restricted microdata are private working artifacts by
 default. Do not distribute them directly.

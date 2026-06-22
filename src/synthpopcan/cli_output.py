@@ -109,6 +109,41 @@ def print_tree_column_suggestions_table(report: dict[str, object]) -> None:
     print_table(table)
 
 
+def print_tree_geography_feasibility_table(report: dict[str, object]) -> None:
+    print_summary_table(
+        {
+            "source_format": report.get("source_format", ""),
+            "geography_column": report.get("geography_column", ""),
+            "regions": len(report.get("regions", [])),
+        },
+        title="Tree Geography Feasibility Summary",
+    )
+
+    table = Table(title="Tree Geography Feasibility")
+    table.add_column("Geography", no_wrap=True)
+    table.add_column("Tier", no_wrap=True)
+    table.add_column("Persons", justify="right")
+    table.add_column("Households", justify="right")
+    table.add_column("Person Min Support", justify="right")
+    table.add_column("Max Purity", justify="right")
+    table.add_column("Action")
+
+    for region in report.get("regions", []):
+        if not isinstance(region, dict):
+            continue
+        table.add_row(
+            str(region.get("geography", "")),
+            str(region.get("tier", "")),
+            format_report_number(region.get("person_rows")),
+            format_report_number(region.get("household_rows")),
+            format_report_number(region.get("person_min_support")),
+            format_report_percent(region.get("person_max_purity")),
+            str(region.get("suggested_action", "")),
+        )
+
+    print_table(table)
+
+
 def print_ipf_report_table(report: dict[str, object]) -> None:
     table = Table(title="IPF Fit Report")
     table.add_column("Margin")

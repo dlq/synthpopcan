@@ -11,10 +11,12 @@ import click
 from synthpopcan.cli_output import (
     print_seed_check_table,
     print_tree_column_suggestions_table,
+    print_tree_geography_feasibility_table,
     write_output,
 )
 from synthpopcan.console import print_summary_table, print_wrote
 from synthpopcan.microdata import (
+    build_tree_geography_feasibility_report,
     check_statcan_2016_household_seed_columns,
     derive_statcan_2016_household_seed_sample,
     export_seed_rows,
@@ -175,6 +177,84 @@ def suggest_microdata_tree_columns(
         print(json.dumps(report, indent=2, sort_keys=True))
         return
     print_tree_column_suggestions_table(report)
+
+
+@microdata.command("tree-geography-feasibility")
+@click.argument("path", type=PATH)
+@click.option(
+    "--input-format",
+    "source_format",
+    required=True,
+    type=click.Choice(["statcan-2016-hierarchical"]),
+    help="Input microdata adapter format.",
+)
+@click.option(
+    "--geography-column",
+    default="PR",
+    show_default=True,
+    help="Geography column to evaluate, such as PR or CMA.",
+)
+@click.option(
+    "--household-block",
+    default="household_core",
+    show_default=True,
+    help="Suggested household block to evaluate.",
+)
+@click.option(
+    "--person-block",
+    default="person_demographics",
+    show_default=True,
+    help="Suggested person block to evaluate.",
+)
+@click.option("--likely-person-rows", default=10_000, type=int, show_default=True)
+@click.option("--likely-household-rows", default=4_000, type=int, show_default=True)
+@click.option("--borderline-person-rows", default=2_500, type=int, show_default=True)
+@click.option("--borderline-household-rows", default=1_000, type=int, show_default=True)
+@click.option("--min-support", default=50.0, type=float, show_default=True)
+@click.option("--max-purity", default=0.95, type=float, show_default=True)
+@click.option(
+    "--format",
+    "output_format",
+    default="table",
+    type=click.Choice(["json", "table"]),
+    show_default=True,
+)
+def tree_geography_feasibility(
+    path: Path,
+    source_format: str,
+    geography_column: str,
+    household_block: str,
+    person_block: str,
+    likely_person_rows: int,
+    likely_household_rows: int,
+    borderline_person_rows: int,
+    borderline_household_rows: int,
+    min_support: float,
+    max_purity: float,
+    output_format: str,
+) -> None:
+    """Estimate which geographies are plausible for publishable tree models."""
+    try:
+        sample = read_statcan_2016_hierarchical_seed_sample(path)
+        report = build_tree_geography_feasibility_report(
+            sample,
+            geography_column=geography_column,
+            household_block=household_block,
+            person_block=person_block,
+            likely_person_rows=likely_person_rows,
+            likely_household_rows=likely_household_rows,
+            borderline_person_rows=borderline_person_rows,
+            borderline_household_rows=borderline_household_rows,
+            min_support=min_support,
+            max_purity=max_purity,
+        )
+    except ValueError as exc:
+        raise click.ClickException(str(exc)) from exc
+
+    if output_format == "json":
+        print(json.dumps(report, indent=2, sort_keys=True))
+        return
+    print_tree_geography_feasibility_table(report)
 
 
 @microdata.command("export-seed")

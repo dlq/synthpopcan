@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import csv
-from collections import Counter
+from collections import Counter, defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Literal
@@ -504,6 +504,341 @@ def resolve_tree_column_block_pair(
             "person_block": person_block,
         },
     )
+
+
+def build_tree_geography_feasibility_report(
+    sample: SeedSample,
+    *,
+    geography_column: str,
+    household_block: str = "household_core",
+    person_block: str = "person_demographics",
+    likely_person_rows: int = 10_000,
+    likely_household_rows: int = 4_000,
+    borderline_person_rows: int = 2_500,
+    borderline_household_rows: int = 1_000,
+    min_support: float = 50,
+    max_purity: float = 0.95,
+) -> dict[str, object]:
+    if sample.source_format != "statcan-2016-hierarchical":
+        raise ValueError(
+            "tree geography feasibility requires statcan-2016-hierarchical"
+        )
+    validate_columns(sample.columns, required=(geography_column,))
+    (
+        household_target_columns,
+        household_conditioning_columns,
+        person_target_columns,
+        person_conditioning_columns,
+        column_source,
+    ) = resolve_tree_column_block_pair(
+        sample,
+        household_block=household_block,
+        person_block=person_block,
+    )
+
+    household_sizes = household_size_lookup(sample.records)
+    household_records = household_records_for_feasibility(
+        sample,
+        geography_column=geography_column,
+        household_sizes=household_sizes,
+        columns=unique_columns(
+            (
+                geography_column,
+                *household_conditioning_columns,
+                *household_target_columns,
+            )
+        ),
+    )
+    person_records = person_records_for_feasibility(
+        sample,
+        geography_column=geography_column,
+        household_sizes=household_sizes,
+        columns=unique_columns(
+            (
+                geography_column,
+                *person_conditioning_columns,
+                *person_target_columns,
+            )
+        ),
+    )
+
+    regions = sorted(
+        (
+            geography_feasibility_region(
+                geography,
+                household_records=[
+                    row
+                    for row in household_records
+                    if row.get(geography_column, "") == geography
+                ],
+                person_records=[
+                    row
+                    for row in person_records
+                    if row.get(geography_column, "") == geography
+                ],
+                geography_column=geography_column,
+                household_conditioning_columns=household_conditioning_columns,
+                household_target_columns=household_target_columns,
+                person_conditioning_columns=person_conditioning_columns,
+                person_target_columns=person_target_columns,
+                likely_person_rows=likely_person_rows,
+                likely_household_rows=likely_household_rows,
+                borderline_person_rows=borderline_person_rows,
+                borderline_household_rows=borderline_household_rows,
+                min_support=min_support,
+                max_purity=max_purity,
+            )
+            for geography in sorted(
+                {
+                    row.get(geography_column, "")
+                    for row in sample.records
+                    if row.get(geography_column, "")
+                }
+            )
+        ),
+        key=lambda region: (-int(region["person_rows"]), str(region["geography"])),
+    )
+
+    return {
+        "source_format": sample.source_format,
+        "geography_column": geography_column,
+        "column_source": column_source,
+        "thresholds": {
+            "likely_person_rows": likely_person_rows,
+            "likely_household_rows": likely_household_rows,
+            "borderline_person_rows": borderline_person_rows,
+            "borderline_household_rows": borderline_household_rows,
+            "min_support": min_support,
+            "max_purity": max_purity,
+        },
+        "regions": regions,
+    }
+
+
+def household_records_for_feasibility(
+    sample: SeedSample,
+    *,
+    geography_column: str,
+    household_sizes: dict[str, str],
+    columns: tuple[str, ...],
+) -> list[dict[str, str]]:
+    records_by_household = group_records_by_household(sample.records)
+    output: list[dict[str, str]] = []
+    for household_id, records in records_by_household.items():
+        row = {
+            "HH_ID": household_id,
+            "WEIGHT": unique_household_value(
+                records,
+                "WEIGHT",
+                household_id,
+                "household weight",
+            ),
+        }
+        for column in columns:
+            if column == "household_size":
+                row[column] = household_sizes[household_id]
+            else:
+                row[column] = unique_household_value(
+                    records,
+                    column,
+                    household_id,
+                    "household feasibility column",
+                )
+        if row.get(geography_column, ""):
+            output.append(row)
+    return output
+
+
+def person_records_for_feasibility(
+    sample: SeedSample,
+    *,
+    geography_column: str,
+    household_sizes: dict[str, str],
+    columns: tuple[str, ...],
+) -> list[dict[str, str]]:
+    output: list[dict[str, str]] = []
+    for record in sample.records:
+        if not record.get(geography_column, ""):
+            continue
+        row = {
+            "PP_ID": record["PP_ID"],
+            "HH_ID": record["HH_ID"],
+            "WEIGHT": record["WEIGHT"],
+        }
+        for column in columns:
+            row[column] = training_value(
+                record,
+                column,
+                household_sizes=household_sizes,
+            )
+        output.append(row)
+    return output
+
+
+def geography_feasibility_region(
+    geography: str,
+    *,
+    household_records: list[dict[str, str]],
+    person_records: list[dict[str, str]],
+    geography_column: str,
+    household_conditioning_columns: tuple[str, ...],
+    household_target_columns: tuple[str, ...],
+    person_conditioning_columns: tuple[str, ...],
+    person_target_columns: tuple[str, ...],
+    likely_person_rows: int,
+    likely_household_rows: int,
+    borderline_person_rows: int,
+    borderline_household_rows: int,
+    min_support: float,
+    max_purity: float,
+) -> dict[str, object]:
+    household_risk = support_and_purity_summary(
+        household_records,
+        conditioning_columns=columns_except(
+            household_conditioning_columns,
+            geography_column,
+        ),
+        target_columns=household_target_columns,
+    )
+    person_risk = support_and_purity_summary(
+        person_records,
+        conditioning_columns=columns_except(
+            person_conditioning_columns,
+            geography_column,
+        ),
+        target_columns=person_target_columns,
+    )
+    reasons = feasibility_reasons(
+        person_rows=len(person_records),
+        household_rows=len(household_records),
+        household_risk=household_risk,
+        person_risk=person_risk,
+        likely_person_rows=likely_person_rows,
+        likely_household_rows=likely_household_rows,
+        borderline_person_rows=borderline_person_rows,
+        borderline_household_rows=borderline_household_rows,
+        min_support=min_support,
+        max_purity=max_purity,
+    )
+    tier = feasibility_tier(
+        reasons,
+        person_rows=len(person_records),
+        household_rows=len(household_records),
+        likely_person_rows=likely_person_rows,
+        likely_household_rows=likely_household_rows,
+    )
+    return {
+        "geography": geography,
+        "person_rows": len(person_records),
+        "household_rows": len(household_records),
+        "weighted_persons": round(weighted_total(person_records), 4),
+        "weighted_households": round(weighted_total(household_records), 4),
+        "household_condition_groups": household_risk["groups"],
+        "person_condition_groups": person_risk["groups"],
+        "household_min_support": household_risk["minimum_support"],
+        "person_min_support": person_risk["minimum_support"],
+        "household_max_purity": household_risk["maximum_purity"],
+        "person_max_purity": person_risk["maximum_purity"],
+        "tier": tier,
+        "reasons": reasons,
+        "suggested_action": suggested_feasibility_action(tier),
+    }
+
+
+def support_and_purity_summary(
+    rows: list[dict[str, str]],
+    *,
+    conditioning_columns: tuple[str, ...],
+    target_columns: tuple[str, ...],
+) -> dict[str, object]:
+    if not rows:
+        return {"groups": 0, "minimum_support": 0.0, "maximum_purity": 0.0}
+    grouped: dict[tuple[str, ...], dict[tuple[str, ...], float]] = defaultdict(
+        lambda: defaultdict(float)
+    )
+    for row in rows:
+        condition_key = tuple(row[column] for column in conditioning_columns)
+        target_key = tuple(row[column] for column in target_columns)
+        grouped[condition_key][target_key] += float(row.get("WEIGHT", "1") or 1)
+    supports = [sum(outcomes.values()) for outcomes in grouped.values()]
+    purities = [
+        max(outcomes.values()) / sum(outcomes.values())
+        for outcomes in grouped.values()
+        if sum(outcomes.values()) > 0
+    ]
+    return {
+        "groups": len(grouped),
+        "minimum_support": round(min(supports), 4),
+        "maximum_purity": round(max(purities, default=0.0), 4),
+    }
+
+
+def feasibility_reasons(
+    *,
+    person_rows: int,
+    household_rows: int,
+    household_risk: dict[str, object],
+    person_risk: dict[str, object],
+    likely_person_rows: int,
+    likely_household_rows: int,
+    borderline_person_rows: int,
+    borderline_household_rows: int,
+    min_support: float,
+    max_purity: float,
+) -> list[str]:
+    reasons: list[str] = []
+    if person_rows < borderline_person_rows:
+        reasons.append("too few person rows")
+    elif person_rows < likely_person_rows:
+        reasons.append("limited person rows")
+    if household_rows < borderline_household_rows:
+        reasons.append("too few household rows")
+    elif household_rows < likely_household_rows:
+        reasons.append("limited household rows")
+    if float(household_risk["minimum_support"]) < min_support:
+        reasons.append("household conditioning support below threshold")
+    if float(person_risk["minimum_support"]) < min_support:
+        reasons.append("person conditioning support below threshold")
+    if float(household_risk["maximum_purity"]) > max_purity:
+        reasons.append("household outcome purity above threshold")
+    if float(person_risk["maximum_purity"]) > max_purity:
+        reasons.append("person outcome purity above threshold")
+    return reasons
+
+
+def feasibility_tier(
+    reasons: list[str],
+    *,
+    person_rows: int,
+    household_rows: int,
+    likely_person_rows: int,
+    likely_household_rows: int,
+) -> str:
+    if any(reason.startswith("too few") for reason in reasons):
+        return "unlikely"
+    if any("threshold" in reason for reason in reasons):
+        return "unlikely"
+    if any("purity" in reason for reason in reasons):
+        return "unlikely"
+    if person_rows >= likely_person_rows and household_rows >= likely_household_rows:
+        return "likely"
+    return "borderline"
+
+
+def suggested_feasibility_action(tier: str) -> str:
+    if tier == "likely":
+        return "candidate for full block review"
+    if tier == "borderline":
+        return "coarsen targets or review before training"
+    return "aggregate geography or use a simpler model"
+
+
+def columns_except(columns: tuple[str, ...], excluded: str) -> tuple[str, ...]:
+    return tuple(column for column in columns if column != excluded)
+
+
+def weighted_total(rows: list[dict[str, str]]) -> float:
+    return sum(float(row.get("WEIGHT", "0") or 0) for row in rows)
 
 
 def find_suggested_tree_column_block(

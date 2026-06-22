@@ -5,6 +5,7 @@ from click import ClickException
 
 from synthpopcan.cli import main
 from synthpopcan.microdata import (
+    build_tree_geography_feasibility_report,
     check_statcan_2016_household_seed_columns,
     derive_statcan_2016_household_seed_sample,
     export_seed_rows,
@@ -706,6 +707,92 @@ def test_suggests_tree_column_blocks_from_statcan_2016_columns(tmp_path) -> None
             ],
         },
     ]
+
+
+def test_builds_tree_geography_feasibility_report(tmp_path) -> None:
+    source = tmp_path / "hierarchical.csv"
+    source.write_text(
+        "HH_ID,EF_ID,CF_ID,PP_ID,WEIGHT,PR,CMA,TENUR,DTYPE,ROOM,BEDRM,CONDO,"
+        "PRESMORTG,VALUE,SHELCO,SUBSIDY,REPAIR,BUILT,AGEGRP,SEX,MarStH,IMMSTAT\n"
+        "1,11,111,11101,1,24,462,1,2,5,3,4,1,6,4,1,2,9,adult,F,married,non_immigrant\n"
+        "1,11,111,11102,1,24,462,1,2,5,3,4,1,6,4,1,2,9,child,M,single,non_immigrant\n"
+        "2,21,211,21101,1,24,462,2,3,4,2,5,2,7,5,2,3,8,adult,F,single,immigrant\n"
+        "3,31,311,31101,1,11,999,1,2,5,3,4,1,6,4,1,2,9,adult,F,married,non_immigrant\n"
+    )
+    sample = read_statcan_2016_hierarchical_seed_sample(source)
+
+    report = build_tree_geography_feasibility_report(
+        sample,
+        geography_column="PR",
+        household_block="household_core",
+        person_block="person_demographics",
+        likely_person_rows=3,
+        likely_household_rows=2,
+        borderline_person_rows=2,
+        borderline_household_rows=1,
+        min_support=1,
+        max_purity=1.0,
+    )
+
+    assert report["geography_column"] == "PR"
+    assert report["column_source"] == {
+        "mode": "profile",
+        "profile": "statcan-2016-hierarchical",
+        "household_block": "household_core",
+        "person_block": "person_demographics",
+    }
+    regions = {region["geography"]: region for region in report["regions"]}
+    assert regions["24"]["person_rows"] == 3
+    assert regions["24"]["household_rows"] == 2
+    assert regions["24"]["tier"] == "likely"
+    assert regions["24"]["suggested_action"] == "candidate for full block review"
+    assert regions["11"]["person_rows"] == 1
+    assert regions["11"]["household_rows"] == 1
+    assert regions["11"]["tier"] == "unlikely"
+    assert "too few person rows" in regions["11"]["reasons"]
+
+
+def test_cli_reports_tree_geography_feasibility_as_json(tmp_path, capsys) -> None:
+    source = tmp_path / "hierarchical.csv"
+    source.write_text(
+        "HH_ID,EF_ID,CF_ID,PP_ID,WEIGHT,PR,TENUR,AGEGRP,SEX\n"
+        "1,11,111,11101,1,24,1,adult,F\n"
+        "1,11,111,11102,1,24,1,child,M\n"
+        "2,21,211,21101,1,11,2,adult,F\n"
+    )
+
+    assert (
+        main(
+            [
+                "microdata",
+                "tree-geography-feasibility",
+                str(source),
+                "--input-format",
+                "statcan-2016-hierarchical",
+                "--geography-column",
+                "PR",
+                "--likely-person-rows",
+                "2",
+                "--likely-household-rows",
+                "1",
+                "--borderline-person-rows",
+                "1",
+                "--borderline-household-rows",
+                "1",
+                "--min-support",
+                "1",
+                "--max-purity",
+                "1",
+                "--format",
+                "json",
+            ]
+        )
+        == 0
+    )
+
+    report = json.loads(capsys.readouterr().out)
+    assert report["regions"][0]["geography"] == "24"
+    assert report["regions"][0]["tier"] == "likely"
 
 
 def test_cli_suggests_tree_columns_as_json(tmp_path, capsys) -> None:
