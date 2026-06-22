@@ -401,6 +401,55 @@ Usability helper principle:
 - For every workflow that requires source-specific knowledge, add companion helper commands before expecting users to hand-author configuration. Prefer discoverable helpers such as `inspect`, `search`, `template`, `doctor`, `explain`, `preview`, and dry-run/JSON output modes. This is especially important for digital humanities users who may understand the research question well but not the StatCan file formats or package internals.
 - Each complex normalization workflow should answer three questions from the CLI: what is in this source file, what starter configuration can I use, and what will be produced before I run the full synthesis step?
 
+Beginner-lane CLI direction:
+
+- The current CLI has useful building blocks, but the top-level surface is
+  already busy for a new humanities user. Keep the structured expert command
+  families, but add a small set of plain-language workflow commands or aliases
+  that cover the most common paths without exposing every intermediate tool.
+- Primary beginner workflows should be easy to recognize: launch the web app,
+  find StatCan tables, make controls, run IPF, generate from a prepared model,
+  and check the result.
+- Candidate beginner-facing aliases, implemented as wrappers over the existing
+  command families rather than replacements:
+
+```bash
+synthpopcan find-tables "population age sex"
+synthpopcan make-controls --from-wds 98100001 --out controls.csv
+synthpopcan run-ipf --seed seed.csv --controls controls.csv --out weights.csv
+synthpopcan generate-from-model model-package.json --households 100 --out-dir output/
+```
+
+- Keep lower-level commands such as `controls from-wds`, `statcan wds fetch`,
+  `tree train-linked`, `tree audit-model`, `tree package-linked-models`, and
+  `release-readiness` available for power users and maintainers, but do not
+  make them the first documented path for new users.
+- Treat model training, auditing, packaging, and release readiness as advanced
+  or maintainer workflows. The common user path should consume prepared,
+  reviewed model packages rather than require users to understand the whole
+  training and privacy-review pipeline.
+- Revisit command naming before the first public documentation pass. Commands
+  should read as user tasks where possible; expert implementation terms should
+  remain available but be clearly labelled as advanced.
+
+Library-surface direction:
+
+- Add a small stable public Python API layer once the core workflows settle.
+  Today users must discover modules such as `ipf`, `controls`, `tree`, and
+  `microdata` directly; that is too implicit for a public library.
+- Candidate stable imports:
+
+```python
+from synthpopcan import fit_ipf
+from synthpopcan import expand_population
+from synthpopcan import read_control_table
+from synthpopcan import generate_from_model
+```
+
+- Keep implementation modules importable for advanced use, but document the
+  small stable API as the first stop for notebooks, teaching material, and
+  humanities research scripts.
+
 Current implementation notes:
 
 - A fixture integration test covers `microdata export-seed -> ipf fit --report -> validate controls` for a tiny `statcan-2016-hierarchical` person-level workflow.
@@ -490,6 +539,10 @@ Deliverables:
 - API reference generated from library docstrings for stable public modules.
 - Data access notes that explain which sources are public fetches, which require local/private files, and how ignored data roots should be organized.
 - Keep README examples short; move reproducible workflow guides into `docs/workflows/` so they can be adopted by the Sphinx site later.
+- Documentation should distinguish beginner workflows from advanced/maintainer
+  workflows. The first page should not expose every CLI command; it should route
+  users to the web app, IPF from StatCan tables, generated-from-model workflows,
+  and only then advanced microdata/model-training/release workflows.
 
 Acceptance criteria:
 
