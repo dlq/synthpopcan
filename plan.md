@@ -444,7 +444,9 @@ for non-specialist users:
    Status: first generic `controls wds mapping-template` helper added for
    observed WDS categories in selected dimensions.
 4. Make `ipf check-inputs` the expected next step after control normalization,
-   with clearer category-mismatch guidance for humanities users.
+   with clearer category-mismatch guidance for humanities users. Status: first
+   `suggested_next_steps` guidance added for missing seed columns and category
+   mismatches, including WDS mapping-template hints.
 5. Keep README examples short and move reproducible walkthroughs into
    `docs/workflows/`.
 

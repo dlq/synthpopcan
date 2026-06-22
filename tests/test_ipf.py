@@ -92,6 +92,15 @@ def test_ipf_input_report_finds_missing_and_unused_seed_categories() -> None:
                 "target": 50.0,
             }
         ],
+        "suggested_next_steps": [
+            (
+                "Column/category mismatch for dimension 'sex': controls include "
+                "'M', but the seed does not. If this came from WDS labels, run "
+                "`synthpopcan controls wds mapping-template ... --dimensions "
+                '"sex" --out categories.json`, fill in the target seed labels, '
+                "then rerun `controls from-wds --mapping categories.json`."
+            ),
+        ],
     }
 
 
@@ -817,6 +826,8 @@ def test_cli_checks_ipf_inputs_as_readable_table(tmp_path: Path, capsys) -> None
     assert "OK" in output
     assert "sex" in output
     assert "Missing column" in output
+    assert "Next Steps" in output
+    assert "export a seed column named 'sex'" in output
 
 
 def count_rows(rows: list[dict[str, str]], field: str) -> dict[str, int]:

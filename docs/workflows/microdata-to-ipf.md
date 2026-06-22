@@ -95,3 +95,8 @@ fill in:
 
 After normalization, run `ipf check-inputs` to confirm that the seed file has
 matching columns and category values.
+
+When columns or categories do not line up, the report includes next steps. For
+example, it may suggest exporting a seed column with the same name as a control
+dimension, or using `controls wds mapping-template` when WDS labels such as
+`Female` need to be mapped to seed labels such as `F`.

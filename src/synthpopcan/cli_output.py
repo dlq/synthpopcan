@@ -276,6 +276,7 @@ def print_ipf_input_check_table(report: dict[str, object]) -> None:
             str(row.get("detail", "")),
         )
     print_table(table)
+    print_next_steps_table(report.get("suggested_next_steps", []))
 
 
 def print_validation_report_table(report: dict[str, object]) -> None:
@@ -399,6 +400,16 @@ def print_issues_table(issues: object, *, title: str) -> None:
             str(issue.get("message", "")),
             str(issue.get("tip", "")),
         )
+    print_table(table)
+
+
+def print_next_steps_table(steps: object) -> None:
+    if not isinstance(steps, list) or not steps:
+        return
+    table = Table(title="Next Steps")
+    table.add_column("Step")
+    for step in steps:
+        table.add_row(str(step))
     print_table(table)
 
 

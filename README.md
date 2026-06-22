@@ -196,6 +196,9 @@ Check that seed columns and categories cover the controls before fitting:
 synthpopcan ipf check-inputs --seed seed.csv --controls controls.csv
 ```
 
+If columns or categories do not match, `check-inputs` prints next steps for
+renaming/exporting seed columns or mapping WDS labels to seed categories.
+
 Run IPF with:
 
 ```bash

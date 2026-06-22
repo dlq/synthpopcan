@@ -116,6 +116,7 @@ def build_ipf_input_report(
         "control_margins": len(control_table.margins),
         "dimensions": dimensions,
         "unsupported_cells": unsupported_cells,
+        "suggested_next_steps": suggest_ipf_input_next_steps(dimensions),
     }
 
 
@@ -159,6 +160,33 @@ def build_dimension_input_check(
         "unused_seed_categories": unused,
         "detail": "; ".join(details) if details else "seed and controls match",
     }
+
+
+def suggest_ipf_input_next_steps(dimension_checks: list[dict[str, Any]]) -> list[str]:
+    steps: list[str] = []
+    for check in dimension_checks:
+        if check["status"] == "ok":
+            continue
+        dimension = str(check["dimension"])
+        if check["seed_column"] == "missing":
+            steps.append(
+                f"Missing seed column for dimension '{dimension}': export a seed "
+                f"column named '{dimension}', or normalize controls so their "
+                "dimension name matches an existing seed column."
+            )
+            continue
+        missing = check.get("missing_categories", [])
+        if missing:
+            first_missing = str(missing[0])
+            steps.append(
+                f"Column/category mismatch for dimension '{dimension}': controls "
+                f"include '{first_missing}', but the seed does not. If this came "
+                "from WDS labels, run `synthpopcan controls wds mapping-template "
+                f'... --dimensions "{dimension}" --out categories.json`, fill '
+                "in the target seed labels, then rerun `controls from-wds "
+                "--mapping categories.json`."
+            )
+    return steps
 
 
 def control_categories_for_dimension(
