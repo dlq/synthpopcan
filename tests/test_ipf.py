@@ -288,6 +288,151 @@ def test_cli_runs_ipf_from_csv_files_as_weights_by_default(tmp_path: Path) -> No
     assert [row["weight"] for row in rows] == ["30", "30", "20", "20"]
 
 
+def test_cli_suggests_household_calibration_controls_from_seed_columns(
+    tmp_path: Path,
+    capsys,
+) -> None:
+    from synthpopcan.cli import main
+
+    seed_path = tmp_path / "candidate-households.csv"
+    write_csv(
+        seed_path,
+        ["synthetic_household_id", "geo", "household_size", "tenure", "rooms"],
+        [
+            {
+                "synthetic_household_id": "1",
+                "geo": "QC",
+                "household_size": "2",
+                "tenure": "owner",
+                "rooms": "5",
+            },
+            {
+                "synthetic_household_id": "2",
+                "geo": "QC",
+                "household_size": "1",
+                "tenure": "renter",
+                "rooms": "3",
+            },
+        ],
+    )
+
+    assert (
+        main(
+            [
+                "ipf",
+                "suggest-controls",
+                "--seed",
+                str(seed_path),
+                "--unit",
+                "household",
+                "--format",
+                "json",
+            ]
+        )
+        == 0
+    )
+
+    report = json.loads(capsys.readouterr().out)
+    assert report["schema_version"] == "synthpopcan-ipf-control-suggestions-v1"
+    assert report["unit"] == "household"
+    assert report["seed_records"] == 2
+    assert report["available_columns"] == [
+        "synthetic_household_id",
+        "geo",
+        "household_size",
+        "tenure",
+        "rooms",
+    ]
+    assert report["geography_columns"] == ["geo"]
+    assert [item["column"] for item in report["usable_controls"]] == [
+        "household_size",
+        "tenure",
+        "rooms",
+    ]
+    assert report["enrichment_candidates"][0]["column"] == "dwelling_type"
+    assert report["next_commands"] == [
+        "synthpopcan statcan wds search household size",
+        "synthpopcan statcan wds explain PRODUCT_ID",
+        (f"synthpopcan ipf check-inputs --seed {seed_path} --controls controls.csv"),
+    ]
+
+
+def test_cli_suggests_person_calibration_controls_from_seed_columns(
+    tmp_path: Path,
+    capsys,
+) -> None:
+    from synthpopcan.cli import main
+
+    seed_path = tmp_path / "candidate-persons.csv"
+    write_csv(
+        seed_path,
+        ["synthetic_person_id", "PR", "age_group", "sex", "marital_status"],
+        [
+            {
+                "synthetic_person_id": "1",
+                "PR": "24",
+                "age_group": "adult",
+                "sex": "F",
+                "marital_status": "single",
+            },
+        ],
+    )
+
+    assert (
+        main(
+            [
+                "ipf",
+                "suggest-controls",
+                "--seed",
+                str(seed_path),
+                "--unit",
+                "auto",
+                "--format",
+                "json",
+            ]
+        )
+        == 0
+    )
+
+    report = json.loads(capsys.readouterr().out)
+    assert report["unit"] == "person"
+    assert report["geography_columns"] == ["PR"]
+    assert [item["column"] for item in report["usable_controls"]] == [
+        "age_group",
+        "sex",
+        "marital_status",
+    ]
+    assert report["enrichment_candidates"][0]["column"] == "immigration_status"
+
+
+def test_cli_prints_control_suggestions_table(tmp_path: Path, capsys) -> None:
+    from synthpopcan.cli import main
+
+    seed_path = tmp_path / "candidate-households.csv"
+    write_csv(
+        seed_path,
+        ["geo", "household_size", "tenure"],
+        [{"geo": "QC", "household_size": "2", "tenure": "owner"}],
+    )
+
+    assert (
+        main(
+            [
+                "ipf",
+                "suggest-controls",
+                "--seed",
+                str(seed_path),
+            ]
+        )
+        == 0
+    )
+
+    output = capsys.readouterr().out
+    assert "IPF Control Suggestions" in output
+    assert "household_size" in output
+    assert "statcan wds search household size" in output
+
+
 def test_cli_fit_writes_diagnostics_report(tmp_path: Path) -> None:
     from synthpopcan.cli import main
 

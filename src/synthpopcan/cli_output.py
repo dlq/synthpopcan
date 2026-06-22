@@ -323,6 +323,49 @@ def print_ipf_input_check_table(report: dict[str, object]) -> None:
     print_next_steps_table(report.get("suggested_next_steps", []))
 
 
+def print_ipf_control_suggestions_table(report: dict[str, object]) -> None:
+    print_summary_table(
+        {
+            "unit": report.get("unit", ""),
+            "seed_records": report.get("seed_records", ""),
+            "columns": len(report.get("available_columns", [])),
+            "geography_columns": ", ".join(
+                str(value) for value in report.get("geography_columns", [])
+            ),
+        },
+        title="IPF Control Suggestion Summary",
+    )
+
+    table = Table(title="IPF Control Suggestions")
+    table.add_column("Column", no_wrap=True)
+    table.add_column("Status", no_wrap=True)
+    table.add_column("Role")
+    table.add_column("StatCan Search")
+    table.add_column("Reason")
+    for row in report.get("usable_controls", []):
+        if not isinstance(row, dict):
+            continue
+        table.add_row(
+            str(row.get("column", "")),
+            "usable if categories match",
+            str(row.get("role", "")),
+            str(row.get("statcan_search", "")),
+            str(row.get("reason", "")),
+        )
+    for row in report.get("enrichment_candidates", []):
+        if not isinstance(row, dict):
+            continue
+        table.add_row(
+            str(row.get("column", "")),
+            "needs enrichment/modeling",
+            str(row.get("role", "")),
+            str(row.get("statcan_search", "")),
+            str(row.get("reason", "")),
+        )
+    print_table(table)
+    print_next_steps_table(report.get("next_commands", []))
+
+
 def print_validation_report_table(report: dict[str, object]) -> None:
     table = Table(title="Control Validation")
     table.add_column("Margin")

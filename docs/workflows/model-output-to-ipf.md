@@ -36,7 +36,22 @@ synthpopcan validate linked-output \
   --persons candidate-persons.csv
 ```
 
-## 2. Check Control Compatibility
+## 2. Get Calibration-Control Suggestions
+
+Ask SynthPopCan which generated columns look like useful calibration controls:
+
+```bash
+synthpopcan ipf suggest-controls \
+  --seed candidate-households.csv \
+  --unit household
+```
+
+This is an advisory helper. It does not choose a StatCan table for you. It
+reports generated columns that are plausible household controls, common useful
+controls that are missing and would require enrichment first, geography columns
+to check against the model scope, and next commands for StatCan WDS discovery.
+
+## 3. Check Control Compatibility
 
 Normalize or prepare the StatCan controls you want to use, then check whether
 the generated rows contain matching columns and categories:
@@ -54,7 +69,7 @@ If the report says a control column is missing, do not try to force that table
 through IPF. Add the missing attribute first, or choose controls that match the
 generated columns.
 
-## 3. Fit Household Weights
+## 4. Fit Household Weights
 
 Fit the generated household rows to compatible controls:
 
@@ -70,7 +85,7 @@ Weights are the default output because they are compact and preserve the model
 output rows. Inspect the report if fitting fails or if the controls appear
 inconsistent.
 
-## 4. Expand When Needed
+## 5. Expand When Needed
 
 Expand only when you need a full household CSV:
 
@@ -83,7 +98,7 @@ synthpopcan ipf expand \
 Expanded output has one row per synthetic household after integerization. Large
 controls can produce large files, so keep the weighted output when possible.
 
-## 5. Validate Against Controls
+## 6. Validate Against Controls
 
 Validate the calibrated output:
 

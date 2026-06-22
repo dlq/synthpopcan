@@ -8,9 +8,11 @@ from pathlib import Path
 
 import click
 
+from synthpopcan.calibration import build_control_suggestion_report
 from synthpopcan.cli_output import (
     format_fit_value_error,
     format_nonconvergence_message,
+    print_ipf_control_suggestions_table,
     print_ipf_input_check_table,
     print_ipf_report_table,
 )
@@ -56,6 +58,38 @@ def check_ipf_inputs(
         print(json.dumps(report, indent=2, sort_keys=True))
         return
     print_ipf_input_check_table(report)
+
+
+@ipf.command("suggest-controls")
+@click.option("--seed", "seed_path", required=True, type=PATH, help="Seed records CSV.")
+@click.option(
+    "--unit",
+    default="auto",
+    type=click.Choice(["auto", "household", "person"]),
+    show_default=True,
+    help="Generated-row unit to consider for calibration controls.",
+)
+@click.option(
+    "--format",
+    "output_format",
+    default="table",
+    type=click.Choice(["json", "table"]),
+    show_default=True,
+)
+def suggest_ipf_controls(
+    seed_path: Path,
+    unit: str,
+    output_format: str,
+) -> None:
+    """Suggest calibration-control directions from generated or seed rows."""
+    seed_rows = read_csv(seed_path)
+    report = build_control_suggestion_report(
+        seed_rows, unit=unit, seed_path=str(seed_path)
+    )
+    if output_format == "json":
+        print(json.dumps(report, indent=2, sort_keys=True))
+        return
+    print_ipf_control_suggestions_table(report)
 
 
 @ipf.command("fit")

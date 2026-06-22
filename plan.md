@@ -552,11 +552,11 @@ Remaining StatCan/IPF follow-up backlog:
   the generated rows, their geography matches the model scope, their universe
   matches the generated unit, categories can be mapped cleanly, totals are
   internally consistent, and the controls are worth fitting rather than merely
-  validating. A future helper such as `ipf suggest-controls --seed ...` could
-  inspect generated columns, report usable controls, flag missing/enrichment
-  candidates, separate likely household controls from person controls, and warn
-  about sparse or overly detailed StatCan cross-tabs. Keep final table choice
-  reviewable by the user.
+  validating. Status: first `ipf suggest-controls --seed ...` helper added. It
+  inspects generated columns, reports usable controls, flags missing/enrichment
+  candidates, separates likely household controls from person controls, and
+  prints next StatCan/IPF commands while keeping final table choice reviewable by
+  the user.
 
 Completed tree model packaging/distribution first pass:
 
