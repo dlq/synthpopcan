@@ -1,5 +1,6 @@
 import csv
 import json
+from dataclasses import replace
 
 import pytest
 
@@ -652,6 +653,214 @@ def test_cli_refuses_to_package_model_with_audit_warnings(tmp_path) -> None:
         )
 
     assert not package_path.exists()
+
+
+def test_cli_packages_publishable_linked_models(tmp_path) -> None:
+    household_model = replace(
+        train_frequency_model_from_rows(
+            TreeModelSpec(
+                level="household",
+                target_columns=("household_size", "tenure"),
+                conditioning_columns=("geo",),
+                geography_column="geo",
+            ),
+            rows=(
+                {
+                    "geo": "QC",
+                    "household_size": "2",
+                    "tenure": "owner",
+                },
+            ),
+        ),
+        release_class="publishable_candidate",
+    )
+    person_model = replace(
+        train_frequency_model_from_rows(
+            TreeModelSpec(
+                level="person",
+                target_columns=("age_group", "sex"),
+                conditioning_columns=("geo", "household_size", "tenure"),
+                geography_column="geo",
+            ),
+            rows=(
+                {
+                    "geo": "QC",
+                    "household_size": "2",
+                    "tenure": "owner",
+                    "age_group": "adult",
+                    "sex": "F",
+                },
+            ),
+        ),
+        release_class="publishable_candidate",
+    )
+    household_model_path = tmp_path / "household-model.json"
+    person_model_path = tmp_path / "person-model.json"
+    package_path = tmp_path / "linked-model-package.json"
+    write_tree_model(household_model_path, household_model)
+    write_tree_model(person_model_path, person_model)
+
+    assert (
+        main(
+            [
+                "tree",
+                "package-linked-models",
+                "--household-model",
+                str(household_model_path),
+                "--person-model",
+                str(person_model_path),
+                "--out",
+                str(package_path),
+                "--min-support",
+                "1",
+                "--max-purity",
+                "1",
+            ]
+        )
+        == 0
+    )
+
+    package = json.loads(package_path.read_text())
+    assert package["schema_version"] == "synthpopcan-linked-tree-package-v1"
+    assert package["package_type"] == "linked_household_person"
+    assert package["household_size_column"] == "household_size"
+    assert package["models"]["household"]["spec"]["level"] == "household"
+    assert package["models"]["person"]["spec"]["level"] == "person"
+    assert package["audits"]["household"]["passed"] is True
+    assert package["audits"]["person"]["passed"] is True
+    assert package["privacy"]["publishable_candidate"] is True
+
+
+def test_cli_refuses_to_package_private_linked_models(tmp_path) -> None:
+    from click import ClickException
+
+    household_model = train_frequency_model_from_rows(
+        TreeModelSpec(
+            level="household",
+            target_columns=("household_size", "tenure"),
+            conditioning_columns=("geo",),
+        ),
+        rows=({"geo": "QC", "household_size": "2", "tenure": "owner"},),
+    )
+    person_model = train_frequency_model_from_rows(
+        TreeModelSpec(
+            level="person",
+            target_columns=("age_group", "sex"),
+            conditioning_columns=("geo", "household_size", "tenure"),
+        ),
+        rows=(
+            {
+                "geo": "QC",
+                "household_size": "2",
+                "tenure": "owner",
+                "age_group": "adult",
+                "sex": "F",
+            },
+        ),
+    )
+    household_model_path = tmp_path / "household-model.json"
+    person_model_path = tmp_path / "person-model.json"
+    package_path = tmp_path / "linked-model-package.json"
+    write_tree_model(household_model_path, household_model)
+    write_tree_model(person_model_path, person_model)
+
+    with pytest.raises(ClickException, match="Linked model audit did not pass"):
+        main(
+            [
+                "tree",
+                "package-linked-models",
+                "--household-model",
+                str(household_model_path),
+                "--person-model",
+                str(person_model_path),
+                "--out",
+                str(package_path),
+                "--min-support",
+                "1",
+                "--max-purity",
+                "1",
+            ]
+        )
+
+    assert not package_path.exists()
+
+
+def test_cli_trains_linked_models_from_suggested_blocks(tmp_path) -> None:
+    source = tmp_path / "hierarchical.csv"
+    household_model_path = tmp_path / "household-model.json"
+    person_model_path = tmp_path / "person-model.json"
+    manifest_path = tmp_path / "linked-training-manifest.json"
+    source.write_text(
+        "HH_ID,EF_ID,CF_ID,PP_ID,WEIGHT,PR,TENUR,DTYPE,ROOM,BEDRM,CONDO,"
+        "PRESMORTG,VALUE,SHELCO,SUBSIDY,REPAIR,BUILT,AGEGRP,SEX,MarStH,IMMSTAT\n"
+        "1,11,111,11101,1,24,owner,detached,6,3,no,yes,500000,1200,no,"
+        "regular,1991,adult,F,married,non_immigrant\n"
+        "1,11,111,11102,1,24,owner,detached,6,3,no,yes,500000,1200,no,"
+        "regular,1991,child,M,never_married,non_immigrant\n"
+        "2,21,211,21101,1,24,renter,apartment,4,2,yes,no,0,900,no,"
+        "regular,2001,adult,F,single,immigrant\n"
+    )
+
+    assert (
+        main(
+            [
+                "tree",
+                "train-linked",
+                str(source),
+                "--input-format",
+                "statcan-2016-hierarchical",
+                "--suggested-blocks",
+                "--household-model-out",
+                str(household_model_path),
+                "--person-model-out",
+                str(person_model_path),
+                "--manifest-out",
+                str(manifest_path),
+                "--random-seed",
+                "7",
+                "--min-support",
+                "2",
+            ]
+        )
+        == 0
+    )
+
+    household_model = json.loads(household_model_path.read_text())
+    person_model = json.loads(person_model_path.read_text())
+    manifest = json.loads(manifest_path.read_text())
+
+    assert household_model["spec"]["level"] == "household"
+    assert household_model["spec"]["target_columns"] == [
+        "household_size",
+        "TENUR",
+        "DTYPE",
+        "ROOM",
+        "BEDRM",
+        "CONDO",
+        "PRESMORTG",
+        "VALUE",
+        "SHELCO",
+        "SUBSIDY",
+        "REPAIR",
+        "BUILT",
+    ]
+    assert person_model["spec"]["level"] == "person"
+    assert person_model["spec"]["target_columns"] == [
+        "AGEGRP",
+        "SEX",
+        "MarStH",
+        "IMMSTAT",
+    ]
+    assert manifest["schema_version"] == "synthpopcan-linked-tree-training-v1"
+    assert manifest["source"]["source_format"] == "statcan-2016-hierarchical"
+    assert manifest["column_source"] == {
+        "mode": "profile",
+        "profile": "statcan-2016-hierarchical",
+        "household_block": "household_core",
+        "person_block": "person_demographics",
+    }
+    assert manifest["models"]["household"]["path"] == str(household_model_path)
+    assert manifest["models"]["person"]["path"] == str(person_model_path)
 
 
 def test_generates_linked_households_and_persons() -> None:

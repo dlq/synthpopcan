@@ -9,7 +9,13 @@ import click
 
 from synthpopcan.cli_output import write_output
 from synthpopcan.console import print_wrote
+from synthpopcan.microdata import (
+    export_training_rows,
+    read_statcan_2016_hierarchical_seed_sample,
+    resolve_tree_column_block_pair,
+)
 from synthpopcan.tree import (
+    TreeTrainingSample,
     audit_tree_model,
     generate_linked_population,
     generate_tree_rows,
@@ -114,6 +120,167 @@ def train_tree_generator(
         raise click.ClickException(str(exc)) from exc
     write_tree_model(out_path, model)
     print_wrote(out_path)
+
+
+@tree.command("train-linked")
+@click.argument("source", type=PATH)
+@click.option(
+    "--input-format",
+    default="statcan-2016-hierarchical",
+    type=click.Choice(["statcan-2016-hierarchical"]),
+    show_default=True,
+    help="Input microdata layout.",
+)
+@click.option(
+    "--suggested-blocks",
+    is_flag=True,
+    help="Train from named microdata suggestion-profile blocks.",
+)
+@click.option(
+    "--household-block",
+    default="household_core",
+    show_default=True,
+    help="Suggested household block to train.",
+)
+@click.option(
+    "--person-block",
+    default="person_demographics",
+    show_default=True,
+    help="Suggested person block to train.",
+)
+@click.option(
+    "--household-model-out",
+    required=True,
+    type=PATH,
+    help="Output household model JSON.",
+)
+@click.option(
+    "--person-model-out",
+    required=True,
+    type=PATH,
+    help="Output person model JSON.",
+)
+@click.option(
+    "--manifest-out",
+    required=True,
+    type=PATH,
+    help="Output training manifest JSON.",
+)
+@click.option(
+    "--method",
+    default="conditional-frequency",
+    type=click.Choice(["conditional-frequency", "cart"]),
+    show_default=True,
+    help="Training backend for both models.",
+)
+@click.option("--random-seed", default=0, type=int, show_default=True)
+@click.option("--min-support", default=5, type=int, show_default=True)
+@click.option("--min-samples-leaf", default=5, type=int, show_default=True)
+@click.option("--max-depth", default=None, type=int)
+def train_linked_tree_generator(
+    source: Path,
+    input_format: str,
+    suggested_blocks: bool,
+    household_block: str,
+    person_block: str,
+    household_model_out: Path,
+    person_model_out: Path,
+    manifest_out: Path,
+    method: str,
+    random_seed: int,
+    min_support: int,
+    min_samples_leaf: int,
+    max_depth: int | None,
+) -> None:
+    """Train linked household and person models from mixed microdata."""
+    if input_format != "statcan-2016-hierarchical":
+        raise click.ClickException(f"unsupported input format: {input_format}")
+    if not suggested_blocks:
+        raise click.ClickException(
+            "train-linked currently requires --suggested-blocks. "
+            "Use 'microdata suggest-tree-columns' to inspect available blocks."
+        )
+    try:
+        sample = read_statcan_2016_hierarchical_seed_sample(source)
+        (
+            household_target_columns,
+            household_conditioning_columns,
+            person_target_columns,
+            person_conditioning_columns,
+            column_source,
+        ) = resolve_tree_column_block_pair(
+            sample,
+            household_block=household_block,
+            person_block=person_block,
+        )
+        household_rows, household_export = export_training_rows(
+            sample,
+            level="household",
+            target_columns=household_target_columns,
+            conditioning_columns=household_conditioning_columns,
+        )
+        person_rows, person_export = export_training_rows(
+            sample,
+            level="person",
+            target_columns=person_target_columns,
+            conditioning_columns=person_conditioning_columns,
+        )
+        household_training = tree_training_sample_from_export(
+            rows=household_rows,
+            export=household_export,
+        )
+        person_training = tree_training_sample_from_export(
+            rows=person_rows,
+            export=person_export,
+        )
+        household_model = train_tree_sample(
+            household_training,
+            method=method,
+            random_seed=random_seed,
+            min_support=min_support,
+            min_samples_leaf=min_samples_leaf,
+            max_depth=max_depth,
+        )
+        person_model = train_tree_sample(
+            person_training,
+            method=method,
+            random_seed=random_seed,
+            min_support=min_support,
+            min_samples_leaf=min_samples_leaf,
+            max_depth=max_depth,
+        )
+    except ValueError as exc:
+        raise click.ClickException(str(exc)) from exc
+
+    write_tree_model(household_model_out, household_model)
+    write_tree_model(person_model_out, person_model)
+    write_tree_generation_manifest(
+        manifest_out,
+        {
+            "schema_version": "synthpopcan-linked-tree-training-v1",
+            "command": "tree train-linked",
+            "source": {
+                "path": str(source),
+                "source_format": sample.source_format,
+                "records": len(sample.records),
+                "households": sample.metadata.get("households", 0),
+            },
+            "column_source": column_source,
+            "method": method,
+            "random_seed": random_seed,
+            "training": {
+                "household": household_export,
+                "person": person_export,
+            },
+            "models": {
+                "household": model_manifest(household_model, household_model_out),
+                "person": model_manifest(person_model, person_model_out),
+            },
+        },
+    )
+    print_wrote(household_model_out)
+    print_wrote(person_model_out)
+    print_wrote(manifest_out)
 
 
 @tree.command("generate")
@@ -344,11 +511,146 @@ def package_tree_model_command(
     print_wrote(out_path)
 
 
+@tree.command("package-linked-models")
+@click.option(
+    "--household-model", required=True, type=PATH, help="Household model JSON."
+)
+@click.option("--person-model", required=True, type=PATH, help="Person model JSON.")
+@click.option("--out", "out_path", required=True, type=PATH)
+@click.option(
+    "--household-size-column",
+    default="household_size",
+    show_default=True,
+    help="Household size linkage column expected by linked generation.",
+)
+@click.option("--min-support", default=50.0, type=float, show_default=True)
+@click.option("--max-purity", default=0.95, type=float, show_default=True)
+def package_linked_tree_models_command(
+    household_model: Path,
+    person_model: Path,
+    out_path: Path,
+    household_size_column: str,
+    min_support: float,
+    max_purity: float,
+) -> None:
+    """Package linked household/person models after clean privacy audits."""
+    try:
+        household_model_payload = read_tree_model(household_model)
+        person_model_payload = read_tree_model(person_model)
+        validate_linked_model_package_inputs(
+            household_model_payload,
+            person_model_payload,
+            household_size_column=household_size_column,
+        )
+        household_audit = audit_tree_model(
+            household_model_payload,
+            min_support=min_support,
+            max_purity=max_purity,
+        )
+        person_audit = audit_tree_model(
+            person_model_payload,
+            min_support=min_support,
+            max_purity=max_purity,
+        )
+    except ValueError as exc:
+        raise click.ClickException(str(exc)) from exc
+    if household_audit["issues"] or person_audit["issues"]:
+        raise click.ClickException(
+            "Linked model audit did not pass without warnings; inspect "
+            "audit-model output for both household and person models before "
+            "packaging."
+        )
+    package = {
+        "schema_version": "synthpopcan-linked-tree-package-v1",
+        "package_type": "linked_household_person",
+        "household_size_column": household_size_column,
+        "models": {
+            "household": household_model_payload.to_dict(),
+            "person": person_model_payload.to_dict(),
+        },
+        "audits": {
+            "household": household_audit,
+            "person": person_audit,
+        },
+        "privacy": {
+            "publishable_candidate": (
+                household_audit["publishable_candidate"]
+                and person_audit["publishable_candidate"]
+            ),
+            "contains_raw_rows": False,
+            "contains_source_identifiers": False,
+        },
+    }
+    out_path.write_text(json.dumps(package, indent=2, sort_keys=True) + "\n")
+    print_wrote(out_path)
+
+
 def parse_column_list(value: str, label: str) -> tuple[str, ...]:
     columns = tuple(column.strip() for column in value.split(",") if column.strip())
     if not columns:
         raise ValueError(f"at least one {label} value is required")
     return columns
+
+
+def validate_linked_model_package_inputs(
+    household_model,
+    person_model,
+    *,
+    household_size_column: str,
+) -> None:
+    if household_model.spec.level != "household":
+        raise ValueError("household model must have level 'household'")
+    if person_model.spec.level != "person":
+        raise ValueError("person model must have level 'person'")
+    if household_size_column not in generated_model_columns(household_model):
+        raise ValueError(
+            f"household model must generate or condition on {household_size_column!r}"
+        )
+    if household_size_column not in person_model.spec.conditioning_columns:
+        raise ValueError(f"person model must condition on {household_size_column!r}")
+
+
+def generated_model_columns(model) -> set[str]:
+    return set(model.spec.conditioning_columns) | set(model.spec.target_columns)
+
+
+def tree_training_sample_from_export(
+    *,
+    rows: list[dict[str, str]],
+    export: dict[str, object],
+) -> TreeTrainingSample:
+    return TreeTrainingSample(
+        level=export["level"],  # type: ignore[arg-type]
+        source_format=str(export["source_format"]),
+        records=tuple(rows),
+        columns=tuple(export["columns"]),  # type: ignore[arg-type]
+        target_columns=tuple(export["target_columns"]),  # type: ignore[arg-type]
+        conditioning_columns=tuple(export["conditioning_columns"]),  # type: ignore[arg-type]
+        weight_column=str(export["weight_column"]),
+    )
+
+
+def train_tree_sample(
+    sample: TreeTrainingSample,
+    *,
+    method: str,
+    random_seed: int,
+    min_support: int,
+    min_samples_leaf: int,
+    max_depth: int | None,
+):
+    if method == "cart":
+        return train_cart_model(
+            sample,
+            random_seed=random_seed,
+            min_samples_leaf=min_samples_leaf,
+            max_depth=max_depth,
+        )
+    return train_frequency_model(
+        sample,
+        random_seed=random_seed,
+        min_support=min_support,
+    )
 
 
 def model_manifest(model, path: Path) -> dict[str, object]:

@@ -466,6 +466,77 @@ def suggest_tree_column_blocks(sample: SeedSample) -> dict[str, object]:
     }
 
 
+def resolve_tree_column_block_pair(
+    sample: SeedSample,
+    *,
+    household_block: str,
+    person_block: str,
+) -> tuple[
+    tuple[str, ...],
+    tuple[str, ...],
+    tuple[str, ...],
+    tuple[str, ...],
+    dict[str, object],
+]:
+    suggestion = suggest_tree_column_blocks(sample)
+    suggested_household_block = find_suggested_tree_column_block(
+        suggestion,
+        name=household_block,
+        level="household",
+    )
+    suggested_person_block = find_suggested_tree_column_block(
+        suggestion,
+        name=person_block,
+        level="person",
+    )
+    return (
+        require_suggested_tree_columns(suggested_household_block, "target_columns"),
+        require_suggested_tree_columns(
+            suggested_household_block,
+            "conditioning_columns",
+        ),
+        require_suggested_tree_columns(suggested_person_block, "target_columns"),
+        require_suggested_tree_columns(suggested_person_block, "conditioning_columns"),
+        {
+            "mode": "profile",
+            "profile": suggestion["profile"],
+            "household_block": household_block,
+            "person_block": person_block,
+        },
+    )
+
+
+def find_suggested_tree_column_block(
+    suggestion: dict[str, object],
+    *,
+    name: str,
+    level: str,
+) -> dict[str, object]:
+    blocks = suggestion["blocks"]
+    if not isinstance(blocks, list):
+        raise ValueError("tree column suggestion blocks must be a list")
+    for block in blocks:
+        if not isinstance(block, dict):
+            continue
+        if block.get("name") == name:
+            if block.get("level") != level:
+                raise ValueError(f"suggested block {name!r} is not a {level} block")
+            return block
+    raise ValueError(f"suggested {level} block {name!r} was not found")
+
+
+def require_suggested_tree_columns(
+    block: dict[str, object],
+    key: str,
+) -> tuple[str, ...]:
+    value = block[key]
+    if not isinstance(value, list) or not all(isinstance(item, str) for item in value):
+        raise ValueError(f"suggested block {block.get('name')!r} has invalid {key}")
+    if not value:
+        raise ValueError(f"suggested block {block.get('name')!r} has no {key}")
+    return tuple(value)
+
+
 def tree_column_block(
     block: TreeColumnBlockSpec,
     available: set[str],

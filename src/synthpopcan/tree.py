@@ -137,7 +137,7 @@ class FrequencyTreeModel:
                 "minimum_support": minimum_support,
                 "min_support_threshold": self.min_support_threshold,
                 "groups_below_threshold": groups_below_threshold,
-                "publishable": False,
+                "publishable": self.release_class == "publishable_candidate",
             },
         }
 
@@ -262,7 +262,7 @@ class CartTreeModel:
                 "min_samples_leaf": self.min_samples_leaf,
                 "minimum_leaf_support": minimum_leaf_support,
                 "leaves_below_threshold": leaves_below_threshold,
-                "publishable": False,
+                "publishable": self.release_class == "publishable_candidate",
             },
         }
 
@@ -432,7 +432,9 @@ def audit_tree_model(
 
     return {
         "passed": not any(issue["severity"] == "error" for issue in issues),
-        "publishable_candidate": False,
+        "publishable_candidate": (
+            model.release_class == "publishable_candidate" and not issues
+        ),
         "model_type": model.model_type,
         "release_class": model.release_class,
         "thresholds": {

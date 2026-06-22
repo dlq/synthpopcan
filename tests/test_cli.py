@@ -24,7 +24,9 @@ def test_tree_commands_are_visible_in_help(capsys) -> None:
     output = capsys.readouterr().out
     assert "Tree-based synthetic population generator" in output
     assert "train" in output
+    assert "train-linked" in output
     assert "generate" in output
+    assert "package-linked-models" in output
 
 
 def test_tree_train_help_shows_core_options(capsys) -> None:
