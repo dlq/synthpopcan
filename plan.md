@@ -273,6 +273,7 @@ Current implementation notes:
 - Initial audit on the local 2016-derived models with `min_support=50,max_purity=0.95`: conditional-frequency had 157 groups, minimum support about 503.7, no low-support groups, and 2 pure groups; CART had 58 leaves, minimum support 81, no low-support or high-purity leaves. Both remained `private_working` and `publishable_candidate: false`.
 - `synthpopcan tree generate-linked` performs the first household-then-person generation pass from separate household and person models, writing linked `synthetic_household_id` and `synthetic_person_id` CSV outputs.
 - `synthpopcan tree generate` and `synthpopcan tree generate-linked` accept `--manifest-out` for a lightweight JSON provenance sidecar with model path, model type, release class, output paths, conditions, requested random seed, and effective random seed.
+- `scripts/benchmark_tree_linked.py` runs the first developer-facing linked household/person benchmark workflow from a `statcan-2016-hierarchical` CSV: derive household/person training views, train both models, generate linked outputs, validate linkage, compare household/person distributions, write JSON reports, and print timing/RSS summary metrics.
 
 Household/person linkage design:
 

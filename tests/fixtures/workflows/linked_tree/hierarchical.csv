@@ -1,0 +1,4 @@
+HH_ID,EF_ID,CF_ID,PP_ID,WEIGHT,PR,TENUR,AGEGRP,SEX
+1,11,111,11101,1,24,owner,adult,F
+1,11,111,11102,1,24,owner,child,M
+2,21,211,21101,1,24,renter,adult,F
