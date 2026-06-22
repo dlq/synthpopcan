@@ -174,6 +174,23 @@ Current implementation notes:
 - The first implementation used a simple record-oriented IPF loop. That was useful for correctness tests, but it repeatedly scanned every seed record for each target category.
 - The next implementation direction is indexed IPF: precompute the seed-record indexes belonging to each margin cell, then reuse those indexes during each fitting iteration.
 
+IPF and attribute coverage:
+
+- IPF cannot add a column that is absent from the seed/generated population.
+  Every control dimension must already map to a seed column before it can be
+  used directly in fitting.
+- StatCan tables with useful dimensions that are missing from the seed should
+  be treated as enrichment or modelling candidates, not direct IPF controls.
+  A separate model, lookup, public cross-tab, or recoding step must add the
+  column first; IPF can then calibrate the enriched rows.
+- `ipf check-inputs` should keep making this distinction explicit for users:
+  usable controls, missing-column controls, category mismatches, and possible
+  enrichment candidates. This is especially important for humanities users
+  exploring unfamiliar StatCan tables.
+- Output metadata should eventually track column provenance: source microdata,
+  recoded source column, model-generated column, enriched public-data column,
+  IPF weight/calibration output, and synthetic identifier.
+
 Production-grade IPF means more than using a faster table library. It should include:
 
 - Indexed or vectorized updates rather than repeated full-record scans per target category.
@@ -312,6 +329,25 @@ Household/person linkage design:
 - Generate people second, conditional on each generated household. The person generator should receive household context such as geography, household size, tenure, household or family type, and any other household attributes used during training.
 - Preserve linkage through generated identifiers: `synthetic_household_id` on household rows and both `synthetic_person_id` and `synthetic_household_id` on person rows.
 - Validate both levels: household outputs against household margins, person outputs against person margins, and linked outputs against structural checks such as household size matching the number of generated people. Status: `synthpopcan validate linked-output` checks that person rows reference known households and that `household_size` matches the number of linked people.
+
+Model output to IPF calibration:
+
+- Treat the Pritchard-style bridge as a staged workflow: generate candidate
+  household/person rows from a model package, check whether selected StatCan
+  controls are compatible with those rows, fit IPF weights, integerize or expand
+  the calibrated output, then validate both margins and household/person
+  linkage.
+- The model generator supplies plausible multivariate structure and extra
+  columns. IPF supplies calibration to official controls for columns already
+  present on the generated rows.
+- Prefer household-level calibration first for linked populations: fit or
+  integerize households, let persons inherit household context, then validate
+  person margins. Add person-level or joint household/person calibration only
+  after the simpler staged workflow is well understood.
+- Keep missing controlled attributes out of IPF until an explicit enrichment
+  step adds them to generated rows. Future commands may add an `enrich` or
+  similarly named workflow, but it should be separate from `ipf fit` so users do
+  not think IPF can invent absent variables.
 
 Model distribution and privacy-release design:
 
@@ -500,6 +536,15 @@ Remaining StatCan/IPF follow-up backlog:
 - Add concise next-step hints where they remove friction without adding noise.
   Status: first `controls from-wds` error hints added for missing WDS columns
   and unmapped category labels.
+- Add an explicit generate-then-calibrate workflow that uses prepared tree model
+  outputs as IPF seed rows: `tree generate-from-package`, `ipf check-inputs`,
+  `ipf fit`, `ipf expand`, and `validate controls`. This should document that
+  IPF calibrates columns already present on generated rows and does not create
+  missing variables.
+- Plan a later enrichment workflow for useful StatCan dimensions that are not
+  present in the microdata/model output. The immediate goal is naming,
+  provenance, and user guidance; implementation can wait until the core
+  generate-then-calibrate path is stable.
 
 Completed tree model packaging/distribution first pass:
 
