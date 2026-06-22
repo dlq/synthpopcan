@@ -77,6 +77,38 @@ def print_census_profile_characteristics_table(rows: list[dict[str, str]]) -> No
     print_table(table)
 
 
+def print_tree_column_suggestions_table(report: dict[str, object]) -> None:
+    table = Table(title="Tree Column Suggestions")
+    table.add_column("Block")
+    table.add_column("Level")
+    table.add_column("Targets")
+    table.add_column("Conditioning")
+    table.add_column("Missing")
+
+    for block in report.get("blocks", []):
+        if not isinstance(block, dict):
+            continue
+        table.add_row(
+            str(block.get("name", "")),
+            str(block.get("level", "")),
+            ", ".join(str(value) for value in block.get("target_columns", [])),
+            ", ".join(str(value) for value in block.get("conditioning_columns", [])),
+            ", ".join(str(value) for value in block.get("missing_target_columns", [])),
+        )
+
+    print_summary_table(
+        {
+            "source_format": report.get("source_format", ""),
+            "geography_columns": ", ".join(
+                str(value) for value in report.get("geography_columns", [])
+            ),
+            "excluded_columns": len(report.get("excluded_columns", [])),
+        },
+        title="Column Suggestion Summary",
+    )
+    print_table(table)
+
+
 def print_ipf_report_table(report: dict[str, object]) -> None:
     table = Table(title="IPF Fit Report")
     table.add_column("Margin")

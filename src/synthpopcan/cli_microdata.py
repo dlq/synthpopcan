@@ -8,7 +8,11 @@ from pathlib import Path
 
 import click
 
-from synthpopcan.cli_output import print_seed_check_table, write_output
+from synthpopcan.cli_output import (
+    print_seed_check_table,
+    print_tree_column_suggestions_table,
+    write_output,
+)
 from synthpopcan.console import print_summary_table, print_wrote
 from synthpopcan.microdata import (
     check_statcan_2016_household_seed_columns,
@@ -17,6 +21,7 @@ from synthpopcan.microdata import (
     export_training_rows,
     read_fixture_seed_sample,
     read_statcan_2016_hierarchical_seed_sample,
+    suggest_tree_column_blocks,
 )
 
 PATH = click.Path(path_type=Path)
@@ -135,6 +140,41 @@ def check_microdata_seed(
         print(json.dumps(report, indent=2, sort_keys=True))
         return
     print_seed_check_table(report)
+
+
+@microdata.command("suggest-tree-columns")
+@click.argument("path", type=PATH)
+@click.option(
+    "--input-format",
+    "source_format",
+    required=True,
+    type=click.Choice(["statcan-2016-hierarchical"]),
+    help="Input microdata adapter format.",
+)
+@click.option(
+    "--format",
+    "output_format",
+    default="table",
+    type=click.Choice(["json", "table"]),
+    show_default=True,
+    help="Output format for the suggestions.",
+)
+def suggest_microdata_tree_columns(
+    path: Path,
+    source_format: str,
+    output_format: str,
+) -> None:
+    """Suggest broad tree-model column blocks from known microdata columns."""
+    try:
+        sample = read_statcan_2016_hierarchical_seed_sample(path)
+        report = suggest_tree_column_blocks(sample)
+    except ValueError as exc:
+        raise click.ClickException(str(exc)) from exc
+
+    if output_format == "json":
+        print(json.dumps(report, indent=2, sort_keys=True))
+        return
+    print_tree_column_suggestions_table(report)
 
 
 @microdata.command("export-seed")

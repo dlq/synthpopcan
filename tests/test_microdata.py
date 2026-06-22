@@ -11,6 +11,7 @@ from synthpopcan.microdata import (
     export_training_rows,
     read_fixture_seed_sample,
     read_statcan_2016_hierarchical_seed_sample,
+    suggest_tree_column_blocks,
 )
 
 
@@ -601,6 +602,142 @@ def test_cli_checks_household_seed_columns_as_readable_table(tmp_path, capsys) -
     assert "ROOMS" in output
     assert "Problem" in output
     assert "varies within 1 household" in output
+
+
+def test_suggests_tree_column_blocks_from_statcan_2016_columns(tmp_path) -> None:
+    source = tmp_path / "hierarchical.csv"
+    source.write_text(
+        "HH_ID,EF_ID,CF_ID,PP_ID,WEIGHT,WT1,PR,CMA,TENUR,DTYPE,ROOM,BEDRM,"
+        "CONDO,VALUE,SHELCO,AGEGRP,SEX,MarStH,IMMSTAT,HDGREE,LFTAG,TOTINC,"
+        "CITIZEN,VISMIN\n"
+        "1,11,111,11101,1,1,24,462,1,2,5,3,4,1,6,4,1,2,1,6,3,7,1,1\n"
+    )
+    sample = read_statcan_2016_hierarchical_seed_sample(source)
+
+    suggestion = suggest_tree_column_blocks(sample)
+
+    assert suggestion["source_format"] == "statcan-2016-hierarchical"
+    assert suggestion["profile"] == "statcan-2016-hierarchical"
+    assert suggestion["excluded_columns"] == [
+        {"column": "HH_ID", "reason": "identifier"},
+        {"column": "EF_ID", "reason": "identifier"},
+        {"column": "CF_ID", "reason": "identifier"},
+        {"column": "PP_ID", "reason": "identifier"},
+        {"column": "WEIGHT", "reason": "weight"},
+        {"column": "WT1", "reason": "replicate_weight"},
+    ]
+    assert suggestion["geography_columns"] == ["PR", "CMA"]
+    assert suggestion["blocks"] == [
+        {
+            "name": "household_core",
+            "level": "household",
+            "target_columns": [
+                "household_size",
+                "TENUR",
+                "DTYPE",
+                "ROOM",
+                "BEDRM",
+                "CONDO",
+                "VALUE",
+                "SHELCO",
+            ],
+            "conditioning_columns": ["PR"],
+            "available_target_columns": [
+                "household_size",
+                "TENUR",
+                "DTYPE",
+                "ROOM",
+                "BEDRM",
+                "CONDO",
+                "VALUE",
+                "SHELCO",
+            ],
+            "missing_target_columns": ["PRESMORTG", "SUBSIDY", "REPAIR", "BUILT"],
+        },
+        {
+            "name": "person_demographics",
+            "level": "person",
+            "target_columns": ["AGEGRP", "SEX", "MarStH", "IMMSTAT"],
+            "conditioning_columns": ["PR", "household_size", "TENUR"],
+            "available_target_columns": ["AGEGRP", "SEX", "MarStH", "IMMSTAT"],
+            "missing_target_columns": [],
+        },
+        {
+            "name": "person_identity_language",
+            "level": "person",
+            "target_columns": ["CITIZEN", "VISMIN"],
+            "conditioning_columns": [
+                "PR",
+                "household_size",
+                "TENUR",
+                "AGEGRP",
+                "SEX",
+            ],
+            "available_target_columns": ["CITIZEN", "VISMIN"],
+            "missing_target_columns": [
+                "GENSTAT",
+                "POB",
+                "MTNEn",
+                "MTNFr",
+                "MTNNO",
+                "HLBEN",
+                "HLBFR",
+                "HLBNO",
+            ],
+        },
+        {
+            "name": "person_education_work_income",
+            "level": "person",
+            "target_columns": ["HDGREE", "LFTAG", "TOTINC"],
+            "conditioning_columns": [
+                "PR",
+                "household_size",
+                "TENUR",
+                "AGEGRP",
+                "SEX",
+            ],
+            "available_target_columns": ["HDGREE", "LFTAG", "TOTINC"],
+            "missing_target_columns": [
+                "EMPIN",
+                "FPTWK",
+                "HRSWRK",
+                "WKSWRK",
+                "WRKACT",
+            ],
+        },
+    ]
+
+
+def test_cli_suggests_tree_columns_as_json(tmp_path, capsys) -> None:
+    source = tmp_path / "hierarchical.csv"
+    source.write_text(
+        "HH_ID,EF_ID,CF_ID,PP_ID,WEIGHT,PR,TENUR,DTYPE,AGEGRP,SEX\n"
+        "1,11,111,11101,1,24,1,2,4,1\n"
+    )
+
+    assert (
+        main(
+            [
+                "microdata",
+                "suggest-tree-columns",
+                str(source),
+                "--input-format",
+                "statcan-2016-hierarchical",
+                "--format",
+                "json",
+            ]
+        )
+        == 0
+    )
+
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["blocks"][0]["name"] == "household_core"
+    assert payload["blocks"][0]["target_columns"] == [
+        "household_size",
+        "TENUR",
+        "DTYPE",
+    ]
+    assert payload["blocks"][1]["target_columns"] == ["AGEGRP", "SEX"]
 
 
 def test_household_seed_export_rejects_conflicting_household_attributes(

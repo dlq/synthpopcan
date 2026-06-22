@@ -36,6 +36,100 @@ class SeedSample:
         return summary
 
 
+@dataclass(frozen=True)
+class TreeColumnBlockSpec:
+    name: str
+    level: SeedLevel
+    target_columns: tuple[str, ...]
+    conditioning_columns: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class TreeColumnSuggestionProfile:
+    source_format: str
+    geography_columns: tuple[str, ...]
+    identifier_columns: tuple[str, ...]
+    weight_columns: tuple[str, ...]
+    replicate_weight_prefixes: tuple[str, ...]
+    derived_columns: tuple[str, ...]
+    blocks: tuple[TreeColumnBlockSpec, ...]
+
+
+STATCAN_2016_HIERARCHICAL_TREE_PROFILE = TreeColumnSuggestionProfile(
+    source_format="statcan-2016-hierarchical",
+    geography_columns=("PR", "CMA"),
+    identifier_columns=("HH_ID", "EF_ID", "CF_ID", "PP_ID"),
+    weight_columns=("WEIGHT",),
+    replicate_weight_prefixes=("WT",),
+    derived_columns=("household_size",),
+    blocks=(
+        TreeColumnBlockSpec(
+            name="household_core",
+            level="household",
+            target_columns=(
+                "household_size",
+                "TENUR",
+                "DTYPE",
+                "ROOM",
+                "BEDRM",
+                "CONDO",
+                "PRESMORTG",
+                "VALUE",
+                "SHELCO",
+                "SUBSIDY",
+                "REPAIR",
+                "BUILT",
+            ),
+            conditioning_columns=("PR",),
+        ),
+        TreeColumnBlockSpec(
+            name="person_demographics",
+            level="person",
+            target_columns=("AGEGRP", "SEX", "MarStH", "IMMSTAT"),
+            conditioning_columns=("PR", "household_size", "TENUR"),
+        ),
+        TreeColumnBlockSpec(
+            name="person_identity_language",
+            level="person",
+            target_columns=(
+                "CITIZEN",
+                "GENSTAT",
+                "POB",
+                "VISMIN",
+                "MTNEn",
+                "MTNFr",
+                "MTNNO",
+                "HLBEN",
+                "HLBFR",
+                "HLBNO",
+            ),
+            conditioning_columns=("PR", "household_size", "TENUR", "AGEGRP", "SEX"),
+        ),
+        TreeColumnBlockSpec(
+            name="person_education_work_income",
+            level="person",
+            target_columns=(
+                "HDGREE",
+                "LFTAG",
+                "EMPIN",
+                "FPTWK",
+                "HRSWRK",
+                "WKSWRK",
+                "WRKACT",
+                "TOTINC",
+            ),
+            conditioning_columns=("PR", "household_size", "TENUR", "AGEGRP", "SEX"),
+        ),
+    ),
+)
+
+TREE_COLUMN_SUGGESTION_PROFILES = {
+    STATCAN_2016_HIERARCHICAL_TREE_PROFILE.source_format: (
+        STATCAN_2016_HIERARCHICAL_TREE_PROFILE
+    )
+}
+
+
 def read_fixture_seed_sample(
     path: Path,
     *,
@@ -345,6 +439,83 @@ def check_statcan_2016_household_seed_columns(
         "passed": all(check["status"] == "ok" for check in checks),
         "checks": checks,
     }
+
+
+def suggest_tree_column_blocks(sample: SeedSample) -> dict[str, object]:
+    profile = TREE_COLUMN_SUGGESTION_PROFILES.get(sample.source_format)
+    if profile is None:
+        raise ValueError(
+            f"tree column suggestions are not available for {sample.source_format}"
+        )
+
+    columns = set(sample.columns)
+    available = columns | set(profile.derived_columns)
+
+    return {
+        "source_format": sample.source_format,
+        "profile": profile.source_format,
+        "geography_columns": available_columns(profile.geography_columns, columns),
+        "excluded_columns": excluded_tree_columns(sample.columns, profile),
+        "blocks": [
+            tree_column_block(
+                block,
+                available,
+            )
+            for block in profile.blocks
+        ],
+    }
+
+
+def tree_column_block(
+    block: TreeColumnBlockSpec,
+    available: set[str],
+) -> dict[str, object]:
+    available_targets = [
+        column for column in block.target_columns if column in available
+    ]
+    missing_targets = [
+        column for column in block.target_columns if column not in available
+    ]
+    return {
+        "name": block.name,
+        "level": block.level,
+        "target_columns": available_targets,
+        "conditioning_columns": available_columns(
+            block.conditioning_columns,
+            available,
+        ),
+        "available_target_columns": available_targets,
+        "missing_target_columns": missing_targets,
+    }
+
+
+def available_columns(candidates: tuple[str, ...], columns: set[str]) -> list[str]:
+    return [column for column in candidates if column in columns]
+
+
+def excluded_tree_columns(
+    columns: tuple[str, ...],
+    profile: TreeColumnSuggestionProfile,
+) -> list[dict[str, str]]:
+    excluded: list[dict[str, str]] = []
+    for column in columns:
+        if column in profile.identifier_columns:
+            excluded.append({"column": column, "reason": "identifier"})
+        elif column in profile.weight_columns:
+            excluded.append({"column": column, "reason": "weight"})
+        elif is_replicate_weight_column(column, profile):
+            excluded.append({"column": column, "reason": "replicate_weight"})
+    return excluded
+
+
+def is_replicate_weight_column(
+    column: str,
+    profile: TreeColumnSuggestionProfile,
+) -> bool:
+    return any(
+        column.startswith(prefix) and column.removeprefix(prefix).isdigit()
+        for prefix in profile.replicate_weight_prefixes
+    )
 
 
 def group_records_by_household(
