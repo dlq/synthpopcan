@@ -480,7 +480,9 @@ Remaining StatCan/IPF follow-up backlog:
 - Explore NumPy, Polars, PyArrow, or sparse-array implementations after the
   pure-Python indexed fitter remains stable under more realistic controls.
 - Add richer reports for inconsistent controls and whole-run non-convergence
-  patterns.
+  patterns. Status: first pass added fit-report control-total checks,
+  inconsistent-control-total issues, report-level next steps, and Rich
+  `ipf report` next-step rendering.
 
 Completed tree model packaging/distribution first pass:
 

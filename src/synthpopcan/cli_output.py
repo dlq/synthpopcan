@@ -281,6 +281,7 @@ def print_ipf_report_table(report: dict[str, object]) -> None:
         title="IPF Fit Summary",
     )
     print_issues_table(report.get("issues", []), title="Fit Issues")
+    print_next_steps_table(report.get("suggested_next_steps", []))
     print_table(table)
 
 

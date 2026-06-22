@@ -462,6 +462,62 @@ def test_nonconverged_ipf_report_includes_actionable_issues() -> None:
     assert "Check whether this control conflicts" in report["issues"][0]["tip"]
 
 
+def test_ipf_report_summarizes_inconsistent_margin_totals() -> None:
+    control_table = ControlTable(
+        margins=(
+            ControlMargin(
+                name="age",
+                dimensions=("age",),
+                cells=(
+                    ControlCell({"age": "young"}, 60.0),
+                    ControlCell({"age": "old"}, 40.0),
+                ),
+            ),
+            ControlMargin(
+                name="sex",
+                dimensions=("sex",),
+                cells=(
+                    ControlCell({"sex": "F"}, 70.0),
+                    ControlCell({"sex": "M"}, 40.0),
+                ),
+            ),
+        ),
+        dimensions=("age", "sex"),
+    )
+    result = fit_ipf(
+        [
+            {"age": "young", "sex": "F"},
+            {"age": "young", "sex": "M"},
+            {"age": "old", "sex": "F"},
+            {"age": "old", "sex": "M"},
+        ],
+        control_table.to_ipf_margins(),
+        max_iterations=2,
+    )
+
+    report = build_ipf_fit_report(control_table, result)
+
+    assert report["control_total_checks"] == {
+        "status": "inconsistent",
+        "totals": [
+            {"margin": "age", "dimensions": ["age"], "target_total": 100.0},
+            {"margin": "sex", "dimensions": ["sex"], "target_total": 110.0},
+        ],
+        "min_total": 100.0,
+        "max_total": 110.0,
+        "difference": 10.0,
+    }
+    assert report["issues"][0]["kind"] == "inconsistent_control_totals"
+    assert (
+        "Control margins do not agree on total population"
+        in (report["issues"][0]["message"])
+    )
+    assert report["suggested_next_steps"][0] == (
+        "Review the source tables or mappings: control margins have different "
+        "total populations, so IPF cannot satisfy all controls exactly."
+    )
+
+
 def test_cli_prints_human_readable_ipf_report(tmp_path: Path, capsys) -> None:
     from synthpopcan.cli import main
 
@@ -473,6 +529,9 @@ def test_cli_prints_human_readable_ipf_report(tmp_path: Path, capsys) -> None:
                 "iterations": 3,
                 "max_abs_error": 0.0,
                 "seed_records": 4,
+                "suggested_next_steps": [
+                    "Review the source tables or mappings before trusting this fit."
+                ],
                 "issues": [
                     {
                         "severity": "warning",
@@ -508,6 +567,8 @@ def test_cli_prints_human_readable_ipf_report(tmp_path: Path, capsys) -> None:
     assert "Converged" in output
     assert "Fit Issues" in output
     assert "Largest residual" in output
+    assert "Next Steps" in output
+    assert "Review the source tables" in output
     assert "age" in output
     assert "100" in output
 

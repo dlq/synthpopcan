@@ -14,6 +14,26 @@ def build_ipf_fit_report(
     margins: list[dict[str, Any]] = []
     margin_summaries: list[dict[str, Any]] = []
     issues: list[dict[str, Any]] = []
+    control_total_checks = build_control_total_checks(control_table)
+    if control_total_checks["status"] == "inconsistent":
+        min_total = format_number(control_total_checks["min_total"])
+        max_total = format_number(control_total_checks["max_total"])
+        issues.append(
+            {
+                "severity": "error",
+                "kind": "inconsistent_control_totals",
+                "margin": "multiple",
+                "message": (
+                    "Control margins do not agree on total population: "
+                    f"smallest total is {min_total} and largest total is {max_total}."
+                ),
+                "tip": (
+                    "Review the source tables, filters, geography, and category "
+                    "mappings before fitting."
+                ),
+                "abs_error": control_total_checks["difference"],
+            }
+        )
     for control_margin in control_table.margins:
         totals = weighted_totals(
             result.records,
@@ -90,14 +110,67 @@ def build_ipf_fit_report(
         "iterations": result.iterations,
         "max_abs_error": result.max_abs_error,
         "seed_records": len(result.records),
+        "control_total_checks": control_total_checks,
         "issues": sorted(
             issues,
             key=lambda issue: issue["abs_error"],
             reverse=True,
         ),
+        "suggested_next_steps": suggest_ipf_fit_next_steps(
+            control_total_checks,
+            issues,
+        ),
         "margin_summaries": margin_summaries,
         "margins": margins,
     }
+
+
+def build_control_total_checks(control_table: ControlTable) -> dict[str, Any]:
+    totals = [
+        {
+            "margin": margin.name,
+            "dimensions": list(margin.dimensions),
+            "target_total": sum(cell.count for cell in margin.cells),
+        }
+        for margin in control_table.margins
+    ]
+    if not totals:
+        return {
+            "status": "ok",
+            "totals": [],
+            "min_total": 0.0,
+            "max_total": 0.0,
+            "difference": 0.0,
+        }
+    total_values = [float(total["target_total"]) for total in totals]
+    min_total = min(total_values)
+    max_total = max(total_values)
+    difference = max_total - min_total
+    return {
+        "status": "inconsistent" if difference > 1e-9 else "ok",
+        "totals": totals,
+        "min_total": min_total,
+        "max_total": max_total,
+        "difference": difference,
+    }
+
+
+def suggest_ipf_fit_next_steps(
+    control_total_checks: dict[str, Any],
+    issues: list[dict[str, Any]],
+) -> list[str]:
+    steps: list[str] = []
+    if control_total_checks["status"] == "inconsistent":
+        steps.append(
+            "Review the source tables or mappings: control margins have different "
+            "total populations, so IPF cannot satisfy all controls exactly."
+        )
+    if any(issue.get("kind") == "cell_residual" for issue in issues):
+        steps.append(
+            "Inspect the largest residual cells; they often point to incompatible "
+            "margins, missing seed coverage, or labels that should be remapped."
+        )
+    return steps
 
 
 def build_ipf_input_report(
