@@ -10,8 +10,10 @@ import time
 from pathlib import Path
 
 from synthpopcan.microdata import (
+    SeedSample,
     export_training_rows,
     read_statcan_2016_hierarchical_seed_sample,
+    suggest_tree_column_blocks,
 )
 from synthpopcan.tree import (
     generate_linked_population,
@@ -29,10 +31,12 @@ def run_linked_tree_benchmark(
     source: Path,
     *,
     output_dir: Path,
-    household_target_columns: tuple[str, ...],
-    household_conditioning_columns: tuple[str, ...],
-    person_target_columns: tuple[str, ...],
-    person_conditioning_columns: tuple[str, ...],
+    household_target_columns: tuple[str, ...] | None,
+    household_conditioning_columns: tuple[str, ...] | None,
+    person_target_columns: tuple[str, ...] | None,
+    person_conditioning_columns: tuple[str, ...] | None,
+    household_block: str | None = None,
+    person_block: str | None = None,
     households: int,
     conditions: dict[str, str] | None = None,
     method: str = "conditional-frequency",
@@ -49,6 +53,21 @@ def run_linked_tree_benchmark(
     start = time.perf_counter()
     sample = read_statcan_2016_hierarchical_seed_sample(source)
     timings["read_source_seconds"] = elapsed_seconds(start)
+    (
+        household_target_columns,
+        household_conditioning_columns,
+        person_target_columns,
+        person_conditioning_columns,
+        column_source,
+    ) = resolve_benchmark_columns(
+        sample,
+        household_target_columns=household_target_columns,
+        household_conditioning_columns=household_conditioning_columns,
+        person_target_columns=person_target_columns,
+        person_conditioning_columns=person_conditioning_columns,
+        household_block=household_block,
+        person_block=person_block,
+    )
 
     start = time.perf_counter()
     household_rows, household_export = export_training_rows(
@@ -148,6 +167,7 @@ def run_linked_tree_benchmark(
         "method": method,
         "random_seed": random_seed,
         "conditions": conditions or {},
+        "column_source": column_source,
         "training": {
             "household": household_export,
             "person": person_export,
@@ -186,6 +206,113 @@ def run_linked_tree_benchmark(
     }
     write_json(paths["summary"], summary)
     return summary
+
+
+def resolve_benchmark_columns(
+    sample: SeedSample,
+    *,
+    household_target_columns: tuple[str, ...] | None,
+    household_conditioning_columns: tuple[str, ...] | None,
+    person_target_columns: tuple[str, ...] | None,
+    person_conditioning_columns: tuple[str, ...] | None,
+    household_block: str | None,
+    person_block: str | None,
+) -> tuple[
+    tuple[str, ...],
+    tuple[str, ...],
+    tuple[str, ...],
+    tuple[str, ...],
+    dict[str, object],
+]:
+    if household_block or person_block:
+        if not household_block or not person_block:
+            raise ValueError(
+                "household_block and person_block must be provided together"
+            )
+        suggestion = suggest_tree_column_blocks(sample)
+        suggested_household_block = find_suggested_block(
+            suggestion,
+            name=household_block,
+            level="household",
+        )
+        suggested_person_block = find_suggested_block(
+            suggestion,
+            name=person_block,
+            level="person",
+        )
+        return (
+            require_suggested_columns(suggested_household_block, "target_columns"),
+            require_suggested_columns(
+                suggested_household_block,
+                "conditioning_columns",
+            ),
+            require_suggested_columns(suggested_person_block, "target_columns"),
+            require_suggested_columns(suggested_person_block, "conditioning_columns"),
+            {
+                "mode": "profile",
+                "profile": suggestion["profile"],
+                "household_block": household_block,
+                "person_block": person_block,
+            },
+        )
+
+    return (
+        require_explicit_columns(
+            household_target_columns,
+            label="household target columns",
+        ),
+        require_explicit_columns(
+            household_conditioning_columns,
+            label="household conditioning columns",
+        ),
+        require_explicit_columns(person_target_columns, label="person target columns"),
+        require_explicit_columns(
+            person_conditioning_columns,
+            label="person conditioning columns",
+        ),
+        {"mode": "explicit"},
+    )
+
+
+def find_suggested_block(
+    suggestion: dict[str, object],
+    *,
+    name: str,
+    level: str,
+) -> dict[str, object]:
+    blocks = suggestion["blocks"]
+    if not isinstance(blocks, list):
+        raise ValueError("tree column suggestion blocks must be a list")
+    for block in blocks:
+        if not isinstance(block, dict):
+            continue
+        if block.get("name") == name:
+            if block.get("level") != level:
+                raise ValueError(f"suggested block {name!r} is not a {level} block")
+            return block
+    raise ValueError(f"suggested {level} block {name!r} was not found")
+
+
+def require_suggested_columns(
+    block: dict[str, object],
+    key: str,
+) -> tuple[str, ...]:
+    value = block[key]
+    if not isinstance(value, list) or not all(isinstance(item, str) for item in value):
+        raise ValueError(f"suggested block {block.get('name')!r} has invalid {key}")
+    if not value:
+        raise ValueError(f"suggested block {block.get('name')!r} has no {key}")
+    return tuple(value)
+
+
+def require_explicit_columns(
+    columns: tuple[str, ...] | None,
+    *,
+    label: str,
+) -> tuple[str, ...]:
+    if not columns:
+        raise ValueError(f"{label} are required without suggested blocks")
+    return columns
 
 
 def train_model_from_csv(

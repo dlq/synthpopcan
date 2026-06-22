@@ -75,3 +75,70 @@ def test_runs_linked_tree_benchmark_fixture(tmp_path) -> None:
     assert len(person_rows) == summary["generation"]["persons"]
     assert linked_report["passed"] is True
     assert written_summary["generation"] == summary["generation"]
+
+
+def test_runs_linked_tree_benchmark_from_suggested_blocks(tmp_path) -> None:
+    source = tmp_path / "hierarchical.csv"
+    output_dir = tmp_path / "benchmark"
+    source.write_text(
+        "HH_ID,EF_ID,CF_ID,PP_ID,WEIGHT,PR,TENUR,DTYPE,ROOM,BEDRM,CONDO,"
+        "PRESMORTG,VALUE,SHELCO,SUBSIDY,REPAIR,BUILT,AGEGRP,SEX,MarStH,IMMSTAT\n"
+        "1,11,111,11101,1,24,owner,detached,6,3,no,yes,500000,1200,no,"
+        "regular,1991,adult,F,married,non_immigrant\n"
+        "1,11,111,11102,1,24,owner,detached,6,3,no,yes,500000,1200,no,"
+        "regular,1991,child,M,never_married,non_immigrant\n"
+        "2,21,211,21101,1,24,renter,apartment,4,2,yes,no,0,900,no,"
+        "regular,2001,adult,F,single,immigrant\n"
+        "3,31,311,31101,1,35,renter,row,5,2,no,no,0,850,yes,"
+        "minor,1981,adult,M,married,non_immigrant\n"
+    )
+
+    summary = run_linked_tree_benchmark(
+        source,
+        output_dir=output_dir,
+        household_target_columns=None,
+        household_conditioning_columns=None,
+        person_target_columns=None,
+        person_conditioning_columns=None,
+        household_block="household_core",
+        person_block="person_demographics",
+        households=2,
+        conditions={"PR": "24"},
+        random_seed=7,
+    )
+
+    assert summary["column_source"] == {
+        "mode": "profile",
+        "profile": "statcan-2016-hierarchical",
+        "household_block": "household_core",
+        "person_block": "person_demographics",
+    }
+    assert summary["training"]["household"]["target_columns"] == [
+        "household_size",
+        "TENUR",
+        "DTYPE",
+        "ROOM",
+        "BEDRM",
+        "CONDO",
+        "PRESMORTG",
+        "VALUE",
+        "SHELCO",
+        "SUBSIDY",
+        "REPAIR",
+        "BUILT",
+    ]
+    assert summary["training"]["person"]["target_columns"] == [
+        "AGEGRP",
+        "SEX",
+        "MarStH",
+        "IMMSTAT",
+    ]
+
+    with (output_dir / "synthetic-households.csv").open(newline="") as handle:
+        household_rows = list(csv.DictReader(handle))
+    with (output_dir / "synthetic-persons.csv").open(newline="") as handle:
+        person_rows = list(csv.DictReader(handle))
+
+    assert len(household_rows) == 2
+    assert {"DTYPE", "ROOM", "BEDRM", "BUILT"}.issubset(household_rows[0])
+    assert {"AGEGRP", "SEX", "MarStH", "IMMSTAT"}.issubset(person_rows[0])
