@@ -200,6 +200,20 @@ synthpopcan tree prepare-model-release household-model.json \
 
 Repeat that review for the person model, then package the pair:
 
+Create a reviewed source-provenance file before packaging:
+
+```json
+{
+  "schema_version": "synthpopcan-source-provenance-v1",
+  "title": "2016 Census Public Use Microdata File, hierarchical",
+  "provider": "Statistics Canada",
+  "access_class": "restricted",
+  "citation": "Statistics Canada. 2016 Census Public Use Microdata File, hierarchical.",
+  "redistribution_note": "Do not redistribute source microdata.",
+  "url": "https://www.statcan.gc.ca/"
+}
+```
+
 ```bash
 synthpopcan tree release-readiness \
   --household-model household-model-publishable.json \
@@ -220,6 +234,7 @@ synthpopcan tree package-linked-models \
   --household-model household-model-publishable.json \
   --person-model person-model-publishable.json \
   --training-manifest linked-training.manifest.json \
+  --source-provenance source-provenance.json \
   --household-release-manifest household-model-release.manifest.json \
   --person-release-manifest person-model-release.manifest.json \
   --review-note "Reviewed for release after readiness report." \
@@ -235,10 +250,11 @@ embeds both audit reports in the package. It also requires the linked training
 manifest from `tree train-linked --manifest-out`, checks that the manifest's
 model paths match the household and person model paths being packaged, or that
 release manifests from `tree prepare-model-release` connect the original private
-models to the reviewed publishable copies. It also requires a non-empty human
-review note. The final package includes the training-manifest provenance, model
-release manifests, model summaries with file sizes, audit thresholds, and review
-note.
+models to the reviewed publishable copies. It also requires reviewed source
+provenance with citation, access-class, and redistribution metadata, plus a
+non-empty human review note. The final package includes the training-manifest
+provenance, source provenance, model release manifests, model summaries with file
+sizes, audit thresholds, and review note.
 
 These checks do not prove that a model is absolutely privacy safe. They are a
 guardrail so a prepared package carries model provenance, release metadata, and a

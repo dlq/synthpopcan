@@ -703,6 +703,12 @@ def linked_tree_release_readiness_command(
     help="Linked tree training manifest JSON for package provenance.",
 )
 @click.option(
+    "--source-provenance",
+    type=PATH,
+    default=None,
+    help="Reviewed source provenance JSON for citation and access metadata.",
+)
+@click.option(
     "--household-release-manifest",
     type=PATH,
     default=None,
@@ -732,6 +738,7 @@ def package_linked_tree_models_command(
     household_model: Path,
     person_model: Path,
     training_manifest: Path | None,
+    source_provenance: Path | None,
     household_release_manifest: Path | None,
     person_release_manifest: Path | None,
     review_note: str,
@@ -747,6 +754,11 @@ def package_linked_tree_models_command(
             "manifest written by `tree train-linked --manifest-out` so the "
             "package carries source, geography, target-profile, and model "
             "provenance."
+        )
+    if source_provenance is None:
+        raise click.ClickException(
+            "Packaging linked models requires --source-provenance with reviewed "
+            "citation, access, and redistribution metadata for the source data."
         )
     if not review_note.strip():
         raise click.ClickException(
@@ -777,6 +789,7 @@ def package_linked_tree_models_command(
             "household": read_model_release_manifest(household_release_manifest),
             "person": read_model_release_manifest(person_release_manifest),
         }
+        source_provenance_payload = read_source_provenance(source_provenance)
         validate_linked_training_manifest_model_paths(
             training_provenance,
             household_model_path=household_model,
@@ -801,6 +814,7 @@ def package_linked_tree_models_command(
             "max_purity": max_purity,
         },
         "training_manifest": training_provenance,
+        "source_provenance": source_provenance_payload,
         "release_manifests": release_manifests,
         "model_summaries": {
             "household": {
@@ -993,6 +1007,47 @@ def read_model_release_manifest(path: Path | None) -> dict[str, object] | None:
         "thresholds": payload.get("thresholds"),
         "audit": payload.get("audit"),
     }
+
+
+def read_source_provenance(path: Path) -> dict[str, object]:
+    try:
+        payload = json.loads(path.read_text())
+    except json.JSONDecodeError as exc:
+        raise ValueError(f"{path} is not valid JSON") from exc
+    if not isinstance(payload, dict):
+        raise ValueError("source provenance must be a JSON object")
+    if payload.get("schema_version") != "synthpopcan-source-provenance-v1":
+        raise ValueError("unsupported source provenance schema")
+    required_fields = (
+        "title",
+        "provider",
+        "access_class",
+        "citation",
+        "redistribution_note",
+    )
+    missing = [
+        field
+        for field in required_fields
+        if not isinstance(payload.get(field), str) or not payload[field].strip()
+    ]
+    if missing:
+        raise ValueError(
+            "source provenance missing required fields: " + ", ".join(missing)
+        )
+    provenance = {
+        "path": str(path),
+        "schema_version": payload["schema_version"],
+        "title": payload["title"].strip(),
+        "provider": payload["provider"].strip(),
+        "access_class": payload["access_class"].strip(),
+        "citation": payload["citation"].strip(),
+        "redistribution_note": payload["redistribution_note"].strip(),
+    }
+    for optional_field in ("url", "license", "local_path", "checksum"):
+        value = payload.get(optional_field)
+        if isinstance(value, str) and value.strip():
+            provenance[optional_field] = value.strip()
+    return provenance
 
 
 def release_manifest_matches_model_paths(

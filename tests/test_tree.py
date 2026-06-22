@@ -751,17 +751,36 @@ def _write_model_release_manifest(
     )
 
 
+def _write_source_provenance(path) -> None:
+    path.write_text(
+        json.dumps(
+            {
+                "schema_version": "synthpopcan-source-provenance-v1",
+                "title": "2016 Census Public Use Microdata File, hierarchical",
+                "provider": "Statistics Canada",
+                "access_class": "restricted",
+                "citation": "Statistics Canada. 2016 Census PUMF, hierarchical.",
+                "redistribution_note": "Do not redistribute source microdata.",
+                "url": "https://www.statcan.gc.ca/",
+            }
+        )
+        + "\n"
+    )
+
+
 def test_cli_packages_publishable_linked_models(tmp_path) -> None:
     household_model_path, person_model_path = _write_publishable_linked_model_fixtures(
         tmp_path
     )
     training_manifest_path = tmp_path / "linked-training-manifest.json"
+    source_provenance_path = tmp_path / "source-provenance.json"
     package_path = tmp_path / "linked-model-package.json"
     _write_linked_training_manifest(
         training_manifest_path,
         household_model_path=household_model_path,
         person_model_path=person_model_path,
     )
+    _write_source_provenance(source_provenance_path)
 
     assert (
         main(
@@ -774,6 +793,8 @@ def test_cli_packages_publishable_linked_models(tmp_path) -> None:
                 str(person_model_path),
                 "--training-manifest",
                 str(training_manifest_path),
+                "--source-provenance",
+                str(source_provenance_path),
                 "--review-note",
                 "reviewed fixture package",
                 "--out",
@@ -799,6 +820,9 @@ def test_cli_packages_publishable_linked_models(tmp_path) -> None:
         "column": "PR",
         "value": "24",
     }
+    assert package["source_provenance"]["path"] == str(source_provenance_path)
+    assert package["source_provenance"]["provider"] == "Statistics Canada"
+    assert package["source_provenance"]["access_class"] == "restricted"
     assert package["model_summaries"]["household"]["bytes"] > 0
     assert package["model_summaries"]["person"]["bytes"] > 0
     assert package["models"]["household"]["spec"]["level"] == "household"
@@ -817,6 +841,7 @@ def test_cli_packages_release_copies_with_model_release_manifests(tmp_path) -> N
     household_release_manifest_path = tmp_path / "household-release-manifest.json"
     person_release_manifest_path = tmp_path / "person-release-manifest.json"
     training_manifest_path = tmp_path / "linked-training-manifest.json"
+    source_provenance_path = tmp_path / "source-provenance.json"
     package_path = tmp_path / "linked-model-package.json"
     household_release_model_path.write_text(household_model_path.read_text())
     person_release_model_path.write_text(person_model_path.read_text())
@@ -825,6 +850,7 @@ def test_cli_packages_release_copies_with_model_release_manifests(tmp_path) -> N
         household_model_path=household_model_path,
         person_model_path=person_model_path,
     )
+    _write_source_provenance(source_provenance_path)
     _write_model_release_manifest(
         household_release_manifest_path,
         source_model_path=household_model_path,
@@ -847,6 +873,8 @@ def test_cli_packages_release_copies_with_model_release_manifests(tmp_path) -> N
                 str(person_release_model_path),
                 "--training-manifest",
                 str(training_manifest_path),
+                "--source-provenance",
+                str(source_provenance_path),
                 "--household-release-manifest",
                 str(household_release_manifest_path),
                 "--person-release-manifest",
@@ -877,6 +905,99 @@ def test_cli_packages_release_copies_with_model_release_manifests(tmp_path) -> N
     assert package["release_manifests"]["person"]["output_model"] == str(
         person_release_model_path
     )
+
+
+def test_cli_requires_source_provenance_for_linked_model_packages(tmp_path) -> None:
+    from click import ClickException
+
+    household_model_path, person_model_path = _write_publishable_linked_model_fixtures(
+        tmp_path
+    )
+    training_manifest_path = tmp_path / "linked-training-manifest.json"
+    package_path = tmp_path / "linked-model-package.json"
+    _write_linked_training_manifest(
+        training_manifest_path,
+        household_model_path=household_model_path,
+        person_model_path=person_model_path,
+    )
+
+    with pytest.raises(ClickException, match="requires --source-provenance"):
+        main(
+            [
+                "tree",
+                "package-linked-models",
+                "--household-model",
+                str(household_model_path),
+                "--person-model",
+                str(person_model_path),
+                "--training-manifest",
+                str(training_manifest_path),
+                "--review-note",
+                "reviewed fixture package",
+                "--out",
+                str(package_path),
+                "--min-support",
+                "1",
+                "--max-purity",
+                "1",
+            ]
+        )
+
+    assert not package_path.exists()
+
+
+def test_cli_validates_source_provenance_for_linked_model_packages(tmp_path) -> None:
+    from click import ClickException
+
+    household_model_path, person_model_path = _write_publishable_linked_model_fixtures(
+        tmp_path
+    )
+    training_manifest_path = tmp_path / "linked-training-manifest.json"
+    source_provenance_path = tmp_path / "source-provenance.json"
+    package_path = tmp_path / "linked-model-package.json"
+    _write_linked_training_manifest(
+        training_manifest_path,
+        household_model_path=household_model_path,
+        person_model_path=person_model_path,
+    )
+    source_provenance_path.write_text(
+        json.dumps(
+            {
+                "schema_version": "synthpopcan-source-provenance-v1",
+                "title": "2016 Census PUMF",
+            }
+        )
+        + "\n"
+    )
+
+    with pytest.raises(
+        ClickException,
+        match="source provenance missing required fields",
+    ):
+        main(
+            [
+                "tree",
+                "package-linked-models",
+                "--household-model",
+                str(household_model_path),
+                "--person-model",
+                str(person_model_path),
+                "--training-manifest",
+                str(training_manifest_path),
+                "--source-provenance",
+                str(source_provenance_path),
+                "--review-note",
+                "reviewed fixture package",
+                "--out",
+                str(package_path),
+                "--min-support",
+                "1",
+                "--max-purity",
+                "1",
+            ]
+        )
+
+    assert not package_path.exists()
 
 
 def test_cli_requires_training_manifest_for_linked_model_packages(tmp_path) -> None:
@@ -917,12 +1038,14 @@ def test_cli_requires_review_note_for_linked_model_packages(tmp_path) -> None:
         tmp_path
     )
     training_manifest_path = tmp_path / "linked-training-manifest.json"
+    source_provenance_path = tmp_path / "source-provenance.json"
     package_path = tmp_path / "linked-model-package.json"
     _write_linked_training_manifest(
         training_manifest_path,
         household_model_path=household_model_path,
         person_model_path=person_model_path,
     )
+    _write_source_provenance(source_provenance_path)
 
     with pytest.raises(ClickException, match="requires --review-note"):
         main(
@@ -935,6 +1058,8 @@ def test_cli_requires_review_note_for_linked_model_packages(tmp_path) -> None:
                 str(person_model_path),
                 "--training-manifest",
                 str(training_manifest_path),
+                "--source-provenance",
+                str(source_provenance_path),
                 "--review-note",
                 "   ",
                 "--out",
@@ -958,12 +1083,14 @@ def test_cli_checks_training_manifest_model_paths_for_linked_packages(
         tmp_path
     )
     training_manifest_path = tmp_path / "linked-training-manifest.json"
+    source_provenance_path = tmp_path / "source-provenance.json"
     package_path = tmp_path / "linked-model-package.json"
     _write_linked_training_manifest(
         training_manifest_path,
         household_model_path=tmp_path / "other-household-model.json",
         person_model_path=person_model_path,
     )
+    _write_source_provenance(source_provenance_path)
 
     with pytest.raises(
         ClickException,
@@ -979,6 +1106,8 @@ def test_cli_checks_training_manifest_model_paths_for_linked_packages(
                 str(person_model_path),
                 "--training-manifest",
                 str(training_manifest_path),
+                "--source-provenance",
+                str(source_provenance_path),
                 "--review-note",
                 "reviewed fixture package",
                 "--out",
@@ -1023,6 +1152,7 @@ def test_cli_refuses_to_package_private_linked_models(tmp_path) -> None:
     household_model_path = tmp_path / "household-model.json"
     person_model_path = tmp_path / "person-model.json"
     training_manifest_path = tmp_path / "linked-training-manifest.json"
+    source_provenance_path = tmp_path / "source-provenance.json"
     package_path = tmp_path / "linked-model-package.json"
     write_tree_model(household_model_path, household_model)
     write_tree_model(person_model_path, person_model)
@@ -1031,6 +1161,7 @@ def test_cli_refuses_to_package_private_linked_models(tmp_path) -> None:
         household_model_path=household_model_path,
         person_model_path=person_model_path,
     )
+    _write_source_provenance(source_provenance_path)
 
     with pytest.raises(ClickException, match="Linked model audit did not pass"):
         main(
@@ -1043,6 +1174,8 @@ def test_cli_refuses_to_package_private_linked_models(tmp_path) -> None:
                 str(person_model_path),
                 "--training-manifest",
                 str(training_manifest_path),
+                "--source-provenance",
+                str(source_provenance_path),
                 "--review-note",
                 "reviewed fixture package",
                 "--out",
