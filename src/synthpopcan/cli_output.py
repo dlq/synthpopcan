@@ -71,16 +71,59 @@ def print_wds_metadata_explanation_table(summary: dict[str, object]) -> None:
             "dimensions": ", ".join(
                 str(value) for value in summary.get("dimensions", [])
             ),
+            "suitability": wds_suitability_label(summary.get("ipf_suitability", {})),
             "ipf_hint": summary.get("ipf_hint", ""),
         },
         title="StatCan WDS Table",
     )
+
+    print_wds_dimension_preview_table(summary.get("dimension_previews", []))
 
     table = Table(title="Next Commands")
     table.add_column("Step", justify="right", no_wrap=True)
     table.add_column("Command")
     for index, command in enumerate(summary.get("next_commands", []), start=1):
         table.add_row(str(index), str(command))
+    print_table(table)
+
+
+def wds_suitability_label(value: object) -> str:
+    if not isinstance(value, dict):
+        return ""
+    status = value.get("status")
+    if status == "likely_age_sex_controls":
+        return "Likely age/sex controls"
+    if status == "possible_totals_only":
+        return "Possible totals only"
+    if status == "unclear":
+        return "Unclear"
+    return str(status or "")
+
+
+def print_wds_dimension_preview_table(previews: object) -> None:
+    if not isinstance(previews, list) or not previews:
+        return
+
+    table = Table(title="Dimension Preview")
+    table.add_column("Dimension", no_wrap=True)
+    table.add_column("Members")
+    table.add_column("Total", justify="right", no_wrap=True)
+
+    for preview in previews:
+        if not isinstance(preview, dict):
+            continue
+        members = preview.get("members", [])
+        member_text = ""
+        if isinstance(members, list):
+            member_text = ", ".join(str(member) for member in members)
+        if preview.get("truncated"):
+            member_text = f"{member_text}, ..." if member_text else "..."
+        table.add_row(
+            str(preview.get("name", "")),
+            member_text,
+            str(preview.get("member_count", "")),
+        )
+
     print_table(table)
 
 

@@ -294,6 +294,29 @@ def test_summarizes_wds_metadata_for_ipf_use() -> None:
         "title_en": "Population and dwelling counts: Canada",
         "date_range": "2021-01-01 to 2021-01-01",
         "dimensions": ["Geography", "Age group", "Sex"],
+        "dimension_previews": [
+            {
+                "name": "Geography",
+                "member_count": 0,
+                "members": [],
+                "truncated": False,
+            },
+            {
+                "name": "Age group",
+                "member_count": 0,
+                "members": [],
+                "truncated": False,
+            },
+            {"name": "Sex", "member_count": 0, "members": [], "truncated": False},
+        ],
+        "ipf_suitability": {
+            "status": "likely_age_sex_controls",
+            "reasons": [
+                "Metadata includes geography.",
+                "Metadata includes age.",
+                "Metadata includes sex.",
+            ],
+        },
         "ipf_hint": (
             "Plausible IPF control table: choose dimensions that match your "
             "seed columns, then inspect the downloaded ZIP before normalizing."
@@ -313,6 +336,61 @@ def test_summarizes_wds_metadata_for_ipf_use() -> None:
     }
 
 
+def test_summarizes_wds_metadata_with_member_previews() -> None:
+    summary = summarize_wds_metadata(
+        {
+            "productId": "98100001",
+            "cubeTitleEn": "Population and dwelling counts: Canada",
+            "cubeStartDate": "2021-01-01",
+            "cubeEndDate": "2021-01-01",
+            "dimension": [
+                {
+                    "dimensionNameEn": "Geography",
+                    "member": [
+                        {"memberNameEn": "Canada"},
+                        {"memberNameEn": "Newfoundland and Labrador"},
+                        {"memberNameEn": "Prince Edward Island"},
+                        {"memberNameEn": "Nova Scotia"},
+                    ],
+                },
+                {
+                    "dimensionNameEn": "Characteristics",
+                    "member": [
+                        {"memberNameEn": "Population, 2021"},
+                        {"memberNameEn": "Total private dwellings"},
+                    ],
+                },
+            ],
+        }
+    )
+
+    assert summary["dimension_previews"] == [
+        {
+            "name": "Geography",
+            "member_count": 4,
+            "members": ["Canada", "Newfoundland and Labrador", "Prince Edward Island"],
+            "truncated": True,
+        },
+        {
+            "name": "Characteristics",
+            "member_count": 2,
+            "members": ["Population, 2021", "Total private dwellings"],
+            "truncated": False,
+        },
+    ]
+    assert summary["ipf_suitability"] == {
+        "status": "possible_totals_only",
+        "reasons": [
+            "Metadata includes geography.",
+            "Metadata does not show age and sex dimensions.",
+        ],
+    }
+    assert summary["ipf_hint"] == (
+        "Possible source for total controls, but metadata does not show age and "
+        "sex dimensions. Fetch and inspect the ZIP before normalizing."
+    )
+
+
 def test_cli_explains_wds_metadata_as_json(capsys, monkeypatch) -> None:
     def fake_metadata(product_id: str) -> dict[str, object]:
         assert product_id == "98100001"
@@ -322,9 +400,15 @@ def test_cli_explains_wds_metadata_as_json(capsys, monkeypatch) -> None:
             "cubeStartDate": "2021-01-01",
             "cubeEndDate": "2021-01-01",
             "dimension": [
-                {"dimensionNameEn": "Geography"},
-                {"dimensionNameEn": "Age group"},
-                {"dimensionNameEn": "Sex"},
+                {
+                    "dimensionNameEn": "Geography",
+                    "member": [{"memberNameEn": "Canada"}],
+                },
+                {
+                    "dimensionNameEn": "Age group",
+                    "member": [{"memberNameEn": "0 to 4 years"}],
+                },
+                {"dimensionNameEn": "Sex", "member": [{"memberNameEn": "Female"}]},
             ],
         }
 
@@ -335,6 +419,44 @@ def test_cli_explains_wds_metadata_as_json(capsys, monkeypatch) -> None:
     payload = json.loads(capsys.readouterr().out)
     assert payload["product_id"] == "98100001"
     assert payload["dimensions"] == ["Geography", "Age group", "Sex"]
+    assert payload["dimension_previews"][0]["members"] == ["Canada"]
+    assert payload["ipf_suitability"]["status"] == "likely_age_sex_controls"
     assert payload["next_commands"][-1] == (
         "synthpopcan ipf check-inputs --seed seed.csv --controls controls.csv"
     )
+
+
+def test_cli_explains_wds_metadata_table_with_member_preview(
+    capsys,
+    monkeypatch,
+) -> None:
+    def fake_metadata(product_id: str) -> dict[str, object]:
+        assert product_id == "98100001"
+        return {
+            "productId": "98100001",
+            "cubeTitleEn": "Population and dwelling counts: Canada",
+            "dimension": [
+                {
+                    "dimensionNameEn": "Geography",
+                    "member": [
+                        {"memberNameEn": "Canada"},
+                        {"memberNameEn": "Quebec"},
+                    ],
+                },
+                {
+                    "dimensionNameEn": "Age group",
+                    "member": [{"memberNameEn": "0 to 4 years"}],
+                },
+                {"dimensionNameEn": "Sex", "member": [{"memberNameEn": "Female"}]},
+            ],
+        }
+
+    monkeypatch.setattr("synthpopcan.cli.fetch_wds_metadata", fake_metadata)
+
+    assert main(["statcan", "wds", "explain", "98100001"]) == 0
+
+    output = capsys.readouterr().out
+    assert "Dimension Preview" in output
+    assert "Geography" in output
+    assert "Canada" in output
+    assert "Quebec" in output

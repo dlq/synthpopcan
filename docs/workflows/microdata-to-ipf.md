@@ -45,8 +45,8 @@ synthpopcan statcan wds explain 98100001
 ```
 
 The explanation summarizes the table title, date range, available dimensions,
-whether it looks plausible as an IPF control source, and the next commands to
-run.
+a short member preview, whether it looks plausible as an IPF control source,
+and the next commands to run.
 
 When you have downloaded a full StatCan WDS table ZIP, inspect it before
 normalizing controls:

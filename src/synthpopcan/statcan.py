@@ -161,6 +161,9 @@ def fetch_wds_metadata(product_id: str) -> dict[str, Any]:
 def summarize_wds_metadata(metadata: dict[str, Any]) -> dict[str, object]:
     product_id = normalize_product_id(str(metadata.get("productId", "")))
     dimensions = extract_wds_dimension_names(metadata)
+    dimension_previews = extract_wds_dimension_previews(metadata)
+    ipf_suitability = classify_wds_ipf_suitability(dimensions)
+    ipf_hint = wds_ipf_hint(ipf_suitability["status"])
     dimensions_arg = ",".join(dimensions)
     zip_path = f"data/raw/statcan/wds/{product_id}-eng.zip"
     return {
@@ -171,10 +174,9 @@ def summarize_wds_metadata(metadata: dict[str, Any]) -> dict[str, object]:
             metadata.get("cubeEndDate"),
         ),
         "dimensions": dimensions,
-        "ipf_hint": (
-            "Plausible IPF control table: choose dimensions that match your "
-            "seed columns, then inspect the downloaded ZIP before normalizing."
-        ),
+        "dimension_previews": dimension_previews,
+        "ipf_suitability": ipf_suitability,
+        "ipf_hint": ipf_hint,
         "next_commands": [
             (
                 f"synthpopcan statcan wds fetch {product_id} "
@@ -192,6 +194,59 @@ def summarize_wds_metadata(metadata: dict[str, Any]) -> dict[str, object]:
     }
 
 
+def classify_wds_ipf_suitability(dimensions: list[str]) -> dict[str, object]:
+    normalized = {normalize_dimension_name(dimension) for dimension in dimensions}
+    has_geography = any(dimension in normalized for dimension in ("geography", "geo"))
+    has_age = any("age" in dimension for dimension in normalized)
+    has_sex = any(dimension in normalized for dimension in ("sex", "gender"))
+
+    reasons: list[str] = []
+    if has_geography:
+        reasons.append("Metadata includes geography.")
+    if has_age:
+        reasons.append("Metadata includes age.")
+    if has_sex:
+        reasons.append("Metadata includes sex.")
+    if not has_age or not has_sex:
+        reasons.append("Metadata does not show age and sex dimensions.")
+
+    if has_age and has_sex:
+        return {
+            "status": "likely_age_sex_controls",
+            "reasons": reasons,
+        }
+    if has_geography:
+        return {
+            "status": "possible_totals_only",
+            "reasons": reasons,
+        }
+    return {
+        "status": "unclear",
+        "reasons": reasons or ["Metadata dimensions are not enough to assess IPF use."],
+    }
+
+
+def wds_ipf_hint(status: object) -> str:
+    if status == "likely_age_sex_controls":
+        return (
+            "Plausible IPF control table: choose dimensions that match your "
+            "seed columns, then inspect the downloaded ZIP before normalizing."
+        )
+    if status == "possible_totals_only":
+        return (
+            "Possible source for total controls, but metadata does not show age and "
+            "sex dimensions. Fetch and inspect the ZIP before normalizing."
+        )
+    return (
+        "Unclear IPF fit from metadata alone. Fetch and inspect the ZIP before "
+        "using it as controls."
+    )
+
+
+def normalize_dimension_name(value: str) -> str:
+    return value.strip().lower()
+
+
 def extract_wds_dimension_names(metadata: dict[str, Any]) -> list[str]:
     names: list[str] = []
     dimensions = metadata.get("dimension") or metadata.get("dimensions", [])
@@ -204,6 +259,63 @@ def extract_wds_dimension_names(metadata: dict[str, Any]) -> list[str]:
             dimension.get("dimensionNameEn")
             or dimension.get("dimensionName")
             or dimension.get("name")
+        )
+        if isinstance(name, str) and name:
+            names.append(name)
+    return names
+
+
+def extract_wds_dimension_previews(
+    metadata: dict[str, Any],
+    *,
+    member_limit: int = 3,
+) -> list[dict[str, object]]:
+    previews: list[dict[str, object]] = []
+    dimensions = metadata.get("dimension") or metadata.get("dimensions", [])
+    if not isinstance(dimensions, list):
+        return previews
+    for dimension in dimensions:
+        if not isinstance(dimension, dict):
+            continue
+        name = extract_wds_dimension_name(dimension)
+        if not name:
+            continue
+        members = extract_wds_member_names(dimension)
+        previews.append(
+            {
+                "name": name,
+                "member_count": len(members),
+                "members": members[:member_limit],
+                "truncated": len(members) > member_limit,
+            }
+        )
+    return previews
+
+
+def extract_wds_dimension_name(dimension: dict[str, Any]) -> str:
+    name = (
+        dimension.get("dimensionNameEn")
+        or dimension.get("dimensionName")
+        or dimension.get("name")
+    )
+    return name if isinstance(name, str) else ""
+
+
+def extract_wds_member_names(dimension: dict[str, Any]) -> list[str]:
+    members = (
+        dimension.get("member")
+        or dimension.get("members")
+        or dimension.get("dimensionMembers")
+        or []
+    )
+    if not isinstance(members, list):
+        return []
+    names: list[str] = []
+    for member in members:
+        if not isinstance(member, dict):
+            continue
+        name = (
+            member.get("memberNameEn") or member.get("memberName") or member.get("name")
         )
         if isinstance(name, str) and name:
             names.append(name)

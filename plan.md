@@ -431,7 +431,7 @@ Acceptance criteria:
 
 ## Near-Term Slice
 
-Current active slice: tree model packaging and distribution readiness.
+Current active slice: StatCan/IPF usability follow-up.
 
 The StatCan/IPF usability slice is mostly complete for a first pass. The project
 now has a coherent public-data-to-IPF path:
@@ -466,6 +466,8 @@ Remaining StatCan/IPF follow-up backlog:
 
 - Improve WDS dimension/member inspection from metadata so `statcan wds explain`
   can preview candidate dimensions and members before downloading a ZIP.
+  Status: first pass complete; `statcan wds explain` now includes bounded
+  dimension/member previews and an IPF suitability status from WDS metadata.
 - Add common mapping presets for recurring StatCan categories such as age, sex,
   geography, household size, and tenure when stable labels are available.
 - Add optional live smoke tests against one or two public WDS tables when
@@ -475,7 +477,7 @@ Remaining StatCan/IPF follow-up backlog:
 - Add richer reports for inconsistent controls and whole-run non-convergence
   patterns.
 
-Next active tree model packaging/distribution slice:
+Completed tree model packaging/distribution first pass:
 
 1. Define a clear publishable model package manifest for linked household/person
    models, including source description, geography scope, target profile,

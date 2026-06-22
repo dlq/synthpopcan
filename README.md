@@ -399,7 +399,7 @@ User story for finding a WDS table ID:
 2. The user runs `synthpopcan statcan wds search "TOPIC WORDS" --limit 10`.
 3. The CLI prints matching WDS tables with product ID, CANSIM ID when available, date range, and English title.
 4. The user runs `synthpopcan statcan wds explain PRODUCT_ID`.
-5. The CLI summarizes the dimensions, date range, whether the table looks plausible for IPF controls, and the next commands.
+5. The CLI summarizes the dimensions, previews a few member labels, reports whether the table looks plausible for IPF controls, and prints the next commands.
 6. The user runs `synthpopcan statcan wds fetch PRODUCT_ID --out-dir ...`.
 7. If the table is not suitable as a margin table, the later normalization step should fail with a clear explanation of which dimensions or measures are missing.
 
