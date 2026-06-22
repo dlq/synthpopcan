@@ -1,7 +1,7 @@
 # SynthPopCan Plan
 
 Status: working roadmap  
-Last updated: 2026-06-21
+Last updated: 2026-06-22
 
 ## Goal
 
@@ -425,32 +425,67 @@ Acceptance criteria:
 
 ## Near-Term Slice
 
-Current active slice: StatCan/IPF usability.
+Current active slice: tree model packaging and distribution readiness.
 
-The original near-term computational core is complete: typed controls and seed
-samples, local source inspection, `controls from-csv`, and the first IPF engine
-are all in place. The next work should make the public-data-to-IPF path easier
-for non-specialist users:
+The StatCan/IPF usability slice is mostly complete for a first pass. The project
+now has a coherent public-data-to-IPF path:
 
-1. Add helper commands that inspect downloaded StatCan WDS tables and suggest
-   starter `controls from-wds` settings. Status: first `controls wds inspect`
-   helper added for local WDS ZIPs.
-2. Improve the WDS metadata/search path so users can choose plausible product
-   IDs and understand whether a table has useful dimensions before downloading.
-   Status: first `statcan wds explain` helper added for product-ID summaries,
-   IPF suitability hints, and next commands.
-3. Add starter mapping/template helpers for common StatCan dimensions such as
-   age, sex, geography, and household structure where stable labels exist.
-   Status: first generic `controls wds mapping-template` helper added for
-   observed WDS categories in selected dimensions.
-4. Make `ipf check-inputs` the expected next step after control normalization,
-   with clearer category-mismatch guidance for humanities users. Status: first
-   `suggested_next_steps` guidance added for missing seed columns and category
-   mismatches, including WDS mapping-template hints.
-5. Keep README examples short and move reproducible walkthroughs into
-   `docs/workflows/`. Status: WDS-to-IPF fixture workflow added to verify
-   mapping-template, mapped WDS controls, input checks, fitting, and validation
-   compose end to end.
+```bash
+synthpopcan statcan wds search ...
+synthpopcan statcan wds explain PRODUCT_ID
+synthpopcan statcan wds fetch PRODUCT_ID --out-dir data/raw/statcan/wds
+synthpopcan controls wds inspect TABLE.zip
+synthpopcan controls wds mapping-template TABLE.zip --dimensions ... --out categories.json
+synthpopcan controls from-wds TABLE.zip --mapping categories.json --out controls.csv
+synthpopcan ipf check-inputs --seed seed.csv --controls controls.csv
+synthpopcan ipf fit --seed seed.csv --controls controls.csv --out weights.csv --report fit-report.json
+synthpopcan validate controls --population weights.csv --controls controls.csv --kind weights
+```
+
+Completed StatCan/IPF usability work:
+
+1. `controls wds inspect` inspects downloaded WDS ZIPs and suggests starter
+   `controls from-wds` settings.
+2. `statcan wds explain` summarizes a product ID, reports available dimensions,
+   gives an IPF suitability hint, and prints next commands.
+3. `controls wds mapping-template` writes a starter category mapping JSON from
+   observed WDS labels in selected dimensions.
+4. `ipf check-inputs` includes `suggested_next_steps` for missing seed columns
+   and category mismatches, including WDS mapping-template hints.
+5. `docs/workflows/microdata-to-ipf.md` includes a tracked WDS-to-IPF fixture
+   workflow that verifies mapping-template, mapped WDS controls, input checks,
+   fitting, and validation compose end to end.
+
+Remaining StatCan/IPF follow-up backlog:
+
+- Improve WDS dimension/member inspection from metadata so `statcan wds explain`
+  can preview candidate dimensions and members before downloading a ZIP.
+- Add common mapping presets for recurring StatCan categories such as age, sex,
+  geography, household size, and tenure when stable labels are available.
+- Add optional live smoke tests against one or two public WDS tables when
+  network access is explicitly enabled.
+- Explore NumPy, Polars, PyArrow, or sparse-array implementations after the
+  pure-Python indexed fitter remains stable under more realistic controls.
+- Add richer reports for inconsistent controls and whole-run non-convergence
+  patterns.
+
+Next active tree model packaging/distribution slice:
+
+1. Define a clear publishable model package manifest for linked household/person
+   models, including source description, geography scope, target profile,
+   training parameters, audit thresholds, model sizes, release class, warnings,
+   and human review notes.
+2. Add a release-readiness report that can be run before packaging Canada,
+   province/territory, and large-CMA model candidates. It should explain whether
+   the candidate is likely publishable, likely private-only, or needs pruning,
+   coarsening, aggregation, or review.
+3. Make the release workflow explicitly separate private working models from
+   publishable candidates, so users cannot accidentally distribute models that
+   have not passed disclosure-risk checks.
+4. Add fixture tests for a linked model package manifest and release-readiness
+   report before running more full-data candidate-model experiments.
+5. Keep the web app boundary intact: the first web app consumes prepared model
+   artifacts and does not expose training from restricted microdata.
 
 ## Deferred Work
 
@@ -468,7 +503,7 @@ Other deferred work:
 - School, healthcare, and food-access enrichment.
 - Scenario simulation.
 - Privacy risk assessment for generated outputs.
-- Sphinx and Read the Docs setup once the core CLI workflows are stable enough to document.
+- Documentation site expansion, API reference, and hosted Read the Docs polish.
 - Project icon and lightweight visual identity for the eventual docs site and web app.
 - Packaging and publishing.
 
