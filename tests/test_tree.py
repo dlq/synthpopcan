@@ -954,6 +954,62 @@ def test_cli_trains_linked_models_from_suggested_blocks(tmp_path) -> None:
     assert manifest["models"]["person"]["path"] == str(person_model_path)
 
 
+def test_cli_trains_linked_models_with_geography_and_minimal_profile(tmp_path) -> None:
+    source = tmp_path / "hierarchical.csv"
+    household_model_path = tmp_path / "household-model.json"
+    person_model_path = tmp_path / "person-model.json"
+    manifest_path = tmp_path / "linked-training-manifest.json"
+    source.write_text(
+        "HH_ID,EF_ID,CF_ID,PP_ID,WEIGHT,PR,TENUR,DTYPE,ROOM,BEDRM,CONDO,"
+        "PRESMORTG,VALUE,SHELCO,SUBSIDY,REPAIR,BUILT,AGEGRP,SEX,MarStH,IMMSTAT\n"
+        "1,11,111,11101,1,24,owner,detached,6,3,no,yes,500000,1200,no,"
+        "regular,1991,adult,F,married,non_immigrant\n"
+        "2,21,211,21101,1,11,renter,apartment,4,2,yes,no,0,900,no,"
+        "regular,2001,adult,F,single,immigrant\n"
+    )
+
+    assert (
+        main(
+            [
+                "tree",
+                "train-linked",
+                str(source),
+                "--input-format",
+                "statcan-2016-hierarchical",
+                "--suggested-blocks",
+                "--geography-column",
+                "PR",
+                "--geography-value",
+                "11",
+                "--target-profile",
+                "minimal",
+                "--household-model-out",
+                str(household_model_path),
+                "--person-model-out",
+                str(person_model_path),
+                "--manifest-out",
+                str(manifest_path),
+                "--min-support",
+                "1",
+            ]
+        )
+        == 0
+    )
+
+    household_model = json.loads(household_model_path.read_text())
+    person_model = json.loads(person_model_path.read_text())
+    manifest = json.loads(manifest_path.read_text())
+
+    assert household_model["records_trained"] == 1
+    assert household_model["spec"]["target_columns"] == ["household_size", "TENUR"]
+    assert person_model["records_trained"] == 1
+    assert person_model["spec"]["target_columns"] == ["AGEGRP", "SEX"]
+    assert manifest["target_profile"] == "minimal"
+    assert manifest["geography_filter"] == {"column": "PR", "value": "11"}
+    assert manifest["source"]["records"] == 1
+    assert manifest["source"]["households"] == 1
+
+
 def test_generates_linked_households_and_persons() -> None:
     household_model = train_frequency_model_from_rows(
         TreeModelSpec(

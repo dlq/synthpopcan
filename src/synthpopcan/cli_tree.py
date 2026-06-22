@@ -11,8 +11,13 @@ import click
 from synthpopcan.cli_output import write_output
 from synthpopcan.console import print_wrote
 from synthpopcan.microdata import (
+    SeedSample,
     export_training_rows,
+    minimal_household_targets,
+    minimal_person_targets,
     read_statcan_2016_hierarchical_seed_sample,
+    reduced_household_targets,
+    reduced_person_targets,
     resolve_tree_column_block_pair,
 )
 from synthpopcan.tree import (
@@ -150,6 +155,23 @@ def train_tree_generator(
     help="Suggested person block to train.",
 )
 @click.option(
+    "--geography-column",
+    default=None,
+    help="Optional source geography column to filter before training, such as PR.",
+)
+@click.option(
+    "--geography-value",
+    default=None,
+    help="Optional source geography value to train, such as 24 or 11.",
+)
+@click.option(
+    "--target-profile",
+    default="full",
+    type=click.Choice(["full", "reduced", "minimal"]),
+    show_default=True,
+    help="Target set to train from the suggested blocks.",
+)
+@click.option(
     "--household-model-out",
     required=True,
     type=PATH,
@@ -184,6 +206,9 @@ def train_linked_tree_generator(
     suggested_blocks: bool,
     household_block: str,
     person_block: str,
+    geography_column: str | None,
+    geography_value: str | None,
+    target_profile: str,
     household_model_out: Path,
     person_model_out: Path,
     manifest_out: Path,
@@ -203,6 +228,11 @@ def train_linked_tree_generator(
         )
     try:
         sample = read_statcan_2016_hierarchical_seed_sample(source)
+        sample = filter_training_sample_by_geography(
+            sample,
+            geography_column=geography_column,
+            geography_value=geography_value,
+        )
         (
             household_target_columns,
             household_conditioning_columns,
@@ -213,6 +243,11 @@ def train_linked_tree_generator(
             sample,
             household_block=household_block,
             person_block=person_block,
+        )
+        household_target_columns, person_target_columns = apply_target_profile(
+            household_target_columns=household_target_columns,
+            person_target_columns=person_target_columns,
+            target_profile=target_profile,
         )
         household_rows, household_export = export_training_rows(
             sample,
@@ -267,6 +302,11 @@ def train_linked_tree_generator(
                 "households": sample.metadata.get("households", 0),
             },
             "column_source": column_source,
+            "target_profile": target_profile,
+            "geography_filter": geography_filter_manifest(
+                geography_column,
+                geography_value,
+            ),
             "method": method,
             "random_seed": random_seed,
             "training": {
@@ -669,6 +709,75 @@ def release_blocking_issues(audit: dict[str, object]) -> list[dict[str, object]]
         if isinstance(issue, dict)
         and issue.get("kind") != "private_working_release_class"
     ]
+
+
+def filter_training_sample_by_geography(
+    sample: SeedSample,
+    *,
+    geography_column: str | None,
+    geography_value: str | None,
+) -> SeedSample:
+    if geography_column is None and geography_value is None:
+        return sample
+    if not geography_column or geography_value is None:
+        raise ValueError(
+            "geography-column and geography-value must be provided together"
+        )
+    if geography_column not in sample.columns:
+        raise ValueError(f"missing required columns: {geography_column}")
+    records = tuple(
+        record
+        for record in sample.records
+        if record.get(geography_column) == geography_value
+    )
+    if not records:
+        raise ValueError(f"no records matched {geography_column}={geography_value}")
+    household_ids = {record["HH_ID"] for record in records if record.get("HH_ID")}
+    return replace(
+        sample,
+        records=records,
+        metadata={
+            **sample.metadata,
+            "households": len(household_ids),
+            "people": len(records),
+            "geography_filter": {
+                "column": geography_column,
+                "value": geography_value,
+            },
+        },
+    )
+
+
+def apply_target_profile(
+    *,
+    household_target_columns: tuple[str, ...],
+    person_target_columns: tuple[str, ...],
+    target_profile: str,
+) -> tuple[tuple[str, ...], tuple[str, ...]]:
+    if target_profile == "full":
+        return household_target_columns, person_target_columns
+    if target_profile == "reduced":
+        return (
+            tuple(reduced_household_targets(household_target_columns)),
+            tuple(reduced_person_targets(person_target_columns)),
+        )
+    return (
+        tuple(minimal_household_targets(household_target_columns)),
+        tuple(minimal_person_targets(person_target_columns)),
+    )
+
+
+def geography_filter_manifest(
+    geography_column: str | None,
+    geography_value: str | None,
+) -> dict[str, str] | None:
+    if geography_column is None and geography_value is None:
+        return None
+    if not geography_column or geography_value is None:
+        raise ValueError(
+            "geography-column and geography-value must be provided together"
+        )
+    return {"column": geography_column, "value": geography_value}
 
 
 def validate_linked_model_package_inputs(

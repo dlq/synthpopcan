@@ -62,6 +62,51 @@ returns a model-design recommendation for each geography:
 A `likely` geography is a candidate for training and audit; it still needs the
 normal model audit and release workflow.
 
+The recommendations are directly actionable with `tree train-linked`. For a
+likely geography, train the requested blocks:
+
+```bash
+synthpopcan tree train-linked hierarchical.csv \
+  --input-format statcan-2016-hierarchical \
+  --suggested-blocks \
+  --geography-column PR \
+  --geography-value 24 \
+  --target-profile full \
+  --household-model-out household-pr24.json \
+  --person-model-out person-pr24.json \
+  --manifest-out linked-training-pr24.manifest.json
+```
+
+For a borderline geography, start with a reduced target profile:
+
+```bash
+synthpopcan tree train-linked hierarchical.csv \
+  --input-format statcan-2016-hierarchical \
+  --suggested-blocks \
+  --geography-column PR \
+  --geography-value 10 \
+  --target-profile reduced \
+  --household-model-out household-pr10-reduced.json \
+  --person-model-out person-pr10-reduced.json \
+  --manifest-out linked-training-pr10-reduced.manifest.json
+```
+
+For a small province or territory that the advisor marks unlikely, use a minimal
+profile only as a cautious local experiment, and prefer an aggregate model for
+distribution:
+
+```bash
+synthpopcan tree train-linked hierarchical.csv \
+  --input-format statcan-2016-hierarchical \
+  --suggested-blocks \
+  --geography-column PR \
+  --geography-value 11 \
+  --target-profile minimal \
+  --household-model-out household-pr11-minimal.json \
+  --person-model-out person-pr11-minimal.json \
+  --manifest-out linked-training-pr11-minimal.manifest.json
+```
+
 ## 3. Train Linked Models
 
 Use `tree train-linked` when you have the mixed hierarchical microdata file and
