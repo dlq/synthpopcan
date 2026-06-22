@@ -696,6 +696,17 @@ def linked_tree_release_readiness_command(
     "--household-model", required=True, type=PATH, help="Household model JSON."
 )
 @click.option("--person-model", required=True, type=PATH, help="Person model JSON.")
+@click.option(
+    "--training-manifest",
+    type=PATH,
+    default=None,
+    help="Optional linked tree training manifest JSON for provenance.",
+)
+@click.option(
+    "--review-note",
+    default="",
+    help="Short human review note to store in the linked package.",
+)
 @click.option("--out", "out_path", required=True, type=PATH)
 @click.option(
     "--household-size-column",
@@ -708,6 +719,8 @@ def linked_tree_release_readiness_command(
 def package_linked_tree_models_command(
     household_model: Path,
     person_model: Path,
+    training_manifest: Path | None,
+    review_note: str,
     out_path: Path,
     household_size_column: str,
     min_support: float,
@@ -732,6 +745,7 @@ def package_linked_tree_models_command(
             min_support=min_support,
             max_purity=max_purity,
         )
+        training_provenance = read_linked_training_manifest(training_manifest)
     except ValueError as exc:
         raise click.ClickException(str(exc)) from exc
     if household_audit["issues"] or person_audit["issues"]:
@@ -744,6 +758,22 @@ def package_linked_tree_models_command(
         "schema_version": "synthpopcan-linked-tree-package-v1",
         "package_type": "linked_household_person",
         "household_size_column": household_size_column,
+        "review_note": review_note,
+        "thresholds": {
+            "min_support": min_support,
+            "max_purity": max_purity,
+        },
+        "training_manifest": training_provenance,
+        "model_summaries": {
+            "household": {
+                **model_manifest(household_model_payload, household_model),
+                "bytes": household_model.stat().st_size,
+            },
+            "person": {
+                **model_manifest(person_model_payload, person_model),
+                "bytes": person_model.stat().st_size,
+            },
+        },
         "models": {
             "household": household_model_payload.to_dict(),
             "person": person_model_payload.to_dict(),

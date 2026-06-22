@@ -219,6 +219,8 @@ method, random seed, and household/person training summaries.
 synthpopcan tree package-linked-models \
   --household-model household-model-publishable.json \
   --person-model person-model-publishable.json \
+  --training-manifest linked-training.manifest.json \
+  --review-note "Reviewed for release after readiness report." \
   --out linked-model-package.json \
   --min-support 50 \
   --max-purity 0.95
@@ -227,7 +229,9 @@ synthpopcan tree package-linked-models \
 Packaging is intentionally strict. It refuses models that still have warnings or
 errors, validates that the household model is a household model, validates that
 the person model is a person model, checks the household-size linkage column, and
-embeds both audit reports in the package.
+embeds both audit reports in the package. When provided, the final package also
+includes the training-manifest provenance, model summaries with file sizes,
+audit thresholds, and the human review note.
 
 These checks do not prove that a model is absolutely privacy safe. They are a
 guardrail so a prepared package carries model provenance, release metadata, and a

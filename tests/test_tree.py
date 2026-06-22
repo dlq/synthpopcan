@@ -696,9 +696,32 @@ def test_cli_packages_publishable_linked_models(tmp_path) -> None:
     )
     household_model_path = tmp_path / "household-model.json"
     person_model_path = tmp_path / "person-model.json"
+    training_manifest_path = tmp_path / "linked-training-manifest.json"
     package_path = tmp_path / "linked-model-package.json"
     write_tree_model(household_model_path, household_model)
     write_tree_model(person_model_path, person_model)
+    training_manifest_path.write_text(
+        json.dumps(
+            {
+                "schema_version": "synthpopcan-linked-tree-training-v1",
+                "source": {
+                    "path": "data/private/census/hierarchical.csv",
+                    "source_format": "statcan-2016-hierarchical",
+                    "records": 100,
+                    "households": 40,
+                },
+                "target_profile": "minimal",
+                "geography_filter": {"column": "PR", "value": "24"},
+                "method": "conditional-frequency",
+                "random_seed": 7,
+                "training": {
+                    "household": {"records": 40},
+                    "person": {"records": 100},
+                },
+            }
+        )
+        + "\n"
+    )
 
     assert (
         main(
@@ -709,6 +732,10 @@ def test_cli_packages_publishable_linked_models(tmp_path) -> None:
                 str(household_model_path),
                 "--person-model",
                 str(person_model_path),
+                "--training-manifest",
+                str(training_manifest_path),
+                "--review-note",
+                "reviewed fixture package",
                 "--out",
                 str(package_path),
                 "--min-support",
@@ -724,6 +751,16 @@ def test_cli_packages_publishable_linked_models(tmp_path) -> None:
     assert package["schema_version"] == "synthpopcan-linked-tree-package-v1"
     assert package["package_type"] == "linked_household_person"
     assert package["household_size_column"] == "household_size"
+    assert package["review_note"] == "reviewed fixture package"
+    assert package["thresholds"] == {"min_support": 1.0, "max_purity": 1.0}
+    assert package["training_manifest"]["path"] == str(training_manifest_path)
+    assert package["training_manifest"]["target_profile"] == "minimal"
+    assert package["training_manifest"]["geography_filter"] == {
+        "column": "PR",
+        "value": "24",
+    }
+    assert package["model_summaries"]["household"]["bytes"] > 0
+    assert package["model_summaries"]["person"]["bytes"] > 0
     assert package["models"]["household"]["spec"]["level"] == "household"
     assert package["models"]["person"]["spec"]["level"] == "person"
     assert package["audits"]["household"]["passed"] is True
