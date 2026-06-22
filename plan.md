@@ -354,7 +354,7 @@ Model distribution and privacy-release design:
 - Support two model artifact modes:
   - Private working models: trained locally from restricted microdata, useful for experimentation, and not marked as publishable.
   - Publishable models: packaged only after passing SynthPopCan disclosure-risk checks, with no raw source records and clear provenance metadata.
-- Add release-oriented commands such as `synthpopcan tree audit-model ...` and `synthpopcan tree package-model ... --require-privacy-pass` before encouraging public model sharing.
+- Use release-oriented commands such as `synthpopcan tree audit-model ...`, `synthpopcan tree prepare-model-release ...`, `synthpopcan tree release-readiness ...`, and `synthpopcan tree package-linked-models ...` before encouraging public model sharing.
 - A trained model from restricted microdata is not automatically safe to publish just because it is a model. The tool should make accidental publication of a leaky model difficult.
 - Privacy checks for publishable model artifacts should include:
   - No raw rows, source identifiers, household identifiers, bootstrap sample indices, cached training data, or debug example records stored in the package.
@@ -374,17 +374,20 @@ Make the CLI useful for actual work before the web app starts.
 Initial command families:
 
 ```bash
-synthpopcan sources inspect ...
-synthpopcan controls validate ...
-synthpopcan controls from-csv ...
-synthpopcan controls from-wds ...
-synthpopcan controls from-census-profile ...
-synthpopcan ipf fit ...
-synthpopcan ipf expand ...
-synthpopcan microdata inspect ...
-synthpopcan tree train ...
-synthpopcan tree generate ...
-synthpopcan validate ...
+synthpopcan data doctor
+synthpopcan sources inspect ROOT
+synthpopcan controls validate controls.csv
+synthpopcan controls from-csv SOURCE --out controls.csv
+synthpopcan controls from-wds SOURCE.zip --dimensions "GEO,Age group,Sex" --count-column VALUE --out controls.csv
+synthpopcan controls from-census-profile PROFILE.csv --mapping census-profile-mapping.json --out controls.csv
+synthpopcan ipf check-inputs --seed seed.csv --controls controls.csv
+synthpopcan ipf fit --seed seed.csv --controls controls.csv --out weights.csv --report fit-report.json
+synthpopcan ipf expand --weights weights.csv --out synthetic.csv
+synthpopcan microdata inspect hierarchical.csv --input-format statcan-2016-hierarchical
+synthpopcan tree train training.csv --level person --target-columns AGEGRP,SEX --conditioning-columns TENUR,household_size --out person-model.json
+synthpopcan tree generate person-model.json --rows 100 --out synthetic-persons.csv
+synthpopcan validate controls --population weights.csv --controls controls.csv --kind weights
+synthpopcan validate linked-output --households synthetic-households.csv --persons synthetic-persons.csv
 ```
 
 Acceptance criteria:

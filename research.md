@@ -185,7 +185,7 @@ Relevance:
 
 Design implication:
 
-- Use PopulationSim as a benchmark for user ergonomics: `synthpopcan run -c config -d data -o output`.
+- Use PopulationSim as a benchmark for future configuration-driven ergonomics. A possible later command shape would be `synthpopcan run -c config -d data -o output`; this is not part of the current CLI.
 - Do not clone its model wholesale unless the Canadian PUMF/profile constraints fit cleanly. The Canadian household/person linkage problem and 2016 Census profile format justify a narrower custom core.
 
 ### Tree-Based Synthetic Microdata
@@ -303,12 +303,23 @@ Design implications for SynthPopCan:
   province-level models are the first plausible publishable targets. Smaller
   geographies should fail by default until support thresholds and rare-linked
   signature checks show that release risk is acceptable.
-- The CLI should make this workflow explicit:
+- The current CLI makes this workflow explicit with audit and packaging gates:
 
 ```bash
-synthpopcan tree train ...
-synthpopcan tree audit-model model.spcmodel --training-sample private.csv
-synthpopcan tree package-model model.spcmodel --require-privacy-pass
+synthpopcan tree train training.csv \
+  --level person \
+  --target-columns AGEGRP,SEX \
+  --conditioning-columns TENUR,household_size \
+  --out person-model.json
+
+synthpopcan tree audit-model person-model.json \
+  --min-support 50 \
+  --max-purity 0.95
+
+synthpopcan tree prepare-model-release person-model.json \
+  --out person-model-publishable.json \
+  --manifest-out person-model-release.manifest.json \
+  --review-note "Reviewed for minimum support, purity, and raw-row metadata."
 ```
 
 The public-facing claim should be deliberately narrow: a publishable model has
@@ -500,20 +511,25 @@ Storage choices:
 
 ### CLI
 
-Suggested commands:
+Current implemented command families include:
 
 ```bash
-synthpopcan statcan download --product-id ... --out data/raw
-synthpopcan census normalize-profile --input ... --geo-level ct --out data/normalized
-synthpopcan pumf normalize --input ... --dictionary ... --out data/normalized
-synthpopcan ipf fit --controls controls.yaml --seed seed.parquet --out runs/run_id
-synthpopcan synth realize --fit runs/run_id/fit.parquet --method integerize --out runs/run_id
-synthpopcan tree train --config tree.yaml --pumf data/normalized/pumf.parquet --out models/tree
-synthpopcan tree synthesize --model models/tree --controls controls.yaml --geo ... --out runs/run_id
-synthpopcan validate --population runs/run_id --controls controls.yaml --out runs/run_id/report
+synthpopcan statcan wds search "population dwelling"
+synthpopcan statcan wds explain PRODUCT_ID
+synthpopcan statcan wds fetch PRODUCT_ID --out-dir data/raw/statcan/wds
+synthpopcan statcan census-profile fetch --year 2016 --geo-level pt --out-dir data/raw/statcan/census-profile/2016
+synthpopcan controls from-wds TABLE.zip --dimensions "GEO,Age group,Sex" --count-column VALUE --out controls.csv
+synthpopcan controls from-census-profile PROFILE.csv --mapping census-profile-mapping.json --out controls.csv
+synthpopcan microdata export-seed hierarchical.csv --input-format statcan-2016-hierarchical --columns AGEGRP,SEX --out seed.csv
+synthpopcan ipf fit --controls controls.csv --seed seed.csv --out weights.csv --report fit-report.json
+synthpopcan ipf expand --weights weights.csv --out synthetic.csv
+synthpopcan tree train-linked hierarchical.csv --suggested-blocks --household-model-out household-model.json --person-model-out person-model.json --manifest-out linked-training.manifest.json
+synthpopcan tree generate-from-package linked-model-package.json --households 1000 --households-out synthetic-households.csv --persons-out synthetic-persons.csv
+synthpopcan validate controls --population weights.csv --controls controls.csv --kind weights
+synthpopcan validate linked-output --households synthetic-households.csv --persons synthetic-persons.csv
 ```
 
-The CLI should treat configs as first-class artifacts so every run is reproducible.
+Future configuration-driven commands may still be useful, but they should be introduced after the explicit CSV/JSON workflow remains stable. The CLI should eventually treat configs as first-class artifacts so every run is reproducible.
 
 ### Web App
 
