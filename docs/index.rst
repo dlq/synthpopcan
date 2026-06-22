@@ -14,3 +14,4 @@ settling. The repository root ``README.md`` remains the short project overview.
 
    workflows/microdata-to-ipf
    workflows/microdata-to-tree
+   workflows/model-output-to-ipf

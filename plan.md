@@ -540,11 +540,23 @@ Remaining StatCan/IPF follow-up backlog:
   outputs as IPF seed rows: `tree generate-from-package`, `ipf check-inputs`,
   `ipf fit`, `ipf expand`, and `validate controls`. This should document that
   IPF calibrates columns already present on generated rows and does not create
-  missing variables.
+  missing variables. Status: first tracked workflow test and docs page added for
+  household-level calibration from a linked model package.
 - Plan a later enrichment workflow for useful StatCan dimensions that are not
   present in the microdata/model output. The immediate goal is naming,
   provenance, and user guidance; implementation can wait until the core
   generate-then-calibrate path is stable.
+- Add calibration-control guidance for model outputs. Users need help deciding
+  which StatCan margin tables should calibrate generated household/person rows.
+  Candidate controls should be recommended only when their dimensions exist on
+  the generated rows, their geography matches the model scope, their universe
+  matches the generated unit, categories can be mapped cleanly, totals are
+  internally consistent, and the controls are worth fitting rather than merely
+  validating. A future helper such as `ipf suggest-controls --seed ...` could
+  inspect generated columns, report usable controls, flag missing/enrichment
+  candidates, separate likely household controls from person controls, and warn
+  about sparse or overly detailed StatCan cross-tabs. Keep final table choice
+  reviewable by the user.
 
 Completed tree model packaging/distribution first pass:
 

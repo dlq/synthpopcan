@@ -1,10 +1,17 @@
 import csv
 import json
 import shutil
+from dataclasses import replace
 from pathlib import Path
 from zipfile import ZipFile
 
 from synthpopcan.cli import main
+from synthpopcan.tree import (
+    TreeModelSpec,
+    TreeTrainingSample,
+    train_frequency_model,
+    write_tree_model,
+)
 
 
 def test_microdata_seed_to_validated_ipf_weights_workflow(
@@ -433,3 +440,293 @@ def test_tracked_microdata_tree_tutorial_fixture_workflow(
     report = json.loads(capsys.readouterr().out)
     assert report["passed"] is True
     assert report["artifact_kind"] == "tree-output"
+
+
+def test_tracked_model_output_to_ipf_tutorial_fixture_workflow(
+    tmp_path: Path,
+    capsys,
+) -> None:
+    workflow_doc = Path("docs/workflows/model-output-to-ipf.md")
+    assert workflow_doc.exists()
+    workflow_text = workflow_doc.read_text()
+    assert "IPF cannot create missing variables" in workflow_text
+    assert "tree generate-from-package" in workflow_text
+    assert "ipf check-inputs" in workflow_text
+
+    household_model_path, person_model_path = _write_publishable_linked_models(tmp_path)
+    training_manifest_path = tmp_path / "linked-training-manifest.json"
+    source_provenance_path = tmp_path / "source-provenance.json"
+    package_path = tmp_path / "linked-model-package.json"
+    households_path = tmp_path / "candidate-households.csv"
+    persons_path = tmp_path / "candidate-persons.csv"
+    controls_path = tmp_path / "household-controls.csv"
+    weights_path = tmp_path / "calibrated-household-weights.csv"
+    expanded_path = tmp_path / "calibrated-households.csv"
+    fit_report_path = tmp_path / "fit-report.json"
+
+    _write_linked_training_manifest(
+        training_manifest_path,
+        household_model_path=household_model_path,
+        person_model_path=person_model_path,
+    )
+    _write_source_provenance(source_provenance_path)
+    controls_path.write_text("margin,dimensions,tenure,count\nhousing,tenure,owner,6\n")
+
+    assert (
+        main(
+            [
+                "tree",
+                "package-linked-models",
+                "--household-model",
+                str(household_model_path),
+                "--person-model",
+                str(person_model_path),
+                "--training-manifest",
+                str(training_manifest_path),
+                "--source-provenance",
+                str(source_provenance_path),
+                "--review-note",
+                "reviewed fixture package for workflow test",
+                "--out",
+                str(package_path),
+                "--min-support",
+                "1",
+                "--max-purity",
+                "1",
+            ]
+        )
+        == 0
+    )
+    capsys.readouterr()
+
+    assert (
+        main(
+            [
+                "tree",
+                "generate-from-package",
+                str(package_path),
+                "--households",
+                "3",
+                "--condition",
+                "geo=QC",
+                "--households-out",
+                str(households_path),
+                "--persons-out",
+                str(persons_path),
+                "--random-seed",
+                "11",
+            ]
+        )
+        == 0
+    )
+    capsys.readouterr()
+
+    assert (
+        main(
+            [
+                "validate",
+                "linked-output",
+                "--households",
+                str(households_path),
+                "--persons",
+                str(persons_path),
+                "--format",
+                "json",
+            ]
+        )
+        == 0
+    )
+    linked_report = json.loads(capsys.readouterr().out)
+    assert linked_report["passed"] is True
+
+    assert (
+        main(
+            [
+                "ipf",
+                "check-inputs",
+                "--seed",
+                str(households_path),
+                "--controls",
+                str(controls_path),
+                "--format",
+                "json",
+            ]
+        )
+        == 0
+    )
+    input_report = json.loads(capsys.readouterr().out)
+    assert input_report["passed"] is True
+    assert input_report["suggested_next_steps"] == []
+
+    assert (
+        main(
+            [
+                "ipf",
+                "fit",
+                "--seed",
+                str(households_path),
+                "--controls",
+                str(controls_path),
+                "--out",
+                str(weights_path),
+                "--report",
+                str(fit_report_path),
+            ]
+        )
+        == 0
+    )
+    capsys.readouterr()
+    assert json.loads(fit_report_path.read_text())["converged"] is True
+
+    assert (
+        main(
+            [
+                "ipf",
+                "expand",
+                "--weights",
+                str(weights_path),
+                "--out",
+                str(expanded_path),
+            ]
+        )
+        == 0
+    )
+    capsys.readouterr()
+
+    assert (
+        main(
+            [
+                "validate",
+                "controls",
+                "--population",
+                str(expanded_path),
+                "--controls",
+                str(controls_path),
+                "--kind",
+                "expanded",
+                "--format",
+                "json",
+            ]
+        )
+        == 0
+    )
+    validation_report = json.loads(capsys.readouterr().out)
+    expanded_rows = list(csv.DictReader(expanded_path.open(newline="")))
+    assert validation_report["passed"] is True
+    assert len(expanded_rows) == 6
+    assert {row["tenure"] for row in expanded_rows} == {"owner"}
+
+
+def _write_publishable_linked_models(tmp_path: Path) -> tuple[Path, Path]:
+    household_model = replace(
+        _train_frequency_model_from_rows(
+            TreeModelSpec(
+                level="household",
+                target_columns=("household_size", "tenure"),
+                conditioning_columns=("geo",),
+                geography_column="geo",
+            ),
+            rows=(
+                {
+                    "geo": "QC",
+                    "household_size": "2",
+                    "tenure": "owner",
+                },
+            ),
+        ),
+        release_class="publishable_candidate",
+    )
+    person_model = replace(
+        _train_frequency_model_from_rows(
+            TreeModelSpec(
+                level="person",
+                target_columns=("age_group", "sex"),
+                conditioning_columns=("geo", "household_size", "tenure"),
+                geography_column="geo",
+            ),
+            rows=(
+                {
+                    "geo": "QC",
+                    "household_size": "2",
+                    "tenure": "owner",
+                    "age_group": "adult",
+                    "sex": "F",
+                },
+            ),
+        ),
+        release_class="publishable_candidate",
+    )
+    household_model_path = tmp_path / "household-model.json"
+    person_model_path = tmp_path / "person-model.json"
+    write_tree_model(household_model_path, household_model)
+    write_tree_model(person_model_path, person_model)
+    return household_model_path, person_model_path
+
+
+def _train_frequency_model_from_rows(
+    spec: TreeModelSpec,
+    *,
+    rows: tuple[dict[str, str], ...],
+):
+    source = TreeTrainingSample(
+        level=spec.level,
+        source_format="csv-v1",
+        records=rows,
+        columns=(*spec.conditioning_columns, *spec.target_columns),
+        target_columns=spec.target_columns,
+        conditioning_columns=spec.conditioning_columns,
+        geography_column=spec.geography_column,
+        weight_column=spec.weight_column,
+    )
+    return train_frequency_model(source, random_seed=spec.random_seed)
+
+
+def _write_linked_training_manifest(
+    path: Path,
+    *,
+    household_model_path: Path,
+    person_model_path: Path,
+) -> None:
+    path.write_text(
+        json.dumps(
+            {
+                "schema_version": "synthpopcan-linked-tree-training-v1",
+                "source": {
+                    "path": "data/private/census/hierarchical.csv",
+                    "source_format": "statcan-2016-hierarchical",
+                    "records": 100,
+                    "households": 40,
+                },
+                "target_profile": "minimal",
+                "geography_filter": {"column": "PR", "value": "24"},
+                "method": "conditional-frequency",
+                "random_seed": 7,
+                "training": {
+                    "household": {"records": 40},
+                    "person": {"records": 100},
+                },
+                "models": {
+                    "household": {"path": str(household_model_path)},
+                    "person": {"path": str(person_model_path)},
+                },
+            }
+        )
+        + "\n"
+    )
+
+
+def _write_source_provenance(path: Path) -> None:
+    path.write_text(
+        json.dumps(
+            {
+                "schema_version": "synthpopcan-source-provenance-v1",
+                "title": "2016 Census Public Use Microdata File, hierarchical",
+                "provider": "Statistics Canada",
+                "access_class": "restricted",
+                "citation": "Statistics Canada. 2016 Census PUMF, hierarchical.",
+                "redistribution_note": "Do not redistribute source microdata.",
+                "url": "https://www.statcan.gc.ca/",
+            }
+        )
+        + "\n"
+    )
