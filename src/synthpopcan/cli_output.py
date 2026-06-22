@@ -187,6 +187,40 @@ def print_validation_report_table(report: dict[str, object]) -> None:
     print_table(table)
 
 
+def print_tree_output_validation_report_table(report: dict[str, object]) -> None:
+    table = Table(title="Tree Output Distribution Check")
+    table.add_column("Dimensions")
+    table.add_column("Cells", justify="right")
+    table.add_column("Training", justify="right")
+    table.add_column("Generated", justify="right")
+    table.add_column("Max Delta", justify="right")
+
+    for row in report.get("comparisons", []):
+        if not isinstance(row, dict):
+            continue
+        table.add_row(
+            ", ".join(str(value) for value in row.get("dimensions", [])),
+            format_report_number(len(row.get("cells", []))),
+            format_report_number(row.get("training_total")),
+            format_report_number(row.get("generated_total")),
+            format_report_percent(row.get("max_abs_proportion_delta")),
+        )
+
+    print_summary_table(
+        {
+            "status": "Passed" if report.get("passed") else "Needs attention",
+            "artifact_kind": report.get("artifact_kind", ""),
+            "training_records": report.get("training_records", ""),
+            "generated_records": report.get("generated_records", ""),
+            "max_delta": format_report_percent(report.get("max_abs_proportion_delta")),
+            "tolerance": format_report_percent(report.get("tolerance")),
+        },
+        title="Tree Output Validation Summary",
+    )
+    print_issues_table(report.get("issues", []), title="Tree Output Issues")
+    print_table(table)
+
+
 def print_seed_check_table(report: dict[str, object]) -> None:
     print_summary_table(
         {

@@ -281,3 +281,30 @@ def test_tracked_microdata_tree_tutorial_fixture_workflow(
             "SEX": "F",
         },
     ]
+
+    assert (
+        main(
+            [
+                "validate",
+                "tree-output",
+                "--generated",
+                str(generated_path),
+                "--training",
+                str(training_path),
+                "--target-columns",
+                "AGEGRP,SEX",
+                "--conditioning-columns",
+                "TENUR,household_size",
+                "--weight-field",
+                "WEIGHT",
+                "--tolerance",
+                "0.5",
+                "--format",
+                "json",
+            ]
+        )
+        == 0
+    )
+    report = json.loads(capsys.readouterr().out)
+    assert report["passed"] is True
+    assert report["artifact_kind"] == "tree-output"

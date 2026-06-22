@@ -6,7 +6,10 @@ import pytest
 from click.exceptions import ClickException
 
 from synthpopcan.controls import read_control_table
-from synthpopcan.validation import build_control_validation_report
+from synthpopcan.validation import (
+    build_control_validation_report,
+    build_tree_output_validation_report,
+)
 
 
 def test_validates_weighted_rows_against_controls(tmp_path: Path) -> None:
@@ -181,6 +184,101 @@ def test_cli_validates_expanded_output(tmp_path: Path, capsys) -> None:
     assert report["passed"] is True
     assert report["artifact_kind"] == "expanded"
     assert report["population_records"] == 3
+
+
+def test_tree_output_validation_compares_target_distributions() -> None:
+    report = build_tree_output_validation_report(
+        training_rows=[
+            {"AGEGRP": "adult", "SEX": "F", "WEIGHT": "2"},
+            {"AGEGRP": "child", "SEX": "M", "WEIGHT": "1"},
+        ],
+        generated_rows=[
+            {"AGEGRP": "adult", "SEX": "F"},
+            {"AGEGRP": "adult", "SEX": "F"},
+            {"AGEGRP": "child", "SEX": "M"},
+        ],
+        target_columns=("AGEGRP", "SEX"),
+        conditioning_columns=(),
+        weight_field="WEIGHT",
+        tolerance=0.0,
+    )
+
+    assert report["passed"] is True
+    assert report["training_records"] == 2
+    assert report["generated_records"] == 3
+    assert report["max_abs_proportion_delta"] == 0.0
+    assert report["comparisons"][0]["dimensions"] == ["AGEGRP"]
+    assert report["comparisons"][2]["dimensions"] == ["AGEGRP", "SEX"]
+
+
+def test_tree_output_validation_flags_unknown_generated_categories() -> None:
+    report = build_tree_output_validation_report(
+        training_rows=[{"AGEGRP": "adult", "SEX": "F", "WEIGHT": "1"}],
+        generated_rows=[
+            {"AGEGRP": "adult", "SEX": "F"},
+            {"AGEGRP": "senior", "SEX": "F"},
+        ],
+        target_columns=("AGEGRP", "SEX"),
+        conditioning_columns=(),
+        weight_field="WEIGHT",
+        tolerance=0.2,
+    )
+
+    assert report["passed"] is False
+    assert report["issues"][0]["kind"] == "unknown_generated_category"
+    assert report["issues"][0]["dimensions"] == ["AGEGRP"]
+    assert report["issues"][0]["categories"] == {"AGEGRP": "senior"}
+
+
+def test_cli_validates_tree_output_as_json(tmp_path: Path, capsys) -> None:
+    from synthpopcan.cli import main
+
+    training_path = tmp_path / "person-training.csv"
+    generated_path = tmp_path / "synthetic-people.csv"
+    write_csv(
+        training_path,
+        ["AGEGRP", "SEX", "WEIGHT"],
+        [
+            {"AGEGRP": "adult", "SEX": "F", "WEIGHT": "2"},
+            {"AGEGRP": "child", "SEX": "M", "WEIGHT": "1"},
+        ],
+    )
+    write_csv(
+        generated_path,
+        ["synthetic_id", "AGEGRP", "SEX"],
+        [
+            {"synthetic_id": "1", "AGEGRP": "adult", "SEX": "F"},
+            {"synthetic_id": "2", "AGEGRP": "adult", "SEX": "F"},
+            {"synthetic_id": "3", "AGEGRP": "child", "SEX": "M"},
+        ],
+    )
+
+    assert (
+        main(
+            [
+                "validate",
+                "tree-output",
+                "--generated",
+                str(generated_path),
+                "--training",
+                str(training_path),
+                "--target-columns",
+                "AGEGRP,SEX",
+                "--weight-field",
+                "WEIGHT",
+                "--tolerance",
+                "0",
+                "--format",
+                "json",
+            ]
+        )
+        == 0
+    )
+
+    report = json.loads(capsys.readouterr().out)
+    assert report["passed"] is True
+    assert report["generated_records"] == 3
+    assert report["max_abs_proportion_delta"] == 0.0
 
 
 def write_csv(path: Path, fieldnames: list[str], rows: list[dict[str, str]]) -> None:

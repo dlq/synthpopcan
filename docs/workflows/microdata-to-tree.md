@@ -29,6 +29,14 @@ synthpopcan tree generate person-model.json \
   --condition TENUR=owner \
   --condition household_size=2 \
   --out synthetic-people.csv
+
+synthpopcan validate tree-output \
+  --generated synthetic-people.csv \
+  --training person-training.csv \
+  --target-columns AGEGRP,SEX \
+  --conditioning-columns TENUR,household_size \
+  --weight-field WEIGHT \
+  --tolerance 0.5
 ```
 
 The important boundary is the first command. The 2016 hierarchical PUMF-style source is one mixed person-row file with household identifiers and household context. `microdata export-training` derives the training view that `tree train` expects, including `household_size`.
@@ -48,3 +56,5 @@ synthpopcan tree train person-training.csv \
 ```
 
 CART model artifacts are JSON, not pickle files. They store tree structure, category metadata, class distributions, and disclosure-risk metadata, but not raw training rows.
+
+The validation step compares generated-row distributions against the derived training view. It reports target-column distributions, the joint target distribution, optional conditioning-column distributions, and generated category combinations that were not present in the training view. This tiny example generates only one conditioned subset, so it uses a loose tolerance; larger unfiltered runs should use a tighter tolerance.

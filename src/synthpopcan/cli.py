@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import csv
 import json
 import os
 from pathlib import Path
@@ -14,6 +15,7 @@ from synthpopcan.cli_microdata import microdata
 from synthpopcan.cli_output import (
     format_report_number,
     print_census_profile_characteristics_table,
+    print_tree_output_validation_report_table,
     print_validation_report_table,
     write_output,
     write_wds_search_results,
@@ -43,7 +45,10 @@ from synthpopcan.statcan import (
     fetch_wds_table,
     search_wds_tables,
 )
-from synthpopcan.validation import build_control_validation_report
+from synthpopcan.validation import (
+    build_control_validation_report,
+    build_tree_output_validation_report,
+)
 
 PATH = click.Path(path_type=Path)
 
@@ -147,6 +152,78 @@ def validate_controls_output(
         )
 
 
+@validate.command("tree-output")
+@click.option(
+    "--generated",
+    "generated_path",
+    required=True,
+    type=PATH,
+    help="Generated synthetic rows CSV.",
+)
+@click.option(
+    "--training",
+    "training_path",
+    required=True,
+    type=PATH,
+    help="Training view CSV used to train the tree model.",
+)
+@click.option(
+    "--target-columns",
+    required=True,
+    help="Comma-separated target columns to compare.",
+)
+@click.option(
+    "--conditioning-columns",
+    default="",
+    help="Optional comma-separated conditioning columns to compare.",
+)
+@click.option(
+    "--weight-field",
+    default=None,
+    help="Optional training row weight column.",
+)
+@click.option("--tolerance", default=0.05, type=float, show_default=True)
+@click.option(
+    "--format",
+    "output_format",
+    default="table",
+    type=click.Choice(["json", "table"]),
+    show_default=True,
+)
+def validate_tree_output(
+    generated_path: Path,
+    training_path: Path,
+    target_columns: str,
+    conditioning_columns: str,
+    weight_field: str | None,
+    tolerance: float,
+    output_format: str,
+) -> None:
+    """Compare generated tree rows with the training-view distributions."""
+    try:
+        report = build_tree_output_validation_report(
+            training_rows=read_csv(training_path),
+            generated_rows=read_csv(generated_path),
+            target_columns=parse_column_list(target_columns, "target columns"),
+            conditioning_columns=parse_optional_column_list(conditioning_columns),
+            weight_field=weight_field,
+            tolerance=tolerance,
+        )
+    except ValueError as exc:
+        raise click.ClickException(str(exc)) from exc
+
+    if output_format == "json":
+        print(json.dumps(report, indent=2, sort_keys=True))
+    else:
+        print_tree_output_validation_report_table(report)
+
+    if not report["passed"]:
+        raise click.ClickException(
+            "Tree output validation found distribution shifts or unknown "
+            f"categories beyond tolerance {format_report_number(tolerance)}."
+        )
+
+
 @cli.group(name="data")
 def data_group() -> None:
     """Check local data and metadata setup."""
@@ -189,6 +266,22 @@ def resolve_data_root(data_root: Path | None) -> Path:
     if env_value:
         return Path(env_value)
     return Path("data")
+
+
+def read_csv(path: Path) -> list[dict[str, str]]:
+    with path.open(newline="") as handle:
+        return list(csv.DictReader(handle))
+
+
+def parse_column_list(value: str, label: str) -> tuple[str, ...]:
+    columns = tuple(part.strip() for part in value.split(",") if part.strip())
+    if not columns:
+        raise click.ClickException(f"at least one {label} value is required")
+    return columns
+
+
+def parse_optional_column_list(value: str) -> tuple[str, ...]:
+    return tuple(part.strip() for part in value.split(",") if part.strip())
 
 
 @cli.group()

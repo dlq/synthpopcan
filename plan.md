@@ -341,12 +341,14 @@ Deliverables:
 - Distribution comparisons.
 - Geography-level diagnostics.
 - Household/person consistency checks.
+- Tree output distribution checks. Status: complete for comparing generated tree rows to training-view distributions with target, joint-target, conditioning, and unknown-category checks.
 - Machine-readable JSON plus human-readable Markdown or HTML report output. Status: JSON and Rich table output complete for control validation; Markdown/HTML reports pending.
 
 Acceptance criteria:
 
 - Every synthesis run can produce a validation report. Status: complete for `synthpopcan validate controls`.
 - Failed validation thresholds can return a non-zero CLI exit code for automation. Status: complete for `synthpopcan validate controls`.
+- Tree-generated flat outputs can be checked with `synthpopcan validate tree-output --generated ... --training ... --target-columns ...`.
 
 ### 9. Web App
 
@@ -357,8 +359,18 @@ Likely first version:
 - Local-only app.
 - Select source roots and normalized controls.
 - Configure an IPF run.
+- Choose prepared tree model artifacts for tree-based generation.
 - Show run progress and validation summaries.
 - Download generated population and report artifacts.
+
+Model training boundary:
+
+- Do not expose model training in the first web app.
+- Treat `microdata export-training`, `tree train`, future `tree audit-model`, and future `tree package-model` as maintainer/developer CLI and Python-library workflows.
+- The web app should consume prepared model artifacts, not restricted microdata. Users should be able to choose a prepared model, select geography/scope, generate synthetic household/person rows, inspect validation summaries, and export outputs.
+- Prepared models used by the web app should include provenance, release class, privacy/disclosure-risk metadata, version information, and warnings.
+- If training is ever exposed in a UI, make it a separate advanced local-only mode with strong warnings and no publish/distribute action by default.
+- This boundary supports the browser-first/Pyodide direction: loading JSON model artifacts and generating rows in-browser is much more plausible than training from restricted microdata in-browser.
 
 Performance and runtime concerns:
 

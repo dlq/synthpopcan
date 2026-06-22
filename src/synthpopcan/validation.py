@@ -106,3 +106,164 @@ def build_control_validation_report(
         "margin_summaries": margin_summaries,
         "margins": margins,
     }
+
+
+def build_tree_output_validation_report(
+    *,
+    training_rows: list[Record],
+    generated_rows: list[Record],
+    target_columns: tuple[str, ...],
+    conditioning_columns: tuple[str, ...],
+    weight_field: str | None = None,
+    tolerance: float = 0.05,
+) -> dict[str, Any]:
+    if not training_rows:
+        raise ValueError("training rows are required")
+    if not generated_rows:
+        raise ValueError("generated rows are required")
+    if not target_columns:
+        raise ValueError("at least one target column is required")
+
+    dimensions = comparison_dimensions(target_columns, conditioning_columns)
+    training_weights = [
+        read_validation_weight(row, weight_field, row_number)
+        for row_number, row in enumerate(training_rows, start=2)
+    ]
+    generated_weights = [1.0 for _row in generated_rows]
+
+    comparisons: list[dict[str, Any]] = []
+    issues: list[dict[str, Any]] = []
+    max_abs_delta = 0.0
+    for dimension_group in dimensions:
+        comparison = build_distribution_comparison(
+            training_rows,
+            training_weights,
+            generated_rows,
+            generated_weights,
+            dimension_group,
+        )
+        comparisons.append(comparison)
+        for cell in comparison["cells"]:
+            abs_delta = abs(cell["proportion_delta"])
+            max_abs_delta = max(max_abs_delta, abs_delta)
+            if cell["training_count"] == 0 and cell["generated_count"] > 0:
+                issues.append(
+                    {
+                        "severity": "error",
+                        "kind": "unknown_generated_category",
+                        "dimensions": list(dimension_group),
+                        "categories": dict(cell["categories"]),
+                        "message": (
+                            "Generated output contains a category combination "
+                            "not present in the training view."
+                        ),
+                        "abs_proportion_delta": abs_delta,
+                    }
+                )
+            elif abs_delta > tolerance:
+                issues.append(
+                    {
+                        "severity": "warning",
+                        "kind": "distribution_shift",
+                        "dimensions": list(dimension_group),
+                        "categories": dict(cell["categories"]),
+                        "message": (
+                            "Generated output distribution differs from the "
+                            "training view beyond tolerance."
+                        ),
+                        "abs_proportion_delta": abs_delta,
+                    }
+                )
+
+    sorted_issues = sorted(
+        issues,
+        key=lambda issue: (
+            issue["kind"] != "unknown_generated_category",
+            -issue["abs_proportion_delta"],
+        ),
+    )
+    return {
+        "passed": not sorted_issues,
+        "artifact_kind": "tree-output",
+        "training_records": len(training_rows),
+        "generated_records": len(generated_rows),
+        "target_columns": list(target_columns),
+        "conditioning_columns": list(conditioning_columns),
+        "weight_field": weight_field,
+        "tolerance": tolerance,
+        "max_abs_proportion_delta": max_abs_delta,
+        "issues": sorted_issues,
+        "comparisons": comparisons,
+    }
+
+
+def comparison_dimensions(
+    target_columns: tuple[str, ...],
+    conditioning_columns: tuple[str, ...],
+) -> list[tuple[str, ...]]:
+    dimensions = [(column,) for column in target_columns]
+    if len(target_columns) > 1:
+        dimensions.append(target_columns)
+    dimensions.extend((column,) for column in conditioning_columns)
+    return dimensions
+
+
+def build_distribution_comparison(
+    training_rows: list[Record],
+    training_weights: list[float],
+    generated_rows: list[Record],
+    generated_weights: list[float],
+    dimensions: tuple[str, ...],
+) -> dict[str, Any]:
+    training_counts = weighted_totals(training_rows, training_weights, dimensions)
+    generated_counts = weighted_totals(generated_rows, generated_weights, dimensions)
+    training_total = sum(training_counts.values())
+    generated_total = sum(generated_counts.values())
+    cells: list[dict[str, Any]] = []
+    max_abs_delta = 0.0
+    for key in sorted(set(training_counts) | set(generated_counts)):
+        training_count = training_counts.get(key, 0.0)
+        generated_count = generated_counts.get(key, 0.0)
+        training_proportion = safe_proportion(training_count, training_total)
+        generated_proportion = safe_proportion(generated_count, generated_total)
+        delta = generated_proportion - training_proportion
+        max_abs_delta = max(max_abs_delta, abs(delta))
+        cells.append(
+            {
+                "categories": dict(zip(dimensions, key, strict=True)),
+                "training_count": training_count,
+                "generated_count": generated_count,
+                "training_proportion": training_proportion,
+                "generated_proportion": generated_proportion,
+                "proportion_delta": delta,
+            }
+        )
+    return {
+        "name": " x ".join(dimensions),
+        "dimensions": list(dimensions),
+        "cells": cells,
+        "training_total": training_total,
+        "generated_total": generated_total,
+        "max_abs_proportion_delta": max_abs_delta,
+    }
+
+
+def read_validation_weight(
+    row: Record,
+    weight_field: str | None,
+    row_number: int,
+) -> float:
+    if weight_field is None:
+        return 1.0
+    try:
+        return float(row[weight_field])
+    except KeyError as exc:
+        raise ValueError(f"training rows require a {weight_field!r} column") from exc
+    except ValueError as exc:
+        raise ValueError(f"training row {row_number} has invalid weight") from exc
+
+
+def safe_proportion(count: float, total: float) -> float:
+    if total == 0:
+        return 0.0
+    return count / total
