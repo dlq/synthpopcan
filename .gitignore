@@ -15,6 +15,10 @@ build/
 *.egg-info/
 /docs/_build/
 
+# JavaScript dev tooling artifacts.
+node_modules/
+.npm/
+
 # Virtual environments and local environment files.
 .venv/
 venv/

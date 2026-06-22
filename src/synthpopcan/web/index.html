@@ -1,0 +1,339 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>SynthPopCan</title>
+    <link rel="icon" href="synthpopcan-icon-64.png" type="image/png">
+    <link rel="apple-touch-icon" href="synthpopcan-icon-64.png">
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <div class="gc-accent" aria-hidden="true"></div>
+    <main class="app-shell">
+      <header class="topbar">
+        <div class="brand-lockup">
+          <img
+            class="brand-logo"
+            src="synthpopcan-logo-256.png"
+            alt=""
+            width="128"
+            height="128"
+          >
+          <div>
+            <h1>SynthPopCan</h1>
+            <p>Local synthetic population workspace</p>
+          </div>
+        </div>
+        <div class="status-pill">Local</div>
+      </header>
+
+      <section class="workspace-grid" aria-label="SynthPopCan workspace">
+        <article class="panel primary-panel">
+          <div class="panel-heading">
+            <h2>Choose a workflow</h2>
+            <span>Browser local</span>
+          </div>
+          <div class="workflow-list">
+            <button
+              class="workflow-card selected"
+              type="button"
+              data-workflow-tab="ipf"
+            >
+              <strong>IPF from margin tables</strong>
+              <span>
+                Use seed rows and margin/control totals to generate synthetic
+                population weights or expanded rows.
+              </span>
+            </button>
+            <button
+              class="workflow-card"
+              type="button"
+              data-workflow-tab="model"
+            >
+              <strong>Generate from existing model</strong>
+              <span>
+                Load a prepared household/person model package and export
+                synthetic household and person rows.
+              </span>
+            </button>
+          </div>
+        </article>
+      </section>
+
+      <section class="workflow-panel active" data-workflow-panel="ipf">
+        <div class="panel-heading">
+          <h2>IPF from margin tables</h2>
+          <span>Guided setup or file upload</span>
+        </div>
+
+        <section
+          class="workflow-card-section setup-paths"
+          aria-label="Ways to prepare IPF inputs"
+        >
+          <div class="setup-heading">
+            <h3>Choose one setup path</h3>
+            <p>
+              Both paths prepare the same two IPF inputs: a seed CSV and a
+              normalized margin/control CSV.
+            </p>
+          </div>
+
+          <div class="setup-grid">
+            <section class="starter-panel" aria-label="Demo or template setup path">
+              <div class="path-label">Path 1</div>
+              <div>
+                <h3>Use a demo or make templates</h3>
+                <p>
+                  Load a tiny example immediately, or create blank CSVs to fill
+                  yourself.
+                </p>
+              </div>
+              <div class="starter-actions">
+                <button
+                  id="use-demo-ipf"
+                  class="secondary-action"
+                  type="button"
+                  title="Loads a tiny example seed CSV and control CSV so you can try IPF immediately."
+                >
+                  Use demo age/sex files
+                </button>
+                <button
+                  id="download-seed-template"
+                  class="secondary-action"
+                  type="button"
+                  title="Creates a starter seed CSV with one row per example person or household category."
+                >
+                  Download seed template
+                </button>
+                <button
+                  id="download-controls-template"
+                  class="secondary-action"
+                  type="button"
+                  title="Creates a starter control CSV with target totals for IPF to match."
+                >
+                  Download controls template
+                </button>
+              </div>
+              <label class="wide-field">
+                <span
+                  class="help-label"
+                  data-help="Dimensions are the categories IPF matches, such as geography, age group, sex, or household size."
+                >Template dimensions</span>
+                <input id="starter-dimensions" value="age, sex">
+              </label>
+            </section>
+
+            <section class="starter-panel" aria-label="StatCan WDS setup path">
+              <div class="path-label">Path 2</div>
+              <div>
+                <h3>Generate from a StatCan table</h3>
+                <p>
+                  Search by plain words, inspect a product ID, then generate
+                  matching seed and control CSVs.
+                </p>
+              </div>
+              <form id="wds-search-form" class="inline-form">
+                <label>
+                  Search terms
+                  <input id="wds-search-query" value="population age sex">
+                </label>
+                <button class="secondary-action" type="submit">Search</button>
+              </form>
+              <form id="wds-explain-form" class="inline-form">
+                <label>
+                  <span
+                    class="help-label"
+                    data-help="A StatCan table identifier, also called a product ID. Search results can fill this for you."
+                  >Product ID</span>
+                  <input id="wds-product-id" placeholder="Example: 98100001">
+                </label>
+                <button
+                  class="secondary-action"
+                  type="submit"
+                  title="Reads StatCan metadata so you can see what dimensions the table contains."
+                >Inspect product</button>
+                <button
+                  id="generate-from-product-id"
+                  class="secondary-action"
+                  type="button"
+                  title="Uses the local Python helper to fetch the StatCan table and fill the IPF CSV inputs."
+                >
+                  Generate from Product ID
+                </button>
+              </form>
+              <div class="inline-form">
+                <label>
+                  <span
+                    class="help-label"
+                    data-help="Use this only when you already have a downloaded StatCan WDS ZIP file."
+                  >Downloaded StatCan ZIP</span>
+                  <input id="wds-zip-file" type="file" accept=".zip,application/zip">
+                </label>
+                <button
+                  id="generate-from-downloaded-zip"
+                  class="secondary-action"
+                  type="button"
+                  title="Reads the selected ZIP locally and fills the IPF CSV inputs."
+                >
+                  Use selected ZIP
+                </button>
+              </div>
+              <div class="inline-form">
+                <label>
+                  <span
+                    class="help-label"
+                    data-help="WDS means StatCan Web Data Service. WDS dimensions are the table columns to use as IPF categories."
+                  >WDS dimensions</span>
+                  <input id="wds-dimensions" placeholder="GEO, Age group, Sex">
+                </label>
+                <label>
+                  <span
+                    class="help-label"
+                    data-help="The numeric StatCan column containing the target values to match. Usually VALUE."
+                  >Count column</span>
+                  <input id="wds-count-column" value="VALUE">
+                </label>
+              </div>
+              <div id="wds-result" class="result-box" aria-live="polite"></div>
+            </section>
+          </div>
+        </section>
+
+        <section class="workflow-card-section run-panel" aria-label="Run IPF">
+          <div class="setup-heading">
+            <h3>IPF inputs and controls</h3>
+            <p>
+              Use files prepared above, or choose your own seed and
+              margin/control CSVs here.
+            </p>
+          </div>
+          <form id="ipf-form" class="form-grid">
+            <label>
+              <span
+                class="help-label"
+                data-help="Seed rows are example records that contain the categories IPF can reweight."
+              >Seed CSV</span>
+              <input id="ipf-seed-file" type="file" accept=".csv,text/csv" required>
+            </label>
+            <label>
+              <span
+                class="help-label"
+                data-help="Control totals are the target margins IPF tries to match."
+              >Normalized margin/control CSV</span>
+              <input id="ipf-controls-file" type="file" accept=".csv,text/csv" required>
+            </label>
+            <label>
+              <span
+                class="help-label"
+                data-help="Optional starting weights for seed rows. Leave blank when each seed row starts equally."
+              >Weight column</span>
+              <input id="ipf-weight-field" placeholder="Optional">
+            </label>
+            <label>
+              <span
+                class="help-label"
+                data-help="Weights CSV is compact and recommended in the browser. Expanded rows CSV creates one row per synthetic record and can be very large."
+              >Output</span>
+              <select id="ipf-output-kind">
+                <option value="weights">Weights CSV</option>
+                <option value="expanded">Expanded rows CSV</option>
+              </select>
+            </label>
+            <label>
+              <span
+                class="help-label"
+                data-help="Maximum number of IPF adjustment rounds before stopping."
+              >Max iterations</span>
+              <input id="ipf-max-iterations" type="number" min="1" value="100">
+            </label>
+            <label>
+              <span
+                class="help-label"
+                data-help="How close fitted totals must be to the control totals before IPF stops."
+              >Tolerance</span>
+              <input id="ipf-tolerance" type="number" min="0" step="0.000001" value="0.000001">
+            </label>
+            <button class="primary-action" type="submit">Run IPF</button>
+          </form>
+          <div id="ipf-result" class="result-box" aria-live="polite"></div>
+        </section>
+      </section>
+
+      <section class="workflow-panel" data-workflow-panel="model">
+        <div class="panel-heading">
+          <h2>Generate from existing model</h2>
+          <span>Model JSON or linked package JSON</span>
+        </div>
+        <section class="model-setup" aria-label="Generate from a prepared model">
+          <p class="panel-intro">
+            Load a prepared model JSON or linked household/person package, inspect
+            it, then generate synthetic rows in the browser.
+          </p>
+          <div class="model-file-row">
+            <label>
+              <span
+                class="help-label"
+                data-help="Premade models are served by the local backend. The bundled demo is synthetic toy data, not Census microdata."
+              >Premade model</span>
+              <select id="premade-model">
+                <option value="">No premade model selected</option>
+              </select>
+            </label>
+            <button
+              id="load-premade-model"
+              class="secondary-action"
+              type="button"
+            >
+              Use premade model
+            </button>
+          </div>
+          <div class="model-file-row">
+            <label>
+              <span
+                class="help-label"
+                data-help="A prepared model JSON generates one table. A linked package JSON generates household and person tables together."
+              >Model or package JSON</span>
+              <input id="model-file" type="file" accept=".json,application/json" required>
+            </label>
+            <button
+              id="inspect-model-file"
+              class="secondary-action"
+              type="button"
+              title="Reads the selected JSON and summarizes what it can generate."
+            >
+              Inspect selected model
+            </button>
+          </div>
+          <div id="model-inspect-result" class="result-box" aria-live="polite"></div>
+          <form id="model-form" class="form-grid">
+            <label>
+              <span
+                class="help-label"
+                data-help="For a linked household/person package, this is the number of households. For a single model, this is the number of rows."
+              >Rows or households</span>
+              <input id="model-rows" type="number" min="1" value="10" required>
+            </label>
+            <label>
+              <span
+                class="help-label"
+                data-help="A random seed makes repeated generation runs reproducible."
+              >Random seed</span>
+              <input id="model-random-seed" type="number" value="13">
+            </label>
+            <label class="wide-field">
+              <span
+                class="help-label"
+                data-help="Optional filters for model conditioning columns, written as name=value pairs such as geo=QC."
+              >Conditions</span>
+              <input id="model-conditions" placeholder="geo=QC, household_size=2">
+            </label>
+            <button class="primary-action" type="submit">Generate rows</button>
+          </form>
+          <div id="model-result" class="result-box" aria-live="polite"></div>
+        </section>
+      </section>
+    </main>
+    <script type="module" src="app.mjs"></script>
+  </body>
+</html>

@@ -23,7 +23,7 @@ from synthpopcan.cli_output import (
     write_wds_search_results,
 )
 from synthpopcan.cli_tree import tree
-from synthpopcan.console import print_checks_table, print_wrote
+from synthpopcan.console import print_checks_table, print_success, print_wrote
 from synthpopcan.controls import (
     build_wds_category_mapping_template,
     census_profile_template,
@@ -55,6 +55,7 @@ from synthpopcan.validation import (
     build_control_validation_report,
     build_tree_output_validation_report,
 )
+from synthpopcan.webapp import serve_webapp
 
 PATH = click.Path(path_type=Path)
 
@@ -77,6 +78,33 @@ def cli() -> None:
 cli.add_command(microdata)
 cli.add_command(ipf)
 cli.add_command(tree)
+
+
+@cli.command("serve")
+@click.option(
+    "--host",
+    default="127.0.0.1",
+    show_default=True,
+    help="Host interface for the local web app.",
+)
+@click.option(
+    "--port",
+    default=8000,
+    show_default=True,
+    type=click.IntRange(1, 65535),
+    help="Port for the local web app.",
+)
+@click.option(
+    "--open/--no-open",
+    "open_browser",
+    default=True,
+    show_default=True,
+    help="Open the web app in your default browser.",
+)
+def serve(host: str, port: int, open_browser: bool) -> None:
+    """Serve the local SynthPopCan web app."""
+    print_success(f"Serving SynthPopCan at http://{host}:{port}/")
+    serve_webapp(host=host, port=port, open_browser=open_browser)
 
 
 @cli.group()

@@ -430,15 +430,23 @@ Start the web app only after the library and CLI contracts are stable enough.
 Likely first version:
 
 - Local-only app.
-- Select source roots and normalized controls.
-- Configure an IPF run.
-- Choose prepared tree model artifacts for tree-based generation.
+- Initial app foundation: `synthpopcan serve` starts a packaged local static app and opens the user's default browser with Python's cross-platform `webbrowser` support.
+- Treat `synthpopcan serve` as a convenience static-file launcher, not as the first step toward a required Python API backend.
+- Keep the default architecture frontend-first: file selection, model loading, IPF setup, small-to-moderate generation, validation summaries, and exports should run in the browser when practical.
+- First browser implementation uses pure modern JavaScript ES modules, no npm package, no build step, and a module Web Worker for IPF/model generation jobs.
+- Keep the first app simple: expose basic SynthPopCan functionality rather than the whole CLI.
+- Support two generation workflows first: IPF from margin/control tables, and synthetic population generation from existing prepared model packages.
+- Select source roots, seed data, and normalized margin/control tables for IPF.
+- For IPF users without files, provide browser starter helpers: runnable demo seed/control files, seed/control templates from chosen dimensions, and StatCan WDS search/metadata inspection where browser access allows it.
+- Configure and run an IPF generation workflow.
+- Choose existing prepared tree model artifacts for tree-based generation.
 - Show run progress and validation summaries.
 - Download generated population and report artifacts.
 
 Model training boundary:
 
 - Do not expose model training in the first web app.
+- Do not expose model generation, model training, model auditing, or model packaging in the first web app.
 - Treat `microdata export-training`, `tree train`, future `tree audit-model`, and future `tree package-model` as maintainer/developer CLI and Python-library workflows.
 - The web app should consume prepared model artifacts, not restricted microdata. Users should be able to choose a prepared model, select geography/scope, generate synthetic household/person rows, inspect validation summaries, and export outputs.
 - Prepared models used by the web app should include provenance, release class, privacy/disclosure-risk metadata, version information, and warnings.
@@ -448,10 +456,17 @@ Model training boundary:
 Performance and runtime concerns:
 
 - Prefer a browser-first web app that does as much work as possible in-browser and avoids a backend unless a workflow clearly needs one.
+- Require an explicit reason before adding any server-side route beyond serving packaged static assets.
 - Define practical time guarantees for web-app workflows before exposing long-running synthesis operations to users.
 - Use the developer IPF benchmarks as early regression checks, then add user-facing estimates or previews for large/sparse runs.
 - Evaluate browser-side Pyodide/WebAssembly as the preferred runtime for demos and small-to-moderate local workflows. Compare it against a local Python backend or server-side job process only where data size, memory pressure, or run time breaks the browser-first model.
 - Keep heavy full-data runs out of the browser unless benchmarks show predictable memory and runtime behavior.
+- Direct WDS ZIP normalization in the browser is still a later step; it needs a browser ZIP parser or a preprocessed browser-friendly table source.
+
+Visual direction:
+
+- Use GCWeb-inspired public data tool styling: accessible forms, sober typography, white page background, dark blue actions, red accenting, simple panels, and clear status text.
+- Do not copy Government of Canada or StatCan branding, wordmarks, signatures, or page chrome. SynthPopCan should feel compatible with public-data workflows without implying official affiliation.
 
 Deferred until needed:
 
@@ -614,6 +629,7 @@ Other deferred work:
 - Privacy risk assessment for generated outputs.
 - Documentation site expansion, API reference, and hosted Read the Docs polish.
 - Project icon and lightweight visual identity for the eventual docs site and web app.
+- Possible npm package once browser-side IPF/model-generation modules have a stable reusable API. Until then, keep JavaScript as packaged static ES modules inside the Python project.
 - Packaging and publishing.
 
 ## Testing Policy
@@ -653,7 +669,7 @@ Ignored:
 - First supported StatCan table format and access path.
 - First derived household/person output schema from the single-file 2016 hierarchical PUMF.
 - Integerization method for the first IPF engine.
-- Whether the web app should be Streamlit/FastAPI-first or built as a richer frontend once workflows settle.
+- How far the web app can go as static packaged frontend plus browser runtime before a backend is justified.
 
 ## Done Means
 

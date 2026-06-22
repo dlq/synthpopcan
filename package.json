@@ -1,0 +1,12 @@
+{
+  "name": "synthpopcan-web-dev",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check:web": "biome check src/synthpopcan/web tests/web",
+    "format:web": "biome format --write src/synthpopcan/web tests/web"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.3.8"
+  }
+}
