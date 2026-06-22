@@ -264,6 +264,37 @@ def inspect_wds_zip(path: Path, *, sample_rows: int = 5) -> dict[str, object]:
     }
 
 
+def build_wds_category_mapping_template(
+    path: Path,
+    *,
+    dimensions: tuple[str, ...],
+) -> CategoryMapping:
+    if not dimensions:
+        raise ValueError("WDS mapping template requires at least one dimension")
+    categories: dict[str, set[str]] = {dimension: set() for dimension in dimensions}
+    with ZipFile(path) as archive:
+        csv_name = find_wds_csv_member(archive)
+        with archive.open(csv_name) as raw_handle:
+            handle = TextIOWrapper(raw_handle, encoding="utf-8-sig", newline="")
+            reader = csv.DictReader(handle)
+            fieldnames = reader.fieldnames or []
+            missing = [
+                dimension for dimension in dimensions if dimension not in fieldnames
+            ]
+            if missing:
+                raise ValueError(f"WDS CSV is missing columns: {', '.join(missing)}")
+            for row in reader:
+                for dimension in dimensions:
+                    value = row.get(dimension, "")
+                    if value:
+                        categories[dimension].add(value)
+
+    return {
+        dimension: {value: "" for value in sorted(values)}
+        for dimension, values in categories.items()
+    }
+
+
 def read_census_profile_control_table(
     path: Path,
     mapping_path: Path,

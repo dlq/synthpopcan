@@ -25,6 +25,7 @@ from synthpopcan.cli_output import (
 from synthpopcan.cli_tree import tree
 from synthpopcan.console import print_checks_table, print_wrote
 from synthpopcan.controls import (
+    build_wds_category_mapping_template,
     census_profile_template,
     inspect_census_profile_characteristics,
     inspect_wds_zip,
@@ -520,6 +521,31 @@ def inspect_wds_controls(source: Path, sample_rows: int, output_format: str) -> 
         print(json.dumps(report, indent=2, sort_keys=True))
         return
     print_wds_inspection_table(report)
+
+
+@wds_controls.command("mapping-template")
+@click.argument("source", type=PATH)
+@click.option(
+    "--dimensions",
+    required=True,
+    help="Comma-separated WDS columns whose categories need mapping.",
+)
+@click.option("--out", "out_path", required=True, type=PATH)
+def write_wds_mapping_template(
+    source: Path,
+    dimensions: str,
+    out_path: Path,
+) -> None:
+    """Write a starter WDS category mapping JSON."""
+    try:
+        payload = build_wds_category_mapping_template(
+            source,
+            dimensions=parse_columns(dimensions),
+        )
+    except ValueError as exc:
+        raise click.ClickException(str(exc)) from exc
+    out_path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n")
+    print_wrote(out_path)
 
 
 @controls.command("from-census-profile")

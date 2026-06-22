@@ -67,5 +67,31 @@ synthpopcan controls from-wds 98100001-eng.zip \
 ```
 
 Treat the suggested dimensions as a starting point. Drop columns that are not
-part of the margin you want to fit, then run `ipf check-inputs` to confirm that
-the seed file has matching columns and category values.
+part of the margin you want to fit.
+
+If source labels need to be converted to seed categories, write a starter
+mapping template:
+
+```bash
+synthpopcan controls wds mapping-template 98100001-eng.zip \
+  --dimensions 'Age group,Sex' \
+  --out categories.json
+```
+
+The template lists observed source labels with blank target values for you to
+fill in:
+
+```json
+{
+  "Age group": {
+    "0 to 4 years": ""
+  },
+  "Sex": {
+    "Female": "",
+    "Male": ""
+  }
+}
+```
+
+After normalization, run `ipf check-inputs` to confirm that the seed file has
+matching columns and category values.

@@ -306,6 +306,14 @@ https://www150.statcan.gc.ca/t1/wds/rest/getFullTableDownloadCSV/{product_id}/{l
 
 The WDS response returns the actual CSV ZIP URL. SynthPopCan downloads that ZIP and writes a small JSON manifest beside it.
 
+Create a starter category mapping when WDS labels need to match seed categories:
+
+```bash
+synthpopcan controls wds mapping-template data/raw/statscan/wds/14100287-eng.zip \
+  --dimensions "Age group,Sex" \
+  --out categories.json
+```
+
 Normalize a downloaded WDS ZIP into SynthPopCan controls with explicit table mapping:
 
 ```bash

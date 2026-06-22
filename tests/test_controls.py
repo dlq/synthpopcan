@@ -189,6 +189,48 @@ def test_cli_inspects_wds_zip_and_suggests_normalization_command(
     }
 
 
+def test_cli_writes_wds_category_mapping_template(tmp_path: Path) -> None:
+    from synthpopcan.cli import main
+
+    zip_path = tmp_path / "wds.zip"
+    output_path = tmp_path / "categories.json"
+    with ZipFile(zip_path, "w") as archive:
+        archive.writestr(
+            "table.csv",
+            "GEO,Age group,Sex,VALUE\n"
+            "Canada,0 to 4 years,Female,100\n"
+            "Canada,0 to 4 years,Male,105\n"
+            "Canada,5 to 9 years,Female,95\n",
+        )
+
+    assert (
+        main(
+            [
+                "controls",
+                "wds",
+                "mapping-template",
+                str(zip_path),
+                "--dimensions",
+                "Age group,Sex",
+                "--out",
+                str(output_path),
+            ]
+        )
+        == 0
+    )
+
+    assert json.loads(output_path.read_text()) == {
+        "Age group": {
+            "0 to 4 years": "",
+            "5 to 9 years": "",
+        },
+        "Sex": {
+            "Female": "",
+            "Male": "",
+        },
+    }
+
+
 def test_cli_applies_category_mapping_to_wds_controls(tmp_path: Path) -> None:
     from synthpopcan.cli import main
 

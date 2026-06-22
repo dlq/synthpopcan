@@ -441,6 +441,8 @@ for non-specialist users:
    IPF suitability hints, and next commands.
 3. Add starter mapping/template helpers for common StatCan dimensions such as
    age, sex, geography, and household structure where stable labels exist.
+   Status: first generic `controls wds mapping-template` helper added for
+   observed WDS categories in selected dimensions.
 4. Make `ipf check-inputs` the expected next step after control normalization,
    with clearer category-mismatch guidance for humanities users.
 5. Keep README examples short and move reproducible walkthroughs into
