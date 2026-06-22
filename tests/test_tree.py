@@ -311,6 +311,7 @@ def test_cli_trains_and_generates_tree_model(tmp_path) -> None:
     source = tmp_path / "derived-person-training.csv"
     model_path = tmp_path / "person-model.json"
     output_path = tmp_path / "synthetic-people.csv"
+    manifest_path = tmp_path / "synthetic-people.manifest.json"
     source.write_text(
         "person_id,geo,household_size,age_group,sex,weight\n"
         "p1,QC,2,adult,F,2\n"
@@ -359,6 +360,8 @@ def test_cli_trains_and_generates_tree_model(tmp_path) -> None:
                 "household_size=2",
                 "--out",
                 str(output_path),
+                "--manifest-out",
+                str(manifest_path),
             ]
         )
         == 0
@@ -382,6 +385,26 @@ def test_cli_trains_and_generates_tree_model(tmp_path) -> None:
             "sex": "F",
         },
     ]
+    manifest = json.loads(manifest_path.read_text())
+    assert manifest == {
+        "schema_version": "synthpopcan-tree-generation-manifest-v1",
+        "command": "tree generate",
+        "outputs": {"rows": str(output_path)},
+        "rows": 2,
+        "conditions": {"geo": "QC", "household_size": "2"},
+        "random_seed": None,
+        "effective_random_seed": 7,
+        "model": {
+            "path": str(model_path),
+            "model_type": "conditional-frequency",
+            "release_class": "private_working",
+            "level": "person",
+            "records_trained": 2,
+            "source_format": "csv-v1",
+            "target_columns": ["age_group", "sex"],
+            "conditioning_columns": ["geo", "household_size"],
+        },
+    }
 
 
 def test_cli_trains_and_generates_cart_tree_model(tmp_path) -> None:
@@ -797,6 +820,7 @@ def test_cli_generates_linked_households_and_persons(tmp_path) -> None:
     person_model_path = tmp_path / "person-model.json"
     households_out = tmp_path / "synthetic-households.csv"
     persons_out = tmp_path / "synthetic-persons.csv"
+    manifest_out = tmp_path / "synthetic-linked.manifest.json"
     write_tree_model(household_model_path, household_model)
     write_tree_model(person_model_path, person_model)
 
@@ -817,6 +841,8 @@ def test_cli_generates_linked_households_and_persons(tmp_path) -> None:
                 str(households_out),
                 "--persons-out",
                 str(persons_out),
+                "--manifest-out",
+                str(manifest_out),
             ]
         )
         == 0
@@ -836,6 +862,22 @@ def test_cli_generates_linked_households_and_persons(tmp_path) -> None:
     ]
     assert [person["synthetic_household_id"] for person in person_rows] == ["1", "1"]
     assert [person["synthetic_person_id"] for person in person_rows] == ["1", "2"]
+    manifest = json.loads(manifest_out.read_text())
+    assert manifest["schema_version"] == "synthpopcan-tree-generation-manifest-v1"
+    assert manifest["command"] == "tree generate-linked"
+    assert manifest["outputs"] == {
+        "households": str(households_out),
+        "persons": str(persons_out),
+    }
+    assert manifest["households"] == 1
+    assert manifest["household_conditions"] == {"geo": "QC"}
+    assert manifest["random_seed"] is None
+    assert manifest["effective_random_seed"] == 0
+    assert manifest["household_size_column"] == "household_size"
+    assert manifest["household_model"]["path"] == str(household_model_path)
+    assert manifest["household_model"]["level"] == "household"
+    assert manifest["person_model"]["path"] == str(person_model_path)
+    assert manifest["person_model"]["level"] == "person"
 
 
 def test_cli_validates_linked_output(tmp_path, capsys) -> None:

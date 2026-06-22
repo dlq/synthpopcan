@@ -37,7 +37,8 @@ synthpopcan tree generate person-model.json \
   --rows 10 \
   --condition TENUR=owner \
   --condition household_size=2 \
-  --out synthetic-people.csv
+  --out synthetic-people.csv \
+  --manifest-out synthetic-people.manifest.json
 
 synthpopcan validate tree-output \
   --generated synthetic-people.csv \
@@ -59,7 +60,8 @@ synthpopcan tree generate-linked \
   --households 100 \
   --condition PR=24 \
   --households-out synthetic-households.csv \
-  --persons-out synthetic-persons.csv
+  --persons-out synthetic-persons.csv \
+  --manifest-out synthetic-linked.manifest.json
 
 synthpopcan validate linked-output \
   --households synthetic-households.csv \
@@ -67,6 +69,8 @@ synthpopcan validate linked-output \
 ```
 
 The household output has one row per generated household with `synthetic_household_id`. The person output has one row per generated person with `synthetic_person_id` and the household's `synthetic_household_id`. The linked validator checks that each person's household exists and that each household's `household_size` equals the number of generated people linked to it.
+
+The optional manifest records the model path, model type, release class, selected conditions, output files, requested random seed, and effective random seed. It is intended as a lightweight provenance sidecar for generated CSVs.
 
 `tree train` defaults to the transparent conditional-frequency backend. To train the first sklearn CART backend instead:
 

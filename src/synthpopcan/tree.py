@@ -701,7 +701,10 @@ def generate_linked_population(
     if households <= 0:
         raise ValueError("households must be greater than zero")
 
-    seed_rng = random.Random(random_seed)
+    effective_random_seed = (
+        household_model.spec.random_seed if random_seed is None else random_seed
+    )
+    seed_rng = random.Random(effective_random_seed)
     generated_households = generate_tree_rows(
         household_model,
         rows=households,

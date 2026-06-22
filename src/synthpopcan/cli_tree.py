@@ -128,12 +128,19 @@ def train_tree_generator(
 @click.option(
     "--out", "out_path", required=True, type=PATH, help="Output synthetic CSV."
 )
+@click.option(
+    "--manifest-out",
+    type=PATH,
+    default=None,
+    help="Optional output JSON manifest with model and seed provenance.",
+)
 @click.option("--random-seed", default=None, type=int)
 def generate_tree_population(
     model_path: Path,
     rows: int,
     condition_values: tuple[str, ...],
     out_path: Path,
+    manifest_out: Path | None,
     random_seed: int | None,
 ) -> None:
     """Generate synthetic rows from a tree model."""
@@ -147,9 +154,28 @@ def generate_tree_population(
             random_seed=random_seed,
         )
         write_generated_rows(out_path, generated_rows)
+        if manifest_out:
+            write_tree_generation_manifest(
+                manifest_out,
+                {
+                    "schema_version": "synthpopcan-tree-generation-manifest-v1",
+                    "command": "tree generate",
+                    "outputs": {"rows": str(out_path)},
+                    "rows": rows,
+                    "conditions": conditions,
+                    "random_seed": random_seed,
+                    "effective_random_seed": effective_random_seed(
+                        model,
+                        random_seed,
+                    ),
+                    "model": model_manifest(model, model_path),
+                },
+            )
     except ValueError as exc:
         raise click.ClickException(str(exc)) from exc
     print_wrote(out_path)
+    if manifest_out:
+        print_wrote(manifest_out)
 
 
 @tree.command("generate-linked")
@@ -187,6 +213,12 @@ def generate_tree_population(
     show_default=True,
     help="Household column used as the number of persons to generate.",
 )
+@click.option(
+    "--manifest-out",
+    type=PATH,
+    default=None,
+    help="Optional output JSON manifest with model and seed provenance.",
+)
 @click.option("--random-seed", default=None, type=int)
 def generate_linked_tree_population(
     household_model: Path,
@@ -196,24 +228,55 @@ def generate_linked_tree_population(
     households_out: Path,
     persons_out: Path,
     household_size_column: str,
+    manifest_out: Path | None,
     random_seed: int | None,
 ) -> None:
     """Generate linked household and person CSVs from two tree models."""
     try:
+        household_model_payload = read_tree_model(household_model)
+        person_model_payload = read_tree_model(person_model)
+        household_conditions = parse_conditions(condition_values)
         generated_households, generated_persons = generate_linked_population(
-            read_tree_model(household_model),
-            read_tree_model(person_model),
+            household_model_payload,
+            person_model_payload,
             households=households,
-            household_conditions=parse_conditions(condition_values),
+            household_conditions=household_conditions,
             household_size_column=household_size_column,
             random_seed=random_seed,
         )
         write_generated_rows(households_out, generated_households)
         write_generated_rows(persons_out, generated_persons)
+        if manifest_out:
+            write_tree_generation_manifest(
+                manifest_out,
+                {
+                    "schema_version": "synthpopcan-tree-generation-manifest-v1",
+                    "command": "tree generate-linked",
+                    "outputs": {
+                        "households": str(households_out),
+                        "persons": str(persons_out),
+                    },
+                    "households": households,
+                    "household_conditions": household_conditions,
+                    "household_size_column": household_size_column,
+                    "random_seed": random_seed,
+                    "effective_random_seed": effective_random_seed(
+                        household_model_payload,
+                        random_seed,
+                    ),
+                    "household_model": model_manifest(
+                        household_model_payload,
+                        household_model,
+                    ),
+                    "person_model": model_manifest(person_model_payload, person_model),
+                },
+            )
     except ValueError as exc:
         raise click.ClickException(str(exc)) from exc
     print_wrote(households_out)
     print_wrote(persons_out)
+    if manifest_out:
+        print_wrote(manifest_out)
 
 
 @tree.command("audit-model")
@@ -286,3 +349,24 @@ def parse_column_list(value: str, label: str) -> tuple[str, ...]:
     if not columns:
         raise ValueError(f"at least one {label} value is required")
     return columns
+
+
+def model_manifest(model, path: Path) -> dict[str, object]:
+    return {
+        "path": str(path),
+        "model_type": model.model_type,
+        "release_class": model.release_class,
+        "level": model.spec.level,
+        "records_trained": model.records_trained,
+        "source_format": model.source_format,
+        "target_columns": list(model.spec.target_columns),
+        "conditioning_columns": list(model.spec.conditioning_columns),
+    }
+
+
+def effective_random_seed(model, random_seed: int | None) -> int:
+    return model.spec.random_seed if random_seed is None else random_seed
+
+
+def write_tree_generation_manifest(path: Path, manifest: dict[str, object]) -> None:
+    path.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n")
