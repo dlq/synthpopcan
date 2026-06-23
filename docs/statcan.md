@@ -10,9 +10,9 @@ Statistics Canada sources are not all shaped the same way. SynthPopCan separates
 source discovery and download from control normalization:
 
 1. Search or fetch a public source.
-2. Inspect the downloaded file.
-3. Normalize only the dimensions needed for the research question.
-4. Check compatibility with the seed or generated rows.
+1. Inspect the downloaded file.
+1. Normalize only the dimensions needed for the research question.
+1. Check compatibility with the seed or generated rows.
 
 This keeps source interpretation visible.
 

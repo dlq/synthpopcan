@@ -15,10 +15,56 @@ from sklearn.tree import DecisionTreeClassifier
 
 TreeLevel = Literal["household", "person"]
 
+__all__ = [
+    "CartTreeModel",
+    "FrequencyGroup",
+    "FrequencyOutcome",
+    "FrequencyTreeModel",
+    "TreeGenerationRequest",
+    "TreeLevel",
+    "TreeModel",
+    "TreeModelSpec",
+    "TreeTrainingSample",
+    "audit_tree_model",
+    "generate_linked_population",
+    "generate_tree_rows",
+    "read_cart_model",
+    "read_frequency_model",
+    "read_tree_model",
+    "read_tree_training_sample",
+    "train_cart_model",
+    "train_frequency_model",
+    "validate_linked_population",
+    "write_generated_rows",
+    "write_tree_model",
+]
+
 
 @dataclass(frozen=True)
 class TreeTrainingSample:
-    """Training rows and column roles for a tree-based generator."""
+    """Training rows and column roles for a tree-based generator.
+
+    Parameters
+    ----------
+    level:
+        Whether the rows describe households or people.
+    source_format:
+        Name of the adapter or file format that produced the training rows.
+    records:
+        Training rows as dictionaries of strings.
+    columns:
+        Column names available in the training rows.
+    target_columns:
+        Columns the model should generate.
+    conditioning_columns:
+        Columns used to select or predict target outcomes.
+    geography_column:
+        Optional column used to describe geographic scope.
+    weight_column:
+        Optional column containing training weights.
+    metadata:
+        Additional source-specific notes for reports or manifests.
+    """
 
     level: TreeLevel
     source_format: str
@@ -49,7 +95,12 @@ class TreeTrainingSample:
 
 @dataclass(frozen=True)
 class TreeModelSpec:
-    """Column roles and generation settings shared by tree model types."""
+    """Column roles and generation settings shared by tree model types.
+
+    A model spec is the compact description of what a tree model learned: which
+    level it operates at, which columns it generates, which columns it
+    conditions on, and what random seed should be used by default.
+    """
 
     level: TreeLevel
     target_columns: tuple[str, ...]
@@ -83,7 +134,11 @@ class TreeModelSpec:
 
 @dataclass(frozen=True)
 class TreeGenerationRequest:
-    """Request parameters for generating rows from a tree model."""
+    """Request parameters for generating rows from a tree model.
+
+    This dataclass is mainly a reusable contract for callers that want to pass
+    generation requests around before calling :func:`generate_tree_rows`.
+    """
 
     model_spec: TreeModelSpec
     rows: int
@@ -97,7 +152,12 @@ class TreeGenerationRequest:
 
 @dataclass(frozen=True)
 class FrequencyOutcome:
-    """One possible target outcome and its training weight."""
+    """One possible target outcome and its training weight.
+
+    ``values`` maps target column names to generated category values. ``weight``
+    is the observed weighted support for that outcome within a conditioning
+    group or globally.
+    """
 
     values: dict[str, str]
     weight: float
@@ -110,7 +170,12 @@ class FrequencyOutcome:
 
 @dataclass(frozen=True)
 class FrequencyGroup:
-    """Observed outcomes for one set of conditioning values."""
+    """Observed outcomes for one set of conditioning values.
+
+    A frequency group is the transparent equivalent of a tree leaf: it records
+    the conditions, total support, and possible target outcomes observed in the
+    training view.
+    """
 
     conditions: dict[str, str]
     support: float
@@ -131,7 +196,12 @@ class FrequencyTreeModel:
     """Conditional-frequency tree model used for transparent generation.
 
     This model stores aggregate outcome counts by conditioning group rather than
-    source rows, which makes it easier to audit before sharing.
+    source rows, which makes it easier to audit before sharing. Generation
+    chooses a conditioning group and samples among its weighted outcomes.
+
+    The model is still a model artifact and should be audited before release:
+    small groups and highly pure groups can reveal too much about the source
+    data even when raw rows are not present.
     """
 
     spec: TreeModelSpec
@@ -223,7 +293,13 @@ class FrequencyTreeModel:
 
 @dataclass(frozen=True)
 class CartTreeModel:
-    """Serialized scikit-learn CART classifier for synthetic row generation."""
+    """Serialized scikit-learn CART classifier for synthetic row generation.
+
+    The object stores the tree structure and class counts needed for generation
+    without storing a live scikit-learn estimator or raw training rows. CART
+    models can be harder to explain than conditional-frequency models, so audit
+    support and purity before treating them as shareable artifacts.
+    """
 
     spec: TreeModelSpec
     feature_categories: dict[str, tuple[str, ...]]
@@ -377,7 +453,13 @@ def read_tree_training_sample(
     geography_column: str | None = None,
     weight_column: str | None = None,
 ) -> TreeTrainingSample:
-    """Read a CSV training view for tree-model fitting."""
+    """Read a CSV training view for tree-model fitting.
+
+    The caller must provide explicit target and conditioning columns. The
+    function validates that all requested columns exist and returns a
+    :class:`TreeTrainingSample` suitable for :func:`train_frequency_model` or
+    :func:`train_cart_model`.
+    """
 
     with path.open(newline="") as handle:
         reader = csv.DictReader(handle)
@@ -419,7 +501,13 @@ def audit_tree_model(
     min_support: float = 50,
     max_purity: float = 0.95,
 ) -> dict[str, object]:
-    """Check whether a tree model meets basic release-review thresholds."""
+    """Check whether a tree model meets basic release-review thresholds.
+
+    The report flags low-support groups or leaves, high-purity groups or
+    leaves, source-row/privacy metadata, and release-class status. It is a
+    screening tool for review, not a proof that a model is safe or
+    substantively valid.
+    """
 
     if min_support <= 0:
         raise ValueError("min_support must be greater than zero")
@@ -589,7 +677,12 @@ def train_cart_model(
     min_samples_leaf: int = 5,
     max_depth: int | None = None,
 ) -> CartTreeModel:
-    """Train a CART model from a tree-training sample."""
+    """Train a CART model from a tree-training sample.
+
+    Categorical conditioning columns are one-hot encoded in a deterministic
+    order before fitting a scikit-learn ``DecisionTreeClassifier``. The returned
+    model is serialized into plain Python data structures for JSON output.
+    """
 
     if min_samples_leaf < 1:
         raise ValueError("min_samples_leaf must be greater than zero")
@@ -670,7 +763,12 @@ def train_frequency_model(
     random_seed: int = 0,
     min_support: int = 5,
 ) -> FrequencyTreeModel:
-    """Train a conditional-frequency model from a tree-training sample."""
+    """Train a conditional-frequency model from a tree-training sample.
+
+    The model groups training rows by conditioning values and stores weighted
+    target-outcome counts for each group. This is often easier to inspect and
+    teach than CART because the generated probabilities are direct aggregates.
+    """
 
     grouped: dict[tuple[str, ...], dict[tuple[str, ...], float]] = defaultdict(
         lambda: defaultdict(float)
@@ -718,7 +816,13 @@ def generate_tree_rows(
     conditions: dict[str, str] | None = None,
     random_seed: int | None = None,
 ) -> list[dict[str, str]]:
-    """Generate synthetic rows from either supported tree model type."""
+    """Generate synthetic rows from either supported tree model type.
+
+    ``conditions`` may provide values for some or all conditioning columns. For
+    conditional-frequency models, unknown or partial conditions fall back toward
+    broader/global outcomes; for CART models, omitted conditions are encoded as
+    empty strings.
+    """
 
     if isinstance(model, FrequencyTreeModel):
         return generate_frequency_rows(
@@ -749,6 +853,12 @@ def generate_linked_population(
     The household model first generates household attributes, including
     household size. The person model then generates the requested number of
     people for each household using any shared conditioning columns.
+
+    Returns
+    -------
+    tuple[list[dict[str, str]], list[dict[str, str]]]
+        Household rows and person rows. Both include synthetic household
+        identifiers so the records can be joined.
     """
 
     if household_model.spec.level != "household":
@@ -814,7 +924,11 @@ def validate_linked_population(
     person_household_id_column: str = "synthetic_household_id",
     household_size_column: str = "household_size",
 ) -> dict[str, object]:
-    """Validate household-person links and household-size consistency."""
+    """Validate household-person links and household-size consistency.
+
+    The report checks that person rows reference generated households and that
+    each household has the number of persons stated in ``household_size_column``.
+    """
 
     household_counts: dict[str, int] = defaultdict(int)
     household_ids = {
@@ -1002,13 +1116,22 @@ def write_frequency_model(path: Path, model: FrequencyTreeModel) -> None:
 
 
 def write_tree_model(path: Path, model: TreeModel) -> None:
-    """Write a tree model JSON file."""
+    """Write a tree model JSON file.
+
+    The JSON schema is the portable artifact format used by the CLI and
+    library. It stores model structure, metadata, and privacy/release metadata,
+    but not raw training rows.
+    """
 
     path.write_text(json.dumps(model.to_dict(), indent=2, sort_keys=True) + "\n")
 
 
 def read_tree_model(path: Path) -> TreeModel:
-    """Read a tree model JSON file and return the matching model class."""
+    """Read a tree model JSON file and return the matching model class.
+
+    The model type is read from the JSON payload and dispatched to either
+    :class:`FrequencyTreeModel` or :class:`CartTreeModel`.
+    """
 
     try:
         payload = json.loads(path.read_text())
@@ -1022,7 +1145,11 @@ def read_tree_model(path: Path) -> TreeModel:
 
 
 def read_frequency_model(path: Path) -> FrequencyTreeModel:
-    """Read a conditional-frequency tree model JSON file."""
+    """Read a conditional-frequency tree model JSON file.
+
+    Raises ``ValueError`` if the JSON file contains a different supported model
+    family.
+    """
 
     payload = read_tree_model(path)
     if not isinstance(payload, FrequencyTreeModel):
@@ -1031,7 +1158,11 @@ def read_frequency_model(path: Path) -> FrequencyTreeModel:
 
 
 def read_cart_model(path: Path) -> CartTreeModel:
-    """Read a CART tree model JSON file."""
+    """Read a CART tree model JSON file.
+
+    Raises ``ValueError`` if the JSON file contains a different supported model
+    family.
+    """
 
     payload = read_tree_model(path)
     if not isinstance(payload, CartTreeModel):
@@ -1040,7 +1171,12 @@ def read_cart_model(path: Path) -> CartTreeModel:
 
 
 def write_generated_rows(path: Path, rows: list[dict[str, str]]) -> None:
-    """Write generated rows to CSV using the first row's column order."""
+    """Write generated rows to CSV using the first row's column order.
+
+    This helper is intentionally simple and deterministic. It raises
+    ``ValueError`` for empty output because there is no first row from which to
+    infer CSV columns.
+    """
 
     if not rows:
         raise ValueError("cannot write empty generated output")

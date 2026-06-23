@@ -16,7 +16,7 @@ validation reports.
 
 .. toctree::
    :maxdepth: 2
-   :caption: Command Sections
+   :caption: Command Line
 
    ipf
    controls
@@ -28,6 +28,7 @@ validation reports.
 
 .. toctree::
    :maxdepth: 2
-   :caption: Reference
+   :caption: Library
 
+   library
    api

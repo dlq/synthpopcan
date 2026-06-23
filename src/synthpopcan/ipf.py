@@ -8,6 +8,19 @@ from dataclasses import dataclass
 Record = Mapping[str, object]
 CategoryKey = tuple[str, ...]
 
+__all__ = [
+    "CategoryKey",
+    "IPFMargin",
+    "IPFResult",
+    "Record",
+    "calculate_max_abs_error",
+    "expand_records",
+    "fit_ipf",
+    "integerize_weights",
+    "validate_margin_coverage",
+    "weighted_totals",
+]
+
 
 @dataclass(frozen=True)
 class IPFMargin:
@@ -44,6 +57,22 @@ class IPFResult:
     The result keeps the original records alongside calibrated weights so
     callers can inspect convergence, validate totals, or expand the weighted
     seed records into integer synthetic rows.
+
+    Parameters
+    ----------
+    records:
+        Original seed records passed to :func:`fit_ipf`.
+    weights:
+        Calibrated weight for each seed record, in the same order as
+        ``records``.
+    converged:
+        Whether the fit reached the requested tolerance before exhausting the
+        iteration limit.
+    iterations:
+        Number of full IPF adjustment passes completed.
+    max_abs_error:
+        Largest absolute residual between a target cell and the fitted weighted
+        total when fitting stopped.
     """
 
     records: Sequence[Record]
@@ -79,6 +108,16 @@ def expand_records(
     Fractional weights are rounded with :func:`integerize_weights`. The output
     includes ``synthetic_id`` and ``seed_id`` columns so generated rows can be
     traced back to their seed-record source without exposing private data.
+
+    Parameters
+    ----------
+    records:
+        Seed records whose calibrated weights should be expanded.
+    weights:
+        Non-negative weights in the same order as ``records``.
+    id_field:
+        Optional seed-record column to copy into ``seed_id``. If the column is
+        missing, the one-based record index is used.
     """
 
     counts = integerize_weights(weights)
@@ -107,7 +146,13 @@ def integerize_weights(weights: Sequence[float]) -> list[int]:
     """Convert non-negative fractional weights to integer replication counts.
 
     The largest-remainder method preserves the rounded total population size
-    while assigning extra records to the largest fractional remainders.
+    while assigning extra records to the largest fractional remainders. This is
+    deterministic: ties are resolved by the original record order.
+
+    Raises
+    ------
+    ValueError
+        If any weight is negative.
     """
 
     if any(weight < 0 for weight in weights):
@@ -158,6 +203,12 @@ def fit_ipf(
     ValueError
         If records or margins are empty, if weights are invalid, or if a
         positive target cell has no seed records that can represent it.
+
+    Notes
+    -----
+    IPF can only adjust weights for category combinations represented in the
+    seed records. A missing positive target cell is a structural problem in the
+    seed/control design, not a convergence problem.
     """
 
     if not records:
@@ -239,7 +290,13 @@ def index_margins(
 def validate_margin_coverage(
     records: Sequence[Record], margins: Sequence[IPFMargin]
 ) -> None:
-    """Check that every positive target cell is represented by seed records."""
+    """Check that every positive target cell is represented by seed records.
+
+    Use this before fitting when you want to report unsupported controls as an
+    input-design problem. The function returns ``None`` when all positive target
+    cells have at least one matching seed record and raises ``ValueError`` for
+    the first unsupported target.
+    """
 
     index_margins(records, margins)
 
@@ -249,7 +306,12 @@ def weighted_totals(
     weights: Sequence[float],
     dimensions: tuple[str, ...],
 ) -> dict[CategoryKey, float]:
-    """Aggregate weighted records by a tuple of categorical dimensions."""
+    """Aggregate weighted records by a tuple of categorical dimensions.
+
+    The keys in the returned dictionary are ordered tuples of string category
+    values matching ``dimensions``. This is the same representation used by
+    :class:`IPFMargin`.
+    """
 
     totals: dict[CategoryKey, float] = {}
     for record, weight in zip(records, weights, strict=True):
@@ -263,7 +325,11 @@ def calculate_max_abs_error(
     weights: Sequence[float],
     margins: Sequence[IPFMargin],
 ) -> float:
-    """Return the largest absolute residual across all margin cells."""
+    """Return the largest absolute residual across all margin cells.
+
+    This helper is useful when validating saved weights or comparing an IPF
+    result after additional filtering or expansion.
+    """
 
     max_abs_error = 0.0
     for margin in margins:

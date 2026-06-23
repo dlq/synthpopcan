@@ -5,8 +5,8 @@ SynthPopCan is an early-stage project for building Canadian synthetic population
 Near-term goals:
 
 1. Provide a Python library and CLI that can create synthetic populations through IPF from Statistics Canada margin/control tables.
-2. Build census microdata workflows for household- and person-level synthetic populations using a tree-based synthetic population generator plus calibration. The local 2016 Census material is the first available microdata source, but the tooling should be census-year agnostic.
-3. Add a web app for configuring runs, inspecting controls, validating outputs, and downloading results.
+1. Build census microdata workflows for household- and person-level synthetic populations using a tree-based synthetic population generator plus calibration. The local 2016 Census material is the first available microdata source, but the tooling should be census-year agnostic.
+1. Add a web app for configuring runs, inspecting controls, validating outputs, and downloading results.
 
 Broader SynthEco-style enrichment with cohort, environmental, school, healthcare, and food-access layers is intentionally deferred until the base population synthesis workflow is stable.
 
@@ -374,11 +374,11 @@ This first adapter intentionally reads local downloaded CSVs and selected rows o
 Short user story for finding a WDS table ID:
 
 1. The user searches with plain topic words, for example `population dwelling`.
-2. The CLI shows matching StatCan WDS tables and their product IDs.
-3. The user explains one promising product ID before downloading it.
-4. The explanation previews the dimensions, a few member labels, and whether
+1. The CLI shows matching StatCan WDS tables and their product IDs.
+1. The user explains one promising product ID before downloading it.
+1. The explanation previews the dimensions, a few member labels, and whether
    the table looks useful as an IPF control source.
-5. If it looks useful, the user fetches it and follows the printed next command.
+1. If it looks useful, the user fetches it and follows the printed next command.
 
 If the downloaded table later needs column or label cleanup, SynthPopCan can
 inspect the ZIP and create a starter mapping template.

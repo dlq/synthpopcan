@@ -30,3 +30,9 @@ html_theme = "sphinx_rtd_theme"
 html_static_path = ["_static"]
 
 myst_heading_anchors = 3
+
+autoclass_content = "both"
+autodoc_member_order = "bysource"
+autodoc_typehints = "description"
+napoleon_use_param = True
+napoleon_use_rtype = True

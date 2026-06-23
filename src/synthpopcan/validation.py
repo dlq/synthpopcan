@@ -8,6 +8,13 @@ from synthpopcan.controls import ControlTable
 from synthpopcan.diagnostics import format_categories, format_number, relative_error
 from synthpopcan.ipf import Record, weighted_totals
 
+__all__ = [
+    "build_control_validation_report",
+    "build_distribution_comparison",
+    "build_tree_output_validation_report",
+    "comparison_dimensions",
+]
+
 
 def build_control_validation_report(
     control_table: ControlTable,
@@ -20,7 +27,8 @@ def build_control_validation_report(
     """Compare weighted records against every cell in a control table.
 
     Returns a JSON-serializable report with margin summaries, cell residuals,
-    and reader-facing issue messages for residuals above ``tolerance``.
+    and reader-facing issue messages for residuals above ``tolerance``. The
+    report is appropriate for CLI output, notebooks, tests, or provenance files.
     """
 
     margins: list[dict[str, Any]] = []
@@ -127,7 +135,8 @@ def build_tree_output_validation_report(
 
     The report checks target columns, joint target distributions, and selected
     conditioning columns for large proportion shifts or unseen generated
-    category combinations.
+    category combinations. Unknown generated categories are reported as errors;
+    distribution shifts beyond ``tolerance`` are reported as warnings.
     """
 
     if not training_rows:
@@ -214,7 +223,11 @@ def comparison_dimensions(
     target_columns: tuple[str, ...],
     conditioning_columns: tuple[str, ...],
 ) -> list[tuple[str, ...]]:
-    """Return one-way and joint dimension groups used for tree validation."""
+    """Return one-way and joint dimension groups used for tree validation.
+
+    The returned groups are the default dimensions compared by
+    :func:`build_tree_output_validation_report`.
+    """
 
     dimensions = [(column,) for column in target_columns]
     if len(target_columns) > 1:
@@ -230,7 +243,11 @@ def build_distribution_comparison(
     generated_weights: list[float],
     dimensions: tuple[str, ...],
 ) -> dict[str, Any]:
-    """Build one weighted distribution comparison for a dimension group."""
+    """Build one weighted distribution comparison for a dimension group.
+
+    The result includes category-level training and generated proportions,
+    absolute proportion deltas, and the maximum absolute delta for the group.
+    """
 
     training_counts = weighted_totals(training_rows, training_weights, dimensions)
     generated_counts = weighted_totals(generated_rows, generated_weights, dimensions)

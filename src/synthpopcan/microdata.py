@@ -10,6 +10,24 @@ from typing import Literal
 
 SeedLevel = Literal["household", "person"]
 
+__all__ = [
+    "SeedLevel",
+    "SeedSample",
+    "TreeColumnBlockSpec",
+    "TreeColumnSuggestionProfile",
+    "build_tree_geography_feasibility_report",
+    "check_statcan_2016_household_seed_columns",
+    "derive_statcan_2016_household_seed_sample",
+    "export_seed_rows",
+    "export_statcan_2016_household_training_rows",
+    "export_statcan_2016_person_training_rows",
+    "export_training_rows",
+    "read_fixture_seed_sample",
+    "read_statcan_2016_hierarchical_seed_sample",
+    "resolve_tree_column_block_pair",
+    "suggest_tree_column_blocks",
+]
+
 
 @dataclass(frozen=True)
 class SeedSample:
@@ -17,6 +35,25 @@ class SeedSample:
 
     Seed samples keep raw CSV rows plus the column roles needed by IPF and tree
     workflows, such as identifier, geography, and weight columns.
+
+    Parameters
+    ----------
+    level:
+        Whether records describe households or people.
+    source_format:
+        Adapter name identifying how the source file was interpreted.
+    records:
+        Source rows represented as dictionaries of strings.
+    columns:
+        Column names available in ``records``.
+    weight_column:
+        Optional column containing source weights.
+    geography_columns:
+        Columns that locate records geographically.
+    id_columns:
+        Columns that identify source records within the sample.
+    metadata:
+        Additional source-specific summary values.
     """
 
     level: SeedLevel
@@ -46,7 +83,12 @@ class SeedSample:
 
 @dataclass(frozen=True)
 class TreeColumnBlockSpec:
-    """A named set of target and conditioning columns for tree workflows."""
+    """A named set of target and conditioning columns for tree workflows.
+
+    Blocks are teaching and workflow aids: they group plausible target and
+    conditioning columns for supported source formats without hiding the final
+    modelling decision from the caller.
+    """
 
     name: str
     level: SeedLevel
@@ -56,7 +98,12 @@ class TreeColumnBlockSpec:
 
 @dataclass(frozen=True)
 class TreeColumnSuggestionProfile:
-    """Column-role suggestions for a known source microdata format."""
+    """Column-role suggestions for a known source microdata format.
+
+    A profile records known geography, identifier, weight, replicate-weight,
+    derived, and block columns for a source adapter. It is used to produce
+    reviewable suggestions rather than silently choosing a model design.
+    """
 
     source_format: str
     geography_columns: tuple[str, ...]
@@ -153,7 +200,8 @@ def read_fixture_seed_sample(
     """Read a small fixture CSV as a seed sample.
 
     This adapter is mainly for examples, tests, and teaching workflows where
-    column roles are supplied directly by the caller.
+    column roles are supplied directly by the caller. It performs only column
+    validation; it does not infer census-specific roles.
     """
 
     with path.open(newline="") as handle:
@@ -181,7 +229,12 @@ def read_fixture_seed_sample(
 
 
 def read_statcan_2016_hierarchical_seed_sample(path: Path) -> SeedSample:
-    """Read a Statistics Canada 2016 hierarchical microdata extract."""
+    """Read a Statistics Canada 2016 hierarchical microdata extract.
+
+    The returned sample is person-level and records known identifier columns,
+    the ``WEIGHT`` column, household counts, person counts, and a basic
+    duplicate-person-ID check in its metadata.
+    """
 
     with path.open(newline="") as handle:
         reader = csv.DictReader(handle)
@@ -226,7 +279,12 @@ def export_seed_rows(
     *,
     columns: tuple[str, ...],
 ) -> tuple[list[dict[str, str]], dict[str, object]]:
-    """Select seed columns for IPF or simple synthetic-population examples."""
+    """Select seed columns for IPF or simple synthetic-population examples.
+
+    The returned tuple contains output rows and a JSON-serializable manifest.
+    Identifier, geography, derived household-size, and weight columns are kept
+    when they are known on the input sample.
+    """
 
     if not columns:
         raise ValueError("at least one seed column is required")
@@ -266,7 +324,12 @@ def export_training_rows(
     target_columns: tuple[str, ...],
     conditioning_columns: tuple[str, ...],
 ) -> tuple[list[dict[str, str]], dict[str, object]]:
-    """Export a tree-training view from a supported seed sample."""
+    """Export a tree-training view from a supported seed sample.
+
+    This dispatches to the supported source-specific household or person export
+    routine. It returns rows plus a manifest describing source format, level,
+    selected columns, identifiers, and weight column.
+    """
 
     if sample.source_format != "statcan-2016-hierarchical":
         raise ValueError("training export requires statcan-2016-hierarchical")
@@ -293,7 +356,11 @@ def export_statcan_2016_person_training_rows(
     target_columns: tuple[str, ...],
     conditioning_columns: tuple[str, ...],
 ) -> tuple[list[dict[str, str]], dict[str, object]]:
-    """Export person-level training rows from 2016 hierarchical microdata."""
+    """Export person-level training rows from 2016 hierarchical microdata.
+
+    ``household_size`` may be requested even though it is not a source column;
+    it is derived from the number of persons sharing each ``HH_ID``.
+    """
 
     validate_columns(sample.columns, required=("PP_ID", "HH_ID", "WEIGHT"))
     source_columns = tuple(
@@ -335,7 +402,12 @@ def export_statcan_2016_household_training_rows(
     target_columns: tuple[str, ...],
     conditioning_columns: tuple[str, ...],
 ) -> tuple[list[dict[str, str]], dict[str, object]]:
-    """Export one household-level training row per household ID."""
+    """Export one household-level training row per household ID.
+
+    Household-level source columns must be constant within each household. Use
+    :func:`check_statcan_2016_household_seed_columns` before exporting when
+    preparing a model design interactively.
+    """
 
     selected_columns = unique_columns((*conditioning_columns, *target_columns))
     household_sample = derive_statcan_2016_household_seed_sample(
@@ -390,7 +462,12 @@ def derive_statcan_2016_household_seed_sample(
     *,
     columns: tuple[str, ...],
 ) -> SeedSample:
-    """Derive household seed records from person-level hierarchical rows."""
+    """Derive household seed records from person-level hierarchical rows.
+
+    One output record is produced per ``HH_ID``. Selected household columns and
+    ``WEIGHT`` must be constant within the household; ``household_size`` is
+    derived from the number of person rows.
+    """
 
     if sample.source_format != "statcan-2016-hierarchical":
         raise ValueError("household derivation requires statcan-2016-hierarchical")
@@ -440,7 +517,11 @@ def check_statcan_2016_household_seed_columns(
     *,
     columns: tuple[str, ...],
 ) -> dict[str, object]:
-    """Check whether selected columns are constant within each household."""
+    """Check whether selected columns are constant within each household.
+
+    The report is JSON-serializable and includes one check per requested column,
+    plus checks for ``WEIGHT`` and derived ``household_size``.
+    """
 
     if sample.source_format != "statcan-2016-hierarchical":
         raise ValueError("household seed checks require statcan-2016-hierarchical")
@@ -474,7 +555,12 @@ def check_statcan_2016_household_seed_columns(
 
 
 def suggest_tree_column_blocks(sample: SeedSample) -> dict[str, object]:
-    """Suggest tree-model column blocks for a known source format."""
+    """Suggest tree-model column blocks for a known source format.
+
+    Suggestions are source-aware but not authoritative. They are intended to
+    start a model-design review by naming available blocks, missing columns, and
+    excluded identifiers or replicate weights.
+    """
 
     profile = TREE_COLUMN_SUGGESTION_PROFILES.get(sample.source_format)
     if profile is None:
@@ -512,7 +598,12 @@ def resolve_tree_column_block_pair(
     tuple[str, ...],
     dict[str, object],
 ]:
-    """Resolve named household and person column blocks into column tuples."""
+    """Resolve named household and person column blocks into column tuples.
+
+    Returns household targets, household conditioning columns, person targets,
+    person conditioning columns, and a design report. The report highlights
+    feasibility issues that should be reviewed before training linked models.
+    """
 
     suggestion = suggest_tree_column_blocks(sample)
     suggested_household_block = find_suggested_tree_column_block(

@@ -15,10 +15,32 @@ CENSUS_PROFILE_2016_BASE_URL = (
     "details/download-telecharger/comp/GetFile.cfm"
 )
 
+__all__ = [
+    "CensusProfileDownload",
+    "WDSTableSearchResult",
+    "classify_wds_ipf_suitability",
+    "extract_wds_dimension_names",
+    "extract_wds_dimension_previews",
+    "fetch_census_profile_2016",
+    "fetch_wds_metadata",
+    "fetch_wds_table",
+    "normalize_language",
+    "normalize_product_id",
+    "search_wds_tables",
+    "summarize_wds_metadata",
+    "wds_all_cubes_lite_url",
+    "wds_download_url",
+    "wds_metadata_url",
+]
+
 
 @dataclass(frozen=True)
 class CensusProfileDownload:
-    """Metadata for one supported 2016 Census Profile bulk download."""
+    """Metadata for one supported 2016 Census Profile bulk download.
+
+    Instances describe the geography level, display label, download parameters,
+    and local filename for a supported Census Profile CSV.
+    """
 
     geo_level: str
     label: str
@@ -43,7 +65,11 @@ class CensusProfileDownload:
 
 @dataclass(frozen=True)
 class WDSTableSearchResult:
-    """One table match from the Statistics Canada WDS cube list."""
+    """One table match from the Statistics Canada WDS cube list.
+
+    Search results contain just enough metadata for a user or script to choose a
+    candidate product ID and then request metadata or a full-table download.
+    """
 
     product_id: str
     cansim_id: str
@@ -109,7 +135,11 @@ CENSUS_PROFILE_2016_DOWNLOADS: dict[str, CensusProfileDownload] = {
 
 
 def wds_download_url(product_id: str, lang: str = "en") -> str:
-    """Build the WDS endpoint URL that returns a full-table download link."""
+    """Build the WDS endpoint URL that returns a full-table download link.
+
+    This returns the service endpoint, not the final ZIP URL. Call
+    :func:`fetch_wds_table` to resolve and download the file.
+    """
 
     product = normalize_product_id(product_id)
     language = normalize_language(lang)
@@ -129,7 +159,12 @@ def wds_metadata_url() -> str:
 
 
 def search_wds_tables(query: str, limit: int = 10) -> list[WDSTableSearchResult]:
-    """Search the WDS cube list for tables matching all query terms."""
+    """Search the WDS cube list for tables matching all query terms.
+
+    The search is a simple case-insensitive term match over product ID, CANSIM
+    ID, English and French titles, and date fields. It is useful for discovery,
+    not as a ranked search engine.
+    """
 
     terms = [term.lower() for term in query.split() if term.strip()]
     if not terms:
@@ -169,7 +204,8 @@ def fetch_wds_metadata(product_id: str) -> dict[str, Any]:
     """Fetch metadata for a WDS product ID.
 
     Raises ``ValueError`` when Statistics Canada returns no usable metadata for
-    the requested product.
+    the requested product. Network and service errors from ``urllib`` are not
+    wrapped so callers can decide how to retry or report them.
     """
 
     product = int(normalize_product_id(product_id))
@@ -183,7 +219,12 @@ def fetch_wds_metadata(product_id: str) -> dict[str, Any]:
 
 
 def summarize_wds_metadata(metadata: dict[str, Any]) -> dict[str, object]:
-    """Summarize WDS metadata into dimensions, suitability hints, and commands."""
+    """Summarize WDS metadata into dimensions, suitability hints, and commands.
+
+    The summary is designed for display and JSON output. It includes dimension
+    names, short member previews, a rough IPF suitability classification, and
+    suggested next commands for downloading and normalizing controls.
+    """
 
     product_id = normalize_product_id(str(metadata.get("productId", "")))
     dimensions = extract_wds_dimension_names(metadata)
@@ -221,7 +262,12 @@ def summarize_wds_metadata(metadata: dict[str, Any]) -> dict[str, object]:
 
 
 def classify_wds_ipf_suitability(dimensions: list[str]) -> dict[str, object]:
-    """Classify whether WDS dimensions look useful for simple IPF controls."""
+    """Classify whether WDS dimensions look useful for simple IPF controls.
+
+    This is a heuristic based only on dimension names. It can suggest that age
+    and sex controls look plausible, but it cannot verify category compatibility
+    with a seed sample.
+    """
 
     normalized = {normalize_dimension_name(dimension) for dimension in dimensions}
     has_geography = any(dimension in normalized for dimension in ("geography", "geo"))
@@ -276,7 +322,11 @@ def normalize_dimension_name(value: str) -> str:
 
 
 def extract_wds_dimension_names(metadata: dict[str, Any]) -> list[str]:
-    """Extract English dimension names from WDS metadata."""
+    """Extract English dimension names from WDS metadata.
+
+    The helper tolerates small shape differences in WDS metadata payloads and
+    returns an empty list when dimension names cannot be found.
+    """
 
     names: list[str] = []
     dimensions = metadata.get("dimension") or metadata.get("dimensions", [])
@@ -300,7 +350,11 @@ def extract_wds_dimension_previews(
     *,
     member_limit: int = 3,
 ) -> list[dict[str, object]]:
-    """Extract short member previews for each WDS dimension."""
+    """Extract short member previews for each WDS dimension.
+
+    Each preview includes the dimension name, total member count, a short member
+    sample, and a ``truncated`` flag.
+    """
 
     previews: list[dict[str, object]] = []
     dimensions = metadata.get("dimension") or metadata.get("dimensions", [])
@@ -363,7 +417,12 @@ def format_metadata_date_range(start: Any, end: Any) -> str:
 
 
 def fetch_wds_table(product_id: str, out_dir: Path, lang: str = "en") -> Path:
-    """Download a WDS full-table ZIP and write a small provenance manifest."""
+    """Download a WDS full-table ZIP and write a small provenance manifest.
+
+    Returns the path to the downloaded ZIP. A JSON manifest is written beside
+    the ZIP with source, product ID, language, service URL, final download URL,
+    and local path.
+    """
 
     source_url = wds_download_url(product_id, lang)
     response = fetch_json(source_url)
@@ -389,7 +448,12 @@ def fetch_wds_table(product_id: str, out_dir: Path, lang: str = "en") -> Path:
 
 
 def fetch_census_profile_2016(geo_level: str, out_dir: Path) -> Path:
-    """Download a supported 2016 Census Profile CSV and manifest."""
+    """Download a supported 2016 Census Profile CSV and manifest.
+
+    ``geo_level`` must be one of the supported keys in
+    ``CENSUS_PROFILE_2016_DOWNLOADS``. The function returns the CSV path and
+    writes a JSON provenance manifest beside it.
+    """
 
     try:
         entry = CENSUS_PROFILE_2016_DOWNLOADS[geo_level]
@@ -440,7 +504,11 @@ def write_manifest(path: Path, data: dict[str, Any]) -> None:
 
 
 def normalize_product_id(product_id: str) -> str:
-    """Validate and normalize a Statistics Canada product ID."""
+    """Validate and normalize a Statistics Canada product ID.
+
+    Product IDs must contain only digits. Leading and trailing whitespace is
+    stripped, but the digit string is otherwise preserved.
+    """
 
     product = product_id.strip()
     if not product.isdigit():

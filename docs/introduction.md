@@ -140,12 +140,12 @@ columns, category mappings, random seeds, commands, and validation results.
 Most SynthPopCan workflows follow the same pattern:
 
 1. Inspect source files before transforming them.
-2. Choose the columns and categories that matter for the research question.
-3. Normalize control totals or export seed/training rows.
-4. Check compatibility before fitting or generating.
-5. Fit, generate, or package outputs.
-6. Validate the result.
-7. Keep the commands, mappings, reports, and notes together.
+1. Choose the columns and categories that matter for the research question.
+1. Normalize control totals or export seed/training rows.
+1. Check compatibility before fitting or generating.
+1. Fit, generate, or package outputs.
+1. Validate the result.
+1. Keep the commands, mappings, reports, and notes together.
 
 This pattern is intentionally conservative. It helps readers understand not only
 what the tool produced, but what choices shaped the result.

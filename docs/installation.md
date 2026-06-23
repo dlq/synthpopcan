@@ -108,6 +108,24 @@ uv run sphinx-build -W -b html docs docs/_build/html
 The `-W` flag treats warnings as errors. This is intentional: it catches broken
 links and malformed documentation before Read the Docs publishes the site.
 
+Check the reStructuredText source files with:
+
+```bash
+uv run --group docs doc8 docs
+```
+
+Check Markdown formatting with:
+
+```bash
+uv run --group docs mdformat --check docs README.md
+```
+
+Apply Markdown formatting with:
+
+```bash
+uv run --group docs mdformat docs README.md
+```
+
 ## Local Data
 
 SynthPopCan looks for local data under `data/` by default. Raw and private data

@@ -7,9 +7,17 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+__all__ = ["DataLayoutCheck", "inspect_local_data_layout"]
+
 
 @dataclass(frozen=True)
 class DataLayoutCheck:
+    """One local data-layout check returned by :func:`inspect_local_data_layout`.
+
+    The object records a check name, status, human-readable detail, checked
+    path, and optional tip for resolving missing or invalid local files.
+    """
+
     name: str
     status: str
     detail: str
@@ -27,6 +35,13 @@ class DataLayoutCheck:
 
 
 def inspect_local_data_layout(data_root: Path) -> list[DataLayoutCheck]:
+    """Inspect whether expected local data directories and metadata exist.
+
+    The checks are intentionally non-destructive and do not read private source
+    data. They are used by the ``data doctor`` command and by scripts that want
+    to explain local setup problems before running a workflow.
+    """
+
     raw_root = data_root / "raw"
     checks = [
         check_directory(
