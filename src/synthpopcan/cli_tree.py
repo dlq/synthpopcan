@@ -81,10 +81,28 @@ def tree() -> None:
     help="Optional training weight column.",
 )
 @click.option("--out", "out_path", required=True, type=PATH, help="Output model JSON.")
-@click.option("--random-seed", default=0, type=int, show_default=True)
-@click.option("--min-support", default=5, type=int, show_default=True)
-@click.option("--min-samples-leaf", default=5, type=int, show_default=True)
-@click.option("--max-depth", default=None, type=int)
+@click.option(
+    "--random-seed",
+    default=0,
+    type=int,
+    show_default=True,
+    help="Random seed used by the training backend.",
+)
+@click.option(
+    "--min-support",
+    default=5,
+    type=int,
+    show_default=True,
+    help="Minimum records required for conditional-frequency groups.",
+)
+@click.option(
+    "--min-samples-leaf",
+    default=5,
+    type=int,
+    show_default=True,
+    help="Minimum samples allowed in each CART leaf.",
+)
+@click.option("--max-depth", default=None, type=int, help="Optional CART max depth.")
 def train_tree_generator(
     source: Path,
     method: str,
@@ -199,10 +217,28 @@ def train_tree_generator(
     show_default=True,
     help="Training backend for both models.",
 )
-@click.option("--random-seed", default=0, type=int, show_default=True)
-@click.option("--min-support", default=5, type=int, show_default=True)
-@click.option("--min-samples-leaf", default=5, type=int, show_default=True)
-@click.option("--max-depth", default=None, type=int)
+@click.option(
+    "--random-seed",
+    default=0,
+    type=int,
+    show_default=True,
+    help="Random seed used by both training backends.",
+)
+@click.option(
+    "--min-support",
+    default=5,
+    type=int,
+    show_default=True,
+    help="Minimum records required for conditional-frequency groups.",
+)
+@click.option(
+    "--min-samples-leaf",
+    default=5,
+    type=int,
+    show_default=True,
+    help="Minimum samples allowed in each CART leaf.",
+)
+@click.option("--max-depth", default=None, type=int, help="Optional CART max depth.")
 def train_linked_tree_generator(
     source: Path,
     input_format: str,
@@ -345,7 +381,7 @@ def train_linked_tree_generator(
     default=None,
     help="Optional output JSON manifest with model and seed provenance.",
 )
-@click.option("--random-seed", default=None, type=int)
+@click.option("--random-seed", default=None, type=int, help="Optional generation seed.")
 def generate_tree_population(
     model_path: Path,
     rows: int,
@@ -430,7 +466,7 @@ def generate_tree_population(
     default=None,
     help="Optional output JSON manifest with model and seed provenance.",
 )
-@click.option("--random-seed", default=None, type=int)
+@click.option("--random-seed", default=None, type=int, help="Optional generation seed.")
 def generate_linked_tree_population(
     household_model: Path,
     person_model: Path,
@@ -527,7 +563,7 @@ def generate_linked_tree_population(
     default=None,
     help="Optional output JSON manifest with package and seed provenance.",
 )
-@click.option("--random-seed", default=None, type=int)
+@click.option("--random-seed", default=None, type=int, help="Optional generation seed.")
 def generate_linked_tree_population_from_package(
     package_path: Path,
     households: int,
@@ -589,8 +625,20 @@ def generate_linked_tree_population_from_package(
 
 @tree.command("audit-model")
 @click.argument("model_path", type=PATH)
-@click.option("--min-support", default=50.0, type=float, show_default=True)
-@click.option("--max-purity", default=0.95, type=float, show_default=True)
+@click.option(
+    "--min-support",
+    default=50.0,
+    type=float,
+    show_default=True,
+    help="Minimum acceptable support for each group or leaf.",
+)
+@click.option(
+    "--max-purity",
+    default=0.95,
+    type=float,
+    show_default=True,
+    help="Maximum acceptable dominant-outcome purity.",
+)
 @click.option(
     "--format",
     "output_format",
@@ -619,9 +667,27 @@ def audit_tree_model_command(
 
 @tree.command("package-model")
 @click.argument("model_path", type=PATH)
-@click.option("--out", "out_path", required=True, type=PATH)
-@click.option("--min-support", default=50.0, type=float, show_default=True)
-@click.option("--max-purity", default=0.95, type=float, show_default=True)
+@click.option(
+    "--out",
+    "out_path",
+    required=True,
+    type=PATH,
+    help="Output flat tree model package JSON.",
+)
+@click.option(
+    "--min-support",
+    default=50.0,
+    type=float,
+    show_default=True,
+    help="Minimum acceptable support for each group or leaf.",
+)
+@click.option(
+    "--max-purity",
+    default=0.95,
+    type=float,
+    show_default=True,
+    help="Maximum acceptable dominant-outcome purity.",
+)
 def package_tree_model_command(
     model_path: Path,
     out_path: Path,

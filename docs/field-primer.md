@@ -254,9 +254,8 @@ commands, options, examples, and troubleshooting.
 - **Control construction:** use {doc}`controls` when a source table needs to
   become a normalized margin or control CSV. This is where category mapping
   becomes explicit.
-- **Seed and training rows:** use the microdata commands described in
-  {doc}`tree` and {doc}`ipf` when local microdata needs to become IPF seed rows
-  or tree-training rows.
+- **Seed and training rows:** use {doc}`microdata` when local microdata needs
+  to become IPF seed rows or tree-training rows.
 - **Calibration:** use {doc}`ipf` for the check, fit, report, validate pattern.
   IPF changes row weights; it does not invent unsupported categories.
 - **Conditional generation:** use {doc}`tree` for tree-model training,

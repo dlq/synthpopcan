@@ -131,6 +131,11 @@ Apply Markdown formatting with:
 uv run --group docs mdformat docs README.md
 ```
 
+When changing examples, also run the examples that are presented as runnable.
+Good examples are part of the interface: check command names, fixture paths,
+column names, output files, and whether the example still makes sense in the
+surrounding explanation.
+
 ## Local Data
 
 SynthPopCan looks for local data under `data/` by default. Raw and private data

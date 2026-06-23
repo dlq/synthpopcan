@@ -1,4 +1,4 @@
-# Library Deep Dive
+# Advanced Library Use
 
 The Python library is for people who want to use SynthPopCan inside notebooks,
 scripts, reproducible research pipelines, or teaching materials. The command
@@ -22,7 +22,7 @@ corresponding command-line page first:
 
 Start with [Getting Started With the Beginner API](library-getting-started.md)
 unless you already know you need lower-level objects such as `IPFMargin`,
-`ControlTable`, or `FrequencyTreeModel`. This page is the deeper guide to the
+`ControlTable`, or `FrequencyTreeModel`. This page is the advanced guide to the
 full library surface.
 
 ## Import Style
@@ -165,7 +165,8 @@ print(manifest["rows_written"], manifest["columns"])
 
 For tree modelling, first ask the source adapter which column blocks are
 available, then resolve the blocks into explicit target and conditioning
-columns:
+columns. This example keeps the exported rows in memory so we can inspect the
+design before writing files:
 
 ```python
 from synthpopcan.microdata import (
@@ -238,6 +239,11 @@ scikit-learn CART classifier. The command-line [Tree Models](tree.md) chapter
 discusses the methodological risks; the library API gives you the objects needed
 to train, audit, serialize, and generate from those models.
 
+When we are ready to train from a file, the training CSV should contain the
+same target and conditioning columns chosen in the microdata step above. The
+command-line `microdata export-training` examples show one way to write that
+CSV.
+
 ```python
 from pathlib import Path
 
@@ -278,6 +284,8 @@ generated household rows.
 ```python
 from synthpopcan.tree import generate_linked_population, validate_linked_population
 
+# household_model and person_model can be read from JSON with read_tree_model()
+# or created earlier in the script with train_frequency_model().
 households, persons = generate_linked_population(
     household_model,
     person_model,

@@ -206,18 +206,55 @@ def suggest_microdata_tree_columns(
     show_default=True,
     help="Suggested person block to evaluate.",
 )
-@click.option("--likely-person-rows", default=10_000, type=int, show_default=True)
-@click.option("--likely-household-rows", default=4_000, type=int, show_default=True)
-@click.option("--borderline-person-rows", default=2_500, type=int, show_default=True)
-@click.option("--borderline-household-rows", default=1_000, type=int, show_default=True)
-@click.option("--min-support", default=50.0, type=float, show_default=True)
-@click.option("--max-purity", default=0.95, type=float, show_default=True)
+@click.option(
+    "--likely-person-rows",
+    default=10_000,
+    type=int,
+    show_default=True,
+    help="Person-row count that usually indicates adequate geography support.",
+)
+@click.option(
+    "--likely-household-rows",
+    default=4_000,
+    type=int,
+    show_default=True,
+    help="Household-row count that usually indicates adequate geography support.",
+)
+@click.option(
+    "--borderline-person-rows",
+    default=2_500,
+    type=int,
+    show_default=True,
+    help="Person-row count below which tree modelling is likely fragile.",
+)
+@click.option(
+    "--borderline-household-rows",
+    default=1_000,
+    type=int,
+    show_default=True,
+    help="Household-row count below which tree modelling is likely fragile.",
+)
+@click.option(
+    "--min-support",
+    default=50.0,
+    type=float,
+    show_default=True,
+    help="Minimum acceptable support for release-oriented model checks.",
+)
+@click.option(
+    "--max-purity",
+    default=0.95,
+    type=float,
+    show_default=True,
+    help="Maximum acceptable dominant-outcome purity for release checks.",
+)
 @click.option(
     "--format",
     "output_format",
     default="table",
     type=click.Choice(["json", "table"]),
     show_default=True,
+    help="Output format for the feasibility report.",
 )
 def tree_geography_feasibility(
     path: Path,
@@ -284,7 +321,13 @@ def tree_geography_feasibility(
     help="Comma-separated fixture geography columns.",
 )
 @click.option("--id-columns", default="", help="Comma-separated fixture ID columns.")
-@click.option("--out", "out_path", required=True, type=PATH)
+@click.option(
+    "--out",
+    "out_path",
+    required=True,
+    type=PATH,
+    help="Output IPF seed CSV.",
+)
 @click.option(
     "--format",
     "output_format",
@@ -360,7 +403,13 @@ def export_microdata_seed(
     required=True,
     help="Comma-separated columns used to condition tree generation.",
 )
-@click.option("--out", "out_path", required=True, type=PATH)
+@click.option(
+    "--out",
+    "out_path",
+    required=True,
+    type=PATH,
+    help="Output tree-training CSV.",
+)
 @click.option(
     "--format",
     "output_format",

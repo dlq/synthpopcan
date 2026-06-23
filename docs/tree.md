@@ -423,6 +423,24 @@ The audit also checks whether model metadata says raw rows or source identifiers
 may be present. A model with those flags should not be treated as a release
 candidate.
 
+### `tree package-model`
+
+Packages a single flat tree model only after `audit-model` passes without
+warnings.
+
+```bash
+synthpopcan tree package-model household-model.json \
+  --out household-model-package.json \
+  --min-support 50 \
+  --max-purity 0.95
+```
+
+This command is intentionally stricter than `audit-model`: an audit report can
+be useful even when it contains warnings, but `package-model` refuses to write a
+package until the audit is clean. For linked household/person work, use
+`prepare-model-release`, `release-readiness`, and `package-linked-models`
+instead.
+
 ### `tree prepare-model-release`
 
 Writes a publishable-candidate copy after release checks.

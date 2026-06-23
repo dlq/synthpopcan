@@ -13,7 +13,7 @@ It gives you a few functions for common work:
 
 It does not expose training, auditing, packaging, source inspection, or release
 workflows at the top level. Those remain available in the command line and in
-the lower-level library modules described in [Library Deep Dive](library.md).
+the lower-level library modules described in [Advanced Library Use](library.md).
 
 ## Why Use a Notebook?
 
@@ -43,9 +43,11 @@ start with [Installation](installation.md).
 
 ## First Notebook Cell
 
-Start with one import:
+Start with the path helper and the SynthPopCan import:
 
 ```python
+from pathlib import Path
+
 import synthpopcan as spc
 ```
 
@@ -62,12 +64,22 @@ process that actually runs the code cells.
 A notebook is a good place to inspect files, try a small fit, and record the
 choices that shaped the output.
 
+The source checkout includes a tiny already-exported seed file and a matching
+control file. We will use those first so the notebook example has concrete
+paths:
+
+```python
+fixture_root = Path("tests/fixtures/workflows/microdata_ipf")
+seed_path = fixture_root / "expected-seed.csv"
+controls_path = fixture_root / "controls.csv"
+```
+
 Read a seed file and look at its shape before fitting. The first line asks how
 many rows were read. The second shows one row so you can inspect the column
 names and values:
 
 ```python
-seed = spc.read_seed("seed.csv")
+seed = spc.read_seed(seed_path)
 
 len(seed), seed[0]
 ```
@@ -83,7 +95,7 @@ sorted(seed[0])
 Read controls and inspect the margins:
 
 ```python
-controls = spc.read_controls("controls.csv")
+controls = spc.read_controls(controls_path)
 
 [(margin.name, margin.dimensions, len(margin.cells)) for margin in controls.margins]
 ```
@@ -146,23 +158,24 @@ When you do not need to inspect or filter rows between steps, pass paths
 directly:
 
 ```python
-fit = spc.fit_ipf("seed.csv", "controls.csv", weight_field="WEIGHT")
+fit = spc.fit_ipf(seed_path, controls_path, weight_field="WEIGHT")
 spc.write_weights(fit, "weights.csv")
 ```
 
 Use in-memory objects when we want to inspect or modify data between steps:
 
 ```python
-seed = spc.read_seed("seed.csv")
-controls = spc.read_controls("controls.csv")
+seed = spc.read_seed(seed_path)
+controls = spc.read_controls(controls_path)
 
-seed_for_quebec = [row for row in seed if row["PR"] == "24"]
-fit = spc.fit_ipf(seed_for_quebec, controls, weight_field="WEIGHT")
+adult_seed = [row for row in seed if row["AGEGRP"] == "adult"]
 ```
 
 That pattern is useful in notebooks because each step can show its assumptions.
 Add a Markdown cell above filters like this explaining why the selection was
-made and what it excludes.
+made and what it excludes. Do not fit the original controls to a filtered seed
+unless the controls have also been filtered or rebuilt for the same population
+universe.
 
 ## Generate From a Prepared Model Package
 

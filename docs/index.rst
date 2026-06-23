@@ -21,10 +21,12 @@ validation reports.
    ipf
    controls
    statcan
+   microdata
    tree
    validate
    data
    sources
+   web-app
 
 .. toctree::
    :maxdepth: 2

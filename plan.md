@@ -546,6 +546,11 @@ Deliverables:
 - Data access notes that explain which sources are public fetches, which require local/private files, and how ignored data roots should be organized. Status: first pass added in `docs/data.md` and `docs/sources.md`.
 - Keep README examples short; keep reproducible workflows in topic pages such as
   `docs/ipf.md`, `docs/controls.md`, `docs/statcan.md`, and `docs/tree.md`.
+- Treat documentation examples as tested interface surfaces, not decorative
+  snippets. Good examples are hard to craft: every getting-started or workflow
+  example should be checked for runnable commands, real fixture paths, existing
+  column names, coherent file flow, and consistency with the surrounding
+  narrative before it is treated as done.
 - Documentation should distinguish beginner workflows from advanced/maintainer
   workflows. The first page should not expose every CLI command; it should route
   users to the web app, IPF from StatCan tables, generated-from-model workflows,
@@ -705,6 +710,10 @@ Every new feature should include tests at the smallest practical scale:
 - Unit tests for pure transformations and algorithms.
 - CLI tests for command behavior and output files.
 - Fixture-based integration tests for one complete workflow.
+- Documentation-example checks for any new or changed getting-started or
+  workflow examples. At minimum, run the commands or notebook snippets that are
+  presented as runnable, and verify that illustrative examples are clearly
+  marked as placeholders when they depend on user-supplied data.
 - Coverage measurement with `pytest-cov` or an equivalent tool once the core workflow surface stabilizes.
 - No tests should require full private or raw data caches.
 

@@ -216,7 +216,9 @@ def expand_population(result: IPFResult, *, id_field: str = "id") -> PopulationR
     result:
         A fitted IPF result from :func:`fit_ipf`.
     id_field:
-        Name of the identifier column to add to expanded rows.
+        Source seed-record identifier column to copy into the ``seed_id`` field
+        of expanded rows. Each expanded row also receives a new
+        ``synthetic_id``.
 
     Returns
     -------
