@@ -240,152 +240,29 @@ Return to this primer when you need to explain what the output means.
 
 ## Tool Reference Map
 
-This section maps field concepts to the current SynthPopCan tool surface. It is
-not a replacement for the command pages; it is a guide to where each concept
-lives in the CLI.
+This section maps field concepts to the current SynthPopCan documentation
+surface. It is deliberately short; the command pages contain the actual
+commands, options, examples, and troubleshooting.
 
-### Inspecting and Preparing Sources
-
-Use these commands before modelling. Their job is to make source files visible
-and reviewable.
-
-```bash
-synthpopcan data doctor
-synthpopcan sources inspect PATH
-synthpopcan sources schema PATH
-synthpopcan sources sample PATH
-```
-
-Use `data doctor` to check local data setup. Use `sources` commands when you
-have a file and need to know its columns, sample rows, or shape before deciding
-whether it belongs in a workflow.
-
-See {doc}`data` and {doc}`sources`.
-
-### Finding Statistics Canada Tables
-
-Use `statcan` commands when the source is a public Statistics Canada table.
-
-```bash
-synthpopcan statcan wds search "age sex"
-synthpopcan statcan wds explain 98100001
-synthpopcan statcan wds metadata 98100001
-synthpopcan statcan wds fetch 98100001 --out-dir data/raw/statcan/wds
-synthpopcan statcan census-profile fetch --year 2016 --geo-level csd-all --out-dir data/raw/statcan/census-profile/2016
-```
-
-The important interpretive step is not the download. It is deciding whether the
-table's dimensions, geography, year, and population universe fit the research
-question.
-
-See {doc}`statcan`.
-
-### Turning Source Tables into Controls
-
-Use `controls` commands when a source table needs to become a normalized margin
-or control CSV.
-
-```bash
-synthpopcan controls validate controls.csv
-synthpopcan controls from-csv local-controls.csv --out controls.csv
-synthpopcan controls wds inspect table.zip
-synthpopcan controls wds mapping-template table.zip --dimensions "Sex,Age group" --out mapping.json
-synthpopcan controls from-wds table.zip --dimensions "Sex,Age group" --count-column VALUE --out controls.csv
-synthpopcan controls census-profile inspect profile.csv --search age
-synthpopcan controls census-profile template age5 --out age-template.json
-synthpopcan controls from-census-profile profile.csv --mapping age-template.json --out controls.csv
-```
-
-This is where category mapping becomes explicit. A good control table is not
-just a downloaded table; it is a documented translation from source labels into
-the categories the seed or generated rows can represent.
-
-See {doc}`controls`.
-
-### Preparing Seed and Training Rows
-
-Use `microdata` commands when the source is microdata rather than an aggregate
-table.
-
-```bash
-synthpopcan microdata inspect hierarchical.csv --input-format statcan-2016-hierarchical
-synthpopcan microdata check-seed hierarchical.csv --input-format statcan-2016-hierarchical --level household --columns TENUR,ROOMS
-synthpopcan microdata export-seed hierarchical.csv --input-format statcan-2016-hierarchical --columns AGEGRP,SEX --out seed.csv
-synthpopcan microdata export-training hierarchical.csv --input-format statcan-2016-hierarchical --level person --target-columns AGEGRP,SEX --conditioning-columns TENUR,household_size --out person-training.csv
-synthpopcan microdata suggest-tree-columns hierarchical.csv --input-format statcan-2016-hierarchical
-synthpopcan microdata tree-geography-feasibility hierarchical.csv --input-format statcan-2016-hierarchical --geography-column PR
-```
-
-Seed rows feed IPF. Training rows feed tree models. The distinction matters:
-IPF changes row weights, while tree models learn conditional patterns from the
-training view.
-
-### Running IPF
-
-Use `ipf` commands for margin-table calibration.
-
-```bash
-synthpopcan ipf check-inputs --seed seed.csv --controls controls.csv
-synthpopcan ipf fit --seed seed.csv --controls controls.csv --weight-field WEIGHT --out weights.csv --report fit-report.json
-synthpopcan ipf report fit-report.json
-synthpopcan ipf expand --weights weights.csv --out synthetic.csv
-synthpopcan ipf suggest-controls --seed candidate-households.csv --unit household
-```
-
-The safe pattern is check, fit, inspect the report, then validate. Use expanded
-rows only when another tool needs one row per generated unit.
-
-See {doc}`ipf`.
-
-### Training and Generating Tree Models
-
-Use `tree` commands for conditional generation and linked household/person
-models.
-
-```bash
-synthpopcan tree train person-training.csv --level person --target-columns AGEGRP,SEX --conditioning-columns TENUR,household_size --out person-model.json
-synthpopcan tree train-linked hierarchical.csv --input-format statcan-2016-hierarchical --suggested-blocks --household-model-out household-model.json --person-model-out person-model.json --manifest-out linked-training.manifest.json
-synthpopcan tree generate person-model.json --rows 100 --out synthetic-persons.csv
-synthpopcan tree generate-linked --household-model household-model.json --person-model person-model.json --households 100 --households-out synthetic-households.csv --persons-out synthetic-persons.csv
-```
-
-Tree models are for plausible conditional structure. They are not, by
-themselves, proof that local margins match. Follow generation with validation or
-post-generation calibration when public controls matter.
-
-See {doc}`tree`.
-
-### Auditing and Packaging Models
-
-Use these commands when a model might be reused or shared.
-
-```bash
-synthpopcan tree audit-model person-model.json --min-support 50 --max-purity 0.95
-synthpopcan tree prepare-model-release person-model.json --out person-model-publishable.json --manifest-out person-release.manifest.json --review-note "Reviewed support and purity."
-synthpopcan tree release-readiness --household-model household-model-publishable.json --person-model person-model-publishable.json --training-manifest linked-training.manifest.json
-synthpopcan tree package-linked-models --household-model household-model-publishable.json --person-model person-model-publishable.json --training-manifest linked-training.manifest.json --source-provenance source-provenance.json --out linked-model-package.json
-synthpopcan tree inspect-package linked-model-package.json
-synthpopcan tree generate-from-package linked-model-package.json --households 100 --households-out synthetic-households.csv --persons-out synthetic-persons.csv
-```
-
-This is the expert lane. It exists because model artifacts can carry disclosure
-risk and need review evidence before reuse.
-
-### Validating Outputs
-
-Use `validate` commands to check generated artifacts against explicit criteria.
-
-```bash
-synthpopcan validate controls --population weights.csv --controls controls.csv --kind weights
-synthpopcan validate controls --population synthetic.csv --controls controls.csv --kind expanded
-synthpopcan validate tree-output --generated synthetic-persons.csv --training person-training.csv --target-columns AGEGRP,SEX
-synthpopcan validate linked-output --households synthetic-households.csv --persons synthetic-persons.csv
-```
-
-Validation is evidence, not a certificate. Keep the report with the run notes
-and state what the validation did not check.
-
-See {doc}`validate`.
+- **Source visibility:** use {doc}`data` and {doc}`sources` to check local data
+  layout and inspect source-file shape before deciding whether a file belongs
+  in a workflow.
+- **Public aggregate tables:** use {doc}`statcan` to find, explain, and fetch
+  Statistics Canada sources. The interpretive question is whether the table's
+  dimensions, geography, year, and population universe fit the research
+  question.
+- **Control construction:** use {doc}`controls` when a source table needs to
+  become a normalized margin or control CSV. This is where category mapping
+  becomes explicit.
+- **Seed and training rows:** use the microdata commands described in
+  {doc}`tree` and {doc}`ipf` when local microdata needs to become IPF seed rows
+  or tree-training rows.
+- **Calibration:** use {doc}`ipf` for the check, fit, report, validate pattern.
+  IPF changes row weights; it does not invent unsupported categories.
+- **Conditional generation:** use {doc}`tree` for tree-model training,
+  generation, linked household/person workflows, and model-release review.
+- **Validation:** use {doc}`validate` to keep explicit evidence beside each
+  generated artifact. Validation is evidence, not a certificate.
 
 ## Further Reading
 

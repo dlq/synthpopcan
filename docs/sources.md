@@ -18,6 +18,11 @@ For humanities and digital-humanities projects, source inspection is also a
 reading practice. Column names, category labels, geography codes, and missing
 values all carry interpretation.
 
+Use this page when we have local files and need to understand their shape. If we
+are still looking for public Statistics Canada tables, start with
+[Statistics Canada Sources](statcan.md). If the file is ready to become a
+control table, move to [Controls](controls.md).
+
 ## Getting Started
 
 Inspect a source root:

@@ -21,6 +21,10 @@ This local-data convention is intentionally conservative. Public aggregate data,
 restricted microdata, derived model artifacts, and generated outputs can have
 different sharing rules and different disclosure risks.
 
+Use this page for local setup checks. Use [Sources](sources.md) to inspect
+specific files, and [Statistics Canada Sources](statcan.md) to find and fetch
+supported public Statistics Canada sources.
+
 ## Getting Started
 
 Check the default data root:

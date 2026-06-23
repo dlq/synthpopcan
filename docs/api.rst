@@ -3,8 +3,9 @@ API Reference
 
 The Python API is still early, but the objects on this page are the intended
 public library surface for scripts, notebooks, and reusable research workflows.
-For workflow-level explanations and examples, start with :doc:`library`; this
-page is the generated member reference.
+For beginner workflow examples, start with :doc:`library-getting-started`; for
+module-level examples, see :doc:`library`. This page is the generated member
+reference.
 
 This page is generated with Sphinx autodoc, which imports modules and renders
 their docstrings and public members. See the Sphinx
@@ -19,7 +20,6 @@ notebooks and examples. The lower-level generated reference below is organized
 by the module that owns each concept.
 
 .. automodule:: synthpopcan
-   :members:
 
 Beginner API
 ------------

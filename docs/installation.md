@@ -28,8 +28,9 @@ cd synthpopcan
 
 ## Install the Development Environment
 
-The repository currently uses `uv` for repeatable local development. If you do
-not have `uv`, install it from the official documentation for your platform.
+The repository currently uses `uv` for repeatable local development. If we do
+not have `uv`, we should install it from the official documentation for our
+platform.
 
 From the repository root:
 
@@ -70,6 +71,10 @@ use `uv run synthpopcan ...` instead.
 This tiny fixture workflow fits two seed rows to age and sex controls. It does
 not download public data and does not use private microdata.
 
+This is a smoke test for the command-line setup. For a fuller explanation of
+each IPF step, see [IPF](ipf.md). For the equivalent notebook-oriented Python
+workflow, see [Getting Started With the Beginner API](library-getting-started.md).
+
 ```bash
 synthpopcan microdata export-seed \
   tests/fixtures/workflows/microdata_ipf/hierarchical.csv \
@@ -96,8 +101,8 @@ synthpopcan validate controls \
   --kind weights
 ```
 
-If you are running from a source checkout without activating the environment,
-add `uv run` before each `synthpopcan` command.
+If we are running from a source checkout without activating the environment, we
+can add `uv run` before each `synthpopcan` command.
 
 ## Build the Documentation
 
@@ -143,7 +148,7 @@ Check the expected local layout with:
 uv run synthpopcan data doctor
 ```
 
-Use `--data-root PATH` or `SYNTHPOPCAN_DATA_ROOT` when your data lives somewhere
+Use `--data-root PATH` or `SYNTHPOPCAN_DATA_ROOT` when the data lives somewhere
 else.
 
 ## Working Folder Advice

@@ -21,6 +21,10 @@ choosing dimensions, geographies, and category mappings still belongs to the
 researcher. A table that is useful for one geography or population universe may
 be misleading for another.
 
+After fetching a source, move to [Sources](sources.md) for local file
+inspection or [Controls](controls.md) when the table is ready to become a
+normalized control CSV.
+
 ## Getting Started
 
 Search WDS table metadata:
@@ -49,6 +53,9 @@ Inspect and normalize after download:
 synthpopcan controls wds inspect data/raw/statcan/wds/PRODUCT_ID-eng.zip
 ```
 
+The next detailed step is covered in [Controls](controls.md), especially the
+sections on WDS inspection, mapping templates, and `controls from-wds`.
+
 ## Subcommands
 
 ### `statcan wds search`
@@ -74,8 +81,7 @@ synthpopcan statcan wds explain 98100001
 synthpopcan statcan wds explain 98100001 --format json
 ```
 
-Use this before download to check whether a table is plausible for your
-workflow.
+Use this before download to check whether a table is plausible for the workflow.
 
 ### `statcan wds fetch`
 

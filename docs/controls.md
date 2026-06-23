@@ -36,6 +36,10 @@ Control tables should be read as source interpretation, not just file
 formatting. The same source table can often be normalized in multiple ways
 depending on geography, universe, dimensions, and category mapping.
 
+If you still need to find or download the source table, start with
+[Statistics Canada Sources](statcan.md) or [Sources](sources.md). Once controls
+are normalized, use [IPF](ipf.md) to check seed compatibility and fit weights.
+
 ## Getting Started
 
 Validate an existing normalized file:
@@ -68,6 +72,9 @@ synthpopcan ipf check-inputs \
   --seed seed.csv \
   --controls controls.csv
 ```
+
+The fitting step itself is documented in [IPF](ipf.md). Validation after fitting
+is documented in [Validate](validate.md).
 
 ## Subcommands
 

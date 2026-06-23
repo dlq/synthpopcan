@@ -1,11 +1,10 @@
-# Library
+# Library Deep Dive
 
 The Python library is for people who want to use SynthPopCan inside notebooks,
 scripts, reproducible research pipelines, or teaching materials. The command
-line remains the friendliest surface for one-off work, but the library exposes
-the same central concepts as Python objects: control tables, IPF margins, seed
-samples, tree training samples, fitted models, generated rows, and validation
-reports.
+line remains the friendliest surface for one-off work, but the library provides
+a small beginner API for common workflows and lower-level modules for research
+code that needs more control.
 
 This section does not repeat the methodological discussion from the command
 line chapters. If you are new to a modelling approach, start with the
@@ -21,23 +20,12 @@ corresponding command-line page first:
   concepts, support, purity, and model quality.
 - [Validate](validate.md) explains what validation reports do and do not prove.
 
-The examples below show the same workflows as Python code.
+Start with [Getting Started With the Beginner API](library-getting-started.md)
+unless you already know you need lower-level objects such as `IPFMargin`,
+`ControlTable`, or `FrequencyTreeModel`. This page is the deeper guide to the
+full library surface.
 
 ## Import Style
-
-For short notebooks, teaching examples, and early exploration, start with the
-small top-level API:
-
-```python
-import synthpopcan as spc
-
-controls = spc.read_controls("controls.csv")
-fit = spc.fit_ipf("seed.csv", controls)
-spc.write_weights(fit, "weights.csv")
-```
-
-This beginner surface accepts ordinary paths where possible and returns plain
-Python objects. It is intentionally smaller than the full project.
 
 For longer research code, import from the module that owns a concept:
 

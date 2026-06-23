@@ -18,10 +18,13 @@ Keep validation reports with the run notes.
 Validation is both a technical check and a provenance practice. It records what
 was checked, against which target, and with what tolerance.
 
+For IPF-specific fit reports and residuals, see [IPF](ipf.md). For linked
+household/person generation and model-package review, see [Tree Models](tree.md).
+
 ## What Validation Does Not Prove
 
 A passing validation report is not a certificate that the synthetic population is
-substantively correct. It proves only that the checks you asked for passed.
+substantively correct. It proves only that the checks we asked for passed.
 
 Validation can miss:
 

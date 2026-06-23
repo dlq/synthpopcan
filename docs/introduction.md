@@ -150,6 +150,15 @@ Most SynthPopCan workflows follow the same pattern:
 This pattern is intentionally conservative. It helps readers understand not only
 what the tool produced, but what choices shaped the result.
 
+The rest of the documentation follows this pattern. Use [Sources](sources.md)
+and [Data](data.md) when you are still inspecting files, [Statistics Canada
+Sources](statcan.md) and [Controls](controls.md) when you are preparing public
+aggregate totals, [IPF](ipf.md) when you are fitting seed rows to controls,
+[Tree Models](tree.md) when you are training or using conditional generation,
+and [Validate](validate.md) when you are checking outputs. If you prefer Python
+notebooks to command-line workflows, start with
+[Getting Started With the Beginner API](library-getting-started.md).
+
 ## Further Reading
 
 - Stanislav Borysov, Jeppe Rich, and Francisco Pereira,

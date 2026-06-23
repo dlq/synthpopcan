@@ -30,5 +30,6 @@ validation reports.
    :maxdepth: 2
    :caption: Library
 
+   library-getting-started
    library
    api
