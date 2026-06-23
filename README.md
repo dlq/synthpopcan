@@ -10,9 +10,10 @@ Near-term goals:
 
 Broader SynthEco-style enrichment with cohort, environmental, school, healthcare, and food-access layers is intentionally deferred until the base population synthesis workflow is stable.
 
-Workflow guides live under `docs/workflows/`. Start with
-`docs/workflows/microdata-to-ipf.md` for IPF and
-`docs/workflows/microdata-to-tree.md` for linked household/person tree models.
+Detailed documentation lives under `docs/`. Start with `docs/introduction.md`
+for concepts, `docs/field-primer.md` for the broader methods primer and tool
+map, `docs/installation.md` for the current source-checkout setup, `docs/ipf.md`
+for IPF workflows, and `docs/tree.md` for linked household/person tree models.
 
 ## Developer Benchmarks
 
@@ -145,7 +146,7 @@ synthpopcan validate controls \
 
 The seed file contains one row per source person with stable IDs, selected attributes, and the source `WEIGHT`. The fitted weights file keeps the seed attributes and adds the fitted `weight` column used for validation or later expansion.
 
-A tracked tiny version of this workflow lives in `docs/workflows/microdata-to-ipf.md`.
+A tracked tiny version of this workflow is described in `docs/ipf.md`.
 
 ## IPF CLI
 
@@ -298,7 +299,7 @@ synthpopcan statcan wds explain 14100287
 Download the table CSV ZIP:
 
 ```bash
-synthpopcan statcan wds fetch 14100287 --lang en --out-dir data/raw/statscan/wds
+synthpopcan statcan wds fetch 14100287 --lang en --out-dir data/raw/statcan/wds
 ```
 
 This calls the Statistics Canada Web Data Service endpoint:
@@ -312,7 +313,7 @@ The WDS response returns the actual CSV ZIP URL. SynthPopCan downloads that ZIP 
 Normalize a downloaded WDS ZIP into SynthPopCan controls:
 
 ```bash
-synthpopcan controls from-wds data/raw/statscan/wds/14100287-eng.zip \
+synthpopcan controls from-wds data/raw/statcan/wds/14100287-eng.zip \
   --dimensions "GEO,Age group,Sex" \
   --count-column VALUE \
   --margin-name population \
@@ -321,8 +322,8 @@ synthpopcan controls from-wds data/raw/statscan/wds/14100287-eng.zip \
 ```
 
 The WDS workflow can also inspect downloaded ZIPs and create starter mapping
-templates when source labels need to match seed categories. See
-`docs/workflows/microdata-to-ipf.md` for the fuller walkthrough.
+templates when source labels need to match seed categories. See `docs/statcan.md`
+and `docs/controls.md` for the fuller walkthrough.
 
 ### Census Profile CSVs
 
@@ -385,7 +386,7 @@ inspect the ZIP and create a starter mapping template.
 The CLI-assisted search uses StatCan's `getAllCubesListLite` endpoint. Metadata inspection uses `getCubeMetadata`.
 
 For detailed examples, optional metadata export, ZIP inspection, and label
-mapping, use `docs/workflows/microdata-to-ipf.md`.
+mapping, use `docs/statcan.md` and `docs/controls.md`.
 
 ### Census Profile bulk CSVs
 
@@ -395,7 +396,7 @@ Use this for known public Census Profile bulk downloads by geography level. The 
 synthpopcan statcan census-profile fetch \
   --year 2016 \
   --geo-level pt \
-  --out-dir data/raw/statscan/census-profile/2016
+  --out-dir data/raw/statcan/census-profile/2016
 ```
 
 Initial geography keys include:

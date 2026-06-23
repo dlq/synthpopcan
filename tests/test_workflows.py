@@ -446,7 +446,7 @@ def test_tracked_model_output_to_ipf_tutorial_fixture_workflow(
     tmp_path: Path,
     capsys,
 ) -> None:
-    workflow_doc = Path("docs/workflows/model-output-to-ipf.md")
+    workflow_doc = Path("docs/ipf.md")
     assert workflow_doc.exists()
     workflow_text = workflow_doc.read_text()
     assert "IPF cannot create missing variables" in workflow_text

@@ -13,6 +13,12 @@ SeedLevel = Literal["household", "person"]
 
 @dataclass(frozen=True)
 class SeedSample:
+    """A loaded seed microdata sample with normalized metadata.
+
+    Seed samples keep raw CSV rows plus the column roles needed by IPF and tree
+    workflows, such as identifier, geography, and weight columns.
+    """
+
     level: SeedLevel
     source_format: str
     records: tuple[dict[str, str], ...]
@@ -23,6 +29,8 @@ class SeedSample:
     metadata: dict[str, object] = field(default_factory=dict)
 
     def as_summary(self) -> dict[str, object]:
+        """Return a compact, JSON-serializable summary of the sample."""
+
         summary = {
             "level": self.level,
             "source_format": self.source_format,
@@ -38,6 +46,8 @@ class SeedSample:
 
 @dataclass(frozen=True)
 class TreeColumnBlockSpec:
+    """A named set of target and conditioning columns for tree workflows."""
+
     name: str
     level: SeedLevel
     target_columns: tuple[str, ...]
@@ -46,6 +56,8 @@ class TreeColumnBlockSpec:
 
 @dataclass(frozen=True)
 class TreeColumnSuggestionProfile:
+    """Column-role suggestions for a known source microdata format."""
+
     source_format: str
     geography_columns: tuple[str, ...]
     identifier_columns: tuple[str, ...]
@@ -138,6 +150,12 @@ def read_fixture_seed_sample(
     geography_columns: tuple[str, ...],
     id_columns: tuple[str, ...],
 ) -> SeedSample:
+    """Read a small fixture CSV as a seed sample.
+
+    This adapter is mainly for examples, tests, and teaching workflows where
+    column roles are supplied directly by the caller.
+    """
+
     with path.open(newline="") as handle:
         reader = csv.DictReader(handle)
         records = tuple(dict(row) for row in reader)
@@ -163,6 +181,8 @@ def read_fixture_seed_sample(
 
 
 def read_statcan_2016_hierarchical_seed_sample(path: Path) -> SeedSample:
+    """Read a Statistics Canada 2016 hierarchical microdata extract."""
+
     with path.open(newline="") as handle:
         reader = csv.DictReader(handle)
         records = tuple(dict(row) for row in reader)
@@ -206,6 +226,8 @@ def export_seed_rows(
     *,
     columns: tuple[str, ...],
 ) -> tuple[list[dict[str, str]], dict[str, object]]:
+    """Select seed columns for IPF or simple synthetic-population examples."""
+
     if not columns:
         raise ValueError("at least one seed column is required")
     validate_columns(sample.columns, required=columns)
@@ -244,6 +266,8 @@ def export_training_rows(
     target_columns: tuple[str, ...],
     conditioning_columns: tuple[str, ...],
 ) -> tuple[list[dict[str, str]], dict[str, object]]:
+    """Export a tree-training view from a supported seed sample."""
+
     if sample.source_format != "statcan-2016-hierarchical":
         raise ValueError("training export requires statcan-2016-hierarchical")
     if not target_columns:
@@ -269,6 +293,8 @@ def export_statcan_2016_person_training_rows(
     target_columns: tuple[str, ...],
     conditioning_columns: tuple[str, ...],
 ) -> tuple[list[dict[str, str]], dict[str, object]]:
+    """Export person-level training rows from 2016 hierarchical microdata."""
+
     validate_columns(sample.columns, required=("PP_ID", "HH_ID", "WEIGHT"))
     source_columns = tuple(
         column
@@ -309,6 +335,8 @@ def export_statcan_2016_household_training_rows(
     target_columns: tuple[str, ...],
     conditioning_columns: tuple[str, ...],
 ) -> tuple[list[dict[str, str]], dict[str, object]]:
+    """Export one household-level training row per household ID."""
+
     selected_columns = unique_columns((*conditioning_columns, *target_columns))
     household_sample = derive_statcan_2016_household_seed_sample(
         sample,
@@ -362,6 +390,8 @@ def derive_statcan_2016_household_seed_sample(
     *,
     columns: tuple[str, ...],
 ) -> SeedSample:
+    """Derive household seed records from person-level hierarchical rows."""
+
     if sample.source_format != "statcan-2016-hierarchical":
         raise ValueError("household derivation requires statcan-2016-hierarchical")
     if not columns:
@@ -410,6 +440,8 @@ def check_statcan_2016_household_seed_columns(
     *,
     columns: tuple[str, ...],
 ) -> dict[str, object]:
+    """Check whether selected columns are constant within each household."""
+
     if sample.source_format != "statcan-2016-hierarchical":
         raise ValueError("household seed checks require statcan-2016-hierarchical")
     if not columns:
@@ -442,6 +474,8 @@ def check_statcan_2016_household_seed_columns(
 
 
 def suggest_tree_column_blocks(sample: SeedSample) -> dict[str, object]:
+    """Suggest tree-model column blocks for a known source format."""
+
     profile = TREE_COLUMN_SUGGESTION_PROFILES.get(sample.source_format)
     if profile is None:
         raise ValueError(
@@ -478,6 +512,8 @@ def resolve_tree_column_block_pair(
     tuple[str, ...],
     dict[str, object],
 ]:
+    """Resolve named household and person column blocks into column tuples."""
+
     suggestion = suggest_tree_column_blocks(sample)
     suggested_household_block = find_suggested_tree_column_block(
         suggestion,
@@ -519,6 +555,13 @@ def build_tree_geography_feasibility_report(
     min_support: float = 50,
     max_purity: float = 0.95,
 ) -> dict[str, object]:
+    """Assess which geographies have enough support for tree modelling.
+
+    The report compares person and household row counts, condition-group
+    support, and dominant-outcome purity so users can avoid modelling very
+    sparse or identifying subsets.
+    """
+
     if sample.source_format != "statcan-2016-hierarchical":
         raise ValueError(
             "tree geography feasibility requires statcan-2016-hierarchical"

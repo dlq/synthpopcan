@@ -21,17 +21,23 @@ class _MarginGroup:
 
 @dataclass(frozen=True)
 class ControlCell:
+    """One target count in a normalized control table."""
+
     categories: dict[str, str]
     count: float
 
 
 @dataclass(frozen=True)
 class ControlMargin:
+    """A named collection of target cells over the same dimensions."""
+
     name: str
     dimensions: tuple[str, ...]
     cells: tuple[ControlCell, ...]
 
     def to_ipf_margin(self) -> IPFMargin:
+        """Convert this control margin into the IPF margin representation."""
+
         return IPFMargin(
             self.dimensions,
             {
@@ -45,10 +51,18 @@ class ControlMargin:
 
 @dataclass(frozen=True)
 class ControlTable:
+    """A normalized set of one or more control margins.
+
+    Control tables are the bridge between source-specific files, such as
+    Statistics Canada downloads, and the generic IPF engine.
+    """
+
     margins: tuple[ControlMargin, ...]
     dimensions: tuple[str, ...]
 
     def to_ipf_margins(self) -> list[IPFMargin]:
+        """Convert all margins in this table into IPF margins."""
+
         return [margin.to_ipf_margin() for margin in self.margins]
 
 
@@ -92,6 +106,12 @@ CENSUS_PROFILE_SEX_CATEGORIES = {
 
 
 def read_control_table(path: Path) -> ControlTable:
+    """Read a normalized controls CSV into a :class:`ControlTable`.
+
+    The CSV must include ``margin``, ``dimensions``, category columns, and
+    ``count``. Rows are grouped into margins by the ``margin`` value.
+    """
+
     grouped: dict[str, _MarginGroup] = {}
     used_dimensions: set[str] = set()
     with path.open(newline="") as handle:
@@ -150,6 +170,8 @@ def read_control_table(path: Path) -> ControlTable:
 
 
 def read_control_margins(path: Path) -> list[IPFMargin]:
+    """Read a normalized controls CSV and return IPF-ready margins."""
+
     return read_control_table(path).to_ipf_margins()
 
 
@@ -161,6 +183,13 @@ def read_wds_control_table(
     margin_name: str,
     category_mapping: CategoryMapping | None = None,
 ) -> ControlTable:
+    """Read a Statistics Canada WDS ZIP as a normalized control table.
+
+    ``dimensions`` and ``count_column`` name columns inside the ZIP's CSV file.
+    ``category_mapping`` can translate source labels into seed-data category
+    codes before the controls are passed to IPF.
+    """
+
     if not dimensions:
         raise ValueError("WDS controls require at least one dimension")
     with ZipFile(path) as archive:
@@ -213,6 +242,8 @@ def read_wds_control_table(
 
 
 def inspect_wds_zip(path: Path, *, sample_rows: int = 5) -> dict[str, object]:
+    """Inspect a WDS ZIP and return columns, sample rows, and command hints."""
+
     if sample_rows < 1:
         raise ValueError("sample rows must be at least 1")
     with ZipFile(path) as archive:
@@ -270,6 +301,12 @@ def build_wds_category_mapping_template(
     dimensions: tuple[str, ...],
     preset: str = "blank",
 ) -> CategoryMapping:
+    """Build a source-to-canonical category mapping template for a WDS ZIP.
+
+    The ``canonical`` preset fills known age and sex Census Profile labels where
+    possible; ``blank`` leaves every target empty for manual review.
+    """
+
     if not dimensions:
         raise ValueError("WDS mapping template requires at least one dimension")
     if preset not in {"blank", "canonical"}:
@@ -321,6 +358,8 @@ def read_census_profile_control_table(
     path: Path,
     mapping_path: Path,
 ) -> ControlTable:
+    """Normalize a Census Profile CSV using a JSON mapping file."""
+
     mapping = read_census_profile_mapping(mapping_path)
     geography = mapping["geography"]
     geography_column = geography["column"]
@@ -396,6 +435,11 @@ def inspect_census_profile_characteristics(
     search: str | None = None,
     limit: int = 25,
 ) -> list[dict[str, str]]:
+    """List characteristic labels from a Census Profile CSV.
+
+    This helps users discover the exact source labels needed in a mapping file.
+    """
+
     if limit < 1:
         raise ValueError("limit must be at least 1")
     search_term = search.lower() if search else None
@@ -435,6 +479,8 @@ def census_profile_template(
     characteristic_column: str = "CHARACTERISTIC_NAME",
     count_column: str = "C1_COUNT_TOTAL",
 ) -> dict:
+    """Return a starter mapping template for common Census Profile margins."""
+
     template_name = name.lower()
     if template_name == "age5":
         margin_name = "age"
@@ -461,6 +507,8 @@ def census_profile_template(
 
 
 def read_census_profile_mapping(path: Path) -> dict:
+    """Read and validate a Census Profile control mapping JSON file."""
+
     payload = json.loads(path.read_text())
     if not isinstance(payload, dict):
         raise ValueError("Census Profile mapping must be a JSON object")
@@ -572,6 +620,8 @@ def values_are_numeric(values: list[str]) -> bool:
 
 
 def read_category_mapping(path: Path) -> CategoryMapping:
+    """Read and validate a WDS category mapping JSON file."""
+
     payload = json.loads(path.read_text())
     if not isinstance(payload, dict):
         raise ValueError("category mapping must be a JSON object")
@@ -606,6 +656,8 @@ def map_category(
 
 
 def write_control_table(path: Path, table: ControlTable) -> None:
+    """Write a :class:`ControlTable` to the normalized controls CSV format."""
+
     fieldnames = ["margin", "dimensions", *table.dimensions, "count"]
     with path.open("w", newline="") as handle:
         writer = csv.DictWriter(handle, fieldnames=fieldnames)

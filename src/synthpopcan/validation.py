@@ -17,6 +17,12 @@ def build_control_validation_report(
     tolerance: float = 1e-6,
     artifact_kind: str = "weights",
 ) -> dict[str, Any]:
+    """Compare weighted records against every cell in a control table.
+
+    Returns a JSON-serializable report with margin summaries, cell residuals,
+    and reader-facing issue messages for residuals above ``tolerance``.
+    """
+
     margins: list[dict[str, Any]] = []
     margin_summaries: list[dict[str, Any]] = []
     issues: list[dict[str, Any]] = []
@@ -117,6 +123,13 @@ def build_tree_output_validation_report(
     weight_field: str | None = None,
     tolerance: float = 0.05,
 ) -> dict[str, Any]:
+    """Compare generated tree output with its training distribution.
+
+    The report checks target columns, joint target distributions, and selected
+    conditioning columns for large proportion shifts or unseen generated
+    category combinations.
+    """
+
     if not training_rows:
         raise ValueError("training rows are required")
     if not generated_rows:
@@ -201,6 +214,8 @@ def comparison_dimensions(
     target_columns: tuple[str, ...],
     conditioning_columns: tuple[str, ...],
 ) -> list[tuple[str, ...]]:
+    """Return one-way and joint dimension groups used for tree validation."""
+
     dimensions = [(column,) for column in target_columns]
     if len(target_columns) > 1:
         dimensions.append(target_columns)
@@ -215,6 +230,8 @@ def build_distribution_comparison(
     generated_weights: list[float],
     dimensions: tuple[str, ...],
 ) -> dict[str, Any]:
+    """Build one weighted distribution comparison for a dimension group."""
+
     training_counts = weighted_totals(training_rows, training_weights, dimensions)
     generated_counts = weighted_totals(generated_rows, generated_weights, dimensions)
     training_total = sum(training_counts.values())

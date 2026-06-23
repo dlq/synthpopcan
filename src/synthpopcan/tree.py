@@ -18,6 +18,8 @@ TreeLevel = Literal["household", "person"]
 
 @dataclass(frozen=True)
 class TreeTrainingSample:
+    """Training rows and column roles for a tree-based generator."""
+
     level: TreeLevel
     source_format: str
     records: tuple[dict[str, str], ...]
@@ -29,6 +31,8 @@ class TreeTrainingSample:
     metadata: dict[str, object] = field(default_factory=dict)
 
     def as_summary(self) -> dict[str, object]:
+        """Return a compact, JSON-serializable summary of this sample."""
+
         summary = {
             "level": self.level,
             "source_format": self.source_format,
@@ -45,6 +49,8 @@ class TreeTrainingSample:
 
 @dataclass(frozen=True)
 class TreeModelSpec:
+    """Column roles and generation settings shared by tree model types."""
+
     level: TreeLevel
     target_columns: tuple[str, ...]
     conditioning_columns: tuple[str, ...]
@@ -54,12 +60,16 @@ class TreeModelSpec:
     model_family: str = "tree-based"
 
     def __post_init__(self) -> None:
+        """Validate target and conditioning column roles."""
+
         validate_tree_roles(
             target_columns=self.target_columns,
             conditioning_columns=self.conditioning_columns,
         )
 
     def as_summary(self) -> dict[str, object]:
+        """Return a JSON-serializable summary of the model specification."""
+
         return {
             "level": self.level,
             "model_family": self.model_family,
@@ -73,6 +83,8 @@ class TreeModelSpec:
 
 @dataclass(frozen=True)
 class TreeGenerationRequest:
+    """Request parameters for generating rows from a tree model."""
+
     model_spec: TreeModelSpec
     rows: int
     geography_values: tuple[str, ...] = ()
@@ -85,20 +97,28 @@ class TreeGenerationRequest:
 
 @dataclass(frozen=True)
 class FrequencyOutcome:
+    """One possible target outcome and its training weight."""
+
     values: dict[str, str]
     weight: float
 
     def to_dict(self) -> dict[str, object]:
+        """Return a JSON-serializable representation."""
+
         return {"values": self.values, "weight": self.weight}
 
 
 @dataclass(frozen=True)
 class FrequencyGroup:
+    """Observed outcomes for one set of conditioning values."""
+
     conditions: dict[str, str]
     support: float
     outcomes: tuple[FrequencyOutcome, ...]
 
     def to_dict(self) -> dict[str, object]:
+        """Return a JSON-serializable representation."""
+
         return {
             "conditions": self.conditions,
             "support": self.support,
@@ -108,6 +128,12 @@ class FrequencyGroup:
 
 @dataclass(frozen=True)
 class FrequencyTreeModel:
+    """Conditional-frequency tree model used for transparent generation.
+
+    This model stores aggregate outcome counts by conditioning group rather than
+    source rows, which makes it easier to audit before sharing.
+    """
+
     spec: TreeModelSpec
     groups: tuple[FrequencyGroup, ...]
     global_outcomes: tuple[FrequencyOutcome, ...]
@@ -118,6 +144,8 @@ class FrequencyTreeModel:
     model_type: str = "conditional-frequency"
 
     def to_dict(self) -> dict[str, object]:
+        """Serialize the model to a JSON-compatible dictionary."""
+
         minimum_support = min((group.support for group in self.groups), default=0.0)
         groups_below_threshold = sum(
             1 for group in self.groups if group.support < self.min_support_threshold
@@ -143,6 +171,8 @@ class FrequencyTreeModel:
 
     @classmethod
     def from_dict(cls, payload: dict[str, object]) -> FrequencyTreeModel:
+        """Deserialize a conditional-frequency model payload."""
+
         if payload.get("schema_version") != "synthpopcan-tree-model-v1":
             raise ValueError("unsupported tree model schema")
         if payload.get("model_type") != "conditional-frequency":
@@ -193,6 +223,8 @@ class FrequencyTreeModel:
 
 @dataclass(frozen=True)
 class CartTreeModel:
+    """Serialized scikit-learn CART classifier for synthetic row generation."""
+
     spec: TreeModelSpec
     feature_categories: dict[str, tuple[str, ...]]
     target_classes: tuple[dict[str, str], ...]
@@ -212,6 +244,8 @@ class CartTreeModel:
 
     @property
     def feature_names(self) -> tuple[str, ...]:
+        """Return one-hot encoded feature names in model order."""
+
         return tuple(
             f"{column}={category}"
             for column in self.spec.conditioning_columns
@@ -219,6 +253,8 @@ class CartTreeModel:
         )
 
     def to_dict(self) -> dict[str, object]:
+        """Serialize the CART model to a JSON-compatible dictionary."""
+
         leaf_supports = [
             support
             for left, right, support in zip(
@@ -268,6 +304,8 @@ class CartTreeModel:
 
     @classmethod
     def from_dict(cls, payload: dict[str, object]) -> CartTreeModel:
+        """Deserialize a CART model payload."""
+
         if payload.get("schema_version") != "synthpopcan-tree-model-v1":
             raise ValueError("unsupported tree model schema")
         if payload.get("model_type") != "cart":
@@ -339,6 +377,8 @@ def read_tree_training_sample(
     geography_column: str | None = None,
     weight_column: str | None = None,
 ) -> TreeTrainingSample:
+    """Read a CSV training view for tree-model fitting."""
+
     with path.open(newline="") as handle:
         reader = csv.DictReader(handle)
         records = tuple(dict(row) for row in reader)
@@ -379,6 +419,8 @@ def audit_tree_model(
     min_support: float = 50,
     max_purity: float = 0.95,
 ) -> dict[str, object]:
+    """Check whether a tree model meets basic release-review thresholds."""
+
     if min_support <= 0:
         raise ValueError("min_support must be greater than zero")
     if not 0 < max_purity <= 1:
@@ -547,6 +589,8 @@ def train_cart_model(
     min_samples_leaf: int = 5,
     max_depth: int | None = None,
 ) -> CartTreeModel:
+    """Train a CART model from a tree-training sample."""
+
     if min_samples_leaf < 1:
         raise ValueError("min_samples_leaf must be greater than zero")
     feature_categories = {
@@ -626,6 +670,8 @@ def train_frequency_model(
     random_seed: int = 0,
     min_support: int = 5,
 ) -> FrequencyTreeModel:
+    """Train a conditional-frequency model from a tree-training sample."""
+
     grouped: dict[tuple[str, ...], dict[tuple[str, ...], float]] = defaultdict(
         lambda: defaultdict(float)
     )
@@ -672,6 +718,8 @@ def generate_tree_rows(
     conditions: dict[str, str] | None = None,
     random_seed: int | None = None,
 ) -> list[dict[str, str]]:
+    """Generate synthetic rows from either supported tree model type."""
+
     if isinstance(model, FrequencyTreeModel):
         return generate_frequency_rows(
             model,
@@ -696,6 +744,13 @@ def generate_linked_population(
     household_size_column: str = "household_size",
     random_seed: int | None = None,
 ) -> tuple[list[dict[str, str]], list[dict[str, str]]]:
+    """Generate linked household and person records.
+
+    The household model first generates household attributes, including
+    household size. The person model then generates the requested number of
+    people for each household using any shared conditioning columns.
+    """
+
     if household_model.spec.level != "household":
         raise ValueError("household model must have level 'household'")
     if person_model.spec.level != "person":
@@ -759,6 +814,8 @@ def validate_linked_population(
     person_household_id_column: str = "synthetic_household_id",
     household_size_column: str = "household_size",
 ) -> dict[str, object]:
+    """Validate household-person links and household-size consistency."""
+
     household_counts: dict[str, int] = defaultdict(int)
     household_ids = {
         household.get(household_id_column, "") for household in households
@@ -945,10 +1002,14 @@ def write_frequency_model(path: Path, model: FrequencyTreeModel) -> None:
 
 
 def write_tree_model(path: Path, model: TreeModel) -> None:
+    """Write a tree model JSON file."""
+
     path.write_text(json.dumps(model.to_dict(), indent=2, sort_keys=True) + "\n")
 
 
 def read_tree_model(path: Path) -> TreeModel:
+    """Read a tree model JSON file and return the matching model class."""
+
     try:
         payload = json.loads(path.read_text())
     except json.JSONDecodeError as exc:
@@ -961,6 +1022,8 @@ def read_tree_model(path: Path) -> TreeModel:
 
 
 def read_frequency_model(path: Path) -> FrequencyTreeModel:
+    """Read a conditional-frequency tree model JSON file."""
+
     payload = read_tree_model(path)
     if not isinstance(payload, FrequencyTreeModel):
         raise ValueError("tree model is not a conditional-frequency model")
@@ -968,6 +1031,8 @@ def read_frequency_model(path: Path) -> FrequencyTreeModel:
 
 
 def read_cart_model(path: Path) -> CartTreeModel:
+    """Read a CART tree model JSON file."""
+
     payload = read_tree_model(path)
     if not isinstance(payload, CartTreeModel):
         raise ValueError("tree model is not a CART model")
@@ -975,6 +1040,8 @@ def read_cart_model(path: Path) -> CartTreeModel:
 
 
 def write_generated_rows(path: Path, rows: list[dict[str, str]]) -> None:
+    """Write generated rows to CSV using the first row's column order."""
+
     if not rows:
         raise ValueError("cannot write empty generated output")
     with path.open("w", newline="") as handle:
@@ -984,6 +1051,8 @@ def write_generated_rows(path: Path, rows: list[dict[str, str]]) -> None:
 
 
 def parse_conditions(values: tuple[str, ...]) -> dict[str, str]:
+    """Parse ``COLUMN=VALUE`` strings into a conditions dictionary."""
+
     conditions: dict[str, str] = {}
     for value in values:
         if "=" not in value:

@@ -1,32 +1,33 @@
 SynthPopCan Documentation
 =========================
 
-SynthPopCan is early-stage tooling for Canadian synthetic population workflows:
-IPF from margin tables, census microdata adapters, linked household/person tree
-models, validation reports, and eventually a browser-first web app.
-
-The documentation is intentionally workflow-first while the public API is still
-settling. The repository root ``README.md`` remains the short project overview.
+SynthPopCan is early-stage tooling for Canadian synthetic population work:
+control tables, iterative proportional fitting, Statistics Canada source
+inspection, census microdata adapters, linked household/person tree models, and
+validation reports.
 
 .. toctree::
    :maxdepth: 2
-   :caption: Start Here
+   :caption: Overview
 
+   introduction
+   field-primer
    installation
-   getting-started
-   concepts
-   data-and-privacy
-   control-tables
-   provenance
-   cli-guide
-   examples
-   troubleshooting
-   api
 
 .. toctree::
    :maxdepth: 2
-   :caption: Workflows
+   :caption: Command Sections
 
-   workflows/microdata-to-ipf
-   workflows/microdata-to-tree
-   workflows/model-output-to-ipf
+   ipf
+   controls
+   statcan
+   tree
+   validate
+   data
+   sources
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Reference
+
+   api

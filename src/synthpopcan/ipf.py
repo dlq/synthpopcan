@@ -11,6 +11,17 @@ CategoryKey = tuple[str, ...]
 
 @dataclass(frozen=True)
 class IPFMargin:
+    """A target margin used to calibrate seed records with IPF.
+
+    Parameters
+    ----------
+    dimensions:
+        Ordered column names that identify the category cells in this margin.
+    targets:
+        Mapping from category tuples to the desired weighted count for each
+        cell. Each key must have the same length and order as ``dimensions``.
+    """
+
     dimensions: tuple[str, ...]
     targets: Mapping[CategoryKey, float]
 
@@ -28,6 +39,13 @@ class IPFMargin:
 
 @dataclass(frozen=True)
 class IPFResult:
+    """Result returned by :func:`fit_ipf`.
+
+    The result keeps the original records alongside calibrated weights so
+    callers can inspect convergence, validate totals, or expand the weighted
+    seed records into integer synthetic rows.
+    """
+
     records: Sequence[Record]
     weights: list[float]
     converged: bool
@@ -35,6 +53,8 @@ class IPFResult:
     max_abs_error: float
 
     def margin_totals(self, dimensions: tuple[str, ...]) -> dict[CategoryKey, float]:
+        """Calculate weighted totals for one set of dimensions."""
+
         totals: dict[CategoryKey, float] = {}
         for record, weight in zip(self.records, self.weights, strict=True):
             key = category_key(record, dimensions)
@@ -54,6 +74,13 @@ def expand_records(
     *,
     id_field: str = "id",
 ) -> list[dict[str, str]]:
+    """Expand weighted seed records into integer synthetic records.
+
+    Fractional weights are rounded with :func:`integerize_weights`. The output
+    includes ``synthetic_id`` and ``seed_id`` columns so generated rows can be
+    traced back to their seed-record source without exposing private data.
+    """
+
     counts = integerize_weights(weights)
     expanded: list[dict[str, str]] = []
     synthetic_id = 1
@@ -77,6 +104,12 @@ def expand_records(
 
 
 def integerize_weights(weights: Sequence[float]) -> list[int]:
+    """Convert non-negative fractional weights to integer replication counts.
+
+    The largest-remainder method preserves the rounded total population size
+    while assigning extra records to the largest fractional remainders.
+    """
+
     if any(weight < 0 for weight in weights):
         raise ValueError("weights must be non-negative")
 
@@ -104,6 +137,29 @@ def fit_ipf(
     max_iterations: int = 100,
     tolerance: float = 1e-6,
 ) -> IPFResult:
+    """Fit record weights so seed records match supplied control margins.
+
+    Parameters
+    ----------
+    records:
+        Seed records containing the categorical columns named by each margin.
+    margins:
+        Target totals that the weighted records should match.
+    weight_field:
+        Optional seed-record column containing starting weights. If omitted,
+        every seed record starts with weight ``1.0``.
+    max_iterations:
+        Maximum number of full adjustment passes over all margins.
+    tolerance:
+        Stop once the largest absolute residual is at or below this value.
+
+    Raises
+    ------
+    ValueError
+        If records or margins are empty, if weights are invalid, or if a
+        positive target cell has no seed records that can represent it.
+    """
+
     if not records:
         raise ValueError("IPF requires at least one seed record")
     if not margins:
@@ -183,6 +239,8 @@ def index_margins(
 def validate_margin_coverage(
     records: Sequence[Record], margins: Sequence[IPFMargin]
 ) -> None:
+    """Check that every positive target cell is represented by seed records."""
+
     index_margins(records, margins)
 
 
@@ -191,6 +249,8 @@ def weighted_totals(
     weights: Sequence[float],
     dimensions: tuple[str, ...],
 ) -> dict[CategoryKey, float]:
+    """Aggregate weighted records by a tuple of categorical dimensions."""
+
     totals: dict[CategoryKey, float] = {}
     for record, weight in zip(records, weights, strict=True):
         key = category_key(record, dimensions)
@@ -203,6 +263,8 @@ def calculate_max_abs_error(
     weights: Sequence[float],
     margins: Sequence[IPFMargin],
 ) -> float:
+    """Return the largest absolute residual across all margin cells."""
+
     max_abs_error = 0.0
     for margin in margins:
         totals = weighted_totals(records, weights, margin.dimensions)
@@ -226,6 +288,8 @@ def calculate_indexed_max_abs_error(
 
 
 def category_key(record: Record, dimensions: Iterable[str]) -> CategoryKey:
+    """Build the ordered category key for a record and set of dimensions."""
+
     key: list[str] = []
     for dimension in dimensions:
         try:

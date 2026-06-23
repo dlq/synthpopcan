@@ -1,0 +1,418 @@
+# Field Primer
+
+This page is a broad introduction to the field around SynthPopCan. It is meant
+to sit somewhere between a primer, a short methods essay, and a map of the
+research area. You can use the command sections without reading it first, but it
+explains why the commands are shaped the way they are.
+
+## Why Synthetic Populations Exist
+
+A synthetic population is a modelled population made of records that look like
+people, households, families, dwellings, or other units. The records are not
+supposed to be the original people. They are generated so that selected features
+match a target population closely enough for a particular use.
+
+This idea is useful because many research questions need row-shaped data:
+
+- a simulation needs people in households;
+- a teaching example needs realistic demographic variation;
+- a digital-history project needs plausible household structure;
+- a policy model needs units linked to geography;
+- a software system needs test records that are not real people;
+- a privacy-conscious workflow needs public outputs without distributing
+  restricted microdata.
+
+The danger is that a synthetic population looks more concrete than it is. A CSV
+with one row per person can feel like evidence. It is better to read it as a
+model: a disciplined argument about what a population could look like, given
+source tables, microdata, category mappings, assumptions, random seeds, and
+validation choices.
+
+## A Short Lineage
+
+Synthetic population work has roots in spatial microsimulation, transportation
+planning, epidemiology, statistical disclosure control, and agent-based
+simulation. Older IPF-based approaches often start with a microdata sample and
+reweight it to match area-level margins. Pritchard and Miller's population
+synthesis work is an important local reference for SynthPopCan because it treats
+many categorical attributes sparsely and keeps household/person realization as a
+separate stage after fitting.
+
+More recent systems and papers broaden the field:
+
+- PopulationSim provides a production-grade Python reference for expanding
+  household/person seed samples to match controls across geographies.
+- `synthpop` shows how tree-based models can synthesize tabular microdata while
+  raising utility and disclosure-risk questions.
+- Deep and hybrid population-synthesis work explores generative models for
+  household/person relationships, geographic transfer, and structural-zero
+  recovery.
+- Differential privacy work offers a formal way to reason about privacy loss,
+  but it changes the modelling problem: one often measures noisy aggregates and
+  synthesizes from those measurements rather than releasing raw trained models.
+
+SynthPopCan's first design deliberately stays closer to explainable,
+auditable methods: IPF, conditional-frequency models, CART-style tree models,
+constrained generation, validation, and provenance.
+
+## What Makes Canadian Data Awkward
+
+The Canadian case is not just "take a generic synthetic-population package and
+point it at Statistics Canada." Several details matter.
+
+Statistics Canada aggregate tables are not all shaped as ready-to-fit controls.
+The Census Profile is a long table of geographies and characteristics. WDS
+tables have their own dimensions, labels, value columns, metadata, and download
+formats. A table must be inspected and normalized before it becomes a control
+table.
+
+PUMF microdata also has structure. The 2016 hierarchical PUMF is especially
+important because it carries household, economic-family, census-family, and
+person identifiers. That makes it useful for household/person modelling, but it
+also means that a person row is not the whole story. Household structure,
+family relationships, and linked person composition are part of the model.
+
+Finally, Canadian public tables may include rounding, suppression, sampling
+notes, quality flags, different universes, and different geography levels. These
+are not annoyances around the edge. They shape what a synthetic population can
+honestly claim.
+
+## Two Families of Methods
+
+SynthPopCan currently separates two method families.
+
+### IPF and Calibration
+
+Iterative proportional fitting, often called IPF or raking, adjusts weights on a
+seed table so that selected margins match target controls. The seed rows already
+contain the variables. IPF changes how much each row counts.
+
+This is powerful when the seed has the right columns and enough category
+coverage. It is weak when the controls ask for things the seed cannot represent.
+IPF cannot invent a missing variable, create a missing joint category, or fix
+controls that describe incompatible populations.
+
+The most important conceptual distinction is between fitting and realization.
+A weighted table is one object. An integer synthetic population is another. When
+fractional weights are expanded into rows, a rounding or sampling decision has
+been made. Lovelace and Ballas discuss this problem directly in the spatial
+microsimulation context.
+
+### Tree-Based and Conditional Generation
+
+Tree-based generation starts from training rows rather than a control table
+alone. A decision tree asks branching questions about conditioning columns and
+uses the observed outcomes in a group or leaf to generate target values. A
+conditional-frequency model is even more direct: group by the conditioning
+columns and sample target outcomes from that group.
+
+Tree models are attractive because they can preserve richer combinations of
+variables than simple margins. They can also support linked household/person
+generation: generate household attributes first, then generate people inside
+those households using shared conditions such as household size, tenure, or
+geography.
+
+Tree models do not remove the need for controls. A model can generate plausible
+records and still fail local margins. For SynthPopCan, tree output is best read
+as candidate records that may later need calibration, constrained sampling, or
+repair against public controls.
+
+## Why Forests Are Not the First Tool Here
+
+A forest combines many trees, often improving predictive stability. Random
+forests and gradient-boosted trees can be attractive when a single CART tree is
+too unstable.
+
+The tradeoff is interpretability. A single tree has leaves, supports, dominant
+outcomes, and paths that can be inspected. A forest has many trees, aggregate
+votes, and more complex internal evidence. For humanities and digital-humanities
+readers, that difference matters. A forest may predict better while being harder
+to explain, audit, or package as a public research artifact.
+
+This does not mean forests are wrong. It means they should arrive with stronger
+diagnostics: variable-importance reporting, out-of-domain checks, stability
+tests, membership-risk thinking, and clear release rules.
+
+## Structural Zeros and Sampling Zeros
+
+One subtle idea appears again and again in synthetic-population work:
+structural zeros are not the same as sampling zeros.
+
+A structural zero is a combination that should not occur. A sampling zero is a
+combination that could occur but was not observed in the seed or training data.
+For example, "household size equals zero" is structurally impossible. A rare
+age-language-tenure combination might be a sampling zero in a small geography.
+
+IPF and tree models can both stumble here:
+
+- IPF has no row to weight when a target cell is absent from the seed.
+- A tree model may treat a missing combination as impossible because the
+  training data never observed it.
+- Deep generative models may recover some sampling-zero diversity, but they add
+  their own interpretability and validation burdens.
+
+For humanities work, this is not just a technical issue. It is a question about
+what kind of absence the model is encoding.
+
+## Privacy, Disclosure, and Model Artifacts
+
+Synthetic data is not automatically private. A generated table can leak through
+rare combinations, memorized rows, or highly distinctive linked households. A
+trained model can also leak, even if it does not contain a raw CSV.
+
+Tree models deserve special caution. A serialized tree can expose split
+features, thresholds, leaf counts, class summaries, and rare paths. If a model
+uses donor-style generation from terminal nodes, a small leaf can become too
+close to the source records. If a whole model is distributed, white-box attacks
+and membership-inference concerns become more relevant than they would be for a
+closed internal service.
+
+Linked household/person outputs raise the bar further. A household can be
+distinctive because of the combination of dwelling attributes and person
+composition, even when no single person-level field looks rare. Release checks
+therefore need to consider household signatures, not just person rows one at a
+time.
+
+SynthPopCan's practical posture is conservative:
+
+- private working models stay private;
+- publishable-candidate models need audit evidence and provenance;
+- model packages should say what they are for and what they are not for;
+- no generated output should claim absolute anonymity.
+
+## Evaluation Is Not One Number
+
+A synthetic population can be evaluated in several different ways. No single
+metric is enough.
+
+For IPF and calibrated outputs, check:
+
+- absolute and relative margin error;
+- worst controls and worst geographies;
+- inconsistent margin totals;
+- structural-zero and zero-cell diagnostics;
+- extreme weights and effective diversity;
+- integerization drift after expansion.
+
+For tree-generated outputs, check:
+
+- distribution similarity to training views;
+- support and purity of groups or leaves;
+- sensitivity to random seeds;
+- rare generated combinations;
+- out-of-domain conditions;
+- household/person linkage;
+- external controls, when available.
+
+For all outputs, keep provenance: input files, source URLs, access status,
+category mappings, commands, package version, random seeds, validation reports,
+and notes about unresolved limitations.
+
+## What Humanities Readers Can Bring
+
+Humanities and digital-humanities readers often bring strengths that are
+central to this work: attention to categories, sources, interpretation,
+silences, provenance, and the politics of representation. Those are not
+secondary concerns. They are the work.
+
+Synthetic populations make choices visible:
+
+- Which categories were preserved?
+- Which identities were collapsed?
+- Which geography became the unit of interpretation?
+- Which source table was treated as authoritative?
+- Which absences were interpreted as impossible?
+- Which relationships were validated, and which were left unmeasured?
+
+The aim is not to hide those choices behind a technical interface. The aim is
+to make them explicit enough that readers can argue with them.
+
+## Reading Map
+
+Start with the command pages when you need to run a workflow:
+
+- {doc}`ipf` for margin-table calibration;
+- {doc}`tree` for conditional and linked household/person generation;
+- {doc}`controls` and {doc}`statcan` for preparing public aggregate sources;
+- {doc}`validate` for checking generated artifacts.
+
+Return to this primer when you need to explain what the output means.
+
+## Tool Reference Map
+
+This section maps field concepts to the current SynthPopCan tool surface. It is
+not a replacement for the command pages; it is a guide to where each concept
+lives in the CLI.
+
+### Inspecting and Preparing Sources
+
+Use these commands before modelling. Their job is to make source files visible
+and reviewable.
+
+```bash
+synthpopcan data doctor
+synthpopcan sources inspect PATH
+synthpopcan sources schema PATH
+synthpopcan sources sample PATH
+```
+
+Use `data doctor` to check local data setup. Use `sources` commands when you
+have a file and need to know its columns, sample rows, or shape before deciding
+whether it belongs in a workflow.
+
+See {doc}`data` and {doc}`sources`.
+
+### Finding Statistics Canada Tables
+
+Use `statcan` commands when the source is a public Statistics Canada table.
+
+```bash
+synthpopcan statcan wds search "age sex"
+synthpopcan statcan wds explain 98100001
+synthpopcan statcan wds metadata 98100001
+synthpopcan statcan wds fetch 98100001 --out-dir data/raw/statcan/wds
+synthpopcan statcan census-profile fetch --year 2016 --geo-level csd-all --out-dir data/raw/statcan/census-profile/2016
+```
+
+The important interpretive step is not the download. It is deciding whether the
+table's dimensions, geography, year, and population universe fit the research
+question.
+
+See {doc}`statcan`.
+
+### Turning Source Tables into Controls
+
+Use `controls` commands when a source table needs to become a normalized margin
+or control CSV.
+
+```bash
+synthpopcan controls validate controls.csv
+synthpopcan controls from-csv local-controls.csv --out controls.csv
+synthpopcan controls wds inspect table.zip
+synthpopcan controls wds mapping-template table.zip --dimensions "Sex,Age group" --out mapping.json
+synthpopcan controls from-wds table.zip --dimensions "Sex,Age group" --count-column VALUE --out controls.csv
+synthpopcan controls census-profile inspect profile.csv --search age
+synthpopcan controls census-profile template age5 --out age-template.json
+synthpopcan controls from-census-profile profile.csv --mapping age-template.json --out controls.csv
+```
+
+This is where category mapping becomes explicit. A good control table is not
+just a downloaded table; it is a documented translation from source labels into
+the categories the seed or generated rows can represent.
+
+See {doc}`controls`.
+
+### Preparing Seed and Training Rows
+
+Use `microdata` commands when the source is microdata rather than an aggregate
+table.
+
+```bash
+synthpopcan microdata inspect hierarchical.csv --input-format statcan-2016-hierarchical
+synthpopcan microdata check-seed hierarchical.csv --input-format statcan-2016-hierarchical --level household --columns TENUR,ROOMS
+synthpopcan microdata export-seed hierarchical.csv --input-format statcan-2016-hierarchical --columns AGEGRP,SEX --out seed.csv
+synthpopcan microdata export-training hierarchical.csv --input-format statcan-2016-hierarchical --level person --target-columns AGEGRP,SEX --conditioning-columns TENUR,household_size --out person-training.csv
+synthpopcan microdata suggest-tree-columns hierarchical.csv --input-format statcan-2016-hierarchical
+synthpopcan microdata tree-geography-feasibility hierarchical.csv --input-format statcan-2016-hierarchical --geography-column PR
+```
+
+Seed rows feed IPF. Training rows feed tree models. The distinction matters:
+IPF changes row weights, while tree models learn conditional patterns from the
+training view.
+
+### Running IPF
+
+Use `ipf` commands for margin-table calibration.
+
+```bash
+synthpopcan ipf check-inputs --seed seed.csv --controls controls.csv
+synthpopcan ipf fit --seed seed.csv --controls controls.csv --weight-field WEIGHT --out weights.csv --report fit-report.json
+synthpopcan ipf report fit-report.json
+synthpopcan ipf expand --weights weights.csv --out synthetic.csv
+synthpopcan ipf suggest-controls --seed candidate-households.csv --unit household
+```
+
+The safe pattern is check, fit, inspect the report, then validate. Use expanded
+rows only when another tool needs one row per generated unit.
+
+See {doc}`ipf`.
+
+### Training and Generating Tree Models
+
+Use `tree` commands for conditional generation and linked household/person
+models.
+
+```bash
+synthpopcan tree train person-training.csv --level person --target-columns AGEGRP,SEX --conditioning-columns TENUR,household_size --out person-model.json
+synthpopcan tree train-linked hierarchical.csv --input-format statcan-2016-hierarchical --suggested-blocks --household-model-out household-model.json --person-model-out person-model.json --manifest-out linked-training.manifest.json
+synthpopcan tree generate person-model.json --rows 100 --out synthetic-persons.csv
+synthpopcan tree generate-linked --household-model household-model.json --person-model person-model.json --households 100 --households-out synthetic-households.csv --persons-out synthetic-persons.csv
+```
+
+Tree models are for plausible conditional structure. They are not, by
+themselves, proof that local margins match. Follow generation with validation or
+post-generation calibration when public controls matter.
+
+See {doc}`tree`.
+
+### Auditing and Packaging Models
+
+Use these commands when a model might be reused or shared.
+
+```bash
+synthpopcan tree audit-model person-model.json --min-support 50 --max-purity 0.95
+synthpopcan tree prepare-model-release person-model.json --out person-model-publishable.json --manifest-out person-release.manifest.json --review-note "Reviewed support and purity."
+synthpopcan tree release-readiness --household-model household-model-publishable.json --person-model person-model-publishable.json --training-manifest linked-training.manifest.json
+synthpopcan tree package-linked-models --household-model household-model-publishable.json --person-model person-model-publishable.json --training-manifest linked-training.manifest.json --source-provenance source-provenance.json --out linked-model-package.json
+synthpopcan tree inspect-package linked-model-package.json
+synthpopcan tree generate-from-package linked-model-package.json --households 100 --households-out synthetic-households.csv --persons-out synthetic-persons.csv
+```
+
+This is the expert lane. It exists because model artifacts can carry disclosure
+risk and need review evidence before reuse.
+
+### Validating Outputs
+
+Use `validate` commands to check generated artifacts against explicit criteria.
+
+```bash
+synthpopcan validate controls --population weights.csv --controls controls.csv --kind weights
+synthpopcan validate controls --population synthetic.csv --controls controls.csv --kind expanded
+synthpopcan validate tree-output --generated synthetic-persons.csv --training person-training.csv --target-columns AGEGRP,SEX
+synthpopcan validate linked-output --households synthetic-households.csv --persons synthetic-persons.csv
+```
+
+Validation is evidence, not a certificate. Keep the report with the run notes
+and state what the validation did not check.
+
+See {doc}`validate`.
+
+## Further Reading
+
+- ActivitySim,
+  [PopulationSim documentation](https://activitysim.github.io/populationsim/),
+  for a production-grade population synthesis workflow using seed samples and
+  controls.
+- Robin Lovelace and Dimitris Ballas,
+  [Truncate, replicate, sample](https://arxiv.org/abs/1303.5228),
+  for integerizing spatial microsimulation weights.
+- Floriana Gargiulo, Sonia Ternes, Sylvie Huet, and Guillaume Deffuant,
+  [An iterative approach for generating statistically realistic populations of households](https://arxiv.org/abs/0912.2826).
+- The `synthpop` project,
+  [resources and package documentation](https://www.synthpop.org.uk/resources.html),
+  for tree-based synthetic microdata and disclosure-risk framing.
+- scikit-learn,
+  [Decision Trees user guide](https://scikit-learn.org/stable/modules/tree.html),
+  for CART-style decision trees.
+- Stanislav Borysov, Jeppe Rich, and Francisco Pereira,
+  [Scalable Population Synthesis with Deep Generative Modeling](https://arxiv.org/abs/1808.06910),
+  for a contrasting deep generative approach.
+- Haewon Kim and Prateek Bansal,
+  [A Deep Generative Model for Feasible and Diverse Population Synthesis](https://arxiv.org/abs/2208.01403),
+  for structural-zero and sampling-zero concerns in newer models.
+- Margaret Mitchell and co-authors,
+  [Model Cards for Model Reporting](https://arxiv.org/abs/1810.03993),
+  for documenting intended use, limitations, and evaluation.
+- NIST,
+  [SP 800-226: Guidelines for Evaluating Differential Privacy Guarantees](https://csrc.nist.gov/pubs/sp/800/226/final),
+  for formal privacy-loss framing.

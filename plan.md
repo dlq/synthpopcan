@@ -1,7 +1,7 @@
 # SynthPopCan Plan
 
 Status: working roadmap  
-Last updated: 2026-06-22
+Last updated: 2026-06-23
 
 ## Goal
 
@@ -533,16 +533,26 @@ Build a documentation site once the CLI and library surfaces have enough stable 
 
 Deliverables:
 
-- Sphinx documentation scaffold under `docs/`. Status: initial scaffold added with MyST Markdown support, workflow pages, autodoc, and the Read the Docs theme.
+- Sphinx documentation scaffold under `docs/`. Status: topic-oriented Sphinx
+  site added with MyST Markdown support, a field primer, command sections,
+  selective autodoc API reference, and the Read the Docs theme.
 - Read the Docs configuration for hosted documentation builds. Status: initial `.readthedocs.yaml` and `docs/requirements.txt` added.
-- User-oriented CLI guides for IPF, StatCan source discovery, local data setup, and microdata inspection.
+- User-oriented CLI guides for IPF, controls, StatCan source discovery, tree
+  models, validation, local data setup, and source inspection. Status: first
+  topic-pass complete under `docs/`.
 - API reference generated from library docstrings for stable public modules.
-- Data access notes that explain which sources are public fetches, which require local/private files, and how ignored data roots should be organized.
-- Keep README examples short; move reproducible workflow guides into `docs/workflows/` so they can be adopted by the Sphinx site later.
+  Status: selective `docs/api.rst` added and public API docstrings added for
+  controls, IPF, microdata, StatCan, tree, and validation modules.
+- Data access notes that explain which sources are public fetches, which require local/private files, and how ignored data roots should be organized. Status: first pass added in `docs/data.md` and `docs/sources.md`.
+- Keep README examples short; keep reproducible workflows in topic pages such as
+  `docs/ipf.md`, `docs/controls.md`, `docs/statcan.md`, and `docs/tree.md`.
 - Documentation should distinguish beginner workflows from advanced/maintainer
   workflows. The first page should not expose every CLI command; it should route
   users to the web app, IPF from StatCan tables, generated-from-model workflows,
   and only then advanced microdata/model-training/release workflows.
+- The field primer should remain part methods primer, part field introduction,
+  part tool reference: explain interpretive risks, cite relevant methods, and
+  map concepts to commands without hiding caveats behind CLI syntax.
 
 Acceptance criteria:
 
@@ -579,9 +589,9 @@ Completed StatCan/IPF usability work:
    observed WDS labels in selected dimensions.
 4. `ipf check-inputs` includes `suggested_next_steps` for missing seed columns
    and category mismatches, including WDS mapping-template hints.
-5. `docs/workflows/microdata-to-ipf.md` includes a tracked WDS-to-IPF fixture
-   workflow that verifies mapping-template, mapped WDS controls, input checks,
-   fitting, and validation compose end to end.
+5. `docs/ipf.md`, `docs/controls.md`, and `docs/statcan.md` document the
+   WDS-to-IPF path, including mapping templates, mapped WDS controls, input
+   checks, fitting, and validation.
 
 Remaining StatCan/IPF follow-up backlog:
 

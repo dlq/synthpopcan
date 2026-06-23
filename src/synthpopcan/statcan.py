@@ -18,6 +18,8 @@ CENSUS_PROFILE_2016_BASE_URL = (
 
 @dataclass(frozen=True)
 class CensusProfileDownload:
+    """Metadata for one supported 2016 Census Profile bulk download."""
+
     geo_level: str
     label: str
     filetype: str
@@ -25,6 +27,8 @@ class CensusProfileDownload:
 
     @property
     def url(self) -> str:
+        """Return the Statistics Canada download URL for this entry."""
+
         return (
             f"{CENSUS_PROFILE_2016_BASE_URL}?FILETYPE={self.filetype}"
             f"&GEONO={self.geono}&Lang=E"
@@ -32,11 +36,15 @@ class CensusProfileDownload:
 
     @property
     def filename(self) -> str:
+        """Return the local filename used for this download."""
+
         return f"2016-census-profile-{self.geo_level}.csv"
 
 
 @dataclass(frozen=True)
 class WDSTableSearchResult:
+    """One table match from the Statistics Canada WDS cube list."""
+
     product_id: str
     cansim_id: str
     title_en: str
@@ -44,6 +52,8 @@ class WDSTableSearchResult:
     end_date: str
 
     def as_dict(self) -> dict[str, str]:
+        """Return a JSON-serializable representation for CLI output."""
+
         return {
             "product_id": self.product_id,
             "cansim_id": self.cansim_id,
@@ -99,20 +109,28 @@ CENSUS_PROFILE_2016_DOWNLOADS: dict[str, CensusProfileDownload] = {
 
 
 def wds_download_url(product_id: str, lang: str = "en") -> str:
+    """Build the WDS endpoint URL that returns a full-table download link."""
+
     product = normalize_product_id(product_id)
     language = normalize_language(lang)
     return f"{WDS_BASE_URL}/getFullTableDownloadCSV/{product}/{language}"
 
 
 def wds_all_cubes_lite_url() -> str:
+    """Return the WDS endpoint URL for the all-cubes lite index."""
+
     return f"{WDS_BASE_URL}/getAllCubesListLite"
 
 
 def wds_metadata_url() -> str:
+    """Return the WDS endpoint URL for cube metadata lookup."""
+
     return f"{WDS_BASE_URL}/getCubeMetadata"
 
 
 def search_wds_tables(query: str, limit: int = 10) -> list[WDSTableSearchResult]:
+    """Search the WDS cube list for tables matching all query terms."""
+
     terms = [term.lower() for term in query.split() if term.strip()]
     if not terms:
         raise ValueError("search query must contain at least one term")
@@ -148,6 +166,12 @@ def search_wds_tables(query: str, limit: int = 10) -> list[WDSTableSearchResult]
 
 
 def fetch_wds_metadata(product_id: str) -> dict[str, Any]:
+    """Fetch metadata for a WDS product ID.
+
+    Raises ``ValueError`` when Statistics Canada returns no usable metadata for
+    the requested product.
+    """
+
     product = int(normalize_product_id(product_id))
     response = post_json(wds_metadata_url(), [{"productId": product}])
     if not response:
@@ -159,6 +183,8 @@ def fetch_wds_metadata(product_id: str) -> dict[str, Any]:
 
 
 def summarize_wds_metadata(metadata: dict[str, Any]) -> dict[str, object]:
+    """Summarize WDS metadata into dimensions, suitability hints, and commands."""
+
     product_id = normalize_product_id(str(metadata.get("productId", "")))
     dimensions = extract_wds_dimension_names(metadata)
     dimension_previews = extract_wds_dimension_previews(metadata)
@@ -195,6 +221,8 @@ def summarize_wds_metadata(metadata: dict[str, Any]) -> dict[str, object]:
 
 
 def classify_wds_ipf_suitability(dimensions: list[str]) -> dict[str, object]:
+    """Classify whether WDS dimensions look useful for simple IPF controls."""
+
     normalized = {normalize_dimension_name(dimension) for dimension in dimensions}
     has_geography = any(dimension in normalized for dimension in ("geography", "geo"))
     has_age = any("age" in dimension for dimension in normalized)
@@ -248,6 +276,8 @@ def normalize_dimension_name(value: str) -> str:
 
 
 def extract_wds_dimension_names(metadata: dict[str, Any]) -> list[str]:
+    """Extract English dimension names from WDS metadata."""
+
     names: list[str] = []
     dimensions = metadata.get("dimension") or metadata.get("dimensions", [])
     if not isinstance(dimensions, list):
@@ -270,6 +300,8 @@ def extract_wds_dimension_previews(
     *,
     member_limit: int = 3,
 ) -> list[dict[str, object]]:
+    """Extract short member previews for each WDS dimension."""
+
     previews: list[dict[str, object]] = []
     dimensions = metadata.get("dimension") or metadata.get("dimensions", [])
     if not isinstance(dimensions, list):
@@ -331,6 +363,8 @@ def format_metadata_date_range(start: Any, end: Any) -> str:
 
 
 def fetch_wds_table(product_id: str, out_dir: Path, lang: str = "en") -> Path:
+    """Download a WDS full-table ZIP and write a small provenance manifest."""
+
     source_url = wds_download_url(product_id, lang)
     response = fetch_json(source_url)
     if response.get("status") != "SUCCESS" or not response.get("object"):
@@ -355,6 +389,8 @@ def fetch_wds_table(product_id: str, out_dir: Path, lang: str = "en") -> Path:
 
 
 def fetch_census_profile_2016(geo_level: str, out_dir: Path) -> Path:
+    """Download a supported 2016 Census Profile CSV and manifest."""
+
     try:
         entry = CENSUS_PROFILE_2016_DOWNLOADS[geo_level]
     except KeyError as exc:
@@ -404,6 +440,8 @@ def write_manifest(path: Path, data: dict[str, Any]) -> None:
 
 
 def normalize_product_id(product_id: str) -> str:
+    """Validate and normalize a Statistics Canada product ID."""
+
     product = product_id.strip()
     if not product.isdigit():
         raise ValueError("StatCan product ID must contain only digits")
@@ -411,6 +449,8 @@ def normalize_product_id(product_id: str) -> str:
 
 
 def normalize_language(lang: str) -> str:
+    """Normalize a WDS language code to ``en`` or ``fr``."""
+
     language = lang.lower().strip()
     if language not in {"en", "fr"}:
         raise ValueError("language must be 'en' or 'fr'")
