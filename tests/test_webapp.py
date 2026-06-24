@@ -165,6 +165,9 @@ def test_webapp_serves_demo_model_api_endpoints() -> None:
         assert catalogue["models"][1]["id"] == "montreal-cma-2016-all-fields"
         assert catalogue["models"][1]["release_status"] == "publishable_candidate"
         assert catalogue["models"][1]["safe_demo"] is False
+        assert catalogue["models"][2]["id"] == "quebec-2016-all-fields"
+        assert catalogue["models"][2]["release_status"] == "publishable_candidate"
+        assert catalogue["models"][2]["safe_demo"] is False
         assert package["schema_version"] == "synthpopcan-linked-tree-package-v1"
         assert package["review"]["status"] == "safe demo"
         with pytest.raises(HTTPError) as exc_info:
@@ -188,6 +191,21 @@ def test_webapp_loads_bundled_montreal_model_payload() -> None:
     assert package["training_manifest"]["geography_filter"] == {  # type: ignore[index]
         "column": "CMA",
         "value": "462",
+    }
+
+
+def test_webapp_loads_bundled_quebec_model_payload() -> None:
+    from synthpopcan.models import model_payload
+
+    package = model_payload("quebec-2016-all-fields")
+
+    assert package["schema_version"] == "synthpopcan-linked-tree-package-v1"
+    assert package["package_type"] == "linked_household_person"
+    assert package["privacy"]["publishable_candidate"] is True  # type: ignore[index]
+    assert package["privacy"]["contains_raw_rows"] is False  # type: ignore[index]
+    assert package["training_manifest"]["geography_filter"] == {  # type: ignore[index]
+        "column": "PR",
+        "value": "24",
     }
 
 
@@ -451,7 +469,7 @@ def test_webapp_wds_helper_edge_cases(monkeypatch) -> None:
 def test_webapp_demo_model_catalogue_serves_safe_linked_package() -> None:
     catalogue = model_catalogue()
 
-    assert len(catalogue) == 2
+    assert len(catalogue) == 3
     model = catalogue[0]
     assert model["id"] == "demo-linked-household-person"
     assert model["name"] == "Safe demo household/person package"
@@ -478,6 +496,13 @@ def test_webapp_demo_model_catalogue_serves_safe_linked_package() -> None:
     assert bundled["safe_demo"] is False
     assert bundled["release_status"] == "publishable_candidate"
     assert bundled["provenance"] == "Statistics Canada 2016 Census hierarchical PUMF."
+    quebec = catalogue[2]
+    assert quebec["id"] == "quebec-2016-all-fields"
+    assert quebec["name"] == "Quebec 2016 broad linked package"
+    assert quebec["geography"] == "Quebec (PR 24)"
+    assert quebec["safe_demo"] is False
+    assert quebec["release_status"] == "publishable_candidate"
+    assert quebec["provenance"] == "Statistics Canada 2016 Census hierarchical PUMF."
 
     payload = model_payload("demo-linked-household-person")
     assert payload["schema_version"] == "synthpopcan-linked-tree-package-v1"

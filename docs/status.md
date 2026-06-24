@@ -116,6 +116,13 @@ The first pass of model packaging and distribution is in place:
   fixed-schema CSV writing, and a shared linked-run RNG. In a local Montréal
   package smoke test, 100,000 household rows plus 231,637 person rows wrote to
   CSV in about 2.78 seconds after these changes.
+- A reviewed Quebec (`PR=24`) all-fields package is bundled as
+  `quebec-2016-all-fields`. The library workflow script
+  `scripts/build_quebec_model_package.py` trained, audited, released, and
+  packaged the 116 MiB model artifact in about 10 seconds of script-recorded
+  build time. Its optional large-output run generated 3,750,000 household rows
+  and 8,450,189 person rows in about 51.7 seconds, writing local CSV artifacts
+  under `data/private/benchmarks/tree-release-2016-pr24-all-fields/`.
 - The `tree generate-from-package` CLI command renders a Rich progress indicator
   with generated household and person counts for longer runs.
 - The `tree train-linked` CLI command renders a step-based Rich progress

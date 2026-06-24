@@ -522,6 +522,14 @@ Performance and runtime concerns:
 - Use the developer IPF benchmarks as early regression checks, then add user-facing estimates or previews for large/sparse runs.
 - Evaluate browser-side Pyodide/WebAssembly as the preferred runtime for demos and small-to-moderate local workflows. Compare it against a local Python backend or server-side job process only where data size, memory pressure, or run time breaks the browser-first model.
 - Keep heavy full-data runs out of the browser unless benchmarks show predictable memory and runtime behavior.
+- Investigate browser streaming exports for larger web-app runs: use
+  `ReadableStream`, `TextEncoderStream`, Web Workers, and the File System Access
+  API where supported so CSV chunks can be written without building a giant
+  in-memory Blob. Treat this as an optional advanced/browser-support-dependent
+  path, keep hard memory guardrails, and show an exact CLI command when
+  streaming file writing is unavailable. If full-population exports need to be
+  reliable from the web UI, consider a narrow local-helper route that streams
+  files server-side while the browser acts as the control panel.
 - Direct WDS ZIP normalization in the browser is still a later step; it needs a browser ZIP parser or a preprocessed browser-friendly table source.
 - The local Python helper is acceptable for workflows that need StatCan download
   support, premade model listing, or other local package assets. Keep its scope

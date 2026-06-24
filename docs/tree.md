@@ -645,6 +645,23 @@ not match a separate target exactly. In one local Montréal CMA run, requesting
 The bundled Montréal package is the same linked package served by the local web
 app's premade model chooser.
 
+## Example: Quebec Province Linked Model With Python
+
+The advanced library documentation includes a maintained Python script for the
+same release pattern applied to Quebec (`PR=24`). Use it when you want a
+reproducible library workflow rather than a long command-line transcript:
+
+```bash
+uv run python scripts/build_quebec_model_package.py
+uv run python scripts/build_quebec_model_package.py --generate
+```
+
+The first command trains, audits, releases, and bundles the reviewed
+`quebec-2016-all-fields` package. The optional `--generate` run writes the
+large local household/person CSV outputs under `data/private/benchmarks/`.
+See [Advanced Library Use](library.md#maintainer-package-workflow-script) for
+the script and notes about what belongs in Git LFS.
+
 ### `tree inspect-package`
 
 Prints a package summary without dumping embedded model payloads.

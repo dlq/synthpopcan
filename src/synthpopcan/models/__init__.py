@@ -38,6 +38,22 @@ _MODEL_PACKAGES: dict[str, dict[str, object]] = {
         },
         "safe_demo": False,
     },
+    "quebec-2016-all-fields": {
+        "filename": "quebec-2016-all-fields-package.json",
+        "name": "Quebec 2016 broad linked package",
+        "description": (
+            "Publishable-candidate linked household/person model trained from "
+            "the local 2016 hierarchical PUMF for Quebec (PR 24)."
+        ),
+        "geography": "Quebec (PR 24)",
+        "provenance": "Statistics Canada 2016 Census hierarchical PUMF.",
+        "conditions": ["PR", "household_size", "TENUR"],
+        "default_generation": {
+            "households": 1000,
+            "conditions": "",
+        },
+        "safe_demo": False,
+    },
 }
 
 
