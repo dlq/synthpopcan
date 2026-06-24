@@ -590,10 +590,13 @@ next work is to tighten how users discover and move through them.
 
 Near-term usability priorities:
 
-1. Add beginner CLI aliases or wrappers for the common paths:
-   `find-tables`, `make-controls`, `run-ipf`, and `generate-from-model`.
-   These should call the existing expert command families and keep JSON/file
-   output options available for automation.
+1. Add a beginner CLI guide that rhymes with the web app's two workflow cards:
+   `synthpopcan guide`, `synthpopcan guide ipf`, and
+   `synthpopcan guide model`. The guide should use the same beginner-facing
+   labels as the web app: "IPF from margin tables" and "Generate from existing
+   model". It should be read-only guidance first, pointing to the existing
+   expert commands instead of creating a second implementation path. Keep the
+   expert commands visible for automation and advanced users.
 2. Make the web app's prepared-model workflow more realistic: support a
    backend-served model index, show model provenance and warnings clearly, keep
    model training out of the UI, and add stronger output previews/validation

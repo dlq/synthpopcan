@@ -8,6 +8,7 @@ import os
 from pathlib import Path
 
 import click
+from rich.table import Table
 
 from synthpopcan import __version__
 from synthpopcan.cli_ipf import ipf, read_population_artifact
@@ -23,7 +24,12 @@ from synthpopcan.cli_output import (
     write_wds_search_results,
 )
 from synthpopcan.cli_tree import tree
-from synthpopcan.console import print_checks_table, print_success, print_wrote
+from synthpopcan.console import (
+    print_checks_table,
+    print_success,
+    print_table,
+    print_wrote,
+)
 from synthpopcan.controls import (
     build_wds_category_mapping_template,
     census_profile_template,
@@ -80,6 +86,26 @@ cli.add_command(ipf)
 cli.add_command(tree)
 
 
+@cli.group(invoke_without_command=True)
+@click.pass_context
+def guide(ctx: click.Context) -> None:
+    """Show beginner workflow guidance."""
+    if ctx.invoked_subcommand is None:
+        print_workflow_choice_guide()
+
+
+@guide.command("ipf")
+def guide_ipf() -> None:
+    """Show the IPF from margin tables path."""
+    print_ipf_workflow_guide()
+
+
+@guide.command("model")
+def guide_model() -> None:
+    """Show the generate from existing model path."""
+    print_model_workflow_guide()
+
+
 @cli.command("serve")
 @click.option(
     "--host",
@@ -105,6 +131,115 @@ def serve(host: str, port: int, open_browser: bool) -> None:
     """Serve the local SynthPopCan web app."""
     print_success(f"Serving SynthPopCan at http://{host}:{port}/")
     serve_webapp(host=host, port=port, open_browser=open_browser)
+
+
+def print_workflow_choice_guide() -> None:
+    table = Table(title="Choose a Workflow")
+    table.add_column("Workflow", no_wrap=True)
+    table.add_column("Use When")
+    table.add_column("Next Command", no_wrap=True)
+    table.add_row(
+        "IPF from margin tables",
+        (
+            "You have seed rows, want to find or prepare margin/control totals, "
+            "and need fitted weights or expanded rows."
+        ),
+        "synthpopcan guide ipf",
+    )
+    table.add_row(
+        "Generate from existing model",
+        (
+            "You have a prepared household/person model package and want to "
+            "export synthetic household and person rows."
+        ),
+        "synthpopcan guide model",
+    )
+    print_table(table)
+
+
+def print_ipf_workflow_guide() -> None:
+    table = Table(title="IPF from Margin Tables")
+    table.add_column("Step", justify="right", no_wrap=True)
+    table.add_column("Web App Label", no_wrap=True)
+    table.add_column("CLI Command")
+    table.add_row(
+        "1",
+        "Use a demo or make templates",
+        "synthpopcan serve",
+    )
+    table.add_row(
+        "2",
+        "Generate from a StatCan table",
+        'synthpopcan statcan wds search "population age sex"',
+    )
+    table.add_row(
+        "3",
+        "Inspect product",
+        "synthpopcan statcan wds explain PRODUCT_ID",
+    )
+    table.add_row(
+        "4",
+        "Prepare IPF inputs",
+        (
+            "synthpopcan controls wds inspect TABLE.zip\n"
+            "synthpopcan controls from-wds TABLE.zip --dimensions "
+            '"GEO,Age group,Sex" --count-column VALUE --out controls.csv'
+        ),
+    )
+    table.add_row(
+        "5",
+        "Run IPF",
+        (
+            "synthpopcan ipf check-inputs --seed seed.csv --controls controls.csv\n"
+            "synthpopcan ipf fit --seed seed.csv --controls controls.csv "
+            "--out weights.csv --report fit-report.json"
+        ),
+    )
+    table.add_row(
+        "6",
+        "Preview or validate",
+        (
+            "synthpopcan ipf report fit-report.json\n"
+            "synthpopcan validate controls --population weights.csv "
+            "--controls controls.csv --kind weights"
+        ),
+    )
+    print_table(table)
+
+
+def print_model_workflow_guide() -> None:
+    table = Table(title="Generate from Existing Model")
+    table.add_column("Step", justify="right", no_wrap=True)
+    table.add_column("Web App Label", no_wrap=True)
+    table.add_column("CLI Command")
+    table.add_row(
+        "1",
+        "Use premade model",
+        "synthpopcan serve",
+    )
+    table.add_row(
+        "2",
+        "Inspect selected model",
+        "synthpopcan tree inspect-package model-package.json",
+    )
+    table.add_row(
+        "3",
+        "Generate rows",
+        (
+            "synthpopcan tree generate-from-package model-package.json "
+            "--households 100 --households-out households.csv "
+            "--persons-out persons.csv"
+        ),
+    )
+    table.add_row(
+        "4",
+        "Preview or validate",
+        (
+            "synthpopcan validate linked-output --households households.csv "
+            "--persons persons.csv"
+        ),
+    )
+    print_table(table)
 
 
 @cli.group()
