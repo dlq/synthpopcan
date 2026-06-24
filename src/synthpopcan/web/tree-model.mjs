@@ -32,6 +32,15 @@ export function summarizeModelPayload(payload) {
       schemaVersion: payload.schema_version,
       release: releaseText(payload),
       privacy: privacyText(payload.privacy),
+      privacyDetails: privacyDetailsText(payload.privacy),
+      source: provenanceText(payload.provenance, "source", "Source not listed"),
+      trainingData: provenanceText(
+        payload.provenance,
+        "training_data",
+        "Training data not listed",
+      ),
+      generationDefault: generationDefault(payload, householdModel),
+      warnings: modelWarnings(payload),
       rowsLabel: "Households to generate",
       outputs: "Household CSV and person CSV",
       linkage: `Household size comes from ${householdSizeColumn}; person rows are generated inside each synthetic household.`,
@@ -49,6 +58,15 @@ export function summarizeModelPayload(payload) {
     schemaVersion: model.schema_version,
     release: releaseText(model),
     privacy: privacyText(model.privacy),
+    privacyDetails: privacyDetailsText(model.privacy),
+    source: provenanceText(model.provenance, "source", "Source not listed"),
+    trainingData: provenanceText(
+      model.provenance,
+      "training_data",
+      "Training data not listed",
+    ),
+    generationDefault: generationDefault(payload, model),
+    warnings: modelWarnings(model),
     rowsLabel: "Rows to generate",
     outputs: "Synthetic rows CSV",
     linkage: "",
@@ -76,7 +94,10 @@ function modelSummaryText(model) {
   const targets = (model.spec?.target_columns ?? []).join(", ") || "none listed";
   const conditioning =
     (model.spec?.conditioning_columns ?? []).join(", ") || "none listed";
-  return `${model.model_type}; targets ${targets}; conditions ${conditioning}`;
+  const records = Number.isFinite(Number(model.records_trained))
+    ? `${Number(model.records_trained).toLocaleString()} training records; `
+    : "";
+  return `${model.model_type}; ${records}targets ${targets}; conditions ${conditioning}`;
 }
 
 function releaseText(payload) {
@@ -91,6 +112,72 @@ function privacyText(privacy) {
     return "marked as publishable candidate";
   }
   return "not marked as publishable candidate";
+}
+
+function privacyDetailsText(privacy) {
+  if (!privacy) {
+    return "No raw/source identifier status listed";
+  }
+  if (
+    privacy.contains_raw_rows === undefined &&
+    privacy.contains_source_identifiers === undefined &&
+    !privacy.source
+  ) {
+    return "No raw/source identifier status listed";
+  }
+  const rawRows = yesNo(privacy.contains_raw_rows);
+  const sourceIds = yesNo(privacy.contains_source_identifiers);
+  const source = privacy.source ? `; source: ${privacy.source}` : "";
+  return `raw rows: ${rawRows}; source identifiers: ${sourceIds}${source}`;
+}
+
+function yesNo(value) {
+  if (value === true) {
+    return "yes";
+  }
+  if (value === false) {
+    return "no";
+  }
+  return "not listed";
+}
+
+function provenanceText(provenance, key, fallback) {
+  const value = provenance?.[key];
+  return value ? String(value) : fallback;
+}
+
+function generationDefault(payload, model) {
+  const defaults = payload.generation_defaults ?? {};
+  return {
+    households: String(defaults.households ?? 10),
+    conditions: String(
+      defaults.conditions ?? exampleConditions(model.spec?.conditioning_columns, model),
+    ),
+  };
+}
+
+function exampleConditions(conditioningColumns = [], model) {
+  const firstGroup = model.groups?.[0]?.conditions ?? {};
+  return conditioningColumns
+    .map((column) => {
+      const value = firstGroup[column] ?? "VALUE";
+      return `${column}=${value}`;
+    })
+    .join(", ");
+}
+
+function modelWarnings(payload) {
+  const warnings = [];
+  if (payload.review?.note) {
+    warnings.push(String(payload.review.note));
+  }
+  if (!payload.provenance?.source) {
+    warnings.push("No source provenance is listed for this package.");
+  }
+  if (payload.provenance?.contains_real_microdata === true) {
+    warnings.push("This package reports real microdata in its provenance.");
+  }
+  return warnings;
 }
 
 export function generateLinkedPopulation(

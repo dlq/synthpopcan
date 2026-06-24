@@ -15,6 +15,15 @@ def demo_model_catalogue() -> list[dict[str, object]]:
             ),
             "kind": "linked_household_person",
             "geography": "Demo regions",
+            "release_status": "publishable_candidate",
+            "provenance": "Synthetic toy rows only; not Census microdata.",
+            "privacy": "No raw rows or source identifiers.",
+            "conditions": ["geo"],
+            "outputs": ["households.csv", "persons.csv"],
+            "default_generation": {
+                "households": 10,
+                "conditions": "geo=Demo North",
+            },
             "safe_demo": True,
         }
     ]
@@ -48,6 +57,14 @@ def demo_model_payload(model_id: str) -> dict[str, object]:
             "source": "SynthPopCan bundled demo",
             "training_data": "hand-authored synthetic toy distribution",
             "contains_real_microdata": False,
+        },
+        "review": {
+            "status": "safe demo",
+            "note": "Trained from synthetic toy rows; safe to distribute.",
+        },
+        "generation_defaults": {
+            "households": 10,
+            "conditions": "geo=Demo North",
         },
         "models": {
             "household": demo_household_model(),

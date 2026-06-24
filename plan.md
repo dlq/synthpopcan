@@ -596,11 +596,14 @@ Near-term usability priorities:
    labels as the web app: "IPF from margin tables" and "Generate from existing
    model". It should be read-only guidance first, pointing to the existing
    expert commands instead of creating a second implementation path. Keep the
-   expert commands visible for automation and advanced users.
+   expert commands visible for automation and advanced users. Status: complete
+   for the first read-only guide.
 2. Make the web app's prepared-model workflow more realistic: support a
    backend-served model index, show model provenance and warnings clearly, keep
    model training out of the UI, and add stronger output previews/validation
-   summaries.
+   summaries. Status: in progress; the safe demo model is now served through a
+   publication-style catalogue with release status, provenance, privacy notes,
+   output shape, and default generation settings.
 3. Promote the beginner Python API in the documentation and keep its examples
    runnable. The API reference should remain autodoc-driven, but workflow docs
    should show the short `import synthpopcan as spc` path first.

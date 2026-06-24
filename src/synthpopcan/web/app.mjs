@@ -250,7 +250,9 @@ document.querySelector("#load-premade-model").addEventListener("click", async ()
     selectedModelText = JSON.stringify(payload);
     selectedModelLabel = select.selectedOptions[0]?.textContent ?? modelId;
     document.querySelector("#model-file").value = "";
-    showModelSummary(resultBox, summarizeModelPayload(payload), selectedModelLabel);
+    const summary = summarizeModelPayload(payload);
+    applyModelDefaults(summary);
+    showModelSummary(resultBox, summary, selectedModelLabel);
   } catch (error) {
     showError(resultBox, error);
   }
@@ -279,15 +281,35 @@ async function loadPremadeModelCatalogue() {
       const option = document.createElement("option");
       option.value = model.id;
       option.textContent = `${model.name} (${model.geography})`;
-      option.title = model.description;
+      option.title = modelOptionTitle(model);
       select.append(option);
     });
+    if (!select.value && payload.models.length > 0) {
+      select.value = payload.models[0].id;
+    }
   } catch {
     const option = document.createElement("option");
     option.value = "";
     option.textContent = "Premade models unavailable";
     select.replaceChildren(option);
   }
+}
+
+function modelOptionTitle(model) {
+  return [
+    model.description,
+    `Release: ${model.release_status ?? "not listed"}`,
+    `Source: ${model.provenance ?? "not listed"}`,
+    `Privacy: ${model.privacy ?? "not listed"}`,
+  ]
+    .filter(Boolean)
+    .join(" ");
+}
+
+function applyModelDefaults(summary) {
+  const defaults = summary.generationDefault;
+  document.querySelector("#model-rows").value = defaults.households;
+  document.querySelector("#model-conditions").value = defaults.conditions;
 }
 
 async function fetchJson(url) {

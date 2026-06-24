@@ -150,7 +150,20 @@ def test_webapp_serves_demo_model_api_endpoints() -> None:
             package = json.loads(response.read().decode("utf-8"))
 
         assert catalogue["models"][0]["id"] == "demo-linked-household-person"
+        assert catalogue["models"][0]["release_status"] == "publishable_candidate"
+        assert catalogue["models"][0]["provenance"] == (
+            "Synthetic toy rows only; not Census microdata."
+        )
+        assert catalogue["models"][0]["outputs"] == [
+            "households.csv",
+            "persons.csv",
+        ]
+        assert catalogue["models"][0]["default_generation"] == {
+            "households": 10,
+            "conditions": "geo=Demo North",
+        }
         assert package["schema_version"] == "synthpopcan-linked-tree-package-v1"
+        assert package["review"]["status"] == "safe demo"
         with pytest.raises(HTTPError) as exc_info:
             urlopen(f"{webapp_url(server)}api/models/missing", timeout=2)
         assert exc_info.value.code == 404
@@ -420,25 +433,37 @@ def test_webapp_wds_helper_edge_cases(monkeypatch) -> None:
 def test_webapp_demo_model_catalogue_serves_safe_linked_package() -> None:
     catalogue = demo_model_catalogue()
 
-    assert catalogue == [
-        {
-            "id": "demo-linked-household-person",
-            "name": "Safe demo household/person package",
-            "description": (
-                "Tiny linked model trained from synthetic toy rows; not derived "
-                "from Census microdata."
-            ),
-            "kind": "linked_household_person",
-            "geography": "Demo regions",
-            "safe_demo": True,
-        }
-    ]
+    assert len(catalogue) == 1
+    model = catalogue[0]
+    assert model["id"] == "demo-linked-household-person"
+    assert model["name"] == "Safe demo household/person package"
+    assert model["description"] == (
+        "Tiny linked model trained from synthetic toy rows; not derived "
+        "from Census microdata."
+    )
+    assert model["kind"] == "linked_household_person"
+    assert model["geography"] == "Demo regions"
+    assert model["safe_demo"] is True
+    assert model["release_status"] == "publishable_candidate"
+    assert model["provenance"] == "Synthetic toy rows only; not Census microdata."
+    assert model["privacy"] == "No raw rows or source identifiers."
+    assert model["conditions"] == ["geo"]
+    assert model["outputs"] == ["households.csv", "persons.csv"]
+    assert model["default_generation"] == {
+        "households": 10,
+        "conditions": "geo=Demo North",
+    }
 
     payload = demo_model_payload("demo-linked-household-person")
     assert payload["schema_version"] == "synthpopcan-linked-tree-package-v1"
     assert payload["privacy"]["publishable_candidate"] is True  # type: ignore[index]
     assert payload["privacy"]["safe_demo"] is True  # type: ignore[index]
     assert payload["provenance"]["contains_real_microdata"] is False  # type: ignore[index]
+    assert payload["review"]["status"] == "safe demo"  # type: ignore[index]
+    assert payload["generation_defaults"] == {  # type: ignore[index]
+        "households": 10,
+        "conditions": "geo=Demo North",
+    }
     assert set(payload["models"]) == {"household", "person"}  # type: ignore[arg-type]
 
 

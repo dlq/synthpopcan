@@ -60,6 +60,21 @@ export function showModelSummary(element, summary, sourceLabel = null) {
   overview.className = "model-overview-note";
   overview.append(resultItem("Package summary", modelOverviewText(summary)));
   element.append(overview);
+  const provenance = document.createElement("div");
+  provenance.className = "model-provenance-note";
+  provenance.append(
+    resultItem("Source", summary.source),
+    resultItem("Training data", summary.trainingData),
+    resultItem("Privacy", summary.privacyDetails),
+    resultItem("Default generation", defaultGenerationText(summary)),
+  );
+  element.append(provenance);
+  if (summary.warnings.length > 0) {
+    const warnings = document.createElement("div");
+    warnings.className = "model-warning-note";
+    warnings.append(resultItem("Review note", summary.warnings.join(" ")));
+    element.append(warnings);
+  }
   if (summary.linkage) {
     const linkage = document.createElement("div");
     linkage.className = "model-linkage-note";
@@ -104,4 +119,9 @@ function modelOverviewText(summary) {
       ? summary.conditions.join(", ")
       : "no required conditioning columns";
   return `${summary.privacy}; release ${summary.release}; ${summary.rowsLabel.toLowerCase()}; generates ${summary.outputs}; conditions: ${conditions}.`;
+}
+
+function defaultGenerationText(summary) {
+  const defaults = summary.generationDefault;
+  return `${summary.rowsLabel}: ${defaults.households}; conditions: ${defaults.conditions || "none"}.`;
 }

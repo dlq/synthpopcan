@@ -141,6 +141,16 @@ test("summarizes linked model packages for browser inspection", () => {
   assert.equal(summary.kind, "Linked household/person package");
   assert.equal(summary.rowsLabel, "Households to generate");
   assert.equal(summary.outputs, "Household CSV and person CSV");
+  assert.equal(summary.source, "Source not listed");
+  assert.equal(summary.trainingData, "Training data not listed");
+  assert.equal(summary.privacyDetails, "No raw/source identifier status listed");
+  assert.deepEqual(summary.generationDefault, {
+    households: "10",
+    conditions: "geo=QC",
+  });
+  assert.deepEqual(summary.warnings, [
+    "No source provenance is listed for this package.",
+  ]);
   assert.deepEqual(summary.conditions, ["geo"]);
   assert.equal(summary.privacy, "marked as publishable candidate");
   assert.match(summary.linkage, /Household size comes from household_size/);
@@ -150,6 +160,50 @@ test("summarizes linked model packages for browser inspection", () => {
   );
   assert.equal(
     summary.models[0].text,
-    "conditional-frequency; targets household_size, tenure; conditions geo",
+    "conditional-frequency; 1 training records; targets household_size, tenure; conditions geo",
   );
+});
+
+test("summarizes provenance and privacy details for prepared model packages", () => {
+  const packagePayload = {
+    schema_version: "synthpopcan-linked-tree-package-v1",
+    package_type: "linked_household_person",
+    household_size_column: "household_size",
+    privacy: {
+      publishable_candidate: true,
+      contains_raw_rows: false,
+      contains_source_identifiers: false,
+      source: "synthetic toy rows only",
+    },
+    provenance: {
+      source: "SynthPopCan bundled demo",
+      training_data: "hand-authored synthetic toy distribution",
+      contains_real_microdata: false,
+    },
+    review: {
+      status: "safe demo",
+      note: "Trained from synthetic toy rows; safe to distribute.",
+    },
+    generation_defaults: {
+      households: 10,
+      conditions: "geo=Demo North",
+    },
+    models: { household: householdModel, person: personModel },
+  };
+
+  const summary = summarizeModelPayload(packagePayload);
+
+  assert.equal(summary.source, "SynthPopCan bundled demo");
+  assert.equal(summary.trainingData, "hand-authored synthetic toy distribution");
+  assert.equal(
+    summary.privacyDetails,
+    "raw rows: no; source identifiers: no; source: synthetic toy rows only",
+  );
+  assert.deepEqual(summary.generationDefault, {
+    households: "10",
+    conditions: "geo=Demo North",
+  });
+  assert.deepEqual(summary.warnings, [
+    "Trained from synthetic toy rows; safe to distribute.",
+  ]);
 });
