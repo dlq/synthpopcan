@@ -145,6 +145,29 @@ def test_cli_validation_fails_over_tolerance(tmp_path: Path) -> None:
         )
 
 
+def test_cli_validation_wraps_bad_population_artifacts(tmp_path: Path) -> None:
+    from synthpopcan.cli import main
+
+    controls_path = tmp_path / "controls.csv"
+    weights_path = tmp_path / "weights.csv"
+    controls_path.write_text("margin,dimensions,age,count\nage,age,young,1\n")
+    write_csv(weights_path, ["id", "age"], [{"id": "1", "age": "young"}])
+
+    with pytest.raises(ClickException, match="requires a 'weight' column"):
+        main(
+            [
+                "validate",
+                "controls",
+                "--population",
+                str(weights_path),
+                "--controls",
+                str(controls_path),
+                "--kind",
+                "weights",
+            ]
+        )
+
+
 def test_cli_validates_expanded_output(tmp_path: Path, capsys) -> None:
     from synthpopcan.cli import main
 
@@ -185,6 +208,93 @@ def test_cli_validates_expanded_output(tmp_path: Path, capsys) -> None:
     assert report["passed"] is True
     assert report["artifact_kind"] == "expanded"
     assert report["population_records"] == 3
+
+
+def test_cli_validates_linked_output_and_reports_failures(
+    tmp_path: Path,
+    capsys,
+) -> None:
+    from synthpopcan.cli import main
+
+    households_path = tmp_path / "households.csv"
+    persons_path = tmp_path / "persons.csv"
+    write_csv(
+        households_path,
+        ["synthetic_household_id", "household_size"],
+        [{"synthetic_household_id": "h1", "household_size": "2"}],
+    )
+    write_csv(
+        persons_path,
+        ["synthetic_person_id", "synthetic_household_id"],
+        [
+            {"synthetic_person_id": "p1", "synthetic_household_id": "h1"},
+            {"synthetic_person_id": "p2", "synthetic_household_id": "h1"},
+        ],
+    )
+
+    assert (
+        main(
+            [
+                "validate",
+                "linked-output",
+                "--households",
+                str(households_path),
+                "--persons",
+                str(persons_path),
+                "--format",
+                "json",
+            ]
+        )
+        == 0
+    )
+
+    assert json.loads(capsys.readouterr().out)["passed"] is True
+
+    write_csv(
+        persons_path,
+        ["synthetic_person_id", "synthetic_household_id"],
+        [{"synthetic_person_id": "p1", "synthetic_household_id": "missing"}],
+    )
+    with pytest.raises(ClickException, match="linkage problems"):
+        main(
+            [
+                "validate",
+                "linked-output",
+                "--households",
+                str(households_path),
+                "--persons",
+                str(persons_path),
+            ]
+        )
+
+
+def test_cli_linked_output_wraps_validation_value_errors(tmp_path: Path) -> None:
+    from synthpopcan.cli import main
+
+    households_path = tmp_path / "households.csv"
+    persons_path = tmp_path / "persons.csv"
+    write_csv(
+        households_path,
+        ["synthetic_household_id"],
+        [{"synthetic_household_id": "h1"}],
+    )
+    write_csv(
+        persons_path,
+        ["synthetic_person_id", "synthetic_household_id"],
+        [{"synthetic_person_id": "p1", "synthetic_household_id": "h1"}],
+    )
+
+    with pytest.raises(ClickException, match="linkage problems"):
+        main(
+            [
+                "validate",
+                "linked-output",
+                "--households",
+                str(households_path),
+                "--persons",
+                str(persons_path),
+            ]
+        )
 
 
 def test_tree_output_validation_compares_target_distributions() -> None:
@@ -338,6 +448,73 @@ def test_cli_validates_tree_output_as_json(tmp_path: Path, capsys) -> None:
     assert report["passed"] is True
     assert report["generated_records"] == 3
     assert report["max_abs_proportion_delta"] == 0.0
+
+
+def test_cli_validates_tree_output_as_table_and_reports_failures(
+    tmp_path: Path,
+    capsys,
+) -> None:
+    from synthpopcan.cli import main
+
+    training_path = tmp_path / "person-training.csv"
+    generated_path = tmp_path / "synthetic-people.csv"
+    write_csv(training_path, ["AGEGRP"], [{"AGEGRP": "adult"}])
+    write_csv(generated_path, ["AGEGRP"], [{"AGEGRP": "adult"}])
+
+    assert (
+        main(
+            [
+                "validate",
+                "tree-output",
+                "--generated",
+                str(generated_path),
+                "--training",
+                str(training_path),
+                "--target-columns",
+                "AGEGRP",
+            ]
+        )
+        == 0
+    )
+    assert "Tree Output Validation" in capsys.readouterr().out
+
+    write_csv(generated_path, ["AGEGRP"], [{"AGEGRP": "child"}])
+    with pytest.raises(ClickException, match="distribution shifts"):
+        main(
+            [
+                "validate",
+                "tree-output",
+                "--generated",
+                str(generated_path),
+                "--training",
+                str(training_path),
+                "--target-columns",
+                "AGEGRP",
+            ]
+        )
+
+
+def test_cli_tree_output_wraps_bad_target_column_input(tmp_path: Path) -> None:
+    from synthpopcan.cli import main
+
+    training_path = tmp_path / "person-training.csv"
+    generated_path = tmp_path / "synthetic-people.csv"
+    write_csv(training_path, ["AGEGRP"], [{"AGEGRP": "adult"}])
+    write_csv(generated_path, ["AGEGRP"], [{"AGEGRP": "adult"}])
+
+    with pytest.raises(ClickException, match="at least one target columns"):
+        main(
+            [
+                "validate",
+                "tree-output",
+                "--generated",
+                str(generated_path),
+                "--training",
+                str(training_path),
+                "--target-columns",
+                " , ",
+            ]
+        )
 
 
 def write_csv(path: Path, fieldnames: list[str], rows: list[dict[str, str]]) -> None:

@@ -81,3 +81,25 @@ def test_sources_sample_requires_private_override(tmp_path) -> None:
 
     with pytest.raises(ClickException, match="private data"):
         main(["sources", "sample", str(source), "--format", "json"])
+
+    assert (
+        main(
+            [
+                "sources",
+                "sample",
+                str(source),
+                "--allow-private",
+                "--format",
+                "json",
+            ]
+        )
+        == 0
+    )
+
+
+def test_sources_sample_wraps_reader_errors(tmp_path) -> None:
+    source = tmp_path / "sample.csv"
+    source.write_text("age,sex\nold,F\n")
+
+    with pytest.raises(ClickException, match="rows must be at least 1"):
+        main(["sources", "sample", str(source), "--rows", "0", "--format", "json"])

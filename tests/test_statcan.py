@@ -349,6 +349,18 @@ def test_cli_writes_wds_metadata_json(tmp_path: Path, monkeypatch) -> None:
     assert payload["dimension"][0]["dimensionNameEn"] == "Geography"
 
 
+def test_cli_prints_wds_metadata_json(capsys, monkeypatch) -> None:
+    def fake_metadata(product_id: str) -> dict[str, object]:
+        assert product_id == "14100287"
+        return {"productId": "14100287", "dimension": []}
+
+    monkeypatch.setattr("synthpopcan.cli.fetch_wds_metadata", fake_metadata)
+
+    assert main(["statcan", "wds", "metadata", "14100287"]) == 0
+
+    assert json.loads(capsys.readouterr().out)["productId"] == "14100287"
+
+
 def test_summarizes_wds_metadata_for_ipf_use() -> None:
     summary = summarize_wds_metadata(
         {
