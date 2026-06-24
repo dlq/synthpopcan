@@ -6,13 +6,30 @@ from click import ClickException
 from synthpopcan.cli import main
 from synthpopcan.microdata import (
     build_tree_geography_feasibility_report,
+    canadian_aggregation_hint,
     check_statcan_2016_household_seed_columns,
+    columns_to_review,
     derive_statcan_2016_household_seed_sample,
     export_seed_rows,
     export_training_rows,
+    feasibility_reasons,
+    feasibility_tier,
+    find_suggested_tree_column_block,
+    group_records_by_household,
+    household_size_lookup,
+    minimal_household_targets,
+    minimal_person_targets,
     read_fixture_seed_sample,
     read_statcan_2016_hierarchical_seed_sample,
+    reduced_conditioning_columns,
+    reduced_household_targets,
+    reduced_person_targets,
+    require_suggested_tree_columns,
+    resolve_tree_column_block_pair,
     suggest_tree_column_blocks,
+    suggested_feasibility_action,
+    support_and_purity_summary,
+    training_value,
 )
 
 
@@ -866,6 +883,206 @@ def test_household_seed_export_rejects_conflicting_household_weights(tmp_path) -
 
     with pytest.raises(ValueError, match="conflicting household weight"):
         derive_statcan_2016_household_seed_sample(sample, columns=("TENUR",))
+
+
+def test_seed_and_training_exports_reject_invalid_inputs(tmp_path) -> None:
+    fixture_path = tmp_path / "people.csv"
+    fixture_path.write_text("person_id,age_group\np1,adult\n")
+    fixture = read_fixture_seed_sample(
+        fixture_path,
+        level="person",
+        weight_column=None,
+        geography_columns=(),
+        id_columns=("person_id",),
+    )
+    hierarchical_path = tmp_path / "hierarchical.csv"
+    hierarchical_path.write_text(
+        "HH_ID,EF_ID,CF_ID,PP_ID,WEIGHT,TENUR,AGEGRP\n"
+        "1,11,111,11101,1,owner,adult\n"
+    )
+    hierarchical = read_statcan_2016_hierarchical_seed_sample(hierarchical_path)
+
+    with pytest.raises(ValueError, match="at least one seed column"):
+        export_seed_rows(fixture, columns=())
+    with pytest.raises(ValueError, match="missing required columns"):
+        export_seed_rows(fixture, columns=("sex",))
+    with pytest.raises(ValueError, match="requires statcan-2016-hierarchical"):
+        export_training_rows(
+            fixture,
+            level="person",
+            target_columns=("age_group",),
+            conditioning_columns=("person_id",),
+        )
+    with pytest.raises(ValueError, match="at least one target column"):
+        export_training_rows(
+            hierarchical,
+            level="person",
+            target_columns=(),
+            conditioning_columns=("TENUR",),
+        )
+    with pytest.raises(ValueError, match="at least one conditioning column"):
+        export_training_rows(
+            hierarchical,
+            level="person",
+            target_columns=("AGEGRP",),
+            conditioning_columns=(),
+        )
+    with pytest.raises(ValueError, match="household derivation requires"):
+        derive_statcan_2016_household_seed_sample(fixture, columns=("TENUR",))
+    with pytest.raises(ValueError, match="at least one household column"):
+        derive_statcan_2016_household_seed_sample(hierarchical, columns=())
+    with pytest.raises(ValueError, match="household seed checks require"):
+        check_statcan_2016_household_seed_columns(fixture, columns=("TENUR",))
+    with pytest.raises(ValueError, match="at least one household column"):
+        check_statcan_2016_household_seed_columns(hierarchical, columns=())
+
+
+def test_tree_column_block_resolution_and_helper_errors(tmp_path) -> None:
+    source = tmp_path / "hierarchical.csv"
+    source.write_text(
+        "HH_ID,EF_ID,CF_ID,PP_ID,WEIGHT,PR,TENUR,AGEGRP,SEX\n"
+        "1,11,111,11101,1,24,owner,adult,F\n"
+    )
+    sample = read_statcan_2016_hierarchical_seed_sample(source)
+    suggestion = suggest_tree_column_blocks(sample)
+
+    (
+        household_targets,
+        household_conditions,
+        person_targets,
+        person_conditions,
+        report,
+    ) = resolve_tree_column_block_pair(
+        sample,
+        household_block="household_core",
+        person_block="person_demographics",
+    )
+    assert household_targets == ("household_size", "TENUR")
+    assert household_conditions == ("PR",)
+    assert person_targets == ("AGEGRP", "SEX")
+    assert person_conditions == ("PR", "household_size", "TENUR")
+    assert report["mode"] == "profile"
+    with pytest.raises(ValueError, match="not a person block"):
+        find_suggested_tree_column_block(
+            suggestion,
+            name="household_core",
+            level="person",
+        )
+    with pytest.raises(ValueError, match="was not found"):
+        find_suggested_tree_column_block(
+            suggestion,
+            name="missing",
+            level="person",
+        )
+    with pytest.raises(ValueError, match="blocks must be a list"):
+        find_suggested_tree_column_block({"blocks": "bad"}, name="x", level="person")
+    with pytest.raises(ValueError, match="invalid target_columns"):
+        require_suggested_tree_columns(
+            {"name": "bad", "target_columns": "bad"},
+            "target_columns",
+        )
+    with pytest.raises(ValueError, match="has no target_columns"):
+        require_suggested_tree_columns(
+            {"name": "bad", "target_columns": []},
+            "target_columns",
+        )
+
+
+def test_geography_feasibility_advisory_helpers() -> None:
+    rows = [
+        {"group": "A", "target": "x", "WEIGHT": "2"},
+        {"group": "A", "target": "x", "WEIGHT": "1"},
+        {"group": "B", "target": "y", "WEIGHT": "1"},
+    ]
+
+    assert support_and_purity_summary(
+        [],
+        conditioning_columns=("group",),
+        target_columns=("target",),
+    ) == {"groups": 0, "minimum_support": 0.0, "maximum_purity": 0.0}
+    assert support_and_purity_summary(
+        rows,
+        conditioning_columns=("group",),
+        target_columns=("target",),
+    ) == {"groups": 2, "minimum_support": 1.0, "maximum_purity": 1.0}
+    reasons = feasibility_reasons(
+        person_rows=100,
+        household_rows=50,
+        household_risk={"minimum_support": 1.0, "maximum_purity": 1.0},
+        person_risk={"minimum_support": 1.0, "maximum_purity": 1.0},
+        likely_person_rows=1000,
+        likely_household_rows=500,
+        borderline_person_rows=200,
+        borderline_household_rows=100,
+        min_support=50,
+        max_purity=0.95,
+    )
+    assert "too few person rows" in reasons
+    assert feasibility_tier(
+        [],
+        person_rows=1000,
+        household_rows=500,
+        likely_person_rows=1000,
+        likely_household_rows=500,
+    ) == "likely"
+    assert feasibility_tier(
+        ["limited person rows"],
+        person_rows=500,
+        household_rows=250,
+        likely_person_rows=1000,
+        likely_household_rows=500,
+    ) == "borderline"
+    assert suggested_feasibility_action("likely") == "candidate for full block review"
+    assert suggested_feasibility_action("borderline") == (
+        "coarsen targets or review before training"
+    )
+    assert columns_to_review([], ("VALUE",), preferred_review_columns=("VALUE",)) == [
+        "VALUE"
+    ]
+    assert columns_to_review(
+        [{"VALUE": str(index)} for index in range(8)],
+        ("VALUE",),
+        preferred_review_columns=(),
+    ) == ["VALUE"]
+    assert reduced_household_targets(("household_size", "TENUR", "VALUE")) == [
+        "household_size",
+        "TENUR",
+    ]
+    assert reduced_person_targets(("AGEGRP", "SEX", "TOTINC")) == ["AGEGRP", "SEX"]
+    assert minimal_household_targets(("household_size", "ROOM")) == ["household_size"]
+    assert minimal_person_targets(("AGEGRP", "MarStH")) == ["AGEGRP"]
+    assert reduced_conditioning_columns(
+        ("PR",),
+        ("household_size", "TENUR"),
+        geography_column="PR",
+    ) == ["PR", "household_size", "TENUR"]
+    assert canadian_aggregation_hint("PR", "11").startswith("Use an Atlantic")
+    assert canadian_aggregation_hint("PR", "70").startswith("Use a territories")
+    assert canadian_aggregation_hint("PR", "10").startswith("Review as an Atlantic")
+    assert canadian_aggregation_hint("CMA", "999").startswith("Treat as non-CMA")
+    assert canadian_aggregation_hint("CMA", "462").startswith("Use only")
+    assert canadian_aggregation_hint("CD", "24").startswith("Aggregate")
+
+
+def test_household_grouping_helpers_reject_missing_household_ids() -> None:
+    records = (
+        {"HH_ID": "1", "WEIGHT": "1", "AGEGRP": "adult"},
+        {"HH_ID": "1", "WEIGHT": "1", "AGEGRP": "child"},
+    )
+
+    assert household_size_lookup(records) == {"1": "2"}
+    assert training_value(
+        {"HH_ID": "1", "AGEGRP": "adult"},
+        "household_size",
+        household_sizes={"1": "2"},
+    ) == "2"
+    assert training_value(
+        {"HH_ID": "1", "AGEGRP": "adult"},
+        "AGEGRP",
+        household_sizes={"1": "2"},
+    ) == "adult"
+    with pytest.raises(ValueError, match="non-empty HH_ID"):
+        group_records_by_household(({"HH_ID": "", "WEIGHT": "1"},))
 
 
 def test_cli_inspects_microdata_as_readable_table(tmp_path, capsys) -> None:
