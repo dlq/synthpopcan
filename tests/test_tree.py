@@ -2,10 +2,38 @@ import csv
 import json
 import random
 from dataclasses import replace
+from pathlib import Path
 
 import pytest
 
 from synthpopcan.cli import main
+from synthpopcan.cli_tree import (
+    apply_target_profile,
+    classify_linked_release_readiness,
+    filter_training_sample_by_geography,
+    format_audit_summary,
+    format_bytes_or_blank,
+    format_geography_filter,
+    format_int_or_blank,
+    format_model_summary,
+    format_number_or_blank,
+    format_privacy_summary,
+    format_source_label,
+    geography_filter_manifest,
+    linked_release_next_steps,
+    package_models,
+    parse_column_list,
+    read_linked_model_package,
+    read_linked_training_manifest,
+    read_model_release_manifest,
+    read_source_provenance,
+    release_blocking_issues,
+    release_manifest_matches_model_paths,
+    train_tree_sample,
+    tree_model_from_payload,
+    validate_linked_model_package_inputs,
+    validate_package_allows_generation,
+)
 from synthpopcan.tree import (
     CartTreeModel,
     FrequencyTreeModel,
@@ -459,6 +487,333 @@ def test_tree_generation_and_sampling_helper_edges(tmp_path) -> None:
         weighted_choice(["x"], [0.0], rng)
     with pytest.raises(ValueError, match="cannot write empty generated output"):
         write_generated_rows(tmp_path / "empty.csv", [])
+
+
+def test_cli_tree_parser_and_formatter_helpers_cover_edges() -> None:
+    assert parse_column_list(" age , sex ", "target columns") == ("age", "sex")
+    with pytest.raises(ValueError, match="at least one target columns"):
+        parse_column_list(" , ", "target columns")
+
+    assert release_blocking_issues(
+        {
+            "issues": [
+                {"kind": "private_working_release_class"},
+                {"kind": "below_min_support"},
+                "ignored",
+            ]
+        }
+    ) == [{"kind": "below_min_support"}]
+    with pytest.raises(ValueError, match="issues must be a list"):
+        release_blocking_issues({"issues": "bad"})
+
+    assert format_source_label({"provider": "StatCan", "title": "Census"}) == (
+        "StatCan: Census"
+    )
+    assert format_source_label({"title": "Census"}) == "Census"
+    assert format_geography_filter({"column": "PR", "value": "24"}) == "PR=24"
+    assert format_geography_filter("bad") == ""
+    assert format_geography_filter({"column": "PR"}) == ""
+    assert format_privacy_summary(
+        {
+            "publishable_candidate": True,
+            "contains_raw_rows": False,
+            "contains_source_identifiers": False,
+        }
+    ) == "publishable_candidate; raw_rows=False; source_ids=False"
+    assert format_model_summary(
+        {
+            "release_class": "publishable_candidate",
+            "records_trained": 1200,
+            "bytes": 2048,
+            "target_columns": ["age", "sex"],
+        }
+    ) == "publishable_candidate; 1,200 records; 2.0 KiB; 2 targets"
+    assert format_model_summary("bad") == ";  records; ; 0 targets"
+    assert format_audit_summary(
+        {
+            "passed": True,
+            "issue_count": 0,
+            "minimum_support": 12.5,
+            "above_max_purity": 1,
+        }
+    ) == "passed=True; issues=0; min_support=12.5; high_purity=1"
+    assert format_bytes_or_blank("bad") == ""
+    assert format_bytes_or_blank(1_048_576) == "1.0 MiB"
+    assert format_int_or_blank("bad") == ""
+    assert format_int_or_blank(12.8) == "12"
+    assert format_number_or_blank("bad") == ""
+    assert format_number_or_blank(12.3456789) == "12.3457"
+
+
+def test_cli_tree_manifest_and_package_helpers_cover_edges(tmp_path) -> None:
+    valid_training_manifest = tmp_path / "training.json"
+    valid_training_manifest.write_text(
+        json.dumps(
+            {
+                "schema_version": "synthpopcan-linked-tree-training-v1",
+                "source": {"path": "source.csv"},
+                "column_source": {"mode": "profile"},
+                "geography_filter": {"column": "PR", "value": "24"},
+                "target_profile": "minimal",
+                "models": {
+                    "household": {"path": str(tmp_path / "household.json")},
+                    "person": {"path": str(tmp_path / "person.json")},
+                },
+            }
+        )
+    )
+    assert read_linked_training_manifest(None) is None
+    assert read_linked_training_manifest(valid_training_manifest)["target_profile"] == (
+        "minimal"
+    )
+    invalid_json = tmp_path / "invalid.json"
+    invalid_json.write_text("{")
+    with pytest.raises(ValueError, match="not valid JSON"):
+        read_linked_training_manifest(invalid_json)
+    array_json = tmp_path / "array.json"
+    array_json.write_text("[]")
+    with pytest.raises(ValueError, match="must be a JSON object"):
+        read_linked_training_manifest(array_json)
+    wrong_schema = tmp_path / "wrong-schema.json"
+    wrong_schema.write_text(json.dumps({"schema_version": "old"}))
+    with pytest.raises(ValueError, match="unsupported linked tree training"):
+        read_linked_training_manifest(wrong_schema)
+
+    release_manifest = tmp_path / "release.json"
+    release_manifest.write_text(
+        json.dumps(
+            {
+                "schema_version": "synthpopcan-tree-release-manifest-v1",
+                "source_model": "source.json",
+                "output_model": "output.json",
+            }
+        )
+    )
+    assert read_model_release_manifest(None) is None
+    assert read_model_release_manifest(release_manifest)["source_model"] == (
+        "source.json"
+    )
+    with pytest.raises(ValueError, match="model release manifest"):
+        read_model_release_manifest(array_json)
+    with pytest.raises(ValueError, match="unsupported tree release"):
+        read_model_release_manifest(wrong_schema)
+
+    provenance = tmp_path / "source-provenance.json"
+    provenance.write_text(
+        json.dumps(
+                {
+                    "schema_version": "synthpopcan-source-provenance-v1",
+                    "title": "2016 Census",
+                    "provider": "Statistics Canada",
+                    "access_class": "restricted",
+                    "citation": "Synthetic fixture citation.",
+                    "redistribution_note": "Synthetic fixture only.",
+                }
+            )
+        )
+    assert read_source_provenance(provenance)["title"] == "2016 Census"
+    with pytest.raises(ValueError, match="source provenance"):
+        read_source_provenance(array_json)
+    with pytest.raises(ValueError, match="unsupported source provenance"):
+        read_source_provenance(wrong_schema)
+    missing_required = tmp_path / "missing-source-field.json"
+    missing_required.write_text(
+        json.dumps(
+            {
+                "schema_version": "synthpopcan-source-provenance-v1",
+                "title": "2016 Census",
+                "provider": "Statistics Canada",
+            }
+        )
+    )
+    with pytest.raises(ValueError, match="access_class"):
+        read_source_provenance(missing_required)
+
+    package = tmp_path / "package.json"
+    package.write_text(
+        json.dumps({"schema_version": "synthpopcan-linked-tree-package-v1"})
+    )
+    assert read_linked_model_package(package)["schema_version"].endswith("package-v1")
+    with pytest.raises(ValueError, match="linked model package"):
+        read_linked_model_package(array_json)
+    with pytest.raises(ValueError, match="unsupported linked model package"):
+        read_linked_model_package(wrong_schema)
+
+    assert release_manifest_matches_model_paths(
+        {
+            "source_model": "source.json",
+            "output_model": "output.json",
+        },
+        source_model_path=Path("source.json"),
+        output_model_path=Path("output.json"),
+    )
+    assert not release_manifest_matches_model_paths(
+        None,
+        source_model_path=Path("source.json"),
+        output_model_path=Path("output.json"),
+    )
+    assert not release_manifest_matches_model_paths(
+        {"source_model": 1, "output_model": "output.json"},
+        source_model_path=Path("source.json"),
+        output_model_path=Path("output.json"),
+    )
+
+
+def test_cli_tree_generation_package_and_geography_helpers_cover_edges(
+    tmp_path,
+) -> None:
+    household_model_path, person_model_path = _write_publishable_linked_model_fixtures(
+        tmp_path
+    )
+    household_model = read_tree_model(household_model_path)
+    person_model = read_tree_model(person_model_path)
+    package = {
+        "privacy": {"publishable_candidate": True},
+        "models": {
+            "household": household_model.to_dict(),
+            "person": person_model.to_dict(),
+        },
+    }
+
+    validate_package_allows_generation(package)
+    with pytest.raises(ValueError, match="publishable candidate"):
+        validate_package_allows_generation(
+            {"privacy": {"publishable_candidate": False}}
+        )
+    assert package_models(package) == (household_model, person_model)
+    with pytest.raises(ValueError, match="household and person models"):
+        package_models({"models": {"household": household_model.to_dict()}})
+    with pytest.raises(ValueError, match="unsupported tree model type"):
+        tree_model_from_payload({"model_type": "other"})
+
+    sample_path = tmp_path / "household-training.csv"
+    sample_path.write_text("geo,household_size\nQC,2\nON,1\n")
+    sample = read_tree_training_sample(
+        sample_path,
+        level="household",
+        target_columns=("household_size",),
+        conditioning_columns=("geo",),
+    )
+    assert filter_training_sample_by_geography(
+        sample,
+        geography_column=None,
+        geography_value=None,
+    ) == sample
+    filtered = filter_training_sample_by_geography(
+        sample,
+        geography_column="geo",
+        geography_value="QC",
+    )
+    assert filtered.metadata["geography_filter"] == {"column": "geo", "value": "QC"}
+    with pytest.raises(ValueError, match="provided together"):
+        filter_training_sample_by_geography(
+            sample,
+            geography_column="geo",
+            geography_value=None,
+        )
+    with pytest.raises(ValueError, match="missing required columns"):
+        filter_training_sample_by_geography(
+            sample,
+            geography_column="missing",
+            geography_value="QC",
+        )
+    with pytest.raises(ValueError, match="no records matched"):
+        filter_training_sample_by_geography(
+            sample,
+            geography_column="geo",
+            geography_value="BC",
+        )
+
+    assert apply_target_profile(
+        household_target_columns=("household_size", "TENUR", "VALUE"),
+        person_target_columns=("AGEGRP", "SEX", "TOTINC"),
+        target_profile="full",
+    ) == (("household_size", "TENUR", "VALUE"), ("AGEGRP", "SEX", "TOTINC"))
+    assert apply_target_profile(
+        household_target_columns=("household_size", "TENUR", "VALUE"),
+        person_target_columns=("AGEGRP", "SEX", "TOTINC"),
+        target_profile="reduced",
+    ) == (("household_size", "TENUR"), ("AGEGRP", "SEX"))
+    assert apply_target_profile(
+        household_target_columns=("household_size", "TENUR", "VALUE"),
+        person_target_columns=("AGEGRP", "SEX", "TOTINC"),
+        target_profile="minimal",
+    ) == (("household_size", "TENUR"), ("AGEGRP", "SEX"))
+    assert geography_filter_manifest(None, None) is None
+    assert geography_filter_manifest("PR", "24") == {"column": "PR", "value": "24"}
+    with pytest.raises(ValueError, match="provided together"):
+        geography_filter_manifest("PR", None)
+
+    validate_linked_model_package_inputs(
+        household_model,
+        person_model,
+        household_size_column="household_size",
+    )
+    with pytest.raises(ValueError, match="household model must have level"):
+        validate_linked_model_package_inputs(
+            person_model,
+            person_model,
+            household_size_column="household_size",
+        )
+    with pytest.raises(ValueError, match="person model must have level"):
+        validate_linked_model_package_inputs(
+            household_model,
+            household_model,
+            household_size_column="household_size",
+        )
+
+    cart_model = train_tree_sample(
+        sample,
+        method="cart",
+        random_seed=1,
+        min_support=1,
+        min_samples_leaf=1,
+        max_depth=None,
+    )
+    assert cart_model.model_type == "cart"
+
+
+def test_cli_tree_release_readiness_helpers_cover_edges() -> None:
+    clean_private = {
+        "issues": [{"kind": "private_working_release_class"}],
+        "publishable_candidate": False,
+    }
+    clean_publishable = {"issues": [], "publishable_candidate": True}
+    blocked = {
+        "issues": [{"kind": "below_min_support"}],
+        "publishable_candidate": False,
+    }
+
+    assert (
+        classify_linked_release_readiness(
+            household_audit=blocked,
+            person_audit=clean_publishable,
+        )
+        == "needs_changes"
+    )
+    assert (
+        classify_linked_release_readiness(
+            household_audit=clean_publishable,
+            person_audit=clean_publishable,
+        )
+        == "likely_publishable"
+    )
+    assert (
+        classify_linked_release_readiness(
+            household_audit=clean_private,
+            person_audit=clean_publishable,
+        )
+        == "private_working"
+    )
+    assert linked_release_next_steps("likely_publishable") == [
+        "Package the reviewed models with `tree package-linked-models`."
+    ]
+    assert linked_release_next_steps("needs_changes")[0].startswith(
+        "Review audit issues"
+    )
+    assert linked_release_next_steps("private_working")[0].startswith(
+        "Prepare reviewed"
+    )
 
 
 def test_tree_low_level_validation_and_cart_edges(tmp_path) -> None:
