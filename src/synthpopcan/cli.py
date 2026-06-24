@@ -834,5 +834,5 @@ def parse_columns(value: str) -> tuple[str, ...]:
     return columns
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     raise SystemExit(main())

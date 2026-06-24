@@ -258,7 +258,7 @@ def train_linked_tree_generator(
     max_depth: int | None,
 ) -> None:
     """Train linked household and person models from mixed microdata."""
-    if input_format != "statcan-2016-hierarchical":
+    if input_format != "statcan-2016-hierarchical":  # pragma: no cover
         raise click.ClickException(f"unsupported input format: {input_format}")
     if not suggested_blocks:
         raise click.ClickException(
@@ -1477,7 +1477,7 @@ def format_bytes_or_blank(value: object) -> str:
                 f"{bytes_value:.1f} {unit}" if unit != "B" else f"{int(bytes_value)} B"
             )
         bytes_value /= 1024
-    raise AssertionError("unreachable")
+    raise AssertionError("unreachable")  # pragma: no cover
 
 
 def format_int_or_blank(value: object) -> str:

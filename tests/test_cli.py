@@ -1,8 +1,16 @@
-from synthpopcan.cli import main
+from pathlib import Path
+
+from synthpopcan.cli import main, resolve_data_root
 
 
 def test_cli_smoke() -> None:
     assert main([]) == 0
+
+
+def test_resolve_data_root_defaults_to_data(monkeypatch) -> None:
+    monkeypatch.delenv("SYNTHPOPCAN_DATA_ROOT", raising=False)
+
+    assert resolve_data_root(None) == Path("data")
 
 
 def test_controls_validate_accepts_long_control_csv(tmp_path) -> None:

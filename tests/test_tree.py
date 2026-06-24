@@ -32,6 +32,7 @@ from synthpopcan.cli_tree import (
     train_tree_sample,
     tree_model_from_payload,
     validate_linked_model_package_inputs,
+    validate_linked_training_manifest_model_paths,
     validate_package_allows_generation,
 )
 from synthpopcan.tree import (
@@ -773,6 +774,105 @@ def test_cli_tree_generation_package_and_geography_helpers_cover_edges(
     assert cart_model.model_type == "cart"
 
 
+def test_cli_tree_package_validation_helpers_cover_remaining_edges(tmp_path) -> None:
+    household_model_path, person_model_path = _write_publishable_linked_model_fixtures(
+        tmp_path
+    )
+    household_model = read_tree_model(household_model_path)
+    person_model = read_tree_model(person_model_path)
+    cart_model = train_cart_model(
+        TreeTrainingSample(
+            level="household",
+            source_format="csv-v1",
+            records=(
+                {"geo": "QC", "household_size": "1"},
+                {"geo": "ON", "household_size": "2"},
+            ),
+            columns=("geo", "household_size"),
+            target_columns=("household_size",),
+            conditioning_columns=("geo",),
+        ),
+        min_samples_leaf=1,
+    )
+
+    assert tree_model_from_payload(cart_model.to_dict()).model_type == "cart"
+    with pytest.raises(ValueError, match="requires a training manifest"):
+        validate_linked_training_manifest_model_paths(
+            None,
+            household_model_path=household_model_path,
+            person_model_path=person_model_path,
+        )
+    with pytest.raises(ValueError, match="models.household.path"):
+        validate_linked_training_manifest_model_paths(
+            {"models": []},
+            household_model_path=household_model_path,
+            person_model_path=person_model_path,
+        )
+    with pytest.raises(ValueError, match="models.person.path"):
+        validate_linked_training_manifest_model_paths(
+            {
+                "models": {"household": {"path": str(household_model_path)}}
+            },
+            household_model_path=household_model_path,
+            person_model_path=person_model_path,
+        )
+    with pytest.raises(ValueError, match="does not connect"):
+        validate_linked_training_manifest_model_paths(
+            {
+                "models": {
+                    "household": {"path": str(tmp_path / "old-household.json")},
+                    "person": {"path": str(person_model_path)},
+                }
+            },
+            household_model_path=household_model_path,
+            person_model_path=person_model_path,
+            release_manifests={
+                "household": {
+                    "source_model": str(tmp_path / "other-source.json"),
+                    "output_model": str(household_model_path),
+                }
+            },
+        )
+
+    bad_release_manifest = tmp_path / "bad-release.json"
+    bad_release_manifest.write_text("{")
+    with pytest.raises(ValueError, match="not valid JSON"):
+        read_model_release_manifest(bad_release_manifest)
+    bad_provenance = tmp_path / "bad-provenance.json"
+    bad_provenance.write_text("{")
+    with pytest.raises(ValueError, match="not valid JSON"):
+        read_source_provenance(bad_provenance)
+
+    household_without_size = train_frequency_model_from_rows(
+        TreeModelSpec(
+            level="household",
+            target_columns=("tenure",),
+            conditioning_columns=("geo",),
+        ),
+        rows=({"geo": "QC", "tenure": "owner"},),
+    )
+    person_without_size_condition = train_frequency_model_from_rows(
+        TreeModelSpec(
+            level="person",
+            target_columns=("age_group",),
+            conditioning_columns=("geo",),
+        ),
+        rows=({"geo": "QC", "age_group": "adult"},),
+    )
+    with pytest.raises(ValueError, match="must generate or condition"):
+        validate_linked_model_package_inputs(
+            household_without_size,
+            person_model,
+            household_size_column="household_size",
+        )
+    with pytest.raises(ValueError, match="must condition"):
+        validate_linked_model_package_inputs(
+            household_model,
+            person_without_size_condition,
+            household_size_column="household_size",
+        )
+
+
 def test_cli_tree_release_readiness_helpers_cover_edges() -> None:
     clean_private = {
         "issues": [{"kind": "private_working_release_class"}],
@@ -959,6 +1059,50 @@ def test_cli_trains_and_generates_tree_model(tmp_path) -> None:
             "conditioning_columns": ["geo", "household_size"],
         },
     }
+
+
+def test_cli_train_wraps_bad_training_input(tmp_path) -> None:
+    from click import ClickException
+
+    source = tmp_path / "bad-training.csv"
+    source.write_text("geo\nQC\n")
+
+    with pytest.raises(ClickException, match="missing required columns"):
+        main(
+            [
+                "tree",
+                "train",
+                str(source),
+                "--level",
+                "person",
+                "--target-columns",
+                "age_group",
+                "--conditioning-columns",
+                "geo",
+                "--out",
+                str(tmp_path / "model.json"),
+            ]
+        )
+
+
+def test_cli_generate_wraps_bad_model_json(tmp_path) -> None:
+    from click import ClickException
+
+    bad_model = tmp_path / "bad-model.json"
+    bad_model.write_text("{")
+
+    with pytest.raises(ClickException, match="not valid JSON"):
+        main(
+            [
+                "tree",
+                "generate",
+                str(bad_model),
+                "--rows",
+                "1",
+                "--out",
+                str(tmp_path / "rows.csv"),
+            ]
+        )
 
 
 def test_cli_trains_and_generates_cart_tree_model(tmp_path) -> None:

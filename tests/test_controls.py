@@ -328,6 +328,91 @@ def test_cli_writes_wds_category_mapping_template_with_canonical_preset(
     }
 
 
+def test_cli_inspects_wds_zip_as_json_and_table(tmp_path: Path, capsys) -> None:
+    from synthpopcan.cli import main
+
+    zip_path = tmp_path / "wds.zip"
+    with ZipFile(zip_path, "w") as archive:
+        archive.writestr(
+            "table.csv",
+            "GEO,Age group,Sex,VALUE\nCanada,0 to 4 years,Female,100\n",
+        )
+
+    assert (
+        main(
+            [
+                "controls",
+                "wds",
+                "inspect",
+                str(zip_path),
+                "--format",
+                "json",
+            ]
+        )
+        == 0
+    )
+    assert json.loads(capsys.readouterr().out)["columns"] == [
+        "GEO",
+        "Age group",
+        "Sex",
+        "VALUE",
+    ]
+
+    assert main(["controls", "wds", "inspect", str(zip_path)]) == 0
+    assert "WDS Table Inspection" in capsys.readouterr().out
+
+
+def test_cli_wds_commands_wrap_bad_inputs(tmp_path: Path, monkeypatch) -> None:
+    from click import ClickException
+
+    from synthpopcan.cli import (
+        format_wds_control_error,
+        main,
+        write_census_profile_template,
+    )
+
+    bad_zip = tmp_path / "bad.zip"
+    bad_zip.write_text("not zip")
+    output_path = tmp_path / "out.json"
+
+    monkeypatch.setattr(
+        "synthpopcan.cli.inspect_wds_zip",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(ValueError("inspect failed")),
+    )
+    with pytest.raises(ClickException, match="inspect failed"):
+        main(["controls", "wds", "inspect", str(bad_zip)])
+
+    monkeypatch.setattr(
+        "synthpopcan.cli.build_wds_category_mapping_template",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(ValueError("mapping failed")),
+    )
+    with pytest.raises(ClickException, match="mapping failed"):
+        main(
+            [
+                "controls",
+                "wds",
+                "mapping-template",
+                str(bad_zip),
+                "--dimensions",
+                "Age group",
+                "--out",
+                str(output_path),
+            ]
+        )
+    with pytest.raises(ClickException, match="known Census Profile templates"):
+        write_census_profile_template.callback(
+            "unknown",
+            "GEO_CODE",
+            "geo",
+            "CHARACTERISTIC_NAME",
+            "C1_COUNT_TOTAL",
+            output_path,
+        )
+    assert format_wds_control_error(ValueError("plain failure"), bad_zip) == (
+        "plain failure"
+    )
+
+
 def test_cli_applies_category_mapping_to_wds_controls(tmp_path: Path) -> None:
     from synthpopcan.cli import main
 
