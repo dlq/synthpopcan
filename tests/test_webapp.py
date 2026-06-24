@@ -1,16 +1,27 @@
 from __future__ import annotations
 
 import csv
+import json
 from io import BytesIO, StringIO
 from threading import Thread
-from urllib.request import urlopen
+from urllib.error import HTTPError
+from urllib.request import Request, urlopen
 from zipfile import ZipFile
 
 import pytest
 
 from synthpopcan.cli import main
 from synthpopcan.web_demo_models import demo_model_catalogue, demo_model_payload
-from synthpopcan.web_wds import generate_wds_seed_controls_from_zip_bytes
+from synthpopcan.web_wds import (
+    choose_wds_data_csv_member,
+    fetch_wds_zip_bytes,
+    generate_wds_seed_controls_from_zip_bytes,
+    normalize_wds_rows,
+    parse_dimensions,
+    reference_period_sort_key,
+    snapshot_wds_rows,
+    write_csv,
+)
 from synthpopcan.webapp import (
     build_webapp_server,
     get_webapp_root,
@@ -124,6 +135,115 @@ def test_webapp_static_assets_are_not_browser_cached() -> None:
         thread.join(timeout=2)
 
 
+def test_webapp_serves_demo_model_api_endpoints() -> None:
+    server = build_webapp_server("127.0.0.1", 0)
+    thread = Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    try:
+        with urlopen(f"{webapp_url(server)}api/models", timeout=2) as response:
+            assert response.headers["Content-Type"] == "application/json"
+            catalogue = json.loads(response.read().decode("utf-8"))
+        with urlopen(
+            f"{webapp_url(server)}api/models/demo-linked-household-person",
+            timeout=2,
+        ) as response:
+            package = json.loads(response.read().decode("utf-8"))
+
+        assert catalogue["models"][0]["id"] == "demo-linked-household-person"
+        assert package["schema_version"] == "synthpopcan-linked-tree-package-v1"
+        with pytest.raises(HTTPError) as exc_info:
+            urlopen(f"{webapp_url(server)}api/models/missing", timeout=2)
+        assert exc_info.value.code == 404
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=2)
+
+
+def test_webapp_wds_seed_controls_api_uses_local_helper(monkeypatch) -> None:
+    zip_bytes = b"fake-zip"
+
+    monkeypatch.setattr(
+        "synthpopcan.webapp.fetch_wds_zip_bytes",
+        lambda product_id: (zip_bytes, f"https://example.test/{product_id}.zip"),
+    )
+    monkeypatch.setattr(
+        "synthpopcan.webapp.generate_wds_seed_controls_from_zip_bytes",
+        lambda data, *, dimensions, count_column: {
+            "seedCsv": "id,age\nseed-1,young\n",
+            "controlsCsv": "margin,dimensions,age,count\nage,age,young,1\n",
+            "dimensions": list(dimensions),
+            "countColumn": count_column,
+        },
+    )
+    server = build_webapp_server("127.0.0.1", 0)
+    thread = Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    try:
+        request = Request(
+            f"{webapp_url(server)}api/wds/seed-controls",
+            data=json.dumps(
+                {
+                    "productId": "13100005",
+                    "dimensions": "Age|Sex",
+                    "countColumn": "VALUE",
+                }
+            ).encode("utf-8"),
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        with urlopen(request, timeout=2) as response:
+            payload = json.loads(response.read().decode("utf-8"))
+
+        assert payload["productId"] == "13100005"
+        assert payload["downloadUrl"] == "https://example.test/13100005.zip"
+        assert payload["dimensions"] == ["Age", "Sex"]
+        assert payload["countColumn"] == "VALUE"
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=2)
+
+
+def test_webapp_wds_seed_controls_api_reports_bad_requests(monkeypatch) -> None:
+    monkeypatch.setattr(
+        "synthpopcan.webapp.fetch_wds_zip_bytes",
+        lambda product_id: (_ for _ in ()).throw(ValueError("download failed")),
+    )
+    server = build_webapp_server("127.0.0.1", 0)
+    thread = Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    try:
+        request = Request(
+            f"{webapp_url(server)}api/wds/seed-controls",
+            data=json.dumps({"productId": "13100005"}).encode("utf-8"),
+            method="POST",
+        )
+        with pytest.raises(HTTPError) as exc_info:
+            urlopen(request, timeout=2)
+        assert exc_info.value.code == 400
+        payload = json.loads(exc_info.value.read().decode("utf-8"))
+        assert payload == {"error": "download failed"}
+
+        missing = Request(f"{webapp_url(server)}api/missing", data=b"{}", method="POST")
+        with pytest.raises(HTTPError) as missing_info:
+            urlopen(missing, timeout=2)
+        assert missing_info.value.code == 404
+
+        no_body = Request(
+            f"{webapp_url(server)}api/wds/seed-controls",
+            data=None,
+            method="POST",
+        )
+        with pytest.raises(HTTPError) as no_body_info:
+            urlopen(no_body, timeout=2)
+        assert no_body_info.value.code == 400
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=2)
+
+
 def test_webapp_generates_wds_seed_controls_from_statcan_zip_shape() -> None:
     zip_bytes = build_wds_zip(
         {
@@ -211,6 +331,90 @@ def test_webapp_wds_generation_reports_original_row_after_snapshot() -> None:
             dimensions=("GEO", "Sex"),
             count_column="VALUE",
         )
+
+
+def test_webapp_wds_helper_edge_cases(monkeypatch) -> None:
+    assert parse_dimensions("GEO|Sex, Age") == ("GEO", "Sex", "Age")
+    assert parse_dimensions(["GEO", " Sex "]) == ("GEO", "Sex")
+    assert parse_dimensions(None) == ()
+    assert reference_period_sort_key("2020") == (0, 2020.0)
+    assert reference_period_sort_key("2020/2021") == (1, "2020/2021")
+    assert write_csv([]) == ""
+
+    metadata_only_zip = build_wds_zip(
+        {"table_MetaData.csv": "Cube Title,Product Id\nExample,13100005\n"}
+    )
+    with ZipFile(BytesIO(metadata_only_zip)) as archive:
+        assert choose_wds_data_csv_member(archive) == "table_MetaData.csv"
+    empty_zip = build_wds_zip({"readme.txt": "not a table"})
+    with ZipFile(BytesIO(empty_zip)) as archive:
+        with pytest.raises(ValueError, match="does not contain a CSV"):
+            choose_wds_data_csv_member(archive)
+
+    rows = [(2, {"GEO": "Canada", "VALUE": "1"})]
+    assert snapshot_wds_rows(rows, ("GEO",)) == (rows, None)
+    assert snapshot_wds_rows([(2, {"REF_DATE": "", "GEO": "Canada"})], ("GEO",)) == (
+        [(2, {"REF_DATE": "", "GEO": "Canada"})],
+        None,
+    )
+    generated_with_blank = generate_wds_seed_controls_from_zip_bytes(
+        build_wds_zip({"table.csv": "GEO,Sex,VALUE\nCanada,Female,\n"}),
+        dimensions=("GEO", "Unknown"),
+        count_column="VALUE",
+    )
+    assert generated_with_blank["dimensions"] == ["GEO", "Unknown"]
+    assert generated_with_blank["seedRows"] == 0
+    assert generated_with_blank["controlRows"] == 0
+
+    with pytest.raises(ValueError, match="has no rows"):
+        generate_wds_seed_controls_from_zip_bytes(
+            build_wds_zip({"table.csv": "GEO,Sex,VALUE\n"}),
+            dimensions=("GEO", "Sex"),
+            count_column="VALUE",
+        )
+
+    with pytest.raises(ValueError, match="missing columns"):
+        normalize_wds_rows(rows, dimensions=("GEO", "Sex"), count_column="VALUE")
+    with pytest.raises(ValueError, match="duplicates control cell"):
+        normalize_wds_rows(
+            [
+                (2, {"GEO": "Canada", "VALUE": "1"}),
+                (3, {"GEO": "Canada", "VALUE": "2"}),
+            ],
+            dimensions=("GEO",),
+            count_column="VALUE",
+        )
+
+    monkeypatch.setattr(
+        "synthpopcan.web_wds.fetch_json",
+        lambda url: {"status": "FAILED", "object": None},
+    )
+    with pytest.raises(ValueError, match="did not return a download URL"):
+        fetch_wds_zip_bytes("13100005")
+
+    class FakeResponse:
+        def __enter__(self) -> FakeResponse:
+            return self
+
+        def __exit__(self, *args: object) -> None:
+            return None
+
+        def read(self) -> bytes:
+            return b"zip-bytes"
+
+    monkeypatch.setattr(
+        "synthpopcan.web_wds.fetch_json",
+        lambda url: {"status": "SUCCESS", "object": "https://example.test/table.zip"},
+    )
+    monkeypatch.setattr(
+        "synthpopcan.web_wds.urlopen",
+        lambda url, timeout: FakeResponse(),
+    )
+
+    assert fetch_wds_zip_bytes("13100005") == (
+        b"zip-bytes",
+        "https://example.test/table.zip",
+    )
 
 
 def test_webapp_demo_model_catalogue_serves_safe_linked_package() -> None:

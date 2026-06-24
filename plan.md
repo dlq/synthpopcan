@@ -435,24 +435,34 @@ synthpopcan generate-from-model model-package.json --households 100 --out-dir ou
 Library-surface direction:
 
 - Add a small stable public Python API layer once the core workflows settle.
-  Today users must discover modules such as `ipf`, `controls`, `tree`, and
-  `microdata` directly; that is too implicit for a public library.
-- Candidate stable imports:
+  Status: first pass complete through `synthpopcan.api` and top-level
+  `synthpopcan` imports. Users no longer need to discover lower-level modules
+  first for common notebook and teaching workflows.
+- Current stable beginner imports:
 
 ```python
 from synthpopcan import fit_ipf
 from synthpopcan import expand_population
-from synthpopcan import read_control_table
+from synthpopcan import read_controls
 from synthpopcan import generate_from_model
 ```
 
 - Keep implementation modules importable for advanced use, but document the
   small stable API as the first stop for notebooks, teaching material, and
   humanities research scripts.
+- Maintain the small API as a deliberately narrow facade: IPF file/path helpers,
+  compact weight output, expanded rows when explicitly requested, prepared model
+  package generation, and linked household/person CSV writing. Add new top-level
+  functions only when they describe a common user workflow rather than an
+  implementation detail.
 
 Current implementation notes:
 
 - A fixture integration test covers `microdata export-seed -> ipf fit --report -> validate controls` for a tiny `statcan-2016-hierarchical` person-level workflow.
+- `synthpopcan.api` exposes `read_seed`, `read_controls`, `fit_ipf`,
+  `write_weights`, `expand_population`, `read_model_package`,
+  `generate_from_model`, and `write_population`, with autodoc-ready docstrings
+  and tests covering the beginner IPF and linked-model paths.
 - CLI refactoring has gone far enough for the current pass; revisit command-module boundaries after the first tree-based generator pass is complete.
 
 ### 8. Validation Reports
@@ -482,18 +492,18 @@ Start the web app only after the library and CLI contracts are stable enough.
 Likely first version:
 
 - Local-only app.
-- Initial app foundation: `synthpopcan serve` starts a packaged local static app and opens the user's default browser with Python's cross-platform `webbrowser` support.
+- Initial app foundation: `synthpopcan serve` starts a packaged local app and opens the user's default browser with Python's cross-platform `webbrowser` support. Status: first pass complete.
 - Treat `synthpopcan serve` as a convenience static-file launcher, not as the first step toward a required Python API backend.
 - Keep the default architecture frontend-first: file selection, model loading, IPF setup, small-to-moderate generation, validation summaries, and exports should run in the browser when practical.
-- First browser implementation uses pure modern JavaScript ES modules, no npm package, no build step, and a module Web Worker for IPF/model generation jobs.
+- First browser implementation uses pure modern JavaScript ES modules, no npm package, no build step, and a module Web Worker for IPF/model generation jobs. Status: first pass complete; Biome is wired in for HTML/CSS/JavaScript formatting and linting.
 - Keep the first app simple: expose basic SynthPopCan functionality rather than the whole CLI.
-- Support two generation workflows first: IPF from margin/control tables, and synthetic population generation from existing prepared model packages.
+- Support two generation workflows first: IPF from margin/control tables, and synthetic population generation from existing prepared model packages. Status: first pass complete.
 - Select source roots, seed data, and normalized margin/control tables for IPF.
-- For IPF users without files, provide browser starter helpers: runnable demo seed/control files, seed/control templates from chosen dimensions, and StatCan WDS search/metadata inspection where browser access allows it.
-- Configure and run an IPF generation workflow.
-- Choose existing prepared tree model artifacts for tree-based generation.
-- Show run progress and validation summaries.
-- Download generated population and report artifacts.
+- For IPF users without files, provide browser starter helpers: runnable demo seed/control files, seed/control templates from chosen dimensions, and StatCan WDS search/metadata inspection where browser access allows it. Status: first pass complete with a local Python helper for WDS seed/control generation when browser cross-origin rules block direct ZIP access.
+- Configure and run an IPF generation workflow. Status: first pass complete for browser weights and guarded expanded output.
+- Choose existing prepared tree model artifacts for tree-based generation. Status: first pass complete with a safe demo package served by the local helper and file-upload fallback.
+- Show run progress, generated-output previews, and validation summaries. Status: first pass complete for small browser runs; fuller validation reports remain pending.
+- Download generated population and report artifacts. Status: first pass complete for IPF weights/expanded rows and linked household/person output.
 
 Model training boundary:
 
@@ -514,6 +524,9 @@ Performance and runtime concerns:
 - Evaluate browser-side Pyodide/WebAssembly as the preferred runtime for demos and small-to-moderate local workflows. Compare it against a local Python backend or server-side job process only where data size, memory pressure, or run time breaks the browser-first model.
 - Keep heavy full-data runs out of the browser unless benchmarks show predictable memory and runtime behavior.
 - Direct WDS ZIP normalization in the browser is still a later step; it needs a browser ZIP parser or a preprocessed browser-friendly table source.
+- The local Python helper is acceptable for workflows that need StatCan download
+  support, premade model listing, or other local package assets. Keep its scope
+  narrow and preserve browser-only fallbacks for static deployments.
 
 Visual direction:
 
@@ -567,7 +580,47 @@ Acceptance criteria:
 
 ## Near-Term Slice
 
-Current active slice: StatCan/IPF usability follow-up.
+Current active slice: public usability polish across the beginner API, web app,
+CLI, and documentation.
+
+This slice should make the project feel coherent to a new humanities user
+without hiding the advanced research workflows. The first-pass algorithmic,
+StatCan/IPF, linked-model, web-app, and documentation pieces now exist; the
+next work is to tighten how users discover and move through them.
+
+Near-term usability priorities:
+
+1. Add beginner CLI aliases or wrappers for the common paths:
+   `find-tables`, `make-controls`, `run-ipf`, and `generate-from-model`.
+   These should call the existing expert command families and keep JSON/file
+   output options available for automation.
+2. Make the web app's prepared-model workflow more realistic: support a
+   backend-served model index, show model provenance and warnings clearly, keep
+   model training out of the UI, and add stronger output previews/validation
+   summaries.
+3. Promote the beginner Python API in the documentation and keep its examples
+   runnable. The API reference should remain autodoc-driven, but workflow docs
+   should show the short `import synthpopcan as spc` path first.
+4. Do a docs navigation pass: route readers first to the web app, IPF from
+   StatCan tables, generated-from-model workflows, and only then advanced
+   microdata/model-training/release material.
+5. Start documentation-example checks for the most visible beginner workflows.
+   The project goal is 100% line coverage, but add the gate gradually: use
+   coverage reports to close blind spots while the public surfaces are still
+   settling, then ratchet thresholds upward by module or workflow.
+
+Recently completed first-pass work:
+
+- Beginner Python API: top-level imports, `synthpopcan.api`, focused tests, and
+  autodoc-ready docstrings.
+- Web app: `synthpopcan serve`, browser IPF, generated-output previews, WDS
+  seed/control generation through the local helper, prepared demo model
+  selection, linked household/person generation, and Biome formatting/linting
+  for web assets.
+- Documentation: Sphinx/Read the Docs scaffold, first topic pages, library API
+  page, selective autodoc reference, and short README pointers.
+
+### Completed StatCan/IPF Slice
 
 The StatCan/IPF usability slice is mostly complete for a first pass. The project
 now has a coherent public-data-to-IPF path:
@@ -714,10 +767,25 @@ Every new feature should include tests at the smallest practical scale:
   workflow examples. At minimum, run the commands or notebook snippets that are
   presented as runnable, and verify that illustrative examples are clearly
   marked as placeholders when they depend on user-supplied data.
-- Coverage measurement with `pytest-cov` or an equivalent tool once the core workflow surface stabilizes.
+- Coverage measurement with `pytest-cov`.
 - No tests should require full private or raw data caches.
 
-Full-data smoke tests can be added later as optional local commands, documented separately from the default test suite. A modest coverage gate should wait until the public API and CLI command families stop shifting rapidly; until then, use coverage reports to find blind spots rather than as a hard release criterion.
+Coverage goal:
+
+- Target 100% line coverage for tracked Python code.
+- Use `uv run pytest --cov=synthpopcan --cov-report=term-missing -q` as the
+  standard local measurement command.
+- Current measured baseline: 90% line coverage, with 169 tests passing and 4
+  skipped on 2026-06-23.
+- Ratchet coverage in small slices. Good first targets are low-risk helper
+  modules and public API surfaces; larger CLI branches, tree workflows, control
+  parsing edge cases, and IPF error paths should follow with focused fixture
+  tests rather than brittle rendering assertions.
+- Add `--cov-fail-under` only after the test suite has a stable baseline high
+  enough that the gate encourages discipline without blocking ordinary design
+  iteration.
+
+Full-data smoke tests can be added later as optional local commands, documented separately from the default test suite. They should supplement, not replace, the fixture-based coverage path because default tests must not require private or large raw data caches.
 
 ## Data Policy
 
@@ -739,12 +807,19 @@ Ignored:
 
 ## Open Decisions
 
-- Exact dependency stack for arrays/tables/models: likely NumPy, pandas or Polars, scikit-learn, and optional PyArrow.
+- Exact dependency stack for arrays/tables/models: current default is pure
+  Python for the indexed IPF kernel, scikit-learn where CART models are used,
+  and later optional NumPy/SciPy CSR/Polars/PyArrow experiments for larger
+  sparse or table-ingestion-heavy workflows.
 - Whether schemas should remain dataclasses or move to Pydantic once the API surface stabilizes.
-- First supported StatCan table format and access path.
-- First derived household/person output schema from the single-file 2016 hierarchical PUMF.
-- Integerization method for the first IPF engine.
-- How far the web app can go as static packaged frontend plus browser runtime before a backend is justified.
+- First supported StatCan table format and access path. Current first pass:
+  StatCan WDS search/metadata/fetch plus local WDS ZIP normalization; broader
+  Census Profile and other table paths need documentation and usability review.
+- First derived household/person output schema from the single-file 2016 hierarchical PUMF. Current first pass: linked household/person CSVs with synthetic identifiers and household-size linkage; publishable schemas for distributed model outputs still need review.
+- Integerization method for the first IPF engine. Current first pass:
+  deterministic integerized expansion for `ipf expand`; alternative
+  integerization strategies remain a later quality/research topic.
+- How far the web app can go as static packaged frontend plus browser runtime before a backend is justified. Current first pass: static/browser-first with a narrow local helper for WDS/model assets; Pyodide/WebAssembly and stricter runtime guarantees remain open.
 
 ## Done Means
 
