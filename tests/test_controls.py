@@ -696,6 +696,84 @@ def test_cli_inspects_census_profile_characteristics(tmp_path: Path, capsys) -> 
     assert "12" in output
 
 
+def test_cli_inspects_census_profile_characteristics_as_json(
+    tmp_path: Path,
+    capsys,
+) -> None:
+    from synthpopcan.cli import main
+
+    profile_path = tmp_path / "profile.csv"
+    profile_path.write_text(
+        "GEO_CODE,CHARACTERISTIC_NAME,C1_COUNT_TOTAL\n"
+        "1001,Population,100\n"
+        "1001,0 to 4 years,12\n"
+    )
+
+    assert (
+        main(
+            [
+                "controls",
+                "census-profile",
+                "inspect",
+                str(profile_path),
+                "--search",
+                "years",
+                "--format",
+                "json",
+            ]
+        )
+        == 0
+    )
+
+    rows = json.loads(capsys.readouterr().out)
+    assert rows[0]["characteristic"] == "0 to 4 years"
+
+
+def test_cli_census_profile_commands_wrap_bad_inputs(tmp_path: Path) -> None:
+    from click import ClickException
+
+    from synthpopcan.cli import main
+
+    missing_columns = tmp_path / "profile.csv"
+    missing_columns.write_text("GEO_CODE,CHARACTERISTIC_NAME\n1001,Population\n")
+    mapping_path = tmp_path / "mapping.json"
+    output_path = tmp_path / "controls.csv"
+    mapping_path.write_text("{}")
+
+    with pytest.raises(ClickException, match="missing columns"):
+        main(
+            [
+                "controls",
+                "census-profile",
+                "inspect",
+                str(missing_columns),
+            ]
+        )
+    with pytest.raises(ClickException, match="not one of"):
+        main(
+            [
+                "controls",
+                "census-profile",
+                "template",
+                "unknown",
+                "--out",
+                str(output_path),
+            ]
+        )
+    with pytest.raises(ClickException, match="mapping"):
+        main(
+            [
+                "controls",
+                "from-census-profile",
+                str(missing_columns),
+                "--mapping",
+                str(mapping_path),
+                "--out",
+                str(output_path),
+            ]
+        )
+
+
 def test_builds_census_profile_age_template() -> None:
     template = census_profile_template("age5")
 

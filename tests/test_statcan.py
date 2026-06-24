@@ -3,7 +3,14 @@ from pathlib import Path
 
 import pytest
 
-from synthpopcan.cli import main
+from synthpopcan.cli import (
+    main,
+    run_statcan_census_profile_fetch,
+    search_wds_tables_for_cli,
+)
+from synthpopcan.cli import (
+    parse_columns as parse_cli_columns,
+)
 from synthpopcan.statcan import (
     CENSUS_PROFILE_2016_DOWNLOADS,
     WDSTableSearchResult,
@@ -274,6 +281,50 @@ def test_cli_searches_wds_tables_as_rich_table(capsys, monkeypatch) -> None:
     assert "Product ID" in output
     assert "98100001" in output
     assert "Population and dwelling counts" in output
+
+
+def test_cli_wds_search_helper_uses_statcan_results(monkeypatch) -> None:
+    def fake_search(query: str, limit: int):
+        assert query == "population"
+        assert limit == 2
+        return [
+            WDSTableSearchResult(
+                product_id="98100001",
+                cansim_id="",
+                title_en="Population and dwelling counts",
+                start_date="2021-01-01",
+                end_date="2021-01-01",
+            )
+        ]
+
+    monkeypatch.setattr("synthpopcan.cli.search_wds_tables", fake_search)
+
+    assert search_wds_tables_for_cli("population", 2) == [
+        {
+            "product_id": "98100001",
+            "cansim_id": "",
+            "title_en": "Population and dwelling counts",
+            "start_date": "2021-01-01",
+            "end_date": "2021-01-01",
+        }
+    ]
+
+
+def test_cli_parse_columns_and_census_profile_year_guard() -> None:
+    assert parse_cli_columns(" age , sex ") == ("age", "sex")
+    with pytest.raises(Exception, match="at least one column"):
+        parse_cli_columns(" , ")
+    with pytest.raises(ValueError, match="only the 2016 Census Profile"):
+        run_statcan_census_profile_fetch.callback("2021", "pt", Path("out"))
+
+
+def test_cli_wds_explain_wraps_bad_metadata(monkeypatch) -> None:
+    from click import ClickException
+
+    monkeypatch.setattr("synthpopcan.cli.fetch_wds_metadata", lambda _product_id: {})
+
+    with pytest.raises(ClickException, match="product ID"):
+        main(["statcan", "wds", "explain", "98100001"])
 
 
 def test_fetch_wds_metadata_posts_product_id(monkeypatch) -> None:

@@ -1275,6 +1275,79 @@ def test_cli_refuses_to_package_model_with_audit_warnings(tmp_path) -> None:
     assert not package_path.exists()
 
 
+def test_cli_packages_model_after_clean_audit(tmp_path, capsys) -> None:
+    source = tmp_path / "derived-person-training.csv"
+    model_path = tmp_path / "person-model.json"
+    package_path = tmp_path / "person-model-package.json"
+    source.write_text(
+        "geo,age_group,sex\n"
+        "QC,adult,F\n"
+        "QC,adult,F\n"
+    )
+    sample = read_tree_training_sample(
+        source,
+        level="person",
+        target_columns=("age_group", "sex"),
+        conditioning_columns=("geo",),
+    )
+    model = replace(
+        train_frequency_model(sample, min_support=1),
+        release_class="publishable_candidate",
+    )
+    write_tree_model(model_path, model)
+
+    assert (
+        main(
+            [
+                "tree",
+                "package-model",
+                str(model_path),
+                "--out",
+                str(package_path),
+                "--min-support",
+                "1",
+                "--max-purity",
+                "1",
+            ]
+        )
+        == 0
+    )
+
+    assert json.loads(package_path.read_text())["schema_version"] == (
+        "synthpopcan-tree-package-v1"
+    )
+
+
+def test_cli_tree_commands_wrap_bad_model_json(tmp_path) -> None:
+    from click import ClickException
+
+    bad_model = tmp_path / "bad-model.json"
+    bad_model.write_text("{")
+
+    with pytest.raises(ClickException, match="not valid JSON"):
+        main(["tree", "audit-model", str(bad_model)])
+    with pytest.raises(ClickException, match="not valid JSON"):
+        main(
+            [
+                "tree",
+                "package-model",
+                str(bad_model),
+                "--out",
+                str(tmp_path / "package.json"),
+            ]
+        )
+    with pytest.raises(ClickException, match="not valid JSON"):
+        main(
+            [
+                "tree",
+                "prepare-model-release",
+                str(bad_model),
+                "--out",
+                str(tmp_path / "candidate.json"),
+            ]
+        )
+
+
 def _write_publishable_linked_model_fixtures(tmp_path):
     household_model = replace(
         train_frequency_model_from_rows(
@@ -1598,6 +1671,16 @@ def test_cli_inspects_linked_model_package_as_json(tmp_path, capsys) -> None:
     assert report["audits"]["person"]["passed"] is True
     assert report["review_note"] == "reviewed fixture package"
     assert "embedded_model_payloads" not in report
+
+
+def test_cli_inspect_package_wraps_bad_package_json(tmp_path) -> None:
+    from click import ClickException
+
+    bad_package = tmp_path / "bad-package.json"
+    bad_package.write_text("{")
+
+    with pytest.raises(ClickException, match="not valid JSON"):
+        main(["tree", "inspect-package", str(bad_package)])
 
 
 def test_cli_inspects_linked_model_package_as_table(tmp_path, capsys) -> None:
@@ -2196,6 +2279,25 @@ def test_cli_reports_linked_model_release_readiness(tmp_path, capsys) -> None:
     ]
 
 
+def test_cli_release_readiness_wraps_bad_model_json(tmp_path) -> None:
+    from click import ClickException
+
+    bad_model = tmp_path / "bad-model.json"
+    bad_model.write_text("{")
+
+    with pytest.raises(ClickException, match="not valid JSON"):
+        main(
+            [
+                "tree",
+                "release-readiness",
+                "--household-model",
+                str(bad_model),
+                "--person-model",
+                str(bad_model),
+            ]
+        )
+
+
 def test_cli_prepares_publishable_candidate_model(tmp_path) -> None:
     source_model = train_frequency_model_from_rows(
         TreeModelSpec(
@@ -2419,6 +2521,55 @@ def test_cli_trains_linked_models_with_geography_and_minimal_profile(tmp_path) -
     assert manifest["geography_filter"] == {"column": "PR", "value": "11"}
     assert manifest["source"]["records"] == 1
     assert manifest["source"]["households"] == 1
+
+
+def test_cli_train_linked_requires_suggested_blocks(tmp_path) -> None:
+    from click import ClickException
+
+    source = tmp_path / "hierarchical.csv"
+    source.write_text("HH_ID,WEIGHT\n1,1\n")
+
+    with pytest.raises(ClickException, match="requires --suggested-blocks"):
+        main(
+            [
+                "tree",
+                "train-linked",
+                str(source),
+                "--household-model-out",
+                str(tmp_path / "household.json"),
+                "--person-model-out",
+                str(tmp_path / "person.json"),
+                "--manifest-out",
+                str(tmp_path / "manifest.json"),
+            ]
+        )
+
+
+def test_cli_train_linked_wraps_processing_errors(tmp_path) -> None:
+    from click import ClickException
+
+    source = tmp_path / "hierarchical.csv"
+    source.write_text("HH_ID,WEIGHT\n1,1\n")
+
+    with pytest.raises(ClickException, match="missing required columns"):
+        main(
+            [
+                "tree",
+                "train-linked",
+                str(source),
+                "--suggested-blocks",
+                "--geography-column",
+                "PR",
+                "--geography-value",
+                "24",
+                "--household-model-out",
+                str(tmp_path / "household.json"),
+                "--person-model-out",
+                str(tmp_path / "person.json"),
+                "--manifest-out",
+                str(tmp_path / "manifest.json"),
+            ]
+        )
 
 
 def test_generates_linked_households_and_persons() -> None:
@@ -2720,6 +2871,31 @@ def test_cli_generates_linked_households_and_persons(tmp_path) -> None:
     assert manifest["household_model"]["level"] == "household"
     assert manifest["person_model"]["path"] == str(person_model_path)
     assert manifest["person_model"]["level"] == "person"
+
+
+def test_cli_generate_linked_wraps_bad_model_json(tmp_path) -> None:
+    from click import ClickException
+
+    bad_model = tmp_path / "bad-model.json"
+    bad_model.write_text("{")
+
+    with pytest.raises(ClickException, match="not valid JSON"):
+        main(
+            [
+                "tree",
+                "generate-linked",
+                "--household-model",
+                str(bad_model),
+                "--person-model",
+                str(bad_model),
+                "--households",
+                "1",
+                "--households-out",
+                str(tmp_path / "households.csv"),
+                "--persons-out",
+                str(tmp_path / "persons.csv"),
+            ]
+        )
 
 
 def test_cli_validates_linked_output(tmp_path, capsys) -> None:

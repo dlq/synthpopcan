@@ -517,6 +517,70 @@ def test_cli_tree_output_wraps_bad_target_column_input(tmp_path: Path) -> None:
         )
 
 
+def test_cli_tree_output_wraps_report_validation_errors(tmp_path: Path) -> None:
+    from click import ClickException
+
+    from synthpopcan.cli import main
+
+    training_path = tmp_path / "person-training.csv"
+    generated_path = tmp_path / "synthetic-people.csv"
+    write_csv(training_path, ["AGEGRP"], [{"AGEGRP": "adult"}])
+    write_csv(generated_path, ["AGEGRP"], [{"AGEGRP": "adult"}])
+
+    with pytest.raises(ClickException, match="WEIGHT"):
+        main(
+            [
+                "validate",
+                "tree-output",
+                "--generated",
+                str(generated_path),
+                "--training",
+                str(training_path),
+                "--target-columns",
+                "AGEGRP",
+                "--weight-field",
+                "WEIGHT",
+            ]
+        )
+
+
+def test_cli_linked_output_wraps_validation_errors(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    from click import ClickException
+
+    import synthpopcan.cli as cli
+
+    households_path = tmp_path / "households.csv"
+    persons_path = tmp_path / "persons.csv"
+    write_csv(households_path, ["household_id"], [{"household_id": "h1"}])
+    write_csv(persons_path, ["household_id"], [{"household_id": "h1"}])
+
+    def fail_validation(**_kwargs):
+        raise ValueError("linked validation failed")
+
+    monkeypatch.setattr(cli, "validate_linked_population", fail_validation)
+
+    with pytest.raises(ClickException, match="linked validation failed"):
+        cli.main(
+            [
+                "validate",
+                "linked-output",
+                "--households",
+                str(households_path),
+                "--persons",
+                str(persons_path),
+                "--household-id-column",
+                "household_id",
+                "--person-household-id-column",
+                "household_id",
+                "--household-size-column",
+                "household_size",
+            ]
+        )
+
+
 def write_csv(path: Path, fieldnames: list[str], rows: list[dict[str, str]]) -> None:
     with path.open("w", newline="") as handle:
         writer = csv.DictWriter(handle, fieldnames=fieldnames)
