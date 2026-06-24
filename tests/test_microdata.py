@@ -5,6 +5,7 @@ from click import ClickException
 
 from synthpopcan.cli import main
 from synthpopcan.microdata import (
+    SeedSample,
     build_tree_geography_feasibility_report,
     canadian_aggregation_hint,
     check_statcan_2016_household_seed_columns,
@@ -19,6 +20,7 @@ from synthpopcan.microdata import (
     household_size_lookup,
     minimal_household_targets,
     minimal_person_targets,
+    person_records_for_feasibility,
     read_fixture_seed_sample,
     read_statcan_2016_hierarchical_seed_sample,
     reduced_conditioning_columns,
@@ -726,6 +728,21 @@ def test_suggests_tree_column_blocks_from_statcan_2016_columns(tmp_path) -> None
     ]
 
 
+def test_tree_column_suggestions_reject_unknown_source_format() -> None:
+    sample = SeedSample(
+        level="person",
+        source_format="unknown-format",
+        records=(),
+        columns=(),
+        weight_column=None,
+        geography_columns=(),
+        id_columns=(),
+    )
+
+    with pytest.raises(ValueError, match="not available for unknown-format"):
+        suggest_tree_column_blocks(sample)
+
+
 def test_builds_tree_geography_feasibility_report(tmp_path) -> None:
     source = tmp_path / "hierarchical.csv"
     source.write_text(
@@ -780,6 +797,21 @@ def test_builds_tree_geography_feasibility_report(tmp_path) -> None:
         "TENUR",
     ]
     assert regions["11"]["model_design"]["person_targets"] == ["AGEGRP", "SEX"]
+
+
+def test_tree_geography_feasibility_rejects_unknown_source_format() -> None:
+    sample = SeedSample(
+        level="person",
+        source_format="fixture-v1",
+        records=(),
+        columns=("geo",),
+        weight_column=None,
+        geography_columns=("geo",),
+        id_columns=(),
+    )
+
+    with pytest.raises(ValueError, match="requires statcan-2016-hierarchical"):
+        build_tree_geography_feasibility_report(sample, geography_column="geo")
 
 
 def test_cli_reports_tree_geography_feasibility_as_json(tmp_path, capsys) -> None:
@@ -1032,6 +1064,27 @@ def test_geography_feasibility_advisory_helpers() -> None:
         likely_person_rows=1000,
         likely_household_rows=500,
     ) == "borderline"
+    assert feasibility_tier(
+        ["household conditioning support below threshold"],
+        person_rows=1000,
+        household_rows=500,
+        likely_person_rows=1000,
+        likely_household_rows=500,
+    ) == "unlikely"
+    assert feasibility_tier(
+        ["person outcome purity above threshold"],
+        person_rows=1000,
+        household_rows=500,
+        likely_person_rows=1000,
+        likely_household_rows=500,
+    ) == "unlikely"
+    assert feasibility_tier(
+        ["purity review needed"],
+        person_rows=1000,
+        household_rows=500,
+        likely_person_rows=1000,
+        likely_household_rows=500,
+    ) == "unlikely"
     assert suggested_feasibility_action("likely") == "candidate for full block review"
     assert suggested_feasibility_action("borderline") == (
         "coarsen targets or review before training"
@@ -1083,6 +1136,52 @@ def test_household_grouping_helpers_reject_missing_household_ids() -> None:
     ) == "adult"
     with pytest.raises(ValueError, match="non-empty HH_ID"):
         group_records_by_household(({"HH_ID": "", "WEIGHT": "1"},))
+
+
+def test_person_feasibility_rows_skip_missing_geography_and_block_noise() -> None:
+    sample = SeedSample(
+        level="person",
+        source_format="statcan-2016-hierarchical",
+        records=(
+            {"HH_ID": "1", "PP_ID": "10", "WEIGHT": "1", "PR": "24", "AGEGRP": "adult"},
+            {"HH_ID": "2", "PP_ID": "20", "WEIGHT": "1", "PR": "", "AGEGRP": "child"},
+        ),
+        columns=("HH_ID", "PP_ID", "WEIGHT", "PR", "AGEGRP"),
+        weight_column="WEIGHT",
+        geography_columns=("PR",),
+        id_columns=("PP_ID",),
+    )
+
+    assert person_records_for_feasibility(
+        sample,
+        geography_column="PR",
+        household_sizes={"1": "1", "2": "1"},
+        columns=("PR", "household_size", "AGEGRP"),
+    ) == [
+        {
+            "PP_ID": "10",
+            "HH_ID": "1",
+            "WEIGHT": "1",
+            "PR": "24",
+            "household_size": "1",
+            "AGEGRP": "adult",
+        }
+    ]
+    assert find_suggested_tree_column_block(
+        {
+            "blocks": [
+                "ignored",
+                {
+                    "name": "household_core",
+                    "level": "household",
+                    "target_columns": [],
+                    "conditioning_columns": [],
+                },
+            ]
+        },
+        name="household_core",
+        level="household",
+    )["name"] == "household_core"
 
 
 def test_cli_inspects_microdata_as_readable_table(tmp_path, capsys) -> None:

@@ -6,6 +6,7 @@ import pytest
 from synthpopcan.cli import main
 from synthpopcan.statcan import (
     CENSUS_PROFILE_2016_DOWNLOADS,
+    WDSTableSearchResult,
     classify_wds_ipf_suitability,
     download_url,
     extract_wds_dimension_names,
@@ -135,6 +136,48 @@ def test_search_wds_tables_filters_inventory(monkeypatch) -> None:
 
     assert [result.product_id for result in results] == ["98100001"]
     assert results[0].title_en == "Population and dwelling counts: Canada"
+
+
+def test_wds_search_results_serialize_and_stop_at_limit(monkeypatch) -> None:
+    def fake_json(_url: str) -> list[dict[str, object]]:
+        return [
+            {
+                "productId": 98100001,
+                "cansimId": "",
+                "cubeTitleEn": "Population and dwelling counts: Canada",
+                "cubeTitleFr": "",
+                "cubeStartDate": "2021-01-01",
+                "cubeEndDate": "2021-01-01",
+            },
+            {
+                "productId": 98100002,
+                "cansimId": "",
+                "cubeTitleEn": "Population by age and sex",
+                "cubeTitleFr": "",
+                "cubeStartDate": "2021-01-01",
+                "cubeEndDate": "2021-01-01",
+            },
+        ]
+
+    monkeypatch.setattr("synthpopcan.statcan.fetch_json", fake_json)
+
+    results = search_wds_tables("population", limit=1)
+
+    assert len(results) == 1
+    assert results[0].as_dict() == {
+        "product_id": "98100001",
+        "cansim_id": "",
+        "title_en": "Population and dwelling counts: Canada",
+        "start_date": "2021-01-01",
+        "end_date": "2021-01-01",
+    }
+    assert WDSTableSearchResult(
+        product_id="1",
+        cansim_id="2",
+        title_en="Title",
+        start_date="2020",
+        end_date="2021",
+    ).as_dict()["title_en"] == "Title"
 
 
 def test_search_wds_tables_rejects_empty_query_and_bad_limit() -> None:
@@ -462,6 +505,13 @@ def test_wds_metadata_helpers_tolerate_alternate_and_invalid_shapes() -> None:
         "status": "unclear",
         "reasons": ["Metadata does not show age and sex dimensions."],
     }
+    assert summarize_wds_metadata({"productId": "98100001", "dimension": "not-a-list"})[
+        "ipf_hint"
+    ] == (
+        "Unclear IPF fit from metadata alone. Fetch and inspect the ZIP before "
+        "using it as controls."
+    )
+    assert extract_wds_dimension_previews({"dimension": "not-a-list"}) == []
 
 
 def test_fetch_wds_table_rejects_failed_download_lookup(
