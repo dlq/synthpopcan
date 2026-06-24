@@ -12,6 +12,12 @@ their docstrings and public members. See the Sphinx
 `autodoc documentation <https://www.sphinx-doc.org/en/master/usage/extensions/autodoc.html>`_
 for the underlying mechanism.
 
+The lower-level sections are intentionally curated. They include objects that
+are useful for notebooks, scripts, reusable research workflows, and contributor
+extensions. CLI callbacks, formatting helpers, web-app internals, benchmark
+helpers, and other implementation details are left out even when they are
+public-by-name in the source tree.
+
 Package
 -------
 

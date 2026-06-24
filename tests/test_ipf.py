@@ -6,11 +6,11 @@ import pytest
 
 import synthpopcan.ipf as ipf_module
 from synthpopcan.cli_ipf import (
-    format_weight,
+    _format_weight,
+    _read_weighted_seed,
+    _write_expanded_seed,
+    _write_weighted_seed,
     read_population_artifact,
-    read_weighted_seed,
-    write_expanded_seed,
-    write_weighted_seed,
 )
 from synthpopcan.controls import ControlCell, ControlMargin, ControlTable
 from synthpopcan.diagnostics import (
@@ -905,6 +905,59 @@ def test_cli_prints_ipf_report_json_and_rejects_invalid_json(
     with pytest.raises(ClickException, match="not valid JSON"):
         main(["ipf", "report", str(invalid_path)])
 
+    with pytest.raises(ClickException, match="Could not read"):
+        main(["ipf", "report", str(tmp_path / "missing-report.json")])
+
+
+def test_cli_ipf_fit_reports_missing_input_files(tmp_path: Path) -> None:
+    from click.exceptions import ClickException
+
+    from synthpopcan.cli import main
+
+    seed_path = tmp_path / "seed.csv"
+    controls_path = tmp_path / "missing-controls.csv"
+    seed_path.write_text("id,sex\n1,F\n")
+
+    with pytest.raises(ClickException) as excinfo:
+        main(
+            [
+                "ipf",
+                "fit",
+                "--seed",
+                str(seed_path),
+                "--controls",
+                str(controls_path),
+                "--out",
+                str(tmp_path / "weights.csv"),
+            ]
+        )
+
+    message = str(excinfo.value)
+    assert "Could not read" in message
+    assert str(controls_path) in message
+    assert "Check that the path is correct" in message
+
+
+def test_cli_ipf_expand_reports_invalid_weight_file(tmp_path: Path) -> None:
+    from click.exceptions import ClickException
+
+    from synthpopcan.cli import main
+
+    weights_path = tmp_path / "not-weights.csv"
+    weights_path.write_text("id,age\n1,adult\n")
+
+    with pytest.raises(ClickException, match="requires a 'weight' column"):
+        main(
+            [
+                "ipf",
+                "expand",
+                "--weights",
+                str(weights_path),
+                "--out",
+                str(tmp_path / "expanded.csv"),
+            ]
+        )
+
 
 def test_ipf_weight_artifact_helpers_validate_input_files(tmp_path: Path) -> None:
     weights_path = tmp_path / "weights.csv"
@@ -914,7 +967,7 @@ def test_ipf_weight_artifact_helpers_validate_input_files(tmp_path: Path) -> Non
         [{"id": "1", "age": "young", "fitted_weight": "1.25"}],
     )
 
-    rows, weights = read_weighted_seed(weights_path, "weight")
+    rows, weights = _read_weighted_seed(weights_path, "weight")
 
     assert rows == [{"id": "1", "age": "young"}]
     assert weights == [1.25]
@@ -946,22 +999,22 @@ def test_ipf_weight_artifact_helpers_validate_input_files(tmp_path: Path) -> Non
     missing_weight_path = tmp_path / "missing-weight.csv"
     write_csv(missing_weight_path, ["id", "age"], [{"id": "1", "age": "young"}])
     with pytest.raises(ValueError, match="requires a 'weight' column"):
-        read_weighted_seed(missing_weight_path, "weight")
+        _read_weighted_seed(missing_weight_path, "weight")
 
     invalid_weight_path = tmp_path / "invalid-weight.csv"
     write_csv(invalid_weight_path, ["id", "weight"], [{"id": "1", "weight": "bad"}])
     with pytest.raises(ValueError, match="row 2 has invalid weight"):
-        read_weighted_seed(invalid_weight_path, "weight")
+        _read_weighted_seed(invalid_weight_path, "weight")
 
 
 def test_ipf_writers_reject_empty_outputs_and_format_weights(tmp_path: Path) -> None:
     with pytest.raises(ValueError, match="empty seed rows"):
-        write_weighted_seed(tmp_path / "weights.csv", [], [])
+        _write_weighted_seed(tmp_path / "weights.csv", [], [])
     with pytest.raises(ValueError, match="synthetic population is empty"):
-        write_expanded_seed(tmp_path / "expanded.csv", [{"id": "1"}], [0.0])
+        _write_expanded_seed(tmp_path / "expanded.csv", [{"id": "1"}], [0.0])
 
     output_path = tmp_path / "weights.csv"
-    write_weighted_seed(
+    _write_weighted_seed(
         output_path,
         [{"id": "1", "age": "young", "weight": "1"}],
         [1.25],
@@ -970,8 +1023,8 @@ def test_ipf_writers_reject_empty_outputs_and_format_weights(tmp_path: Path) -> 
     assert list(csv.DictReader(output_path.open(newline=""))) == [
         {"id": "1", "age": "young", "weight": "1", "fitted_weight": "1.25"}
     ]
-    assert format_weight(2.0) == "2"
-    assert format_weight(1.25) == "1.25"
+    assert _format_weight(2.0) == "2"
+    assert _format_weight(1.25) == "1.25"
 
 
 def test_cli_expands_fitted_weight_when_seed_has_initial_weight(tmp_path: Path) -> None:

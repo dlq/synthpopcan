@@ -2,6 +2,7 @@ import json
 from pathlib import Path
 
 import pytest
+from click.exceptions import ClickException
 
 from synthpopcan.cli import (
     main,
@@ -12,7 +13,7 @@ from synthpopcan.cli import (
     parse_columns as parse_cli_columns,
 )
 from synthpopcan.statcan import (
-    CENSUS_PROFILE_2016_DOWNLOADS,
+    _CENSUS_PROFILE_2016_DOWNLOADS,
     WDSTableSearchResult,
     classify_wds_ipf_suitability,
     download_url,
@@ -31,7 +32,7 @@ from synthpopcan.statcan import (
 )
 
 
-def test_wds_download_url_uses_statscan_endpoint() -> None:
+def test_wds_download_url_uses_statcan_endpoint() -> None:
     assert wds_download_url("14100287", "en") == (
         "https://www150.statcan.gc.ca/t1/wds/rest/getFullTableDownloadCSV/14100287/en"
     )
@@ -108,11 +109,32 @@ def test_cli_fetches_2016_census_profile_by_registry_key(
         == 0
     )
 
-    entry = CENSUS_PROFILE_2016_DOWNLOADS["pt"]
+    entry = _CENSUS_PROFILE_2016_DOWNLOADS["pt"]
     assert calls == [(entry.url, tmp_path / entry.filename)]
     manifest = json.loads((tmp_path / "2016-census-profile-pt.json").read_text())
     assert manifest["geo_level"] == "pt"
     assert manifest["source_url"] == entry.url
+
+
+def test_cli_fetch_census_profile_rejects_unknown_geo_level(tmp_path: Path) -> None:
+    with pytest.raises(ClickException) as excinfo:
+        main(
+            [
+                "statcan",
+                "census-profile",
+                "fetch",
+                "--year",
+                "2016",
+                "--geo-level",
+                "unknown",
+                "--out-dir",
+                str(tmp_path),
+            ]
+        )
+
+    message = str(excinfo.value)
+    assert "Unknown 2016 Census Profile geography level" in message
+    assert "Use one of:" in message
 
 
 def test_search_wds_tables_filters_inventory(monkeypatch) -> None:
@@ -314,7 +336,7 @@ def test_cli_parse_columns_and_census_profile_year_guard() -> None:
     assert parse_cli_columns(" age , sex ") == ("age", "sex")
     with pytest.raises(Exception, match="at least one column"):
         parse_cli_columns(" , ")
-    with pytest.raises(ValueError, match="only the 2016 Census Profile"):
+    with pytest.raises(ClickException, match="Only the 2016 Census Profile"):
         run_statcan_census_profile_fetch.callback("2021", "pt", Path("out"))
 
 
@@ -591,7 +613,7 @@ def test_fetch_wds_table_rejects_failed_download_lookup(
 
 
 def test_fetch_census_profile_rejects_unknown_geo_level(tmp_path: Path) -> None:
-    with pytest.raises(ValueError, match="unknown 2016 Census Profile geo level"):
+    with pytest.raises(ValueError, match="Unknown 2016 Census Profile geography level"):
         fetch_census_profile_2016("unknown", tmp_path)
 
 

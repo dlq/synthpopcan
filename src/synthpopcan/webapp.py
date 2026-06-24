@@ -21,7 +21,7 @@ from synthpopcan.web_wds import (
 )
 
 
-class WebAppServer(Protocol):
+class _WebAppServer(Protocol):
     server_address: tuple[str, int]
 
     def serve_forever(self) -> None: ...
@@ -34,7 +34,7 @@ def get_webapp_root() -> Path:
     return Path(str(files("synthpopcan.web")))
 
 
-class SynthPopCanWebHandler(SimpleHTTPRequestHandler):
+class _SynthPopCanWebHandler(SimpleHTTPRequestHandler):
     """Static file handler with small localhost API helpers."""
 
     def end_headers(self) -> None:
@@ -103,11 +103,11 @@ class SynthPopCanWebHandler(SimpleHTTPRequestHandler):
 def build_webapp_server(host: str, port: int) -> ThreadingHTTPServer:
     """Build a local HTTP server for the packaged web app."""
     root = get_webapp_root()
-    handler = partial(SynthPopCanWebHandler, directory=str(root))
+    handler = partial(_SynthPopCanWebHandler, directory=str(root))
     return ThreadingHTTPServer((host, port), handler)
 
 
-def webapp_url(server: WebAppServer) -> str:
+def webapp_url(server: _WebAppServer) -> str:
     """Return the browser URL for a local server."""
     host, port = server.server_address
     browser_host = "127.0.0.1" if host in {"", "0.0.0.0", "::"} else host

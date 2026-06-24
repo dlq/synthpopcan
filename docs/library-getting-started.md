@@ -21,7 +21,7 @@ The beginner API mirrors the two main web app paths:
 
 1. **IPF from margin tables:** read seed rows, read normalized controls, fit
    IPF weights, then write a weighted or expanded population artifact.
-2. **Generate from existing model:** read a reviewed model package, generate
+1. **Generate from existing model:** read a reviewed model package, generate
    linked household/person rows, then write the generated CSV files.
 
 Use the web app when you want guided local controls, previews, and downloads.

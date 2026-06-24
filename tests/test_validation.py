@@ -168,6 +168,36 @@ def test_cli_validation_wraps_bad_population_artifacts(tmp_path: Path) -> None:
         )
 
 
+def test_cli_validation_reports_missing_input_files(tmp_path: Path) -> None:
+    from synthpopcan.cli import main
+
+    population_path = tmp_path / "weights.csv"
+    controls_path = tmp_path / "missing-controls.csv"
+    write_csv(
+        population_path,
+        ["id", "age", "weight"],
+        [{"id": "1", "age": "young", "weight": "1"}],
+    )
+
+    with pytest.raises(ClickException) as excinfo:
+        main(
+            [
+                "validate",
+                "controls",
+                "--population",
+                str(population_path),
+                "--controls",
+                str(controls_path),
+                "--kind",
+                "weights",
+            ]
+        )
+
+    message = str(excinfo.value)
+    assert "Could not read" in message
+    assert str(controls_path) in message
+
+
 def test_cli_validates_expanded_output(tmp_path: Path, capsys) -> None:
     from synthpopcan.cli import main
 

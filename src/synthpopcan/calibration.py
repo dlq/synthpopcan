@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Iterable, Sequence
 
-HOUSEHOLD_CONTROL_CATALOG = (
+_HOUSEHOLD_CONTROL_CATALOG = (
     {
         "canonical": "household_size",
         "aliases": ("household_size", "hhsize", "hhsz", "hh_size"),
@@ -41,7 +41,7 @@ HOUSEHOLD_CONTROL_CATALOG = (
     },
 )
 
-PERSON_CONTROL_CATALOG = (
+_PERSON_CONTROL_CATALOG = (
     {
         "canonical": "age_group",
         "aliases": ("age_group", "AGEGRP", "age", "agegrp"),
@@ -72,7 +72,7 @@ PERSON_CONTROL_CATALOG = (
     },
 )
 
-GEOGRAPHY_ALIASES = ("geo", "GEO", "PR", "CMA", "CD", "CSD", "CT")
+_GEOGRAPHY_ALIASES = ("geo", "GEO", "PR", "CMA", "CD", "CSD", "CT")
 
 
 def build_control_suggestion_report(
@@ -87,15 +87,15 @@ def build_control_suggestion_report(
         raise ValueError("unit must be household, person, or auto")
 
     catalog = (
-        HOUSEHOLD_CONTROL_CATALOG
+        _HOUSEHOLD_CONTROL_CATALOG
         if selected_unit == "household"
-        else PERSON_CONTROL_CATALOG
+        else _PERSON_CONTROL_CATALOG
     )
     usable_controls, enrichment_candidates = classify_controls(
         available_columns, catalog
     )
     geography_columns = [
-        column for column in available_columns if column in GEOGRAPHY_ALIASES
+        column for column in available_columns if column in _GEOGRAPHY_ALIASES
     ]
     first_search = first_search_query(usable_controls, selected_unit)
     next_commands = [

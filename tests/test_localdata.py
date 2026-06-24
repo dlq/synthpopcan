@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 
 from synthpopcan.cli import main
-from synthpopcan.localdata import check_file, inspect_local_data_layout, metadata_path
+from synthpopcan.localdata import _metadata_path, inspect_local_data_layout
 
 
 def test_inspects_expected_local_data_layout(tmp_path: Path) -> None:
@@ -10,7 +10,7 @@ def test_inspects_expected_local_data_layout(tmp_path: Path) -> None:
     hierarchical_metadata = (
         data_root
         / "raw"
-        / "statscan"
+        / "statcan"
         / "2016-census"
         / "metadata"
         / "statcan-2016-hierarchical-pumf"
@@ -43,8 +43,8 @@ def test_inspects_expected_local_data_layout(tmp_path: Path) -> None:
 
 def test_inspects_variable_metadata_edge_cases(tmp_path: Path) -> None:
     data_root = tmp_path / "data"
-    hierarchical_path = metadata_path(data_root, "statcan-2016-hierarchical-pumf")
-    individual_path = metadata_path(data_root, "statcan-2016-individual-pumf")
+    hierarchical_path = _metadata_path(data_root, "statcan-2016-hierarchical-pumf")
+    individual_path = _metadata_path(data_root, "statcan-2016-individual-pumf")
     hierarchical_path.parent.mkdir(parents=True)
     individual_path.parent.mkdir(parents=True)
     hierarchical_path.write_text(
@@ -54,7 +54,7 @@ def test_inspects_variable_metadata_edge_cases(tmp_path: Path) -> None:
     profile_path = (
         data_root
         / "raw"
-        / "statscan"
+        / "statcan"
         / "2016-census"
         / "Census Tract Summaries 2016"
         / "98-401-X2016043_eng_CSV"
@@ -69,12 +69,11 @@ def test_inspects_variable_metadata_edge_cases(tmp_path: Path) -> None:
     assert checks["2016 individual metadata"].status == "problem"
     assert checks["2016 individual metadata"].detail == "invalid JSON"
     assert checks["2016 Census Profile tract metadata"].status == "found"
-    assert check_file("Existing", profile_path).detail == "available"
 
 
 def test_inspects_variable_metadata_missing_labels(tmp_path: Path) -> None:
     data_root = tmp_path / "data"
-    hierarchical_path = metadata_path(data_root, "statcan-2016-hierarchical-pumf")
+    hierarchical_path = _metadata_path(data_root, "statcan-2016-hierarchical-pumf")
     hierarchical_path.parent.mkdir(parents=True)
     hierarchical_path.write_text(json.dumps({"source": "metadata"}))
 

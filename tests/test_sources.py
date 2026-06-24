@@ -4,7 +4,7 @@ import pytest
 from click.exceptions import ClickException
 
 from synthpopcan.cli import main
-from synthpopcan.sources import read_source_sample, sniff_delimiter
+from synthpopcan.sources import _sniff_delimiter, read_source_sample
 
 
 def test_sources_inspect_counts_files_by_extension(tmp_path, capsys) -> None:
@@ -69,8 +69,8 @@ def test_sources_sniffs_delimiter_with_suffix_fallbacks(tmp_path) -> None:
     tsv_source.write_text("")
     text_source.write_text("")
 
-    assert sniff_delimiter(tsv_source) == "\t"
-    assert sniff_delimiter(text_source) == ","
+    assert _sniff_delimiter(tsv_source) == "\t"
+    assert _sniff_delimiter(text_source) == ","
 
 
 def test_sources_sample_requires_private_override(tmp_path) -> None:
@@ -103,3 +103,14 @@ def test_sources_sample_wraps_reader_errors(tmp_path) -> None:
 
     with pytest.raises(ClickException, match="rows must be at least 1"):
         main(["sources", "sample", str(source), "--rows", "0", "--format", "json"])
+
+
+def test_sources_schema_reports_missing_file_without_traceback(tmp_path) -> None:
+    missing = tmp_path / "missing.csv"
+
+    with pytest.raises(ClickException) as excinfo:
+        main(["sources", "schema", str(missing)])
+
+    message = str(excinfo.value)
+    assert "Could not read" in message
+    assert str(missing) in message

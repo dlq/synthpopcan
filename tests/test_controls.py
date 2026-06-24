@@ -7,10 +7,11 @@ from click.exceptions import ClickException
 
 from synthpopcan.controls import (
     ControlCell,
+    _find_wds_csv_member,
+    _format_count,
+    _values_are_numeric,
     build_wds_category_mapping_template,
     census_profile_template,
-    find_wds_csv_member,
-    format_count,
     inspect_census_profile_characteristics,
     inspect_wds_zip,
     read_category_mapping,
@@ -19,7 +20,6 @@ from synthpopcan.controls import (
     read_control_margins,
     read_control_table,
     read_wds_control_table,
-    values_are_numeric,
 )
 
 
@@ -228,7 +228,7 @@ def test_wds_inspection_and_template_reject_invalid_inputs(tmp_path: Path) -> No
         inspect_wds_zip(zip_path, sample_rows=0)
     with pytest.raises(ValueError, match="at least one dimension"):
         build_wds_category_mapping_template(zip_path, dimensions=())
-    with pytest.raises(ValueError, match="known WDS mapping presets"):
+    with pytest.raises(ValueError, match="Unknown WDS mapping preset"):
         build_wds_category_mapping_template(
             zip_path,
             dimensions=("GEO",),
@@ -362,6 +362,16 @@ def test_cli_inspects_wds_zip_as_json_and_table(tmp_path: Path, capsys) -> None:
     assert "WDS Table Inspection" in capsys.readouterr().out
 
 
+def test_cli_wds_inspect_reports_bad_zip_as_click_error(tmp_path: Path) -> None:
+    from synthpopcan.cli import main
+
+    bad_zip = tmp_path / "bad.zip"
+    bad_zip.write_text("not zip")
+
+    with pytest.raises(ClickException, match="not a valid WDS ZIP"):
+        main(["controls", "wds", "inspect", str(bad_zip)])
+
+
 def test_cli_wds_commands_wrap_bad_inputs(tmp_path: Path, monkeypatch) -> None:
     from click import ClickException
 
@@ -399,7 +409,7 @@ def test_cli_wds_commands_wrap_bad_inputs(tmp_path: Path, monkeypatch) -> None:
                 str(output_path),
             ]
         )
-    with pytest.raises(ClickException, match="known Census Profile templates"):
+    with pytest.raises(ClickException, match="Unknown Census Profile template"):
         write_census_profile_template.callback(
             "unknown",
             "GEO_CODE",
@@ -884,7 +894,7 @@ def test_census_profile_template_accepts_overrides_and_rejects_unknown_names() -
     assert template["characteristic_column"] == "CHAR"
     assert template["count_column"] == "COUNT"
     assert template["margins"][0]["dimensions"] == ["region", "sex"]
-    with pytest.raises(ValueError, match="known Census Profile templates"):
+    with pytest.raises(ValueError, match="Unknown Census Profile template"):
         census_profile_template("unknown")
 
 
@@ -929,10 +939,10 @@ def test_category_mapping_validation_and_numeric_detection(tmp_path: Path) -> No
         read_category_mapping(bad_dimension)
     with pytest.raises(ValueError, match="values must be strings"):
         read_category_mapping(bad_value)
-    assert values_are_numeric([]) is False
-    assert values_are_numeric(["1", "2.5"]) is True
-    assert values_are_numeric(["1", "not-a-number"]) is False
-    assert format_count(1.25) == "1.25"
+    assert _values_are_numeric([]) is False
+    assert _values_are_numeric(["1", "2.5"]) is True
+    assert _values_are_numeric(["1", "not-a-number"]) is False
+    assert _format_count(1.25) == "1.25"
 
 
 def test_census_profile_mapping_validation_errors(tmp_path: Path) -> None:
@@ -1067,10 +1077,10 @@ def test_wds_csv_member_detection_rejects_missing_or_ambiguous_csvs(
 
     with ZipFile(no_csv) as archive:
         with pytest.raises(ValueError, match="does not contain a CSV"):
-            find_wds_csv_member(archive)
+            _find_wds_csv_member(archive)
     with ZipFile(multiple_csv) as archive:
         with pytest.raises(ValueError, match="multiple CSV"):
-            find_wds_csv_member(archive)
+            _find_wds_csv_member(archive)
 
 
 def read_control_table_from_wds_for_test(

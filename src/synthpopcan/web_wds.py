@@ -9,7 +9,7 @@ from zipfile import ZipFile
 
 from synthpopcan.statcan import fetch_json, wds_download_url
 
-WDS_METADATA_COLUMNS = {
+_WDS_METADATA_COLUMNS = {
     "STATUS",
     "SYMBOL",
     "TERMINATED",
@@ -22,7 +22,7 @@ WDS_METADATA_COLUMNS = {
     "UOM",
     "UOM_ID",
 }
-WDS_FETCH_TIMEOUT_SECONDS = 30
+_WDS_FETCH_TIMEOUT_SECONDS = 30
 WdsRow = tuple[int, dict[str, str]]
 
 
@@ -33,7 +33,7 @@ def fetch_wds_zip_bytes(product_id: str, lang: str = "en") -> tuple[bytes, str]:
     if response.get("status") != "SUCCESS" or not response.get("object"):
         raise ValueError(f"StatCan WDS did not return a download URL for {product_id}")
     download_url = str(response["object"])
-    with urlopen(download_url, timeout=WDS_FETCH_TIMEOUT_SECONDS) as handle:
+    with urlopen(download_url, timeout=_WDS_FETCH_TIMEOUT_SECONDS) as handle:
         return handle.read(), download_url
 
 
@@ -124,7 +124,7 @@ def suggest_wds_dimensions(
         for column in rows[0]
         if column != count_column
         and column != "REF_DATE"
-        and column.upper() not in WDS_METADATA_COLUMNS
+        and column.upper() not in _WDS_METADATA_COLUMNS
     )
 
 

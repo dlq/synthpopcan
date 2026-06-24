@@ -520,16 +520,21 @@ def test_cli_tree_parser_and_formatter_helpers_cover_edges() -> None:
             "contains_raw_rows": False,
             "contains_source_identifiers": False,
         }
-    ) == "publishable_candidate; raw_rows=False; source_ids=False"
+    ) == "Publishable candidate; No raw rows; No source identifiers"
     assert format_model_summary(
         {
+            "level": "person",
+            "model_type": "conditional-frequency",
             "release_class": "publishable_candidate",
             "records_trained": 1200,
             "bytes": 2048,
             "target_columns": ["age", "sex"],
         }
-    ) == "publishable_candidate; 1,200 records; 2.0 KiB; 2 targets"
-    assert format_model_summary("bad") == ";  records; ; 0 targets"
+    ) == (
+        "Person; Conditional frequency; Publishable candidate; "
+        "1,200 records; 2.0 KiB; 2 targets"
+    )
+    assert format_model_summary("bad") == ""
     assert format_audit_summary(
         {
             "passed": True,
@@ -537,7 +542,7 @@ def test_cli_tree_parser_and_formatter_helpers_cover_edges() -> None:
             "minimum_support": 12.5,
             "above_max_purity": 1,
         }
-    ) == "passed=True; issues=0; min_support=12.5; high_purity=1"
+    ) == "Audit passed; issues=0; minimum support=12.5; high purity=1"
     assert format_bytes_or_blank("bad") == ""
     assert format_bytes_or_blank(1_048_576) == "1.0 MiB"
     assert format_int_or_blank("bad") == ""
@@ -1827,6 +1832,46 @@ def test_cli_inspect_package_wraps_bad_package_json(tmp_path) -> None:
         main(["tree", "inspect-package", str(bad_package)])
 
 
+def test_cli_tree_commands_report_missing_files_without_traceback(tmp_path) -> None:
+    from click import ClickException
+
+    missing_model = tmp_path / "missing-model.json"
+
+    with pytest.raises(ClickException) as inspect_exc:
+        main(["tree", "inspect-package", str(missing_model)])
+    assert "Could not read" in str(inspect_exc.value)
+    assert str(missing_model) in str(inspect_exc.value)
+
+    with pytest.raises(ClickException) as generate_exc:
+        main(
+            [
+                "tree",
+                "generate",
+                str(missing_model),
+                "--rows",
+                "2",
+                "--out",
+                str(tmp_path / "generated.csv"),
+            ]
+        )
+    assert "Could not read" in str(generate_exc.value)
+    assert str(missing_model) in str(generate_exc.value)
+
+
+def test_cli_inspect_package_uses_plain_schema_error(tmp_path) -> None:
+    from click import ClickException
+
+    wrong_package = tmp_path / "wrong-package.json"
+    wrong_package.write_text(json.dumps({"schema_version": "old"}) + "\n")
+
+    with pytest.raises(ClickException) as excinfo:
+        main(["tree", "inspect-package", str(wrong_package)])
+
+    message = str(excinfo.value)
+    assert "not a supported linked household/person model package" in message
+    assert "unsupported linked model package schema" not in message
+
+
 def test_cli_inspects_linked_model_package_as_table(tmp_path, capsys) -> None:
     household_model_path, person_model_path = _write_publishable_linked_model_fixtures(
         tmp_path
@@ -1872,8 +1917,29 @@ def test_cli_inspects_linked_model_package_as_table(tmp_path, capsys) -> None:
     output = capsys.readouterr().out
     assert "Linked Model Package" in output
     assert "Statistics Canada" in output
-    assert "publishable_candidate" in output
+    assert "Publishable candidate" in output
+    assert "publishable_candidate" not in output
     assert "Do not redistribute source microdata." in output
+
+
+def test_cli_inspects_demo_linked_model_package_as_table(tmp_path, capsys) -> None:
+    from synthpopcan.web_demo_models import demo_model_payload
+
+    package_path = tmp_path / "demo-package.json"
+    package_path.write_text(
+        json.dumps(demo_model_payload("demo-linked-household-person"))
+    )
+
+    assert main(["tree", "inspect-package", str(package_path)]) == 0
+
+    output = capsys.readouterr().out
+    assert "Safe demo household/person package" in output
+    assert "synthetic toy rows" in output
+    assert "Publishable candidate" in output
+    assert "publishable_candidate" not in output
+    assert "Household; Conditional frequency" in output
+    assert "Person; Conditional frequency" in output
+    assert "None" not in output
 
 
 def test_cli_generates_linked_population_from_package(tmp_path) -> None:

@@ -1,17 +1,22 @@
 # SynthPopCan Plan
 
-Status: working roadmap  
-Last updated: 2026-06-23
+Status: working roadmap\
+Last updated: 2026-06-24
 
 ## Goal
 
-Build SynthPopCan as a Python library, CLI, and eventually web app for Canadian synthetic population generation.
+Build SynthPopCan as a Python library, CLI, and local web app for Canadian synthetic population generation.
+
+This file is the live roadmap: it should say what is next, what is deferred,
+and which design decisions remain open. Detailed completed implementation
+status and benchmark notes belong in the Sphinx documentation, especially
+`docs/status.md`; research background and source synthesis belong in `NOTES.md`.
 
 The near-term scope is deliberately narrower than the full proposal:
 
 1. Build synthetic populations through iterative proportional fitting from StatCan margin/control tables.
-2. Build household- and person-level synthetic populations with a tree-based synthetic population generator using pluggable census microdata sources. The Canadian 2016 Census material staged locally is the first available microdata source, not the tool boundary.
-3. Keep environmental, school, healthcare, food, and broader enrichment data as later extensions unless they are needed for validation or demos.
+1. Build household- and person-level synthetic populations with a tree-based synthetic population generator using pluggable census microdata sources. The Canadian 2016 Census material staged locally is the first available microdata source, not the tool boundary.
+1. Keep environmental, school, healthcare, food, and broader enrichment data as later extensions unless they are needed for validation or demos.
 
 ## Principles
 
@@ -27,25 +32,29 @@ The near-term scope is deliberately narrower than the full proposal:
 SynthPopCan should eventually have four layers:
 
 1. `synthpopcan` Python library
+
    - Data schemas and validation.
    - StatCan table normalization.
    - IPF and integerization.
    - Tree-based household/person synthesis.
    - Validation and reporting primitives.
 
-2. `synthpopcan` CLI
+1. `synthpopcan` CLI
+
    - Inspect local source files.
    - Normalize margins.
    - Run IPF synthesis.
    - Train or apply the tree-based synthetic population generator.
    - Validate and export generated populations.
 
-3. Local data workspace
+1. Local data workspace
+
    - Ignored `data/raw` and `data/private` folders.
    - Tracked manifests only when they are public-safe and useful.
    - Small test fixtures under `tests/fixtures` when needed.
 
-4. Web app
+1. Web app
+
    - Run configuration UI.
    - Source and geography selection.
    - Progress and diagnostics.
@@ -60,9 +69,10 @@ Status: complete.
 Current state:
 
 - Git repository initialized.
-- README, research notes, license, package scaffold, CLI stub, and smoke test are in place.
+- README, research notes, license, package scaffold, CLI, web app, and tests are in place.
 - Large data and private source material are ignored.
-- `research.md` captures the local proposal/materials plus recent implementation work in population synthesis.
+- `NOTES.md` captures the local proposal/materials plus research and source
+  synthesis for population synthesis.
 
 ### 1. Core Data Model
 
@@ -206,32 +216,15 @@ Production-grade IPF means more than using a faster table library. It should inc
 Near-term IPF performance tasks:
 
 1. Use fitted weights as the default CLI output. Status: complete.
-2. Keep expanded output explicit through a separate `ipf expand` command. Status: complete.
-3. Precompute record membership indexes for each margin cell. Status: complete in the pure-Python fitter.
-4. Stream expanded rows directly to CSV instead of building the full expanded population in memory. Status: complete.
-5. Add benchmarks or performance tests for easy, moderate, and high-cardinality fixtures. Status: complete for developer-facing `scripts/benchmark_ipf.py`; not exposed as a user CLI workflow.
-6. Improve non-convergence diagnostics and CLI reporting. Status: partially complete; the CLI now fails closed on non-convergence, can write JSON fit diagnostics, can print a human-readable report table, and reports the largest residual with a plain-language tip. Richer validation reports that explain whole-run inconsistency patterns are still pending.
-7. Consider NumPy, Polars, and possibly sparse arrays after the pure-Python indexed version establishes the right data contracts. Status: first benchmark characterization tests added; cases now report average records per margin cell plus a dependency hint, and an opt-in timing test runs with `SYNTHPOPCAN_PERF_TESTS=1 uv run pytest tests/test_benchmarks.py -m performance`. Experimental backend benchmarks show current pure Python remains fastest for one-iteration dense cases, while NumPy `bincount` and SciPy CSR are much faster for repeated high-cardinality updates; Polars appears better suited to table ingestion/prep than the iterative IPF update kernel.
-8. Later, prototype an optional SciPy CSR IPF backend for large or sparse StatCan controls. Candidate trigger conditions: many geography-crossed cells, low average seed records per margin cell, or repeated non-converged/high-iteration updates. Keep the current pure-Python indexed backend as the default until the sparse backend has production tests, clear dependency implications, and web-app/Pyodide feasibility notes.
+1. Keep expanded output explicit through a separate `ipf expand` command. Status: complete.
+1. Precompute record membership indexes for each margin cell. Status: complete in the pure-Python fitter.
+1. Stream expanded rows directly to CSV instead of building the full expanded population in memory. Status: complete.
+1. Add benchmarks or performance tests for easy, moderate, and high-cardinality fixtures. Status: complete for developer-facing `scripts/benchmark_ipf.py`; not exposed as a user CLI workflow.
+1. Improve non-convergence diagnostics and CLI reporting. Status: partially complete; the CLI now fails closed on non-convergence, can write JSON fit diagnostics, can print a human-readable report table, and reports the largest residual with a plain-language tip. Richer validation reports that explain whole-run inconsistency patterns are still pending.
+1. Consider NumPy, Polars, and possibly sparse arrays after the pure-Python indexed version establishes the right data contracts. Status: first benchmark characterization tests added; cases now report average records per margin cell plus a dependency hint, and an opt-in timing test runs with `SYNTHPOPCAN_PERF_TESTS=1 uv run pytest tests/test_benchmarks.py -m performance`. Experimental backend benchmarks show current pure Python remains fastest for one-iteration dense cases, while NumPy `bincount` and SciPy CSR are much faster for repeated high-cardinality updates; Polars appears better suited to table ingestion/prep than the iterative IPF update kernel.
+1. Later, prototype an optional SciPy CSR IPF backend for large or sparse StatCan controls. Candidate trigger conditions: many geography-crossed cells, low average seed records per margin cell, or repeated non-converged/high-iteration updates. Keep the current pure-Python indexed backend as the default until the sparse backend has production tests, clear dependency implications, and web-app/Pyodide feasibility notes.
 
-Local timing evidence after indexing:
-
-- Easy balanced fixture, 50,000 seed records to 500,000 expanded rows: fitting about 0.03 seconds, expansion about 0.14 seconds.
-- High-cardinality inconsistent fixture, 50,000 seed records, 72 target cells, 100 iterations: fitting about 1.0 second, down from about 54.5 seconds in the naive repeated-scan version.
-- The high-cardinality fixture still does not converge because its controls are deliberately inconsistent, so diagnostics are still required.
-- Experimental backend comparison results:
-
-  | Seed rows | Case | Iterations | Current Python | NumPy `bincount` | SciPy CSR | Polars `group_by` |
-  | ---: | --- | ---: | ---: | ---: | ---: | ---: |
-  | 50,000 | easy balanced | 1 | ~0.023s | ~0.032s | ~0.037s | ~0.046s |
-  | 50,000 | moderate three-margin | 1 | ~0.037s | ~0.047s | ~0.056-0.064s | ~0.035-0.049s |
-  | 50,000 | high-cardinality inconsistent | 100 | ~0.62-0.67s | ~0.11s | ~0.09-0.12s | ~0.69-0.73s |
-  | 200,000 | high-cardinality inconsistent | 100 | ~2.8s | ~0.44s | ~0.36s | not rerun |
-
-  Current decision: keep pure Python as the default for simple dense controls,
-  prototype SciPy CSR later for large/sparse/repeated-update fits, and treat
-  Polars as a likely table-ingestion/prep tool rather than the IPF update
-  kernel.
+Detailed IPF timing and backend comparison notes now live in `docs/status.md`.
 
 ### 5. Census Household/Person Microdata Ingestion
 
@@ -246,7 +239,7 @@ Deliverables:
 - Export selected person-level microdata columns to IPF seed CSVs.
 - Export conservative household-level seed rows from hierarchical microdata when selected household columns are constant within each `HH_ID`.
 - Check selected household seed columns before export so users can see constant columns, conflicts, the weight check, and derived `household_size`.
-- Document assumptions in `research.md` or a future data-access note when source interpretation matters.
+- Document assumptions in `NOTES.md` or a future data-access note when source interpretation matters.
 - CLI commands:
 
 ```bash
@@ -310,17 +303,14 @@ Current implementation notes:
 - `synthpopcan tree generate` and `synthpopcan tree generate-linked` accept `--manifest-out` for a lightweight JSON provenance sidecar with model path, model type, release class, output paths, conditions, requested random seed, and effective random seed.
 - `synthpopcan tree train-linked` trains household and person models directly from a mixed `statcan-2016-hierarchical` microdata file using named suggestion-profile blocks. The first user-facing path requires `--suggested-blocks`, defaults to `household_core` plus `person_demographics`, writes both model JSON files, and writes a training manifest with source, selected blocks, training summaries, model paths, method, and random seed.
 - `synthpopcan tree train-linked` now makes geography advisor recommendations directly actionable with `--geography-column`, `--geography-value`, and `--target-profile full|reduced|minimal`. This lets a user train a likely PR/CMA with the full suggested blocks, a borderline geography with reduced targets, or a small province/territory with a minimal local-experiment target set without hand-authoring training CSVs.
-- Full local 2016 run using `tree train-linked --suggested-blocks` on the ignored project-local hierarchical PUMF source trained household/person conditional-frequency models from 343,330 person rows and 140,720 derived household rows in about 12 seconds wall-clock. The default `household_core` model was about 95.5 MB and the `person_demographics` model about 3.5 MB. Generating 1,000 QC households with `PR=24` produced 2,300 people; `validate linked-output` passed with no unknown households and no household-size mismatches. The household model size suggests broad household target blocks need pruning, coarsening, or staged modeling before distribution or browser use.
-- Local smoke run for PEI-style small-geography training with `--geography-column PR --geography-value 11 --target-profile minimal` trained on 1,401 person rows and 597 households, producing a 4.8 KB household model and 42 KB person model. This demonstrates the ergonomic path works, but the advisor still recommends aggregate or minimal models for small geographies before any distribution workflow.
-- `scripts/benchmark_tree_linked.py` runs the first developer-facing linked household/person benchmark workflow from a `statcan-2016-hierarchical` CSV: derive household/person training views, train both models, generate linked outputs, validate linkage, compare household/person distributions, write JSON reports, and print timing/RSS summary metrics.
-- Initial linked benchmark on the local 2016 hierarchical PUMF with `PR=24`, 1,000 generated households, household targets `household_size,TENUR`, household conditioning `PR`, person targets `AGEGRP,SEX`, and person conditioning `PR,household_size,TENUR`: source 343,330 person rows and 140,720 households; QC validation subset 35,306 household rows and 79,498 person rows; generated 1,000 households and 2,271 persons; generated average household size 2.271 versus 2.2517 in the QC training subset; linkage passed with no issues; household and person distribution checks passed at 5 percentage-point tolerance after comparing against the conditioned QC training subset, with max deltas about 2.02 and 2.08 percentage points and no warnings. Timings: read source 3.5s, derive training 3.1s, train models 1.8s, generate 0.1s, validate 0.3s; peak RSS about 2.2 GiB. Output artifacts under ignored `data/private/benchmarks/tree-linked-2016-qc/`: household model 28 KB, person model 590 KB, household training CSV 4.2 MB, person training CSV 15 MB.
-- `synthpopcan microdata suggest-tree-columns` advises broad staged column blocks through a source-specific suggestion profile. The first profile, `statcan-2016-hierarchical`, covers household core, person demographics, person identity/language, and person education/work/income. It excludes identifiers, weights, and replicate weights, reports geography context columns, and only includes target columns present in the inspected file. The profile registry is the first step toward supporting other census years or microdata layouts without rewriting the command.
-- `synthpopcan microdata tree-geography-feasibility` estimates which PR or CMA geographies are plausible candidates for publishable linked tree models before training many artifacts. It reports person rows, derived household rows, weighted totals, conditioning support, outcome purity risk, a likely/borderline/unlikely tier, and a model-design recommendation with scope, reduced/minimal target sets, columns to review first, Canadian aggregation hints, and next steps. On the local 2016 hierarchical PUMF with default `household_core` plus `person_demographics`, PR 35/24/59/48/46/47 are likely, PR 12/13/10 are borderline, and PR 11/70 are unlikely under the current thresholds. The exposed CMA buckets 999/535/462/933/825/835 are likely under the same first-pass criteria.
-- `scripts/benchmark_tree_linked.py --suggested-blocks` can now run the linked benchmark from named suggestion-profile blocks, defaulting to `household_core` plus `person_demographics`. This keeps the fuller benchmark path aligned with `synthpopcan microdata suggest-tree-columns` and avoids long manual column lists while preserving the explicit-column mode for experiments.
-- Full local release-workflow experiment on the 2016 hierarchical PUMF:
-  - PR=24 full suggested profile trained in about 6.2 seconds wall-clock from 79,498 person rows and 35,306 households. After `tree prepare-model-release`, `tree release-readiness` classified the pair as `likely_publishable`; both audits had zero issues, no low-support groups, and no high-purity groups. The household model was about 21 MB, the person model about 567 KB, and the linked package about 25 MB. Generating 1,000 households with `PR=24` produced 2,300 people; `validate linked-output` passed with no unknown households and no household-size mismatches.
-  - PR=11 minimal profile trained in about 5.1 seconds wall-clock from 1,401 person rows and 597 households. After `tree prepare-model-release`, `tree release-readiness` also classified the pair as `likely_publishable` under the current first-pass model-artifact checks; both audits had zero issues, no low-support groups, and no high-purity groups. The household model was about 4.7 KB, the person model about 41 KB, and the linked package about 64 KB. Generating 1,000 households with `PR=11` produced 2,388 people; `validate linked-output` passed. This is useful as a technical smoke test, but the earlier geography advisor still recommends aggregate or minimal-only caution for small geographies before distribution.
-  - The real run exposed a necessary workflow distinction: linked training manifests point at the original private working models, while packages usually embed reviewed publishable copies. `tree package-linked-models` now accepts `--household-release-manifest` and `--person-release-manifest` so the package can verify that provenance chain without requiring hand-edited manifests.
+- Local linked-model benchmark and release-workflow evidence now lives in
+  `docs/status.md`.
+- `scripts/benchmark_tree_linked.py` remains the developer-facing linked
+  household/person benchmark harness. It should stay optional because it depends
+  on ignored local/private data.
+- `synthpopcan microdata suggest-tree-columns` and `microdata tree-geography-feasibility` provide source-specific column and geography
+  advice. Keep future adapter profiles explicit by source year/product instead
+  of assuming all Canadian census microdata uses the 2016 hierarchical layout.
 
 Household/person linkage design:
 
@@ -598,26 +588,46 @@ Near-term usability priorities:
    expert commands instead of creating a second implementation path. Keep the
    expert commands visible for automation and advanced users. Status: complete
    for the first read-only guide.
-2. Make the web app's prepared-model workflow more realistic: support a
+1. Make the web app's prepared-model workflow more realistic: support a
    backend-served model index, show model provenance and warnings clearly, keep
    model training out of the UI, and add stronger output previews/validation
    summaries. Status: in progress; the safe demo model is now served through a
    publication-style catalogue with release status, provenance, privacy notes,
    output shape, default generation settings, generated-output previews, and a
    first-pass linked household/person validation summary.
-3. Promote the beginner Python API in the documentation and keep its examples
+1. Promote the beginner Python API in the documentation and keep its examples
    runnable. The API reference should remain autodoc-driven, but workflow docs
    should show the short `import synthpopcan as spc` path first. Status: first
    pass complete; the docs landing page and beginner API guide now route users
    through the same two workflow labels as the web app and CLI guide.
-4. Do a docs navigation pass: route readers first to the web app, IPF from
+1. Do a docs navigation pass: route readers first to the web app, IPF from
    StatCan tables, generated-from-model workflows, and only then advanced
    microdata/model-training/release material. Status: first pass complete in
    the Sphinx index and web app guide.
-5. Start documentation-example checks for the most visible beginner workflows.
+1. Start documentation-example checks for the most visible beginner workflows.
    The project goal is 100% line coverage, but add the gate gradually: use
    coverage reports to close blind spots while the public surfaces are still
    settling, then ratchet thresholds upward by module or workflow.
+
+Remaining user-facing surface audits:
+
+- Generated artifacts as user documents: review default filenames, CSV column
+  names, JSON manifest fields, provenance text, and validation/report outputs
+  so a non-programmer can reopen them later and understand what was generated,
+  from which sources, with which caveats.
+- Install and package metadata: review PyPI-facing text, classifiers, project
+  URLs, license display, changelog/release notes, console-script metadata, and
+  a clean install/package smoke test before public distribution.
+- Published model catalogue UX: when real models exist, present geography,
+  census vintage, source, privacy review status, release version, model size,
+  generation limits, and known limitations clearly in both the web app and CLI.
+- Full first-run dry run: test both beginner paths from a clean checkout or
+  installed wheel with no private local data, starting from `synthpopcan --help`,
+  `synthpopcan guide`, and `synthpopcan serve`.
+- Future browser/npm surface: if the browser-side IPF/model-generation modules
+  become reusable outside the Python package, design the npm-facing API and
+  examples so the terminology rhymes with the Python API, CLI, and web app
+  instead of creating a parallel vocabulary.
 
 Recently completed first-pass work:
 
@@ -630,38 +640,10 @@ Recently completed first-pass work:
 - Documentation: Sphinx/Read the Docs scaffold, first topic pages, library API
   page, selective autodoc reference, and short README pointers.
 
-### Completed StatCan/IPF Slice
+### StatCan/IPF Follow-Up Backlog
 
-The StatCan/IPF usability slice is mostly complete for a first pass. The project
-now has a coherent public-data-to-IPF path:
-
-```bash
-synthpopcan statcan wds search ...
-synthpopcan statcan wds explain PRODUCT_ID
-synthpopcan statcan wds fetch PRODUCT_ID --out-dir data/raw/statcan/wds
-synthpopcan controls wds inspect TABLE.zip
-synthpopcan controls wds mapping-template TABLE.zip --dimensions ... --out categories.json
-synthpopcan controls from-wds TABLE.zip --mapping categories.json --out controls.csv
-synthpopcan ipf check-inputs --seed seed.csv --controls controls.csv
-synthpopcan ipf fit --seed seed.csv --controls controls.csv --out weights.csv --report fit-report.json
-synthpopcan validate controls --population weights.csv --controls controls.csv --kind weights
-```
-
-Completed StatCan/IPF usability work:
-
-1. `controls wds inspect` inspects downloaded WDS ZIPs and suggests starter
-   `controls from-wds` settings.
-2. `statcan wds explain` summarizes a product ID, reports available dimensions,
-   gives an IPF suitability hint, and prints next commands.
-3. `controls wds mapping-template` writes a starter category mapping JSON from
-   observed WDS labels in selected dimensions.
-4. `ipf check-inputs` includes `suggested_next_steps` for missing seed columns
-   and category mismatches, including WDS mapping-template hints.
-5. `docs/ipf.md`, `docs/controls.md`, and `docs/statcan.md` document the
-   WDS-to-IPF path, including mapping templates, mapped WDS controls, input
-   checks, fitting, and validation.
-
-Remaining StatCan/IPF follow-up backlog:
+Completed StatCan/IPF implementation notes now live in
+`docs/status.md`. Keep this section focused on remaining work.
 
 - Improve WDS dimension/member inspection from metadata so `statcan wds explain`
   can preview candidate dimensions and members before downloading a ZIP.
@@ -709,41 +691,19 @@ Remaining StatCan/IPF follow-up backlog:
   prints next StatCan/IPF commands while keeping final table choice reviewable by
   the user.
 
-Completed tree model packaging/distribution first pass:
+### Tree Packaging Follow-Up Backlog
 
-1. Define a clear publishable model package manifest for linked household/person
-   models, including source description, geography scope, target profile,
-   training parameters, audit thresholds, model sizes, release class, warnings,
-   and human review notes. Status: partially complete; `tree release-readiness`
-   and `tree package-linked-models` can carry linked training-manifest
-   provenance, audit thresholds, model summaries with file sizes, and human
-   review notes. `tree package-linked-models` now requires a training manifest,
-   requires a non-empty review note, and checks manifest model paths against the
-   packaged model paths or release manifests connecting private source models to
-   reviewed publishable copies. `tree package-linked-models` also requires
-   source provenance with title, provider, access class, citation, and
-   redistribution-note fields. `tree inspect-package` now summarizes linked
-   packages for human review and automation without exposing full embedded model
-   payloads. `tree generate-from-package` now treats a reviewed linked package
-   as the user-facing generation input.
-2. Add a release-readiness report that can be run before packaging Canada,
-   province/territory, and large-CMA model candidates. It should explain whether
-   the candidate is likely publishable, likely private-only, or needs pruning,
-   coarsening, aggregation, or review. Status: first `tree release-readiness`
-   command added for linked household/person model pairs.
-3. Make the release workflow explicitly separate private working models from
-   publishable candidates, so users cannot accidentally distribute models that
-   have not passed disclosure-risk checks. Status: partially complete; readiness
-   reports and package commands distinguish private working models from
-   publishable candidates, and linked packages now require reviewed training,
-   source, and release-copy provenance before writing an artifact.
-4. Add fixture tests for a linked model package manifest and release-readiness
-   report before running more full-data candidate-model experiments. Status:
-   release-readiness and strict linked-package manifest fixture tests added.
-5. Keep the web app boundary intact: the first web app consumes prepared model
-   artifacts and does not expose training from restricted microdata. Status:
-   `tree generate-from-package` establishes the CLI version of this package
-   consumer boundary.
+Completed tree packaging and distribution implementation notes now live in
+`docs/status.md`. Keep this section focused on remaining work.
+
+- Broaden publishable package review from fixture and local smoke tests toward
+  a repeatable Canada/province/territory/large-CMA model-candidate workflow.
+- Add stronger rare-combination and disclosure-risk checks before treating
+  models trained from restricted microdata as public distribution candidates.
+- Add clearer model-size and browser-readiness guidance for prepared packages,
+  especially broad household models.
+- Keep the web app boundary intact: the first app consumes prepared model
+  artifacts and does not expose training from restricted microdata.
 
 ## Deferred Work
 
@@ -768,34 +728,19 @@ Other deferred work:
 
 ## Testing Policy
 
-Every new feature should include tests at the smallest practical scale:
+The stable testing policy and current coverage baseline now live in
+`docs/status.md`.
 
-- Unit tests for pure transformations and algorithms.
-- CLI tests for command behavior and output files.
-- Fixture-based integration tests for one complete workflow.
-- Documentation-example checks for any new or changed getting-started or
-  workflow examples. At minimum, run the commands or notebook snippets that are
-  presented as runnable, and verify that illustrative examples are clearly
-  marked as placeholders when they depend on user-supplied data.
-- Coverage measurement with `pytest-cov`.
-- No tests should require full private or raw data caches.
+Roadmap implications:
 
-Coverage goal:
-
-- Target 100% line coverage for tracked Python code.
-- Use `uv run pytest --cov=synthpopcan --cov-report=term-missing -q` as the
-  standard local measurement command.
-- Current measured baseline: 90% line coverage, with 169 tests passing and 4
-  skipped on 2026-06-23.
-- Ratchet coverage in small slices. Good first targets are low-risk helper
-  modules and public API surfaces; larger CLI branches, tree workflows, control
-  parsing edge cases, and IPF error paths should follow with focused fixture
-  tests rather than brittle rendering assertions.
-- Add `--cov-fail-under` only after the test suite has a stable baseline high
-  enough that the gate encourages discipline without blocking ordinary design
+- Keep the default suite fixture-based and free of private/raw data
+  requirements.
+- Start documentation-example checks for visible beginner workflows.
+- Add `--cov-fail-under` only after the suite and public surfaces settle enough
+  that the gate encourages discipline without blocking ordinary design
   iteration.
-
-Full-data smoke tests can be added later as optional local commands, documented separately from the default test suite. They should supplement, not replace, the fixture-based coverage path because default tests must not require private or large raw data caches.
+- Keep full-data smoke tests optional and documented separately from the
+  default test suite.
 
 ## Data Policy
 
@@ -836,8 +781,8 @@ Ignored:
 The first useful version is done when a user can:
 
 1. Point the CLI at a small seed sample and normalized control table.
-2. Generate a synthetic population through IPF.
-3. Validate the output against controls.
-4. Inspect and normalize a small census-style household/person fixture.
-5. Run an initial tree-based household/person synthesis prototype.
-6. Reproduce the run from tracked code and ignored local data caches.
+1. Generate a synthetic population through IPF.
+1. Validate the output against controls.
+1. Inspect and normalize a small census-style household/person fixture.
+1. Run an initial tree-based household/person synthesis prototype.
+1. Reproduce the run from tracked code and ignored local data caches.

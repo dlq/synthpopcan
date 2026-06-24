@@ -1,17 +1,17 @@
 # Installation
 
-SynthPopCan is not yet published on PyPI and does not yet have a public
-repository URL in these docs. This page is therefore a source-checkout
-installation guide for early users and contributors. The download and package
-installation section should be expanded once the distribution mechanism is set.
+SynthPopCan is not yet published on PyPI. This page is therefore a
+source-checkout installation guide for early users and contributors. The
+download and package installation section can be expanded once the public
+distribution mechanism is set.
 
 ## Requirements
 
 - Python 3.11 or newer.
-- Git, once a public repository URL is available.
+- Git, when cloning from a repository.
 - A Python environment tool. The current development workflow uses `uv`, but
-  end-user documentation should eventually prefer a normal installed
-  `synthpopcan` command.
+  the rest of the documentation usually shows the installed `synthpopcan`
+  command.
 - Local source data staged outside git when working with real census or private files.
 
 You do not need a database, a cloud account, or a web server for the
@@ -19,7 +19,7 @@ command-line workflows.
 
 ## Download the Source
 
-This section is a placeholder until SynthPopCan has a public source URL.
+Clone the repository you are using, then enter the checkout:
 
 ```bash
 git clone REPOSITORY_URL synthpopcan
@@ -49,7 +49,7 @@ uv sync --group docs
 
 ## Run the Command
 
-Eventually, installed users should be able to run:
+If your environment exposes the console script, run:
 
 ```bash
 synthpopcan --help
@@ -65,6 +65,13 @@ uv run synthpopcan --help
 The rest of the documentation usually shows `synthpopcan ...` to focus on the
 tool itself. If you have not activated an environment or installed the command,
 use `uv run synthpopcan ...` instead.
+
+Beginner command-line guidance is available with:
+
+```bash
+synthpopcan guide ipf
+synthpopcan guide model
+```
 
 ## Quick Getting Started
 

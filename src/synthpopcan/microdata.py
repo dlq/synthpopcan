@@ -114,7 +114,7 @@ class TreeColumnSuggestionProfile:
     blocks: tuple[TreeColumnBlockSpec, ...]
 
 
-STATCAN_2016_HIERARCHICAL_TREE_PROFILE = TreeColumnSuggestionProfile(
+_STATCAN_2016_HIERARCHICAL_TREE_PROFILE = TreeColumnSuggestionProfile(
     source_format="statcan-2016-hierarchical",
     geography_columns=("PR", "CMA"),
     identifier_columns=("HH_ID", "EF_ID", "CF_ID", "PP_ID"),
@@ -182,9 +182,9 @@ STATCAN_2016_HIERARCHICAL_TREE_PROFILE = TreeColumnSuggestionProfile(
     ),
 )
 
-TREE_COLUMN_SUGGESTION_PROFILES = {
-    STATCAN_2016_HIERARCHICAL_TREE_PROFILE.source_format: (
-        STATCAN_2016_HIERARCHICAL_TREE_PROFILE
+_TREE_COLUMN_SUGGESTION_PROFILES = {
+    _STATCAN_2016_HIERARCHICAL_TREE_PROFILE.source_format: (
+        _STATCAN_2016_HIERARCHICAL_TREE_PROFILE
     )
 }
 
@@ -562,7 +562,7 @@ def suggest_tree_column_blocks(sample: SeedSample) -> dict[str, object]:
     excluded identifiers or replicate weights.
     """
 
-    profile = TREE_COLUMN_SUGGESTION_PROFILES.get(sample.source_format)
+    profile = _TREE_COLUMN_SUGGESTION_PROFILES.get(sample.source_format)
     if profile is None:
         raise ValueError(
             f"tree column suggestions are not available for {sample.source_format}"

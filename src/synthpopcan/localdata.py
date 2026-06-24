@@ -44,24 +44,24 @@ def inspect_local_data_layout(data_root: Path) -> list[DataLayoutCheck]:
 
     raw_root = data_root / "raw"
     checks = [
-        check_directory(
+        _check_directory(
             "Raw data directory",
             raw_root,
             missing_tip="Create data/raw or pass --data-root PATH.",
         ),
-        check_variable_metadata(
+        _check_variable_metadata(
             "2016 hierarchical metadata",
-            metadata_path(data_root, "statcan-2016-hierarchical-pumf"),
+            _metadata_path(data_root, "statcan-2016-hierarchical-pumf"),
         ),
-        check_variable_metadata(
+        _check_variable_metadata(
             "2016 individual metadata",
-            metadata_path(data_root, "statcan-2016-individual-pumf"),
+            _metadata_path(data_root, "statcan-2016-individual-pumf"),
         ),
-        check_file(
+        _check_file(
             "2016 Census Profile tract metadata",
             data_root
             / "raw"
-            / "statscan"
+            / "statcan"
             / "2016-census"
             / "Census Tract Summaries 2016"
             / "98-401-X2016043_eng_CSV"
@@ -72,11 +72,11 @@ def inspect_local_data_layout(data_root: Path) -> list[DataLayoutCheck]:
     return checks
 
 
-def metadata_path(data_root: Path, package_name: str) -> Path:
+def _metadata_path(data_root: Path, package_name: str) -> Path:
     return (
         data_root
         / "raw"
-        / "statscan"
+        / "statcan"
         / "2016-census"
         / "metadata"
         / package_name
@@ -84,19 +84,21 @@ def metadata_path(data_root: Path, package_name: str) -> Path:
     )
 
 
-def check_directory(name: str, path: Path, *, missing_tip: str = "") -> DataLayoutCheck:
+def _check_directory(
+    name: str, path: Path, *, missing_tip: str = ""
+) -> DataLayoutCheck:
     if path.is_dir():
         return DataLayoutCheck(name, "found", "ready", path)
     return DataLayoutCheck(name, "missing", "not found", path, missing_tip)
 
 
-def check_file(name: str, path: Path, *, missing_tip: str = "") -> DataLayoutCheck:
+def _check_file(name: str, path: Path, *, missing_tip: str = "") -> DataLayoutCheck:
     if path.is_file():
         return DataLayoutCheck(name, "found", "available", path)
     return DataLayoutCheck(name, "missing", "not found", path, missing_tip)
 
 
-def check_variable_metadata(name: str, path: Path) -> DataLayoutCheck:
+def _check_variable_metadata(name: str, path: Path) -> DataLayoutCheck:
     tip = (
         "Expected variable-labels.json here. Download the 2016 PUMF metadata "
         "package or pass --data-root PATH."

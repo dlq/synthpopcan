@@ -135,7 +135,7 @@ def test_cli_microdata_inspect_requires_fixture_level(tmp_path) -> None:
     source = tmp_path / "people.csv"
     source.write_text("age_group,sex\nadult,F\n")
 
-    with pytest.raises(ClickException, match="fixture-v1 requires --level"):
+    with pytest.raises(ClickException, match="--level household or --level person"):
         main(["microdata", "inspect", str(source), "--input-format", "fixture-v1"])
 
     with pytest.raises(ClickException, match="missing required columns: weight"):
@@ -406,7 +406,7 @@ def test_cli_exports_fixture_seed_as_table_and_requires_level(tmp_path, capsys) 
     )
     assert "Seed Export Summary" in capsys.readouterr().out
 
-    with pytest.raises(ClickException, match="fixture-v1 requires --level"):
+    with pytest.raises(ClickException, match="--level household or --level person"):
         main(
             [
                 "microdata",
@@ -1495,7 +1495,7 @@ def test_fixture_inspection_still_requires_level(tmp_path) -> None:
     source = tmp_path / "people.csv"
     source.write_text("person_id,age_group\np1,adult\n")
 
-    with pytest.raises(ClickException, match="fixture-v1 requires --level"):
+    with pytest.raises(ClickException, match="--level household or --level person"):
         main(
             [
                 "microdata",

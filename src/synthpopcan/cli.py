@@ -14,6 +14,7 @@ from synthpopcan import __version__
 from synthpopcan.cli_ipf import ipf, read_population_artifact
 from synthpopcan.cli_microdata import microdata
 from synthpopcan.cli_output import (
+    format_file_access_error,
     format_report_number,
     print_census_profile_characteristics_table,
     print_tree_output_validation_report_table,
@@ -44,8 +45,8 @@ from synthpopcan.controls import (
 )
 from synthpopcan.localdata import inspect_local_data_layout
 from synthpopcan.sources import (
+    _is_private_path,
     inspect_source_root,
-    is_private_path,
     read_source_sample,
     read_source_schema,
 )
@@ -63,7 +64,7 @@ from synthpopcan.validation import (
 )
 from synthpopcan.webapp import serve_webapp
 
-PATH = click.Path(path_type=Path)
+_PATH = click.Path(path_type=Path)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -160,8 +161,8 @@ def print_workflow_choice_guide() -> None:
 def print_ipf_workflow_guide() -> None:
     table = Table(title="IPF from Margin Tables")
     table.add_column("Step", justify="right", no_wrap=True)
-    table.add_column("Web App Label", no_wrap=True)
-    table.add_column("CLI Command")
+    table.add_column("Setup Path", no_wrap=True)
+    table.add_column("Command or Next Step")
     table.add_row(
         "1",
         "Use a demo or make templates",
@@ -210,8 +211,8 @@ def print_ipf_workflow_guide() -> None:
 def print_model_workflow_guide() -> None:
     table = Table(title="Generate from Existing Model")
     table.add_column("Step", justify="right", no_wrap=True)
-    table.add_column("Web App Label", no_wrap=True)
-    table.add_column("CLI Command")
+    table.add_column("Setup Path", no_wrap=True)
+    table.add_column("Command or Next Step")
     table.add_row(
         "1",
         "Use premade model",
@@ -252,14 +253,14 @@ def validate() -> None:
     "--population",
     "population_path",
     required=True,
-    type=PATH,
+    type=_PATH,
     help="Weights or expanded synthetic population CSV.",
 )
 @click.option(
     "--controls",
     "controls_path",
     required=True,
-    type=PATH,
+    type=_PATH,
     help="Normalized controls CSV.",
 )
 @click.option(
@@ -306,6 +307,10 @@ def validate_controls_output(
             tolerance=tolerance,
             artifact_kind=artifact_kind,
         )
+    except OSError as exc:
+        raise click.ClickException(
+            format_file_access_error(exc.filename or controls_path, "read", exc)
+        ) from exc
     except ValueError as exc:
         raise click.ClickException(str(exc)) from exc
 
@@ -326,14 +331,14 @@ def validate_controls_output(
     "--households",
     "households_path",
     required=True,
-    type=PATH,
+    type=_PATH,
     help="Generated household CSV.",
 )
 @click.option(
     "--persons",
     "persons_path",
     required=True,
-    type=PATH,
+    type=_PATH,
     help="Generated person CSV.",
 )
 @click.option(
@@ -378,6 +383,10 @@ def validate_linked_output(
             person_household_id_column=person_household_id_column,
             household_size_column=household_size_column,
         )
+    except OSError as exc:
+        raise click.ClickException(
+            format_file_access_error(exc.filename or households_path, "read", exc)
+        ) from exc
     except ValueError as exc:
         raise click.ClickException(str(exc)) from exc
 
@@ -394,14 +403,14 @@ def validate_linked_output(
     "--generated",
     "generated_path",
     required=True,
-    type=PATH,
+    type=_PATH,
     help="Generated synthetic rows CSV.",
 )
 @click.option(
     "--training",
     "training_path",
     required=True,
-    type=PATH,
+    type=_PATH,
     help="Training view CSV used to train the tree model.",
 )
 @click.option(
@@ -446,6 +455,10 @@ def validate_tree_output(
             weight_field=weight_field,
             tolerance=tolerance,
         )
+    except OSError as exc:
+        raise click.ClickException(
+            format_file_access_error(exc.filename or training_path, "read", exc)
+        ) from exc
     except ValueError as exc:
         raise click.ClickException(str(exc)) from exc
 
@@ -469,7 +482,7 @@ def data_group() -> None:
 @data_group.command("doctor")
 @click.option(
     "--data-root",
-    type=PATH,
+    type=_PATH,
     default=None,
     help=(
         "Local data directory to check. Defaults to SYNTHPOPCAN_DATA_ROOT, then data/."
@@ -497,6 +510,8 @@ def data_doctor(data_root: Path, output_format: str) -> None:
 
 
 def resolve_data_root(data_root: Path | None) -> Path:
+    """Resolve the data root from CLI option, environment, or local default."""
+
     if data_root is not None:
         return data_root
     env_value = os.environ.get("SYNTHPOPCAN_DATA_ROOT")
@@ -506,11 +521,15 @@ def resolve_data_root(data_root: Path | None) -> Path:
 
 
 def read_csv(path: Path) -> list[dict[str, str]]:
+    """Read a CSV file as string-valued dictionaries for validation commands."""
+
     with path.open(newline="") as handle:
         return list(csv.DictReader(handle))
 
 
 def parse_column_list(value: str, label: str) -> tuple[str, ...]:
+    """Parse a required comma-separated column list for Click callbacks."""
+
     columns = tuple(part.strip() for part in value.split(",") if part.strip())
     if not columns:
         raise click.ClickException(f"at least one {label} value is required")
@@ -518,6 +537,8 @@ def parse_column_list(value: str, label: str) -> tuple[str, ...]:
 
 
 def parse_optional_column_list(value: str) -> tuple[str, ...]:
+    """Parse an optional comma-separated column list for Click callbacks."""
+
     return tuple(part.strip() for part in value.split(",") if part.strip())
 
 
@@ -527,7 +548,7 @@ def sources() -> None:
 
 
 @sources.command("inspect")
-@click.argument("root", type=PATH)
+@click.argument("root", type=_PATH)
 @click.option(
     "--format",
     "output_format",
@@ -537,11 +558,14 @@ def sources() -> None:
 )
 def inspect_sources(root: Path, output_format: str) -> None:
     """Summarize files under a local source root."""
-    write_output(inspect_source_root(root), output_format)
+    try:
+        write_output(inspect_source_root(root), output_format)
+    except OSError as exc:
+        raise click.ClickException(format_file_access_error(root, "read", exc)) from exc
 
 
 @sources.command("schema")
-@click.argument("path", type=PATH)
+@click.argument("path", type=_PATH)
 @click.option(
     "--format",
     "output_format",
@@ -551,11 +575,14 @@ def inspect_sources(root: Path, output_format: str) -> None:
 )
 def inspect_source_schema(path: Path, output_format: str) -> None:
     """Inspect source file columns without printing rows."""
-    write_output(read_source_schema(path), output_format)
+    try:
+        write_output(read_source_schema(path), output_format)
+    except OSError as exc:
+        raise click.ClickException(format_file_access_error(path, "read", exc)) from exc
 
 
 @sources.command("sample")
-@click.argument("path", type=PATH)
+@click.argument("path", type=_PATH)
 @click.option("--rows", default=5, type=int, show_default=True)
 @click.option("--allow-private", is_flag=True, help="Allow sampling private paths.")
 @click.option(
@@ -569,10 +596,15 @@ def sample_source(
     path: Path, rows: int, allow_private: bool, output_format: str
 ) -> None:
     """Print a small source file sample."""
-    if is_private_path(path) and not allow_private:
-        raise click.ClickException("sampling private data requires --allow-private")
+    if _is_private_path(path) and not allow_private:
+        raise click.ClickException(
+            "Refusing to print rows from a private data path. "
+            "Pass --allow-private if you understand the data sensitivity."
+        )
     try:
         write_output(read_source_sample(path, rows), output_format)
+    except OSError as exc:
+        raise click.ClickException(format_file_access_error(path, "read", exc)) from exc
     except ValueError as exc:
         raise click.ClickException(str(exc)) from exc
 
@@ -593,30 +625,42 @@ def wds_controls() -> None:
 
 
 @controls.command("validate")
-@click.argument("path", type=PATH)
+@click.argument("path", type=_PATH)
 def validate_controls(path: Path) -> None:
     """Validate a normalized long control CSV."""
-    read_control_margins(path)
+    try:
+        read_control_margins(path)
+    except OSError as exc:
+        raise click.ClickException(format_file_access_error(path, "read", exc)) from exc
+    except ValueError as exc:
+        raise click.ClickException(str(exc)) from exc
 
 
 @controls.command("from-csv")
-@click.argument("source", type=PATH)
+@click.argument("source", type=_PATH)
 @click.option(
     "--out",
     "out_path",
     required=True,
-    type=PATH,
+    type=_PATH,
     help="Output normalized controls CSV.",
 )
 def normalize_controls_from_csv(source: Path, out_path: Path) -> None:
     """Normalize a local long control CSV."""
-    table = read_control_table(source)
-    write_control_table(out_path, table)
+    try:
+        table = read_control_table(source)
+        write_control_table(out_path, table)
+    except OSError as exc:
+        raise click.ClickException(
+            format_file_access_error(exc.filename or source, "access", exc)
+        ) from exc
+    except ValueError as exc:
+        raise click.ClickException(str(exc)) from exc
     print_wrote(out_path)
 
 
 @controls.command("from-wds")
-@click.argument("source", type=PATH)
+@click.argument("source", type=_PATH)
 @click.option(
     "--dimensions",
     required=True,
@@ -630,13 +674,13 @@ def normalize_controls_from_csv(source: Path, out_path: Path) -> None:
     help="Name for the generated control margin.",
 )
 @click.option(
-    "--mapping", "mapping_path", type=PATH, help="Optional category mapping JSON."
+    "--mapping", "mapping_path", type=_PATH, help="Optional category mapping JSON."
 )
 @click.option(
     "--out",
     "out_path",
     required=True,
-    type=PATH,
+    type=_PATH,
     help="Output normalized controls CSV.",
 )
 def normalize_controls_from_wds(
@@ -658,13 +702,19 @@ def normalize_controls_from_wds(
             if mapping_path
             else None,
         )
+        write_control_table(out_path, table)
+    except OSError as exc:
+        raise click.ClickException(
+            format_file_access_error(exc.filename or source, "access", exc)
+        ) from exc
     except ValueError as exc:
         raise click.ClickException(format_wds_control_error(exc, source)) from exc
-    write_control_table(out_path, table)
     print_wrote(out_path)
 
 
 def format_wds_control_error(exc: ValueError, source: Path) -> str:
+    """Attach actionable WDS normalization next steps to common errors."""
+
     message = str(exc)
     if "unmapped category" in message:
         return (
@@ -684,7 +734,7 @@ def format_wds_control_error(exc: ValueError, source: Path) -> str:
 
 
 @wds_controls.command("inspect")
-@click.argument("source", type=PATH)
+@click.argument("source", type=_PATH)
 @click.option("--sample-rows", default=5, type=int, show_default=True)
 @click.option(
     "--format",
@@ -697,6 +747,10 @@ def inspect_wds_controls(source: Path, sample_rows: int, output_format: str) -> 
     """Inspect a local StatCan WDS ZIP and suggest a controls command."""
     try:
         report = inspect_wds_zip(source, sample_rows=sample_rows)
+    except OSError as exc:
+        raise click.ClickException(
+            format_file_access_error(source, "read", exc)
+        ) from exc
     except ValueError as exc:
         raise click.ClickException(str(exc)) from exc
     if output_format == "json":
@@ -706,7 +760,7 @@ def inspect_wds_controls(source: Path, sample_rows: int, output_format: str) -> 
 
 
 @wds_controls.command("mapping-template")
-@click.argument("source", type=PATH)
+@click.argument("source", type=_PATH)
 @click.option(
     "--dimensions",
     required=True,
@@ -719,7 +773,7 @@ def inspect_wds_controls(source: Path, sample_rows: int, output_format: str) -> 
     show_default=True,
     help="Optionally prefill common StatCan labels.",
 )
-@click.option("--out", "out_path", required=True, type=PATH)
+@click.option("--out", "out_path", required=True, type=_PATH)
 def write_wds_mapping_template(
     source: Path,
     dimensions: str,
@@ -733,26 +787,30 @@ def write_wds_mapping_template(
             dimensions=parse_columns(dimensions),
             preset=preset,
         )
+        out_path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n")
+    except OSError as exc:
+        raise click.ClickException(
+            format_file_access_error(exc.filename or source, "access", exc)
+        ) from exc
     except ValueError as exc:
         raise click.ClickException(str(exc)) from exc
-    out_path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n")
     print_wrote(out_path)
 
 
 @controls.command("from-census-profile")
-@click.argument("source", type=PATH)
+@click.argument("source", type=_PATH)
 @click.option(
     "--mapping",
     "mapping_path",
     required=True,
-    type=PATH,
+    type=_PATH,
     help="JSON mapping from Census Profile rows to control categories.",
 )
 @click.option(
     "--out",
     "out_path",
     required=True,
-    type=PATH,
+    type=_PATH,
     help="Output normalized controls CSV.",
 )
 def normalize_controls_from_census_profile(
@@ -763,14 +821,18 @@ def normalize_controls_from_census_profile(
     """Normalize a local StatCan Census Profile CSV."""
     try:
         table = read_census_profile_control_table(source, mapping_path)
+        write_control_table(out_path, table)
+    except OSError as exc:
+        raise click.ClickException(
+            format_file_access_error(exc.filename or source, "access", exc)
+        ) from exc
     except ValueError as exc:
         raise click.ClickException(str(exc)) from exc
-    write_control_table(out_path, table)
     print_wrote(out_path)
 
 
 @census_profile_controls.command("inspect")
-@click.argument("source", type=PATH)
+@click.argument("source", type=_PATH)
 @click.option(
     "--characteristic-column",
     default="CHARACTERISTIC_NAME",
@@ -809,6 +871,10 @@ def inspect_census_profile_controls(
             search=search,
             limit=limit,
         )
+    except OSError as exc:
+        raise click.ClickException(
+            format_file_access_error(source, "read", exc)
+        ) from exc
     except ValueError as exc:
         raise click.ClickException(str(exc)) from exc
     if output_format == "json":
@@ -843,7 +909,7 @@ def inspect_census_profile_controls(
     show_default=True,
     help="Census Profile count column.",
 )
-@click.option("--out", "out_path", required=True, type=PATH)
+@click.option("--out", "out_path", required=True, type=_PATH)
 def write_census_profile_template(
     name: str,
     geo_column: str,
@@ -861,9 +927,13 @@ def write_census_profile_template(
             characteristic_column=characteristic_column,
             count_column=count_column,
         )
+        out_path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n")
+    except OSError as exc:
+        raise click.ClickException(
+            format_file_access_error(out_path, "write", exc)
+        ) from exc
     except ValueError as exc:
         raise click.ClickException(str(exc)) from exc
-    out_path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n")
     print_wrote(out_path)
 
 
@@ -882,10 +952,17 @@ def wds() -> None:
 @click.option(
     "--lang", default="en", type=click.Choice(["en", "fr"]), show_default=True
 )
-@click.option("--out-dir", required=True, type=PATH)
+@click.option("--out-dir", required=True, type=_PATH)
 def run_statcan_wds_fetch(product_id: str, out_dir: Path, lang: str) -> None:
     """Download a full WDS table CSV ZIP by product ID."""
-    print_wrote(fetch_wds_table(product_id, out_dir, lang))
+    try:
+        print_wrote(fetch_wds_table(product_id, out_dir, lang))
+    except OSError as exc:
+        raise click.ClickException(
+            format_file_access_error(out_dir, "write to", exc)
+        ) from exc
+    except ValueError as exc:
+        raise click.ClickException(str(exc)) from exc
 
 
 @wds.command("search")
@@ -901,24 +978,36 @@ def run_statcan_wds_fetch(product_id: str, out_dir: Path, lang: str) -> None:
 )
 def run_statcan_wds_search(query: str, limit: int, output_format: str) -> None:
     """Search the WDS table inventory."""
-    write_wds_search_results(
-        search_wds_tables_for_cli(query, limit),
-        output_format,
-    )
+    try:
+        rows = search_wds_tables_for_cli(query, limit)
+    except OSError as exc:
+        raise click.ClickException(f"Could not search StatCan WDS: {exc}") from exc
+    except ValueError as exc:
+        raise click.ClickException(str(exc)) from exc
+    write_wds_search_results(rows, output_format)
 
 
 @wds.command("metadata")
 @click.argument("product_id")
-@click.option("--out", "out_path", type=PATH, help="Optional JSON output path.")
+@click.option("--out", "out_path", type=_PATH, help="Optional JSON output path.")
 def run_statcan_wds_metadata(product_id: str, out_path: Path | None) -> None:
     """Fetch WDS cube metadata by product ID."""
-    metadata = fetch_wds_metadata(product_id)
-    payload = json.dumps(metadata, indent=2, sort_keys=True) + "\n"
-    if out_path:
-        out_path.write_text(payload)
-        print_wrote(out_path)
-    else:
-        print(payload, end="")
+    try:
+        metadata = fetch_wds_metadata(product_id)
+        payload = json.dumps(metadata, indent=2, sort_keys=True) + "\n"
+        if out_path:
+            out_path.write_text(payload)
+            print_wrote(out_path)
+        else:
+            print(payload, end="")
+    except OSError as exc:
+        action = "write" if out_path else "fetch"
+        target = out_path if out_path else f"StatCan WDS metadata for {product_id}"
+        raise click.ClickException(
+            format_file_access_error(target, action, exc)
+        ) from exc
+    except ValueError as exc:
+        raise click.ClickException(str(exc)) from exc
 
 
 @wds.command("explain")
@@ -934,6 +1023,10 @@ def run_statcan_wds_explain(product_id: str, output_format: str) -> None:
     """Explain a WDS table and show next IPF-control commands."""
     try:
         summary = summarize_wds_metadata(fetch_wds_metadata(product_id))
+    except OSError as exc:
+        raise click.ClickException(
+            f"Could not fetch StatCan WDS metadata for {product_id}: {exc}"
+        ) from exc
     except ValueError as exc:
         raise click.ClickException(str(exc)) from exc
     if output_format == "json":
@@ -950,12 +1043,21 @@ def census_profile() -> None:
 @census_profile.command("fetch")
 @click.option("--year", required=True, type=click.Choice(["2016"]))
 @click.option("--geo-level", required=True)
-@click.option("--out-dir", required=True, type=PATH)
+@click.option("--out-dir", required=True, type=_PATH)
 def run_statcan_census_profile_fetch(year: str, geo_level: str, out_dir: Path) -> None:
     """Download a known Census Profile bulk CSV."""
     if year != "2016":
-        raise ValueError("only the 2016 Census Profile registry is currently supported")
-    print_wrote(fetch_census_profile_2016(geo_level, out_dir))
+        raise click.ClickException(
+            "Only the 2016 Census Profile registry is currently supported."
+        )
+    try:
+        print_wrote(fetch_census_profile_2016(geo_level, out_dir))
+    except ValueError as exc:
+        raise click.ClickException(str(exc)) from exc
+    except OSError as exc:
+        raise click.ClickException(
+            format_file_access_error(out_dir, "write to", exc)
+        ) from exc
 
 
 def search_wds_tables_for_cli(query: str, limit: int) -> list[dict[str, str]]:

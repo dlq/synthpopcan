@@ -9,10 +9,44 @@ from rich.table import Table
 
 from synthpopcan.console import print_summary_table, print_table
 
+__all__ = [
+    "format_file_access_error",
+    "format_fit_value_error",
+    "format_nonconvergence_message",
+    "format_report_number",
+    "format_report_percent",
+    "print_census_profile_characteristics_table",
+    "print_ipf_control_suggestions_table",
+    "print_ipf_input_check_table",
+    "print_ipf_report_table",
+    "print_seed_check_table",
+    "print_tree_column_suggestions_table",
+    "print_tree_geography_feasibility_table",
+    "print_tree_output_validation_report_table",
+    "print_validation_report_table",
+    "print_wds_inspection_table",
+    "print_wds_metadata_explanation_table",
+    "write_output",
+    "write_wds_search_results",
+]
+
+
+def format_file_access_error(path: object, action: str, exc: OSError) -> str:
+    """Build a friendly CLI message for input/output file access failures."""
+
+    reason = getattr(exc, "strerror", None) or str(exc)
+    return (
+        f"Could not {action} {path}: {reason}. "
+        "Check that the path is correct and that SynthPopCan has permission "
+        "to access it."
+    )
+
 
 def write_output(
     payload: object, output_format: str, *, title: str | None = None
 ) -> None:
+    """Write a JSON payload or render a compact human-readable table."""
+
     if output_format == "json":
         print(json.dumps(payload, indent=2, sort_keys=True))
         return
@@ -23,16 +57,20 @@ def write_output(
 
 
 def write_wds_search_results(rows: list[dict[str, str]], output_format: str) -> None:
+    """Render WDS search results in table, TSV, or JSON form."""
+
     if output_format == "json":
         print(json.dumps(rows, indent=2, sort_keys=True))
         return
     if output_format == "tsv":
-        write_wds_search_tsv(rows)
+        _write_wds_search_tsv(rows)
         return
-    write_wds_search_table(rows)
+    _write_wds_search_table(rows)
 
 
-def write_wds_search_tsv(rows: list[dict[str, str]]) -> None:
+def _write_wds_search_tsv(rows: list[dict[str, str]]) -> None:
+    """Write WDS search rows as a script-friendly tab-separated table."""
+
     fieldnames = ["product_id", "cansim_id", "start_date", "end_date", "title_en"]
     writer = csv.DictWriter(
         _StdoutWriter(),
@@ -45,7 +83,9 @@ def write_wds_search_tsv(rows: list[dict[str, str]]) -> None:
     writer.writerows(rows)
 
 
-def write_wds_search_table(rows: list[dict[str, str]]) -> None:
+def _write_wds_search_table(rows: list[dict[str, str]]) -> None:
+    """Render WDS search rows as a readable terminal table."""
+
     table = Table(title="StatCan WDS Tables")
     table.add_column("Product ID", no_wrap=True)
     table.add_column("CANSIM ID", no_wrap=True)
@@ -56,7 +96,7 @@ def write_wds_search_table(rows: list[dict[str, str]]) -> None:
         table.add_row(
             row.get("product_id", ""),
             row.get("cansim_id", ""),
-            format_date_range(row.get("start_date", ""), row.get("end_date", "")),
+            _format_date_range(row.get("start_date", ""), row.get("end_date", "")),
             row.get("title_en", ""),
         )
 
@@ -64,6 +104,8 @@ def write_wds_search_table(rows: list[dict[str, str]]) -> None:
 
 
 def print_wds_metadata_explanation_table(summary: dict[str, object]) -> None:
+    """Render a WDS product summary with dimension previews and next commands."""
+
     print_summary_table(
         {
             "product_id": summary.get("product_id", ""),
@@ -71,13 +113,15 @@ def print_wds_metadata_explanation_table(summary: dict[str, object]) -> None:
             "dimensions": ", ".join(
                 str(value) for value in summary.get("dimensions", [])
             ),
-            "suitability": wds_suitability_label(summary.get("ipf_suitability", {})),
+            "suitability": _wds_suitability_label(
+                summary.get("ipf_suitability", {})
+            ),
             "ipf_hint": summary.get("ipf_hint", ""),
         },
         title="StatCan WDS Table",
     )
 
-    print_wds_dimension_preview_table(summary.get("dimension_previews", []))
+    _print_wds_dimension_preview_table(summary.get("dimension_previews", []))
 
     table = Table(title="Next Commands")
     table.add_column("Step", justify="right", no_wrap=True)
@@ -87,7 +131,9 @@ def print_wds_metadata_explanation_table(summary: dict[str, object]) -> None:
     print_table(table)
 
 
-def wds_suitability_label(value: object) -> str:
+def _wds_suitability_label(value: object) -> str:
+    """Convert a WDS suitability status object into a short user-facing label."""
+
     if not isinstance(value, dict):
         return ""
     status = value.get("status")
@@ -100,7 +146,9 @@ def wds_suitability_label(value: object) -> str:
     return str(status or "")
 
 
-def print_wds_dimension_preview_table(previews: object) -> None:
+def _print_wds_dimension_preview_table(previews: object) -> None:
+    """Render short member previews for each WDS dimension when available."""
+
     if not isinstance(previews, list) or not previews:
         return
 
@@ -128,6 +176,8 @@ def print_wds_dimension_preview_table(previews: object) -> None:
 
 
 def print_census_profile_characteristics_table(rows: list[dict[str, str]]) -> None:
+    """Render Census Profile characteristic counts for mapping inspection."""
+
     table = Table(title="Census Profile Characteristics")
     table.add_column("Characteristic")
     table.add_column("Example Count", justify="right")
@@ -142,6 +192,8 @@ def print_census_profile_characteristics_table(rows: list[dict[str, str]]) -> No
 
 
 def print_wds_inspection_table(report: dict[str, object]) -> None:
+    """Render local WDS ZIP inspection results and starter normalization hints."""
+
     print_summary_table(
         {
             "csv_member": report.get("csv_member", ""),
@@ -166,6 +218,8 @@ def print_wds_inspection_table(report: dict[str, object]) -> None:
 
 
 def print_tree_column_suggestions_table(report: dict[str, object]) -> None:
+    """Render suggested household/person column blocks for tree workflows."""
+
     table = Table(title="Tree Column Suggestions")
     table.add_column("Block")
     table.add_column("Level")
@@ -198,6 +252,8 @@ def print_tree_column_suggestions_table(report: dict[str, object]) -> None:
 
 
 def print_tree_geography_feasibility_table(report: dict[str, object]) -> None:
+    """Render geography-level model-design feasibility advice."""
+
     print_summary_table(
         {
             "source_format": report.get("source_format", ""),
@@ -230,14 +286,16 @@ def print_tree_geography_feasibility_table(report: dict[str, object]) -> None:
             format_report_number(region.get("household_rows")),
             format_report_number(region.get("person_min_support")),
             format_report_percent(region.get("person_max_purity")),
-            first_model_design_move(model_design),
+            _first_model_design_move(model_design),
             str(model_design.get("aggregation_hint", "")),
         )
 
     print_table(table)
 
 
-def first_model_design_move(model_design: dict[str, object]) -> str:
+def _first_model_design_move(model_design: dict[str, object]) -> str:
+    """Return the first actionable model-design move from an advisor payload."""
+
     strategy = str(model_design.get("block_strategy", ""))
     if strategy == "use_requested_blocks":
         return "train and audit requested blocks"
@@ -249,6 +307,8 @@ def first_model_design_move(model_design: dict[str, object]) -> str:
 
 
 def print_ipf_report_table(report: dict[str, object]) -> None:
+    """Render an IPF fit report with summary, issues, next steps, and margins."""
+
     table = Table(title="IPF Fit Report")
     table.add_column("Margin")
     table.add_column("Dimensions")
@@ -280,12 +340,14 @@ def print_ipf_report_table(report: dict[str, object]) -> None:
         },
         title="IPF Fit Summary",
     )
-    print_issues_table(report.get("issues", []), title="Fit Issues")
-    print_next_steps_table(report.get("suggested_next_steps", []))
+    _print_issues_table(report.get("issues", []), title="Fit Issues")
+    _print_next_steps_table(report.get("suggested_next_steps", []))
     print_table(table)
 
 
 def print_ipf_input_check_table(report: dict[str, object]) -> None:
+    """Render seed/control compatibility checks before fitting IPF."""
+
     print_summary_table(
         {
             "status": "Passed" if report.get("passed") else "Needs attention",
@@ -320,10 +382,12 @@ def print_ipf_input_check_table(report: dict[str, object]) -> None:
             str(row.get("detail", "")),
         )
     print_table(table)
-    print_next_steps_table(report.get("suggested_next_steps", []))
+    _print_next_steps_table(report.get("suggested_next_steps", []))
 
 
 def print_ipf_control_suggestions_table(report: dict[str, object]) -> None:
+    """Render suggested StatCan control directions for generated or seed rows."""
+
     print_summary_table(
         {
             "unit": report.get("unit", ""),
@@ -338,35 +402,46 @@ def print_ipf_control_suggestions_table(report: dict[str, object]) -> None:
 
     table = Table(title="IPF Control Suggestions")
     table.add_column("Column", no_wrap=True)
-    table.add_column("Status", no_wrap=True)
-    table.add_column("Role")
-    table.add_column("StatCan Search")
-    table.add_column("Reason")
+    table.add_column("Decision", no_wrap=True)
+    table.add_column("Search Terms")
+    table.add_column("Why It Matters")
     for row in report.get("usable_controls", []):
         if not isinstance(row, dict):
             continue
         table.add_row(
             str(row.get("column", "")),
-            "usable if categories match",
-            str(row.get("role", "")),
+            "Use now",
             str(row.get("statcan_search", "")),
-            str(row.get("reason", "")),
+            _control_suggestion_note(row, "Review categories before IPF."),
         )
     for row in report.get("enrichment_candidates", []):
         if not isinstance(row, dict):
             continue
         table.add_row(
             str(row.get("column", "")),
-            "needs enrichment/modeling",
-            str(row.get("role", "")),
+            "Add first",
             str(row.get("statcan_search", "")),
-            str(row.get("reason", "")),
+            _control_suggestion_note(row, "Add this column before IPF."),
         )
     print_table(table)
-    print_next_steps_table(report.get("next_commands", []))
+    _print_next_steps_table(report.get("next_commands", []))
+
+
+def _control_suggestion_note(row: dict[str, object], default_next_step: str) -> str:
+    """Combine the role and reason into one readable control-suggestion note."""
+
+    role = str(row.get("role", "")).strip()
+    reason = str(row.get("reason", "")).strip()
+    if role and reason:
+        return f"{role}: {reason} {default_next_step}"
+    if reason:
+        return f"{reason} {default_next_step}"
+    return default_next_step
 
 
 def print_validation_report_table(report: dict[str, object]) -> None:
+    """Render control-validation results for weighted or expanded populations."""
+
     table = Table(title="Control Validation")
     table.add_column("Margin")
     table.add_column("Dimensions")
@@ -399,11 +474,13 @@ def print_validation_report_table(report: dict[str, object]) -> None:
         },
         title="Validation Summary",
     )
-    print_issues_table(report.get("issues", []), title="Validation Issues")
+    _print_issues_table(report.get("issues", []), title="Validation Issues")
     print_table(table)
 
 
 def print_tree_output_validation_report_table(report: dict[str, object]) -> None:
+    """Render generated tree-output distribution checks against training rows."""
+
     table = Table(title="Tree Output Distribution Check")
     table.add_column("Dimensions")
     table.add_column("Cells", justify="right")
@@ -433,11 +510,13 @@ def print_tree_output_validation_report_table(report: dict[str, object]) -> None
         },
         title="Tree Output Validation Summary",
     )
-    print_issues_table(report.get("issues", []), title="Tree Output Issues")
+    _print_issues_table(report.get("issues", []), title="Tree Output Issues")
     print_table(table)
 
 
 def print_seed_check_table(report: dict[str, object]) -> None:
+    """Render microdata seed-column checks for household-level exports."""
+
     print_summary_table(
         {
             "status": "Passed" if report.get("passed") else "Needs attention",
@@ -470,7 +549,9 @@ def print_seed_check_table(report: dict[str, object]) -> None:
     print_table(table)
 
 
-def print_issues_table(issues: object, *, title: str) -> None:
+def _print_issues_table(issues: object, *, title: str) -> None:
+    """Render issue dictionaries when a report includes problems or warnings."""
+
     if not isinstance(issues, list) or not issues:
         return
     table = Table(title=title)
@@ -490,7 +571,9 @@ def print_issues_table(issues: object, *, title: str) -> None:
     print_table(table)
 
 
-def print_next_steps_table(steps: object) -> None:
+def _print_next_steps_table(steps: object) -> None:
+    """Render plain-language next steps when a report can suggest them."""
+
     if not isinstance(steps, list) or not steps:
         return
     table = Table(title="Next Steps")
@@ -501,18 +584,22 @@ def print_next_steps_table(steps: object) -> None:
 
 
 def format_nonconvergence_message(report: dict[str, object]) -> str:
+    """Build the terminal error shown when IPF stops before convergence."""
+
     message = (
         "IPF did not converge "
         f"after {format_report_number(report.get('iterations'))} iterations; "
         f"max absolute error is {format_report_number(report.get('max_abs_error'))}."
     )
-    issue = first_report_issue(report)
+    issue = _first_report_issue(report)
     if issue is not None:
         message = f"{message} {issue.get('message', '')} {issue.get('tip', '')}"
     return f"{message} Use --allow-nonconverged to write the fitted weights anyway."
 
 
-def first_report_issue(report: dict[str, object]) -> dict[str, object] | None:
+def _first_report_issue(report: dict[str, object]) -> dict[str, object] | None:
+    """Return the first structured issue from a report, if one exists."""
+
     issues = report.get("issues", [])
     if not isinstance(issues, list) or not issues:
         return None
@@ -521,6 +608,8 @@ def first_report_issue(report: dict[str, object]) -> dict[str, object] | None:
 
 
 def format_fit_value_error(exc: ValueError) -> str:
+    """Add modelling context to common low-level IPF fit errors."""
+
     message = str(exc)
     if "has no seed records" in message:
         return (
@@ -532,6 +621,8 @@ def format_fit_value_error(exc: ValueError) -> str:
 
 
 def format_report_number(value: object) -> str:
+    """Format report numbers with commas and compact floating-point output."""
+
     if isinstance(value, int):
         return f"{value:,}"
     if isinstance(value, float):
@@ -543,6 +634,8 @@ def format_report_number(value: object) -> str:
 
 
 def format_report_percent(value: object) -> str:
+    """Format a proportion as a compact percentage for report tables."""
+
     if not isinstance(value, int | float):
         return ""
     if value == float("inf"):
@@ -550,7 +643,9 @@ def format_report_percent(value: object) -> str:
     return f"{value * 100:.6g}%"
 
 
-def format_date_range(start_date: str, end_date: str) -> str:
+def _format_date_range(start_date: str, end_date: str) -> str:
+    """Format WDS start/end timestamps as a compact date range."""
+
     start = start_date[:10]
     end = end_date[:10]
     if start and start == end:

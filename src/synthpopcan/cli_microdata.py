@@ -9,6 +9,7 @@ from pathlib import Path
 import click
 
 from synthpopcan.cli_output import (
+    format_file_access_error,
     print_seed_check_table,
     print_tree_column_suggestions_table,
     print_tree_geography_feasibility_table,
@@ -26,7 +27,7 @@ from synthpopcan.microdata import (
     suggest_tree_column_blocks,
 )
 
-PATH = click.Path(path_type=Path)
+_PATH = click.Path(path_type=Path)
 
 
 @click.group(name="microdata")
@@ -35,7 +36,7 @@ def microdata() -> None:
 
 
 @microdata.command("inspect")
-@click.argument("path", type=PATH)
+@click.argument("path", type=_PATH)
 @click.option(
     "--input-format",
     "source_format",
@@ -77,7 +78,10 @@ def inspect_microdata(
     try:
         if source_format == "fixture-v1":
             if level is None:
-                raise click.ClickException("fixture-v1 requires --level")
+                raise click.ClickException(
+                    "When --input-format fixture-v1 is used, pass "
+                    "--level household or --level person."
+                )
             sample = read_fixture_seed_sample(
                 path,
                 level=level,
@@ -87,13 +91,15 @@ def inspect_microdata(
             )
         else:
             sample = read_statcan_2016_hierarchical_seed_sample(path)
+    except OSError as exc:
+        raise click.ClickException(format_file_access_error(path, "read", exc)) from exc
     except ValueError as exc:
         raise click.ClickException(str(exc)) from exc
     write_output(sample.as_summary(), output_format, title="Microdata Summary")
 
 
 @microdata.command("check-seed")
-@click.argument("path", type=PATH)
+@click.argument("path", type=_PATH)
 @click.option(
     "--input-format",
     "source_format",
@@ -135,6 +141,8 @@ def check_microdata_seed(
             sample,
             columns=selected_columns,
         )
+    except OSError as exc:
+        raise click.ClickException(format_file_access_error(path, "read", exc)) from exc
     except ValueError as exc:
         raise click.ClickException(str(exc)) from exc
 
@@ -145,7 +153,7 @@ def check_microdata_seed(
 
 
 @microdata.command("suggest-tree-columns")
-@click.argument("path", type=PATH)
+@click.argument("path", type=_PATH)
 @click.option(
     "--input-format",
     "source_format",
@@ -170,6 +178,8 @@ def suggest_microdata_tree_columns(
     try:
         sample = read_statcan_2016_hierarchical_seed_sample(path)
         report = suggest_tree_column_blocks(sample)
+    except OSError as exc:
+        raise click.ClickException(format_file_access_error(path, "read", exc)) from exc
     except ValueError as exc:
         raise click.ClickException(str(exc)) from exc
 
@@ -180,7 +190,7 @@ def suggest_microdata_tree_columns(
 
 
 @microdata.command("tree-geography-feasibility")
-@click.argument("path", type=PATH)
+@click.argument("path", type=_PATH)
 @click.option(
     "--input-format",
     "source_format",
@@ -285,6 +295,8 @@ def tree_geography_feasibility(
             min_support=min_support,
             max_purity=max_purity,
         )
+    except OSError as exc:
+        raise click.ClickException(format_file_access_error(path, "read", exc)) from exc
     except ValueError as exc:
         raise click.ClickException(str(exc)) from exc
 
@@ -295,7 +307,7 @@ def tree_geography_feasibility(
 
 
 @microdata.command("export-seed")
-@click.argument("path", type=PATH)
+@click.argument("path", type=_PATH)
 @click.option(
     "--input-format",
     "source_format",
@@ -325,7 +337,7 @@ def tree_geography_feasibility(
     "--out",
     "out_path",
     required=True,
-    type=PATH,
+    type=_PATH,
     help="Output IPF seed CSV.",
 )
 @click.option(
@@ -352,7 +364,10 @@ def export_microdata_seed(
         selected_columns = parse_columns(columns)
         if source_format == "fixture-v1":
             if level is None:
-                raise click.ClickException("fixture-v1 requires --level")
+                raise click.ClickException(
+                    "When --input-format fixture-v1 is used, pass "
+                    "--level household or --level person."
+                )
             sample = read_fixture_seed_sample(
                 path,
                 level=level,
@@ -368,9 +383,13 @@ def export_microdata_seed(
                     columns=selected_columns,
                 )
         rows, summary = export_seed_rows(sample, columns=selected_columns)
+        write_rows(out_path, rows)
+    except OSError as exc:
+        raise click.ClickException(
+            format_file_access_error(exc.filename or path, "access", exc)
+        ) from exc
     except ValueError as exc:
         raise click.ClickException(str(exc)) from exc
-    write_rows(out_path, rows)
     if output_format == "json":
         print(json.dumps(summary, indent=2, sort_keys=True))
         return
@@ -379,7 +398,7 @@ def export_microdata_seed(
 
 
 @microdata.command("export-training")
-@click.argument("path", type=PATH)
+@click.argument("path", type=_PATH)
 @click.option(
     "--input-format",
     "source_format",
@@ -407,7 +426,7 @@ def export_microdata_seed(
     "--out",
     "out_path",
     required=True,
-    type=PATH,
+    type=_PATH,
     help="Output tree-training CSV.",
 )
 @click.option(
@@ -436,9 +455,13 @@ def export_microdata_training(
             target_columns=parse_columns(target_columns),
             conditioning_columns=parse_columns(conditioning_columns),
         )
+        write_rows(out_path, rows)
+    except OSError as exc:
+        raise click.ClickException(
+            format_file_access_error(exc.filename or path, "access", exc)
+        ) from exc
     except ValueError as exc:
         raise click.ClickException(str(exc)) from exc
-    write_rows(out_path, rows)
     if output_format == "json":
         print(json.dumps(summary, indent=2, sort_keys=True))
         return

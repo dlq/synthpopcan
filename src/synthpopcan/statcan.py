@@ -9,8 +9,8 @@ from pathlib import Path
 from typing import Any
 from urllib.request import Request, urlopen
 
-WDS_BASE_URL = "https://www150.statcan.gc.ca/t1/wds/rest"
-CENSUS_PROFILE_2016_BASE_URL = (
+_WDS_BASE_URL = "https://www150.statcan.gc.ca/t1/wds/rest"
+_CENSUS_PROFILE_2016_BASE_URL = (
     "https://www12.statcan.gc.ca/census-recensement/2016/dp-pd/prof/"
     "details/download-telecharger/comp/GetFile.cfm"
 )
@@ -52,7 +52,7 @@ class CensusProfileDownload:
         """Return the Statistics Canada download URL for this entry."""
 
         return (
-            f"{CENSUS_PROFILE_2016_BASE_URL}?FILETYPE={self.filetype}"
+            f"{_CENSUS_PROFILE_2016_BASE_URL}?FILETYPE={self.filetype}"
             f"&GEONO={self.geono}&Lang=E"
         )
 
@@ -89,7 +89,7 @@ class WDSTableSearchResult:
         }
 
 
-CENSUS_PROFILE_2016_DOWNLOADS: dict[str, CensusProfileDownload] = {
+_CENSUS_PROFILE_2016_DOWNLOADS: dict[str, CensusProfileDownload] = {
     "pt": CensusProfileDownload(
         "pt", "Canada, provinces and territories", "CSV", "059"
     ),
@@ -143,19 +143,19 @@ def wds_download_url(product_id: str, lang: str = "en") -> str:
 
     product = normalize_product_id(product_id)
     language = normalize_language(lang)
-    return f"{WDS_BASE_URL}/getFullTableDownloadCSV/{product}/{language}"
+    return f"{_WDS_BASE_URL}/getFullTableDownloadCSV/{product}/{language}"
 
 
 def wds_all_cubes_lite_url() -> str:
     """Return the WDS endpoint URL for the all-cubes lite index."""
 
-    return f"{WDS_BASE_URL}/getAllCubesListLite"
+    return f"{_WDS_BASE_URL}/getAllCubesListLite"
 
 
 def wds_metadata_url() -> str:
     """Return the WDS endpoint URL for cube metadata lookup."""
 
-    return f"{WDS_BASE_URL}/getCubeMetadata"
+    return f"{_WDS_BASE_URL}/getCubeMetadata"
 
 
 def search_wds_tables(query: str, limit: int = 10) -> list[WDSTableSearchResult]:
@@ -451,16 +451,17 @@ def fetch_census_profile_2016(geo_level: str, out_dir: Path) -> Path:
     """Download a supported 2016 Census Profile CSV and manifest.
 
     ``geo_level`` must be one of the supported keys in
-    ``CENSUS_PROFILE_2016_DOWNLOADS``. The function returns the CSV path and
+    ``_CENSUS_PROFILE_2016_DOWNLOADS``. The function returns the CSV path and
     writes a JSON provenance manifest beside it.
     """
 
     try:
-        entry = CENSUS_PROFILE_2016_DOWNLOADS[geo_level]
+        entry = _CENSUS_PROFILE_2016_DOWNLOADS[geo_level]
     except KeyError as exc:
-        known = ", ".join(sorted(CENSUS_PROFILE_2016_DOWNLOADS))
+        known = ", ".join(sorted(_CENSUS_PROFILE_2016_DOWNLOADS))
         raise ValueError(
-            f"unknown 2016 Census Profile geo level {geo_level!r}: {known}"
+            f"Unknown 2016 Census Profile geography level {geo_level!r}. "
+            f"Use one of: {known}."
         ) from exc
 
     out_dir.mkdir(parents=True, exist_ok=True)

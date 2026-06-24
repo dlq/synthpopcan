@@ -42,6 +42,8 @@ def test_guide_ipf_matches_beginner_web_flow(capsys) -> None:
 
     output = capsys.readouterr().out
     assert "IPF from Margin Tables" in output
+    assert "Setup Path" in output
+    assert "Command or Next Step" in output
     assert "Use a demo or make templates" in output
     assert "Generate from a StatCan table" in output
     assert "Inspect product" in output
@@ -55,6 +57,8 @@ def test_guide_model_matches_beginner_web_flow(capsys) -> None:
 
     output = capsys.readouterr().out
     assert "Generate from Existing Model" in output
+    assert "Setup Path" in output
+    assert "Command or Next Step" in output
     assert "Use premade model" in output
     assert "Inspect selected model" in output
     assert "Generate rows" in output

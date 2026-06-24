@@ -7,7 +7,7 @@ import json
 from dataclasses import dataclass
 from io import TextIOWrapper
 from pathlib import Path
-from zipfile import ZipFile
+from zipfile import BadZipFile, ZipFile
 
 from synthpopcan.ipf import IPFMargin
 
@@ -118,7 +118,7 @@ class ControlTable:
 
 
 CategoryMapping = dict[str, dict[str, str]]
-WDS_METADATA_COLUMNS = {
+_WDS_METADATA_COLUMNS = {
     "STATUS",
     "SYMBOL",
     "TERMINATED",
@@ -130,7 +130,7 @@ WDS_METADATA_COLUMNS = {
     "UOM",
     "UOM_ID",
 }
-CENSUS_PROFILE_AGE5_CATEGORIES = {
+_CENSUS_PROFILE_AGE5_CATEGORIES = {
     "0 to 4 years": {"age": "age_000_004"},
     "5 to 9 years": {"age": "age_005_009"},
     "10 to 14 years": {"age": "age_010_014"},
@@ -150,7 +150,7 @@ CENSUS_PROFILE_AGE5_CATEGORIES = {
     "80 to 84 years": {"age": "age_080_084"},
     "85 years and over": {"age": "age_085_plus"},
 }
-CENSUS_PROFILE_SEX_CATEGORIES = {
+_CENSUS_PROFILE_SEX_CATEGORIES = {
     "Female": {"sex": "female"},
     "Male": {"sex": "male"},
 }
@@ -177,7 +177,7 @@ def read_control_table(path: Path) -> ControlTable:
         reader = csv.DictReader(handle)
         fieldnames = reader.fieldnames or []
         for row_number, row in enumerate(reader, start=2):
-            dimensions = parse_dimensions(row.get("dimensions", ""))
+            dimensions = _parse_dimensions(row.get("dimensions", ""))
             if not dimensions:
                 raise ValueError(f"controls row {row_number} has no dimensions")
             try:
@@ -262,8 +262,12 @@ def read_wds_control_table(
 
     if not dimensions:
         raise ValueError("WDS controls require at least one dimension")
-    with ZipFile(path) as archive:
-        csv_name = find_wds_csv_member(archive)
+    try:
+        archive = ZipFile(path)
+    except BadZipFile as exc:
+        raise ValueError(f"{path} is not a valid WDS ZIP") from exc
+    with archive:
+        csv_name = _find_wds_csv_member(archive)
         with archive.open(csv_name) as raw_handle:
             handle = TextIOWrapper(raw_handle, encoding="utf-8-sig", newline="")
             reader = csv.DictReader(handle)
@@ -293,7 +297,7 @@ def read_wds_control_table(
                 cells.append(
                     ControlCell(
                         categories={
-                            dimension: map_category(
+                            dimension: _map_category(
                                 dimension,
                                 row[dimension],
                                 category_mapping,
@@ -321,8 +325,12 @@ def inspect_wds_zip(path: Path, *, sample_rows: int = 5) -> dict[str, object]:
 
     if sample_rows < 1:
         raise ValueError("sample rows must be at least 1")
-    with ZipFile(path) as archive:
-        csv_name = find_wds_csv_member(archive)
+    try:
+        archive = ZipFile(path)
+    except BadZipFile as exc:
+        raise ValueError(f"{path} is not a valid WDS ZIP") from exc
+    with archive:
+        csv_name = _find_wds_csv_member(archive)
         with archive.open(csv_name) as raw_handle:
             handle = TextIOWrapper(raw_handle, encoding="utf-8-sig", newline="")
             reader = csv.DictReader(handle)
@@ -343,13 +351,14 @@ def inspect_wds_zip(path: Path, *, sample_rows: int = 5) -> dict[str, object]:
     count_candidates = value_columns or [
         column
         for column in columns
-        if column.upper() not in WDS_METADATA_COLUMNS
-        and values_are_numeric(numeric_probe_values[column])
+        if column.upper() not in _WDS_METADATA_COLUMNS
+        and _values_are_numeric(numeric_probe_values[column])
     ]
     dimension_candidates = [
         column
         for column in columns
-        if column not in count_candidates and column.upper() not in WDS_METADATA_COLUMNS
+        if column not in count_candidates
+        and column.upper() not in _WDS_METADATA_COLUMNS
     ]
     dimensions_arg = ",".join(dimension_candidates)
     count_column = count_candidates[0] if count_candidates else "VALUE"
@@ -387,10 +396,14 @@ def build_wds_category_mapping_template(
     if not dimensions:
         raise ValueError("WDS mapping template requires at least one dimension")
     if preset not in {"blank", "canonical"}:
-        raise ValueError("known WDS mapping presets: blank, canonical")
+        raise ValueError("Unknown WDS mapping preset. Use one of: blank, canonical.")
     categories: dict[str, set[str]] = {dimension: set() for dimension in dimensions}
-    with ZipFile(path) as archive:
-        csv_name = find_wds_csv_member(archive)
+    try:
+        archive = ZipFile(path)
+    except BadZipFile as exc:
+        raise ValueError(f"{path} is not a valid WDS ZIP") from exc
+    with archive:
+        csv_name = _find_wds_csv_member(archive)
         with archive.open(csv_name) as raw_handle:
             handle = TextIOWrapper(raw_handle, encoding="utf-8-sig", newline="")
             reader = csv.DictReader(handle)
@@ -408,24 +421,24 @@ def build_wds_category_mapping_template(
 
     return {
         dimension: {
-            value: preset_wds_category(dimension, value, preset)
+            value: _preset_wds_category(dimension, value, preset)
             for value in sorted(values)
         }
         for dimension, values in categories.items()
     }
 
 
-def preset_wds_category(dimension: str, value: str, preset: str) -> str:
+def _preset_wds_category(dimension: str, value: str, preset: str) -> str:
     if preset == "blank":
         return ""
 
     dimension_key = dimension.casefold()
     if "age" in dimension_key:
-        categories = CENSUS_PROFILE_AGE5_CATEGORIES.get(value)
+        categories = _CENSUS_PROFILE_AGE5_CATEGORIES.get(value)
         if categories:
             return categories["age"]
     if dimension_key in {"sex", "gender"}:
-        categories = CENSUS_PROFILE_SEX_CATEGORIES.get(value)
+        categories = _CENSUS_PROFILE_SEX_CATEGORIES.get(value)
         if categories:
             return categories["sex"]
     return ""
@@ -574,13 +587,13 @@ def census_profile_template(
     if template_name == "age5":
         margin_name = "age"
         dimensions = [geography_dimension, "age"]
-        categories = CENSUS_PROFILE_AGE5_CATEGORIES
+        categories = _CENSUS_PROFILE_AGE5_CATEGORIES
     elif template_name == "sex":
         margin_name = "sex"
         dimensions = [geography_dimension, "sex"]
-        categories = CENSUS_PROFILE_SEX_CATEGORIES
+        categories = _CENSUS_PROFILE_SEX_CATEGORIES
     else:
-        raise ValueError("known Census Profile templates: age5, sex")
+        raise ValueError("Unknown Census Profile template. Use one of: age5, sex.")
     return {
         "geography": {"column": geography_column, "dimension": geography_dimension},
         "characteristic_column": characteristic_column,
@@ -688,7 +701,7 @@ def read_census_profile_mapping(path: Path) -> dict:
     }
 
 
-def find_wds_csv_member(archive: ZipFile) -> str:
+def _find_wds_csv_member(archive: ZipFile) -> str:
     csv_names = [
         name
         for name in archive.namelist()
@@ -701,7 +714,7 @@ def find_wds_csv_member(archive: ZipFile) -> str:
     return csv_names[0]
 
 
-def values_are_numeric(values: list[str]) -> bool:
+def _values_are_numeric(values: list[str]) -> bool:
     if not values:
         return False
     for value in values[:25]:
@@ -735,7 +748,7 @@ def read_category_mapping(path: Path) -> CategoryMapping:
     return mapping
 
 
-def map_category(
+def _map_category(
     dimension: str,
     value: str,
     category_mapping: CategoryMapping | None,
@@ -773,17 +786,17 @@ def write_control_table(path: Path, table: ControlTable) -> None:
                             dimension: cell.categories.get(dimension, "")
                             for dimension in table.dimensions
                         },
-                        "count": format_count(cell.count),
+                        "count": _format_count(cell.count),
                     }
                 )
 
 
-def parse_dimensions(value: str) -> tuple[str, ...]:
+def _parse_dimensions(value: str) -> tuple[str, ...]:
     separator = "|" if "|" in value else ","
     return tuple(part.strip() for part in value.split(separator) if part.strip())
 
 
-def format_count(count: float) -> str:
+def _format_count(count: float) -> str:
     rounded = round(count)
     if abs(count - rounded) < 1e-9:
         return str(rounded)

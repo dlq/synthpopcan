@@ -7,7 +7,11 @@ from collections import Counter
 from pathlib import Path
 from typing import Any
 
-__all__ = ["inspect_source_root", "read_source_sample", "read_source_schema"]
+__all__ = [
+    "inspect_source_root",
+    "read_source_sample",
+    "read_source_schema",
+]
 
 
 def inspect_source_root(root: Path) -> dict[str, Any]:
@@ -29,7 +33,7 @@ def inspect_source_root(root: Path) -> dict[str, Any]:
 def read_source_schema(path: Path) -> dict[str, Any]:
     """Read the delimiter and header row from a local tabular source file."""
 
-    delimiter = sniff_delimiter(path)
+    delimiter = _sniff_delimiter(path)
     with path.open(newline="") as handle:
         reader = csv.reader(handle, delimiter=delimiter)
         columns = next(reader, [])
@@ -49,7 +53,7 @@ def read_source_sample(path: Path, rows: int) -> dict[str, Any]:
 
     if rows < 1:
         raise ValueError("rows must be at least 1")
-    delimiter = sniff_delimiter(path)
+    delimiter = _sniff_delimiter(path)
     with path.open(newline="") as handle:
         reader = csv.DictReader(handle, delimiter=delimiter)
         sample = []
@@ -65,7 +69,7 @@ def read_source_sample(path: Path, rows: int) -> dict[str, Any]:
     }
 
 
-def sniff_delimiter(path: Path) -> str:
+def _sniff_delimiter(path: Path) -> str:
     with path.open(newline="") as handle:
         sample = handle.read(4096)
     try:
@@ -74,7 +78,7 @@ def sniff_delimiter(path: Path) -> str:
         return "\t" if path.suffix.lower() in {".tab", ".tsv"} else ","
 
 
-def is_private_path(path: Path) -> bool:
+def _is_private_path(path: Path) -> bool:
     parts = [part.lower() for part in path.parts]
     return any(
         current == "data" and following == "private"

@@ -10,6 +10,98 @@ This note synthesizes the local material currently in `~/Downloads` and recent e
 2. Build a second workflow that creates household- and person-level synthetic populations with a tree-based synthetic population generator for geographic subregions using Canadian 2016 Census data.
 3. Leave broader SynthEco ecosystem enrichment, cohort attachment, and simulation work for later.
 
+Current codebase status, 2026-06-24:
+
+- The active roadmap is now `PLANS.md`; this file is the research and design
+  notes companion.
+- The first-pass Python library, Click CLI, local web app, Sphinx docs, and
+  fixture tests are implemented.
+- IPF from normalized controls, StatCan WDS source discovery/normalization,
+  microdata adapters, linked household/person model generation, validation,
+  and prepared-model web generation all have working first-pass surfaces.
+- The older phase sketch near the end of this file should be read as research
+  background, not the live implementation checklist.
+
+Research questions tracked by this note:
+
+- Add a source-access note for newer Canadian census/public-use microdata
+  products, especially 2021 and later formats, so future adapters are based on
+  documented product differences rather than assumptions from the local 2016
+  files.
+- Add Canadian disclosure-control and dissemination guidance to the privacy
+  section before calling any restricted-source model package publicly
+  publishable. The current notes cover model privacy literature, but the release
+  policy should also cite the relevant Canadian/StatCan disclosure context.
+- Add a focused note on calibration controls for generated household/person
+  model outputs: which StatCan tables are appropriate, which universes must not
+  be mixed, and when a control implies an enrichment step rather than IPF.
+- Keep watching for maintained Python/browser-side population-synthesis or
+  tabular-synthesis implementations, especially ones that publish reusable
+  JavaScript/WebAssembly modules, because the web app is intended to remain as
+  frontend-first as practical.
+
+Recent research findings, 2026-06-24:
+
+- Statistics Canada now lists 2021 Census PUMFs in the same public catalogue
+  family as earlier Census PUMFs. The catalogue page lists 2021 individuals and
+  hierarchical files, 2016 individuals and hierarchical files, 2011 NHS files,
+  and older 2006/2001/1996/1991 files. It also says PUMFs are distributed as
+  CSV or TXT plus documentation such as user guides, codebooks, layout cards, or
+  syntax files. This reinforces the adapter strategy: do not bake the 2016
+  hierarchical columns into the generic microdata layer; treat each year/product
+  as a documented source profile.
+- The 2021 individuals PUMF page says the file is a 2.7% anonymous-response
+  sample with 144 variables, restricted geography at provinces/territories and
+  metropolitan areas, and both ASCII and CSV data plus SAS/SPSS/Stata source
+  code. It also has a correction notice for the `IMMCAT5` metadata labels. Any
+  future 2021 adapter should record product corrections in provenance metadata
+  and should not assume that metadata labels are immutable.
+- The 2021 hierarchical PUMF is listed as released after the 2021 individuals
+  file, and the main PUMF page has a correction notice for `STIR_GRP` in the
+  hierarchical file. That is a practical warning for SynthPopCan: model
+  packages should record both data product IDs and correction dates, not just
+  "2021 Census".
+- Statistics Canada's Census Dictionary is the authoritative place for census
+  concepts, variables, geography terms, and comparability between census years.
+  Adapter profiles should link to the relevant dictionary/reference guide and
+  should keep recodes explicit rather than relying only on column names.
+- The Statistics Act makes the confidentiality rule explicit: information
+  obtained under the Act must not be disclosed in a way that can be related to
+  an identifiable person, business, or organization. For SynthPopCan, this
+  supports a conservative release claim: a package may pass project
+  disclosure-risk checks, but it should not claim legal anonymization or
+  Statistics Canada endorsement.
+- The Statistics Canada Open Licence permits use and value-added products, but
+  it prohibits using the information to try to identify an individual, and it
+  prohibits presenting outputs as if they reveal confidential Statistics Canada
+  information. Public model packages and generated outputs should therefore
+  include source acknowledgment, no-endorsement language, and a statement that
+  outputs are SynthPopCan-derived synthetic artifacts.
+- Recent work on 2021 Census random rounding argues that some hierarchical
+  published counts can be partially or exactly "unrounded." Even if that paper
+  is not official guidance, it is directly relevant to calibration controls:
+  SynthPopCan should not treat rounded/suppressed/public table cells as if they
+  are exact confidential truth, and should avoid combining many overlapping
+  rounded tables in a way that invites reconstruction claims.
+- Browser-first Python is more plausible than it looked earlier. Pyodide's
+  built package list currently includes relevant scientific packages such as
+  NumPy, pandas, Polars, SciPy, scikit-learn, PyArrow, DuckDB, and XGBoost. That
+  does not make full model training in-browser a good default, but it means a
+  later Pyodide proof-of-concept for small IPF, validation, and prepared-model
+  generation is worth testing against the current pure-JavaScript worker.
+
+Sources for this follow-up:
+
+- Statistics Canada PUMF catalogue: https://www150.statcan.gc.ca/n1/pub/98m0001x/index-eng.htm
+- Statistics Canada PUMF product family: https://www150.statcan.gc.ca/n1/en/catalogue/98M0001X
+- 2021 individuals PUMF: https://www150.statcan.gc.ca/n1/en/catalogue/98M0001X2021001
+- 2016 hierarchical PUMF catalogue family: https://www150.statcan.gc.ca/n1/en/catalogue/98M0002X
+- 2021 Census Dictionary: https://www12.statcan.gc.ca/census-recensement/2021/ref/dict/index-eng.cfm
+- Statistics Act: https://laws-lois.justice.gc.ca/eng/acts/S-19/FullText.html
+- Statistics Canada Open Licence: https://www.statcan.gc.ca/en/terms-conditions/open-licence
+- West, Vecna, and Chowdhury, "Random (Un)rounding" (2023): https://arxiv.org/abs/2307.13859
+- Pyodide built packages: https://pyodide.org/en/stable/usage/packages-in-pyodide.html
+
 The main conclusion is that these should be treated as two related but distinct engines:
 
 - A **general margin-table IPF engine** for arbitrary StatCan tables, where the user supplies or selects a margin table and the system constructs a fitted joint distribution against a seed sample or prior.
@@ -659,7 +751,10 @@ Minimum acceptance criteria for a first serious run:
 - Household size equals linked person count, unless a documented collective/non-private household path exists.
 - All output records carry source/run metadata.
 
-## Recommended Near-Term Roadmap
+## Historical Near-Term Roadmap Sketch
+
+This sketch records the initial research interpretation of the work. It is not
+the active implementation plan; use `PLANS.md` for current sequencing.
 
 ### Phase 1: Data Normalization
 
@@ -693,7 +788,10 @@ Minimum acceptance criteria for a first serious run:
 - Build a thin orchestration app around existing library commands.
 - Prioritize control-table mapping, run management, validation viewing, and downloads.
 
-## Open Questions
+## Original Research Open Questions
+
+These questions are still useful context, but some now have partial answers in
+the current codebase and roadmap.
 
 - Which exact first geography should be targeted: Montreal CMA, city of Montreal, all Montreal tracts, or selected pilot tracts?
 - Should the first output represent private households only, or also collective/non-private populations?

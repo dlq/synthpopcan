@@ -10,6 +10,7 @@ import click
 
 from synthpopcan.calibration import build_control_suggestion_report
 from synthpopcan.cli_output import (
+    format_file_access_error,
     format_fit_value_error,
     format_nonconvergence_message,
     print_ipf_control_suggestions_table,
@@ -21,7 +22,12 @@ from synthpopcan.controls import read_control_table
 from synthpopcan.diagnostics import build_ipf_fit_report, build_ipf_input_report
 from synthpopcan.ipf import fit_ipf, integerize_weights
 
-PATH = click.Path(path_type=Path)
+_PATH = click.Path(path_type=Path)
+
+__all__ = [
+    "ipf",
+    "read_population_artifact",
+]
 
 
 @click.group()
@@ -30,12 +36,14 @@ def ipf() -> None:
 
 
 @ipf.command("check-inputs")
-@click.option("--seed", "seed_path", required=True, type=PATH, help="Seed records CSV.")
+@click.option(
+    "--seed", "seed_path", required=True, type=_PATH, help="Seed records CSV."
+)
 @click.option(
     "--controls",
     "controls_path",
     required=True,
-    type=PATH,
+    type=_PATH,
     help="Control totals CSV in long margin format.",
 )
 @click.option(
@@ -45,14 +53,21 @@ def ipf() -> None:
     type=click.Choice(["json", "table"]),
     show_default=True,
 )
-def check_ipf_inputs(
+def _check_ipf_inputs(
     seed_path: Path,
     controls_path: Path,
     output_format: str,
 ) -> None:
     """Check whether seed records cover the control dimensions and categories."""
-    seed_rows = read_csv(seed_path)
-    control_table = read_control_table(controls_path)
+    try:
+        seed_rows = _read_csv(seed_path)
+        control_table = read_control_table(controls_path)
+    except OSError as exc:
+        raise click.ClickException(
+            format_file_access_error(exc.filename, "read", exc)
+        ) from exc
+    except ValueError as exc:
+        raise click.ClickException(str(exc)) from exc
     report = build_ipf_input_report(seed_rows, control_table)
     if output_format == "json":
         print(json.dumps(report, indent=2, sort_keys=True))
@@ -61,7 +76,9 @@ def check_ipf_inputs(
 
 
 @ipf.command("suggest-controls")
-@click.option("--seed", "seed_path", required=True, type=PATH, help="Seed records CSV.")
+@click.option(
+    "--seed", "seed_path", required=True, type=_PATH, help="Seed records CSV."
+)
 @click.option(
     "--unit",
     default="auto",
@@ -76,13 +93,18 @@ def check_ipf_inputs(
     type=click.Choice(["json", "table"]),
     show_default=True,
 )
-def suggest_ipf_controls(
+def _suggest_ipf_controls(
     seed_path: Path,
     unit: str,
     output_format: str,
 ) -> None:
     """Suggest calibration-control directions from generated or seed rows."""
-    seed_rows = read_csv(seed_path)
+    try:
+        seed_rows = _read_csv(seed_path)
+    except OSError as exc:
+        raise click.ClickException(
+            format_file_access_error(seed_path, "read", exc)
+        ) from exc
     report = build_control_suggestion_report(
         seed_rows, unit=unit, seed_path=str(seed_path)
     )
@@ -93,16 +115,18 @@ def suggest_ipf_controls(
 
 
 @ipf.command("fit")
-@click.option("--seed", "seed_path", required=True, type=PATH, help="Seed records CSV.")
+@click.option(
+    "--seed", "seed_path", required=True, type=_PATH, help="Seed records CSV."
+)
 @click.option(
     "--controls",
     "controls_path",
     required=True,
-    type=PATH,
+    type=_PATH,
     help="Control totals CSV in long margin format.",
 )
 @click.option(
-    "--out", "out_path", required=True, type=PATH, help="Output weighted CSV."
+    "--out", "out_path", required=True, type=_PATH, help="Output weighted CSV."
 )
 @click.option(
     "--weight-field",
@@ -116,8 +140,8 @@ def suggest_ipf_controls(
     is_flag=True,
     help="Write weights even when IPF does not meet the convergence tolerance.",
 )
-@click.option("--report", "report_path", type=PATH, help="Optional JSON fit report.")
-def fit_ipf_command(
+@click.option("--report", "report_path", type=_PATH, help="Optional JSON fit report.")
+def _fit_ipf_command(
     seed_path: Path,
     controls_path: Path,
     out_path: Path,
@@ -128,9 +152,9 @@ def fit_ipf_command(
     report_path: Path | None,
 ) -> None:
     """Fit seed records to controls and write compact weights."""
-    seed_rows = read_csv(seed_path)
-    control_table = read_control_table(controls_path)
     try:
+        seed_rows = _read_csv(seed_path)
+        control_table = read_control_table(controls_path)
         result = fit_ipf(
             seed_rows,
             control_table.to_ipf_margins(),
@@ -138,14 +162,28 @@ def fit_ipf_command(
             max_iterations=max_iterations,
             tolerance=tolerance,
         )
+    except OSError as exc:
+        raise click.ClickException(
+            format_file_access_error(exc.filename or seed_path, "read", exc)
+        ) from exc
     except ValueError as exc:
         raise click.ClickException(format_fit_value_error(exc)) from exc
     report = build_ipf_fit_report(control_table, result)
     if report_path:
-        report_path.write_text(json.dumps(report, indent=2) + "\n")
+        try:
+            report_path.write_text(json.dumps(report, indent=2) + "\n")
+        except OSError as exc:
+            raise click.ClickException(
+                format_file_access_error(report_path, "write", exc)
+            ) from exc
     if not result.converged and not allow_nonconverged:
         raise click.ClickException(format_nonconvergence_message(report))
-    write_weighted_seed(out_path, seed_rows, result.weights)
+    try:
+        _write_weighted_seed(out_path, seed_rows, result.weights)
+    except OSError as exc:
+        raise click.ClickException(
+            format_file_access_error(out_path, "write", exc)
+        ) from exc
     if report_path:
         print_wrote(report_path)
     print_wrote(out_path)
@@ -156,11 +194,11 @@ def fit_ipf_command(
     "--weights",
     "weights_path",
     required=True,
-    type=PATH,
+    type=_PATH,
     help="Fitted seed weights CSV from ipf fit.",
 )
 @click.option(
-    "--out", "out_path", required=True, type=PATH, help="Output synthetic CSV."
+    "--out", "out_path", required=True, type=_PATH, help="Output synthetic CSV."
 )
 @click.option(
     "--weight-field",
@@ -168,15 +206,22 @@ def fit_ipf_command(
     show_default=True,
     help="Column containing fitted weights.",
 )
-def expand_ipf(weights_path: Path, out_path: Path, weight_field: str) -> None:
+def _expand_ipf(weights_path: Path, out_path: Path, weight_field: str) -> None:
     """Expand fitted weights into full synthetic rows."""
-    seed_rows, weights = read_weighted_seed(weights_path, weight_field)
-    write_expanded_seed(out_path, seed_rows, weights)
+    try:
+        seed_rows, weights = _read_weighted_seed(weights_path, weight_field)
+        _write_expanded_seed(out_path, seed_rows, weights)
+    except OSError as exc:
+        raise click.ClickException(
+            format_file_access_error(exc.filename or weights_path, "access", exc)
+        ) from exc
+    except ValueError as exc:
+        raise click.ClickException(str(exc)) from exc
     print_wrote(out_path)
 
 
 @ipf.command("report")
-@click.argument("path", type=PATH)
+@click.argument("path", type=_PATH)
 @click.option(
     "--format",
     "output_format",
@@ -184,10 +229,12 @@ def expand_ipf(weights_path: Path, out_path: Path, weight_field: str) -> None:
     type=click.Choice(["json", "table"]),
     show_default=True,
 )
-def report_ipf(path: Path, output_format: str) -> None:
+def _report_ipf(path: Path, output_format: str) -> None:
     """Print a fit report summary from ipf fit --report JSON."""
     try:
         report = json.loads(path.read_text())
+    except OSError as exc:
+        raise click.ClickException(format_file_access_error(path, "read", exc)) from exc
     except json.JSONDecodeError as exc:
         raise click.ClickException(f"{path} is not valid JSON") from exc
     if output_format == "json":
@@ -196,14 +243,18 @@ def report_ipf(path: Path, output_format: str) -> None:
     print_ipf_report_table(report)
 
 
-def read_csv(path: Path) -> list[dict[str, str]]:
+def _read_csv(path: Path) -> list[dict[str, str]]:
+    """Read a CSV file as string-valued dictionaries for CLI workflows."""
+
     with path.open(newline="") as handle:
         return list(csv.DictReader(handle))
 
 
-def read_weighted_seed(
+def _read_weighted_seed(
     path: Path, weight_field: str
 ) -> tuple[list[dict[str, str]], list[float]]:
+    """Read compact weighted IPF output into seed rows and fitted weights."""
+
     rows: list[dict[str, str]] = []
     weights: list[float] = []
     with path.open(newline="") as handle:
@@ -234,17 +285,21 @@ def read_population_artifact(
     artifact_kind: str,
     weight_field: str,
 ) -> tuple[list[dict[str, str]], list[float]]:
+    """Read a weighted or expanded population artifact for validation."""
+
     if artifact_kind == "weights":
-        return read_weighted_seed(path, weight_field)
+        return _read_weighted_seed(path, weight_field)
     if artifact_kind == "expanded":
-        rows = read_csv(path)
+        rows = _read_csv(path)
         return rows, [1.0 for _row in rows]
     raise ValueError(f"unknown population artifact kind {artifact_kind!r}")
 
 
-def write_weighted_seed(
+def _write_weighted_seed(
     path: Path, rows: list[dict[str, str]], weights: list[float]
 ) -> None:
+    """Write seed rows plus fitted IPF weights as the compact default output."""
+
     if not rows:
         raise ValueError("cannot write weighted output for empty seed rows")
     weight_column = "weight" if "weight" not in rows[0] else "fitted_weight"
@@ -253,12 +308,14 @@ def write_weighted_seed(
         writer = csv.DictWriter(handle, fieldnames=fieldnames)
         writer.writeheader()
         for row, weight in zip(rows, weights, strict=True):
-            writer.writerow({**row, weight_column: format_weight(weight)})
+            writer.writerow({**row, weight_column: _format_weight(weight)})
 
 
-def write_expanded_seed(
+def _write_expanded_seed(
     path: Path, rows: list[dict[str, str]], weights: list[float]
 ) -> None:
+    """Write a full expanded synthetic CSV from integerized fitted weights."""
+
     counts = integerize_weights(weights)
     if sum(counts) == 0:
         raise ValueError("expanded synthetic population is empty")
@@ -285,7 +342,9 @@ def write_expanded_seed(
                 synthetic_id += 1
 
 
-def format_weight(weight: float) -> str:
+def _format_weight(weight: float) -> str:
+    """Format fitted weights without unnecessary decimal places."""
+
     rounded = round(weight)
     if abs(weight - rounded) < 1e-9:
         return str(rounded)

@@ -78,6 +78,13 @@ population.
 These approaches can be combined. A tree model can generate candidate rows, and
 IPF can later calibrate compatible columns to public control totals.
 
+For a guided command-line start that mirrors the web app, run:
+
+```bash
+synthpopcan guide ipf
+synthpopcan guide model
+```
+
 ## Treat Generated Populations as Arguments, Not Facts
 
 Synthetic populations can be persuasive because they look like ordinary data:

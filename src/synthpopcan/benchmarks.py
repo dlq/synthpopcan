@@ -9,7 +9,7 @@ from synthpopcan.ipf import IPFMargin, Record, fit_ipf, integerize_weights
 
 
 @dataclass(frozen=True)
-class IPFBenchmarkCase:
+class _IPFBenchmarkCase:
     name: str
     records: list[Record]
     margins: list[IPFMargin]
@@ -22,7 +22,7 @@ class IPFBenchmarkCase:
         return sum(len(margin.targets) for margin in self.margins)
 
 
-def build_ipf_benchmark_cases(seed_records: int = 50_000) -> list[IPFBenchmarkCase]:
+def build_ipf_benchmark_cases(seed_records: int = 50_000) -> list[_IPFBenchmarkCase]:
     if seed_records < 12:
         raise ValueError("seed_records must be at least 12")
     return [
@@ -33,7 +33,7 @@ def build_ipf_benchmark_cases(seed_records: int = 50_000) -> list[IPFBenchmarkCa
 
 
 def assess_ipf_benchmark_case(
-    case: IPFBenchmarkCase,
+    case: _IPFBenchmarkCase,
 ) -> dict[str, int | float | str]:
     record_memberships = len(case.records) * len(case.margins)
     average_records_per_margin_cell = record_memberships / case.margin_cell_count
@@ -60,7 +60,7 @@ def classify_ipf_dependency_need(
     return "pure_python_ok"
 
 
-def build_easy_balanced_case(seed_records: int) -> IPFBenchmarkCase:
+def build_easy_balanced_case(seed_records: int) -> _IPFBenchmarkCase:
     records = [
         {
             "id": str(index + 1),
@@ -69,7 +69,7 @@ def build_easy_balanced_case(seed_records: int) -> IPFBenchmarkCase:
         }
         for index in range(seed_records)
     ]
-    return IPFBenchmarkCase(
+    return _IPFBenchmarkCase(
         name="easy_balanced",
         records=records,
         margins=[
@@ -79,7 +79,7 @@ def build_easy_balanced_case(seed_records: int) -> IPFBenchmarkCase:
     )
 
 
-def build_moderate_three_margin_case(seed_records: int) -> IPFBenchmarkCase:
+def build_moderate_three_margin_case(seed_records: int) -> _IPFBenchmarkCase:
     age_groups = [f"age_{index:02d}" for index in range(10)]
     regions = [f"region_{index:02d}" for index in range(6)]
     sexes = ["female", "male"]
@@ -93,7 +93,7 @@ def build_moderate_three_margin_case(seed_records: int) -> IPFBenchmarkCase:
         for index in range(seed_records)
     ]
     target_total = float(seed_records * 5)
-    return IPFBenchmarkCase(
+    return _IPFBenchmarkCase(
         name="moderate_three_margin",
         records=records,
         margins=[
@@ -113,7 +113,7 @@ def build_moderate_three_margin_case(seed_records: int) -> IPFBenchmarkCase:
     )
 
 
-def build_high_cardinality_inconsistent_case(seed_records: int) -> IPFBenchmarkCase:
+def build_high_cardinality_inconsistent_case(seed_records: int) -> _IPFBenchmarkCase:
     age_groups = [f"age_{index:02d}" for index in range(36)]
     sexes = ["female", "male"]
     records = [
@@ -126,7 +126,7 @@ def build_high_cardinality_inconsistent_case(seed_records: int) -> IPFBenchmarkC
     ]
     target_total = float(seed_records * 5)
     age_targets = {(age,): target_total / len(age_groups) for age in age_groups}
-    return IPFBenchmarkCase(
+    return _IPFBenchmarkCase(
         name="high_cardinality_inconsistent",
         records=records,
         margins=[
@@ -143,7 +143,7 @@ def build_high_cardinality_inconsistent_case(seed_records: int) -> IPFBenchmarkC
     )
 
 
-def run_ipf_benchmark(case: IPFBenchmarkCase) -> dict[str, int | float | str | bool]:
+def run_ipf_benchmark(case: _IPFBenchmarkCase) -> dict[str, int | float | str | bool]:
     assessment = assess_ipf_benchmark_case(case)
     start = perf_counter()
     result = fit_ipf(

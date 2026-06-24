@@ -29,6 +29,14 @@ If you want to work in a notebook or teaching script, start with
 page uses ``import synthpopcan as spc`` and keeps advanced training, auditing,
 and packaging out of the first path.
 
+If you prefer the command line but want the same beginner lane as the web app,
+run:
+
+.. code-block:: bash
+
+   synthpopcan guide ipf
+   synthpopcan guide model
+
 Advanced source preparation, microdata adapters, model training, audit reports,
 and release-readiness checks are still documented, but they come after the
 beginner generation workflows.
@@ -39,6 +47,7 @@ beginner generation workflows.
 
    introduction
    field-primer
+   status
    installation
 
 .. toctree::

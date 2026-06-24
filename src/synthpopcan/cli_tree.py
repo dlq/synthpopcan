@@ -9,7 +9,7 @@ from pathlib import Path
 import click
 from rich.table import Table
 
-from synthpopcan.cli_output import write_output
+from synthpopcan.cli_output import format_file_access_error, write_output
 from synthpopcan.console import print_table, print_wrote
 from synthpopcan.microdata import (
     SeedSample,
@@ -37,7 +37,7 @@ from synthpopcan.tree import (
     write_tree_model,
 )
 
-PATH = click.Path(path_type=Path)
+_PATH = click.Path(path_type=Path)
 
 
 @click.group()
@@ -46,7 +46,7 @@ def tree() -> None:
 
 
 @tree.command("train")
-@click.argument("source", type=PATH)
+@click.argument("source", type=_PATH)
 @click.option(
     "--method",
     default="conditional-frequency",
@@ -80,7 +80,7 @@ def tree() -> None:
     default=None,
     help="Optional training weight column.",
 )
-@click.option("--out", "out_path", required=True, type=PATH, help="Output model JSON.")
+@click.option("--out", "out_path", required=True, type=_PATH, help="Output model JSON.")
 @click.option(
     "--random-seed",
     default=0,
@@ -143,14 +143,18 @@ def train_tree_generator(
                 random_seed=random_seed,
                 min_support=min_support,
             )
+        write_tree_model(out_path, model)
+    except OSError as exc:
+        raise click.ClickException(
+            _format_tree_file_error(exc, read_paths=(source,), write_paths=(out_path,))
+        ) from exc
     except ValueError as exc:
-        raise click.ClickException(str(exc)) from exc
-    write_tree_model(out_path, model)
+        raise click.ClickException(_format_tree_value_error(exc)) from exc
     print_wrote(out_path)
 
 
 @tree.command("train-linked")
-@click.argument("source", type=PATH)
+@click.argument("source", type=_PATH)
 @click.option(
     "--input-format",
     default="statcan-2016-hierarchical",
@@ -195,19 +199,19 @@ def train_tree_generator(
 @click.option(
     "--household-model-out",
     required=True,
-    type=PATH,
+    type=_PATH,
     help="Output household model JSON.",
 )
 @click.option(
     "--person-model-out",
     required=True,
-    type=PATH,
+    type=_PATH,
     help="Output person model JSON.",
 )
 @click.option(
     "--manifest-out",
     required=True,
-    type=PATH,
+    type=_PATH,
     help="Output training manifest JSON.",
 )
 @click.option(
@@ -324,47 +328,54 @@ def train_linked_tree_generator(
             min_samples_leaf=min_samples_leaf,
             max_depth=max_depth,
         )
+        write_tree_model(household_model_out, household_model)
+        write_tree_model(person_model_out, person_model)
+        write_tree_generation_manifest(
+            manifest_out,
+            {
+                "schema_version": "synthpopcan-linked-tree-training-v1",
+                "command": "tree train-linked",
+                "source": {
+                    "path": str(source),
+                    "source_format": sample.source_format,
+                    "records": len(sample.records),
+                    "households": sample.metadata.get("households", 0),
+                },
+                "column_source": column_source,
+                "target_profile": target_profile,
+                "geography_filter": geography_filter_manifest(
+                    geography_column,
+                    geography_value,
+                ),
+                "method": method,
+                "random_seed": random_seed,
+                "training": {
+                    "household": household_export,
+                    "person": person_export,
+                },
+                "models": {
+                    "household": model_manifest(household_model, household_model_out),
+                    "person": model_manifest(person_model, person_model_out),
+                },
+            },
+        )
+    except OSError as exc:
+        raise click.ClickException(
+            _format_tree_file_error(
+                exc,
+                read_paths=(source,),
+                write_paths=(household_model_out, person_model_out, manifest_out),
+            )
+        ) from exc
     except ValueError as exc:
-        raise click.ClickException(str(exc)) from exc
-
-    write_tree_model(household_model_out, household_model)
-    write_tree_model(person_model_out, person_model)
-    write_tree_generation_manifest(
-        manifest_out,
-        {
-            "schema_version": "synthpopcan-linked-tree-training-v1",
-            "command": "tree train-linked",
-            "source": {
-                "path": str(source),
-                "source_format": sample.source_format,
-                "records": len(sample.records),
-                "households": sample.metadata.get("households", 0),
-            },
-            "column_source": column_source,
-            "target_profile": target_profile,
-            "geography_filter": geography_filter_manifest(
-                geography_column,
-                geography_value,
-            ),
-            "method": method,
-            "random_seed": random_seed,
-            "training": {
-                "household": household_export,
-                "person": person_export,
-            },
-            "models": {
-                "household": model_manifest(household_model, household_model_out),
-                "person": model_manifest(person_model, person_model_out),
-            },
-        },
-    )
+        raise click.ClickException(_format_tree_value_error(exc)) from exc
     print_wrote(household_model_out)
     print_wrote(person_model_out)
     print_wrote(manifest_out)
 
 
 @tree.command("generate")
-@click.argument("model_path", type=PATH)
+@click.argument("model_path", type=_PATH)
 @click.option("--rows", required=True, type=int, help="Number of rows to generate.")
 @click.option(
     "--condition",
@@ -373,11 +384,11 @@ def train_linked_tree_generator(
     help="Condition generated rows with COLUMN=VALUE. Repeat for multiple columns.",
 )
 @click.option(
-    "--out", "out_path", required=True, type=PATH, help="Output synthetic CSV."
+    "--out", "out_path", required=True, type=_PATH, help="Output synthetic CSV."
 )
 @click.option(
     "--manifest-out",
-    type=PATH,
+    type=_PATH,
     default=None,
     help="Optional output JSON manifest with model and seed provenance.",
 )
@@ -418,8 +429,16 @@ def generate_tree_population(
                     "model": model_manifest(model, model_path),
                 },
             )
+    except OSError as exc:
+        raise click.ClickException(
+            _format_tree_file_error(
+                exc,
+                read_paths=(model_path,),
+                write_paths=(out_path, manifest_out),
+            )
+        ) from exc
     except ValueError as exc:
-        raise click.ClickException(str(exc)) from exc
+        raise click.ClickException(_format_tree_value_error(exc)) from exc
     print_wrote(out_path)
     if manifest_out:
         print_wrote(manifest_out)
@@ -427,9 +446,9 @@ def generate_tree_population(
 
 @tree.command("generate-linked")
 @click.option(
-    "--household-model", required=True, type=PATH, help="Household model JSON."
+    "--household-model", required=True, type=_PATH, help="Household model JSON."
 )
-@click.option("--person-model", required=True, type=PATH, help="Person model JSON.")
+@click.option("--person-model", required=True, type=_PATH, help="Person model JSON.")
 @click.option(
     "--households",
     required=True,
@@ -445,13 +464,13 @@ def generate_tree_population(
 @click.option(
     "--households-out",
     required=True,
-    type=PATH,
+    type=_PATH,
     help="Output household CSV.",
 )
 @click.option(
     "--persons-out",
     required=True,
-    type=PATH,
+    type=_PATH,
     help="Output person CSV.",
 )
 @click.option(
@@ -462,7 +481,7 @@ def generate_tree_population(
 )
 @click.option(
     "--manifest-out",
-    type=PATH,
+    type=_PATH,
     default=None,
     help="Optional output JSON manifest with model and seed provenance.",
 )
@@ -518,8 +537,16 @@ def generate_linked_tree_population(
                     "person_model": model_manifest(person_model_payload, person_model),
                 },
             )
+    except OSError as exc:
+        raise click.ClickException(
+            _format_tree_file_error(
+                exc,
+                read_paths=(household_model, person_model),
+                write_paths=(households_out, persons_out, manifest_out),
+            )
+        ) from exc
     except ValueError as exc:
-        raise click.ClickException(str(exc)) from exc
+        raise click.ClickException(_format_tree_value_error(exc)) from exc
     print_wrote(households_out)
     print_wrote(persons_out)
     if manifest_out:
@@ -527,7 +554,7 @@ def generate_linked_tree_population(
 
 
 @tree.command("generate-from-package")
-@click.argument("package_path", type=PATH)
+@click.argument("package_path", type=_PATH)
 @click.option(
     "--households",
     required=True,
@@ -543,13 +570,13 @@ def generate_linked_tree_population(
 @click.option(
     "--households-out",
     required=True,
-    type=PATH,
+    type=_PATH,
     help="Output household CSV.",
 )
 @click.option(
     "--persons-out",
     required=True,
-    type=PATH,
+    type=_PATH,
     help="Output person CSV.",
 )
 @click.option(
@@ -559,7 +586,7 @@ def generate_linked_tree_population(
 )
 @click.option(
     "--manifest-out",
-    type=PATH,
+    type=_PATH,
     default=None,
     help="Optional output JSON manifest with package and seed provenance.",
 )
@@ -615,8 +642,16 @@ def generate_linked_tree_population_from_package(
                     "package": package_inspection,
                 },
             )
+    except OSError as exc:
+        raise click.ClickException(
+            _format_tree_file_error(
+                exc,
+                read_paths=(package_path,),
+                write_paths=(households_out, persons_out, manifest_out),
+            )
+        ) from exc
     except ValueError as exc:
-        raise click.ClickException(str(exc)) from exc
+        raise click.ClickException(_format_tree_value_error(exc)) from exc
     print_wrote(households_out)
     print_wrote(persons_out)
     if manifest_out:
@@ -624,7 +659,7 @@ def generate_linked_tree_population_from_package(
 
 
 @tree.command("audit-model")
-@click.argument("model_path", type=PATH)
+@click.argument("model_path", type=_PATH)
 @click.option(
     "--min-support",
     default=50.0,
@@ -660,18 +695,22 @@ def audit_tree_model_command(
             min_support=min_support,
             max_purity=max_purity,
         )
+    except OSError as exc:
+        raise click.ClickException(
+            format_file_access_error(model_path, "read", exc)
+        ) from exc
     except ValueError as exc:
-        raise click.ClickException(str(exc)) from exc
+        raise click.ClickException(_format_tree_value_error(exc)) from exc
     write_output(report, output_format, title="Tree Model Audit")
 
 
 @tree.command("package-model")
-@click.argument("model_path", type=PATH)
+@click.argument("model_path", type=_PATH)
 @click.option(
     "--out",
     "out_path",
     required=True,
-    type=PATH,
+    type=_PATH,
     help="Output flat tree model package JSON.",
 )
 @click.option(
@@ -702,8 +741,12 @@ def package_tree_model_command(
             min_support=min_support,
             max_purity=max_purity,
         )
+    except OSError as exc:
+        raise click.ClickException(
+            format_file_access_error(model_path, "read", exc)
+        ) from exc
     except ValueError as exc:
-        raise click.ClickException(str(exc)) from exc
+        raise click.ClickException(_format_tree_value_error(exc)) from exc
     if audit["issues"]:
         raise click.ClickException(
             "Model audit did not pass without warnings; inspect audit-model "
@@ -714,16 +757,21 @@ def package_tree_model_command(
         "model": model.to_dict(),
         "audit": audit,
     }
-    out_path.write_text(json.dumps(package, indent=2, sort_keys=True) + "\n")
+    try:
+        out_path.write_text(json.dumps(package, indent=2, sort_keys=True) + "\n")
+    except OSError as exc:
+        raise click.ClickException(
+            format_file_access_error(out_path, "write", exc)
+        ) from exc
     print_wrote(out_path)
 
 
 @tree.command("prepare-model-release")
-@click.argument("model_path", type=PATH)
-@click.option("--out", "out_path", required=True, type=PATH)
+@click.argument("model_path", type=_PATH)
+@click.option("--out", "out_path", required=True, type=_PATH)
 @click.option(
     "--manifest-out",
-    type=PATH,
+    type=_PATH,
     default=None,
     help="Optional release-review manifest JSON.",
 )
@@ -750,8 +798,12 @@ def prepare_tree_model_release_command(
             min_support=min_support,
             max_purity=max_purity,
         )
+    except OSError as exc:
+        raise click.ClickException(
+            format_file_access_error(model_path, "read", exc)
+        ) from exc
     except ValueError as exc:
-        raise click.ClickException(str(exc)) from exc
+        raise click.ClickException(_format_tree_value_error(exc)) from exc
 
     blocking_issues = release_blocking_issues(audit)
     if blocking_issues:
@@ -761,24 +813,29 @@ def prepare_tree_model_release_command(
         )
 
     candidate = replace(model, release_class="publishable_candidate")
-    write_tree_model(out_path, candidate)
-    if manifest_out:
-        write_tree_generation_manifest(
-            manifest_out,
-            {
-                "schema_version": "synthpopcan-tree-release-manifest-v1",
-                "command": "tree prepare-model-release",
-                "source_model": str(model_path),
-                "output_model": str(out_path),
-                "release_class": "publishable_candidate",
-                "review_note": review_note,
-                "thresholds": {
-                    "min_support": min_support,
-                    "max_purity": max_purity,
+    try:
+        write_tree_model(out_path, candidate)
+        if manifest_out:
+            write_tree_generation_manifest(
+                manifest_out,
+                {
+                    "schema_version": "synthpopcan-tree-release-manifest-v1",
+                    "command": "tree prepare-model-release",
+                    "source_model": str(model_path),
+                    "output_model": str(out_path),
+                    "release_class": "publishable_candidate",
+                    "review_note": review_note,
+                    "thresholds": {
+                        "min_support": min_support,
+                        "max_purity": max_purity,
+                    },
+                    "audit": audit,
                 },
-                "audit": audit,
-            },
-        )
+            )
+    except OSError as exc:
+        raise click.ClickException(
+            format_file_access_error(exc.filename or out_path, "write", exc)
+        ) from exc
     print_wrote(out_path)
     if manifest_out:
         print_wrote(manifest_out)
@@ -786,12 +843,12 @@ def prepare_tree_model_release_command(
 
 @tree.command("release-readiness")
 @click.option(
-    "--household-model", required=True, type=PATH, help="Household model JSON."
+    "--household-model", required=True, type=_PATH, help="Household model JSON."
 )
-@click.option("--person-model", required=True, type=PATH, help="Person model JSON.")
+@click.option("--person-model", required=True, type=_PATH, help="Person model JSON.")
 @click.option(
     "--training-manifest",
-    type=PATH,
+    type=_PATH,
     default=None,
     help="Optional linked tree training manifest JSON for provenance.",
 )
@@ -839,8 +896,12 @@ def linked_tree_release_readiness_command(
             max_purity=max_purity,
         )
         training_provenance = read_linked_training_manifest(training_manifest)
+    except OSError as exc:
+        raise click.ClickException(
+            format_file_access_error(exc.filename or household_model, "read", exc)
+        ) from exc
     except ValueError as exc:
-        raise click.ClickException(str(exc)) from exc
+        raise click.ClickException(_format_tree_value_error(exc)) from exc
 
     report = build_linked_release_readiness_report(
         household_model=household_model_payload,
@@ -859,30 +920,30 @@ def linked_tree_release_readiness_command(
 
 @tree.command("package-linked-models")
 @click.option(
-    "--household-model", required=True, type=PATH, help="Household model JSON."
+    "--household-model", required=True, type=_PATH, help="Household model JSON."
 )
-@click.option("--person-model", required=True, type=PATH, help="Person model JSON.")
+@click.option("--person-model", required=True, type=_PATH, help="Person model JSON.")
 @click.option(
     "--training-manifest",
-    type=PATH,
+    type=_PATH,
     default=None,
     help="Linked tree training manifest JSON for package provenance.",
 )
 @click.option(
     "--source-provenance",
-    type=PATH,
+    type=_PATH,
     default=None,
     help="Reviewed source provenance JSON for citation and access metadata.",
 )
 @click.option(
     "--household-release-manifest",
-    type=PATH,
+    type=_PATH,
     default=None,
     help="Optional household model release manifest from prepare-model-release.",
 )
 @click.option(
     "--person-release-manifest",
-    type=PATH,
+    type=_PATH,
     default=None,
     help="Optional person model release manifest from prepare-model-release.",
 )
@@ -891,7 +952,7 @@ def linked_tree_release_readiness_command(
     default="",
     help="Short human review note to store in the linked package.",
 )
-@click.option("--out", "out_path", required=True, type=PATH)
+@click.option("--out", "out_path", required=True, type=_PATH)
 @click.option(
     "--household-size-column",
     default="household_size",
@@ -962,8 +1023,12 @@ def package_linked_tree_models_command(
             person_model_path=person_model,
             release_manifests=release_manifests,
         )
+    except OSError as exc:
+        raise click.ClickException(
+            format_file_access_error(exc.filename or household_model, "read", exc)
+        ) from exc
     except ValueError as exc:
-        raise click.ClickException(str(exc)) from exc
+        raise click.ClickException(_format_tree_value_error(exc)) from exc
     if household_audit["issues"] or person_audit["issues"]:
         raise click.ClickException(
             "Linked model audit did not pass without warnings; inspect "
@@ -1009,12 +1074,17 @@ def package_linked_tree_models_command(
             "contains_source_identifiers": False,
         },
     }
-    out_path.write_text(json.dumps(package, indent=2, sort_keys=True) + "\n")
+    try:
+        out_path.write_text(json.dumps(package, indent=2, sort_keys=True) + "\n")
+    except OSError as exc:
+        raise click.ClickException(
+            format_file_access_error(out_path, "write", exc)
+        ) from exc
     print_wrote(out_path)
 
 
 @tree.command("inspect-package")
-@click.argument("package_path", type=PATH)
+@click.argument("package_path", type=_PATH)
 @click.option(
     "--format",
     "output_format",
@@ -1030,8 +1100,12 @@ def inspect_linked_tree_package_command(
     try:
         package = read_linked_model_package(package_path)
         report = build_linked_package_inspection(package, package_path)
+    except OSError as exc:
+        raise click.ClickException(
+            format_file_access_error(package_path, "read", exc)
+        ) from exc
     except ValueError as exc:
-        raise click.ClickException(str(exc)) from exc
+        raise click.ClickException(_format_tree_value_error(exc)) from exc
 
     if output_format == "json":
         write_output(report, "json")
@@ -1044,6 +1118,74 @@ def parse_column_list(value: str, label: str) -> tuple[str, ...]:
     if not columns:
         raise ValueError(f"at least one {label} value is required")
     return columns
+
+
+def _format_tree_file_error(
+    exc: OSError,
+    *,
+    read_paths: tuple[Path | None, ...] = (),
+    write_paths: tuple[Path | None, ...] = (),
+) -> str:
+    """Format tree-command file errors with read/write-specific wording."""
+
+    failing_path = Path(exc.filename) if exc.filename else None
+    if failing_path is not None:
+        for path in read_paths:
+            if path is not None and same_model_path(failing_path, path):
+                return format_file_access_error(path, "read", exc)
+        for path in write_paths:
+            if path is not None and same_model_path(failing_path, path):
+                return format_file_access_error(path, "write", exc)
+        return format_file_access_error(failing_path, "access", exc)
+    if read_paths:
+        first_read_path = next((path for path in read_paths if path is not None), None)
+        if first_read_path is not None:
+            return format_file_access_error(first_read_path, "read", exc)
+    if write_paths:
+        first_write_path = next(
+            (path for path in write_paths if path is not None), None
+        )
+        if first_write_path is not None:
+            return format_file_access_error(first_write_path, "write", exc)
+    return format_file_access_error("file", "access", exc)
+
+
+def _format_tree_value_error(exc: ValueError) -> str:
+    """Convert tree/model validation errors into CLI-facing wording."""
+
+    message = str(exc)
+    schema_messages = {
+        "unsupported linked model package schema": (
+            "This file is not a supported linked household/person model package. "
+            "Choose a package created by `tree package-linked-models` or use the "
+            "web app's premade model chooser."
+        ),
+        "unsupported linked tree training manifest schema": (
+            "This file is not a supported linked training manifest. Use the "
+            "manifest written by `tree train-linked --manifest-out`."
+        ),
+        "unsupported tree release manifest schema": (
+            "This file is not a supported tree release manifest. Use the manifest "
+            "written by `tree prepare-model-release --manifest-out`."
+        ),
+        "unsupported source provenance schema": (
+            "This file is not a supported source provenance file. Use a reviewed "
+            "source provenance JSON with schema_version "
+            "'synthpopcan-source-provenance-v1'."
+        ),
+        "unsupported tree model type in linked package": (
+            "The linked package contains a model type SynthPopCan cannot generate "
+            "from yet."
+        ),
+    }
+    if message in schema_messages:
+        return schema_messages[message]
+    if message.endswith("must be a JSON object"):
+        return message.replace(
+            "must be a JSON object",
+            "must contain a JSON object, not a list or plain value",
+        )
+    return message
 
 
 def release_blocking_issues(audit: dict[str, object]) -> list[dict[str, object]]:
@@ -1288,24 +1430,32 @@ def build_linked_package_inspection(
     package_path: Path,
 ) -> dict[str, object]:
     training_manifest = object_or_empty(package.get("training_manifest"))
-    source_provenance = object_or_empty(package.get("source_provenance"))
+    source_provenance = object_or_empty(
+        package.get("source_provenance") or package.get("provenance")
+    )
     privacy = object_or_empty(package.get("privacy"))
     thresholds = object_or_empty(package.get("thresholds"))
     model_summaries = object_or_empty(package.get("model_summaries"))
+    embedded_models = object_or_empty(package.get("models"))
     audits = object_or_empty(package.get("audits"))
     release_manifests = object_or_empty(package.get("release_manifests"))
+    review = object_or_empty(package.get("review"))
 
     return {
         "schema_version": "synthpopcan-linked-tree-package-inspection-v1",
         "package_path": str(package_path),
+        "name": package.get("name"),
         "package_type": package.get("package_type"),
         "package_schema_version": package.get("schema_version"),
         "household_size_column": package.get("household_size_column"),
-        "review_note": package.get("review_note", ""),
+        "review_note": package.get("review_note") or review.get("note") or "",
         "source": {
-            "title": source_provenance.get("title"),
+            "title": source_provenance.get("title")
+            or source_provenance.get("training_data")
+            or source_provenance.get("source"),
             "provider": source_provenance.get("provider"),
-            "access_class": source_provenance.get("access_class"),
+            "access_class": source_provenance.get("access_class")
+            or ("demo" if privacy.get("safe_demo") else None),
             "citation": source_provenance.get("citation"),
             "redistribution_note": source_provenance.get("redistribution_note"),
             "url": source_provenance.get("url"),
@@ -1323,7 +1473,7 @@ def build_linked_package_inspection(
             "contains_source_identifiers": privacy.get("contains_source_identifiers"),
         },
         "thresholds": thresholds,
-        "models": summarize_package_models(model_summaries),
+        "models": summarize_package_models(model_summaries or embedded_models),
         "audits": summarize_package_audits(audits),
         "release_manifests": summarize_release_manifests(release_manifests),
     }
@@ -1339,14 +1489,17 @@ def summarize_package_models(
     summaries: dict[str, dict[str, object]] = {}
     for level in ("household", "person"):
         summary = object_or_empty(model_summaries.get(level))
+        spec = object_or_empty(summary.get("spec"))
         summaries[level] = {
-            "level": summary.get("level"),
+            "level": summary.get("level") or spec.get("level"),
             "model_type": summary.get("model_type"),
             "release_class": summary.get("release_class"),
             "records_trained": summary.get("records_trained"),
             "bytes": summary.get("bytes"),
-            "target_columns": summary.get("target_columns"),
-            "conditioning_columns": summary.get("conditioning_columns"),
+            "target_columns": summary.get("target_columns")
+            or spec.get("target_columns"),
+            "conditioning_columns": summary.get("conditioning_columns")
+            or spec.get("conditioning_columns"),
         }
     return summaries
 
@@ -1399,23 +1552,38 @@ def print_linked_package_inspection_table(report: dict[str, object]) -> None:
     models = object_or_empty(report.get("models"))
     audits = object_or_empty(report.get("audits"))
 
+    add_optional_table_row(table, "Name", report.get("name"))
     table.add_row("Package", str(report.get("package_path", "")))
-    table.add_row("Type", str(report.get("package_type", "")))
-    table.add_row("Source", format_source_label(source))
-    table.add_row("Access", str(source.get("access_class", "")))
-    table.add_row("Redistribution", str(source.get("redistribution_note", "")))
-    table.add_row(
-        "Geography", format_geography_filter(training.get("geography_filter"))
+    add_optional_table_row(table, "Type", report.get("package_type"))
+    add_optional_table_row(table, "Source", format_source_label(source))
+    add_optional_table_row(table, "Access", source.get("access_class"))
+    add_optional_table_row(table, "Redistribution", source.get("redistribution_note"))
+    add_optional_table_row(
+        table, "Geography", format_geography_filter(training.get("geography_filter"))
     )
-    table.add_row("Target profile", str(training.get("target_profile", "")))
-    table.add_row("Method", str(training.get("method", "")))
+    add_optional_table_row(table, "Target profile", training.get("target_profile"))
+    add_optional_table_row(table, "Method", training.get("method"))
     table.add_row("Privacy", format_privacy_summary(privacy))
     table.add_row("Household model", format_model_summary(models.get("household")))
     table.add_row("Person model", format_model_summary(models.get("person")))
-    table.add_row("Household audit", format_audit_summary(audits.get("household")))
-    table.add_row("Person audit", format_audit_summary(audits.get("person")))
-    table.add_row("Review note", str(report.get("review_note", "")))
+    add_optional_table_row(
+        table, "Household audit", format_audit_summary(audits.get("household"))
+    )
+    add_optional_table_row(
+        table, "Person audit", format_audit_summary(audits.get("person"))
+    )
+    add_optional_table_row(table, "Review note", report.get("review_note"))
     print_table(table)
+
+
+def add_optional_table_row(table: Table, label: str, value: object) -> None:
+    text = format_optional(value)
+    if text:
+        table.add_row(label, text)
+
+
+def format_optional(value: object) -> str:
+    return "" if value is None else str(value)
 
 
 def format_source_label(source: dict[str, object]) -> str:
@@ -1436,35 +1604,99 @@ def format_geography_filter(value: object) -> str:
 
 def format_privacy_summary(privacy: dict[str, object]) -> str:
     status = (
-        "publishable_candidate"
+        "Publishable candidate"
         if privacy.get("publishable_candidate")
-        else "not_publishable"
+        else "Not marked publishable"
     )
-    raw_rows = privacy.get("contains_raw_rows")
-    source_ids = privacy.get("contains_source_identifiers")
-    return f"{status}; raw_rows={raw_rows}; source_ids={source_ids}"
+    raw_rows = _format_boolean_phrase(
+        privacy.get("contains_raw_rows"),
+        true_text="Contains raw rows",
+        false_text="No raw rows",
+    )
+    source_ids = _format_boolean_phrase(
+        privacy.get("contains_source_identifiers"),
+        true_text="Contains source identifiers",
+        false_text="No source identifiers",
+    )
+    return "; ".join(part for part in (status, raw_rows, source_ids) if part)
 
 
 def format_model_summary(value: object) -> str:
     model = object_or_empty(value)
+    if not model:
+        return ""
     target_columns = model.get("target_columns")
     targets = len(target_columns) if isinstance(target_columns, list) else 0
-    return (
-        f"{model.get('release_class', '')}; "
-        f"{format_int_or_blank(model.get('records_trained'))} records; "
-        f"{format_bytes_or_blank(model.get('bytes'))}; "
-        f"{targets} targets"
-    )
+    parts = [
+        _format_level(model.get("level")),
+        _format_model_type(model.get("model_type")),
+        _format_release_class(model.get("release_class")),
+    ]
+    records = format_int_or_blank(model.get("records_trained"))
+    if records:
+        parts.append(f"{records} records")
+    size = format_bytes_or_blank(model.get("bytes"))
+    if size:
+        parts.append(size)
+    parts.append(f"{targets} targets")
+    return "; ".join(part for part in parts if part)
 
 
 def format_audit_summary(value: object) -> str:
     audit = object_or_empty(value)
+    if not audit or not any(value is not None for value in audit.values()):
+        return ""
     return (
-        f"passed={audit.get('passed')}; "
+        f"{_format_audit_passed(audit.get('passed'))}; "
         f"issues={format_int_or_blank(audit.get('issue_count'))}; "
-        f"min_support={format_number_or_blank(audit.get('minimum_support'))}; "
-        f"high_purity={format_int_or_blank(audit.get('above_max_purity'))}"
+        f"minimum support={format_number_or_blank(audit.get('minimum_support'))}; "
+        f"high purity={format_int_or_blank(audit.get('above_max_purity'))}"
     )
+
+
+def _format_boolean_phrase(
+    value: object,
+    *,
+    true_text: str,
+    false_text: str,
+) -> str:
+    if value is True:
+        return true_text
+    if value is False:
+        return false_text
+    return ""
+
+
+def _format_level(value: object) -> str:
+    if value == "household":
+        return "Household"
+    if value == "person":
+        return "Person"
+    return format_optional(value)
+
+
+def _format_model_type(value: object) -> str:
+    if value == "conditional-frequency":
+        return "Conditional frequency"
+    if value == "cart":
+        return "CART"
+    return format_optional(value)
+
+
+def _format_release_class(value: object) -> str:
+    if value == "publishable_candidate":
+        return "Publishable candidate"
+    if value == "private_working":
+        return "Private working model"
+    return format_optional(value)
+
+
+def _format_audit_passed(value: object) -> str:
+    if value is True:
+        return "Audit passed"
+    if value is False:
+        return "Audit has warnings"
+    return "Audit not available"
 
 
 def format_bytes_or_blank(value: object) -> str:

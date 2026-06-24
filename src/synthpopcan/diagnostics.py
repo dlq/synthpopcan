@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from synthpopcan.controls import ControlTable
-from synthpopcan.ipf import IPFResult, Record, category_key, weighted_totals
+from synthpopcan.ipf import IPFResult, Record, _category_key, weighted_totals
 
 
 def build_ipf_fit_report(
@@ -288,7 +288,7 @@ def find_unsupported_control_cells(
             all(dimension in row for dimension in margin.dimensions)
             for row in seed_rows
         ):
-            seed_keys = {category_key(row, margin.dimensions) for row in seed_rows}
+            seed_keys = {_category_key(row, margin.dimensions) for row in seed_rows}
         for cell in margin.cells:
             key = tuple(cell.categories[dimension] for dimension in margin.dimensions)
             if cell.count > 0 and key not in seed_keys:
