@@ -15,6 +15,19 @@ It does not expose training, auditing, packaging, source inspection, or release
 workflows at the top level. Those remain available in the command line and in
 the lower-level library modules described in [Advanced Library Use](library.md).
 
+## The Same Two Beginner Workflows
+
+The beginner API mirrors the two main web app paths:
+
+1. **IPF from margin tables:** read seed rows, read normalized controls, fit
+   IPF weights, then write a weighted or expanded population artifact.
+2. **Generate from existing model:** read a reviewed model package, generate
+   linked household/person rows, then write the generated CSV files.
+
+Use the web app when you want guided local controls, previews, and downloads.
+Use the beginner API when you want the same work inside a notebook, script, or
+teaching example.
+
 ## Why Use a Notebook?
 
 A notebook lets you keep prose, code, output, and interpretation together. That

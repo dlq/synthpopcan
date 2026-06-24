@@ -10,10 +10,10 @@ Near-term goals:
 
 Broader SynthEco-style enrichment with cohort, environmental, school, healthcare, and food-access layers is intentionally deferred until the base population synthesis workflow is stable.
 
-Detailed documentation lives under `docs/`. Start with `docs/introduction.md`
-for concepts, `docs/field-primer.md` for the broader methods primer and tool
-map, `docs/installation.md` for the current source-checkout setup, `docs/ipf.md`
-for IPF workflows, and `docs/tree.md` for linked household/person tree models.
+Detailed documentation lives under `docs/`. Start with `docs/index.rst` for
+task-based navigation to the web app, IPF from StatCan margin tables,
+generated-from-model workflows, the beginner Python API, and advanced
+microdata/model-training material.
 
 ## Developer Benchmarks
 

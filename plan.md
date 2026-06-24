@@ -607,10 +607,13 @@ Near-term usability priorities:
    first-pass linked household/person validation summary.
 3. Promote the beginner Python API in the documentation and keep its examples
    runnable. The API reference should remain autodoc-driven, but workflow docs
-   should show the short `import synthpopcan as spc` path first.
+   should show the short `import synthpopcan as spc` path first. Status: first
+   pass complete; the docs landing page and beginner API guide now route users
+   through the same two workflow labels as the web app and CLI guide.
 4. Do a docs navigation pass: route readers first to the web app, IPF from
    StatCan tables, generated-from-model workflows, and only then advanced
-   microdata/model-training/release material.
+   microdata/model-training/release material. Status: first pass complete in
+   the Sphinx index and web app guide.
 5. Start documentation-example checks for the most visible beginner workflows.
    The project goal is 100% line coverage, but add the gate gradually: use
    coverage reports to close blind spots while the public surfaces are still

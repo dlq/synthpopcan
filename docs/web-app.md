@@ -22,6 +22,45 @@ uv run synthpopcan serve
 By default, the app listens on `127.0.0.1:8000` and opens in the default
 browser.
 
+## Choose a Workflow
+
+The first screen has two beginner paths. Both run locally on your machine.
+
+### IPF from margin tables
+
+Choose this when you want to fit seed rows to public margin/control totals.
+This path can start in two ways:
+
+- use the demo files or blank templates when you are learning the format; or
+- search for a Statistics Canada WDS product ID, inspect the table, and let the
+  local helper fill the seed CSV and normalized margin/control CSV.
+
+After the two IPF input files are loaded, keep **Weights CSV** as the first
+output choice. Weighted output is smaller and easier to inspect. Use expanded
+rows only for small browser runs or when a downstream tool really needs one row
+per generated record.
+
+The same workflow is documented for command-line use in {doc}`statcan`,
+{doc}`controls`, and {doc}`ipf`.
+
+### Generate from existing model
+
+Choose this when you have a prepared model JSON or a linked household/person
+package JSON. The web app can also load premade packages served by the local
+helper. The bundled demo package is synthetic toy data, not Census microdata.
+
+For a linked household/person package, the browser generates household rows
+first and then person rows inside each household. The result panel shows:
+
+- generated household and person counts;
+- whether each person row links to a known household;
+- whether each household's `household_size` matches its generated persons;
+- download links for `households.csv` and `persons.csv`;
+- short previews of both CSV files.
+
+The first web app deliberately does not train models. Training, audit, and
+release workflows remain advanced command-line/library work; see {doc}`tree`.
+
 ## Options
 
 ```bash
