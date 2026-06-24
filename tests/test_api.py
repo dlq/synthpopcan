@@ -9,6 +9,7 @@ import pytest
 import synthpopcan as spc
 from synthpopcan.controls import ControlCell, ControlMargin, ControlTable
 from synthpopcan.ipf import IPFResult
+from synthpopcan.tree import read_tree_training_sample, train_cart_model
 from synthpopcan.web_demo_models import demo_model_payload
 
 
@@ -209,6 +210,63 @@ def test_top_level_api_accepts_package_path_and_default_household_size(
 
     assert len(population.households) == 2
     assert len(population.persons) >= 2
+
+
+def test_top_level_api_generates_from_cart_model_package(tmp_path: Path) -> None:
+    household_source = tmp_path / "cart-households.csv"
+    household_source.write_text(
+        "geo,household_size,tenure,weight\n"
+        "QC,1,renter,1\n"
+        "QC,2,owner,1\n"
+        "ON,3,owner,1\n"
+    )
+    person_source = tmp_path / "cart-persons.csv"
+    person_source.write_text(
+        "geo,household_size,tenure,age_group,sex,weight\n"
+        "QC,1,renter,adult,F,1\n"
+        "QC,2,owner,child,M,1\n"
+        "ON,3,owner,adult,M,1\n"
+    )
+    household_model = train_cart_model(
+        read_tree_training_sample(
+            household_source,
+            level="household",
+            target_columns=("household_size", "tenure"),
+            conditioning_columns=("geo",),
+            weight_column="weight",
+        ),
+        min_samples_leaf=1,
+    )
+    person_model = train_cart_model(
+        read_tree_training_sample(
+            person_source,
+            level="person",
+            target_columns=("age_group", "sex"),
+            conditioning_columns=("geo", "household_size", "tenure"),
+            weight_column="weight",
+        ),
+        min_samples_leaf=1,
+    )
+    package = {
+        "schema_version": "synthpopcan-linked-tree-package-v1",
+        "household_size_column": "household_size",
+        "privacy": {"publishable_candidate": True},
+        "models": {
+            "household": household_model.to_dict(),
+            "person": person_model.to_dict(),
+        },
+    }
+
+    population = spc.generate_from_model(
+        package,
+        households=2,
+        conditions={"geo": "QC"},
+        random_seed=7,
+    )
+
+    assert len(population.households) == 2
+    assert len(population.persons) >= 2
+    assert {row["geo"] for row in population.households} == {"QC"}
 
 
 def write_csv(path: Path, fieldnames: list[str], rows: list[dict[str, str]]) -> None:
