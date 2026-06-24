@@ -4,6 +4,7 @@ import pytest
 from click import ClickException
 
 from synthpopcan.cli import main
+from synthpopcan.cli_microdata import parse_columns, write_rows
 from synthpopcan.microdata import (
     SeedSample,
     build_tree_geography_feasibility_report,
@@ -128,6 +129,29 @@ def test_cli_inspects_fixture_without_optional_seed_columns(tmp_path, capsys) ->
     assert payload["geography_columns"] == []
     assert payload["id_columns"] == []
     assert payload["weight_column"] is None
+
+
+def test_cli_microdata_inspect_requires_fixture_level(tmp_path) -> None:
+    source = tmp_path / "people.csv"
+    source.write_text("age_group,sex\nadult,F\n")
+
+    with pytest.raises(ClickException, match="fixture-v1 requires --level"):
+        main(["microdata", "inspect", str(source), "--input-format", "fixture-v1"])
+
+    with pytest.raises(ClickException, match="missing required columns: weight"):
+        main(
+            [
+                "microdata",
+                "inspect",
+                str(source),
+                "--input-format",
+                "fixture-v1",
+                "--level",
+                "person",
+                "--weight-column",
+                "weight",
+            ]
+        )
 
 
 def test_reads_statcan_2016_hierarchical_seed_sample(tmp_path) -> None:
@@ -351,6 +375,69 @@ def test_cli_exports_household_seed_csv_from_statcan_2016_hierarchical(
     assert payload["columns"] == ["HH_ID", "TENUR", "household_size", "WEIGHT"]
 
 
+def test_cli_exports_fixture_seed_as_table_and_requires_level(tmp_path, capsys) -> None:
+    source = tmp_path / "people.csv"
+    output = tmp_path / "seed.csv"
+    source.write_text("person_id,geo,age_group,sex,weight\np1,QC,adult,F,1\n")
+
+    assert (
+        main(
+            [
+                "microdata",
+                "export-seed",
+                str(source),
+                "--input-format",
+                "fixture-v1",
+                "--level",
+                "person",
+                "--columns",
+                "age_group,sex",
+                "--weight-column",
+                "weight",
+                "--geography-columns",
+                "geo",
+                "--id-columns",
+                "person_id",
+                "--out",
+                str(output),
+            ]
+        )
+        == 0
+    )
+    assert "Seed Export Summary" in capsys.readouterr().out
+
+    with pytest.raises(ClickException, match="fixture-v1 requires --level"):
+        main(
+            [
+                "microdata",
+                "export-seed",
+                str(source),
+                "--input-format",
+                "fixture-v1",
+                "--columns",
+                "age_group",
+                "--out",
+                str(output),
+            ]
+        )
+    with pytest.raises(ClickException, match="missing required columns: missing"):
+        main(
+            [
+                "microdata",
+                "export-seed",
+                str(source),
+                "--input-format",
+                "fixture-v1",
+                "--level",
+                "person",
+                "--columns",
+                "missing",
+                "--out",
+                str(output),
+            ]
+        )
+
+
 def test_exports_person_training_rows_from_statcan_2016_hierarchical(tmp_path) -> None:
     source = tmp_path / "hierarchical.csv"
     source.write_text(
@@ -461,6 +548,79 @@ def test_cli_exports_training_csv_from_statcan_2016_hierarchical(
     assert payload["level"] == "person"
     assert payload["target_columns"] == ["AGEGRP", "SEX"]
     assert payload["conditioning_columns"] == ["TENUR", "household_size"]
+
+
+def test_cli_exports_training_csv_as_table_and_wraps_bad_columns(
+    tmp_path,
+    capsys,
+) -> None:
+    source = tmp_path / "hierarchical.csv"
+    output = tmp_path / "person-training.csv"
+    source.write_text(
+        "HH_ID,EF_ID,CF_ID,PP_ID,WEIGHT,AGEGRP,SEX,TENUR\n"
+        "1,11,111,11101,100.5,adult,F,owner\n"
+    )
+
+    assert (
+        main(
+            [
+                "microdata",
+                "export-training",
+                str(source),
+                "--input-format",
+                "statcan-2016-hierarchical",
+                "--level",
+                "person",
+                "--target-columns",
+                "AGEGRP",
+                "--conditioning-columns",
+                "TENUR",
+                "--out",
+                str(output),
+            ]
+        )
+        == 0
+    )
+    assert "Training Export Summary" in capsys.readouterr().out
+
+    with pytest.raises(ClickException, match="at least one column"):
+        main(
+            [
+                "microdata",
+                "export-training",
+                str(source),
+                "--input-format",
+                "statcan-2016-hierarchical",
+                "--level",
+                "person",
+                "--target-columns",
+                " , ",
+                "--conditioning-columns",
+                "TENUR",
+                "--out",
+                str(output),
+            ]
+        )
+    bad_source = tmp_path / "bad-hierarchical.csv"
+    bad_source.write_text("HH_ID,WEIGHT\n1,1\n")
+    with pytest.raises(ClickException, match="missing required columns"):
+        main(
+            [
+                "microdata",
+                "export-training",
+                str(bad_source),
+                "--input-format",
+                "statcan-2016-hierarchical",
+                "--level",
+                "person",
+                "--target-columns",
+                "AGEGRP",
+                "--conditioning-columns",
+                "TENUR",
+                "--out",
+                str(output),
+            ]
+        )
 
 
 def test_exports_household_training_rows_from_statcan_2016_hierarchical(
@@ -622,6 +782,26 @@ def test_cli_checks_household_seed_columns_as_readable_table(tmp_path, capsys) -
     assert "ROOMS" in output
     assert "Problem" in output
     assert "varies within 1 household" in output
+
+
+def test_cli_check_seed_wraps_bad_hierarchical_source(tmp_path) -> None:
+    source = tmp_path / "bad.csv"
+    source.write_text("HH_ID,WEIGHT\n1,1\n")
+
+    with pytest.raises(ClickException, match="missing required columns"):
+        main(
+            [
+                "microdata",
+                "check-seed",
+                str(source),
+                "--input-format",
+                "statcan-2016-hierarchical",
+                "--level",
+                "household",
+                "--columns",
+                "TENUR",
+            ]
+        )
 
 
 def test_suggests_tree_column_blocks_from_statcan_2016_columns(tmp_path) -> None:
@@ -857,6 +1037,50 @@ def test_cli_reports_tree_geography_feasibility_as_json(tmp_path, capsys) -> Non
     assert report["regions"][0]["tier"] == "likely"
 
 
+def test_cli_reports_tree_geography_feasibility_as_table_and_wraps_errors(
+    tmp_path,
+    capsys,
+) -> None:
+    source = tmp_path / "hierarchical.csv"
+    source.write_text(
+        "HH_ID,EF_ID,CF_ID,PP_ID,WEIGHT,PR,TENUR,AGEGRP,SEX\n"
+        "1,11,111,11101,1,24,1,adult,F\n"
+    )
+
+    assert (
+        main(
+            [
+                "microdata",
+                "tree-geography-feasibility",
+                str(source),
+                "--input-format",
+                "statcan-2016-hierarchical",
+                "--geography-column",
+                "PR",
+                "--min-support",
+                "1",
+                "--max-purity",
+                "1",
+            ]
+        )
+        == 0
+    )
+    assert "Tree Geography Feasibility" in capsys.readouterr().out
+
+    with pytest.raises(ClickException, match="missing required columns"):
+        main(
+            [
+                "microdata",
+                "tree-geography-feasibility",
+                str(source),
+                "--input-format",
+                "statcan-2016-hierarchical",
+                "--geography-column",
+                "MISSING",
+            ]
+        )
+
+
 def test_cli_suggests_tree_columns_as_json(tmp_path, capsys) -> None:
     source = tmp_path / "hierarchical.csv"
     source.write_text(
@@ -887,6 +1111,41 @@ def test_cli_suggests_tree_columns_as_json(tmp_path, capsys) -> None:
         "DTYPE",
     ]
     assert payload["blocks"][1]["target_columns"] == ["AGEGRP", "SEX"]
+
+
+def test_cli_suggests_tree_columns_as_table_and_wraps_errors(tmp_path, capsys) -> None:
+    source = tmp_path / "hierarchical.csv"
+    source.write_text(
+        "HH_ID,EF_ID,CF_ID,PP_ID,WEIGHT,PR,TENUR,DTYPE,AGEGRP,SEX\n"
+        "1,11,111,11101,1,24,1,2,4,1\n"
+    )
+
+    assert (
+        main(
+            [
+                "microdata",
+                "suggest-tree-columns",
+                str(source),
+                "--input-format",
+                "statcan-2016-hierarchical",
+            ]
+        )
+        == 0
+    )
+    assert "Tree Column Suggestions" in capsys.readouterr().out
+
+    bad_source = tmp_path / "bad.csv"
+    bad_source.write_text("HH_ID,WEIGHT\n1,1\n")
+    with pytest.raises(ClickException, match="missing required columns"):
+        main(
+            [
+                "microdata",
+                "suggest-tree-columns",
+                str(bad_source),
+                "--input-format",
+                "statcan-2016-hierarchical",
+            ]
+        )
 
 
 def test_household_seed_export_rejects_conflicting_household_attributes(
@@ -967,6 +1226,13 @@ def test_seed_and_training_exports_reject_invalid_inputs(tmp_path) -> None:
         check_statcan_2016_household_seed_columns(fixture, columns=("TENUR",))
     with pytest.raises(ValueError, match="at least one household column"):
         check_statcan_2016_household_seed_columns(hierarchical, columns=())
+
+
+def test_cli_microdata_helpers_reject_empty_columns_and_rows(tmp_path) -> None:
+    with pytest.raises(ClickException, match="at least one column"):
+        parse_columns(" , ")
+    with pytest.raises(ValueError, match="empty CSV output"):
+        write_rows(tmp_path / "empty.csv", [])
 
 
 def test_tree_column_block_resolution_and_helper_errors(tmp_path) -> None:
