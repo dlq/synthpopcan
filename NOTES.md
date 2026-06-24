@@ -4,7 +4,8 @@ Date: 2026-06-21
 
 ## Purpose
 
-This note synthesizes the local material currently in `~/Downloads` and recent external work relevant to a narrower near-term goal:
+This note synthesizes project source material reviewed locally, along with
+recent external work relevant to a narrower near-term goal:
 
 1. Build a Python library, CLI, and web app that can create a synthetic population through IPF from arbitrary Statistics Canada margin/control tables.
 2. Build a second workflow that creates household- and person-level synthetic populations with a tree-based synthetic population generator for geographic subregions using Canadian 2016 Census data.
@@ -107,15 +108,15 @@ The main conclusion is that these should be treated as two related but distinct 
 - A **general margin-table IPF engine** for arbitrary StatCan tables, where the user supplies or selects a margin table and the system constructs a fitted joint distribution against a seed sample or prior.
 - A **2016 Census household/person engine** that uses the Canadian 2016 PUMF individual and hierarchical files, Census Profile controls, and geography-specific constraints. Tree models should generate realistic conditional household/person records, but they should be followed by calibration or constrained sampling so outputs match census controls.
 
-## Local Material In Downloads
+## Local Source Material Reviewed
 
 ### Proposal And Product Intent
 
-Relevant files:
+Reviewed source-bundle entries:
 
-- `/Users/dlq/Downloads/Proposal/CIHR Operating Research Grant 01.10.2018_PROPOSAL.pdf`
-- `/Users/dlq/Downloads/Proposal/CIHR Operating Research Grant 01.10.2018_APPENDIX.pdf`
-- `/Users/dlq/Downloads/Papers/SynthEco platform methods paper - 06 Aug 2020.docx`
+- `Proposal/CIHR Operating Research Grant 01.10.2018_PROPOSAL.pdf`
+- `Proposal/CIHR Operating Research Grant 01.10.2018_APPENDIX.pdf`
+- `Papers/SynthEco platform methods paper - 06 Aug 2020.docx`
 
 The proposal describes SynthEco as a platform for creating, visualizing, and downloading "Synthetic Ecosystems": synthetic populations embedded in real geographic/environmental context. The near-term subset in this repo should focus only on the base population construction layer.
 
@@ -139,11 +140,11 @@ The 2020 SynthEco methods draft is especially useful because it already translat
 
 ### Pritchard Paper And Code
 
-Relevant files:
+Reviewed source-bundle entries:
 
-- `/Users/dlq/Downloads/Papers/PritchardDissertation.pdf`
-- `/Users/dlq/Downloads/Papers/Pritchard-Miller2012_Article_AdvancesInPopulationSynthesisF.pdf`
-- `/Users/dlq/Downloads/Papers/drpritch_popsyn_200910/`
+- `Papers/PritchardDissertation.pdf`
+- `Papers/Pritchard-Miller2012_Article_AdvancesInPopulationSynthesisF.pdf`
+- `Papers/drpritch_popsyn_200910/`
 
 The Pritchard/Miller method is the strongest local algorithmic reference for the IPF side. Its core ideas are directly relevant:
 
@@ -174,9 +175,9 @@ Design implications:
 
 ### Canadian 2016 Census Data
 
-Relevant root:
+Reviewed source-bundle root:
 
-- `/Users/dlq/Downloads/Canadian 2016 Census`
+- `Canadian 2016 Census/`
 
 Inventory observed locally:
 
@@ -220,9 +221,9 @@ The PUMF files contain many coded variables. A serious implementation needs code
 
 ### Canadian 2011 Census And SPEW-Prepared Material
 
-Relevant root:
+Reviewed source-bundle root:
 
-- `/Users/dlq/Downloads/Canadian 2011 Census`
+- `Canadian 2011 Census/`
 
 This appears to contain prior SPEW-oriented Montreal preprocessing:
 
@@ -237,9 +238,9 @@ This is useful as an example of how a finished data package can be organized, bu
 
 ### Derived GIS And Existing Synthetic-Looking Outputs
 
-Relevant root:
+Reviewed source-bundle root:
 
-- `/Users/dlq/Downloads/Derived GeoJSON GIS`
+- `Derived GeoJSON GIS/`
 
 Useful observed files:
 
@@ -802,17 +803,17 @@ the current codebase and roadmap.
 
 ## Source List
 
-Local sources:
+Reviewed local source-bundle entries:
 
-- `/Users/dlq/Downloads/Proposal/CIHR Operating Research Grant 01.10.2018_PROPOSAL.pdf`
-- `/Users/dlq/Downloads/Proposal/CIHR Operating Research Grant 01.10.2018_APPENDIX.pdf`
-- `/Users/dlq/Downloads/Papers/SynthEco platform methods paper - 06 Aug 2020.docx`
-- `/Users/dlq/Downloads/Papers/PritchardDissertation.pdf`
-- `/Users/dlq/Downloads/Papers/Pritchard-Miller2012_Article_AdvancesInPopulationSynthesisF.pdf`
-- `/Users/dlq/Downloads/Papers/drpritch_popsyn_200910/`
-- `/Users/dlq/Downloads/Canadian 2016 Census/`
-- `/Users/dlq/Downloads/Canadian 2011 Census/`
-- `/Users/dlq/Downloads/Derived GeoJSON GIS/`
+- `Proposal/CIHR Operating Research Grant 01.10.2018_PROPOSAL.pdf`
+- `Proposal/CIHR Operating Research Grant 01.10.2018_APPENDIX.pdf`
+- `Papers/SynthEco platform methods paper - 06 Aug 2020.docx`
+- `Papers/PritchardDissertation.pdf`
+- `Papers/Pritchard-Miller2012_Article_AdvancesInPopulationSynthesisF.pdf`
+- `Papers/drpritch_popsyn_200910/`
+- `Canadian 2016 Census/`
+- `Canadian 2011 Census/`
+- `Derived GeoJSON GIS/`
 
 External sources checked:
 
