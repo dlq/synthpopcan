@@ -4,6 +4,13 @@ from pathlib import Path
 
 import pytest
 
+from synthpopcan.cli_ipf import (
+    format_weight,
+    read_population_artifact,
+    read_weighted_seed,
+    write_expanded_seed,
+    write_weighted_seed,
+)
 from synthpopcan.controls import ControlCell, ControlMargin, ControlTable
 from synthpopcan.diagnostics import (
     build_control_total_checks,
@@ -866,6 +873,98 @@ def test_cli_prints_human_readable_ipf_report(tmp_path: Path, capsys) -> None:
     assert "Review the source tables" in output
     assert "age" in output
     assert "100" in output
+
+
+def test_cli_prints_ipf_report_json_and_rejects_invalid_json(
+    tmp_path: Path,
+    capsys,
+) -> None:
+    from click.exceptions import ClickException
+
+    from synthpopcan.cli import main
+
+    report_path = tmp_path / "fit-report.json"
+    report_path.write_text(json.dumps({"converged": True, "seed_records": 4}))
+
+    assert main(["ipf", "report", str(report_path), "--format", "json"]) == 0
+
+    assert json.loads(capsys.readouterr().out) == {
+        "converged": True,
+        "seed_records": 4,
+    }
+
+    invalid_path = tmp_path / "invalid-report.json"
+    invalid_path.write_text("{")
+    with pytest.raises(ClickException, match="not valid JSON"):
+        main(["ipf", "report", str(invalid_path)])
+
+
+def test_ipf_weight_artifact_helpers_validate_input_files(tmp_path: Path) -> None:
+    weights_path = tmp_path / "weights.csv"
+    write_csv(
+        weights_path,
+        ["id", "age", "fitted_weight"],
+        [{"id": "1", "age": "young", "fitted_weight": "1.25"}],
+    )
+
+    rows, weights = read_weighted_seed(weights_path, "weight")
+
+    assert rows == [{"id": "1", "age": "young"}]
+    assert weights == [1.25]
+    assert read_population_artifact(weights_path, "weights", "weight") == (
+        rows,
+        weights,
+    )
+
+    expanded_path = tmp_path / "expanded.csv"
+    write_csv(
+        expanded_path,
+        ["synthetic_id", "age"],
+        [
+            {"synthetic_id": "1", "age": "young"},
+            {"synthetic_id": "2", "age": "old"},
+        ],
+    )
+    assert read_population_artifact(expanded_path, "expanded", "weight") == (
+        [
+            {"synthetic_id": "1", "age": "young"},
+            {"synthetic_id": "2", "age": "old"},
+        ],
+        [1.0, 1.0],
+    )
+
+    with pytest.raises(ValueError, match="unknown population artifact kind"):
+        read_population_artifact(weights_path, "rows", "weight")
+
+    missing_weight_path = tmp_path / "missing-weight.csv"
+    write_csv(missing_weight_path, ["id", "age"], [{"id": "1", "age": "young"}])
+    with pytest.raises(ValueError, match="requires a 'weight' column"):
+        read_weighted_seed(missing_weight_path, "weight")
+
+    invalid_weight_path = tmp_path / "invalid-weight.csv"
+    write_csv(invalid_weight_path, ["id", "weight"], [{"id": "1", "weight": "bad"}])
+    with pytest.raises(ValueError, match="row 2 has invalid weight"):
+        read_weighted_seed(invalid_weight_path, "weight")
+
+
+def test_ipf_writers_reject_empty_outputs_and_format_weights(tmp_path: Path) -> None:
+    with pytest.raises(ValueError, match="empty seed rows"):
+        write_weighted_seed(tmp_path / "weights.csv", [], [])
+    with pytest.raises(ValueError, match="synthetic population is empty"):
+        write_expanded_seed(tmp_path / "expanded.csv", [{"id": "1"}], [0.0])
+
+    output_path = tmp_path / "weights.csv"
+    write_weighted_seed(
+        output_path,
+        [{"id": "1", "age": "young", "weight": "1"}],
+        [1.25],
+    )
+
+    assert list(csv.DictReader(output_path.open(newline=""))) == [
+        {"id": "1", "age": "young", "weight": "1", "fitted_weight": "1.25"}
+    ]
+    assert format_weight(2.0) == "2"
+    assert format_weight(1.25) == "1.25"
 
 
 def test_cli_expands_fitted_weight_when_seed_has_initial_weight(tmp_path: Path) -> None:
