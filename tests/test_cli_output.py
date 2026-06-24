@@ -236,6 +236,7 @@ def test_ipf_and_validation_report_tables(monkeypatch) -> None:
             "available_columns": ["age"],
             "geography_columns": ["GEO"],
             "usable_controls": [
+                "ignored",
                 {
                     "column": "age",
                     "role": "target",
@@ -244,6 +245,7 @@ def test_ipf_and_validation_report_tables(monkeypatch) -> None:
                 }
             ],
             "enrichment_candidates": [
+                "ignored",
                 {
                     "column": "income",
                     "role": "enrichment",

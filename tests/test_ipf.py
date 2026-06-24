@@ -5,8 +5,22 @@ from pathlib import Path
 import pytest
 
 from synthpopcan.controls import ControlCell, ControlMargin, ControlTable
-from synthpopcan.diagnostics import build_ipf_fit_report, build_ipf_input_report
-from synthpopcan.ipf import IPFMargin, expand_records, fit_ipf
+from synthpopcan.diagnostics import (
+    build_control_total_checks,
+    build_ipf_fit_report,
+    build_ipf_input_report,
+    format_number,
+    relative_error,
+)
+from synthpopcan.ipf import (
+    IPFMargin,
+    calculate_max_abs_error,
+    expand_records,
+    fit_ipf,
+    integerize_weights,
+    validate_margin_coverage,
+    weighted_totals,
+)
 
 
 def test_fit_ipf_matches_two_one_way_margins() -> None:
@@ -43,6 +57,88 @@ def test_fit_ipf_reports_missing_seed_cells() -> None:
 
     with pytest.raises(ValueError, match="no seed records"):
         fit_ipf(records, margins)
+
+
+def test_ipf_margin_rejects_invalid_targets() -> None:
+    with pytest.raises(ValueError, match="must not be empty"):
+        IPFMargin((), {(): 1.0})
+    with pytest.raises(ValueError, match="does not match dimensions"):
+        IPFMargin(("age",), {("young", "extra"): 1.0})
+    with pytest.raises(ValueError, match="must be non-negative"):
+        IPFMargin(("age",), {("young",): -1.0})
+
+
+def test_fit_ipf_rejects_invalid_run_settings_and_weights() -> None:
+    records = [{"age": "young", "weight": "1"}]
+    margins = [IPFMargin(("age",), {("young",): 1.0})]
+
+    with pytest.raises(ValueError, match="at least one seed record"):
+        fit_ipf([], margins)
+    with pytest.raises(ValueError, match="at least one margin"):
+        fit_ipf(records, [])
+    with pytest.raises(ValueError, match="max_iterations"):
+        fit_ipf(records, margins, max_iterations=0)
+    with pytest.raises(ValueError, match="tolerance"):
+        fit_ipf(records, margins, tolerance=-0.1)
+    with pytest.raises(ValueError, match="weight field"):
+        fit_ipf([{"age": "young"}], margins, weight_field="weight")
+    with pytest.raises(ValueError, match="seed weights"):
+        fit_ipf([{"age": "young", "weight": "-1"}], margins, weight_field="weight")
+    with pytest.raises(ValueError, match="no seed records"):
+        fit_ipf(
+            [{"age": "young", "weight": "0"}],
+            margins,
+            weight_field="weight",
+        )
+
+
+def test_fit_ipf_handles_zero_targets_and_reports_nonconvergence() -> None:
+    records = [{"age": "young"}, {"age": "old"}]
+    zero_target = [IPFMargin(("age",), {("young",): 0.0, ("old",): 0.0})]
+    impossible_without_positive_target = [IPFMargin(("age",), {("missing",): 0.0})]
+
+    result = fit_ipf(records, zero_target)
+
+    assert result.converged is True
+    assert result.weights == [0.0, 0.0]
+    missing_zero = fit_ipf(records, impossible_without_positive_target)
+    assert missing_zero.converged is True
+
+    nonconverged = fit_ipf(
+        [
+            {"age": "young", "sex": "F"},
+            {"age": "old", "sex": "M"},
+            {"age": "young", "sex": "M"},
+        ],
+        [
+            IPFMargin(("age",), {("young",): 70.0, ("old",): 30.0}),
+            IPFMargin(("sex",), {("F",): 50.0, ("M",): 50.0}),
+        ],
+        max_iterations=1,
+        tolerance=0.0,
+    )
+    assert nonconverged.converged is False
+
+
+def test_integerize_and_aggregate_ipf_helpers_cover_edge_cases() -> None:
+    records = [{"age": "young"}, {"age": "old"}]
+    weights = [1.2, 1.8]
+    margins = [IPFMargin(("age",), {("young",): 1.0, ("old",): 2.0})]
+
+    assert integerize_weights(weights) == [1, 2]
+    with pytest.raises(ValueError, match="non-negative"):
+        integerize_weights([1.0, -0.1])
+    assert expand_records([{"age": "young"}], [1.0]) == [
+        {"synthetic_id": "1", "seed_id": "1", "age": "young"}
+    ]
+    assert weighted_totals(records, weights, ("age",)) == {
+        ("young",): 1.2,
+        ("old",): 1.8,
+    }
+    assert calculate_max_abs_error(records, weights, margins) == pytest.approx(0.2)
+    validate_margin_coverage(records, margins)
+    with pytest.raises(ValueError, match="missing dimension"):
+        weighted_totals([{"age": "young"}], [1.0], ("sex",))
 
 
 def test_ipf_input_report_finds_missing_and_unused_seed_categories() -> None:
@@ -699,6 +795,22 @@ def test_ipf_report_summarizes_inconsistent_margin_totals() -> None:
         "Review the source tables or mappings: control margins have different "
         "total populations, so IPF cannot satisfy all controls exactly."
     )
+
+
+def test_ipf_report_helpers_cover_empty_and_zero_cases() -> None:
+    empty_controls = ControlTable(margins=(), dimensions=())
+
+    assert build_control_total_checks(empty_controls) == {
+        "status": "ok",
+        "totals": [],
+        "min_total": 0.0,
+        "max_total": 0.0,
+        "difference": 0.0,
+    }
+    assert relative_error(0.0, 0.0) == 0.0
+    assert relative_error(1.0, 0.0) == float("inf")
+    assert format_number(1000.0) == "1,000"
+    assert format_number(1.25) == "1.25"
 
 
 def test_cli_prints_human_readable_ipf_report(tmp_path: Path, capsys) -> None:

@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 
 from synthpopcan.cli import main
-from synthpopcan.localdata import inspect_local_data_layout
+from synthpopcan.localdata import check_file, inspect_local_data_layout, metadata_path
 
 
 def test_inspects_expected_local_data_layout(tmp_path: Path) -> None:
@@ -39,6 +39,49 @@ def test_inspects_expected_local_data_layout(tmp_path: Path) -> None:
         check for check in checks if check.name == "2016 hierarchical metadata"
     )
     assert hierarchical_check.detail == "116 variable labels"
+
+
+def test_inspects_variable_metadata_edge_cases(tmp_path: Path) -> None:
+    data_root = tmp_path / "data"
+    hierarchical_path = metadata_path(data_root, "statcan-2016-hierarchical-pumf")
+    individual_path = metadata_path(data_root, "statcan-2016-individual-pumf")
+    hierarchical_path.parent.mkdir(parents=True)
+    individual_path.parent.mkdir(parents=True)
+    hierarchical_path.write_text(
+        json.dumps({"variables": {"AGEGRP": {"label": "Age group"}}})
+    )
+    individual_path.write_text("{")
+    profile_path = (
+        data_root
+        / "raw"
+        / "statscan"
+        / "2016-census"
+        / "Census Tract Summaries 2016"
+        / "98-401-X2016043_eng_CSV"
+        / "98-401-X2016043_English_meta.txt"
+    )
+    profile_path.parent.mkdir(parents=True)
+    profile_path.write_text("metadata")
+
+    checks = {check.name: check for check in inspect_local_data_layout(data_root)}
+
+    assert checks["2016 hierarchical metadata"].detail == "1 variable labels"
+    assert checks["2016 individual metadata"].status == "problem"
+    assert checks["2016 individual metadata"].detail == "invalid JSON"
+    assert checks["2016 Census Profile tract metadata"].status == "found"
+    assert check_file("Existing", profile_path).detail == "available"
+
+
+def test_inspects_variable_metadata_missing_labels(tmp_path: Path) -> None:
+    data_root = tmp_path / "data"
+    hierarchical_path = metadata_path(data_root, "statcan-2016-hierarchical-pumf")
+    hierarchical_path.parent.mkdir(parents=True)
+    hierarchical_path.write_text(json.dumps({"source": "metadata"}))
+
+    checks = {check.name: check for check in inspect_local_data_layout(data_root)}
+
+    assert checks["2016 hierarchical metadata"].status == "problem"
+    assert checks["2016 hierarchical metadata"].detail == "missing variable labels"
 
 
 def test_cli_data_doctor_reports_layout_as_json(tmp_path: Path, capsys) -> None:

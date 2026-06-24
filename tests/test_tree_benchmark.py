@@ -1,7 +1,18 @@
 import csv
 import json
 
-from synthpopcan.tree_benchmark import run_linked_tree_benchmark
+import pytest
+
+from synthpopcan.tree_benchmark import (
+    average_household_size,
+    filter_rows,
+    peak_rss_bytes,
+    require_explicit_columns,
+    resolve_benchmark_columns,
+    run_linked_tree_benchmark,
+    train_model_from_csv,
+    write_csv,
+)
 
 
 def test_runs_linked_tree_benchmark_fixture(tmp_path) -> None:
@@ -142,3 +153,54 @@ def test_runs_linked_tree_benchmark_from_suggested_blocks(tmp_path) -> None:
     assert len(household_rows) == 2
     assert {"DTYPE", "ROOM", "BEDRM", "BUILT"}.issubset(household_rows[0])
     assert {"AGEGRP", "SEX", "MarStH", "IMMSTAT"}.issubset(person_rows[0])
+
+
+def test_tree_benchmark_helper_edges(tmp_path) -> None:
+    rows = [{"household_size": "2", "PR": "24"}, {"household_size": "4", "PR": "35"}]
+
+    assert require_explicit_columns(("AGEGRP",), label="person targets") == ("AGEGRP",)
+    with pytest.raises(ValueError, match="person targets are required"):
+        require_explicit_columns(None, label="person targets")
+    assert filter_rows(rows, {}) == rows
+    assert filter_rows(rows, {"PR": "24"}) == [{"household_size": "2", "PR": "24"}]
+    assert average_household_size([]) == 0.0
+    assert average_household_size(rows) == 3.0
+    with pytest.raises(ValueError, match="cannot write empty"):
+        write_csv(tmp_path / "empty.csv", [])
+
+
+def test_tree_benchmark_rejects_partial_blocks_and_unknown_methods(
+    tmp_path, monkeypatch
+) -> None:
+    source = tmp_path / "households.csv"
+    source.write_text("HH_ID,WEIGHT,PR,household_size\n1,1,24,2\n")
+
+    with pytest.raises(ValueError, match="provided together"):
+        resolve_benchmark_columns(
+            sample=[],
+            household_target_columns=None,
+            household_conditioning_columns=None,
+            person_target_columns=None,
+            person_conditioning_columns=None,
+            household_block="household_core",
+            person_block=None,
+        )
+    with pytest.raises(ValueError, match="unsupported tree benchmark method"):
+        train_model_from_csv(
+            source,
+            level="household",
+            target_columns=("household_size",),
+            conditioning_columns=("PR",),
+            method="unknown",
+            random_seed=1,
+            min_support=1,
+            min_samples_leaf=1,
+            max_depth=None,
+        )
+
+    monkeypatch.setattr("synthpopcan.tree_benchmark.sys.platform", "linux")
+    monkeypatch.setattr(
+        "synthpopcan.tree_benchmark.resource.getrusage",
+        lambda _who: type("Usage", (), {"ru_maxrss": 2})(),
+    )
+    assert peak_rss_bytes() == 2048

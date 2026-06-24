@@ -9,6 +9,7 @@ from synthpopcan.controls import read_control_table
 from synthpopcan.validation import (
     build_control_validation_report,
     build_tree_output_validation_report,
+    safe_proportion,
 )
 
 
@@ -228,6 +229,64 @@ def test_tree_output_validation_flags_unknown_generated_categories() -> None:
     assert report["issues"][0]["kind"] == "unknown_generated_category"
     assert report["issues"][0]["dimensions"] == ["AGEGRP"]
     assert report["issues"][0]["categories"] == {"AGEGRP": "senior"}
+
+
+def test_tree_output_validation_rejects_missing_inputs() -> None:
+    with pytest.raises(ValueError, match="training rows are required"):
+        build_tree_output_validation_report(
+            training_rows=[],
+            generated_rows=[{"AGEGRP": "adult"}],
+            target_columns=("AGEGRP",),
+            conditioning_columns=(),
+        )
+    with pytest.raises(ValueError, match="generated rows are required"):
+        build_tree_output_validation_report(
+            training_rows=[{"AGEGRP": "adult"}],
+            generated_rows=[],
+            target_columns=("AGEGRP",),
+            conditioning_columns=(),
+        )
+    with pytest.raises(ValueError, match="at least one target column"):
+        build_tree_output_validation_report(
+            training_rows=[{"AGEGRP": "adult"}],
+            generated_rows=[{"AGEGRP": "adult"}],
+            target_columns=(),
+            conditioning_columns=(),
+        )
+
+
+def test_tree_output_validation_rejects_bad_weight_fields() -> None:
+    with pytest.raises(ValueError, match="require a 'WEIGHT' column"):
+        build_tree_output_validation_report(
+            training_rows=[{"AGEGRP": "adult"}],
+            generated_rows=[{"AGEGRP": "adult"}],
+            target_columns=("AGEGRP",),
+            conditioning_columns=(),
+            weight_field="WEIGHT",
+        )
+    with pytest.raises(ValueError, match="training row 2 has invalid weight"):
+        build_tree_output_validation_report(
+            training_rows=[{"AGEGRP": "adult", "WEIGHT": "not-a-number"}],
+            generated_rows=[{"AGEGRP": "adult"}],
+            target_columns=("AGEGRP",),
+            conditioning_columns=(),
+            weight_field="WEIGHT",
+        )
+
+
+def test_tree_output_validation_flags_distribution_shift() -> None:
+    report = build_tree_output_validation_report(
+        training_rows=[{"AGEGRP": "adult"}, {"AGEGRP": "child"}],
+        generated_rows=[{"AGEGRP": "adult"}, {"AGEGRP": "adult"}],
+        target_columns=("AGEGRP",),
+        conditioning_columns=(),
+        tolerance=0.1,
+    )
+
+    assert report["passed"] is False
+    assert report["issues"][0]["kind"] == "distribution_shift"
+    assert report["issues"][0]["categories"] == {"AGEGRP": "adult"}
+    assert safe_proportion(1.0, 0.0) == 0.0
 
 
 def test_cli_validates_tree_output_as_json(tmp_path: Path, capsys) -> None:

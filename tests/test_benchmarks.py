@@ -6,6 +6,7 @@ from synthpopcan.benchmarks import (
     assess_ipf_benchmark_case,
     build_ipf_benchmark_cases,
     run_ipf_benchmark,
+    run_ipf_benchmarks,
 )
 
 PERFORMANCE_ENV = "SYNTHPOPCAN_PERF_TESTS"
@@ -26,6 +27,22 @@ def test_builds_named_ipf_benchmark_cases() -> None:
     assert cases[0].margin_cell_count == 4
     assert cases[1].margin_cell_count > cases[0].margin_cell_count
     assert cases[2].expected_converged is False
+
+
+def test_rejects_too_small_ipf_benchmark_cases() -> None:
+    with pytest.raises(ValueError, match="at least 12"):
+        build_ipf_benchmark_cases(seed_records=11)
+
+
+def test_runs_all_small_ipf_benchmarks() -> None:
+    results = run_ipf_benchmarks(seed_records=SMALL_BENCHMARK_ROWS)
+
+    assert [result["case"] for result in results] == [
+        "easy_balanced",
+        "moderate_three_margin",
+        "high_cardinality_inconsistent",
+    ]
+    assert results[-1]["expected_converged"] is False
 
 
 def test_runs_small_ipf_benchmark_case() -> None:
