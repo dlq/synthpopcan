@@ -197,6 +197,18 @@ def test_tree_benchmark_rejects_partial_blocks_and_unknown_methods(
             min_samples_leaf=1,
             max_depth=None,
         )
+    cart_model = train_model_from_csv(
+        source,
+        level="household",
+        target_columns=("household_size",),
+        conditioning_columns=("PR",),
+        method="cart",
+        random_seed=1,
+        min_support=1,
+        min_samples_leaf=1,
+        max_depth=None,
+    )
+    assert cart_model.model_type == "cart"
 
     monkeypatch.setattr("synthpopcan.tree_benchmark.sys.platform", "linux")
     monkeypatch.setattr(

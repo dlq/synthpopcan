@@ -33,6 +33,7 @@ from synthpopcan.tree import (
     validate_linked_population,
     validate_tree_roles,
     weighted_choice,
+    write_frequency_model,
     write_generated_rows,
     write_tree_model,
 )
@@ -401,6 +402,7 @@ def test_tree_model_readers_validate_json_and_model_family(tmp_path) -> None:
     )
     cart_model = train_cart_model(cart_sample, min_samples_leaf=1)
     write_tree_model(freq_path, freq_model)
+    write_frequency_model(tmp_path / "frequency-writer.json", freq_model)
     write_tree_model(cart_path, cart_model)
     invalid_json_path.write_text("{")
     unsupported_path.write_text(json.dumps({"model_type": "other"}))
@@ -762,6 +764,55 @@ def test_audit_tree_model_rejects_invalid_thresholds() -> None:
         audit_tree_model(model, max_purity=0)
     with pytest.raises(ValueError, match="max_purity"):
         audit_tree_model(model, max_purity=1.1)
+    with pytest.raises(ValueError, match="min_samples_leaf"):
+        train_cart_model(
+            TreeTrainingSample(
+                level="person",
+                source_format="test",
+                records=(),
+                columns=("geo", "age_group"),
+                target_columns=("age_group",),
+                conditioning_columns=("geo",),
+                geography_column=None,
+                weight_column=None,
+            ),
+            min_samples_leaf=0,
+        )
+
+
+def test_audit_tree_model_flags_privacy_metadata(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    model = train_frequency_model_from_rows(
+        TreeModelSpec(
+            level="person",
+            target_columns=("age_group",),
+            conditioning_columns=("geo",),
+        ),
+        rows=({"geo": "QC", "age_group": "adult"},),
+    )
+    original_to_dict = FrequencyTreeModel.to_dict
+
+    def to_dict_with_sensitive_metadata(
+        self: FrequencyTreeModel,
+    ) -> dict[str, object]:
+        payload = original_to_dict(self)
+        payload["privacy"] = {
+            **payload["privacy"],  # type: ignore[arg-type]
+            "contains_raw_rows": True,
+            "contains_source_identifiers": True,
+        }
+        return payload
+
+    monkeypatch.setattr(FrequencyTreeModel, "to_dict", to_dict_with_sensitive_metadata)
+
+    report = audit_tree_model(model, min_support=1)
+
+    assert {"contains_raw_rows", "contains_source_identifiers"}.issubset(
+        {issue["kind"] for issue in report["issues"]}
+    )
+    assert report["summary"]["contains_raw_rows"] is True
+    assert report["summary"]["contains_source_identifiers"] is True
 
 
 def test_cli_audits_tree_model_as_json(tmp_path, capsys) -> None:

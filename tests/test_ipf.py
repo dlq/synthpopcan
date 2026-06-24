@@ -4,6 +4,7 @@ from pathlib import Path
 
 import pytest
 
+import synthpopcan.ipf as ipf_module
 from synthpopcan.cli_ipf import (
     format_weight,
     read_population_artifact,
@@ -127,7 +128,9 @@ def test_fit_ipf_handles_zero_targets_and_reports_nonconvergence() -> None:
     assert nonconverged.converged is False
 
 
-def test_integerize_and_aggregate_ipf_helpers_cover_edge_cases() -> None:
+def test_integerize_and_aggregate_ipf_helpers_cover_edge_cases(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     records = [{"age": "young"}, {"age": "old"}]
     weights = [1.2, 1.8]
     margins = [IPFMargin(("age",), {("young",): 1.0, ("old",): 2.0})]
@@ -135,6 +138,10 @@ def test_integerize_and_aggregate_ipf_helpers_cover_edge_cases() -> None:
     assert integerize_weights(weights) == [1, 2]
     with pytest.raises(ValueError, match="non-negative"):
         integerize_weights([1.0, -0.1])
+    with monkeypatch.context() as patched:
+        patched.setattr(ipf_module, "round", lambda _value: -1, raising=False)
+        with pytest.raises(ValueError, match="integerized total"):
+            integerize_weights([0.1])
     assert expand_records([{"age": "young"}], [1.0]) == [
         {"synthetic_id": "1", "seed_id": "1", "age": "young"}
     ]

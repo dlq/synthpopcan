@@ -627,6 +627,7 @@ def test_census_profile_controls_reject_bad_source_rows(tmp_path: Path) -> None:
     missing_column = tmp_path / "missing-column.csv"
     duplicate = tmp_path / "duplicate.csv"
     invalid_count = tmp_path / "invalid-count.csv"
+    unknown_characteristic = tmp_path / "unknown-characteristic.csv"
     missing_column.write_text("GEO_CODE,CHARACTERISTIC_NAME\n1001,0 to 4 years\n")
     duplicate.write_text(
         "GEO_CODE,CHARACTERISTIC_NAME,C1_COUNT_TOTAL\n"
@@ -637,6 +638,11 @@ def test_census_profile_controls_reject_bad_source_rows(tmp_path: Path) -> None:
         "GEO_CODE,CHARACTERISTIC_NAME,C1_COUNT_TOTAL\n"
         "1001,0 to 4 years,bad\n"
     )
+    unknown_characteristic.write_text(
+        "GEO_CODE,CHARACTERISTIC_NAME,C1_COUNT_TOTAL\n"
+        "1001,Total - Age groups,99\n"
+        "1001,0 to 4 years,12\n"
+    )
 
     with pytest.raises(ValueError, match="missing columns"):
         read_census_profile_control_table(missing_column, mapping_path)
@@ -644,6 +650,8 @@ def test_census_profile_controls_reject_bad_source_rows(tmp_path: Path) -> None:
         read_census_profile_control_table(duplicate, mapping_path)
     with pytest.raises(ValueError, match="invalid count"):
         read_census_profile_control_table(invalid_count, mapping_path)
+    table = read_census_profile_control_table(unknown_characteristic, mapping_path)
+    assert table.margins[0].cells[0].count == 12
 
 
 def test_census_profile_characteristic_inspection_rejects_bad_inputs(
