@@ -6,6 +6,7 @@ import {
   modelFromPayload,
   packageModels,
   parseConditions,
+  validateLinkedPopulationOutput,
 } from "./tree-model.mjs";
 
 self.addEventListener("message", (event) => {
@@ -78,6 +79,11 @@ function runModelJob(job) {
     });
     return {
       message: `Generated ${generated.households.length} household row(s) and ${generated.persons.length} person row(s).`,
+      validation: validateLinkedPopulationOutput(
+        generated.households,
+        generated.persons,
+        { householdSizeColumn },
+      ),
       downloads: [
         {
           filename: "synthpopcan-households.csv",

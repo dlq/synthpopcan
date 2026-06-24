@@ -7,6 +7,7 @@ import {
   modelFromPayload,
   packageModels,
   summarizeModelPayload,
+  validateLinkedPopulationOutput,
 } from "../../src/synthpopcan/web/tree-model.mjs";
 
 const householdModel = {
@@ -123,6 +124,66 @@ test("generates linked household and person rows from embedded package models", 
       tenure: "owner",
       age_group: "adult",
       sex: "F",
+    },
+  ]);
+});
+
+test("validates generated linked household and person rows", () => {
+  const summary = validateLinkedPopulationOutput(
+    [
+      {
+        synthetic_household_id: "1",
+        household_size: "2",
+      },
+    ],
+    [
+      { synthetic_person_id: "1", synthetic_household_id: "1" },
+      { synthetic_person_id: "2", synthetic_household_id: "1" },
+    ],
+    { householdSizeColumn: "household_size" },
+  );
+
+  assert.equal(summary.status, "passed");
+  assert.deepEqual(summary.items, [
+    { title: "Households generated", text: "1" },
+    { title: "Persons generated", text: "2" },
+    {
+      title: "Household links",
+      text: "2 of 2 person row(s) link to known households.",
+    },
+    {
+      title: "Household sizes",
+      text: "1 of 1 household row(s) match household_size.",
+    },
+  ]);
+});
+
+test("reports linked output validation warnings", () => {
+  const summary = validateLinkedPopulationOutput(
+    [
+      {
+        synthetic_household_id: "1",
+        household_size: "2",
+      },
+    ],
+    [
+      { synthetic_person_id: "1", synthetic_household_id: "1" },
+      { synthetic_person_id: "2", synthetic_household_id: "missing" },
+    ],
+    { householdSizeColumn: "household_size" },
+  );
+
+  assert.equal(summary.status, "warning");
+  assert.deepEqual(summary.items, [
+    { title: "Households generated", text: "1" },
+    { title: "Persons generated", text: "2" },
+    {
+      title: "Household links",
+      text: "1 of 2 person row(s) link to known households; 1 unknown household reference(s).",
+    },
+    {
+      title: "Household sizes",
+      text: "0 of 1 household row(s) match household_size; 1 mismatch(es).",
     },
   ]);
 });

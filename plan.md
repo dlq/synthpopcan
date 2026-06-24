@@ -603,7 +603,8 @@ Near-term usability priorities:
    model training out of the UI, and add stronger output previews/validation
    summaries. Status: in progress; the safe demo model is now served through a
    publication-style catalogue with release status, provenance, privacy notes,
-   output shape, and default generation settings.
+   output shape, default generation settings, generated-output previews, and a
+   first-pass linked household/person validation summary.
 3. Promote the beginner Python API in the documentation and keep its examples
    runnable. The API reference should remain autodoc-driven, but workflow docs
    should show the short `import synthpopcan as spc` path first.

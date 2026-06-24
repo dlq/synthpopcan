@@ -233,6 +233,89 @@ export function generateLinkedPopulation(
   return { households: linkedHouseholds, persons: linkedPersons };
 }
 
+export function validateLinkedPopulationOutput(
+  households,
+  persons,
+  { householdSizeColumn = "household_size" } = {},
+) {
+  const householdIds = new Set(
+    households.map((household) => household.synthetic_household_id),
+  );
+  const linkedPersonCount = persons.filter((person) =>
+    householdIds.has(person.synthetic_household_id),
+  ).length;
+  const unknownHouseholdReferences = persons.length - linkedPersonCount;
+  const peopleByHousehold = countPeopleByHousehold(persons);
+  const householdSizeMatches = households.filter((household) => {
+    const expectedSize = Number(household[householdSizeColumn]);
+    if (!Number.isFinite(expectedSize)) {
+      return false;
+    }
+    const actualSize = peopleByHousehold.get(household.synthetic_household_id) ?? 0;
+    return expectedSize === actualSize;
+  }).length;
+  const householdSizeMismatches = households.length - householdSizeMatches;
+  const status =
+    unknownHouseholdReferences === 0 && householdSizeMismatches === 0
+      ? "passed"
+      : "warning";
+
+  return {
+    status,
+    items: [
+      { title: "Households generated", text: String(households.length) },
+      { title: "Persons generated", text: String(persons.length) },
+      {
+        title: "Household links",
+        text: householdLinksText(
+          linkedPersonCount,
+          persons.length,
+          unknownHouseholdReferences,
+        ),
+      },
+      {
+        title: "Household sizes",
+        text: householdSizesText(
+          householdSizeMatches,
+          households.length,
+          householdSizeColumn,
+          householdSizeMismatches,
+        ),
+      },
+    ],
+  };
+}
+
+function countPeopleByHousehold(persons) {
+  const counts = new Map();
+  persons.forEach((person) => {
+    const householdId = person.synthetic_household_id;
+    counts.set(householdId, (counts.get(householdId) ?? 0) + 1);
+  });
+  return counts;
+}
+
+function householdLinksText(linkedPersonCount, personCount, unknownReferences) {
+  const base = `${linkedPersonCount} of ${personCount} person row(s) link to known households.`;
+  if (unknownReferences === 0) {
+    return base;
+  }
+  return `${base.slice(0, -1)}; ${unknownReferences} unknown household reference(s).`;
+}
+
+function householdSizesText(
+  householdSizeMatches,
+  householdCount,
+  householdSizeColumn,
+  householdSizeMismatches,
+) {
+  const base = `${householdSizeMatches} of ${householdCount} household row(s) match ${householdSizeColumn}.`;
+  if (householdSizeMismatches === 0) {
+    return base;
+  }
+  return `${base.slice(0, -1)}; ${householdSizeMismatches} mismatch(es).`;
+}
+
 export function parseConditions(text) {
   const conditions = {};
   String(text ?? "")

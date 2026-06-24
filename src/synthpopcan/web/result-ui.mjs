@@ -12,13 +12,16 @@ export function showError(element, error) {
   element.textContent = error instanceof Error ? error.message : String(error);
 }
 
-export function showDownloads(element, { message, downloads }) {
+export function showDownloads(element, { message, downloads, validation = null }) {
   revokeDownloads(element);
   element.className = "result-box success";
   const messageElement = document.createElement("p");
   messageElement.className = "result-message";
   messageElement.textContent = message;
   element.replaceChildren(messageElement);
+  if (validation) {
+    appendValidationSummary(element, validation);
+  }
   appendDownloads(element, downloads);
   appendPreviews(element, downloads);
 }
@@ -69,6 +72,20 @@ function appendPreviews(element, downloads) {
     previews.append(previewBlock(download));
   });
   element.append(previews);
+}
+
+function appendValidationSummary(element, validation) {
+  const summary = document.createElement("section");
+  summary.className = `validation-summary ${validation.status ?? "passed"}`;
+  const heading = document.createElement("h4");
+  heading.textContent = "Validation summary";
+  const list = document.createElement("div");
+  list.className = "validation-list";
+  validation.items.forEach((item) => {
+    list.append(resultItem(item.title, item.text));
+  });
+  summary.append(heading, list);
+  element.append(summary);
 }
 
 function previewBlock(download) {

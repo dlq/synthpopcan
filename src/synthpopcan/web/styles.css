@@ -451,6 +451,25 @@ select {
   text-decoration: none;
 }
 
+.validation-summary {
+  margin-top: 12px;
+  border-top: 1px solid #d6d6d6;
+  padding-top: 10px;
+}
+
+.validation-summary h4 {
+  margin: 0;
+  color: #26374a;
+  font-size: 0.98rem;
+}
+
+.validation-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 8px;
+  margin-top: 8px;
+}
+
 .preview-list {
   display: grid;
   gap: 12px;
@@ -564,6 +583,14 @@ button.result-item:hover {
 .compact-result-list .result-item,
 .model-summary-list .result-item {
   padding: 8px 10px;
+}
+
+.validation-list .result-item {
+  padding: 8px 10px;
+}
+
+.validation-summary.warning .result-item {
+  border-color: #f90;
 }
 
 .model-overview-note .result-item,
