@@ -1,10 +1,22 @@
 import json
 from pathlib import Path
 
+import pytest
+
 from synthpopcan.cli import main
 from synthpopcan.statcan import (
     CENSUS_PROFILE_2016_DOWNLOADS,
+    classify_wds_ipf_suitability,
+    download_url,
+    extract_wds_dimension_names,
+    extract_wds_dimension_previews,
+    fetch_census_profile_2016,
+    fetch_json,
     fetch_wds_metadata,
+    fetch_wds_table,
+    normalize_language,
+    normalize_product_id,
+    post_json,
     search_wds_tables,
     summarize_wds_metadata,
     wds_download_url,
@@ -125,6 +137,13 @@ def test_search_wds_tables_filters_inventory(monkeypatch) -> None:
     assert results[0].title_en == "Population and dwelling counts: Canada"
 
 
+def test_search_wds_tables_rejects_empty_query_and_bad_limit() -> None:
+    with pytest.raises(ValueError, match="at least one term"):
+        search_wds_tables("   ")
+    with pytest.raises(ValueError, match="limit must be at least 1"):
+        search_wds_tables("population", limit=0)
+
+
 def test_cli_searches_wds_tables(capsys, monkeypatch) -> None:
     def fake_search(query: str, limit: int):
         assert query == "labour"
@@ -241,6 +260,19 @@ def test_fetch_wds_metadata_posts_product_id(monkeypatch) -> None:
         )
     ]
     assert metadata["cubeTitleEn"] == "Labour force characteristics by province"
+
+
+def test_fetch_wds_metadata_rejects_empty_or_failed_responses(monkeypatch) -> None:
+    monkeypatch.setattr("synthpopcan.statcan.post_json", lambda _url, _payload: [])
+    with pytest.raises(ValueError, match="returned no metadata"):
+        fetch_wds_metadata("14100287")
+
+    monkeypatch.setattr(
+        "synthpopcan.statcan.post_json",
+        lambda _url, _payload: [{"status": "FAILED", "object": None}],
+    )
+    with pytest.raises(ValueError, match="metadata lookup failed"):
+        fetch_wds_metadata("14100287")
 
 
 def test_cli_writes_wds_metadata_json(tmp_path: Path, monkeypatch) -> None:
@@ -389,6 +421,108 @@ def test_summarizes_wds_metadata_with_member_previews() -> None:
         "Possible source for total controls, but metadata does not show age and "
         "sex dimensions. Fetch and inspect the ZIP before normalizing."
     )
+
+
+def test_wds_metadata_helpers_tolerate_alternate_and_invalid_shapes() -> None:
+    assert extract_wds_dimension_names({"dimension": "not-a-list"}) == []
+    assert extract_wds_dimension_names(
+        {
+            "dimensions": [
+                "ignored",
+                {"dimensionName": "Age"},
+                {"name": "Sex"},
+                {"dimensionNameEn": ""},
+            ]
+        }
+    ) == ["Age", "Sex"]
+    previews = extract_wds_dimension_previews(
+        {
+            "dimensions": [
+                "ignored",
+                {"dimensionName": "Age", "members": "not-a-list"},
+                {
+                    "name": "Sex",
+                    "dimensionMembers": [
+                        "ignored",
+                        {"memberName": "Female"},
+                        {"name": "Male"},
+                        {"memberNameEn": ""},
+                    ],
+                },
+                {"member": [{"memberNameEn": "No dimension name"}]},
+            ]
+        },
+        member_limit=1,
+    )
+    assert previews == [
+        {"name": "Age", "member_count": 0, "members": [], "truncated": False},
+        {"name": "Sex", "member_count": 2, "members": ["Female"], "truncated": True},
+    ]
+    assert classify_wds_ipf_suitability(["Topic"]) == {
+        "status": "unclear",
+        "reasons": ["Metadata does not show age and sex dimensions."],
+    }
+
+
+def test_fetch_wds_table_rejects_failed_download_lookup(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    monkeypatch.setattr(
+        "synthpopcan.statcan.fetch_json",
+        lambda _url: {"status": "FAILED", "object": ""},
+    )
+
+    with pytest.raises(ValueError, match="did not return a download URL"):
+        fetch_wds_table("14100287", tmp_path)
+
+
+def test_fetch_census_profile_rejects_unknown_geo_level(tmp_path: Path) -> None:
+    with pytest.raises(ValueError, match="unknown 2016 Census Profile geo level"):
+        fetch_census_profile_2016("unknown", tmp_path)
+
+
+def test_low_level_download_helpers_use_urlopen(tmp_path: Path, monkeypatch) -> None:
+    calls: list[object] = []
+
+    class FakeResponse:
+        def __init__(self, body: bytes) -> None:
+            self.body = body
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args) -> None:
+            return None
+
+        def read(self, _size: int = -1) -> bytes:
+            body = self.body
+            self.body = b""
+            return body
+
+    def fake_urlopen(request):
+        calls.append(request)
+        return FakeResponse(b'{"status": "SUCCESS"}')
+
+    monkeypatch.setattr("synthpopcan.statcan.urlopen", fake_urlopen)
+
+    assert fetch_json("https://example.test/data.json") == {"status": "SUCCESS"}
+    assert post_json("https://example.test/post", [{"productId": 1}]) == {
+        "status": "SUCCESS"
+    }
+    destination = tmp_path / "download.json"
+    download_url("https://example.test/download.json", destination)
+    assert destination.read_bytes() == b'{"status": "SUCCESS"}'
+    assert calls[0] == "https://example.test/data.json"
+    assert calls[1].full_url == "https://example.test/post"
+    assert calls[1].data == b'[{"productId": 1}]'
+
+
+def test_normalizers_reject_invalid_values() -> None:
+    with pytest.raises(ValueError, match="product ID"):
+        normalize_product_id("14A")
+    with pytest.raises(ValueError, match="language"):
+        normalize_language("es")
 
 
 def test_cli_explains_wds_metadata_as_json(capsys, monkeypatch) -> None:

@@ -1,22 +1,39 @@
 import csv
 import json
+import random
 from dataclasses import replace
 
 import pytest
 
 from synthpopcan.cli import main
 from synthpopcan.tree import (
+    CartTreeModel,
+    FrequencyTreeModel,
     TreeGenerationRequest,
     TreeModelSpec,
     TreeTrainingSample,
     audit_tree_model,
+    choose_group,
+    dominant_cart_outcome,
+    dominant_frequency_outcome,
+    encode_conditions,
     generate_frequency_rows,
     generate_linked_population,
     generate_tree_rows,
+    outcome_purity,
+    parse_conditions,
+    read_cart_model,
+    read_frequency_model,
+    read_record_weight,
+    read_tree_model,
     read_tree_training_sample,
     train_cart_model,
     train_frequency_model,
+    validate_condition_columns,
     validate_linked_population,
+    validate_tree_roles,
+    weighted_choice,
+    write_generated_rows,
     write_tree_model,
 )
 
@@ -308,6 +325,185 @@ def test_generates_cart_rows_for_condition(tmp_path) -> None:
     ]
 
 
+def test_tree_model_deserializers_reject_bad_payloads(tmp_path) -> None:
+    freq_model = train_frequency_model_from_rows(
+        TreeModelSpec(
+            level="person",
+            target_columns=("age_group",),
+            conditioning_columns=("geo",),
+        ),
+        rows=({"geo": "QC", "age_group": "adult"},),
+    )
+    cart_source = tmp_path / "cart-training.csv"
+    cart_source.write_text(
+        "geo,age_group,weight\n"
+        "QC,adult,1\n"
+        "ON,child,1\n"
+    )
+    cart_sample = read_tree_training_sample(
+        cart_source,
+        level="person",
+        target_columns=("age_group",),
+        conditioning_columns=("geo",),
+        weight_column="weight",
+    )
+    cart_model = train_cart_model(cart_sample, min_samples_leaf=1)
+
+    with pytest.raises(ValueError, match="unsupported tree model schema"):
+        FrequencyTreeModel.from_dict({"schema_version": "old"})
+    with pytest.raises(ValueError, match="unsupported tree model type"):
+        FrequencyTreeModel.from_dict(
+            {**freq_model.to_dict(), "model_type": "cart"}
+        )
+    with pytest.raises(ValueError, match="tree model spec must be an object"):
+        FrequencyTreeModel.from_dict({**freq_model.to_dict(), "spec": "bad"})
+    with pytest.raises(ValueError, match="unsupported tree model schema"):
+        CartTreeModel.from_dict({"schema_version": "old"})
+    with pytest.raises(ValueError, match="unsupported tree model type"):
+        CartTreeModel.from_dict(
+            {**cart_model.to_dict(), "model_type": "conditional-frequency"}
+        )
+    with pytest.raises(ValueError, match="tree model spec must be an object"):
+        CartTreeModel.from_dict({**cart_model.to_dict(), "spec": "bad"})
+    with pytest.raises(ValueError, match="cart model payload must be an object"):
+        CartTreeModel.from_dict({**cart_model.to_dict(), "cart": "bad"})
+    with pytest.raises(ValueError, match="privacy payload must be an object"):
+        CartTreeModel.from_dict({**cart_model.to_dict(), "privacy": "bad"})
+    with pytest.raises(ValueError, match="feature categories must be an object"):
+        CartTreeModel.from_dict({**cart_model.to_dict(), "feature_categories": "bad"})
+
+
+def test_tree_model_readers_validate_json_and_model_family(tmp_path) -> None:
+    freq_model = train_frequency_model_from_rows(
+        TreeModelSpec(
+            level="person",
+            target_columns=("age_group",),
+            conditioning_columns=("geo",),
+        ),
+        rows=({"geo": "QC", "age_group": "adult"},),
+    )
+    freq_path = tmp_path / "frequency.json"
+    cart_path = tmp_path / "cart.json"
+    invalid_json_path = tmp_path / "invalid.json"
+    unsupported_path = tmp_path / "unsupported.json"
+    cart_source = tmp_path / "cart-training.csv"
+    cart_source.write_text(
+        "geo,age_group,weight\n"
+        "QC,adult,1\n"
+        "ON,child,1\n"
+    )
+    cart_sample = read_tree_training_sample(
+        cart_source,
+        level="person",
+        target_columns=("age_group",),
+        conditioning_columns=("geo",),
+        weight_column="weight",
+    )
+    cart_model = train_cart_model(cart_sample, min_samples_leaf=1)
+    write_tree_model(freq_path, freq_model)
+    write_tree_model(cart_path, cart_model)
+    invalid_json_path.write_text("{")
+    unsupported_path.write_text(json.dumps({"model_type": "other"}))
+
+    assert isinstance(read_tree_model(freq_path), FrequencyTreeModel)
+    assert isinstance(read_tree_model(cart_path), CartTreeModel)
+    assert isinstance(read_frequency_model(freq_path), FrequencyTreeModel)
+    assert isinstance(read_cart_model(cart_path), CartTreeModel)
+    with pytest.raises(ValueError, match="not valid JSON"):
+        read_tree_model(invalid_json_path)
+    with pytest.raises(ValueError, match="unsupported tree model type"):
+        read_tree_model(unsupported_path)
+    with pytest.raises(ValueError, match="not a conditional-frequency"):
+        read_frequency_model(cart_path)
+    with pytest.raises(ValueError, match="not a CART"):
+        read_cart_model(freq_path)
+
+
+def test_tree_generation_and_sampling_helper_edges(tmp_path) -> None:
+    model = train_frequency_model_from_rows(
+        TreeModelSpec(
+            level="person",
+            target_columns=("age_group",),
+            conditioning_columns=("geo",),
+        ),
+        rows=({"geo": "QC", "age_group": "adult"},),
+    )
+    rng = random.Random(7)
+
+    with pytest.raises(ValueError, match="rows must be greater than zero"):
+        generate_tree_rows(model, rows=0)
+    with pytest.raises(ValueError, match="unknown conditioning columns"):
+        generate_frequency_rows(model, rows=1, conditions={"bad": "value"})
+    fallback = generate_frequency_rows(model, rows=1, conditions={"geo": "ON"})
+    assert fallback == [
+        {"synthetic_id": "1", "geo": "ON", "age_group": "adult"}
+    ]
+    assert parse_conditions(("geo=QC", "household_size=2")) == {
+        "geo": "QC",
+        "household_size": "2",
+    }
+    with pytest.raises(ValueError, match="must use COLUMN=VALUE"):
+        parse_conditions(("bad",))
+    with pytest.raises(ValueError, match="must include a column name"):
+        parse_conditions(("=QC",))
+    assert encode_conditions(
+        {"geo": "QC"},
+        ("geo",),
+        {"geo": ("ON", "QC")},
+    ) == [0.0, 1.0]
+    assert choose_group(model, {}, rng).conditions == {"geo": "QC"}
+    assert outcome_purity(()) == 0.0
+    with pytest.raises(ValueError, match="non-positive weights"):
+        weighted_choice(["x"], [0.0], rng)
+    with pytest.raises(ValueError, match="cannot write empty generated output"):
+        write_generated_rows(tmp_path / "empty.csv", [])
+
+
+def test_tree_low_level_validation_and_cart_edges(tmp_path) -> None:
+    cart_source = tmp_path / "cart-training.csv"
+    cart_source.write_text(
+        "geo,age_group,weight\n"
+        "QC,adult,1\n"
+        "ON,child,1\n"
+    )
+    cart_sample = read_tree_training_sample(
+        cart_source,
+        level="person",
+        target_columns=("age_group",),
+        conditioning_columns=("geo",),
+        weight_column="weight",
+    )
+    cart_model = train_cart_model(cart_sample, min_samples_leaf=1)
+    zero_probability_cart = replace(
+        cart_model,
+        value=tuple(
+            tuple(0.0 for _class in cart_model.target_classes)
+            for _node in cart_model.value
+        ),
+    )
+
+    with pytest.raises(ValueError, match="rows must be greater than zero"):
+        generate_tree_rows(cart_model, rows=0)
+    with pytest.raises(ValueError, match="no positive target probabilities"):
+        generate_tree_rows(zero_probability_cart, rows=1, conditions={"geo": "QC"})
+    with pytest.raises(ValueError, match="at least one target column"):
+        validate_tree_roles(target_columns=(), conditioning_columns=("geo",))
+    with pytest.raises(ValueError, match="at least one conditioning column"):
+        validate_tree_roles(target_columns=("age_group",), conditioning_columns=())
+    with pytest.raises(ValueError, match="unknown conditioning columns"):
+        validate_condition_columns(("geo",), {"bad": "value"})
+    with pytest.raises(ValueError, match="invalid weight"):
+        read_record_weight({"weight": "bad"}, "weight", 2)
+    assert dominant_frequency_outcome(()) is None
+    assert dominant_cart_outcome(replace(cart_model, value=((),)), 0) is None
+
+    class HighUniform:
+        def uniform(self, _start: float, total: float) -> float:
+            return total + 1
+
+    assert weighted_choice(["fallback"], [1.0], HighUniform()) == "fallback"
+
+
 def test_cli_trains_and_generates_tree_model(tmp_path) -> None:
     source = tmp_path / "derived-person-training.csv"
     model_path = tmp_path / "person-model.json"
@@ -548,6 +744,24 @@ def test_audits_cart_model_support_and_purity(tmp_path) -> None:
     assert report["summary"]["minimum_support"] >= 2
     assert report["summary"]["contains_raw_rows"] is False
     assert report["summary"]["contains_source_identifiers"] is False
+
+
+def test_audit_tree_model_rejects_invalid_thresholds() -> None:
+    model = train_frequency_model_from_rows(
+        TreeModelSpec(
+            level="person",
+            target_columns=("age_group",),
+            conditioning_columns=("geo",),
+        ),
+        rows=({"geo": "QC", "age_group": "adult"},),
+    )
+
+    with pytest.raises(ValueError, match="min_support"):
+        audit_tree_model(model, min_support=0)
+    with pytest.raises(ValueError, match="max_purity"):
+        audit_tree_model(model, max_purity=0)
+    with pytest.raises(ValueError, match="max_purity"):
+        audit_tree_model(model, max_purity=1.1)
 
 
 def test_cli_audits_tree_model_as_json(tmp_path, capsys) -> None:
@@ -1928,6 +2142,81 @@ def test_validates_linked_population_household_sizes() -> None:
             "message": "household 1 expected 2 persons but has 1.",
         },
     ]
+
+
+def test_linked_population_reports_unknown_and_invalid_households() -> None:
+    report = validate_linked_population(
+        households=[
+            {"synthetic_household_id": "1"},
+            {"synthetic_household_id": "2", "household_size": "bad"},
+            {"synthetic_household_id": "3", "household_size": "0"},
+        ],
+        persons=[
+            {"synthetic_person_id": "1", "synthetic_household_id": "missing"},
+        ],
+    )
+
+    assert report["passed"] is False
+    assert report["summary"] == {
+        "households": 3,
+        "persons": 1,
+        "households_with_size_mismatches": 0,
+        "persons_with_unknown_households": 1,
+    }
+    assert [issue["kind"] for issue in report["issues"]] == [
+        "invalid_household_size",
+        "invalid_household_size",
+        "invalid_household_size",
+        "unknown_person_household",
+    ]
+
+
+def test_generate_linked_population_rejects_bad_models_and_links() -> None:
+    household_model = train_frequency_model_from_rows(
+        TreeModelSpec(
+            level="household",
+            target_columns=("household_size",),
+            conditioning_columns=("geo",),
+        ),
+        rows=({"geo": "QC", "household_size": "1"},),
+    )
+    household_without_tenure = train_frequency_model_from_rows(
+        TreeModelSpec(
+            level="household",
+            target_columns=("household_size",),
+            conditioning_columns=("geo",),
+        ),
+        rows=({"geo": "QC", "household_size": "1"},),
+    )
+    person_model = train_frequency_model_from_rows(
+        TreeModelSpec(
+            level="person",
+            target_columns=("age_group",),
+            conditioning_columns=("geo", "household_size", "tenure"),
+        ),
+        rows=(
+            {
+                "geo": "QC",
+                "household_size": "1",
+                "tenure": "owner",
+                "age_group": "adult",
+            },
+        ),
+    )
+
+    with pytest.raises(ValueError, match="household model must have level"):
+        generate_linked_population(person_model, person_model, households=1)
+    with pytest.raises(ValueError, match="person model must have level"):
+        generate_linked_population(household_model, household_model, households=1)
+    with pytest.raises(ValueError, match="households must be greater than zero"):
+        generate_linked_population(household_model, person_model, households=0)
+    with pytest.raises(ValueError, match="missing columns: tenure"):
+        generate_linked_population(
+            household_without_tenure,
+            person_model,
+            households=1,
+            household_conditions={"geo": "QC"},
+        )
 
 
 def test_cli_generates_linked_households_and_persons(tmp_path) -> None:
