@@ -256,6 +256,7 @@ def build_package() -> dict[str, object]:
             "contains_source_identifiers": False,
         },
     }
+    package = relativize_paths(package)
     print_release_summary(package)
     return package
 
@@ -279,8 +280,8 @@ def prepare_publishable_model(
         {
             "schema_version": "synthpopcan-tree-release-manifest-v1",
             "command": "library workflow",
-            "source_model": str(model_path),
-            "output_model": str(out_path),
+            "source_model": repo_path(model_path),
+            "output_model": repo_path(out_path),
             "release_class": "publishable_candidate",
             "review_note": review_note,
             "thresholds": {"min_support": 50.0, "max_purity": 0.95},
@@ -317,8 +318,8 @@ def generate_large_outputs() -> None:
             "command": "library workflow",
             "package": PACKAGE_ID,
             "outputs": {
-                "households": str(households_path),
-                "persons": str(persons_path),
+                "households": repo_path(households_path),
+                "persons": repo_path(persons_path),
             },
             "households": HOUSEHOLDS,
             "generated_households": household_count,
@@ -333,6 +334,37 @@ def generate_large_outputs() -> None:
         f"in {elapsed:.2f}s"
     )
     print(f"Wrote {manifest_path.relative_to(ROOT)}")
+
+
+def relativize_paths(value: object) -> object:
+    """Return a JSON-like object with repo-local absolute paths made relative."""
+
+    if isinstance(value, dict):
+        return {key: relativize_paths(item) for key, item in value.items()}
+    if isinstance(value, list):
+        return [relativize_paths(item) for item in value]
+    if isinstance(value, str):
+        return relativize_path_string(value)
+    return value
+
+
+def relativize_path_string(value: str) -> str:
+    try:
+        path = Path(value)
+    except ValueError:
+        return value
+    if not path.is_absolute():
+        return value
+    try:
+        return repo_path(path)
+    except ValueError:
+        return value
+
+
+def repo_path(path: Path) -> str:
+    """Return ``path`` relative to the repository root."""
+
+    return str(path.resolve(strict=False).relative_to(ROOT))
 
 
 def print_release_summary(package: dict[str, object]) -> None:

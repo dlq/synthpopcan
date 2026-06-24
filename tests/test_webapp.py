@@ -183,6 +183,7 @@ def test_webapp_loads_bundled_montreal_model_payload() -> None:
     from synthpopcan.models import model_payload
 
     package = model_payload("montreal-cma-2016-all-fields")
+    serialized_package = json.dumps(package)
 
     assert package["schema_version"] == "synthpopcan-linked-tree-package-v1"
     assert package["package_type"] == "linked_household_person"
@@ -192,12 +193,14 @@ def test_webapp_loads_bundled_montreal_model_payload() -> None:
         "column": "CMA",
         "value": "462",
     }
+    assert "/Users/" not in serialized_package
 
 
 def test_webapp_loads_bundled_quebec_model_payload() -> None:
     from synthpopcan.models import model_payload
 
     package = model_payload("quebec-2016-all-fields")
+    serialized_package = json.dumps(package)
 
     assert package["schema_version"] == "synthpopcan-linked-tree-package-v1"
     assert package["package_type"] == "linked_household_person"
@@ -207,6 +210,7 @@ def test_webapp_loads_bundled_quebec_model_payload() -> None:
         "column": "PR",
         "value": "24",
     }
+    assert "/Users/" not in serialized_package
 
 
 def test_webapp_wds_seed_controls_api_uses_local_helper(monkeypatch) -> None:

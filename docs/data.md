@@ -25,6 +25,28 @@ Use this page for local setup checks. Use [Sources](sources.md) to inspect
 specific files, and [Statistics Canada Sources](statcan.md) to find and fetch
 supported public Statistics Canada sources.
 
+## Public Repository Policy
+
+The public repository should not contain raw or access-controlled source data.
+This includes Census microdata files, local Downloads snapshots, private
+research datasets, and generated full-population CSV outputs.
+
+Reviewed model packages are handled separately from raw data. A package may be
+distributed when it is intentionally prepared for public use, contains
+provenance and review metadata, and passes the current model-release checks.
+Large packaged models should be tracked with Git LFS.
+
+Model packages are still derived research artifacts. Before publishing one:
+
+- check that it contains no raw rows, source identifiers, or private paths;
+- confirm the source citation and redistribution note are clear;
+- run the relevant tree-model audit and release workflow;
+- inspect package metadata with `synthpopcan tree inspect-package`;
+- verify large package files are Git LFS pointers.
+
+SynthPopCan is independent research software. It is not affiliated with or
+endorsed by Statistics Canada or the Government of Canada.
+
 ## Getting Started
 
 Check the default data root:

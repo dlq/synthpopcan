@@ -2,6 +2,10 @@
 
 SynthPopCan is an early-stage project for building Canadian synthetic population tooling.
 
+SynthPopCan is an independent research-software project. It is not affiliated
+with, endorsed by, or sponsored by Statistics Canada or the Government of
+Canada.
+
 Near-term goals:
 
 1. Provide a Python library and CLI that can create synthetic populations through IPF from Statistics Canada margin/control tables.
@@ -90,3 +94,18 @@ Large, raw, private, or access-controlled data are not tracked in git.
 Public geography, school, healthcare, road, and environmental layers should generally be fetched from authoritative public sources such as Statistics Canada, open.canada.ca, donneesquebec.ca, and municipal/provincial open-data portals rather than stored in this repository.
 
 Local-only manifests may exist inside ignored data directories to document what is present on a development machine.
+
+## Model Packages
+
+Reviewed model packages may be distributed with the project when they are
+explicitly intended as public research artifacts. Large packaged models are
+tracked with Git LFS rather than ordinary Git blobs.
+
+Bundled model packages are not raw Census microdata. They should still be
+treated as derived research artifacts with provenance, disclosure-risk checks,
+and limitations. A model package being marked as a publishable candidate means
+it passed the project's current checks; it is not a claim of official approval,
+legal privacy certification, or fitness for every research use.
+
+Before publishing a new model package, review `docs/data.md`, `docs/tree.md`,
+and `CONTRIBUTING.md`.
