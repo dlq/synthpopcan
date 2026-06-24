@@ -294,6 +294,12 @@ synthpopcan tree train-linked \
   --random-seed 7
 ```
 
+The beginner defaults train `household_core` plus `person_demographics`. For a
+broader source-adapter model, use `--household-block all --person-block all`.
+Those `all` blocks combine the adapter's supported household and person
+suggestion blocks; they still exclude identifiers, weights, replicate weights,
+and columns that are not safe or coherent at the requested record level.
+
 Generate linked rows:
 
 ```bash
@@ -477,6 +483,19 @@ synthpopcan tree package-linked-models \
   --out linked-model-package.json
 ```
 
+### `tree list-packages`
+
+Lists model packages bundled with SynthPopCan. These are available to both the
+CLI and the local web app.
+
+```bash
+synthpopcan tree list-packages
+synthpopcan tree list-packages --format json
+```
+
+Use the package `ID` with `tree inspect-package` or
+`tree generate-from-package`.
+
 ### `tree generate-from-package`
 
 Generates linked rows directly from a reviewed package.
@@ -489,6 +508,143 @@ synthpopcan tree generate-from-package linked-model-package.json \
   --persons-out synthetic-persons.csv
 ```
 
+The first argument can be either a local package JSON path or a bundled package
+ID from `tree list-packages`.
+
+This command streams linked household and person CSVs as it generates them, so
+large outputs do not need to fit in memory before writing. The generation
+manifest records both the requested household count and the actual generated
+person count.
+
+Large package generation is optimized internally by reusing repeated condition
+lookups and precomputed sampling weights. CSV remains the normal user-facing
+output; alternative columnar formats, if added later, should be treated as
+advanced or internal performance options.
+
+Generated rows preserve the source model's raw codes. For 2016 PUMF-derived
+packages, values such as `99999999`, `9999`, `99`, and `9` are usually
+Statistics Canada special codes such as not applicable, not available, or valid
+skip, depending on the column. Do not treat these as ordinary numeric values
+without decoding the relevant field metadata.
+
+## Example: Broad Montréal CMA Linked Model
+
+This example shows the full CLI sequence for a local 2016 hierarchical PUMF
+workflow. It uses Montréal CMA (`CMA=462`), combines all currently supported
+household and person suggestion blocks, checks release-readiness, prepares
+publishable-candidate copies, packages the linked model, and generates a large
+linked synthetic population.
+
+The source microdata path below is intentionally under `data/raw` and the
+outputs are under `data/private`; neither should be committed to the repository.
+
+```bash
+mkdir -p data/private/benchmarks/tree-release-2016-cma462-all-fields
+```
+
+Train the broad linked household/person model:
+
+```bash
+synthpopcan tree train-linked \
+  "data/raw/statscan/2016-census/PUMF Census 2016/pumf-98M0002-E-2016-hierarchical/pumf-98M0002-E-2016-hierarchical_F1.csv" \
+  --suggested-blocks \
+  --household-block all \
+  --person-block all \
+  --geography-column CMA \
+  --geography-value 462 \
+  --target-profile full \
+  --random-seed 7 \
+  --household-model-out data/private/benchmarks/tree-release-2016-cma462-all-fields/household-model.json \
+  --person-model-out data/private/benchmarks/tree-release-2016-cma462-all-fields/person-model.json \
+  --manifest-out data/private/benchmarks/tree-release-2016-cma462-all-fields/linked-training-manifest.json
+```
+
+Check whether the private working models are eligible for release preparation:
+
+```bash
+synthpopcan tree release-readiness \
+  --household-model data/private/benchmarks/tree-release-2016-cma462-all-fields/household-model.json \
+  --person-model data/private/benchmarks/tree-release-2016-cma462-all-fields/person-model.json \
+  --training-manifest data/private/benchmarks/tree-release-2016-cma462-all-fields/linked-training-manifest.json \
+  --household-size-column household_size \
+  --min-support 50 \
+  --max-purity 0.95
+```
+
+Prepare reviewed publishable-candidate copies:
+
+```bash
+synthpopcan tree prepare-model-release \
+  data/private/benchmarks/tree-release-2016-cma462-all-fields/household-model.json \
+  --out data/private/benchmarks/tree-release-2016-cma462-all-fields/household-model-publishable.json \
+  --manifest-out data/private/benchmarks/tree-release-2016-cma462-all-fields/household-release-manifest.json \
+  --min-support 50 \
+  --max-purity 0.95 \
+  --review-note "Montreal CMA 462 all-household and all-person-block household model reviewed with SynthPopCan release checks."
+
+synthpopcan tree prepare-model-release \
+  data/private/benchmarks/tree-release-2016-cma462-all-fields/person-model.json \
+  --out data/private/benchmarks/tree-release-2016-cma462-all-fields/person-model-publishable.json \
+  --manifest-out data/private/benchmarks/tree-release-2016-cma462-all-fields/person-release-manifest.json \
+  --min-support 50 \
+  --max-purity 0.95 \
+  --review-note "Montreal CMA 462 all-household and all-person-block person model reviewed with SynthPopCan release checks."
+```
+
+Create a small source-provenance JSON file before packaging. The exact metadata
+should match the source access terms and citation used by the project:
+
+```json
+{
+  "schema_version": "synthpopcan-source-provenance-v1",
+  "title": "2016 Census Hierarchical Public Use Microdata File",
+  "provider": "Statistics Canada",
+  "access_class": "local restricted/source-controlled data root",
+  "citation": "Statistics Canada, 2016 Census Hierarchical Public Use Microdata File.",
+  "redistribution_note": "Do not redistribute source microdata. Package contains model artifacts only.",
+  "local_path": "data/raw/statscan/2016-census/PUMF Census 2016/pumf-98M0002-E-2016-hierarchical/pumf-98M0002-E-2016-hierarchical_F1.csv"
+}
+```
+
+Package the linked model:
+
+```bash
+synthpopcan tree package-linked-models \
+  --household-model data/private/benchmarks/tree-release-2016-cma462-all-fields/household-model-publishable.json \
+  --person-model data/private/benchmarks/tree-release-2016-cma462-all-fields/person-model-publishable.json \
+  --training-manifest data/private/benchmarks/tree-release-2016-cma462-all-fields/linked-training-manifest.json \
+  --source-provenance data/private/benchmarks/tree-release-2016-cma462-all-fields/source-provenance.json \
+  --household-release-manifest data/private/benchmarks/tree-release-2016-cma462-all-fields/household-release-manifest.json \
+  --person-release-manifest data/private/benchmarks/tree-release-2016-cma462-all-fields/person-release-manifest.json \
+  --review-note "Montreal CMA 462 all-household and all-person-block linked package reviewed by SynthPopCan release-readiness checks." \
+  --out data/private/benchmarks/tree-release-2016-cma462-all-fields/linked-model-package.json \
+  --household-size-column household_size \
+  --min-support 50 \
+  --max-purity 0.95
+```
+
+Generate the linked synthetic population:
+
+```bash
+synthpopcan tree list-packages
+synthpopcan tree inspect-package montreal-cma-2016-all-fields
+synthpopcan tree generate-from-package \
+  montreal-cma-2016-all-fields \
+  --households 1830000 \
+  --households-out data/private/benchmarks/tree-release-2016-cma462-all-fields/synthetic-households.csv \
+  --persons-out data/private/benchmarks/tree-release-2016-cma462-all-fields/synthetic-persons.csv \
+  --manifest-out data/private/benchmarks/tree-release-2016-cma462-all-fields/synthetic-linked-manifest.json \
+  --random-seed 7
+```
+
+The household count is controlled directly by `--households`. The person count
+is generated from the model's household-size distribution, so it will usually
+not match a separate target exactly. In one local Montréal CMA run, requesting
+1,830,000 households produced 4,238,633 person rows.
+
+The bundled Montréal package is the same linked package served by the local web
+app's premade model chooser.
+
 ### `tree inspect-package`
 
 Prints a package summary without dumping embedded model payloads.
@@ -496,7 +652,11 @@ Prints a package summary without dumping embedded model payloads.
 ```bash
 synthpopcan tree inspect-package linked-model-package.json
 synthpopcan tree inspect-package linked-model-package.json --format json
+synthpopcan tree inspect-package montreal-cma-2016-all-fields
 ```
+
+The argument can be a local package JSON path or a packaged model ID from
+`tree list-packages`.
 
 ## Troubleshooting
 

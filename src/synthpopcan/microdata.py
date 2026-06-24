@@ -142,6 +142,12 @@ _STATCAN_2016_HIERARCHICAL_TREE_PROFILE = TreeColumnSuggestionProfile(
             conditioning_columns=("PR",),
         ),
         TreeColumnBlockSpec(
+            name="household_family_context",
+            level="household",
+            target_columns=("FCOND", "NOS"),
+            conditioning_columns=("PR", "household_size", "TENUR"),
+        ),
+        TreeColumnBlockSpec(
             name="person_demographics",
             level="person",
             target_columns=("AGEGRP", "SEX", "MarStH", "IMMSTAT"),
@@ -606,30 +612,102 @@ def resolve_tree_column_block_pair(
     """
 
     suggestion = suggest_tree_column_blocks(sample)
-    suggested_household_block = find_suggested_tree_column_block(
-        suggestion,
-        name=household_block,
-        level="household",
-    )
-    suggested_person_block = find_suggested_tree_column_block(
-        suggestion,
-        name=person_block,
-        level="person",
-    )
-    return (
-        require_suggested_tree_columns(suggested_household_block, "target_columns"),
-        require_suggested_tree_columns(
+    if household_block == "all":
+        suggested_household_blocks = [
+            block
+            for block in suggestion["blocks"]
+            if block["level"] == "household" and block["target_columns"]
+        ]
+        if not suggested_household_blocks:
+            raise ValueError("no available household tree column blocks")
+        household_target_columns = unique_columns(
+            column
+            for block in suggested_household_blocks
+            for column in require_suggested_tree_columns(block, "target_columns")
+        )
+        household_conditioning_columns = unique_columns(
+            column
+            for block in suggested_household_blocks
+            for column in require_suggested_tree_columns(block, "conditioning_columns")
+        )
+        household_conditioning_columns = tuple(
+            column
+            for column in household_conditioning_columns
+            if column not in household_target_columns
+        )
+        household_block_names = [
+            str(block["name"]) for block in suggested_household_blocks
+        ]
+    else:
+        suggested_household_block = find_suggested_tree_column_block(
+            suggestion,
+            name=household_block,
+            level="household",
+        )
+        household_target_columns = require_suggested_tree_columns(
+            suggested_household_block,
+            "target_columns",
+        )
+        household_conditioning_columns = require_suggested_tree_columns(
             suggested_household_block,
             "conditioning_columns",
-        ),
-        require_suggested_tree_columns(suggested_person_block, "target_columns"),
-        require_suggested_tree_columns(suggested_person_block, "conditioning_columns"),
-        {
-            "mode": "profile",
-            "profile": suggestion["profile"],
-            "household_block": household_block,
-            "person_block": person_block,
-        },
+        )
+        household_block_names = None
+    if person_block == "all":
+        suggested_person_blocks = [
+            block
+            for block in suggestion["blocks"]
+            if block["level"] == "person" and block["target_columns"]
+        ]
+        if not suggested_person_blocks:
+            raise ValueError("no available person tree column blocks")
+        person_target_columns = unique_columns(
+            column
+            for block in suggested_person_blocks
+            for column in require_suggested_tree_columns(block, "target_columns")
+        )
+        person_conditioning_columns = unique_columns(
+            column
+            for block in suggested_person_blocks
+            for column in require_suggested_tree_columns(block, "conditioning_columns")
+        )
+        person_conditioning_columns = tuple(
+            column
+            for column in person_conditioning_columns
+            if column not in person_target_columns
+        )
+        person_block_names = [str(block["name"]) for block in suggested_person_blocks]
+    else:
+        suggested_person_block = find_suggested_tree_column_block(
+            suggestion,
+            name=person_block,
+            level="person",
+        )
+        person_target_columns = require_suggested_tree_columns(
+            suggested_person_block,
+            "target_columns",
+        )
+        person_conditioning_columns = require_suggested_tree_columns(
+            suggested_person_block,
+            "conditioning_columns",
+        )
+        person_block_names = None
+    column_source = {
+        "mode": "profile",
+        "profile": suggestion["profile"],
+        "household_block": household_block,
+        "person_block": person_block,
+    }
+    if household_block_names is not None:
+        column_source["household_blocks"] = household_block_names
+    if person_block_names is not None:
+        column_source["person_blocks"] = person_block_names
+    return (
+        household_target_columns,
+        household_conditioning_columns,
+        person_target_columns,
+        person_conditioning_columns,
+        column_source,
     )
 
 

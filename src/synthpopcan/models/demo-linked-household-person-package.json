@@ -1,0 +1,828 @@
+{
+  "description": "Demonstration package trained from synthetic toy rows. It exercises linked household/person generation without using restricted data.",
+  "generation_defaults": {
+    "conditions": "geo=Demo North",
+    "households": 10
+  },
+  "household_size_column": "household_size",
+  "models": {
+    "household": {
+      "global_outcomes": [
+        {
+          "values": {
+            "household_size": "1",
+            "tenure": "renter"
+          },
+          "weight": 28
+        },
+        {
+          "values": {
+            "household_size": "2",
+            "tenure": "owner"
+          },
+          "weight": 24
+        },
+        {
+          "values": {
+            "household_size": "3",
+            "tenure": "owner"
+          },
+          "weight": 14
+        },
+        {
+          "values": {
+            "household_size": "2",
+            "tenure": "renter"
+          },
+          "weight": 16
+        },
+        {
+          "values": {
+            "household_size": "4",
+            "tenure": "owner"
+          },
+          "weight": 14
+        }
+      ],
+      "groups": [
+        {
+          "conditions": {
+            "geo": "Demo North"
+          },
+          "outcomes": [
+            {
+              "values": {
+                "household_size": "1",
+                "tenure": "renter"
+              },
+              "weight": 10
+            },
+            {
+              "values": {
+                "household_size": "2",
+                "tenure": "owner"
+              },
+              "weight": 24
+            },
+            {
+              "values": {
+                "household_size": "3",
+                "tenure": "owner"
+              },
+              "weight": 14
+            }
+          ],
+          "support": 48
+        },
+        {
+          "conditions": {
+            "geo": "Demo South"
+          },
+          "outcomes": [
+            {
+              "values": {
+                "household_size": "1",
+                "tenure": "renter"
+              },
+              "weight": 18
+            },
+            {
+              "values": {
+                "household_size": "2",
+                "tenure": "renter"
+              },
+              "weight": 16
+            },
+            {
+              "values": {
+                "household_size": "4",
+                "tenure": "owner"
+              },
+              "weight": 14
+            }
+          ],
+          "support": 48
+        }
+      ],
+      "model_type": "conditional-frequency",
+      "privacy": {
+        "contains_raw_rows": false,
+        "contains_source_identifiers": false,
+        "groups_below_threshold": 0,
+        "min_support_threshold": 5,
+        "minimum_support": 48,
+        "publishable": true,
+        "safe_demo": true
+      },
+      "records_trained": 96,
+      "release_class": "publishable_candidate",
+      "schema_version": "synthpopcan-tree-model-v1",
+      "source_format": "synthetic-demo-v1",
+      "spec": {
+        "conditioning_columns": [
+          "geo"
+        ],
+        "geography_column": "geo",
+        "level": "household",
+        "model_family": "tree-based",
+        "random_seed": 101,
+        "target_columns": [
+          "household_size",
+          "tenure"
+        ],
+        "weight_column": null
+      }
+    },
+    "person": {
+      "global_outcomes": [
+        {
+          "values": {
+            "age_group": "child",
+            "sex": "F"
+          },
+          "weight": 1
+        },
+        {
+          "values": {
+            "age_group": "adult",
+            "sex": "F"
+          },
+          "weight": 2
+        },
+        {
+          "values": {
+            "age_group": "adult",
+            "sex": "M"
+          },
+          "weight": 2
+        },
+        {
+          "values": {
+            "age_group": "older",
+            "sex": "F"
+          },
+          "weight": 1
+        }
+      ],
+      "groups": [
+        {
+          "conditions": {
+            "geo": "Demo North",
+            "household_size": "1",
+            "tenure": "owner"
+          },
+          "outcomes": [
+            {
+              "values": {
+                "age_group": "child",
+                "sex": "F"
+              },
+              "weight": 1
+            },
+            {
+              "values": {
+                "age_group": "adult",
+                "sex": "F"
+              },
+              "weight": 2
+            },
+            {
+              "values": {
+                "age_group": "adult",
+                "sex": "M"
+              },
+              "weight": 2
+            },
+            {
+              "values": {
+                "age_group": "older",
+                "sex": "F"
+              },
+              "weight": 1
+            }
+          ],
+          "support": 12
+        },
+        {
+          "conditions": {
+            "geo": "Demo North",
+            "household_size": "1",
+            "tenure": "renter"
+          },
+          "outcomes": [
+            {
+              "values": {
+                "age_group": "child",
+                "sex": "F"
+              },
+              "weight": 1
+            },
+            {
+              "values": {
+                "age_group": "adult",
+                "sex": "F"
+              },
+              "weight": 2
+            },
+            {
+              "values": {
+                "age_group": "adult",
+                "sex": "M"
+              },
+              "weight": 2
+            },
+            {
+              "values": {
+                "age_group": "older",
+                "sex": "F"
+              },
+              "weight": 1
+            }
+          ],
+          "support": 12
+        },
+        {
+          "conditions": {
+            "geo": "Demo North",
+            "household_size": "2",
+            "tenure": "owner"
+          },
+          "outcomes": [
+            {
+              "values": {
+                "age_group": "child",
+                "sex": "F"
+              },
+              "weight": 1
+            },
+            {
+              "values": {
+                "age_group": "adult",
+                "sex": "F"
+              },
+              "weight": 2
+            },
+            {
+              "values": {
+                "age_group": "adult",
+                "sex": "M"
+              },
+              "weight": 2
+            },
+            {
+              "values": {
+                "age_group": "older",
+                "sex": "F"
+              },
+              "weight": 1
+            }
+          ],
+          "support": 12
+        },
+        {
+          "conditions": {
+            "geo": "Demo North",
+            "household_size": "2",
+            "tenure": "renter"
+          },
+          "outcomes": [
+            {
+              "values": {
+                "age_group": "child",
+                "sex": "F"
+              },
+              "weight": 1
+            },
+            {
+              "values": {
+                "age_group": "adult",
+                "sex": "F"
+              },
+              "weight": 2
+            },
+            {
+              "values": {
+                "age_group": "adult",
+                "sex": "M"
+              },
+              "weight": 2
+            },
+            {
+              "values": {
+                "age_group": "older",
+                "sex": "F"
+              },
+              "weight": 1
+            }
+          ],
+          "support": 12
+        },
+        {
+          "conditions": {
+            "geo": "Demo North",
+            "household_size": "3",
+            "tenure": "owner"
+          },
+          "outcomes": [
+            {
+              "values": {
+                "age_group": "child",
+                "sex": "F"
+              },
+              "weight": 1
+            },
+            {
+              "values": {
+                "age_group": "adult",
+                "sex": "F"
+              },
+              "weight": 2
+            },
+            {
+              "values": {
+                "age_group": "adult",
+                "sex": "M"
+              },
+              "weight": 2
+            },
+            {
+              "values": {
+                "age_group": "older",
+                "sex": "F"
+              },
+              "weight": 1
+            }
+          ],
+          "support": 12
+        },
+        {
+          "conditions": {
+            "geo": "Demo North",
+            "household_size": "3",
+            "tenure": "renter"
+          },
+          "outcomes": [
+            {
+              "values": {
+                "age_group": "child",
+                "sex": "F"
+              },
+              "weight": 1
+            },
+            {
+              "values": {
+                "age_group": "adult",
+                "sex": "F"
+              },
+              "weight": 2
+            },
+            {
+              "values": {
+                "age_group": "adult",
+                "sex": "M"
+              },
+              "weight": 2
+            },
+            {
+              "values": {
+                "age_group": "older",
+                "sex": "F"
+              },
+              "weight": 1
+            }
+          ],
+          "support": 12
+        },
+        {
+          "conditions": {
+            "geo": "Demo North",
+            "household_size": "4",
+            "tenure": "owner"
+          },
+          "outcomes": [
+            {
+              "values": {
+                "age_group": "child",
+                "sex": "F"
+              },
+              "weight": 1
+            },
+            {
+              "values": {
+                "age_group": "adult",
+                "sex": "F"
+              },
+              "weight": 2
+            },
+            {
+              "values": {
+                "age_group": "adult",
+                "sex": "M"
+              },
+              "weight": 2
+            },
+            {
+              "values": {
+                "age_group": "older",
+                "sex": "F"
+              },
+              "weight": 1
+            }
+          ],
+          "support": 12
+        },
+        {
+          "conditions": {
+            "geo": "Demo North",
+            "household_size": "4",
+            "tenure": "renter"
+          },
+          "outcomes": [
+            {
+              "values": {
+                "age_group": "child",
+                "sex": "F"
+              },
+              "weight": 1
+            },
+            {
+              "values": {
+                "age_group": "adult",
+                "sex": "F"
+              },
+              "weight": 2
+            },
+            {
+              "values": {
+                "age_group": "adult",
+                "sex": "M"
+              },
+              "weight": 2
+            },
+            {
+              "values": {
+                "age_group": "older",
+                "sex": "F"
+              },
+              "weight": 1
+            }
+          ],
+          "support": 12
+        },
+        {
+          "conditions": {
+            "geo": "Demo South",
+            "household_size": "1",
+            "tenure": "owner"
+          },
+          "outcomes": [
+            {
+              "values": {
+                "age_group": "child",
+                "sex": "F"
+              },
+              "weight": 1
+            },
+            {
+              "values": {
+                "age_group": "adult",
+                "sex": "F"
+              },
+              "weight": 2
+            },
+            {
+              "values": {
+                "age_group": "adult",
+                "sex": "M"
+              },
+              "weight": 2
+            },
+            {
+              "values": {
+                "age_group": "older",
+                "sex": "F"
+              },
+              "weight": 1
+            }
+          ],
+          "support": 12
+        },
+        {
+          "conditions": {
+            "geo": "Demo South",
+            "household_size": "1",
+            "tenure": "renter"
+          },
+          "outcomes": [
+            {
+              "values": {
+                "age_group": "child",
+                "sex": "F"
+              },
+              "weight": 1
+            },
+            {
+              "values": {
+                "age_group": "adult",
+                "sex": "F"
+              },
+              "weight": 2
+            },
+            {
+              "values": {
+                "age_group": "adult",
+                "sex": "M"
+              },
+              "weight": 2
+            },
+            {
+              "values": {
+                "age_group": "older",
+                "sex": "F"
+              },
+              "weight": 1
+            }
+          ],
+          "support": 12
+        },
+        {
+          "conditions": {
+            "geo": "Demo South",
+            "household_size": "2",
+            "tenure": "owner"
+          },
+          "outcomes": [
+            {
+              "values": {
+                "age_group": "child",
+                "sex": "F"
+              },
+              "weight": 1
+            },
+            {
+              "values": {
+                "age_group": "adult",
+                "sex": "F"
+              },
+              "weight": 2
+            },
+            {
+              "values": {
+                "age_group": "adult",
+                "sex": "M"
+              },
+              "weight": 2
+            },
+            {
+              "values": {
+                "age_group": "older",
+                "sex": "F"
+              },
+              "weight": 1
+            }
+          ],
+          "support": 12
+        },
+        {
+          "conditions": {
+            "geo": "Demo South",
+            "household_size": "2",
+            "tenure": "renter"
+          },
+          "outcomes": [
+            {
+              "values": {
+                "age_group": "child",
+                "sex": "F"
+              },
+              "weight": 1
+            },
+            {
+              "values": {
+                "age_group": "adult",
+                "sex": "F"
+              },
+              "weight": 2
+            },
+            {
+              "values": {
+                "age_group": "adult",
+                "sex": "M"
+              },
+              "weight": 2
+            },
+            {
+              "values": {
+                "age_group": "older",
+                "sex": "F"
+              },
+              "weight": 1
+            }
+          ],
+          "support": 12
+        },
+        {
+          "conditions": {
+            "geo": "Demo South",
+            "household_size": "3",
+            "tenure": "owner"
+          },
+          "outcomes": [
+            {
+              "values": {
+                "age_group": "child",
+                "sex": "F"
+              },
+              "weight": 1
+            },
+            {
+              "values": {
+                "age_group": "adult",
+                "sex": "F"
+              },
+              "weight": 2
+            },
+            {
+              "values": {
+                "age_group": "adult",
+                "sex": "M"
+              },
+              "weight": 2
+            },
+            {
+              "values": {
+                "age_group": "older",
+                "sex": "F"
+              },
+              "weight": 1
+            }
+          ],
+          "support": 12
+        },
+        {
+          "conditions": {
+            "geo": "Demo South",
+            "household_size": "3",
+            "tenure": "renter"
+          },
+          "outcomes": [
+            {
+              "values": {
+                "age_group": "child",
+                "sex": "F"
+              },
+              "weight": 1
+            },
+            {
+              "values": {
+                "age_group": "adult",
+                "sex": "F"
+              },
+              "weight": 2
+            },
+            {
+              "values": {
+                "age_group": "adult",
+                "sex": "M"
+              },
+              "weight": 2
+            },
+            {
+              "values": {
+                "age_group": "older",
+                "sex": "F"
+              },
+              "weight": 1
+            }
+          ],
+          "support": 12
+        },
+        {
+          "conditions": {
+            "geo": "Demo South",
+            "household_size": "4",
+            "tenure": "owner"
+          },
+          "outcomes": [
+            {
+              "values": {
+                "age_group": "child",
+                "sex": "F"
+              },
+              "weight": 1
+            },
+            {
+              "values": {
+                "age_group": "adult",
+                "sex": "F"
+              },
+              "weight": 2
+            },
+            {
+              "values": {
+                "age_group": "adult",
+                "sex": "M"
+              },
+              "weight": 2
+            },
+            {
+              "values": {
+                "age_group": "older",
+                "sex": "F"
+              },
+              "weight": 1
+            }
+          ],
+          "support": 12
+        },
+        {
+          "conditions": {
+            "geo": "Demo South",
+            "household_size": "4",
+            "tenure": "renter"
+          },
+          "outcomes": [
+            {
+              "values": {
+                "age_group": "child",
+                "sex": "F"
+              },
+              "weight": 1
+            },
+            {
+              "values": {
+                "age_group": "adult",
+                "sex": "F"
+              },
+              "weight": 2
+            },
+            {
+              "values": {
+                "age_group": "adult",
+                "sex": "M"
+              },
+              "weight": 2
+            },
+            {
+              "values": {
+                "age_group": "older",
+                "sex": "F"
+              },
+              "weight": 1
+            }
+          ],
+          "support": 12
+        }
+      ],
+      "model_type": "conditional-frequency",
+      "privacy": {
+        "contains_raw_rows": false,
+        "contains_source_identifiers": false,
+        "groups_below_threshold": 0,
+        "min_support_threshold": 5,
+        "minimum_support": 12,
+        "publishable": true,
+        "safe_demo": true
+      },
+      "records_trained": 192,
+      "release_class": "publishable_candidate",
+      "schema_version": "synthpopcan-tree-model-v1",
+      "source_format": "synthetic-demo-v1",
+      "spec": {
+        "conditioning_columns": [
+          "geo",
+          "household_size",
+          "tenure"
+        ],
+        "geography_column": "geo",
+        "level": "person",
+        "model_family": "tree-based",
+        "random_seed": 202,
+        "target_columns": [
+          "age_group",
+          "sex"
+        ],
+        "weight_column": null
+      }
+    }
+  },
+  "name": "Safe demo household/person package",
+  "package_type": "linked_household_person",
+  "privacy": {
+    "contains_raw_rows": false,
+    "contains_source_identifiers": false,
+    "publishable_candidate": true,
+    "safe_demo": true,
+    "source": "synthetic toy rows only"
+  },
+  "provenance": {
+    "contains_real_microdata": false,
+    "source": "SynthPopCan bundled demo",
+    "training_data": "hand-authored synthetic toy distribution"
+  },
+  "review": {
+    "note": "Trained from synthetic toy rows; safe to distribute.",
+    "status": "safe demo"
+  },
+  "schema_version": "synthpopcan-linked-tree-package-v1"
+}

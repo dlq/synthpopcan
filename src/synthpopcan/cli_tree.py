@@ -7,6 +7,14 @@ from dataclasses import replace
 from pathlib import Path
 
 import click
+from rich.console import Console
+from rich.progress import (
+    BarColumn,
+    Progress,
+    SpinnerColumn,
+    TextColumn,
+    TimeElapsedColumn,
+)
 from rich.table import Table
 
 from synthpopcan.cli_output import format_file_access_error, write_output
@@ -21,12 +29,13 @@ from synthpopcan.microdata import (
     reduced_person_targets,
     resolve_tree_column_block_pair,
 )
+from synthpopcan.models import model_catalogue, model_payload
 from synthpopcan.tree import (
     CartTreeModel,
     FrequencyTreeModel,
     TreeTrainingSample,
     audit_tree_model,
-    generate_linked_population,
+    generate_linked_population_to_csv,
     generate_tree_rows,
     parse_conditions,
     read_tree_model,
@@ -171,13 +180,13 @@ def train_tree_generator(
     "--household-block",
     default="household_core",
     show_default=True,
-    help="Suggested household block to train.",
+    help="Suggested household block to train. Use 'all' to combine household blocks.",
 )
 @click.option(
     "--person-block",
     default="person_demographics",
     show_default=True,
-    help="Suggested person block to train.",
+    help="Suggested person block to train. Use 'all' to combine person blocks.",
 )
 @click.option(
     "--geography-column",
@@ -270,95 +279,122 @@ def train_linked_tree_generator(
             "Use 'microdata suggest-tree-columns' to inspect available blocks."
         )
     try:
-        sample = read_statcan_2016_hierarchical_seed_sample(source)
-        sample = filter_training_sample_by_geography(
-            sample,
-            geography_column=geography_column,
-            geography_value=geography_value,
-        )
-        (
-            household_target_columns,
-            household_conditioning_columns,
-            person_target_columns,
-            person_conditioning_columns,
-            column_source,
-        ) = resolve_tree_column_block_pair(
-            sample,
-            household_block=household_block,
-            person_block=person_block,
-        )
-        household_target_columns, person_target_columns = apply_target_profile(
-            household_target_columns=household_target_columns,
-            person_target_columns=person_target_columns,
-            target_profile=target_profile,
-        )
-        household_rows, household_export = export_training_rows(
-            sample,
-            level="household",
-            target_columns=household_target_columns,
-            conditioning_columns=household_conditioning_columns,
-        )
-        person_rows, person_export = export_training_rows(
-            sample,
-            level="person",
-            target_columns=person_target_columns,
-            conditioning_columns=person_conditioning_columns,
-        )
-        household_training = tree_training_sample_from_export(
-            rows=household_rows,
-            export=household_export,
-        )
-        person_training = tree_training_sample_from_export(
-            rows=person_rows,
-            export=person_export,
-        )
-        household_model = train_tree_sample(
-            household_training,
-            method=method,
-            random_seed=random_seed,
-            min_support=min_support,
-            min_samples_leaf=min_samples_leaf,
-            max_depth=max_depth,
-        )
-        person_model = train_tree_sample(
-            person_training,
-            method=method,
-            random_seed=random_seed,
-            min_support=min_support,
-            min_samples_leaf=min_samples_leaf,
-            max_depth=max_depth,
-        )
-        write_tree_model(household_model_out, household_model)
-        write_tree_model(person_model_out, person_model)
-        write_tree_generation_manifest(
-            manifest_out,
-            {
-                "schema_version": "synthpopcan-linked-tree-training-v1",
-                "command": "tree train-linked",
-                "source": {
-                    "path": str(source),
-                    "source_format": sample.source_format,
-                    "records": len(sample.records),
-                    "households": sample.metadata.get("households", 0),
+        progress_console = Console(stderr=True)
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            BarColumn(),
+            TextColumn("{task.completed:,}/{task.total:,} steps"),
+            TimeElapsedColumn(),
+            console=progress_console,
+        ) as progress:
+            task_id = progress.add_task("Reading source microdata", total=7)
+
+            sample = read_statcan_2016_hierarchical_seed_sample(source)
+            progress.advance(task_id)
+            progress.update(task_id, description="Filtering and choosing columns")
+            sample = filter_training_sample_by_geography(
+                sample,
+                geography_column=geography_column,
+                geography_value=geography_value,
+            )
+            (
+                household_target_columns,
+                household_conditioning_columns,
+                person_target_columns,
+                person_conditioning_columns,
+                column_source,
+            ) = resolve_tree_column_block_pair(
+                sample,
+                household_block=household_block,
+                person_block=person_block,
+            )
+            household_target_columns, person_target_columns = apply_target_profile(
+                household_target_columns=household_target_columns,
+                person_target_columns=person_target_columns,
+                target_profile=target_profile,
+            )
+            progress.advance(task_id)
+            progress.update(task_id, description="Deriving household training rows")
+            household_rows, household_export = export_training_rows(
+                sample,
+                level="household",
+                target_columns=household_target_columns,
+                conditioning_columns=household_conditioning_columns,
+            )
+            household_training = tree_training_sample_from_export(
+                rows=household_rows,
+                export=household_export,
+            )
+            progress.advance(task_id)
+            progress.update(task_id, description="Deriving person training rows")
+            person_rows, person_export = export_training_rows(
+                sample,
+                level="person",
+                target_columns=person_target_columns,
+                conditioning_columns=person_conditioning_columns,
+            )
+            person_training = tree_training_sample_from_export(
+                rows=person_rows,
+                export=person_export,
+            )
+            progress.advance(task_id)
+            progress.update(task_id, description="Training household model")
+            household_model = train_tree_sample(
+                household_training,
+                method=method,
+                random_seed=random_seed,
+                min_support=min_support,
+                min_samples_leaf=min_samples_leaf,
+                max_depth=max_depth,
+            )
+            progress.advance(task_id)
+            progress.update(task_id, description="Training person model")
+            person_model = train_tree_sample(
+                person_training,
+                method=method,
+                random_seed=random_seed,
+                min_support=min_support,
+                min_samples_leaf=min_samples_leaf,
+                max_depth=max_depth,
+            )
+            progress.advance(task_id)
+            progress.update(task_id, description="Writing models and manifest")
+            write_tree_model(household_model_out, household_model)
+            write_tree_model(person_model_out, person_model)
+            write_tree_generation_manifest(
+                manifest_out,
+                {
+                    "schema_version": "synthpopcan-linked-tree-training-v1",
+                    "command": "tree train-linked",
+                    "source": {
+                        "path": str(source),
+                        "source_format": sample.source_format,
+                        "records": len(sample.records),
+                        "households": sample.metadata.get("households", 0),
+                    },
+                    "column_source": column_source,
+                    "target_profile": target_profile,
+                    "geography_filter": geography_filter_manifest(
+                        geography_column,
+                        geography_value,
+                    ),
+                    "method": method,
+                    "random_seed": random_seed,
+                    "training": {
+                        "household": household_export,
+                        "person": person_export,
+                    },
+                    "models": {
+                        "household": model_manifest(
+                            household_model,
+                            household_model_out,
+                        ),
+                        "person": model_manifest(person_model, person_model_out),
+                    },
                 },
-                "column_source": column_source,
-                "target_profile": target_profile,
-                "geography_filter": geography_filter_manifest(
-                    geography_column,
-                    geography_value,
-                ),
-                "method": method,
-                "random_seed": random_seed,
-                "training": {
-                    "household": household_export,
-                    "person": person_export,
-                },
-                "models": {
-                    "household": model_manifest(household_model, household_model_out),
-                    "person": model_manifest(person_model, person_model_out),
-                },
-            },
-        )
+            )
+            progress.advance(task_id)
     except OSError as exc:
         raise click.ClickException(
             _format_tree_file_error(
@@ -502,16 +538,18 @@ def generate_linked_tree_population(
         household_model_payload = read_tree_model(household_model)
         person_model_payload = read_tree_model(person_model)
         household_conditions = parse_conditions(condition_values)
-        generated_households, generated_persons = generate_linked_population(
-            household_model_payload,
-            person_model_payload,
-            households=households,
-            household_conditions=household_conditions,
-            household_size_column=household_size_column,
-            random_seed=random_seed,
+        generated_household_count, generated_person_count = (
+            generate_linked_population_to_csv(
+                household_model_payload,
+                person_model_payload,
+                households=households,
+                households_path=households_out,
+                persons_path=persons_out,
+                household_conditions=household_conditions,
+                household_size_column=household_size_column,
+                random_seed=random_seed,
+            )
         )
-        write_generated_rows(households_out, generated_households)
-        write_generated_rows(persons_out, generated_persons)
         if manifest_out:
             write_tree_generation_manifest(
                 manifest_out,
@@ -523,6 +561,8 @@ def generate_linked_tree_population(
                         "persons": str(persons_out),
                     },
                     "households": households,
+                    "generated_households": generated_household_count,
+                    "generated_persons": generated_person_count,
                     "household_conditions": household_conditions,
                     "household_size_column": household_size_column,
                     "random_seed": random_seed,
@@ -553,8 +593,34 @@ def generate_linked_tree_population(
         print_wrote(manifest_out)
 
 
+@tree.command("list-packages")
+@click.option(
+    "--format",
+    "output_format",
+    default="table",
+    type=click.Choice(["json", "table"]),
+    show_default=True,
+)
+def list_tree_model_packages(output_format: str) -> None:
+    """List packaged linked models."""
+    catalogue = {"models": model_catalogue()}
+    if output_format == "json":
+        write_output(catalogue, "json")
+        return
+    table = Table(title="Model Packages")
+    table.add_column("Package ID")
+    table.add_column("Summary")
+    for model in catalogue["models"]:
+        default_generation = object_or_empty(model.get("default_generation"))
+        table.add_row(
+            str(model.get("id", "")),
+            format_package_catalogue_summary(model, default_generation),
+        )
+    print_table(table)
+
+
 @tree.command("generate-from-package")
-@click.argument("package_path", type=_PATH)
+@click.argument("package_path", metavar="PACKAGE")
 @click.option(
     "--households",
     required=True,
@@ -592,7 +658,7 @@ def generate_linked_tree_population(
 )
 @click.option("--random-seed", default=None, type=int, help="Optional generation seed.")
 def generate_linked_tree_population_from_package(
-    package_path: Path,
+    package_path: str,
     households: int,
     condition_values: tuple[str, ...],
     households_out: Path,
@@ -601,26 +667,61 @@ def generate_linked_tree_population_from_package(
     manifest_out: Path | None,
     random_seed: int | None,
 ) -> None:
-    """Generate linked household/person CSVs from a package."""
+    """Generate linked household/person CSVs from a package path or bundled ID."""
+    package_source_path: Path | None = None
     try:
-        package = read_linked_model_package(package_path)
+        package, package_label, package_source_path = read_package_path_or_id(
+            package_path
+        )
         validate_package_allows_generation(package)
-        package_inspection = build_linked_package_inspection(package, package_path)
+        package_inspection = build_linked_package_inspection(
+            package,
+            package_source_path,
+        )
+        package_inspection["package_path"] = package_label
         household_model_payload, person_model_payload = package_models(package)
         effective_household_size_column = household_size_column or str(
             package.get("household_size_column", "household_size")
         )
         household_conditions = parse_conditions(condition_values)
-        generated_households, generated_persons = generate_linked_population(
-            household_model_payload,
-            person_model_payload,
-            households=households,
-            household_conditions=household_conditions,
-            household_size_column=effective_household_size_column,
-            random_seed=random_seed,
-        )
-        write_generated_rows(households_out, generated_households)
-        write_generated_rows(persons_out, generated_persons)
+        progress_console = Console(stderr=True)
+        with Progress(
+            TextColumn("[progress.description]{task.description}"),
+            BarColumn(),
+            TextColumn("{task.completed:,}/{task.total:,} households"),
+            TextColumn("• {task.fields[persons]:,} people"),
+            TimeElapsedColumn(),
+            console=progress_console,
+        ) as progress:
+            task_id = progress.add_task(
+                "Generating linked population",
+                total=households,
+                persons=0,
+            )
+
+            def update_progress(
+                generated_households: int,
+                generated_persons: int,
+            ) -> None:
+                progress.update(
+                    task_id,
+                    completed=generated_households,
+                    persons=generated_persons,
+                )
+
+            generated_household_count, generated_person_count = (
+                generate_linked_population_to_csv(
+                    household_model_payload,
+                    person_model_payload,
+                    households=households,
+                    households_path=households_out,
+                    persons_path=persons_out,
+                    household_conditions=household_conditions,
+                    household_size_column=effective_household_size_column,
+                    random_seed=random_seed,
+                    progress_callback=update_progress,
+                )
+            )
         if manifest_out:
             write_tree_generation_manifest(
                 manifest_out,
@@ -632,6 +733,8 @@ def generate_linked_tree_population_from_package(
                         "persons": str(persons_out),
                     },
                     "households": households,
+                    "generated_households": generated_household_count,
+                    "generated_persons": generated_person_count,
                     "household_conditions": household_conditions,
                     "household_size_column": effective_household_size_column,
                     "random_seed": random_seed,
@@ -646,7 +749,7 @@ def generate_linked_tree_population_from_package(
         raise click.ClickException(
             _format_tree_file_error(
                 exc,
-                read_paths=(package_path,),
+                read_paths=(package_source_path, Path(package_path)),
                 write_paths=(households_out, persons_out, manifest_out),
             )
         ) from exc
@@ -1084,7 +1187,7 @@ def package_linked_tree_models_command(
 
 
 @tree.command("inspect-package")
-@click.argument("package_path", type=_PATH)
+@click.argument("package_path", metavar="PACKAGE")
 @click.option(
     "--format",
     "output_format",
@@ -1093,16 +1196,23 @@ def package_linked_tree_models_command(
     show_default=True,
 )
 def inspect_linked_tree_package_command(
-    package_path: Path,
+    package_path: str,
     output_format: str,
 ) -> None:
-    """Inspect a linked household/person model package."""
+    """Inspect a linked household/person model package path or bundled ID."""
+    package_source_path: Path | None = None
     try:
-        package = read_linked_model_package(package_path)
-        report = build_linked_package_inspection(package, package_path)
+        package, package_label, package_source_path = read_package_path_or_id(
+            package_path
+        )
+        report = build_linked_package_inspection(package, package_source_path)
+        report["package_path"] = package_label
     except OSError as exc:
         raise click.ClickException(
-            format_file_access_error(package_path, "read", exc)
+            _format_tree_file_error(
+                exc,
+                read_paths=(package_source_path, Path(package_path)),
+            )
         ) from exc
     except ValueError as exc:
         raise click.ClickException(_format_tree_value_error(exc)) from exc
@@ -1396,6 +1506,26 @@ def read_linked_model_package(path: Path) -> dict[str, object]:
     return payload
 
 
+def read_package_path_or_id(
+    package_path_or_id: str,
+) -> tuple[dict[str, object], str, Path | None]:
+    """Read a linked package from a local path or packaged model ID."""
+
+    package_path = Path(package_path_or_id)
+    if package_path.exists():
+        return read_linked_model_package(package_path), str(package_path), package_path
+    if package_path.is_absolute() or len(package_path.parts) > 1 or package_path.suffix:
+        return read_linked_model_package(package_path), str(package_path), package_path
+    try:
+        package = model_payload(package_path_or_id)
+    except KeyError as exc:
+        raise ValueError(
+            f"linked package not found: {package_path_or_id}. Use a package JSON path "
+            "or a packaged model ID from `synthpopcan tree list-packages`."
+        ) from exc
+    return package, package_path_or_id, None
+
+
 def validate_package_allows_generation(package: dict[str, object]) -> None:
     privacy = object_or_empty(package.get("privacy"))
     if privacy.get("publishable_candidate") is not True:
@@ -1652,6 +1782,32 @@ def format_audit_summary(value: object) -> str:
         f"minimum support={format_number_or_blank(audit.get('minimum_support'))}; "
         f"high purity={format_int_or_blank(audit.get('above_max_purity'))}"
     )
+
+
+def format_default_generation(value: dict[str, object]) -> str:
+    parts: list[str] = []
+    households = format_int_or_blank(value.get("households"))
+    if households:
+        parts.append(f"{households} households")
+    conditions = value.get("conditions")
+    if isinstance(conditions, str) and conditions:
+        parts.append(conditions)
+    return "; ".join(parts)
+
+
+def format_package_catalogue_summary(
+    model: dict[str, object],
+    default_generation: dict[str, object],
+) -> str:
+    parts = [
+        str(model.get("name", "")),
+        f"Geography: {model.get('geography', '')}",
+        f"Status: {model.get('release_status', '')}",
+    ]
+    default_text = format_default_generation(default_generation)
+    if default_text:
+        parts.append(f"Default: {default_text}")
+    return "\n".join(part for part in parts if part)
 
 
 def _format_boolean_phrase(

@@ -47,7 +47,10 @@ The same workflow is documented for command-line use in {doc}`statcan`,
 
 Choose this when you have a prepared model JSON or a linked household/person
 package JSON. The web app can also load premade packages served by the local
-helper. The bundled demo package is synthetic toy data, not Census microdata.
+helper. The bundled safe demo package is synthetic toy data, not Census
+microdata; the bundled `montreal-cma-2016-all-fields` package is a
+publishable-candidate Montréal CMA 2016 linked model served from the same
+premade model chooser.
 
 For a linked household/person package, the browser generates household rows
 first and then person rows inside each household. The result panel shows:
@@ -57,6 +60,12 @@ first and then person rows inside each household. The result panel shows:
 - whether each household's `household_size` matches its generated persons;
 - download links for `households.csv` and `persons.csv`;
 - short previews of both CSV files.
+
+Model-generated previews preserve the package's raw source codes. For
+PUMF-derived packages, values such as `99999999`, `9999`, `99`, and `9` are
+usually Statistics Canada special codes such as not applicable, not available,
+or valid skip, depending on the column. They should be decoded with field
+metadata before being treated as numeric analysis values.
 
 The first web app deliberately does not train models. Training, audit, and
 release workflows remain advanced command-line/library work; see {doc}`tree`.

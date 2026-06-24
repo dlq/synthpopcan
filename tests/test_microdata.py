@@ -808,9 +808,9 @@ def test_suggests_tree_column_blocks_from_statcan_2016_columns(tmp_path) -> None
     source = tmp_path / "hierarchical.csv"
     source.write_text(
         "HH_ID,EF_ID,CF_ID,PP_ID,WEIGHT,WT1,PR,CMA,TENUR,DTYPE,ROOM,BEDRM,"
-        "CONDO,VALUE,SHELCO,AGEGRP,SEX,MarStH,IMMSTAT,HDGREE,LFTAG,TOTINC,"
-        "CITIZEN,VISMIN\n"
-        "1,11,111,11101,1,1,24,462,1,2,5,3,4,1,6,4,1,2,1,6,3,7,1,1\n"
+        "CONDO,VALUE,SHELCO,FCOND,NOS,AGEGRP,SEX,MarStH,IMMSTAT,HDGREE,"
+        "LFTAG,TOTINC,CITIZEN,VISMIN\n"
+        "1,11,111,11101,1,1,24,462,1,2,5,3,4,1,6,1,2,4,1,2,1,6,3,7,1,1\n"
     )
     sample = read_statcan_2016_hierarchical_seed_sample(source)
 
@@ -853,6 +853,14 @@ def test_suggests_tree_column_blocks_from_statcan_2016_columns(tmp_path) -> None
                 "SHELCO",
             ],
             "missing_target_columns": ["PRESMORTG", "SUBSIDY", "REPAIR", "BUILT"],
+        },
+        {
+            "name": "household_family_context",
+            "level": "household",
+            "target_columns": ["FCOND", "NOS"],
+            "conditioning_columns": ["PR", "household_size", "TENUR"],
+            "available_target_columns": ["FCOND", "NOS"],
+            "missing_target_columns": [],
         },
         {
             "name": "person_demographics",
@@ -1110,7 +1118,8 @@ def test_cli_suggests_tree_columns_as_json(tmp_path, capsys) -> None:
         "TENUR",
         "DTYPE",
     ]
-    assert payload["blocks"][1]["target_columns"] == ["AGEGRP", "SEX"]
+    blocks_by_name = {block["name"]: block for block in payload["blocks"]}
+    assert blocks_by_name["person_demographics"]["target_columns"] == ["AGEGRP", "SEX"]
 
 
 def test_cli_suggests_tree_columns_as_table_and_wraps_errors(tmp_path, capsys) -> None:
@@ -1188,8 +1197,7 @@ def test_seed_and_training_exports_reject_invalid_inputs(tmp_path) -> None:
     )
     hierarchical_path = tmp_path / "hierarchical.csv"
     hierarchical_path.write_text(
-        "HH_ID,EF_ID,CF_ID,PP_ID,WEIGHT,TENUR,AGEGRP\n"
-        "1,11,111,11101,1,owner,adult\n"
+        "HH_ID,EF_ID,CF_ID,PP_ID,WEIGHT,TENUR,AGEGRP\n1,11,111,11101,1,owner,adult\n"
     )
     hierarchical = read_statcan_2016_hierarchical_seed_sample(hierarchical_path)
 
@@ -1260,6 +1268,23 @@ def test_tree_column_block_resolution_and_helper_errors(tmp_path) -> None:
     assert person_targets == ("AGEGRP", "SEX")
     assert person_conditions == ("PR", "household_size", "TENUR")
     assert report["mode"] == "profile"
+    (
+        household_targets,
+        household_conditions,
+        person_targets,
+        person_conditions,
+        report,
+    ) = resolve_tree_column_block_pair(
+        sample,
+        household_block="all",
+        person_block="all",
+    )
+    assert household_targets == ("household_size", "TENUR")
+    assert household_conditions == ("PR",)
+    assert person_targets == ("AGEGRP", "SEX")
+    assert person_conditions == ("PR", "household_size", "TENUR")
+    assert report["household_blocks"] == ["household_core"]
+    assert report["person_blocks"] == ["person_demographics"]
     with pytest.raises(ValueError, match="not a person block"):
         find_suggested_tree_column_block(
             suggestion,
@@ -1316,41 +1341,56 @@ def test_geography_feasibility_advisory_helpers() -> None:
         max_purity=0.95,
     )
     assert "too few person rows" in reasons
-    assert feasibility_tier(
-        [],
-        person_rows=1000,
-        household_rows=500,
-        likely_person_rows=1000,
-        likely_household_rows=500,
-    ) == "likely"
-    assert feasibility_tier(
-        ["limited person rows"],
-        person_rows=500,
-        household_rows=250,
-        likely_person_rows=1000,
-        likely_household_rows=500,
-    ) == "borderline"
-    assert feasibility_tier(
-        ["household conditioning support below threshold"],
-        person_rows=1000,
-        household_rows=500,
-        likely_person_rows=1000,
-        likely_household_rows=500,
-    ) == "unlikely"
-    assert feasibility_tier(
-        ["person outcome purity above threshold"],
-        person_rows=1000,
-        household_rows=500,
-        likely_person_rows=1000,
-        likely_household_rows=500,
-    ) == "unlikely"
-    assert feasibility_tier(
-        ["purity review needed"],
-        person_rows=1000,
-        household_rows=500,
-        likely_person_rows=1000,
-        likely_household_rows=500,
-    ) == "unlikely"
+    assert (
+        feasibility_tier(
+            [],
+            person_rows=1000,
+            household_rows=500,
+            likely_person_rows=1000,
+            likely_household_rows=500,
+        )
+        == "likely"
+    )
+    assert (
+        feasibility_tier(
+            ["limited person rows"],
+            person_rows=500,
+            household_rows=250,
+            likely_person_rows=1000,
+            likely_household_rows=500,
+        )
+        == "borderline"
+    )
+    assert (
+        feasibility_tier(
+            ["household conditioning support below threshold"],
+            person_rows=1000,
+            household_rows=500,
+            likely_person_rows=1000,
+            likely_household_rows=500,
+        )
+        == "unlikely"
+    )
+    assert (
+        feasibility_tier(
+            ["person outcome purity above threshold"],
+            person_rows=1000,
+            household_rows=500,
+            likely_person_rows=1000,
+            likely_household_rows=500,
+        )
+        == "unlikely"
+    )
+    assert (
+        feasibility_tier(
+            ["purity review needed"],
+            person_rows=1000,
+            household_rows=500,
+            likely_person_rows=1000,
+            likely_household_rows=500,
+        )
+        == "unlikely"
+    )
     assert suggested_feasibility_action("likely") == "candidate for full block review"
     assert suggested_feasibility_action("borderline") == (
         "coarsen targets or review before training"
@@ -1390,16 +1430,22 @@ def test_household_grouping_helpers_reject_missing_household_ids() -> None:
     )
 
     assert household_size_lookup(records) == {"1": "2"}
-    assert training_value(
-        {"HH_ID": "1", "AGEGRP": "adult"},
-        "household_size",
-        household_sizes={"1": "2"},
-    ) == "2"
-    assert training_value(
-        {"HH_ID": "1", "AGEGRP": "adult"},
-        "AGEGRP",
-        household_sizes={"1": "2"},
-    ) == "adult"
+    assert (
+        training_value(
+            {"HH_ID": "1", "AGEGRP": "adult"},
+            "household_size",
+            household_sizes={"1": "2"},
+        )
+        == "2"
+    )
+    assert (
+        training_value(
+            {"HH_ID": "1", "AGEGRP": "adult"},
+            "AGEGRP",
+            household_sizes={"1": "2"},
+        )
+        == "adult"
+    )
     with pytest.raises(ValueError, match="non-empty HH_ID"):
         group_records_by_household(({"HH_ID": "", "WEIGHT": "1"},))
 
@@ -1433,21 +1479,24 @@ def test_person_feasibility_rows_skip_missing_geography_and_block_noise() -> Non
             "AGEGRP": "adult",
         }
     ]
-    assert find_suggested_tree_column_block(
-        {
-            "blocks": [
-                "ignored",
-                {
-                    "name": "household_core",
-                    "level": "household",
-                    "target_columns": [],
-                    "conditioning_columns": [],
-                },
-            ]
-        },
-        name="household_core",
-        level="household",
-    )["name"] == "household_core"
+    assert (
+        find_suggested_tree_column_block(
+            {
+                "blocks": [
+                    "ignored",
+                    {
+                        "name": "household_core",
+                        "level": "household",
+                        "target_columns": [],
+                        "conditioning_columns": [],
+                    },
+                ]
+            },
+            name="household_core",
+            level="household",
+        )["name"]
+        == "household_core"
+    )
 
 
 def test_cli_inspects_microdata_as_readable_table(tmp_path, capsys) -> None:

@@ -11,7 +11,7 @@ from zipfile import ZipFile
 import pytest
 
 from synthpopcan.cli import main
-from synthpopcan.web_demo_models import demo_model_catalogue, demo_model_payload
+from synthpopcan.models import model_catalogue, model_payload
 from synthpopcan.web_wds import (
     choose_wds_data_csv_member,
     fetch_wds_zip_bytes,
@@ -162,6 +162,9 @@ def test_webapp_serves_demo_model_api_endpoints() -> None:
             "households": 10,
             "conditions": "geo=Demo North",
         }
+        assert catalogue["models"][1]["id"] == "montreal-cma-2016-all-fields"
+        assert catalogue["models"][1]["release_status"] == "publishable_candidate"
+        assert catalogue["models"][1]["safe_demo"] is False
         assert package["schema_version"] == "synthpopcan-linked-tree-package-v1"
         assert package["review"]["status"] == "safe demo"
         with pytest.raises(HTTPError) as exc_info:
@@ -171,6 +174,21 @@ def test_webapp_serves_demo_model_api_endpoints() -> None:
         server.shutdown()
         server.server_close()
         thread.join(timeout=2)
+
+
+def test_webapp_loads_bundled_montreal_model_payload() -> None:
+    from synthpopcan.models import model_payload
+
+    package = model_payload("montreal-cma-2016-all-fields")
+
+    assert package["schema_version"] == "synthpopcan-linked-tree-package-v1"
+    assert package["package_type"] == "linked_household_person"
+    assert package["privacy"]["publishable_candidate"] is True  # type: ignore[index]
+    assert package["privacy"]["contains_raw_rows"] is False  # type: ignore[index]
+    assert package["training_manifest"]["geography_filter"] == {  # type: ignore[index]
+        "column": "CMA",
+        "value": "462",
+    }
 
 
 def test_webapp_wds_seed_controls_api_uses_local_helper(monkeypatch) -> None:
@@ -431,9 +449,9 @@ def test_webapp_wds_helper_edge_cases(monkeypatch) -> None:
 
 
 def test_webapp_demo_model_catalogue_serves_safe_linked_package() -> None:
-    catalogue = demo_model_catalogue()
+    catalogue = model_catalogue()
 
-    assert len(catalogue) == 1
+    assert len(catalogue) == 2
     model = catalogue[0]
     assert model["id"] == "demo-linked-household-person"
     assert model["name"] == "Safe demo household/person package"
@@ -453,8 +471,15 @@ def test_webapp_demo_model_catalogue_serves_safe_linked_package() -> None:
         "households": 10,
         "conditions": "geo=Demo North",
     }
+    bundled = catalogue[1]
+    assert bundled["id"] == "montreal-cma-2016-all-fields"
+    assert bundled["name"] == "Montreal CMA 2016 broad linked package"
+    assert bundled["geography"] == "Montreal CMA (CMA 462)"
+    assert bundled["safe_demo"] is False
+    assert bundled["release_status"] == "publishable_candidate"
+    assert bundled["provenance"] == "Statistics Canada 2016 Census hierarchical PUMF."
 
-    payload = demo_model_payload("demo-linked-household-person")
+    payload = model_payload("demo-linked-household-person")
     assert payload["schema_version"] == "synthpopcan-linked-tree-package-v1"
     assert payload["privacy"]["publishable_candidate"] is True  # type: ignore[index]
     assert payload["privacy"]["safe_demo"] is True  # type: ignore[index]

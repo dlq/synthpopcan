@@ -47,6 +47,8 @@ Completed StatCan/IPF usability work:
   `controls from-wds` settings.
 - `statcan wds explain` summarizes a product ID, reports available dimensions,
   gives an IPF suitability hint, and prints next commands.
+- `statcan wds fetch` and `controls from-wds` show Rich status indicators while
+  downloading, reading, normalizing, and writing WDS artifacts.
 - `controls wds mapping-template` writes a starter category mapping JSON from
   observed WDS labels in selected dimensions.
 - `ipf check-inputs` includes suggested next steps for missing seed columns and
@@ -102,11 +104,23 @@ The first pass of model packaging and distribution is in place:
 - `tree package-linked-models` packages household and person models together
   only after both audits pass, source provenance is present, training/release
   manifests are consistent, and a human review note is provided.
+- `tree list-packages` lists model packages bundled with SynthPopCan for both
+  CLI and local web app use.
 - `tree inspect-package` summarizes package provenance, privacy flags, model
   sizes, audit summaries, release manifests, and review notes without dumping
   embedded model payloads.
-- `tree generate-from-package` consumes a reviewed linked package and generates
-  linked household/person CSVs.
+- `tree generate-from-package` consumes a reviewed linked package path or
+  packaged model ID and generates linked household/person CSVs.
+- Large linked package generation streams CSV and now caches repeated
+  conditional-frequency selections with precomputed cumulative sampling weights,
+  fixed-schema CSV writing, and a shared linked-run RNG. In a local Montréal
+  package smoke test, 100,000 household rows plus 231,637 person rows wrote to
+  CSV in about 2.78 seconds after these changes.
+- The `tree generate-from-package` CLI command renders a Rich progress indicator
+  with generated household and person counts for longer runs.
+- The `tree train-linked` CLI command renders a step-based Rich progress
+  indicator for reading source microdata, deriving household/person training
+  rows, training both models, and writing model artifacts.
 - The web app consumes prepared model artifacts and does not expose training
   from restricted microdata.
 

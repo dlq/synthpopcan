@@ -8,6 +8,7 @@ import os
 from pathlib import Path
 
 import click
+from rich.console import Console
 from rich.table import Table
 
 from synthpopcan import __version__
@@ -221,13 +222,14 @@ def print_model_workflow_guide() -> None:
     table.add_row(
         "2",
         "Inspect selected model",
-        "synthpopcan tree inspect-package model-package.json",
+        "synthpopcan tree list-packages\n"
+        "synthpopcan tree inspect-package demo-linked-household-person",
     )
     table.add_row(
         "3",
         "Generate rows",
         (
-            "synthpopcan tree generate-from-package model-package.json "
+            "synthpopcan tree generate-from-package demo-linked-household-person "
             "--households 100 --households-out households.csv "
             "--persons-out persons.csv"
         ),
@@ -693,16 +695,19 @@ def normalize_controls_from_wds(
 ) -> None:
     """Normalize a local StatCan WDS CSV ZIP."""
     try:
-        table = read_wds_control_table(
-            source,
-            dimensions=parse_columns(dimensions),
-            count_column=count_column,
-            margin_name=margin_name,
-            category_mapping=read_category_mapping(mapping_path)
-            if mapping_path
-            else None,
-        )
-        write_control_table(out_path, table)
+        console = Console(stderr=True)
+        with console.status("Reading and normalizing WDS ZIP..."):
+            table = read_wds_control_table(
+                source,
+                dimensions=parse_columns(dimensions),
+                count_column=count_column,
+                margin_name=margin_name,
+                category_mapping=read_category_mapping(mapping_path)
+                if mapping_path
+                else None,
+            )
+        with console.status("Writing normalized controls CSV..."):
+            write_control_table(out_path, table)
     except OSError as exc:
         raise click.ClickException(
             format_file_access_error(exc.filename or source, "access", exc)
@@ -956,7 +961,10 @@ def wds() -> None:
 def run_statcan_wds_fetch(product_id: str, out_dir: Path, lang: str) -> None:
     """Download a full WDS table CSV ZIP by product ID."""
     try:
-        print_wrote(fetch_wds_table(product_id, out_dir, lang))
+        console = Console(stderr=True)
+        with console.status(f"Downloading StatCan WDS table {product_id}..."):
+            zip_path = fetch_wds_table(product_id, out_dir, lang)
+        print_wrote(zip_path)
     except OSError as exc:
         raise click.ClickException(
             format_file_access_error(out_dir, "write to", exc)

@@ -48,6 +48,7 @@ from synthpopcan.tree import (
     encode_conditions,
     generate_frequency_rows,
     generate_linked_population,
+    generate_linked_population_to_csv,
     generate_tree_rows,
     outcome_purity,
     parse_conditions,
@@ -365,11 +366,7 @@ def test_tree_model_deserializers_reject_bad_payloads(tmp_path) -> None:
         rows=({"geo": "QC", "age_group": "adult"},),
     )
     cart_source = tmp_path / "cart-training.csv"
-    cart_source.write_text(
-        "geo,age_group,weight\n"
-        "QC,adult,1\n"
-        "ON,child,1\n"
-    )
+    cart_source.write_text("geo,age_group,weight\nQC,adult,1\nON,child,1\n")
     cart_sample = read_tree_training_sample(
         cart_source,
         level="person",
@@ -382,9 +379,7 @@ def test_tree_model_deserializers_reject_bad_payloads(tmp_path) -> None:
     with pytest.raises(ValueError, match="unsupported tree model schema"):
         FrequencyTreeModel.from_dict({"schema_version": "old"})
     with pytest.raises(ValueError, match="unsupported tree model type"):
-        FrequencyTreeModel.from_dict(
-            {**freq_model.to_dict(), "model_type": "cart"}
-        )
+        FrequencyTreeModel.from_dict({**freq_model.to_dict(), "model_type": "cart"})
     with pytest.raises(ValueError, match="tree model spec must be an object"):
         FrequencyTreeModel.from_dict({**freq_model.to_dict(), "spec": "bad"})
     with pytest.raises(ValueError, match="unsupported tree model schema"):
@@ -417,11 +412,7 @@ def test_tree_model_readers_validate_json_and_model_family(tmp_path) -> None:
     invalid_json_path = tmp_path / "invalid.json"
     unsupported_path = tmp_path / "unsupported.json"
     cart_source = tmp_path / "cart-training.csv"
-    cart_source.write_text(
-        "geo,age_group,weight\n"
-        "QC,adult,1\n"
-        "ON,child,1\n"
-    )
+    cart_source.write_text("geo,age_group,weight\nQC,adult,1\nON,child,1\n")
     cart_sample = read_tree_training_sample(
         cart_source,
         level="person",
@@ -466,9 +457,7 @@ def test_tree_generation_and_sampling_helper_edges(tmp_path) -> None:
     with pytest.raises(ValueError, match="unknown conditioning columns"):
         generate_frequency_rows(model, rows=1, conditions={"bad": "value"})
     fallback = generate_frequency_rows(model, rows=1, conditions={"geo": "ON"})
-    assert fallback == [
-        {"synthetic_id": "1", "geo": "ON", "age_group": "adult"}
-    ]
+    assert fallback == [{"synthetic_id": "1", "geo": "ON", "age_group": "adult"}]
     assert parse_conditions(("geo=QC", "household_size=2")) == {
         "geo": "QC",
         "household_size": "2",
@@ -514,13 +503,16 @@ def test_cli_tree_parser_and_formatter_helpers_cover_edges() -> None:
     assert format_geography_filter({"column": "PR", "value": "24"}) == "PR=24"
     assert format_geography_filter("bad") == ""
     assert format_geography_filter({"column": "PR"}) == ""
-    assert format_privacy_summary(
-        {
-            "publishable_candidate": True,
-            "contains_raw_rows": False,
-            "contains_source_identifiers": False,
-        }
-    ) == "Publishable candidate; No raw rows; No source identifiers"
+    assert (
+        format_privacy_summary(
+            {
+                "publishable_candidate": True,
+                "contains_raw_rows": False,
+                "contains_source_identifiers": False,
+            }
+        )
+        == "Publishable candidate; No raw rows; No source identifiers"
+    )
     assert format_model_summary(
         {
             "level": "person",
@@ -535,14 +527,17 @@ def test_cli_tree_parser_and_formatter_helpers_cover_edges() -> None:
         "1,200 records; 2.0 KiB; 2 targets"
     )
     assert format_model_summary("bad") == ""
-    assert format_audit_summary(
-        {
-            "passed": True,
-            "issue_count": 0,
-            "minimum_support": 12.5,
-            "above_max_purity": 1,
-        }
-    ) == "Audit passed; issues=0; minimum support=12.5; high purity=1"
+    assert (
+        format_audit_summary(
+            {
+                "passed": True,
+                "issue_count": 0,
+                "minimum_support": 12.5,
+                "above_max_purity": 1,
+            }
+        )
+        == "Audit passed; issues=0; minimum support=12.5; high purity=1"
+    )
     assert format_bytes_or_blank("bad") == ""
     assert format_bytes_or_blank(1_048_576) == "1.0 MiB"
     assert format_int_or_blank("bad") == ""
@@ -607,16 +602,16 @@ def test_cli_tree_manifest_and_package_helpers_cover_edges(tmp_path) -> None:
     provenance = tmp_path / "source-provenance.json"
     provenance.write_text(
         json.dumps(
-                {
-                    "schema_version": "synthpopcan-source-provenance-v1",
-                    "title": "2016 Census",
-                    "provider": "Statistics Canada",
-                    "access_class": "restricted",
-                    "citation": "Synthetic fixture citation.",
-                    "redistribution_note": "Synthetic fixture only.",
-                }
-            )
+            {
+                "schema_version": "synthpopcan-source-provenance-v1",
+                "title": "2016 Census",
+                "provider": "Statistics Canada",
+                "access_class": "restricted",
+                "citation": "Synthetic fixture citation.",
+                "redistribution_note": "Synthetic fixture only.",
+            }
         )
+    )
     assert read_source_provenance(provenance)["title"] == "2016 Census"
     with pytest.raises(ValueError, match="source provenance"):
         read_source_provenance(array_json)
@@ -700,11 +695,14 @@ def test_cli_tree_generation_package_and_geography_helpers_cover_edges(
         target_columns=("household_size",),
         conditioning_columns=("geo",),
     )
-    assert filter_training_sample_by_geography(
-        sample,
-        geography_column=None,
-        geography_value=None,
-    ) == sample
+    assert (
+        filter_training_sample_by_geography(
+            sample,
+            geography_column=None,
+            geography_value=None,
+        )
+        == sample
+    )
     filtered = filter_training_sample_by_geography(
         sample,
         geography_column="geo",
@@ -815,9 +813,7 @@ def test_cli_tree_package_validation_helpers_cover_remaining_edges(tmp_path) -> 
         )
     with pytest.raises(ValueError, match="models.person.path"):
         validate_linked_training_manifest_model_paths(
-            {
-                "models": {"household": {"path": str(household_model_path)}}
-            },
+            {"models": {"household": {"path": str(household_model_path)}}},
             household_model_path=household_model_path,
             person_model_path=person_model_path,
         )
@@ -923,11 +919,7 @@ def test_cli_tree_release_readiness_helpers_cover_edges() -> None:
 
 def test_tree_low_level_validation_and_cart_edges(tmp_path) -> None:
     cart_source = tmp_path / "cart-training.csv"
-    cart_source.write_text(
-        "geo,age_group,weight\n"
-        "QC,adult,1\n"
-        "ON,child,1\n"
-    )
+    cart_source.write_text("geo,age_group,weight\nQC,adult,1\nON,child,1\n")
     cart_sample = read_tree_training_sample(
         cart_source,
         level="person",
@@ -1428,11 +1420,7 @@ def test_cli_packages_model_after_clean_audit(tmp_path, capsys) -> None:
     source = tmp_path / "derived-person-training.csv"
     model_path = tmp_path / "person-model.json"
     package_path = tmp_path / "person-model-package.json"
-    source.write_text(
-        "geo,age_group,sex\n"
-        "QC,adult,F\n"
-        "QC,adult,F\n"
-    )
+    source.write_text("geo,age_group,sex\nQC,adult,F\nQC,adult,F\n")
     sample = read_tree_training_sample(
         source,
         level="person",
@@ -1923,12 +1911,10 @@ def test_cli_inspects_linked_model_package_as_table(tmp_path, capsys) -> None:
 
 
 def test_cli_inspects_demo_linked_model_package_as_table(tmp_path, capsys) -> None:
-    from synthpopcan.web_demo_models import demo_model_payload
+    from synthpopcan.models import model_payload
 
     package_path = tmp_path / "demo-package.json"
-    package_path.write_text(
-        json.dumps(demo_model_payload("demo-linked-household-person"))
-    )
+    package_path.write_text(json.dumps(model_payload("demo-linked-household-person")))
 
     assert main(["tree", "inspect-package", str(package_path)]) == 0
 
@@ -1940,6 +1926,66 @@ def test_cli_inspects_demo_linked_model_package_as_table(tmp_path, capsys) -> No
     assert "Household; Conditional frequency" in output
     assert "Person; Conditional frequency" in output
     assert "None" not in output
+
+
+def test_cli_lists_model_packages(capsys) -> None:
+    assert main(["tree", "list-packages", "--format", "json"]) == 0
+
+    output = capsys.readouterr().out
+    payload = json.loads(output)
+    model_ids = {model["id"] for model in payload["models"]}
+    assert "demo-linked-household-person" in model_ids
+    assert "montreal-cma-2016-all-fields" in model_ids
+
+
+def test_cli_inspects_demo_package_by_id(capsys) -> None:
+    assert main(["tree", "inspect-package", "demo-linked-household-person"]) == 0
+
+    output = capsys.readouterr().out
+    assert "Safe demo household/person package" in output
+    assert "demo-linked-household-person" in output
+    assert "synthetic toy rows" in output
+
+
+def test_cli_generates_linked_population_from_bundled_demo_package(
+    tmp_path,
+) -> None:
+    households_path = tmp_path / "synthetic-households.csv"
+    persons_path = tmp_path / "synthetic-persons.csv"
+
+    assert (
+        main(
+            [
+                "tree",
+                "generate-from-package",
+                "demo-linked-household-person",
+                "--households",
+                "3",
+                "--condition",
+                "geo=Demo North",
+                "--households-out",
+                str(households_path),
+                "--persons-out",
+                str(persons_path),
+                "--random-seed",
+                "13",
+            ]
+        )
+        == 0
+    )
+
+    with households_path.open(newline="") as handle:
+        households = list(csv.DictReader(handle))
+    with persons_path.open(newline="") as handle:
+        persons = list(csv.DictReader(handle))
+    report = validate_linked_population(
+        households,
+        persons,
+        household_size_column="household_size",
+    )
+    assert report["passed"] is True
+    assert len(households) == 3
+    assert len(persons) >= 3
 
 
 def test_cli_generates_linked_population_from_package(tmp_path) -> None:
@@ -2024,6 +2070,8 @@ def test_cli_generates_linked_population_from_package(tmp_path) -> None:
     assert manifest["package"]["package_path"] == str(package_path)
     assert manifest["package"]["source"]["provider"] == "Statistics Canada"
     assert manifest["household_conditions"] == {"geo": "QC"}
+    assert manifest["generated_households"] == 3
+    assert manifest["generated_persons"] == 6
     assert manifest["effective_random_seed"] == 13
 
 
@@ -2677,6 +2725,125 @@ def test_cli_trains_linked_models_from_suggested_blocks(tmp_path) -> None:
     assert manifest["models"]["person"]["path"] == str(person_model_path)
 
 
+def test_cli_trains_linked_models_with_all_person_blocks(tmp_path) -> None:
+    source = tmp_path / "hierarchical.csv"
+    household_model_path = tmp_path / "household-model.json"
+    person_model_path = tmp_path / "person-model.json"
+    manifest_path = tmp_path / "linked-training-manifest.json"
+    source.write_text(
+        "HH_ID,EF_ID,CF_ID,PP_ID,WEIGHT,PR,TENUR,DTYPE,ROOM,BEDRM,CONDO,"
+        "PRESMORTG,VALUE,SHELCO,SUBSIDY,REPAIR,BUILT,FCOND,NOS,AGEGRP,SEX,"
+        "MarStH,IMMSTAT,CITIZEN,GENSTAT,POB,VISMIN,MTNEn,MTNFr,MTNNO,HLBEN,"
+        "HLBFR,HLBNO,HDGREE,LFTAG,EMPIN,FPTWK,HRSWRK,WKSWRK,WRKACT,TOTINC\n"
+        "1,11,111,11101,1,24,owner,detached,6,3,no,yes,500000,1200,no,"
+        "regular,1991,census_family,1,adult,F,married,non_immigrant,citizen,third,canada,"
+        "not_visible,english,no,no,yes,no,no,bachelor,active,employee,full,"
+        "40,52,full_year,80000\n"
+        "1,11,111,11102,1,24,owner,detached,6,3,no,yes,500000,1200,no,"
+        "regular,1991,census_family,1,child,M,never_married,non_immigrant,citizen,third,"
+        "canada,not_visible,english,no,no,yes,no,no,none,inactive,none,"
+        "none,0,0,none,0\n"
+        "2,21,211,21101,1,24,renter,apartment,4,2,yes,no,0,900,no,"
+        "regular,2001,non_family,0,adult,F,single,immigrant,citizen,first,elsewhere,"
+        "visible,french,no,no,no,yes,no,college,active,employee,part,20,40,"
+        "part_year,45000\n"
+    )
+
+    assert (
+        main(
+            [
+                "tree",
+                "train-linked",
+                str(source),
+                "--input-format",
+                "statcan-2016-hierarchical",
+                "--suggested-blocks",
+                "--household-block",
+                "all",
+                "--person-block",
+                "all",
+                "--household-model-out",
+                str(household_model_path),
+                "--person-model-out",
+                str(person_model_path),
+                "--manifest-out",
+                str(manifest_path),
+                "--random-seed",
+                "7",
+                "--min-support",
+                "1",
+            ]
+        )
+        == 0
+    )
+
+    person_model = json.loads(person_model_path.read_text())
+    household_model = json.loads(household_model_path.read_text())
+    manifest = json.loads(manifest_path.read_text())
+
+    assert household_model["spec"]["target_columns"] == [
+        "household_size",
+        "TENUR",
+        "DTYPE",
+        "ROOM",
+        "BEDRM",
+        "CONDO",
+        "PRESMORTG",
+        "VALUE",
+        "SHELCO",
+        "SUBSIDY",
+        "REPAIR",
+        "BUILT",
+        "FCOND",
+        "NOS",
+    ]
+    assert household_model["spec"]["conditioning_columns"] == ["PR"]
+    assert person_model["spec"]["target_columns"] == [
+        "AGEGRP",
+        "SEX",
+        "MarStH",
+        "IMMSTAT",
+        "CITIZEN",
+        "GENSTAT",
+        "POB",
+        "VISMIN",
+        "MTNEn",
+        "MTNFr",
+        "MTNNO",
+        "HLBEN",
+        "HLBFR",
+        "HLBNO",
+        "HDGREE",
+        "LFTAG",
+        "EMPIN",
+        "FPTWK",
+        "HRSWRK",
+        "WKSWRK",
+        "WRKACT",
+        "TOTINC",
+    ]
+    assert person_model["spec"]["conditioning_columns"] == [
+        "PR",
+        "household_size",
+        "TENUR",
+    ]
+    assert manifest["column_source"] == {
+        "mode": "profile",
+        "profile": "statcan-2016-hierarchical",
+        "household_block": "all",
+        "household_blocks": [
+            "household_core",
+            "household_family_context",
+        ],
+        "person_block": "all",
+        "person_blocks": [
+            "person_demographics",
+            "person_identity_language",
+            "person_education_work_income",
+        ],
+    }
+
+
 def test_cli_trains_linked_models_with_geography_and_minimal_profile(tmp_path) -> None:
     source = tmp_path / "hierarchical.csv"
     household_model_path = tmp_path / "household-model.json"
@@ -2878,6 +3045,60 @@ def test_generates_linked_households_and_persons() -> None:
             "sex": "F",
         },
     ]
+
+
+def test_generate_linked_population_to_csv_reports_progress(tmp_path) -> None:
+    household_model = train_frequency_model_from_rows(
+        TreeModelSpec(
+            level="household",
+            target_columns=("household_size", "tenure"),
+            conditioning_columns=("geo",),
+            geography_column="geo",
+            random_seed=7,
+        ),
+        rows=(
+            {
+                "geo": "QC",
+                "household_size": "2",
+                "tenure": "owner",
+            },
+        ),
+    )
+    person_model = train_frequency_model_from_rows(
+        TreeModelSpec(
+            level="person",
+            target_columns=("age_group", "sex"),
+            conditioning_columns=("geo", "household_size", "tenure"),
+            geography_column="geo",
+            random_seed=11,
+        ),
+        rows=(
+            {
+                "geo": "QC",
+                "household_size": "2",
+                "tenure": "owner",
+                "age_group": "adult",
+                "sex": "F",
+            },
+        ),
+    )
+    updates: list[tuple[int, int]] = []
+
+    generate_linked_population_to_csv(
+        household_model,
+        person_model,
+        households=3,
+        household_conditions={"geo": "QC"},
+        households_path=tmp_path / "households.csv",
+        persons_path=tmp_path / "persons.csv",
+        random_seed=13,
+        progress_interval=2,
+        progress_callback=lambda households, persons: updates.append(
+            (households, persons)
+        ),
+    )
+
+    assert updates == [(2, 4), (3, 6)]
 
 
 def test_validates_linked_population_household_sizes() -> None:

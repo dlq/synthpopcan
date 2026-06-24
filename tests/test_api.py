@@ -9,8 +9,8 @@ import pytest
 import synthpopcan as spc
 from synthpopcan.controls import ControlCell, ControlMargin, ControlTable
 from synthpopcan.ipf import IPFResult
+from synthpopcan.models import model_payload
 from synthpopcan.tree import read_tree_training_sample, train_cart_model
-from synthpopcan.web_demo_models import demo_model_payload
 
 
 def test_top_level_api_runs_path_based_ipf_workflow(tmp_path: Path) -> None:
@@ -58,7 +58,7 @@ def test_top_level_api_generates_from_linked_model_package(tmp_path: Path) -> No
     package_path = tmp_path / "demo-package.json"
     output_dir = tmp_path / "population"
     package_path.write_text(
-        json.dumps(demo_model_payload("demo-linked-household-person")),
+        json.dumps(model_payload("demo-linked-household-person")),
     )
 
     package = spc.read_model_package(package_path)
@@ -158,13 +158,13 @@ def test_top_level_api_reports_empty_outputs_and_invalid_packages(
 
 
 def test_top_level_api_rejects_unpublishable_and_malformed_packages() -> None:
-    package = demo_model_payload("demo-linked-household-person")
+    package = model_payload("demo-linked-household-person")
     package["privacy"] = {"publishable_candidate": False}
 
     with pytest.raises(ValueError, match="not marked as a publishable candidate"):
         spc.generate_from_model(package, households=1)
 
-    package_without_models = demo_model_payload("demo-linked-household-person")
+    package_without_models = model_payload("demo-linked-household-person")
     package_without_models.pop("models")
     with pytest.raises(ValueError, match="must include models"):
         spc.generate_from_model(
@@ -173,7 +173,7 @@ def test_top_level_api_rejects_unpublishable_and_malformed_packages() -> None:
             require_publishable=False,
         )
 
-    package_without_person = demo_model_payload("demo-linked-household-person")
+    package_without_person = model_payload("demo-linked-household-person")
     models = dict(package_without_person["models"])  # type: ignore[arg-type]
     models.pop("person")
     package_without_person["models"] = models
@@ -184,7 +184,7 @@ def test_top_level_api_rejects_unpublishable_and_malformed_packages() -> None:
             require_publishable=False,
         )
 
-    unsupported_model = demo_model_payload("demo-linked-household-person")
+    unsupported_model = model_payload("demo-linked-household-person")
     bad_models = dict(unsupported_model["models"])  # type: ignore[arg-type]
     bad_household = dict(bad_models["household"])  # type: ignore[index]
     bad_household["model_type"] = "neural-net"
@@ -201,7 +201,7 @@ def test_top_level_api_rejects_unpublishable_and_malformed_packages() -> None:
 def test_top_level_api_accepts_package_path_and_default_household_size(
     tmp_path: Path,
 ) -> None:
-    package = demo_model_payload("demo-linked-household-person")
+    package = model_payload("demo-linked-household-person")
     package.pop("household_size_column", None)
     package_path = tmp_path / "package.json"
     package_path.write_text(json.dumps(package))
@@ -215,10 +215,7 @@ def test_top_level_api_accepts_package_path_and_default_household_size(
 def test_top_level_api_generates_from_cart_model_package(tmp_path: Path) -> None:
     household_source = tmp_path / "cart-households.csv"
     household_source.write_text(
-        "geo,household_size,tenure,weight\n"
-        "QC,1,renter,1\n"
-        "QC,2,owner,1\n"
-        "ON,3,owner,1\n"
+        "geo,household_size,tenure,weight\nQC,1,renter,1\nQC,2,owner,1\nON,3,owner,1\n"
     )
     person_source = tmp_path / "cart-persons.csv"
     person_source.write_text(

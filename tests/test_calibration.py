@@ -71,4 +71,3 @@ def test_control_classification_and_review_helper_edges() -> None:
     assert build_review_notes("person", [], [])[-1] == (
         "No common calibration columns were found; add attributes before IPF."
     )
-

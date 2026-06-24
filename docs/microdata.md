@@ -182,6 +182,13 @@ block can still be too detailed for a small geography or unsuitable for a
 particular humanities question. See {doc}`tree` for the longer discussion of
 support, purity, forests, and bad models.
 
+For broad linked tree models, `tree train-linked` also accepts
+`--household-block all` and `--person-block all`. These combine the source
+adapter's currently supported household or person blocks. They do not mean
+"every raw column": identifier, weight, replicate-weight, geography, and
+person-varying columns are excluded from the household side unless a supported
+source adapter derives a household-level version.
+
 ### `microdata tree-geography-feasibility`
 
 Estimates which geography values have enough row support for publishable

@@ -5,7 +5,9 @@ from __future__ import annotations
 import csv
 import json
 import random
+from bisect import bisect_left
 from collections import defaultdict
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Literal
@@ -26,6 +28,7 @@ __all__ = [
     "TreeModelSpec",
     "TreeTrainingSample",
     "audit_tree_model",
+    "generate_linked_population_to_csv",
     "generate_linked_population",
     "generate_tree_rows",
     "read_cart_model",
@@ -189,6 +192,13 @@ class FrequencyGroup:
             "support": self.support,
             "outcomes": [outcome.to_dict() for outcome in self.outcomes],
         }
+
+
+@dataclass(frozen=True)
+class _FrequencySelection:
+    groups: tuple[FrequencyGroup, ...]
+    group_cumulative_weights: tuple[float, ...]
+    outcome_cumulative_weights_by_group: dict[int, tuple[float, ...]]
 
 
 @dataclass(frozen=True)
@@ -839,6 +849,29 @@ def generate_tree_rows(
     )
 
 
+def iter_tree_rows(
+    model: TreeModel,
+    *,
+    rows: int,
+    conditions: dict[str, str] | None = None,
+    random_seed: int | None = None,
+):
+    if isinstance(model, FrequencyTreeModel):
+        yield from iter_frequency_rows(
+            model,
+            rows=rows,
+            conditions=conditions,
+            random_seed=random_seed,
+        )
+        return
+    yield from iter_cart_rows(
+        model,
+        rows=rows,
+        conditions=conditions,
+        random_seed=random_seed,
+    )
+
+
 def generate_linked_population(
     household_model: TreeModel,
     person_model: TreeModel,
@@ -881,6 +914,7 @@ def generate_linked_population(
 
     linked_households: list[dict[str, str]] = []
     linked_persons: list[dict[str, str]] = []
+    person_selection_cache: dict[tuple[tuple[str, str], ...], _FrequencySelection] = {}
     next_person_id = 1
     for household_index, generated_household in enumerate(
         generated_households,
@@ -897,11 +931,12 @@ def generate_linked_population(
             household_row,
             person_model,
         )
-        generated_persons = generate_tree_rows(
+        generated_persons = generate_person_rows_for_household(
             person_model,
             rows=household_size,
             conditions=person_conditions,
-            random_seed=seed_rng.randrange(1, 2**31),
+            rng=seed_rng,
+            selection_cache=person_selection_cache,
         )
         for generated_person in generated_persons:
             linked_persons.append(
@@ -914,6 +949,188 @@ def generate_linked_population(
             next_person_id += 1
 
     return linked_households, linked_persons
+
+
+def generate_linked_population_to_csv(
+    household_model: TreeModel,
+    person_model: TreeModel,
+    *,
+    households: int,
+    households_path: Path,
+    persons_path: Path,
+    household_conditions: dict[str, str] | None = None,
+    household_size_column: str = "household_size",
+    random_seed: int | None = None,
+    progress_callback: Callable[[int, int], None] | None = None,
+    progress_interval: int = 1000,
+) -> tuple[int, int]:
+    """Stream linked household and person records to CSV files.
+
+    This has the same generation semantics as :func:`generate_linked_population`
+    but keeps memory bounded for city-scale or national-scale outputs.
+    ``progress_callback`` receives generated household and person counts for
+    callers that want to render progress without coupling the library to a
+    terminal UI.
+    """
+
+    if household_model.spec.level != "household":
+        raise ValueError("household model must have level 'household'")
+    if person_model.spec.level != "person":
+        raise ValueError("person model must have level 'person'")
+    if households <= 0:
+        raise ValueError("households must be greater than zero")
+    if progress_interval <= 0:
+        raise ValueError("progress interval must be greater than zero")
+
+    effective_random_seed = (
+        household_model.spec.random_seed if random_seed is None else random_seed
+    )
+    seed_rng = random.Random(effective_random_seed)
+    household_fieldnames = unique_fieldnames(
+        (
+            "synthetic_household_id",
+            *household_model.spec.conditioning_columns,
+            *household_model.spec.target_columns,
+        )
+    )
+    person_fieldnames = unique_fieldnames(
+        (
+            "synthetic_person_id",
+            "synthetic_household_id",
+            *person_model.spec.conditioning_columns,
+            *person_model.spec.target_columns,
+        )
+    )
+
+    person_count = 0
+    person_selection_cache: dict[tuple[tuple[str, str], ...], _FrequencySelection] = {}
+    with households_path.open("w", newline="") as households_handle:
+        with persons_path.open("w", newline="") as persons_handle:
+            household_writer = csv.writer(households_handle)
+            person_writer = csv.writer(persons_handle)
+            household_writer.writerow(household_fieldnames)
+            person_writer.writerow(person_fieldnames)
+
+            household_rows = iter_tree_rows(
+                household_model,
+                rows=households,
+                conditions=household_conditions,
+                random_seed=random_seed,
+            )
+            for household_index, generated_household in enumerate(
+                household_rows,
+                start=1,
+            ):
+                household_id = str(household_index)
+                generated_household.pop("synthetic_id", None)
+                household_row = {
+                    "synthetic_household_id": household_id,
+                    **generated_household,
+                }
+                household_writer.writerow(
+                    [
+                        household_row.get(fieldname, "")
+                        for fieldname in household_fieldnames
+                    ]
+                )
+                household_size = read_household_size(
+                    household_row,
+                    household_size_column,
+                )
+                person_conditions = household_conditions_for_person_model(
+                    household_row,
+                    person_model,
+                )
+                generated_persons = iter_person_rows_for_household(
+                    person_model,
+                    rows=household_size,
+                    conditions=person_conditions,
+                    rng=seed_rng,
+                    selection_cache=person_selection_cache,
+                )
+                for generated_person in generated_persons:
+                    person_count += 1
+                    generated_person.pop("synthetic_id", None)
+                    person_row = {
+                        "synthetic_person_id": str(person_count),
+                        "synthetic_household_id": household_id,
+                        **generated_person,
+                    }
+                    person_writer.writerow(
+                        [
+                            person_row.get(fieldname, "")
+                            for fieldname in person_fieldnames
+                        ]
+                    )
+                if progress_callback and (
+                    household_index % progress_interval == 0
+                    or household_index == households
+                ):
+                    progress_callback(household_index, person_count)
+
+    return households, person_count
+
+
+def generate_person_rows_for_household(
+    person_model: TreeModel,
+    *,
+    rows: int,
+    conditions: dict[str, str],
+    rng: random.Random,
+    selection_cache: dict[tuple[tuple[str, str], ...], _FrequencySelection],
+) -> list[dict[str, str]]:
+    return list(
+        iter_person_rows_for_household(
+            person_model,
+            rows=rows,
+            conditions=conditions,
+            rng=rng,
+            selection_cache=selection_cache,
+        )
+    )
+
+
+def iter_person_rows_for_household(
+    person_model: TreeModel,
+    *,
+    rows: int,
+    conditions: dict[str, str],
+    rng: random.Random,
+    selection_cache: dict[tuple[tuple[str, str], ...], _FrequencySelection],
+):
+    if not isinstance(person_model, FrequencyTreeModel):
+        yield from iter_tree_rows(
+            person_model,
+            rows=rows,
+            conditions=conditions,
+            random_seed=rng.randrange(1, 2**31),
+        )
+        return
+    if rows <= 0:
+        raise ValueError("rows must be greater than zero")
+    cache_key = frequency_selection_cache_key(person_model, conditions)
+    selection = selection_cache.get(cache_key)
+    if selection is None:
+        selection = prepare_frequency_selection(person_model, conditions)
+        selection_cache[cache_key] = selection
+    for index in range(1, rows + 1):
+        group, outcome = choose_frequency_group_and_outcome(selection, rng)
+        yield {
+            "synthetic_id": str(index),
+            **group.conditions,
+            **outcome.values,
+        }
+
+
+def frequency_selection_cache_key(
+    model: FrequencyTreeModel,
+    conditions: dict[str, str],
+) -> tuple[tuple[str, str], ...]:
+    validate_condition_columns(model.spec.conditioning_columns, conditions)
+    return tuple(
+        (column, conditions.get(column, ""))
+        for column in model.spec.conditioning_columns
+    )
 
 
 def validate_linked_population(
@@ -1086,6 +1303,48 @@ def generate_cart_rows(
     return generated_rows
 
 
+def iter_cart_rows(
+    model: CartTreeModel,
+    *,
+    rows: int,
+    conditions: dict[str, str] | None = None,
+    random_seed: int | None = None,
+):
+    if rows <= 0:
+        raise ValueError("rows must be greater than zero")
+    requested_conditions = conditions or {}
+    validate_condition_columns(model.spec.conditioning_columns, requested_conditions)
+    rng = random.Random(model.spec.random_seed if random_seed is None else random_seed)
+    feature_row = {
+        column: requested_conditions.get(column, "")
+        for column in model.spec.conditioning_columns
+    }
+    encoded = encode_conditions(
+        feature_row,
+        model.spec.conditioning_columns,
+        model.feature_categories,
+    )
+    leaf_id = cart_leaf_id(model, encoded)
+    outcomes = tuple(
+        FrequencyOutcome(values=target_class, weight=weight)
+        for target_class, weight in zip(
+            model.target_classes,
+            model.value[leaf_id],
+            strict=True,
+        )
+        if weight > 0
+    )
+    if not outcomes:
+        raise ValueError("selected CART leaf has no positive target probabilities")
+    for index in range(1, rows + 1):
+        outcome = choose_outcome(outcomes, rng)
+        yield {
+            "synthetic_id": str(index),
+            **feature_row,
+            **outcome.values,
+        }
+
+
 def generate_frequency_rows(
     model: FrequencyTreeModel,
     *,
@@ -1093,22 +1352,34 @@ def generate_frequency_rows(
     conditions: dict[str, str] | None = None,
     random_seed: int | None = None,
 ) -> list[dict[str, str]]:
+    return list(
+        iter_frequency_rows(
+            model,
+            rows=rows,
+            conditions=conditions,
+            random_seed=random_seed,
+        )
+    )
+
+
+def iter_frequency_rows(
+    model: FrequencyTreeModel,
+    *,
+    rows: int,
+    conditions: dict[str, str] | None = None,
+    random_seed: int | None = None,
+):
     if rows <= 0:
         raise ValueError("rows must be greater than zero")
     rng = random.Random(model.spec.random_seed if random_seed is None else random_seed)
-    requested_conditions = conditions or {}
-    generated_rows: list[dict[str, str]] = []
+    selection = prepare_frequency_selection(model, conditions or {})
     for index in range(1, rows + 1):
-        group = choose_group(model, requested_conditions, rng)
-        outcome = choose_outcome(group.outcomes, rng)
-        generated_rows.append(
-            {
-                "synthetic_id": str(index),
-                **group.conditions,
-                **outcome.values,
-            }
-        )
-    return generated_rows
+        group, outcome = choose_frequency_group_and_outcome(selection, rng)
+        yield {
+            "synthetic_id": str(index),
+            **group.conditions,
+            **outcome.values,
+        }
 
 
 def write_frequency_model(path: Path, model: FrequencyTreeModel) -> None:
@@ -1184,6 +1455,14 @@ def write_generated_rows(path: Path, rows: list[dict[str, str]]) -> None:
         writer = csv.DictWriter(handle, fieldnames=tuple(rows[0].keys()))
         writer.writeheader()
         writer.writerows(rows)
+
+
+def unique_fieldnames(fieldnames: tuple[str, ...]) -> tuple[str, ...]:
+    output: list[str] = []
+    for fieldname in fieldnames:
+        if fieldname not in output:
+            output.append(fieldname)
+    return tuple(output)
 
 
 def parse_conditions(values: tuple[str, ...]) -> dict[str, str]:
@@ -1287,49 +1566,107 @@ def choose_group(
     conditions: dict[str, str],
     rng: random.Random,
 ) -> FrequencyGroup:
-    if conditions:
-        missing = [
-            column
-            for column in conditions
-            if column not in model.spec.conditioning_columns
-        ]
-        if missing:
-            raise ValueError(f"unknown conditioning columns: {', '.join(missing)}")
-        matches = [
-            group
-            for group in model.groups
-            if all(
-                group.conditions.get(column) == value
-                for column, value in conditions.items()
-            )
-        ]
-        if not matches:
-            return FrequencyGroup(
-                conditions={
-                    column: conditions.get(column, "")
-                    for column in model.spec.conditioning_columns
-                },
-                support=sum(outcome.weight for outcome in model.global_outcomes),
-                outcomes=model.global_outcomes,
-            )
-        return weighted_choice(matches, [group.support for group in matches], rng)
-    return weighted_choice(model.groups, [group.support for group in model.groups], rng)
+    selection = prepare_frequency_selection(model, conditions)
+    return weighted_choice_from_cumulative(
+        selection.groups,
+        selection.group_cumulative_weights,
+        rng,
+    )
 
 
 def choose_outcome(
     outcomes: tuple[FrequencyOutcome, ...], rng: random.Random
 ) -> FrequencyOutcome:
-    return weighted_choice(outcomes, [outcome.weight for outcome in outcomes], rng)
+    return weighted_choice(outcomes, tuple(outcome.weight for outcome in outcomes), rng)
 
 
-def weighted_choice(items, weights: list[float], rng: random.Random):
-    total = sum(weights)
+def prepare_frequency_selection(
+    model: FrequencyTreeModel,
+    conditions: dict[str, str],
+) -> _FrequencySelection:
+    groups = matching_frequency_groups(model, conditions)
+    return _FrequencySelection(
+        groups=groups,
+        group_cumulative_weights=cumulative_weights(group.support for group in groups),
+        outcome_cumulative_weights_by_group={
+            id(group): cumulative_weights(outcome.weight for outcome in group.outcomes)
+            for group in groups
+        },
+    )
+
+
+def matching_frequency_groups(
+    model: FrequencyTreeModel,
+    conditions: dict[str, str],
+) -> tuple[FrequencyGroup, ...]:
+    if not conditions:
+        return model.groups
+    missing = [
+        column for column in conditions if column not in model.spec.conditioning_columns
+    ]
+    if missing:
+        raise ValueError(f"unknown conditioning columns: {', '.join(missing)}")
+    matches = tuple(
+        group
+        for group in model.groups
+        if all(
+            group.conditions.get(column) == value
+            for column, value in conditions.items()
+        )
+    )
+    if matches:
+        return matches
+    return (
+        FrequencyGroup(
+            conditions={
+                column: conditions.get(column, "")
+                for column in model.spec.conditioning_columns
+            },
+            support=sum(outcome.weight for outcome in model.global_outcomes),
+            outcomes=model.global_outcomes,
+        ),
+    )
+
+
+def choose_frequency_group_and_outcome(
+    selection: _FrequencySelection,
+    rng: random.Random,
+) -> tuple[FrequencyGroup, FrequencyOutcome]:
+    group = weighted_choice_from_cumulative(
+        selection.groups,
+        selection.group_cumulative_weights,
+        rng,
+    )
+    outcome = weighted_choice_from_cumulative(
+        group.outcomes,
+        selection.outcome_cumulative_weights_by_group[id(group)],
+        rng,
+    )
+    return group, outcome
+
+
+def weighted_choice(items, weights: Sequence[float], rng: random.Random):
+    return weighted_choice_from_cumulative(items, cumulative_weights(weights), rng)
+
+
+def cumulative_weights(weights) -> tuple[float, ...]:
+    cumulative: list[float] = []
+    total = 0.0
+    for weight in weights:
+        total += weight
+        cumulative.append(total)
     if total <= 0:
         raise ValueError("cannot sample from non-positive weights")
-    threshold = rng.uniform(0, total)
-    cumulative = 0.0
-    for item, weight in zip(items, weights, strict=True):
-        cumulative += weight
-        if threshold <= cumulative:
-            return item
-    return items[-1]
+    return tuple(cumulative)
+
+
+def weighted_choice_from_cumulative(
+    items,
+    cumulative_weights: tuple[float, ...],
+    rng: random.Random,
+):
+    threshold = rng.uniform(0, cumulative_weights[-1])
+    index = bisect_left(cumulative_weights, threshold)
+    if index >= len(cumulative_weights):
+        return items[-1]
+    return items[index]

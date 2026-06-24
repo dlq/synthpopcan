@@ -89,7 +89,9 @@ Deliverables:
 Notes:
 
 - Use plain dataclasses or lightweight typed models first. Avoid a heavy dependency until the shape stabilizes.
-- Include serialization helpers for CSV/Parquet-friendly structures once dependencies are chosen.
+- Keep CSV as the beginner-facing data exchange format. If Arrow/Parquet-style
+  structures become useful later, treat them as internal or advanced
+  performance/export options rather than required concepts for humanities users.
 
 Current implementation notes:
 
@@ -298,6 +300,13 @@ Current implementation notes:
 - `synthpopcan tree package-linked-models` packages household and person models together only after both audits pass without warnings. It validates household/person model levels and the household-size linkage column, requires linked training-manifest provenance, reviewed source provenance, and a human review note, checks manifest model paths against the packaged models or verifies release manifests connecting private source models to publishable release copies, embeds both model artifacts and both audit reports, and marks the package as a publishable candidate only when both model audits say so.
 - `synthpopcan tree inspect-package` provides a compact reader-facing package summary as a Rich table or JSON, including source provenance, geography/profile, privacy flags, model sizes, audit summaries, release manifests, and review note without dumping the embedded full model payloads.
 - `synthpopcan tree generate-from-package` generates linked household/person CSVs directly from a publishable linked package, refusing packages that are not marked `publishable_candidate`. Its generation manifest points back to a compact package inspection summary, source provenance, generation conditions, outputs, and random seed.
+- Linked conditional-frequency generation now caches repeated condition
+  selections and uses precomputed cumulative weights with binary-search
+  sampling, fixed-schema CSV writing, and a shared linked-run RNG instead of
+  constructing one random generator per household. A local Montréal package
+  smoke test generated 100,000 household rows and 231,637 person rows to CSV in
+  about 2.78 seconds after these changes, compared with about 34.7 seconds
+  before the optimization pass. CSV remains the user-facing output.
 - Initial audit on the local 2016-derived models with `min_support=50,max_purity=0.95`: conditional-frequency had 157 groups, minimum support about 503.7, no low-support groups, and 2 pure groups; CART had 58 leaves, minimum support 81, no low-support or high-purity leaves. Both remained `private_working` and `publishable_candidate: false`.
 - `synthpopcan tree generate-linked` performs the first household-then-person generation pass from separate household and person models, writing linked `synthetic_household_id` and `synthetic_person_id` CSV outputs.
 - `synthpopcan tree generate` and `synthpopcan tree generate-linked` accept `--manifest-out` for a lightweight JSON provenance sidecar with model path, model type, release class, output paths, conditions, requested random seed, and effective random seed.

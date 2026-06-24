@@ -12,8 +12,8 @@ from pathlib import Path
 from typing import Protocol
 from urllib.parse import urlparse
 
+from synthpopcan.models import model_catalogue, model_payload
 from synthpopcan.statcan import normalize_product_id
-from synthpopcan.web_demo_models import demo_model_catalogue, demo_model_payload
 from synthpopcan.web_wds import (
     fetch_wds_zip_bytes,
     generate_wds_seed_controls_from_zip_bytes,
@@ -44,10 +44,10 @@ class _SynthPopCanWebHandler(SimpleHTTPRequestHandler):
     def do_GET(self) -> None:  # noqa: N802
         path = urlparse(self.path).path
         if path == "/api/models":
-            self._send_json({"models": demo_model_catalogue()})
+            self._send_json({"models": model_catalogue()})
             return
         if path.startswith("/api/models/"):
-            self._handle_demo_model(path.rsplit("/", 1)[-1])
+            self._handle_model(path.rsplit("/", 1)[-1])
             return
         super().do_GET()
 
@@ -57,11 +57,11 @@ class _SynthPopCanWebHandler(SimpleHTTPRequestHandler):
             return
         self.send_error(HTTPStatus.NOT_FOUND)
 
-    def _handle_demo_model(self, model_id: str) -> None:
+    def _handle_model(self, model_id: str) -> None:
         try:
-            self._send_json(demo_model_payload(model_id))
+            self._send_json(model_payload(model_id))
         except KeyError:
-            self.send_error(HTTPStatus.NOT_FOUND, "Unknown demo model")
+            self.send_error(HTTPStatus.NOT_FOUND, "Unknown model")
 
     def _handle_wds_seed_controls(self) -> None:
         try:

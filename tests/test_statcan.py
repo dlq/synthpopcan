@@ -200,13 +200,16 @@ def test_wds_search_results_serialize_and_stop_at_limit(monkeypatch) -> None:
         "start_date": "2021-01-01",
         "end_date": "2021-01-01",
     }
-    assert WDSTableSearchResult(
-        product_id="1",
-        cansim_id="2",
-        title_en="Title",
-        start_date="2020",
-        end_date="2021",
-    ).as_dict()["title_en"] == "Title"
+    assert (
+        WDSTableSearchResult(
+            product_id="1",
+            cansim_id="2",
+            title_en="Title",
+            start_date="2020",
+            end_date="2021",
+        ).as_dict()["title_en"]
+        == "Title"
+    )
 
 
 def test_search_wds_tables_rejects_empty_query_and_bad_limit() -> None:

@@ -113,9 +113,7 @@ def print_wds_metadata_explanation_table(summary: dict[str, object]) -> None:
             "dimensions": ", ".join(
                 str(value) for value in summary.get("dimensions", [])
             ),
-            "suitability": _wds_suitability_label(
-                summary.get("ipf_suitability", {})
-            ),
+            "suitability": _wds_suitability_label(summary.get("ipf_suitability", {})),
             "ipf_hint": summary.get("ipf_hint", ""),
         },
         title="StatCan WDS Table",

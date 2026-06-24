@@ -162,12 +162,14 @@ def test_source_and_tree_helper_tables(monkeypatch) -> None:
         "Tree Geography Feasibility Summary",
     ]
     assert len(tables) == 4
-    assert cli_output._first_model_design_move(
-        {"block_strategy": "use_requested_blocks"}
-    ) == "train and audit requested blocks"
-    assert cli_output._first_model_design_move(
-        {"block_strategy": "minimal_or_aggregate"}
-    ) == "aggregate or use minimal targets"
+    assert (
+        cli_output._first_model_design_move({"block_strategy": "use_requested_blocks"})
+        == "train and audit requested blocks"
+    )
+    assert (
+        cli_output._first_model_design_move({"block_strategy": "minimal_or_aggregate"})
+        == "aggregate or use minimal targets"
+    )
     assert cli_output._first_model_design_move({"block_strategy": "custom"}) == "custom"
 
 
@@ -242,7 +244,7 @@ def test_ipf_and_validation_report_tables(monkeypatch) -> None:
                     "role": "target",
                     "statcan_search": "age",
                     "reason": "present",
-                }
+                },
             ],
             "enrichment_candidates": [
                 "ignored",
@@ -251,7 +253,7 @@ def test_ipf_and_validation_report_tables(monkeypatch) -> None:
                     "role": "enrichment",
                     "statcan_search": "income",
                     "reason": "missing",
-                }
+                },
             ],
             "next_commands": ["synthpopcan statcan wds search age"],
         }

@@ -730,8 +730,7 @@ def test_census_profile_controls_reject_bad_source_rows(tmp_path: Path) -> None:
         "1001,0 to 4 years,14\n"
     )
     invalid_count.write_text(
-        "GEO_CODE,CHARACTERISTIC_NAME,C1_COUNT_TOTAL\n"
-        "1001,0 to 4 years,bad\n"
+        "GEO_CODE,CHARACTERISTIC_NAME,C1_COUNT_TOTAL\n1001,0 to 4 years,bad\n"
     )
     unknown_characteristic.write_text(
         "GEO_CODE,CHARACTERISTIC_NAME,C1_COUNT_TOTAL\n"
