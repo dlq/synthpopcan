@@ -35,6 +35,12 @@ the Montreal tract files are already staged. Province-wide and country-wide
 work should use `ada` first, then `da` once the pipeline handles sparse controls
 well enough.
 
+Dissemination blocks (`db`) belong in the plan, but they should be treated as a
+later placement geography rather than the first calibration geography. In the
+near term, CT, ADA, and DA controls tell us how many households of each kind a
+small area should contain. Later, DB-level spatial evidence can help us place
+already calibrated households more precisely inside those areas.
+
 Fetch or reuse controls in this order:
 
 ```bash
@@ -123,6 +129,11 @@ country-wide work, we should name the product by the small geography being
 used. Use aggregate dissemination areas first because they cover Canada and are
 less sparse than dissemination areas. Use dissemination areas later when the
 calibration, validation, and sparse-control diagnostics are strong enough.
+Treat dissemination blocks as a later placement geography, not as the first
+calibration geography. Once households are calibrated to CTs, ADAs, or DAs, a
+later workflow can place those households into DBs using simpler spatial
+evidence such as dwelling counts, residential land use, building data, or other
+reviewed local sources.
 ```
 
 - [ ] **Step 2: Document fetch commands for CT, ADA, and DA**

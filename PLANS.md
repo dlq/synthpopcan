@@ -374,6 +374,11 @@ High-priority small-area linked synthesis bridge:
   aggregate dissemination areas cover the country and are less sparse than
   dissemination areas. Add `da-all` support next for finer, wall-to-wall
   synthesis after calibration and validation are stable.
+- Placement strategy: treat dissemination blocks as a later placement geography,
+  not as the first calibration geography. Once households are calibrated to CTs,
+  ADAs, or DAs, a later workflow can place those households into DBs using
+  simpler spatial evidence such as dwelling counts, residential land use,
+  building data, or other reviewed local sources.
 - Source-fetch strategy: add explicit workflow tasks for
   `synthpopcan statcan census-profile fetch --year 2016 --geo-level ada` and
   `--geo-level da-all`, followed by reviewed `controls from-census-profile`
