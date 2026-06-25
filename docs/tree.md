@@ -485,12 +485,15 @@ synthpopcan tree package-linked-models \
 
 ### `tree list-packages`
 
-Lists model packages bundled with SynthPopCan. These are available to both the
-CLI and the local web app.
+Lists model packages known to SynthPopCan. The tiny demo package is bundled.
+Large published packages are listed as downloadable until fetched into the local
+model cache.
 
 ```bash
 synthpopcan tree list-packages
 synthpopcan tree list-packages --format json
+synthpopcan models list
+synthpopcan models fetch montreal-cma-2016-all-fields
 ```
 
 Use the package `ID` with `tree inspect-package` or
@@ -508,8 +511,9 @@ synthpopcan tree generate-from-package linked-model-package.json \
   --persons-out synthetic-persons.csv
 ```
 
-The first argument can be either a local package JSON path or a bundled package
-ID from `tree list-packages`.
+The first argument can be either a local package JSON path or a model ID from
+`models list`. Large published models must be fetched first with
+`synthpopcan models fetch MODEL_ID`.
 
 This command streams linked household and person CSVs as it generates them, so
 large outputs do not need to fit in memory before writing. The generation
@@ -626,7 +630,8 @@ synthpopcan tree package-linked-models \
 Generate the linked synthetic population:
 
 ```bash
-synthpopcan tree list-packages
+synthpopcan models list
+synthpopcan models fetch montreal-cma-2016-all-fields
 synthpopcan tree inspect-package montreal-cma-2016-all-fields
 synthpopcan tree generate-from-package \
   montreal-cma-2016-all-fields \
@@ -642,8 +647,9 @@ is generated from the model's household-size distribution, so it will usually
 not match a separate target exactly. In one local Montréal CMA run, requesting
 1,830,000 households produced 4,238,633 person rows.
 
-The bundled Montréal package is the same linked package served by the local web
-app's premade model chooser.
+The Montréal package is a published model package. It is listed by the CLI and
+web app, but the large JSON is downloaded into a local cache only after
+`synthpopcan models fetch montreal-cma-2016-all-fields`.
 
 ## Example: Quebec Province Linked Model With Python
 
@@ -656,11 +662,13 @@ uv run python scripts/build_quebec_model_package.py
 uv run python scripts/build_quebec_model_package.py --generate
 ```
 
-The first command trains, audits, releases, and bundles the reviewed
-`quebec-2016-all-fields` package. The optional `--generate` run writes the
-large local household/person CSV outputs under `data/private/benchmarks/`.
+The first command trains, audits, releases, and prepares the reviewed
+`quebec-2016-all-fields` package for release-asset upload. The optional
+`--generate` run writes the large local household/person CSV outputs under
+`data/private/benchmarks/`.
 See [Advanced Library Use](library.md#maintainer-package-workflow-script) for
-the script and notes about what belongs in Git LFS.
+the script and notes about what belongs in the public repo versus release
+assets.
 
 ### `tree inspect-package`
 
@@ -673,7 +681,8 @@ synthpopcan tree inspect-package montreal-cma-2016-all-fields
 ```
 
 The argument can be a local package JSON path or a packaged model ID from
-`tree list-packages`.
+`models list`. Downloadable IDs must be fetched first with
+`synthpopcan models fetch MODEL_ID`.
 
 ## Troubleshooting
 

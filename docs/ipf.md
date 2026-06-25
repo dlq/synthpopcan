@@ -398,15 +398,16 @@ small hand-built seed file, such as household size or tenure.
 Generate candidate households and people from a reviewed linked-model package:
 
 ```bash
-synthpopcan tree list-packages
+synthpopcan models list
 synthpopcan tree generate-from-package demo-linked-household-person \
   --households 100 \
   --households-out candidate-households.csv \
   --persons-out candidate-persons.csv
 ```
 
-`generate-from-package` accepts either a local package JSON path or a bundled
-package ID from `tree list-packages`.
+`generate-from-package` accepts either a local package JSON path or a model ID
+from `models list`. Larger published model IDs must be fetched first with
+`synthpopcan models fetch MODEL_ID`.
 
 Then check whether the candidate household rows can satisfy the controls:
 

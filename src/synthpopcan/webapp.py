@@ -62,6 +62,8 @@ class _SynthPopCanWebHandler(SimpleHTTPRequestHandler):
             self._send_json(model_payload(model_id))
         except KeyError:
             self.send_error(HTTPStatus.NOT_FOUND, "Unknown model")
+        except FileNotFoundError as exc:
+            self._send_json({"error": str(exc)}, status=HTTPStatus.CONFLICT)
 
     def _handle_wds_seed_controls(self) -> None:
         try:

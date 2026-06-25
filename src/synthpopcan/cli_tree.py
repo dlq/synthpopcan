@@ -1523,6 +1523,8 @@ def read_package_path_or_id(
             f"linked package not found: {package_path_or_id}. Use a package JSON path "
             "or a packaged model ID from `synthpopcan tree list-packages`."
         ) from exc
+    except FileNotFoundError as exc:
+        raise ValueError(str(exc)) from exc
     return package, package_path_or_id, None
 
 
@@ -1804,6 +1806,8 @@ def format_package_catalogue_summary(
         f"Geography: {model.get('geography', '')}",
         f"Status: {model.get('release_status', '')}",
     ]
+    if model.get("distribution") == "download" and not model.get("installed"):
+        parts.append("Availability: download with `synthpopcan models fetch`")
     default_text = format_default_generation(default_generation)
     if default_text:
         parts.append(f"Default: {default_text}")

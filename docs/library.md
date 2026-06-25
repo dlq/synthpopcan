@@ -320,7 +320,7 @@ That script uses library modules directly to:
 - train linked conditional-frequency household and person models;
 - audit the private working models;
 - write publishable-candidate model copies and release manifests;
-- write a linked package JSON to `src/synthpopcan/models/`;
+- write a linked package JSON for release-asset upload;
 - optionally generate a large linked synthetic population under
   `data/private/benchmarks/`.
 
@@ -331,8 +331,9 @@ uv run python scripts/build_quebec_model_package.py --generate
 ```
 
 The generated CSVs stay under `data/private`, which is ignored by Git. The
-reviewed package JSON is tracked with Git LFS because it is a distributable
-model artifact, not raw source microdata.
+reviewed package JSON is copied to `data/private/model-release-assets/` for
+maintainer upload as a GitHub Release asset; ordinary installs fetch it only
+when requested.
 
 The current script is reproduced below so documentation readers can see the
 exact library calls used by the workflow:

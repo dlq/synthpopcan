@@ -9,6 +9,14 @@ from pathlib import Path
 
 import click
 from rich.console import Console
+from rich.progress import (
+    BarColumn,
+    DownloadColumn,
+    Progress,
+    TextColumn,
+    TimeElapsedColumn,
+    TransferSpeedColumn,
+)
 from rich.table import Table
 
 from synthpopcan import __version__
@@ -45,6 +53,12 @@ from synthpopcan.controls import (
     write_control_table,
 )
 from synthpopcan.localdata import inspect_local_data_layout
+from synthpopcan.models import (
+    fetch_model_package,
+    model_cache_path,
+    model_catalogue,
+    remove_cached_model,
+)
 from synthpopcan.sources import (
     _is_private_path,
     inspect_source_root,
@@ -86,6 +100,95 @@ def cli() -> None:
 cli.add_command(microdata)
 cli.add_command(ipf)
 cli.add_command(tree)
+
+
+@cli.group()
+def models() -> None:
+    """List, fetch, and manage downloadable model packages."""
+
+
+@models.command("list")
+@click.option(
+    "--format",
+    "output_format",
+    default="table",
+    type=click.Choice(["json", "table"]),
+    show_default=True,
+)
+def list_models(output_format: str) -> None:
+    """List demo and downloadable model packages."""
+    catalogue = {"models": model_catalogue()}
+    if output_format == "json":
+        write_output(catalogue, "json")
+        return
+    table = Table(title="Model Packages")
+    table.add_column("Package ID")
+    table.add_column("Availability")
+    table.add_column("Summary")
+    for model in catalogue["models"]:
+        table.add_row(
+            str(model["id"]),
+            format_model_availability(model),
+            format_model_catalogue_summary(model),
+        )
+    print_table(table)
+
+
+@models.command("fetch")
+@click.argument("model_id")
+def fetch_model(model_id: str) -> None:
+    """Download a model package into the local cache."""
+    try:
+        progress_console = Console(stderr=True)
+        with Progress(
+            TextColumn("[progress.description]{task.description}"),
+            BarColumn(),
+            DownloadColumn(),
+            TransferSpeedColumn(),
+            TimeElapsedColumn(),
+            console=progress_console,
+        ) as progress:
+            task_id = progress.add_task(f"Fetching {model_id}", total=None)
+
+            def update_progress(downloaded: int, total: int | None) -> None:
+                progress.update(task_id, completed=downloaded, total=total)
+
+            path = fetch_model_package(
+                model_id,
+                progress_callback=update_progress,
+            )
+    except KeyError as exc:
+        raise click.ClickException(f"unknown model package: {model_id}") from exc
+    except OSError as exc:
+        raise click.ClickException(f"could not fetch {model_id}: {exc}") from exc
+    except ValueError as exc:
+        raise click.ClickException(str(exc)) from exc
+    print_success(f"Model package ready: {path}")
+
+
+@models.command("path")
+@click.argument("model_id")
+def print_model_path(model_id: str) -> None:
+    """Print where a downloadable model package is stored."""
+    try:
+        path = model_cache_path(model_id)
+    except KeyError as exc:
+        raise click.ClickException(f"unknown model package: {model_id}") from exc
+    click.echo(path)
+
+
+@models.command("remove")
+@click.argument("model_id")
+def remove_model(model_id: str) -> None:
+    """Remove a downloaded model package from the local cache."""
+    try:
+        removed = remove_cached_model(model_id)
+    except KeyError as exc:
+        raise click.ClickException(f"unknown model package: {model_id}") from exc
+    if removed:
+        print_success(f"Removed cached model package: {model_id}")
+    else:
+        print_success(f"No cached downloadable model package found for {model_id}")
 
 
 @cli.group(invoke_without_command=True)
@@ -222,7 +325,8 @@ def print_model_workflow_guide() -> None:
     table.add_row(
         "2",
         "Inspect selected model",
-        "synthpopcan tree list-packages\n"
+        "synthpopcan models list\n"
+        "synthpopcan models fetch montreal-cma-2016-all-fields\n"
         "synthpopcan tree inspect-package demo-linked-household-person",
     )
     table.add_row(
@@ -243,6 +347,35 @@ def print_model_workflow_guide() -> None:
         ),
     )
     print_table(table)
+
+
+def format_model_availability(model: dict[str, object]) -> str:
+    if model.get("distribution") == "bundled":
+        return "Bundled"
+    if model.get("installed"):
+        return "Downloaded"
+    return "Download with `synthpopcan models fetch`"
+
+
+def format_model_catalogue_summary(model: dict[str, object]) -> str:
+    parts = [
+        str(model.get("name", "")),
+        f"Geography: {model.get('geography', '')}",
+        f"Status: {model.get('release_status', '')}",
+    ]
+    size = model.get("size_bytes")
+    if isinstance(size, int):
+        parts.append(f"Download: {size / (1024 * 1024):.1f} MB")
+    default_generation = model.get("default_generation")
+    if isinstance(default_generation, dict):
+        households = default_generation.get("households")
+        conditions = default_generation.get("conditions")
+        if households:
+            default = f"{households} households"
+            if conditions:
+                default = f"{default}; {conditions}"
+            parts.append(f"Default: {default}")
+    return "\n".join(part for part in parts if part)
 
 
 @cli.group()

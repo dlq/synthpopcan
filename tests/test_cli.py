@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 from synthpopcan.cli import main, resolve_data_root
@@ -62,9 +63,60 @@ def test_guide_model_matches_beginner_web_flow(capsys) -> None:
     assert "Use premade model" in output
     assert "Inspect selected model" in output
     assert "Generate rows" in output
+    assert "synthpopcan models fetch" in output
     assert "synthpopcan tree inspect-package" in output
     assert "synthpopcan tree generate-from-package" in output
     assert "synthpopcan validate linked-output" in output
+
+
+def test_cli_models_list_marks_downloadable_models(
+    capsys, monkeypatch, tmp_path
+) -> None:
+    monkeypatch.setenv("SYNTHPOPCAN_MODEL_CACHE", str(tmp_path))
+
+    assert main(["models", "list", "--format", "json"]) == 0
+
+    payload = json.loads(capsys.readouterr().out)
+    demo, montreal, quebec = payload["models"]
+    assert demo["id"] == "demo-linked-household-person"
+    assert demo["distribution"] == "bundled"
+    assert demo["installed"] is True
+    assert montreal["id"] == "montreal-cma-2016-all-fields"
+    assert montreal["distribution"] == "download"
+    assert montreal["installed"] is False
+    assert quebec["id"] == "quebec-2016-all-fields"
+    assert quebec["distribution"] == "download"
+    assert quebec["installed"] is False
+
+
+def test_cli_models_fetch_uses_model_cache(monkeypatch, tmp_path, capsys) -> None:
+    fetched_paths: list[Path] = []
+
+    def fake_fetch_model_package(model_id: str, **kwargs: object) -> Path:
+        callback = kwargs.get("progress_callback")
+        if callable(callback):
+            callback(1, 1)
+        path = tmp_path / f"{model_id}.json"
+        fetched_paths.append(path)
+        return path
+
+    monkeypatch.setattr("synthpopcan.cli.fetch_model_package", fake_fetch_model_package)
+
+    assert main(["models", "fetch", "montreal-cma-2016-all-fields"]) == 0
+
+    output = capsys.readouterr()
+    assert fetched_paths == [tmp_path / "montreal-cma-2016-all-fields.json"]
+    assert "Model package ready" in output.err
+
+
+def test_cli_models_path_uses_cache_location(monkeypatch, tmp_path, capsys) -> None:
+    monkeypatch.setenv("SYNTHPOPCAN_MODEL_CACHE", str(tmp_path))
+
+    assert main(["models", "path", "quebec-2016-all-fields"]) == 0
+
+    assert capsys.readouterr().out.strip() == str(
+        tmp_path / "quebec-2016-all-fields-package.json"
+    )
 
 
 def test_tree_commands_are_visible_in_help(capsys) -> None:

@@ -34,7 +34,9 @@ research datasets, and generated full-population CSV outputs.
 Reviewed model packages are handled separately from raw data. A package may be
 distributed when it is intentionally prepared for public use, contains
 provenance and review metadata, and passes the current model-release checks.
-Large packaged models should be tracked with Git LFS.
+Large published packages should be attached as GitHub Release assets and fetched
+on demand with `synthpopcan models fetch MODEL_ID`, not bundled into the default
+Python install.
 
 Model packages are still derived research artifacts. Before publishing one:
 
@@ -42,7 +44,8 @@ Model packages are still derived research artifacts. Before publishing one:
 - confirm the source citation and redistribution note are clear;
 - run the relevant tree-model audit and release workflow;
 - inspect package metadata with `synthpopcan tree inspect-package`;
-- verify large package files are Git LFS pointers.
+- verify large package files are outside the installed package and listed in
+  the model registry with a checksum.
 
 SynthPopCan is independent research software. It is not affiliated with or
 endorsed by Statistics Canada or the Government of Canada.

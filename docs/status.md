@@ -104,8 +104,10 @@ The first pass of model packaging and distribution is in place:
 - `tree package-linked-models` packages household and person models together
   only after both audits pass, source provenance is present, training/release
   manifests are consistent, and a human review note is provided.
-- `tree list-packages` lists model packages bundled with SynthPopCan for both
-  CLI and local web app use.
+- `models list` lists bundled demo packages and published downloadable model
+  packages for both CLI and local web app use.
+- `models fetch` downloads large published model packages into a local cache
+  only when the user asks for them.
 - `tree inspect-package` summarizes package provenance, privacy flags, model
   sizes, audit summaries, release manifests, and review notes without dumping
   embedded model payloads.
@@ -116,8 +118,8 @@ The first pass of model packaging and distribution is in place:
   fixed-schema CSV writing, and a shared linked-run RNG. In a local Montréal
   package smoke test, 100,000 household rows plus 231,637 person rows wrote to
   CSV in about 2.78 seconds after these changes.
-- A reviewed Quebec (`PR=24`) all-fields package is bundled as
-  `quebec-2016-all-fields`. The library workflow script
+- A reviewed Quebec (`PR=24`) all-fields package is listed as the downloadable
+  `quebec-2016-all-fields` model. The library workflow script
   `scripts/build_quebec_model_package.py` trained, audited, released, and
   packaged the 116 MiB model artifact in about 10 seconds of script-recorded
   build time. Its optional large-output run generated 3,750,000 household rows

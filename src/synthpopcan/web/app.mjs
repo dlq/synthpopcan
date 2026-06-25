@@ -280,7 +280,9 @@ async function loadPremadeModelCatalogue() {
     payload.models.forEach((model) => {
       const option = document.createElement("option");
       option.value = model.id;
-      option.textContent = `${model.name} (${model.geography})`;
+      option.textContent = model.installed
+        ? `${model.name} (${model.geography})`
+        : `${model.name} (${model.geography}) - fetch with CLI`;
       option.title = modelOptionTitle(model);
       select.append(option);
     });
@@ -299,6 +301,7 @@ function modelOptionTitle(model) {
   return [
     model.description,
     `Release: ${model.release_status ?? "not listed"}`,
+    `Availability: ${model.installed ? "ready" : "fetch with synthpopcan models fetch"}`,
     `Source: ${model.provenance ?? "not listed"}`,
     `Privacy: ${model.privacy ?? "not listed"}`,
   ]
@@ -315,7 +318,14 @@ function applyModelDefaults(summary) {
 async function fetchJson(url) {
   const response = await fetch(url);
   if (!response.ok) {
-    throw new Error(`Request returned HTTP ${response.status}`);
+    let detail = `Request returned HTTP ${response.status}`;
+    try {
+      const payload = await response.json();
+      detail = payload.error ?? detail;
+    } catch {
+      // Keep the HTTP status message when the response is not JSON.
+    }
+    throw new Error(detail);
   }
   return response.json();
 }

@@ -2,8 +2,9 @@
 
 This is a maintainer workflow script. It uses SynthPopCan's Python library
 modules directly so the release process is reproducible outside the CLI.
-Source microdata and generated CSVs stay under ``data/private``; only the final
-reviewed package is copied into ``src/synthpopcan/models`` for distribution.
+Source microdata and generated CSVs stay under ``data/private``. The final
+reviewed package is copied into ``data/private/model-release-assets`` for
+maintainer upload as a GitHub Release asset.
 """
 
 from __future__ import annotations
@@ -47,7 +48,9 @@ SOURCE = (
 )
 WORK_DIR = ROOT / "data/private/benchmarks/tree-release-2016-pr24-all-fields"
 PACKAGE_ID = "quebec-2016-all-fields"
-PACKAGE_PATH = ROOT / "src/synthpopcan/models/quebec-2016-all-fields-package.json"
+PACKAGE_PATH = (
+    ROOT / "data/private/model-release-assets/quebec-2016-all-fields-package.json"
+)
 HOUSEHOLDS = 3_750_000
 
 

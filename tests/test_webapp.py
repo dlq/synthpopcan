@@ -165,9 +165,13 @@ def test_webapp_serves_demo_model_api_endpoints() -> None:
         assert catalogue["models"][1]["id"] == "montreal-cma-2016-all-fields"
         assert catalogue["models"][1]["release_status"] == "publishable_candidate"
         assert catalogue["models"][1]["safe_demo"] is False
+        assert catalogue["models"][1]["distribution"] == "download"
+        assert catalogue["models"][1]["installed"] is False
         assert catalogue["models"][2]["id"] == "quebec-2016-all-fields"
         assert catalogue["models"][2]["release_status"] == "publishable_candidate"
         assert catalogue["models"][2]["safe_demo"] is False
+        assert catalogue["models"][2]["distribution"] == "download"
+        assert catalogue["models"][2]["installed"] is False
         assert package["schema_version"] == "synthpopcan-linked-tree-package-v1"
         assert package["review"]["status"] == "safe demo"
         with pytest.raises(HTTPError) as exc_info:
@@ -179,38 +183,27 @@ def test_webapp_serves_demo_model_api_endpoints() -> None:
         thread.join(timeout=2)
 
 
-def test_webapp_loads_bundled_montreal_model_payload() -> None:
-    from synthpopcan.models import model_payload
-
-    package = model_payload("montreal-cma-2016-all-fields")
-    serialized_package = json.dumps(package)
-
-    assert package["schema_version"] == "synthpopcan-linked-tree-package-v1"
-    assert package["package_type"] == "linked_household_person"
-    assert package["privacy"]["publishable_candidate"] is True  # type: ignore[index]
-    assert package["privacy"]["contains_raw_rows"] is False  # type: ignore[index]
-    assert package["training_manifest"]["geography_filter"] == {  # type: ignore[index]
-        "column": "CMA",
-        "value": "462",
-    }
-    assert "/Users/" not in serialized_package
-
-
-def test_webapp_loads_bundled_quebec_model_payload() -> None:
-    from synthpopcan.models import model_payload
-
-    package = model_payload("quebec-2016-all-fields")
-    serialized_package = json.dumps(package)
-
-    assert package["schema_version"] == "synthpopcan-linked-tree-package-v1"
-    assert package["package_type"] == "linked_household_person"
-    assert package["privacy"]["publishable_candidate"] is True  # type: ignore[index]
-    assert package["privacy"]["contains_raw_rows"] is False  # type: ignore[index]
-    assert package["training_manifest"]["geography_filter"] == {  # type: ignore[index]
-        "column": "PR",
-        "value": "24",
-    }
-    assert "/Users/" not in serialized_package
+def test_webapp_reports_download_required_for_large_model(
+    monkeypatch,
+    tmp_path,
+) -> None:
+    monkeypatch.setenv("SYNTHPOPCAN_MODEL_CACHE", str(tmp_path))
+    server = build_webapp_server("127.0.0.1", 0)
+    thread = Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    try:
+        with pytest.raises(HTTPError) as exc_info:
+            urlopen(
+                f"{webapp_url(server)}api/models/quebec-2016-all-fields",
+                timeout=2,
+            )
+        assert exc_info.value.code == 409
+        payload = json.loads(exc_info.value.read().decode("utf-8"))
+        assert "synthpopcan models fetch quebec-2016-all-fields" in payload["error"]
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=2)
 
 
 def test_webapp_wds_seed_controls_api_uses_local_helper(monkeypatch) -> None:
@@ -500,6 +493,7 @@ def test_webapp_demo_model_catalogue_serves_safe_linked_package() -> None:
     assert bundled["safe_demo"] is False
     assert bundled["release_status"] == "publishable_candidate"
     assert bundled["provenance"] == "Statistics Canada 2016 Census hierarchical PUMF."
+    assert bundled["distribution"] == "download"
     quebec = catalogue[2]
     assert quebec["id"] == "quebec-2016-all-fields"
     assert quebec["name"] == "Quebec 2016 broad linked package"
@@ -507,6 +501,7 @@ def test_webapp_demo_model_catalogue_serves_safe_linked_package() -> None:
     assert quebec["safe_demo"] is False
     assert quebec["release_status"] == "publishable_candidate"
     assert quebec["provenance"] == "Statistics Canada 2016 Census hierarchical PUMF."
+    assert quebec["distribution"] == "download"
 
     payload = model_payload("demo-linked-household-person")
     assert payload["schema_version"] == "synthpopcan-linked-tree-package-v1"

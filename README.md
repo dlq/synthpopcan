@@ -98,8 +98,9 @@ Local-only manifests may exist inside ignored data directories to document what 
 ## Model Packages
 
 Reviewed model packages may be distributed with the project when they are
-explicitly intended as public research artifacts. Large packaged models are
-tracked with Git LFS rather than ordinary Git blobs.
+explicitly intended as public research artifacts. The installed package should
+stay small: only the tiny demo model is bundled. Larger published models are
+downloaded on demand with `synthpopcan models fetch MODEL_ID`.
 
 Bundled model packages are not raw Census microdata. They should still be
 treated as derived research artifacts with provenance, disclosure-risk checks,

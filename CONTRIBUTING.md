@@ -33,16 +33,18 @@ outputs, private research datasets, or local reference corpora. Keep those files
 under ignored paths such as `data/raw`, `data/private`, `references`, `runs`, or
 `outputs`.
 
-Reviewed model packages may be committed only when they are explicitly intended
-for distribution, carry provenance and disclosure-risk metadata, and are tracked
-with Git LFS when large.
+Reviewed model packages may be published only when they are explicitly intended
+for distribution and carry provenance and disclosure-risk metadata. Large
+packages should be uploaded as GitHub Release assets and listed in the model
+registry, not bundled into the normal Python package.
 
 Before contributing a model artifact:
 
 - verify it contains no raw source rows or source identifiers;
 - inspect its provenance and redistribution notes;
 - run the relevant SynthPopCan audit/release workflow;
-- confirm large files are stored through Git LFS, not ordinary Git blobs.
+- confirm large files are distributed as release assets with checksums and
+  fetched on demand by `synthpopcan models fetch`.
 
 ## Documentation
 

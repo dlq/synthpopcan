@@ -48,9 +48,8 @@ The same workflow is documented for command-line use in {doc}`statcan`,
 Choose this when you have a prepared model JSON or a linked household/person
 package JSON. The web app can also load premade packages served by the local
 helper. The bundled safe demo package is synthetic toy data, not Census
-microdata; the bundled `montreal-cma-2016-all-fields` package is a
-publishable-candidate Montréal CMA 2016 linked model served from the same
-premade model chooser.
+microdata; published models such as `montreal-cma-2016-all-fields` appear in
+the same chooser after they are fetched into the local model cache.
 
 For a linked household/person package, the browser generates household rows
 first and then person rows inside each household. The result panel shows:
