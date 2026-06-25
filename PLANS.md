@@ -1,7 +1,7 @@
 # SynthPopCan Plan
 
 Status: working roadmap\
-Last updated: 2026-06-24
+Last updated: 2026-06-25
 
 ## Goal
 
@@ -17,6 +17,13 @@ The near-term scope is deliberately narrower than the full proposal:
 1. Build synthetic populations through iterative proportional fitting from StatCan margin/control tables.
 1. Build household- and person-level synthetic populations with a tree-based synthetic population generator using pluggable census microdata sources. The Canadian 2016 Census material staged locally is the first available microdata source, not the tool boundary.
 1. Keep environmental, school, healthcare, food, and broader enrichment data as later extensions unless they are needed for validation or demos.
+
+Current high-priority implementation step: build the tract-level linked
+synthesis bridge. The project already has tract-level Census Profile controls
+and broad-geography linked household/person model generation; the next major
+workflow must assign generated linked households to census tracts, calibrate
+household rows against tract controls, preserve person links, and validate both
+the tract margins and household/person structure.
 
 ## Principles
 
@@ -348,6 +355,24 @@ Model output to IPF calibration:
   similarly named workflow, but it should be separate from `ipf fit` so users do
   not think IPF can invent absent variables.
 
+High-priority tract-level linked synthesis bridge:
+
+- The next implementation slice should turn the staged bridge above into an
+  explicit tract-level workflow. The 2016 hierarchical PUMF does not provide
+  census tract identifiers for source households; Census Profile tract tables
+  provide aggregate controls rather than household rows. The software bridge is
+  therefore: generate plausible linked household/person candidates from a
+  prepared model package, fit household candidates separately to each tract's
+  household controls, assign selected households to tract identifiers, copy
+  linked persons into the assigned households, and validate tract controls plus
+  household/person links.
+- First-pass scope should be household-level tract calibration. Person rows
+  inherit tract from assigned households; person-level tract margins should be
+  validated and reported, then added as a later joint or staged calibration
+  step once the household bridge is stable.
+- Detailed implementation plan:
+  `docs/superpowers/plans/2026-06-25-tract-level-linked-synthesis.md`.
+
 Model distribution and privacy-release design:
 
 - Support two model artifact modes:
@@ -587,13 +612,17 @@ Acceptance criteria:
 
 ## Near-Term Slice
 
-Current active slice: public usability polish across the beginner API, web app,
-CLI, and documentation.
+Current active slice: tract-level linked household/person synthesis.
 
-This slice should make the project feel coherent to a new humanities user
-without hiding the advanced research workflows. The first-pass algorithmic,
-StatCan/IPF, linked-model, web-app, and documentation pieces now exist; the
-next work is to tighten how users discover and move through them.
+This slice should build the missing bridge between broad-geography PUMF-derived
+linked household/person candidates and tract-level Census Profile controls. It
+is the next substantive modelling step because it turns the existing IPF,
+control-table, tree-package, linked-generation, and validation pieces into the
+first workflow that can produce tract-assigned linked households.
+
+Previous active slice: public usability polish across the beginner API, web app,
+CLI, and documentation. That work should continue opportunistically, but it is
+no longer the main implementation priority.
 
 Near-term usability priorities:
 
