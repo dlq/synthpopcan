@@ -58,7 +58,7 @@ _MODEL_PACKAGES: dict[str, dict[str, object]] = {
         "distribution": "download",
         "size_bytes": 64_234_759,
         "sha256": (
-            "ebad14c83b97364064eaebcf1c8a6377f1d57c17271fa85875dc00e9c0c66db4"
+            "ebad14c83bf2aef47e3ac6e0684c1994ea0fa8cd83df7eaeb78a76077174ef91"
         ),
         "url": (
             f"{_RELEASE_BASE_URL}/montreal-cma-2016-all-fields-package.json"
