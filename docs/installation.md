@@ -1,9 +1,9 @@
 # Installation
 
-SynthPopCan is not yet published on PyPI. This page is therefore a
-source-checkout installation guide for early users and contributors. The
-download and package installation section can be expanded once the public
-distribution mechanism is set.
+SynthPopCan is in early public release preparation. This page focuses on a
+source-checkout installation for contributors and early users. Once the PyPI
+project is enabled, users will also be able to install the published package
+with `pip install synthpopcan`.
 
 ## Requirements
 
@@ -19,10 +19,10 @@ command-line workflows.
 
 ## Download the Source
 
-Clone the repository you are using, then enter the checkout:
+Clone the repository, then enter the checkout:
 
 ```bash
-git clone REPOSITORY_URL synthpopcan
+git clone https://github.com/dlq/synthpopcan.git
 cd synthpopcan
 ```
 
@@ -176,5 +176,16 @@ together.
 ## Read the Docs
 
 The project includes a `.readthedocs.yaml` file for Read the Docs. The published
-build installs the package with the documentation dependency group and builds
-from `docs/conf.py`.
+build installs the package and Sphinx requirements, then builds from
+`docs/conf.py`.
+
+## Release Publishing
+
+The repository includes a manual GitHub Actions workflow for PyPI publishing.
+Before running it, the PyPI project owner should configure a trusted publisher
+for:
+
+- repository: `dlq/synthpopcan`
+- workflow: `.github/workflows/publish.yml`
+- environment: `pypi`
+- package: `synthpopcan`

@@ -29,6 +29,12 @@ dependencies = [
     "scikit-learn>=1.9.0",
 ]
 
+[project.urls]
+Homepage = "https://github.com/dlq/synthpopcan"
+Documentation = "https://synthpopcan.readthedocs.io/"
+Source = "https://github.com/dlq/synthpopcan"
+Issues = "https://github.com/dlq/synthpopcan/issues"
+
 [project.scripts]
 synthpopcan = "synthpopcan.cli:cli"
 
