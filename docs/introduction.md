@@ -6,6 +6,10 @@ small, inspectable workflows for control tables, IPF calibration, Statistics
 Canada sources, microdata-derived seed files, linked household/person models,
 and validation reports.
 
+SynthPopCan also has a specific project lineage: it began from work connected
+to the SynthEco proposal and should be read as a spiritual and academic
+successor to that earlier research effort. See {doc}`acknowledgments`.
+
 The intended audience includes humanities and digital-humanities researchers,
 social scientists, policy researchers, and technically curious project teams.
 The documentation assumes that many readers care more about source choices,

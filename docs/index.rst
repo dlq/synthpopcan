@@ -46,6 +46,7 @@ beginner generation workflows.
    :caption: Overview
 
    introduction
+   acknowledgments
    field-primer
    status
    installation
