@@ -1,10 +1,10 @@
-# Tract-Level Linked Synthesis Implementation Plan
+# Small-Area Linked Synthesis Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Build the first end-to-end workflow that assigns generated linked household/person candidates to census tracts and calibrates household rows to tract-level controls while preserving household/person links.
+**Goal:** Build the first end-to-end workflow that fetches or reuses Census Profile small-area controls, assigns generated linked household/person candidates to target geographies, and calibrates household rows while preserving household/person links.
 
-**Architecture:** Use the existing tree package generator to create plausible linked household/person candidates, then add a separate tract-calibration layer that fits household candidates to each target geography. The first implementation calibrates household-level controls by tract, writes assigned household rows with a tract column, copies linked person rows into the assigned households, and validates the linked output plus controlled household margins.
+**Architecture:** Use the existing tree package generator to create plausible linked household/person candidates, then add a separate small-area calibration layer that fits household candidates to each target geography. The first implementation uses Montreal census tracts as the prototype, but the code and CLI must accept any geography dimension, especially `ada` for province-wide/country-wide first runs and `da` for later finer runs. The workflow writes assigned household rows with a configurable geography column, copies linked person rows into the assigned households, and validates the linked output plus controlled household margins.
 
 **Tech Stack:** Python dataclasses, existing `synthpopcan.controls.ControlTable`, existing `synthpopcan.ipf.fit_ipf`, Click CLI, CSV fixtures, pytest.
 
@@ -12,22 +12,58 @@ ______________________________________________________________________
 
 ## File Structure
 
-- Create: `src/synthpopcan/tract_synthesis.py`
-  - Owns tract-level request/result dataclasses, control slicing by geography, household IPF fitting per target geography, and linked household/person realization.
-- Create: `src/synthpopcan/cli_tract.py`
-  - Adds `synthpopcan tract calibrate-linked` for candidate CSVs and `synthpopcan tract synthesize-from-package` as a later convenience wrapper.
+- Create: `src/synthpopcan/small_area_synthesis.py`
+  - Owns small-area request/result dataclasses, control slicing by geography, household IPF fitting per target geography, and linked household/person realization.
+- Create: `src/synthpopcan/cli_small_area.py`
+  - Adds `synthpopcan small-area calibrate-linked` for candidate CSVs and `synthpopcan small-area synthesize-from-package` as a later convenience wrapper.
 - Modify: `src/synthpopcan/cli.py`
-  - Registers the new `tract` command group.
+  - Registers the new `small-area` command group.
 - Modify: `src/synthpopcan/api.py`
   - Adds a small library wrapper only after the CLI/core workflow is stable.
-- Create: `tests/test_tract_synthesis.py`
-  - Unit and CLI tests for control slicing, per-tract household fitting, linked realization, and validation-ready output.
+- Create: `tests/test_small_area_synthesis.py`
+  - Unit and CLI tests for control slicing, per-geography household fitting, linked realization, and validation-ready output.
 - Modify: `docs/tree.md`, `docs/ipf.md`, `docs/validate.md`, `docs/library.md`, `docs/status.md`
   - Document the generate-then-calibrate bridge without repeating the IPF and tree primers.
 - Modify: `PLANS.md`
   - Mark this work as the current high-priority next implementation slice.
 
 ## Core Design
+
+Small-area means a target geography column in normalized controls, not a single
+fixed Statistics Canada geography. The first prototype can use `tract` because
+the Montreal tract files are already staged. Province-wide and country-wide
+work should use `ada` first, then `da` once the pipeline handles sparse controls
+well enough.
+
+Fetch or reuse controls in this order:
+
+```bash
+# Montreal prototype, where CT controls are already staged locally.
+synthpopcan statcan census-profile fetch \
+  --year 2016 \
+  --geo-level ct \
+  --out-dir data/raw/statcan/census-profile/2016
+
+# Province-wide or country-wide first pass.
+synthpopcan statcan census-profile fetch \
+  --year 2016 \
+  --geo-level ada \
+  --out-dir data/raw/statcan/census-profile/2016
+
+# Later finer wall-to-wall pass.
+synthpopcan statcan census-profile fetch \
+  --year 2016 \
+  --geo-level da-all \
+  --out-dir data/raw/statcan/census-profile/2016
+```
+
+Normalize fetched or staged Census Profile rows with reviewed mappings:
+
+```bash
+synthpopcan controls from-census-profile 2016-census-profile-ada.csv \
+  --mapping ada-household-controls.json \
+  --out ada-household-controls.csv
+```
 
 The first pass should use candidate linked household/person CSVs as input:
 
@@ -38,39 +74,114 @@ synthpopcan tree generate-from-package montreal-cma-2016-all-fields \
   --persons-out candidates-persons.csv \
   --manifest-out candidates.manifest.json
 
-synthpopcan tract calibrate-linked \
+synthpopcan small-area calibrate-linked \
   --households candidates-households.csv \
   --persons candidates-persons.csv \
-  --controls tract-household-controls.csv \
-  --geography-dimension tract \
-  --geography-column tract \
-  --households-out tract-households.csv \
-  --persons-out tract-persons.csv \
-  --weights-out tract-household-weights.csv \
-  --report tract-calibration-report.json
+  --controls ada-household-controls.csv \
+  --geography-dimension ada \
+  --geography-column ada \
+  --households-out small-area-households.csv \
+  --persons-out small-area-persons.csv \
+  --weights-out small-area-household-weights.csv \
+  --report small-area-calibration-report.json
 ```
 
 The controls CSV should use the existing normalized long format. Each target cell includes a geography dimension:
 
 ```csv
-margin,dimensions,tract,household_size,TENUR,count
-tract household size by tenure,"tract,household_size,TENUR",4620001.00,1,owner,120
-tract household size by tenure,"tract,household_size,TENUR",4620001.00,1,renter,180
-tract household size by tenure,"tract,household_size,TENUR",4620001.00,2,owner,160
-tract household size by tenure,"tract,household_size,TENUR",4620002.00,1,owner,90
+margin,dimensions,ada,household_size,TENUR,count
+ada household size by tenure,"ada,household_size,TENUR",2400101,1,owner,120
+ada household size by tenure,"ada,household_size,TENUR",2400101,1,renter,180
+ada household size by tenure,"ada,household_size,TENUR",2400101,2,owner,160
+ada household size by tenure,"ada,household_size,TENUR",2400102,1,owner,90
 ```
 
-For each tract, the fitter removes the geography dimension from that tract's controls, fits candidate household rows to the remaining dimensions, integerizes weights, and emits assigned household rows with `tract` populated. Persons are copied from the selected candidate households and rewritten to the new synthetic household identifiers.
+For each target geography, the fitter removes the geography dimension from that geography's controls, fits candidate household rows to the remaining dimensions, integerizes weights, and emits assigned household rows with the configured geography column populated. Persons are copied from the selected candidate households and rewritten to the new synthetic household identifiers.
 
-This deliberately does not claim person-level tract calibration yet. Person rows inherit tract from their assigned household, then later validation can show which person margins fit or fail.
+This deliberately does not claim person-level small-area calibration yet. Person rows inherit geography from their assigned household, then later validation can show which person margins fit or fail.
+
+### Task 0: Small-Area Source Strategy
+
+**Files:**
+
+- Modify: `docs/status.md`
+
+- Modify: `docs/statcan.md`
+
+- Modify: `docs/controls.md`
+
+- Test: no new code tests; documentation build only.
+
+- [ ] **Step 1: Document the target geography ladder**
+
+Add this text to the small-area synthesis section created in Task 7:
+
+```markdown
+For Montreal, we can begin with census tracts because the staged 2016 Census
+Profile tract file already covers the Montreal CMA. For province-wide and
+country-wide work, we should name the product by the small geography being
+used. Use aggregate dissemination areas first because they cover Canada and are
+less sparse than dissemination areas. Use dissemination areas later when the
+calibration, validation, and sparse-control diagnostics are strong enough.
+```
+
+- [ ] **Step 2: Document fetch commands for CT, ADA, and DA**
+
+Add these commands to `docs/statcan.md` or the small-area synthesis page:
+
+```bash
+synthpopcan statcan census-profile fetch \
+  --year 2016 \
+  --geo-level ct \
+  --out-dir data/raw/statcan/census-profile/2016
+
+synthpopcan statcan census-profile fetch \
+  --year 2016 \
+  --geo-level ada \
+  --out-dir data/raw/statcan/census-profile/2016
+
+synthpopcan statcan census-profile fetch \
+  --year 2016 \
+  --geo-level da-all \
+  --out-dir data/raw/statcan/census-profile/2016
+```
+
+- [ ] **Step 3: Document mapping requirement**
+
+Add this warning:
+
+```markdown
+Fetching a Census Profile file is not the same as choosing controls. The
+workflow still needs reviewed mappings from source profile rows to generated
+columns such as `household_size`, `TENUR`, dwelling type, age, and sex. We
+should start with a small set of household controls and validate person
+controls before trying joint household/person fitting.
+```
+
+- [ ] **Step 4: Run docs formatting**
+
+Run:
+
+```bash
+uv run --group docs mdformat docs/status.md docs/statcan.md docs/controls.md docs/superpowers/plans/2026-06-25-small-area-linked-synthesis.md PLANS.md
+```
+
+Expected: files are formatted.
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add docs/status.md docs/statcan.md docs/controls.md docs/superpowers/plans/2026-06-25-small-area-linked-synthesis.md PLANS.md
+git commit -m "docs: document small-area control sources"
+```
 
 ### Task 1: Core Control Slicing
 
 **Files:**
 
-- Create: `src/synthpopcan/tract_synthesis.py`
+- Create: `src/synthpopcan/small_area_synthesis.py`
 
-- Test: `tests/test_tract_synthesis.py`
+- Test: `tests/test_small_area_synthesis.py`
 
 - [ ] **Step 1: Write failing tests for splitting controls by geography**
 
@@ -78,7 +189,7 @@ Add this test:
 
 ```python
 from synthpopcan.controls import ControlCell, ControlMargin, ControlTable
-from synthpopcan.tract_synthesis import controls_by_geography
+from synthpopcan.small_area_synthesis import controls_by_geography
 
 
 def test_controls_by_geography_removes_target_geography_dimension() -> None:
@@ -125,7 +236,7 @@ def test_controls_by_geography_removes_target_geography_dimension() -> None:
 Run:
 
 ```bash
-uv run pytest tests/test_tract_synthesis.py::test_controls_by_geography_removes_target_geography_dimension -q
+uv run pytest tests/test_small_area_synthesis.py::test_controls_by_geography_removes_target_geography_dimension -q
 ```
 
 Expected: FAIL with `ModuleNotFoundError` or missing `controls_by_geography`.
@@ -135,7 +246,7 @@ Expected: FAIL with `ModuleNotFoundError` or missing `controls_by_geography`.
 Add:
 
 ```python
-"""Tract-level linked household/person synthesis helpers."""
+"""Small-area linked household/person synthesis helpers."""
 
 from __future__ import annotations
 
@@ -212,7 +323,7 @@ def _control_dimensions(margins: list[ControlMargin]) -> tuple[str, ...]:
 Run:
 
 ```bash
-uv run pytest tests/test_tract_synthesis.py::test_controls_by_geography_removes_target_geography_dimension -q
+uv run pytest tests/test_small_area_synthesis.py::test_controls_by_geography_removes_target_geography_dimension -q
 ```
 
 Expected: PASS.
@@ -220,7 +331,7 @@ Expected: PASS.
 - [ ] **Step 5: Commit**
 
 ```bash
-git add src/synthpopcan/tract_synthesis.py tests/test_tract_synthesis.py
+git add src/synthpopcan/small_area_synthesis.py tests/test_small_area_synthesis.py
 git commit -m "feat: split controls by target geography"
 ```
 
@@ -228,16 +339,16 @@ git commit -m "feat: split controls by target geography"
 
 **Files:**
 
-- Modify: `src/synthpopcan/tract_synthesis.py`
+- Modify: `src/synthpopcan/small_area_synthesis.py`
 
-- Test: `tests/test_tract_synthesis.py`
+- Test: `tests/test_small_area_synthesis.py`
 
-- [ ] **Step 1: Write failing tests for fitting household candidates to each tract**
+- [ ] **Step 1: Write failing tests for fitting household candidates to each target geography**
 
 Add:
 
 ```python
-from synthpopcan.tract_synthesis import fit_households_by_geography
+from synthpopcan.small_area_synthesis import fit_households_by_geography
 
 
 def test_fit_households_by_geography_returns_weights_for_each_target() -> None:
@@ -283,7 +394,7 @@ def test_fit_households_by_geography_returns_weights_for_each_target() -> None:
 Run:
 
 ```bash
-uv run pytest tests/test_tract_synthesis.py::test_fit_households_by_geography_returns_weights_for_each_target -q
+uv run pytest tests/test_small_area_synthesis.py::test_fit_households_by_geography_returns_weights_for_each_target -q
 ```
 
 Expected: FAIL because `fit_households_by_geography` does not exist.
@@ -352,7 +463,7 @@ def fit_households_by_geography(
 Run:
 
 ```bash
-uv run pytest tests/test_tract_synthesis.py -q
+uv run pytest tests/test_small_area_synthesis.py -q
 ```
 
 Expected: PASS for Task 1 and Task 2 tests.
@@ -360,24 +471,24 @@ Expected: PASS for Task 1 and Task 2 tests.
 - [ ] **Step 5: Commit**
 
 ```bash
-git add src/synthpopcan/tract_synthesis.py tests/test_tract_synthesis.py
-git commit -m "feat: fit household candidates by tract"
+git add src/synthpopcan/small_area_synthesis.py tests/test_small_area_synthesis.py
+git commit -m "feat: fit household candidates by target geography"
 ```
 
 ### Task 3: Linked Household/Person Realization
 
 **Files:**
 
-- Modify: `src/synthpopcan/tract_synthesis.py`
+- Modify: `src/synthpopcan/small_area_synthesis.py`
 
-- Test: `tests/test_tract_synthesis.py`
+- Test: `tests/test_small_area_synthesis.py`
 
-- [ ] **Step 1: Write failing tests for realizing linked tract rows**
+- [ ] **Step 1: Write failing tests for realizing linked small-area rows**
 
 Add:
 
 ```python
-from synthpopcan.tract_synthesis import realize_linked_geography_population
+from synthpopcan.small_area_synthesis import realize_linked_geography_population
 
 
 def test_realize_linked_geography_population_preserves_person_links() -> None:
@@ -421,7 +532,7 @@ def test_realize_linked_geography_population_preserves_person_links() -> None:
 Run:
 
 ```bash
-uv run pytest tests/test_tract_synthesis.py::test_realize_linked_geography_population_preserves_person_links -q
+uv run pytest tests/test_small_area_synthesis.py::test_realize_linked_geography_population_preserves_person_links -q
 ```
 
 Expected: FAIL because `realize_linked_geography_population` does not exist.
@@ -493,7 +604,7 @@ def realize_linked_geography_population(
 Run:
 
 ```bash
-uv run pytest tests/test_tract_synthesis.py -q
+uv run pytest tests/test_small_area_synthesis.py -q
 ```
 
 Expected: PASS.
@@ -501,17 +612,17 @@ Expected: PASS.
 - [ ] **Step 5: Commit**
 
 ```bash
-git add src/synthpopcan/tract_synthesis.py tests/test_tract_synthesis.py
-git commit -m "feat: realize linked tract populations"
+git add src/synthpopcan/small_area_synthesis.py tests/test_small_area_synthesis.py
+git commit -m "feat: realize linked small-area populations"
 ```
 
 ### Task 4: CSV Workflow and Report
 
 **Files:**
 
-- Modify: `src/synthpopcan/tract_synthesis.py`
+- Modify: `src/synthpopcan/small_area_synthesis.py`
 
-- Test: `tests/test_tract_synthesis.py`
+- Test: `tests/test_small_area_synthesis.py`
 
 - [ ] **Step 1: Write failing integration test for CSV inputs and outputs**
 
@@ -520,15 +631,15 @@ Add a test that writes `households.csv`, `persons.csv`, and `controls.csv`, then
 ```python
 from pathlib import Path
 
-from synthpopcan.tract_synthesis import calibrate_linked_household_csvs
+from synthpopcan.small_area_synthesis import calibrate_linked_household_csvs
 
 
 def test_calibrate_linked_household_csvs_writes_outputs(tmp_path: Path) -> None:
     households = tmp_path / "households.csv"
     persons = tmp_path / "persons.csv"
     controls = tmp_path / "controls.csv"
-    out_households = tmp_path / "tract-households.csv"
-    out_persons = tmp_path / "tract-persons.csv"
+    out_households = tmp_path / "small-area-households.csv"
+    out_persons = tmp_path / "small-area-persons.csv"
     weights = tmp_path / "weights.csv"
     report = tmp_path / "report.json"
 
@@ -577,7 +688,7 @@ def test_calibrate_linked_household_csvs_writes_outputs(tmp_path: Path) -> None:
 Run:
 
 ```bash
-uv run pytest tests/test_tract_synthesis.py::test_calibrate_linked_household_csvs_writes_outputs -q
+uv run pytest tests/test_small_area_synthesis.py::test_calibrate_linked_household_csvs_writes_outputs -q
 ```
 
 Expected: FAIL because `calibrate_linked_household_csvs` does not exist.
@@ -588,7 +699,7 @@ Implement helpers using `csv.DictReader` and `csv.DictWriter`. The report must i
 
 ```json
 {
-  "schema_version": "synthpopcan-tract-linked-calibration-v1",
+  "schema_version": "synthpopcan-small-area-linked-calibration-v1",
   "geography_dimension": "tract",
   "geography_column": "tract",
   "candidate_households": 2,
@@ -617,7 +728,7 @@ target_geography,source_candidate_household_id,weight,integer_weight
 Run:
 
 ```bash
-uv run pytest tests/test_tract_synthesis.py -q
+uv run pytest tests/test_small_area_synthesis.py -q
 ```
 
 Expected: PASS.
@@ -625,7 +736,7 @@ Expected: PASS.
 - [ ] **Step 5: Commit**
 
 ```bash
-git add src/synthpopcan/tract_synthesis.py tests/test_tract_synthesis.py
+git add src/synthpopcan/small_area_synthesis.py tests/test_small_area_synthesis.py
 git commit -m "feat: calibrate linked household csvs"
 ```
 
@@ -633,11 +744,11 @@ git commit -m "feat: calibrate linked household csvs"
 
 **Files:**
 
-- Create: `src/synthpopcan/cli_tract.py`
+- Create: `src/synthpopcan/cli_small_area.py`
 
 - Modify: `src/synthpopcan/cli.py`
 
-- Test: `tests/test_tract_synthesis.py`
+- Test: `tests/test_small_area_synthesis.py`
 
 - [ ] **Step 1: Write failing CLI test**
 
@@ -647,12 +758,14 @@ Add:
 from synthpopcan.cli import main
 
 
-def test_cli_calibrates_linked_households_to_tract_controls(tmp_path: Path) -> None:
+def test_cli_calibrates_linked_households_to_small_area_controls(
+    tmp_path: Path,
+) -> None:
     households = tmp_path / "households.csv"
     persons = tmp_path / "persons.csv"
     controls = tmp_path / "controls.csv"
-    out_households = tmp_path / "tract-households.csv"
-    out_persons = tmp_path / "tract-persons.csv"
+    out_households = tmp_path / "small-area-households.csv"
+    out_persons = tmp_path / "small-area-persons.csv"
 
     households.write_text(
         "synthetic_household_id,household_size,TENUR\n"
@@ -673,7 +786,7 @@ def test_cli_calibrates_linked_households_to_tract_controls(tmp_path: Path) -> N
 
     exit_code = main(
         [
-            "tract",
+            "small-area",
             "calibrate-linked",
             "--households",
             str(households),
@@ -702,17 +815,17 @@ def test_cli_calibrates_linked_households_to_tract_controls(tmp_path: Path) -> N
 Run:
 
 ```bash
-uv run pytest tests/test_tract_synthesis.py::test_cli_calibrates_linked_households_to_tract_controls -q
+uv run pytest tests/test_small_area_synthesis.py::test_cli_calibrates_linked_households_to_tract_controls -q
 ```
 
-Expected: FAIL because the `tract` command group is not registered.
+Expected: FAIL because the `small-area` command group is not registered.
 
-- [ ] **Step 3: Implement `cli_tract.py`**
+- [ ] **Step 3: Implement `cli_small_area.py`**
 
 Add a Click group:
 
 ```python
-"""Tract-level linked synthesis commands."""
+"""Small-area linked synthesis commands."""
 
 from __future__ import annotations
 
@@ -723,17 +836,17 @@ import click
 
 from synthpopcan.cli_output import format_file_access_error
 from synthpopcan.console import print_wrote
-from synthpopcan.tract_synthesis import calibrate_linked_household_csvs
+from synthpopcan.small_area_synthesis import calibrate_linked_household_csvs
 
 _PATH = click.Path(path_type=Path)
 
 
 @click.group()
-def tract() -> None:
+def small_area() -> None:
     """Assign and calibrate linked households to target geographies."""
 
 
-@tract.command("calibrate-linked")
+@small_area.command("calibrate-linked")
 @click.option("--households", "households_path", required=True, type=_PATH)
 @click.option("--persons", "persons_path", required=True, type=_PATH)
 @click.option("--controls", "controls_path", required=True, type=_PATH)
@@ -793,9 +906,9 @@ def calibrate_linked_command(
 Register the command in `src/synthpopcan/cli.py`:
 
 ```python
-from synthpopcan.cli_tract import tract
+from synthpopcan.cli_small_area import small_area
 
-cli.add_command(tract)
+cli.add_command(small_area, name="small-area")
 ```
 
 - [ ] **Step 4: Run CLI tests**
@@ -803,7 +916,7 @@ cli.add_command(tract)
 Run:
 
 ```bash
-uv run pytest tests/test_tract_synthesis.py tests/test_tree.py::test_cli_generates_linked_households_and_persons -q
+uv run pytest tests/test_small_area_synthesis.py tests/test_tree.py::test_cli_generates_linked_households_and_persons -q
 ```
 
 Expected: PASS.
@@ -811,17 +924,17 @@ Expected: PASS.
 - [ ] **Step 5: Commit**
 
 ```bash
-git add src/synthpopcan/cli.py src/synthpopcan/cli_tract.py tests/test_tract_synthesis.py
-git commit -m "feat: add tract linked calibration cli"
+git add src/synthpopcan/cli.py src/synthpopcan/cli_small_area.py tests/test_small_area_synthesis.py
+git commit -m "feat: add small-area linked calibration cli"
 ```
 
 ### Task 6: Validation Hooks
 
 **Files:**
 
-- Modify: `src/synthpopcan/tract_synthesis.py`
+- Modify: `src/synthpopcan/small_area_synthesis.py`
 
-- Test: `tests/test_tract_synthesis.py`
+- Test: `tests/test_small_area_synthesis.py`
 
 - [ ] **Step 1: Add a test that outputs validate cleanly**
 
@@ -832,7 +945,9 @@ from synthpopcan.validation import build_control_validation_report
 from synthpopcan.tree import validate_linked_population
 
 
-def test_tract_outputs_validate_against_controls_and_links(tmp_path: Path) -> None:
+def test_small_area_outputs_validate_against_controls_and_links(
+    tmp_path: Path,
+) -> None:
     # Reuse the small CSV fixture from Task 4.
     # After calibration, read output rows and verify both validators pass.
     household_report = build_control_validation_report(
@@ -856,7 +971,7 @@ Implement the test with local helper functions so it is runnable.
 Run:
 
 ```bash
-uv run pytest tests/test_tract_synthesis.py::test_tract_outputs_validate_against_controls_and_links -q
+uv run pytest tests/test_small_area_synthesis.py::test_small_area_outputs_validate_against_controls_and_links -q
 ```
 
 Expected: FAIL if output field ordering, geography assignment, or validator compatibility is incomplete.
@@ -870,7 +985,7 @@ Ensure assigned household rows include all controlled dimensions, including the 
 Run:
 
 ```bash
-uv run pytest tests/test_tract_synthesis.py tests/test_tree.py::test_cli_validates_linked_output -q
+uv run pytest tests/test_small_area_synthesis.py tests/test_tree.py::test_cli_validates_linked_output -q
 ```
 
 Expected: PASS.
@@ -878,8 +993,8 @@ Expected: PASS.
 - [ ] **Step 5: Commit**
 
 ```bash
-git add src/synthpopcan/tract_synthesis.py tests/test_tract_synthesis.py
-git commit -m "test: validate tract linked outputs"
+git add src/synthpopcan/small_area_synthesis.py tests/test_small_area_synthesis.py
+git commit -m "test: validate small-area linked outputs"
 ```
 
 ### Task 7: Documentation and User Guidance
@@ -903,13 +1018,13 @@ git commit -m "test: validate tract linked outputs"
 Add text explaining:
 
 ```markdown
-### From Broad Microdata to Tract Outputs
+### From Broad Microdata to Small-Area Outputs
 
 The 2016 hierarchical PUMF gives us linked households and people, but not
-census tract identifiers on each source household. Census Profile tables give
-us tract-level controls, but not household microdata. The tract workflow bridges
+census small-area identifiers on each source household. Census Profile tables give
+us small-area controls, but not household microdata. The small-area workflow bridges
 those sources by generating plausible linked household/person candidates, then
-calibrating household candidates separately for each tract.
+calibrating household candidates separately for each target geography.
 ```
 
 - [ ] **Step 2: Add a command example**
@@ -917,15 +1032,15 @@ calibrating household candidates separately for each tract.
 Add this example:
 
 ```bash
-synthpopcan tract calibrate-linked \
+synthpopcan small-area calibrate-linked \
   --households candidates-households.csv \
   --persons candidates-persons.csv \
-  --controls tract-household-controls.csv \
-  --geography-dimension tract \
-  --geography-column tract \
-  --households-out tract-households.csv \
-  --persons-out tract-persons.csv \
-  --report tract-calibration-report.json
+  --controls ada-household-controls.csv \
+  --geography-dimension ada \
+  --geography-column ada \
+  --households-out small-area-households.csv \
+  --persons-out small-area-persons.csv \
+  --report small-area-calibration-report.json
 ```
 
 - [ ] **Step 3: Update validation docs**
@@ -934,13 +1049,13 @@ Explain that users should run:
 
 ```bash
 synthpopcan validate controls \
-  --population tract-households.csv \
-  --controls tract-household-controls.csv \
+  --population small-area-households.csv \
+  --controls ada-household-controls.csv \
   --kind expanded
 
 synthpopcan validate linked-output \
-  --households tract-households.csv \
-  --persons tract-persons.csv
+  --households small-area-households.csv \
+  --persons small-area-persons.csv
 ```
 
 - [ ] **Step 4: Run docs checks**
@@ -957,7 +1072,7 @@ Expected: build completes without warnings.
 
 ```bash
 git add docs/tree.md docs/ipf.md docs/validate.md docs/library.md docs/status.md PLANS.md
-git commit -m "docs: explain tract-level linked synthesis"
+git commit -m "docs: explain small-area linked synthesis"
 ```
 
 ### Task 8: Full Verification
@@ -971,7 +1086,7 @@ git commit -m "docs: explain tract-level linked synthesis"
 Run:
 
 ```bash
-uv run pytest tests/test_tract_synthesis.py tests/test_ipf.py tests/test_tree.py tests/test_validation.py -q
+uv run pytest tests/test_small_area_synthesis.py tests/test_ipf.py tests/test_tree.py tests/test_validation.py -q
 ```
 
 Expected: PASS.
@@ -1012,17 +1127,17 @@ Expected: Ruff passes. `rg` should not show personal local paths in public docs 
 
 ```bash
 git status --short
-git add src/synthpopcan/tract_synthesis.py src/synthpopcan/cli_tract.py src/synthpopcan/cli.py tests/test_tract_synthesis.py docs PLANS.md
-git commit -m "feat: add tract-level linked synthesis workflow"
+git add src/synthpopcan/small_area_synthesis.py src/synthpopcan/cli_small_area.py src/synthpopcan/cli.py tests/test_small_area_synthesis.py docs PLANS.md
+git commit -m "feat: add small-area linked synthesis workflow"
 ```
 
 ## Self-Review
 
 Spec coverage:
 
-- The plan implements the missing bridge between broad-geography PUMF-derived linked candidates and tract-level Census Profile controls.
-- The first pass explicitly calibrates household-level tract controls and preserves linked persons.
-- Person-level tract calibration remains outside the first implementation, but validation commands are included so we can see person-margin gaps before adding joint calibration.
+- The plan implements the missing bridge between broad-geography PUMF-derived linked candidates and small-area Census Profile controls.
+- The first pass explicitly calibrates household-level small-area controls and preserves linked persons.
+- Person-level small-area calibration remains outside the first implementation, but validation commands are included so we can see person-margin gaps before adding joint calibration.
 
 Placeholder scan:
 
