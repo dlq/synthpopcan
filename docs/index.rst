@@ -1,6 +1,11 @@
 SynthPopCan Documentation
 =========================
 
+.. image:: ../assets/branding/logo/synthpopcan-logo-512.png
+   :alt: SynthPopCan logo
+   :width: 220px
+   :align: center
+
 SynthPopCan is early-stage tooling for Canadian synthetic population work:
 control tables, iterative proportional fitting, Statistics Canada source
 inspection, census microdata adapters, linked household/person tree models, and

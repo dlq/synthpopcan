@@ -1,5 +1,9 @@
 # SynthPopCan
 
+<p align="center">
+  <img src="assets/branding/logo/synthpopcan-logo-512.png" alt="SynthPopCan logo" width="220">
+</p>
+
 SynthPopCan is an early-stage project for building Canadian synthetic population tooling.
 
 SynthPopCan is an independent research-software project. It is not affiliated
