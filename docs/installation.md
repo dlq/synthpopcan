@@ -222,7 +222,7 @@ The project includes a `.readthedocs.yaml` file for Read the Docs. The published
 build installs the package and Sphinx requirements, then builds from
 `docs/conf.py`.
 
-Published documentation lives at <https://synthpopcan.readthedocs.org/>.
+Published documentation lives at <https://synthpopcan.readthedocs.io/>.
 
 ## Release Publishing
 

@@ -77,9 +77,7 @@ def test_fetch_model_package_reports_progress(
     try:
         models.fetch_model_package(
             "montreal-cma-2016-all-fields",
-            progress_callback=lambda done, total: progress_events.append(
-                (done, total)
-            ),
+            progress_callback=lambda done, total: progress_events.append((done, total)),
         )
     finally:
         metadata["sha256"] = original_sha

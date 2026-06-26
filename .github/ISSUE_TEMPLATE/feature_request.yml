@@ -1,0 +1,30 @@
+name: Feature request
+description: Suggest a new workflow, helper, or usability improvement.
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: user
+    attributes:
+      label: Who is this for?
+      description: Describe the user and research workflow.
+      placeholder: "A digital humanities researcher trying to..."
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem would this solve?
+      description: Explain what is hard, confusing, slow, or missing now.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What should SynthPopCan do?
+      description: Include command, API, or web app ideas if you have them.
+  - type: textarea
+    id: data
+    attributes:
+      label: Data considerations
+      description: Note whether this depends on public data, private data, or model artifacts.

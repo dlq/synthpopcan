@@ -1,0 +1,39 @@
+cff-version: 1.2.0
+message: "If you use SynthPopCan in research, please cite it using this metadata."
+title: "SynthPopCan"
+version: "0.1.0"
+date-released: 2026-06-25
+type: software
+license: MIT
+repository-code: "https://github.com/dlq/synthpopcan"
+url: "https://synthpopcan.readthedocs.io/"
+abstract: >-
+  SynthPopCan is research software for Canadian synthetic population work,
+  including Statistics Canada margin/control table workflows, iterative
+  proportional fitting, census microdata adapters, linked household/person
+  model generation, validation, and a local browser app.
+authors:
+  - family-names: Quesnel
+    given-names: Darcy
+    email: darcy.quesnel@gmail.com
+keywords:
+  - synthetic population
+  - census
+  - Statistics Canada
+  - iterative proportional fitting
+  - digital humanities
+  - research software
+preferred-citation:
+  type: software
+  title: "SynthPopCan"
+  authors:
+    - family-names: Quesnel
+      given-names: Darcy
+      email: darcy.quesnel@gmail.com
+  version: "0.1.0"
+  date-released: 2026-06-25
+  url: "https://github.com/dlq/synthpopcan"
+notes: >-
+  This work began under a proposal led with Laurette Dube and Shawn Brown and is
+  a spiritual and academic successor to that project. The project also
+  acknowledges the influence of Pritchard's synthetic population paper and code.

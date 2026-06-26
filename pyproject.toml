@@ -31,7 +31,7 @@ dependencies = [
 
 [project.urls]
 Homepage = "https://github.com/dlq/synthpopcan"
-Documentation = "https://synthpopcan.readthedocs.org/"
+Documentation = "https://synthpopcan.readthedocs.io/"
 Source = "https://github.com/dlq/synthpopcan"
 Issues = "https://github.com/dlq/synthpopcan/issues"
 

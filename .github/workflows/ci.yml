@@ -27,6 +27,9 @@ jobs:
       - name: Lint Python
         run: uv run ruff check src tests scripts
 
+      - name: Check Python formatting
+        run: uv run ruff format --check src tests scripts
+
       - name: Run tests
         run: uv run pytest
 

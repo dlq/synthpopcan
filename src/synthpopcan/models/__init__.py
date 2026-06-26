@@ -18,9 +18,7 @@ from urllib.request import urlopen
 
 ProgressCallback = Callable[[int, int | None], None]
 
-_RELEASE_BASE_URL = (
-    "https://github.com/dlq/synthpopcan/releases/download/v0.1.0"
-)
+_RELEASE_BASE_URL = "https://github.com/dlq/synthpopcan/releases/download/v0.1.0"
 
 _MODEL_PACKAGES: dict[str, dict[str, object]] = {
     "demo-linked-household-person": {
@@ -57,12 +55,8 @@ _MODEL_PACKAGES: dict[str, dict[str, object]] = {
         "safe_demo": False,
         "distribution": "download",
         "size_bytes": 64_234_759,
-        "sha256": (
-            "ebad14c83bf2aef47e3ac6e0684c1994ea0fa8cd83df7eaeb78a76077174ef91"
-        ),
-        "url": (
-            f"{_RELEASE_BASE_URL}/montreal-cma-2016-all-fields-package.json"
-        ),
+        "sha256": ("ebad14c83bf2aef47e3ac6e0684c1994ea0fa8cd83df7eaeb78a76077174ef91"),
+        "url": (f"{_RELEASE_BASE_URL}/montreal-cma-2016-all-fields-package.json"),
     },
     "quebec-2016-all-fields": {
         "filename": "quebec-2016-all-fields-package.json",
@@ -81,9 +75,7 @@ _MODEL_PACKAGES: dict[str, dict[str, object]] = {
         "safe_demo": False,
         "distribution": "download",
         "size_bytes": 122_079_409,
-        "sha256": (
-            "7fbfa64e29ae5539f382475c472cb1fe48b988161e0b3a10ecd81fcaa942a7d7"
-        ),
+        "sha256": ("7fbfa64e29ae5539f382475c472cb1fe48b988161e0b3a10ecd81fcaa942a7d7"),
         "url": f"{_RELEASE_BASE_URL}/quebec-2016-all-fields-package.json",
     },
 }

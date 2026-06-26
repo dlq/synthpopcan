@@ -21,6 +21,7 @@ Run the normal checks before opening a pull request:
 
 ```bash
 uv run ruff check src tests scripts
+uv run ruff format --check src tests scripts
 uv run pytest
 uv run sphinx-build -W -b html docs docs/_build/html
 npm run check:web
@@ -45,6 +46,7 @@ Before contributing a model artifact:
 - run the relevant SynthPopCan audit/release workflow;
 - confirm large files are distributed as release assets with checksums and
   fetched on demand by `synthpopcan models fetch`.
+- follow `docs/release-checklist.md` before updating the public model registry.
 
 ## Documentation
 

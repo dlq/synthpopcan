@@ -1,0 +1,40 @@
+name: Model release checklist
+description: Track review work for a public model package candidate.
+title: "[Model release]: "
+labels: ["model-release"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this for public model package candidates only. Do not attach raw
+        microdata, generated full-population outputs, or private review files.
+  - type: input
+    id: model_id
+    attributes:
+      label: Model ID
+      placeholder: "montreal-cma-2016-all-fields"
+    validations:
+      required: true
+  - type: input
+    id: source
+    attributes:
+      label: Source and geography
+      placeholder: "Statistics Canada 2016 Census hierarchical PUMF, CMA 462"
+    validations:
+      required: true
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Release checks
+      options:
+        - label: No raw source rows or source identifiers are stored in the package.
+        - label: Provenance, citation, access, and redistribution notes are present.
+        - label: Disclosure-risk and release-readiness checks have been reviewed.
+        - label: Package size and SHA-256 checksum have been recorded.
+        - label: "`synthpopcan models fetch MODEL_ID` has been tested from the release asset."
+        - label: Documentation has been updated if this model is user-facing.
+  - type: textarea
+    id: notes
+    attributes:
+      label: Review notes
+      description: Summarize limitations, known risks, and publication rationale.

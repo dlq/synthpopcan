@@ -1,5 +1,10 @@
 # SynthPopCan
 
+[![CI](https://github.com/dlq/synthpopcan/actions/workflows/ci.yml/badge.svg)](https://github.com/dlq/synthpopcan/actions/workflows/ci.yml)
+[![Documentation Status](https://readthedocs.org/projects/synthpopcan/badge/?version=latest)](https://synthpopcan.readthedocs.io/en/latest/)
+[![PyPI](https://img.shields.io/pypi/v/synthpopcan.svg)](https://pypi.org/project/synthpopcan/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 <p align="center">
   <img src="assets/branding/logo/synthpopcan-logo-512.png" alt="SynthPopCan logo" width="220">
 </p>
@@ -19,7 +24,7 @@ Near-term goals:
 Broader SynthEco-style enrichment with cohort, environmental, school, healthcare, and food-access layers is intentionally deferred until the base population synthesis workflow is stable.
 
 Detailed documentation is published at
-<https://synthpopcan.readthedocs.org/>. The source files live under `docs/`;
+<https://synthpopcan.readthedocs.io/>. The source files live under `docs/`;
 start with `docs/index.rst` for task-based navigation to the web app, IPF from
 StatCan margin tables, generated-from-model workflows, the beginner Python API,
 and advanced microdata/model-training material.
@@ -29,6 +34,7 @@ Project planning and research notes are tracked separately:
 - `PLANS.md`: current roadmap, open work, sequencing, and design decisions.
 - `NOTES.md`: research synthesis from local materials and external literature.
 - `docs/status.md`: completed implementation status and benchmark notes.
+- `CHANGELOG.md`: public release notes.
 
 ## Quick Start
 
@@ -124,4 +130,4 @@ it passed the project's current checks; it is not a claim of official approval,
 legal privacy certification, or fitness for every research use.
 
 Before publishing a new model package, review `docs/data.md`, `docs/tree.md`,
-and `CONTRIBUTING.md`.
+`docs/release-checklist.md`, and `CONTRIBUTING.md`.

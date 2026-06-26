@@ -1,0 +1,48 @@
+name: Bug report
+description: Report a problem with the CLI, library, docs, or local web app.
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a problem. Do not paste private data, raw Census
+        microdata rows, credentials, or access-controlled files into a public
+        issue.
+  - type: textarea
+    id: summary
+    attributes:
+      label: What happened?
+      description: Describe the problem and what you expected instead.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: How can we reproduce it?
+      description: Include commands, file shapes, or a small public fixture if possible.
+      placeholder: |
+        synthpopcan ...
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: SynthPopCan version
+      placeholder: "0.1.0"
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Surface
+      options:
+        - CLI
+        - Python library
+        - Local web app
+        - Documentation
+        - Model package
+        - Other
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Keep examples public and minimal.
