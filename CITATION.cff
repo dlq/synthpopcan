@@ -1,8 +1,8 @@
 cff-version: 1.2.0
 message: "If you use SynthPopCan in research, please cite it using this metadata."
 title: "SynthPopCan"
-version: "0.1.0"
-date-released: 2026-06-25
+version: "0.1.1"
+date-released: 2026-06-26
 type: software
 license: MIT
 repository-code: "https://github.com/dlq/synthpopcan"
@@ -30,8 +30,8 @@ preferred-citation:
     - family-names: Quesnel
       given-names: Darcy
       email: darcy.quesnel@gmail.com
-  version: "0.1.0"
-  date-released: 2026-06-25
+  version: "0.1.1"
+  date-released: 2026-06-26
   url: "https://github.com/dlq/synthpopcan"
 notes: >-
   This work began under a proposal led with Laurette Dube and Shawn Brown and is

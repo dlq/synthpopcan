@@ -2,6 +2,19 @@
 
 All notable public changes to SynthPopCan are tracked here.
 
+## 0.1.1 - 2026-06-26
+
+Public repository polish release.
+
+- Added README badges for CI, documentation, PyPI, and license status.
+- Added `CITATION.cff` for research software citation metadata.
+- Added GitHub issue templates for bugs, feature requests, and model release
+  reviews.
+- Added `docs/release-checklist.md` for package and model asset releases.
+- Added a CI Python formatting check with `ruff format --check`.
+- Normalized documentation links to `synthpopcan.readthedocs.io`.
+- Added repository topics for discovery on GitHub.
+
 ## 0.1.0 - 2026-06-25
 
 Initial public release.
