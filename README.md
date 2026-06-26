@@ -18,10 +18,11 @@ Near-term goals:
 
 Broader SynthEco-style enrichment with cohort, environmental, school, healthcare, and food-access layers is intentionally deferred until the base population synthesis workflow is stable.
 
-Detailed documentation lives under `docs/`. Start with `docs/index.rst` for
-task-based navigation to the web app, IPF from StatCan margin tables,
-generated-from-model workflows, the beginner Python API, and advanced
-microdata/model-training material.
+Detailed documentation is published at
+<https://synthpopcan.readthedocs.org/>. The source files live under `docs/`;
+start with `docs/index.rst` for task-based navigation to the web app, IPF from
+StatCan margin tables, generated-from-model workflows, the beginner Python API,
+and advanced microdata/model-training material.
 
 Project planning and research notes are tracked separately:
 
@@ -31,22 +32,32 @@ Project planning and research notes are tracked separately:
 
 ## Quick Start
 
-SynthPopCan is not yet published on PyPI. From a source checkout, install the
-development environment with:
+Install the published package from PyPI:
 
 ```bash
+python -m pip install synthpopcan
+```
+
+Then inspect the command line:
+
+```bash
+synthpopcan --help
+```
+
+For a one-off command without installing the tool into your current
+environment, use `uvx`:
+
+```bash
+uvx synthpopcan --help
+uvx synthpopcan guide ipf
+```
+
+From a source checkout for development:
+
+```bash
+git clone https://github.com/dlq/synthpopcan.git
+cd synthpopcan
 uv sync
-```
-
-Run the local web app:
-
-```bash
-uv run synthpopcan serve
-```
-
-Or inspect the command line:
-
-```bash
 uv run synthpopcan --help
 ```
 

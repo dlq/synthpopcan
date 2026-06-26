@@ -1,23 +1,68 @@
 # Installation
 
-SynthPopCan is in early public release preparation. This page focuses on a
-source-checkout installation for contributors and early users. Once the PyPI
-project is enabled, users will also be able to install the published package
-with `pip install synthpopcan`.
+SynthPopCan can be installed from PyPI, run as a one-off command with `uvx`, or
+installed from a source checkout for development. If we only want to use the
+command line or beginner Python API, start with the PyPI installation. If we
+want to edit the code, documentation, or tests, use the source checkout.
 
 ## Requirements
 
 - Python 3.11 or newer.
-- Git, when cloning from a repository.
-- A Python environment tool. The current development workflow uses `uv`, but
-  the rest of the documentation usually shows the installed `synthpopcan`
-  command.
+- Git, only when cloning from the repository.
+- `pip`, which is included with most Python installations.
+- Optional: `uv`, when using `uvx` for one-off commands or when working on the
+  source checkout.
 - Local source data staged outside git when working with real census or private files.
 
 You do not need a database, a cloud account, or a web server for the
 command-line workflows.
 
-## Download the Source
+## Install From PyPI
+
+For most users, install the published package from PyPI:
+
+```bash
+python -m pip install synthpopcan
+```
+
+Then check that the command is available:
+
+```bash
+synthpopcan --help
+```
+
+This is the best path when we want to run command-line examples, use the
+beginner API in a notebook, or build small teaching workflows without editing
+SynthPopCan itself.
+
+For notebook work, install SynthPopCan into the same Python environment that
+Jupyter uses. A minimal notebook smoke test is:
+
+```python
+import synthpopcan as spc
+
+spc.__version__
+```
+
+## Run One-Off Commands With `uvx`
+
+If we have `uv` installed but do not want to install SynthPopCan into the
+current environment, `uvx` can download the package and run the `synthpopcan`
+command in an isolated temporary environment:
+
+```bash
+uvx synthpopcan --help
+uvx synthpopcan guide ipf
+```
+
+This is useful for trying the CLI or running a short command. For repeated work
+in a project folder or notebook, a normal `pip` installation is usually easier
+to reason about.
+
+## Install From a Source Checkout
+
+Use a source checkout when we want to edit SynthPopCan, run the tests, build the
+documentation locally, or work against unreleased changes.
 
 Clone the repository, then enter the checkout:
 
@@ -26,11 +71,8 @@ git clone https://github.com/dlq/synthpopcan.git
 cd synthpopcan
 ```
 
-## Install the Development Environment
-
 The repository currently uses `uv` for repeatable local development. If we do
-not have `uv`, we should install it from the official documentation for our
-platform.
+not have `uv`, install it from the official documentation for our platform.
 
 From the repository root:
 
@@ -49,22 +91,23 @@ uv sync --group docs
 
 ## Run the Command
 
-If your environment exposes the console script, run:
+If SynthPopCan was installed with `pip`, run:
 
 ```bash
 synthpopcan --help
 ```
 
-When working directly from the source checkout with `uv`, prefix commands with
-`uv run`:
+When working directly from a source checkout with `uv`, prefix commands with
+`uv run` so they use the checkout's development environment:
 
 ```bash
 uv run synthpopcan --help
 ```
 
 The rest of the documentation usually shows `synthpopcan ...` to focus on the
-tool itself. If you have not activated an environment or installed the command,
-use `uv run synthpopcan ...` instead.
+tool itself. If we are using `uvx`, replace `synthpopcan ...` with
+`uvx synthpopcan ...`. If we are working from a checkout without activating the
+environment, use `uv run synthpopcan ...`.
 
 Beginner command-line guidance is available with:
 
@@ -179,11 +222,13 @@ The project includes a `.readthedocs.yaml` file for Read the Docs. The published
 build installs the package and Sphinx requirements, then builds from
 `docs/conf.py`.
 
+Published documentation lives at <https://synthpopcan.readthedocs.org/>.
+
 ## Release Publishing
 
 The repository includes a manual GitHub Actions workflow for PyPI publishing.
-Before running it, the PyPI project owner should configure a trusted publisher
-for:
+The PyPI project owner should keep the trusted publisher configuration aligned
+with:
 
 - repository: `dlq/synthpopcan`
 - workflow: `.github/workflows/publish.yml`
