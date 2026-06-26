@@ -170,16 +170,33 @@ Geography strategy:
 - Treat dissemination blocks as a later placement geography, not the first
   calibration geography.
 
+Completed in the first implementation pass:
+
+- `small-area calibrate-linked` consumes linked household/person candidate CSVs,
+  fits household candidates to controls split by a target geography, and writes
+  assigned household/person CSVs while preserving links.
+- The beginner API exposes the same workflow as
+  `synthpopcan.calibrate_small_area_linked(...)`.
+- A Montreal CT tenure-control run generated 1,830,000 households and 4,170,389
+  persons across 951 census tracts and passed linked-output validation.
+- A Quebec ADA tenure-control run generated 3,750,000 households and 8,330,828
+  persons across 1,115 aggregate dissemination areas and passed linked-output
+  validation.
+
 0.2.x exit criteria:
 
 - A user can generate candidate linked households/persons from a prepared model
   package and calibrate households to at least one small-area control fixture.
+  **Met for CLI and beginner API.**
 - A Montreal census-tract prototype can run from documented commands or API
-  calls with ignored local data.
+  calls with ignored local data. **Met for tenure controls; broaden controls
+  after recoding household-size categories.**
 - Validation clearly reports fitted household margins, inherited person
-  geography, household/person link consistency, and limitations.
+  geography, household/person link consistency, and limitations. **Partly met;
+  add richer geography-level residual summaries.**
 - The beginner-facing story remains one workflow, not a pile of intermediate
-  files.
+  files. **Partly met; add a convenience wrapper that can generate candidates
+  from a package and calibrate them in one command or API call.**
 
 ### 0.3.x - Small-Area Quality, Validation, And Performance
 
@@ -192,6 +209,9 @@ Candidate work:
 
 - Add staged or joint person-level calibration after household-level calibration
   is stable.
+- Add household-size recoding helpers for Census Profile categories such as
+  `1`, `2`, `3`, `4`, and `5 or more` before fitting generated exact household
+  sizes to small-area controls.
 - Improve margin-selection helpers so users can see which StatCan tables are
   usable controls, which are validation-only, and which require enrichment.
 - Add richer non-convergence diagnostics for inconsistent small-area controls,

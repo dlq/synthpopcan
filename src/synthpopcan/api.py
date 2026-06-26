@@ -7,6 +7,7 @@ functions that map directly to the two main beginner tasks:
 
 * fit seed rows to margin/control totals with IPF;
 * generate linked household/person rows from a prepared model package.
+* calibrate generated linked rows to small-area household controls.
 
 Most users should import the top-level package and call these functions from
 there::
@@ -29,10 +30,12 @@ import json
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 from synthpopcan.controls import ControlTable, read_control_table
 from synthpopcan.ipf import IPFMargin, IPFResult, Record, expand_records
 from synthpopcan.ipf import fit_ipf as fit_ipf_records
+from synthpopcan.small_area_synthesis import calibrate_linked_household_csvs
 from synthpopcan.tree import (
     CartTreeModel,
     FrequencyTreeModel,
@@ -55,6 +58,7 @@ __all__ = [
     "read_model_package",
     "generate_from_model",
     "write_population",
+    "calibrate_small_area_linked",
 ]
 
 
@@ -429,6 +433,112 @@ def write_population(
         _write_rows(output_path / "persons.csv", population.persons)
         return
     _write_rows(output_path, population)
+
+
+def calibrate_small_area_linked(
+    *,
+    households: str | Path,
+    persons: str | Path,
+    controls: str | Path,
+    geography_dimension: str,
+    geography_column: str,
+    households_out: str | Path,
+    persons_out: str | Path,
+    report_out: str | Path | None = None,
+    weights_out: str | Path | None = None,
+    household_id_column: str = "synthetic_household_id",
+    person_id_column: str = "synthetic_person_id",
+    weight_field: str | None = None,
+    max_iterations: int = 100,
+    tolerance: float = 1e-6,
+) -> dict[str, Any]:
+    """Calibrate linked household/person candidates to small-area controls.
+
+    This is the beginner-friendly Python entry point for the small-area
+    workflow. It takes linked household and person candidate CSVs, assigns
+    household rows to a target geography such as census tract (``ct``) or
+    aggregate dissemination area (``ada``), and writes new household/person CSVs
+    that preserve the household/person links.
+
+    The first implementation calibrates household-level controls. Person rows
+    inherit the geography of their assigned household. Use linked-output
+    validation afterward when person-level geography totals matter.
+
+    Parameters
+    ----------
+    households:
+        Candidate household CSV, usually generated from a prepared linked model
+        package.
+    persons:
+        Candidate person CSV linked to ``households`` by the household ID
+        column.
+    controls:
+        Normalized control CSV with one dimension naming the target geography
+        and one or more household dimensions available in ``households``.
+    geography_dimension:
+        Name of the geography dimension in the control CSV, for example ``ct``
+        or ``ada``.
+    geography_column:
+        Output column name to write on assigned household and person rows.
+    households_out:
+        Destination CSV for assigned household rows.
+    persons_out:
+        Destination CSV for assigned person rows.
+    report_out:
+        Optional JSON report path containing convergence and assigned-row
+        counts by geography.
+    weights_out:
+        Optional CSV path for fitted household weights. This can be very large
+        for many small areas, so it is usually omitted.
+    household_id_column:
+        Household ID column shared by the candidate household and person CSVs.
+    person_id_column:
+        Person ID column in the candidate person CSV.
+    weight_field:
+        Optional candidate-household starting weight column.
+    max_iterations:
+        Maximum IPF iterations for each geography-specific household fit.
+    tolerance:
+        Convergence tolerance for each geography-specific household fit.
+
+    Returns
+    -------
+    dict[str, Any]
+        A summary report with total assigned household/person counts,
+        geography counts, and per-geography fit diagnostics.
+
+    Examples
+    --------
+    >>> summary = calibrate_small_area_linked(
+    ...     households="candidate-households.csv",
+    ...     persons="candidate-persons.csv",
+    ...     controls="ct-tenure-controls.csv",
+    ...     geography_dimension="ct",
+    ...     geography_column="ct",
+    ...     households_out="synthetic-households.csv",
+    ...     persons_out="synthetic-persons.csv",
+    ...     report_out="small-area-report.json",
+    ... )
+    >>> summary["assigned_households"] > 0
+    True
+    """
+
+    return calibrate_linked_household_csvs(
+        households_path=Path(households),
+        persons_path=Path(persons),
+        controls_path=Path(controls),
+        geography_dimension=geography_dimension,
+        geography_column=geography_column,
+        households_out=Path(households_out),
+        persons_out=Path(persons_out),
+        weights_out=Path(weights_out) if weights_out is not None else None,
+        report_out=Path(report_out) if report_out is not None else None,
+        household_id_column=household_id_column,
+        person_id_column=person_id_column,
+        weight_field=weight_field,
+        max_iterations=max_iterations,
+        tolerance=tolerance,
+    )
 
 
 def _seed_records(seed: SeedInput) -> list[Record]:

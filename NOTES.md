@@ -8,8 +8,8 @@ This note synthesizes project source material reviewed locally, along with
 recent external work relevant to a narrower near-term goal:
 
 1. Build a Python library, CLI, and web app that can create a synthetic population through IPF from arbitrary Statistics Canada margin/control tables.
-2. Build a second workflow that creates household- and person-level synthetic populations with a tree-based synthetic population generator for geographic subregions using Canadian 2016 Census data.
-3. Leave broader SynthEco ecosystem enrichment, cohort attachment, and simulation work for later.
+1. Build a second workflow that creates household- and person-level synthetic populations with a tree-based synthetic population generator for geographic subregions using Canadian 2016 Census data.
+1. Leave broader SynthEco ecosystem enrichment, cohort attachment, and simulation work for later.
 
 Current codebase status, 2026-06-24:
 
@@ -491,15 +491,15 @@ What does exist is a set of adjacent implementation families:
 
 1. **SPEW remains the closest conceptual ancestor, but it is older.** SPEW is explicitly a synthetic ecosystems package and directly matches the language of the original SynthEco proposal. It is implemented as an R package, with a GitHub repository and CRAN-style installation, but the public GitHub release appears to date from 2017. It is still useful as a conceptual and packaging reference, especially for the distinction between agent generation, geographic regions, and environment components. It should not be treated as a current implementation base.
 
-2. **SynthPops is a useful public-health contact-network generator, but not a census-table IPF toolkit.** SynthPops is a Python package for synthetic populations used in COVID-19 epidemic analyses. It creates populations with multilayer contact networks and includes household, school, workplace, and long-term-care-facility logic. The repository and documentation indicate that it is no longer actively maintained, but its module boundaries are instructive: separate concerns for data distributions, households, schools, workplaces, contact networks, and plotting. It is a useful design reference for later environment/contact layers, not a fit for the near-term Canadian IPF/table-ingestion core.
+1. **SynthPops is a useful public-health contact-network generator, but not a census-table IPF toolkit.** SynthPops is a Python package for synthetic populations used in COVID-19 epidemic analyses. It creates populations with multilayer contact networks and includes household, school, workplace, and long-term-care-facility logic. The repository and documentation indicate that it is no longer actively maintained, but its module boundaries are instructive: separate concerns for data distributions, households, schools, workplaces, contact networks, and plotting. It is a useful design reference for later environment/contact layers, not a fit for the near-term Canadian IPF/table-ingestion core.
 
-3. **Recent open contact-network work covers later SynthEco layers.** Tulchinsky et al. (2024) describe an open-source pipeline that first creates a household synthetic population from public census data, then assigns people to schools and workplaces and builds a contact network. This is close to the later "ecosystem" part of SynthEco: households plus schools/workplaces plus network edges. It is US-focused and appears more concerned with epidemic contact networks than reusable census ingestion, but it is a strong reference for the future stage where SynthPopCan assigns schools/workplaces and constructs interaction layers.
+1. **Recent open contact-network work covers later SynthEco layers.** Tulchinsky et al. (2024) describe an open-source pipeline that first creates a household synthetic population from public census data, then assigns people to schools and workplaces and builds a contact network. This is close to the later "ecosystem" part of SynthEco: households plus schools/workplaces plus network edges. It is US-focused and appears more concerned with epidemic contact networks than reusable census ingestion, but it is a strong reference for the future stage where SynthPopCan assigns schools/workplaces and constructs interaction layers.
 
-4. **BESSIE and FRED show how synthetic populations are consumed by simulators.** BESSIE is an open agent-based epidemic simulator that uses a synthetic population with demographic attributes, households, activities, and location visits. Recent FRED-related papers also use US census-derived synthetic populations as simulation baselines. These are not population-synthesis libraries, but they clarify downstream expectations: stable agent IDs, household IDs, location/activity tables, schedules or visit layers, and reproducible scenario comparisons.
+1. **BESSIE and FRED show how synthetic populations are consumed by simulators.** BESSIE is an open agent-based epidemic simulator that uses a synthetic population with demographic attributes, households, activities, and location visits. Recent FRED-related papers also use US census-derived synthetic populations as simulation baselines. These are not population-synthesis libraries, but they clarify downstream expectations: stable agent IDs, household IDs, location/activity tables, schedules or visit layers, and reproducible scenario comparisons.
 
-5. **Starsim and Vivarium are relevant as simulation frameworks, not input-data builders.** Starsim is an actively maintained Python/R agent-based disease modeling framework with dynamic transmission networks, calibration support, and population/network abstractions. Vivarium is a Python microsimulation framework that has moved into a renamed suite. These frameworks reinforce the value of clean population-table boundaries and calibration hooks, but they do not replace the need for a Canadian census-specific population builder.
+1. **Starsim and Vivarium are relevant as simulation frameworks, not input-data builders.** Starsim is an actively maintained Python/R agent-based disease modeling framework with dynamic transmission networks, calibration support, and population/network abstractions. Vivarium is a Python microsimulation framework that has moved into a renamed suite. These frameworks reinforce the value of clean population-table boundaries and calibration hooks, but they do not replace the need for a Canadian census-specific population builder.
 
-6. **pseudopeople is relevant for synthetic records and entity-resolution testing.** `pseudopeople` is a Python package for generating realistic simulated data about a fictional US population for record-linkage and data-science testing. It is not a geographic synthetic ecosystem builder, but it is a useful reminder that synthetic population outputs may be valuable beyond simulation: record linkage, privacy-preserving software tests, QA fixtures, and scalable algorithm testing.
+1. **pseudopeople is relevant for synthetic records and entity-resolution testing.** `pseudopeople` is a Python package for generating realistic simulated data about a fictional US population for record-linkage and data-science testing. It is not a geographic synthetic ecosystem builder, but it is a useful reminder that synthetic population outputs may be valuable beyond simulation: record linkage, privacy-preserving software tests, QA fixtures, and scalable algorithm testing.
 
 Design implications for SynthPopCan:
 
@@ -657,12 +657,12 @@ Inputs:
 Algorithm:
 
 1. Normalize StatCan table to `ControlTable`.
-2. Validate that selected controls share compatible universes.
-3. Build seed/prior table from seed microdata or uniform/smoothed prior.
-4. Run dense IPF for small low-dimensional problems; run sparse/list IPF for high-dimensional microdata.
-5. Integerize fitted weights.
-6. Sample or replicate records.
-7. Validate all controlled margins.
+1. Validate that selected controls share compatible universes.
+1. Build seed/prior table from seed microdata or uniform/smoothed prior.
+1. Run dense IPF for small low-dimensional problems; run sparse/list IPF for high-dimensional microdata.
+1. Integerize fitted weights.
+1. Sample or replicate records.
+1. Validate all controlled margins.
 
 Hard parts:
 
@@ -688,14 +688,14 @@ Inputs:
 Proposed model:
 
 1. Normalize PUMF files and recode variables into analysis categories.
-2. Train household-level sequential tree models from hierarchical PUMF:
+1. Train household-level sequential tree models from hierarchical PUMF:
    - household size,
    - dwelling type,
    - tenure,
    - household income,
    - family/economic-family structure,
    - other selected household variables.
-3. Train person-level sequential tree models conditional on household variables and previously generated person variables:
+1. Train person-level sequential tree models conditional on household variables and previously generated person variables:
    - age group,
    - sex,
    - marital/family status,
@@ -703,10 +703,10 @@ Proposed model:
    - labour force,
    - income,
    - language/immigration variables where supported.
-4. For each target geography, generate candidate households/persons.
-5. Calibrate candidate weights or sample candidates so controlled household and person margins match Census Profile controls.
-6. Realize integer households and linked persons.
-7. Validate household-person consistency and controlled margins.
+1. For each target geography, generate candidate households/persons.
+1. Calibrate candidate weights or sample candidates so controlled household and person margins match Census Profile controls.
+1. Realize integer households and linked persons.
+1. Validate household-person consistency and controlled margins.
 
 Why tree models:
 

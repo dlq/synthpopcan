@@ -10,6 +10,8 @@ It gives you a few functions for common work:
 - fit seed rows to control totals with IPF;
 - save weighted or expanded IPF output;
 - generate linked household/person rows from a prepared model package.
+- calibrate generated linked household/person candidates to small-area
+  household controls.
 
 It does not expose training, auditing, packaging, source inspection, or release
 workflows at the top level. Those remain available in the command line and in
@@ -23,6 +25,12 @@ The beginner API mirrors the two main web app paths:
    IPF weights, then write a weighted or expanded population artifact.
 1. **Generate from existing model:** read a reviewed model package, generate
    linked household/person rows, then write the generated CSV files.
+
+It also exposes one follow-on workflow:
+
+3. **Small-area linked synthesis:** take generated linked household/person
+   candidate CSVs, calibrate household rows to small-area controls, and write
+   household/person CSVs with an assigned geography such as census tract or ADA.
 
 Use the web app when you want guided local controls, previews, and downloads.
 Use the beginner API when you want the same work inside a notebook, script, or
@@ -218,6 +226,32 @@ spc.write_population(population, "synthetic-linked-population")
 That directory will contain `households.csv` and `persons.csv`. Keep the model
 package, generated files, notebook, and validation notes together so another
 reader can understand both the result and the choices that produced it.
+
+## Assign Generated Rows To Small Areas
+
+Small-area synthesis starts after a candidate linked population exists. The
+controls must include one geography dimension, such as `ct` for census tract or
+`ada` for aggregate dissemination area, plus household dimensions already
+present in the candidate household CSV.
+
+```python
+summary = spc.calibrate_small_area_linked(
+    households="candidate-households.csv",
+    persons="candidate-persons.csv",
+    controls="ct-tenure-controls.csv",
+    geography_dimension="ct",
+    geography_column="ct",
+    households_out="synthetic-households.csv",
+    persons_out="synthetic-persons.csv",
+    report_out="small-area-report.json",
+)
+
+summary["assigned_households"], summary["assigned_persons"]
+```
+
+The current small-area workflow calibrates household-level controls. Person rows
+inherit the assigned household geography, so validate linked output and document
+which person-level totals were not fitted directly.
 
 ## Reproducible Generation
 

@@ -8,6 +8,7 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
 from urllib.request import Request, urlopen
+from zipfile import BadZipFile, ZipFile
 
 _WDS_BASE_URL = "https://www150.statcan.gc.ca/t1/wds/rest"
 _CENSUS_PROFILE_2016_BASE_URL = (
@@ -94,13 +95,13 @@ _CENSUS_PROFILE_2016_DOWNLOADS: dict[str, CensusProfileDownload] = {
         "pt", "Canada, provinces and territories", "CSV", "059"
     ),
     "cma-ca": CensusProfileDownload(
-        "cma-ca", "Census metropolitan areas and census agglomerations", "CSV", "001"
+        "cma-ca", "Census metropolitan areas and census agglomerations", "CSV", "041"
     ),
     "cma-ca-csd": CensusProfileDownload(
         "cma-ca-csd",
         "Census metropolitan areas, census agglomerations and census subdivisions",
         "CSV",
-        "006",
+        "042",
     ),
     "cd": CensusProfileDownload("cd", "Census divisions", "CSV", "018"),
     "csd-all": CensusProfileDownload(
@@ -114,23 +115,23 @@ _CENSUS_PROFILE_2016_DOWNLOADS: dict[str, CensusProfileDownload] = {
         "Canada, provinces, territories, census divisions, census subdivisions "
         "and dissemination areas",
         "CSV",
-        "017",
+        "044",
     ),
     "ct": CensusProfileDownload(
         "ct",
         "Census metropolitan areas, tracted census agglomerations and census tracts",
         "CSV",
-        "020",
+        "043",
     ),
-    "er": CensusProfileDownload("er", "Economic regions", "CSV", "022"),
-    "popctr": CensusProfileDownload("popctr", "Population centres", "CSV", "023"),
+    "er": CensusProfileDownload("er", "Economic regions", "CSV", "049"),
+    "popctr": CensusProfileDownload("popctr", "Population centres", "CSV", "048"),
     "fed": CensusProfileDownload(
-        "fed", "Federal electoral districts, 2013 Representation Order", "CSV", "024"
+        "fed", "Federal electoral districts, 2013 Representation Order", "CSV", "045"
     ),
-    "dpl": CensusProfileDownload("dpl", "Designated places", "CSV", "025"),
-    "fsa": CensusProfileDownload("fsa", "Forward sortation areas", "CSV", "026"),
-    "ada": CensusProfileDownload("ada", "Aggregate dissemination areas", "CSV", "027"),
-    "hr": CensusProfileDownload("hr", "Health regions", "CSV", "029"),
+    "dpl": CensusProfileDownload("dpl", "Designated places", "CSV", "047"),
+    "fsa": CensusProfileDownload("fsa", "Forward sortation areas", "CSV", "046"),
+    "ada": CensusProfileDownload("ada", "Aggregate dissemination areas", "CSV", "050"),
+    "hr": CensusProfileDownload("hr", "Health regions", "CSV", "058"),
 }
 
 
@@ -466,7 +467,10 @@ def fetch_census_profile_2016(geo_level: str, out_dir: Path) -> Path:
 
     out_dir.mkdir(parents=True, exist_ok=True)
     destination = out_dir / entry.filename
-    download_url(entry.url, destination)
+    download_path = destination.with_suffix(destination.suffix + ".download")
+    download_url(entry.url, download_path)
+    extract_census_profile_csv(download_path, destination)
+    download_path.unlink(missing_ok=True)
     write_manifest(
         out_dir / f"2016-census-profile-{entry.geo_level}.json",
         {
@@ -477,6 +481,23 @@ def fetch_census_profile_2016(geo_level: str, out_dir: Path) -> Path:
         },
     )
     return destination
+
+
+def extract_census_profile_csv(download_path: Path, destination: Path) -> None:
+    """Extract a Census Profile CSV when StatCan returns a ZIP payload."""
+
+    try:
+        with ZipFile(download_path) as archive:
+            csv_members = [
+                name
+                for name in archive.namelist()
+                if name.endswith("_English_CSV_data.csv")
+            ]
+            if not csv_members:
+                raise ValueError("Census Profile ZIP did not contain a data CSV")
+            destination.write_bytes(archive.read(csv_members[0]))
+    except BadZipFile:
+        download_path.replace(destination)
 
 
 def fetch_json(url: str) -> Any:

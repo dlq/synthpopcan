@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+from zipfile import ZipFile
 
 import pytest
 from click.exceptions import ClickException
@@ -110,10 +111,42 @@ def test_cli_fetches_2016_census_profile_by_registry_key(
     )
 
     entry = _CENSUS_PROFILE_2016_DOWNLOADS["pt"]
-    assert calls == [(entry.url, tmp_path / entry.filename)]
+    assert calls == [(entry.url, tmp_path / "2016-census-profile-pt.csv.download")]
+    assert (tmp_path / entry.filename).read_bytes() == b"csv bytes"
     manifest = json.loads((tmp_path / "2016-census-profile-pt.json").read_text())
     assert manifest["geo_level"] == "pt"
     assert manifest["source_url"] == entry.url
+
+
+def test_fetch_2016_census_profile_extracts_zip_payload(
+    tmp_path: Path, monkeypatch
+) -> None:
+    def fake_download(_url: str, destination: Path) -> None:
+        with ZipFile(destination, "w") as archive:
+            archive.writestr("README_meta.txt", "metadata")
+            archive.writestr("98-401-X2016027_English_CSV_data.csv", "a,b\n1,2\n")
+
+    monkeypatch.setattr("synthpopcan.statcan.download_url", fake_download)
+
+    assert (
+        main(
+            [
+                "statcan",
+                "census-profile",
+                "fetch",
+                "--year",
+                "2016",
+                "--geo-level",
+                "ada",
+                "--out-dir",
+                str(tmp_path),
+            ]
+        )
+        == 0
+    )
+
+    assert (tmp_path / "2016-census-profile-ada.csv").read_text() == "a,b\n1,2\n"
+    assert not (tmp_path / "2016-census-profile-ada.csv.download").exists()
 
 
 def test_cli_fetch_census_profile_rejects_unknown_geo_level(tmp_path: Path) -> None:

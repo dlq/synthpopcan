@@ -24,6 +24,14 @@ The two beginner generation paths are:
    package, generate linked household and person rows, preview output, and
    validate household/person linkage.
 
+There is also a first-pass follow-on path for small-area linked synthesis:
+
+3. **Assign linked output to small areas:** generate linked household/person
+   candidates from a prepared package, calibrate household rows to small-area
+   Census Profile controls, and write linked household/person CSVs with an
+   assigned geography such as census tract (`ct`) or aggregate dissemination
+   area (`ada`).
+
 ## Completed StatCan/IPF Slice
 
 The StatCan/IPF usability slice is mostly complete for a first pass. The
@@ -136,6 +144,41 @@ The first pass of model packaging and distribution is in place:
 The workflow separates private working models from publishable candidates. This
 is deliberate: a model trained from restricted microdata is not automatically
 safe to distribute just because it is a model.
+
+## Small-Area Linked Synthesis Status
+
+The first household-level small-area calibration workflow is now implemented for
+CLI and beginner API use. It consumes generated linked household/person
+candidate CSVs, fits candidate households to controls split by a target
+geography, writes assigned household/person CSVs, and preserves
+household/person links.
+
+Current command shape:
+
+```bash
+synthpopcan small-area calibrate-linked \
+  --households candidate-households.csv \
+  --persons candidate-persons.csv \
+  --controls ct-tenure-controls.csv \
+  --geography-dimension ct \
+  --geography-column ct \
+  --households-out synthetic-households.csv \
+  --persons-out synthetic-persons.csv \
+  --report small-area-report.json
+```
+
+Local real-data smoke runs completed under ignored `data/private/small-area/`:
+
+- Montreal CMA 2016 all-fields package, census tract tenure controls scaled to
+  1,830,000 households: generated 1,830,000 household rows and 4,170,389 person
+  rows across 951 CTs in about 38 seconds. `validate linked-output` passed.
+- Quebec 2016 all-fields package, ADA tenure controls scaled to 3,750,000
+  households: generated 3,750,000 household rows and 8,330,828 person rows
+  across 1,115 ADAs in about 62 seconds. `validate linked-output` passed.
+
+These runs fit household tenure controls only. Person rows inherit the assigned
+household geography, and person counts remain model-derived rather than forced
+to official small-area person totals.
 
 ## 2016 Linked-Model Experiment Notes
 

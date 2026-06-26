@@ -33,6 +33,7 @@ from synthpopcan.cli_output import (
     write_output,
     write_wds_search_results,
 )
+from synthpopcan.cli_small_area import small_area
 from synthpopcan.cli_tree import tree
 from synthpopcan.console import (
     print_checks_table,
@@ -100,6 +101,7 @@ def cli() -> None:
 cli.add_command(microdata)
 cli.add_command(ipf)
 cli.add_command(tree)
+cli.add_command(small_area)
 
 
 @cli.group()

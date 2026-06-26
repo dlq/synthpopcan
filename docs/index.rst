@@ -29,6 +29,12 @@ Most new users should start with one of two generation workflows:
    :doc:`web app <web-app>` for a guided local run, or use
    :doc:`Tree Models <tree>` when you need command-line details.
 
+**Assign linked output to small areas**
+   Use this after generating candidate household/person rows when you also have
+   small-area Census Profile controls. Start with
+   :doc:`Small-Area Linked Synthesis <small-area>` for the current
+   household-first workflow.
+
 If you want to work in a notebook or teaching script, start with
 :doc:`Getting Started With the Beginner API <library-getting-started>`. That
 page uses ``import synthpopcan as spc`` and keeps advanced training, auditing,
@@ -65,6 +71,7 @@ beginner generation workflows.
    ipf
    controls
    statcan
+   small-area
 
 .. toctree::
    :maxdepth: 2

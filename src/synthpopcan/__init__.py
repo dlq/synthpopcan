@@ -7,6 +7,7 @@ notebooks and short scripts. Import from modules such as ``synthpopcan.ipf`` or
 
 from synthpopcan.api import (
     LinkedPopulation,
+    calibrate_small_area_linked,
     expand_population,
     fit_ipf,
     generate_from_model,
@@ -20,6 +21,7 @@ from synthpopcan.api import (
 __all__ = [
     "LinkedPopulation",
     "__version__",
+    "calibrate_small_area_linked",
     "expand_population",
     "fit_ipf",
     "generate_from_model",

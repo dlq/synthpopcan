@@ -266,6 +266,76 @@ def test_top_level_api_generates_from_cart_model_package(tmp_path: Path) -> None
     assert {row["geo"] for row in population.households} == {"QC"}
 
 
+def test_top_level_api_calibrates_linked_small_area_csvs(tmp_path: Path) -> None:
+    households_path = tmp_path / "households.csv"
+    persons_path = tmp_path / "persons.csv"
+    controls_path = tmp_path / "controls.csv"
+    households_out = tmp_path / "small-area-households.csv"
+    persons_out = tmp_path / "small-area-persons.csv"
+    report_out = tmp_path / "small-area-report.json"
+    write_csv(
+        households_path,
+        ["synthetic_household_id", "TENUR"],
+        [
+            {"synthetic_household_id": "h1", "TENUR": "1"},
+            {"synthetic_household_id": "h2", "TENUR": "2"},
+        ],
+    )
+    write_csv(
+        persons_path,
+        ["synthetic_person_id", "synthetic_household_id", "age_group"],
+        [
+            {
+                "synthetic_person_id": "p1",
+                "synthetic_household_id": "h1",
+                "age_group": "adult",
+            },
+            {
+                "synthetic_person_id": "p2",
+                "synthetic_household_id": "h2",
+                "age_group": "adult",
+            },
+        ],
+    )
+    write_csv(
+        controls_path,
+        ["margin", "dimensions", "ct", "TENUR", "count"],
+        [
+            {
+                "margin": "ct_tenure",
+                "dimensions": "ct,TENUR",
+                "ct": "4620001",
+                "TENUR": "1",
+                "count": "2",
+            },
+            {
+                "margin": "ct_tenure",
+                "dimensions": "ct,TENUR",
+                "ct": "4620001",
+                "TENUR": "2",
+                "count": "1",
+            },
+        ],
+    )
+
+    summary = spc.calibrate_small_area_linked(
+        households=households_path,
+        persons=persons_path,
+        controls=controls_path,
+        geography_dimension="ct",
+        geography_column="ct",
+        households_out=households_out,
+        persons_out=persons_out,
+        report_out=report_out,
+    )
+
+    assert summary["assigned_households"] == 3
+    assert summary["assigned_persons"] == 3
+    assert {row["ct"] for row in read_csv(households_out)} == {"4620001"}
+    assert {row["ct"] for row in read_csv(persons_out)} == {"4620001"}
+    assert report_out.is_file()
+
+
 def write_csv(path: Path, fieldnames: list[str], rows: list[dict[str, str]]) -> None:
     with path.open("w", newline="") as handle:
         writer = csv.DictWriter(handle, fieldnames=fieldnames)
