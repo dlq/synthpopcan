@@ -94,7 +94,7 @@ synthpopcan small-area calibrate-linked \
 
 The controls CSV should use the existing normalized long format. Each target cell includes a geography dimension:
 
-```csv
+```text
 margin,dimensions,ada,household_size,TENUR,count
 ada household size by tenure,"ada,household_size,TENUR",2400101,1,owner,120
 ada household size by tenure,"ada,household_size,TENUR",2400101,1,renter,180
@@ -728,7 +728,7 @@ Implement helpers using `csv.DictReader` and `csv.DictWriter`. The report must i
 
 The weights CSV must include:
 
-```csv
+```text
 target_geography,source_candidate_household_id,weight,integer_weight
 4620001.00,h1,1.0,1
 4620001.00,h2,1.0,1
