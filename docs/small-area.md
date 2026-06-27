@@ -255,6 +255,55 @@ population totals in this first pass. For example, the Quebec run creates
 3,750,000 households and 8,330,828 people because persons are generated from the
 household/person package and then copied into calibrated households.
 
+## Statistical Quality
+
+The outputs are spatially coherent synthetic populations suitable for aggregate
+analysis and microsimulation inputs. Understanding what the calibration does and
+does not guarantee is important before using them for research.
+
+**What is guaranteed.** The two calibrated margins — household size and tenure
+(owner/renter) — are reproduced exactly at every target geography by
+construction. IPF converges to near-zero error for both margins at every CT or
+ADA. Every geography in the output has the right household-size distribution and
+the right owner/renter split.
+
+**What is not calibrated.** All other attributes — person demographics (age,
+sex, income, immigrant status, visible minority status), dwelling type, shelter
+costs — come from the provincial joint distribution as learned by the tree
+model. The model does not know that large households in one CT skew younger
+than those in another. It assigns household types weighted to match each
+geography's hhsize/tenure profile, but the within-geography conditional
+distributions of all other variables are provincial averages, not
+geography-specific.
+
+**Practical guidance.**
+
+These outputs are appropriate for:
+
+- agent-based models or microsimulations that need geographically anchored
+  synthetic microdata as input;
+- housing policy or service-demand scenarios where household size and tenure
+  are the primary drivers;
+- estimating how many households of a given type live in each geography when
+  no better data is available.
+
+Use caution for:
+
+- CT- or ADA-level analysis of non-calibrated variables (e.g. income
+  distribution or visible-minority composition by tract);
+- drawing conclusions about specific geographies from individual synthetic
+  records;
+- any claim requiring person-level geographic accuracy.
+
+**Comparison to alternatives.** These populations are better than drawing a
+provincial random sample and assigning geographies at random, because the
+geographic distribution reflects real Census structure. They are not as
+accurate as a synthetic population calibrated on many margins (age × sex ×
+geography, income × geography, etc.), which would require either restricted
+master-file access or substantially more Census Profile variables as controls.
+Most published synthetic population work operates at roughly this level of
+calibration.
+
 ## Current Limits
 
 The current implementation is useful, but still a prototype for substantive
