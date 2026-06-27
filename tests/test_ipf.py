@@ -136,6 +136,20 @@ def test_integerize_and_aggregate_ipf_helpers_cover_edge_cases(
     margins = [IPFMargin(("age",), {("young",): 1.0, ("old",): 2.0})]
 
     assert integerize_weights(weights) == [1, 2]
+
+    # Regression: fractional weights (pool >> target) must preserve group proportions.
+    # Largest-remainder failed here: with 4 owners (weight ~0.024 each) and 3 renters
+    # (weight ~0.034 each), all draws went to renters because their per-candidate
+    # weight was uniformly higher. Systematic sampling correctly distributes them.
+    small_pool = [{"TENUR": "1"}] * 28 + [{"TENUR": "2"}] * 22  # 50 candidates
+    frac_weights = [6.78 / 28] * 28 + [7.42 / 22] * 22  # targets: ~7 owners, ~7 renters
+    frac_counts = integerize_weights(frac_weights)
+    owner_total = sum(c for h, c in zip(small_pool, frac_counts) if h["TENUR"] == "1")
+    renter_total = sum(c for h, c in zip(small_pool, frac_counts) if h["TENUR"] == "2")
+    assert owner_total > 0, "systematic sampling must select at least some owner candidates"
+    assert renter_total > 0, "systematic sampling must select at least some renter candidates"
+    assert owner_total + renter_total == round(sum(frac_weights))
+
     with pytest.raises(ValueError, match="non-negative"):
         integerize_weights([1.0, -0.1])
     with monkeypatch.context() as patched:

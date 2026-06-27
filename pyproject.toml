@@ -25,6 +25,10 @@ classifiers = [
 ]
 dependencies = [
     "click>=8.4.1",
+    "folium>=0.20.0",
+    "geopandas>=1.1.4",
+    "matplotlib>=3.11.0",
+    "numpy>=1.26",
     "rich>=15.0.0",
     "scikit-learn>=1.9.0",
 ]

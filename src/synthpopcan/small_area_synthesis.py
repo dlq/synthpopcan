@@ -10,6 +10,9 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+import numpy as np
+import pandas as pd
+
 from synthpopcan.controls import (
     ControlCell,
     ControlMargin,
@@ -17,7 +20,7 @@ from synthpopcan.controls import (
     read_control_table,
 )
 from synthpopcan.diagnostics import build_ipf_fit_report
-from synthpopcan.ipf import fit_ipf, integerize_weights
+from synthpopcan.ipf import IPFResult, NumpyIPFIndex, fit_ipf, fit_ipf_numpy, integerize_weights
 
 HouseholdRow = dict[str, str]
 PersonRow = dict[str, str]
@@ -127,18 +130,30 @@ def fit_households_by_geography(
     if not controls_for_geographies:
         raise ValueError("controls contain no target geographies")
 
+    # Pre-build the numpy index once for the whole candidate pool.
+    # All geographies share the same dimension structure; only targets differ.
+    first_margins = next(iter(controls_for_geographies.values())).to_ipf_margins()
+    numpy_index = NumpyIPFIndex.build(households, first_margins)
+
     weights_by_geography: dict[str, list[float]] = {}
     reports: dict[str, dict[str, Any]] = {}
     for geography, geography_controls in controls_for_geographies.items():
-        result = fit_ipf(
-            households,
-            geography_controls.to_ipf_margins(),
-            weight_field=weight_field,
+        ipf_margins = geography_controls.to_ipf_margins()
+        # Use fit() to keep weights as numpy array until compute_totals is done,
+        # avoiding a tolist() → asarray() round-trip in the report step.
+        weights_np, converged, iterations, max_abs_error = numpy_index.fit(
+            ipf_margins,
             max_iterations=max_iterations,
             tolerance=tolerance,
         )
-        weights_by_geography[geography] = result.weights
-        reports[geography] = build_ipf_fit_report(geography_controls, result)
+        weights_list = weights_np.tolist()
+        weights_by_geography[geography] = weights_list
+        result = IPFResult(households, weights_list, converged, iterations, max_abs_error)
+        # Compute weighted totals with numpy (replaces 50k-record Python loop per ADA)
+        precomputed = numpy_index.compute_totals(weights_np)
+        reports[geography] = build_ipf_fit_report(
+            geography_controls, result, precomputed_totals=precomputed
+        )
 
     return GeographyHouseholdFit(
         weights_by_geography=weights_by_geography,
@@ -310,98 +325,97 @@ def _write_realized_population_to_csv(
 ) -> dict[str, Any]:
     if not households:
         raise ValueError("at least one candidate household row is required")
-    persons_by_household: dict[str, list[PersonRow]] = defaultdict(list)
-    for person in persons:
-        household_id = person.get(household_id_column, "")
-        if household_id:
-            persons_by_household[household_id].append(person)
 
-    household_fieldnames = _ordered_fieldnames(
-        (
-            *households,
-            {
-                household_id_column: "",
-                geography_column: "",
-                "source_candidate_household_id": "",
-            },
-        )
-    )
-    person_fieldnames = _ordered_fieldnames(
-        (
-            *persons,
-            {
-                person_id_column: "",
-                household_id_column: "",
-                geography_column: "",
-                "source_candidate_person_id": "",
-            },
-        )
-    )
+    # --- Build expand index across all geographies with numpy ---
+    # For each geography: integerize weights → repeat candidate indices
+    idx_parts: list[np.ndarray] = []
+    geo_parts: list[np.ndarray] = []
+    for geography in sorted(weights_by_geography):
+        weights = weights_by_geography[geography]
+        if len(weights) != len(households):
+            raise ValueError(
+                f"weights for geography {geography!r} do not match household rows"
+            )
+        counts = np.array(integerize_weights(weights), dtype=np.int32)
+        nonzero = np.where(counts > 0)[0]
+        repeated = np.repeat(nonzero, counts[nonzero])
+        idx_parts.append(repeated)
+        geo_parts.append(np.full(len(repeated), geography, dtype=object))
+
+    all_idxs = np.concatenate(idx_parts)       # (total_households,)
+    all_geos = np.concatenate(geo_parts)        # (total_households,)
+    n_hh = len(all_idxs)
+
+    # --- Expand households with pandas ---
+    df_hh = pd.DataFrame(households)
+    df_hh_exp = df_hh.iloc[all_idxs].reset_index(drop=True)
+    df_hh_exp["source_candidate_household_id"] = df_hh_exp[household_id_column].values
+    df_hh_exp[geography_column] = all_geos
+    # Sequential IDs: "<geography>-<n>" numbering within each geography is
+    # reproduced by the global counter used in the original implementation.
+    seq = np.arange(1, n_hh + 1, dtype=np.int64)
+    new_hh_ids = [f"{g}-{i}" for g, i in zip(all_geos, seq)]
+    df_hh_exp[household_id_column] = new_hh_ids
+    df_hh_exp["_new_hh_id"] = new_hh_ids
+    df_hh_exp["_cand_idx"] = all_idxs
+
+    # Column order: original columns first, then new ones (mirrors DictWriter behaviour)
+    hh_extra = [c for c in [geography_column, "source_candidate_household_id"]
+                if c not in df_hh.columns]
+    hh_cols = list(df_hh.columns) + hh_extra
+
     households_path.parent.mkdir(parents=True, exist_ok=True)
-    persons_path.parent.mkdir(parents=True, exist_ok=True)
+    df_hh_exp[hh_cols].to_csv(households_path, index=False)
 
-    assigned_households = 0
-    assigned_persons = 0
-    assigned_by_geography: dict[str, int] = defaultdict(int)
-    next_household_number = 1
-    next_person_number = 1
-    with (
-        households_path.open("w", newline="") as household_handle,
-        persons_path.open("w", newline="") as person_handle,
-    ):
-        household_writer = csv.DictWriter(
-            household_handle,
-            fieldnames=household_fieldnames,
+    # --- Expand persons with a vectorized join ---
+    df_p = pd.DataFrame(persons)
+    if persons:
+        # Map each candidate household ID → integer index in df_hh
+        df_hh_idx = df_hh[[household_id_column]].copy()
+        df_hh_idx["_cand_idx"] = np.arange(len(df_hh), dtype=np.int32)
+        df_p_idx = df_p.merge(df_hh_idx, on=household_id_column, how="left")
+
+        # Join persons to every expanded copy of their candidate household
+        df_p_exp = df_p_idx.merge(
+            df_hh_exp[["_cand_idx", "_new_hh_id", geography_column]],
+            on="_cand_idx",
+            how="inner",
         )
-        person_writer = csv.DictWriter(person_handle, fieldnames=person_fieldnames)
-        household_writer.writeheader()
-        person_writer.writeheader()
-        for geography in sorted(weights_by_geography):
-            weights = weights_by_geography[geography]
-            if len(weights) != len(households):
-                raise ValueError(
-                    f"weights for geography {geography!r} do not match household rows"
-                )
-            integer_weights = integerize_weights(weights)
-            for candidate_index, repeats in enumerate(integer_weights):
-                if repeats == 0:
-                    continue
-                source_household = households[candidate_index]
-                source_household_id = source_household[household_id_column]
-                source_persons = persons_by_household.get(source_household_id, [])
-                for _copy_index in range(repeats):
-                    assigned_household_id = f"{geography}-{next_household_number}"
-                    next_household_number += 1
-                    household_writer.writerow(
-                        {
-                            **source_household,
-                            household_id_column: assigned_household_id,
-                            geography_column: geography,
-                            "source_candidate_household_id": source_household_id,
-                        }
-                    )
-                    assigned_households += 1
-                    assigned_by_geography[geography] += 1
-                    for source_person in source_persons:
-                        person_writer.writerow(
-                            {
-                                **source_person,
-                                person_id_column: f"{geography}-{next_person_number}",
-                                household_id_column: assigned_household_id,
-                                geography_column: geography,
-                                "source_candidate_person_id": source_person.get(
-                                    person_id_column,
-                                    "",
-                                ),
-                            }
-                        )
-                        next_person_number += 1
-                        assigned_persons += 1
+        df_p_exp["source_candidate_person_id"] = df_p_exp[person_id_column]
+        df_p_exp[household_id_column] = df_p_exp["_new_hh_id"]
+        # geography_column comes from the right side of the join (suffixed _y if clash)
+        geo_col = (
+            f"{geography_column}_y"
+            if f"{geography_column}_x" in df_p_exp.columns
+            else geography_column
+        )
+        df_p_exp[geography_column] = df_p_exp[geo_col]
+        n_p = len(df_p_exp)
+        seq_p = np.arange(1, n_p + 1, dtype=np.int64)
+        df_p_exp[person_id_column] = [
+            f"{g}-{i}" for g, i in zip(df_p_exp[geography_column], seq_p)
+        ]
+
+        p_extra = [c for c in [geography_column, "source_candidate_person_id"]
+                   if c not in df_p.columns]
+        p_cols = [c for c in list(df_p.columns) + p_extra
+                  if c in df_p_exp.columns]
+        persons_path.parent.mkdir(parents=True, exist_ok=True)
+        df_p_exp[p_cols].to_csv(persons_path, index=False)
+        assigned_persons = n_p
+    else:
+        persons_path.parent.mkdir(parents=True, exist_ok=True)
+        persons_path.write_text("")
+        assigned_persons = 0
+
+    assigned_by_geography = (
+        df_hh_exp[geography_column].value_counts().to_dict()
+    )
 
     return {
-        "assigned_households": assigned_households,
+        "assigned_households": n_hh,
         "assigned_persons": assigned_persons,
-        "geographies": dict(assigned_by_geography),
+        "geographies": assigned_by_geography,
     }
 
 

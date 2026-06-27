@@ -9,8 +9,21 @@ from synthpopcan.ipf import IPFResult, Record, _category_key, weighted_totals
 
 
 def build_ipf_fit_report(
-    control_table: ControlTable, result: IPFResult
+    control_table: ControlTable,
+    result: IPFResult,
+    *,
+    precomputed_totals: dict[tuple[str, ...], dict[tuple[str, ...], float]] | None = None,
 ) -> dict[str, Any]:
+    """Build a fit-quality report for a completed IPF result.
+
+    Parameters
+    ----------
+    precomputed_totals:
+        Optional mapping ``{dimensions: {category_key: total}}`` computed by
+        :meth:`~synthpopcan.ipf.NumpyIPFIndex.compute_totals`.  When present,
+        the Python ``weighted_totals`` loop is skipped for those margins,
+        replacing it with the pre-computed numpy totals.
+    """
     margins: list[dict[str, Any]] = []
     margin_summaries: list[dict[str, Any]] = []
     issues: list[dict[str, Any]] = []
@@ -35,11 +48,14 @@ def build_ipf_fit_report(
             }
         )
     for control_margin in control_table.margins:
-        totals = weighted_totals(
-            result.records,
-            result.weights,
-            control_margin.dimensions,
-        )
+        if precomputed_totals is not None and control_margin.dimensions in precomputed_totals:
+            totals = precomputed_totals[control_margin.dimensions]
+        else:
+            totals = weighted_totals(
+                result.records,
+                result.weights,
+                control_margin.dimensions,
+            )
         cells: list[dict[str, Any]] = []
         target_total = 0.0
         fitted_total = 0.0

@@ -5,6 +5,8 @@ from __future__ import annotations
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 
+import numpy as np
+
 Record = Mapping[str, object]
 CategoryKey = tuple[str, ...]
 
@@ -12,10 +14,12 @@ __all__ = [
     "CategoryKey",
     "IPFMargin",
     "IPFResult",
+    "NumpyIPFIndex",
     "Record",
     "calculate_max_abs_error",
     "expand_records",
     "fit_ipf",
+    "fit_ipf_numpy",
     "integerize_weights",
     "validate_margin_coverage",
     "weighted_totals",
@@ -145,9 +149,17 @@ def expand_records(
 def integerize_weights(weights: Sequence[float]) -> list[int]:
     """Convert non-negative fractional weights to integer replication counts.
 
-    The largest-remainder method preserves the rounded total population size
-    while assigning extra records to the largest fractional remainders. This is
-    deterministic: ties are resolved by the original record order.
+    Uses systematic sampling: the cumulative weight axis is divided into N
+    equal-width intervals and one sample is drawn from each interval starting
+    at the mid-point of the first. This is deterministic and preserves
+    proportional distributions regardless of weight magnitude.
+
+    The largest-remainder method (the prior implementation) degenerates when
+    all weights are less than 1 — every floor is 0 and the N remainder bumps
+    all land on whichever group has the highest per-candidate weight, discarding
+    the margin structure entirely. This arises in small-area synthesis when a
+    large candidate pool (e.g. 50 000 records) is fitted to a small per-CT
+    target (e.g. 1 400 households), giving every candidate a weight of ~0.03.
 
     Raises
     ------
@@ -158,20 +170,23 @@ def integerize_weights(weights: Sequence[float]) -> list[int]:
     if any(weight < 0 for weight in weights):
         raise ValueError("weights must be non-negative")
 
-    floors = [int(weight) for weight in weights]
-    target_total = round(sum(weights))
-    remaining = target_total - sum(floors)
-    if remaining < 0:
+    arr = np.asarray(weights, dtype=np.float64)
+    total = float(arr.sum())
+    n = round(total)
+    if n < 0:
         raise ValueError("integerized total cannot be negative")
+    if n == 0:
+        return [0] * len(weights)
 
-    remainders = sorted(
-        enumerate(weight - int(weight) for weight in weights),
-        key=lambda item: (-item[1], item[0]),
-    )
-    counts = floors[:]
-    for index, _remainder in remainders[:remaining]:
-        counts[index] += 1
-    return counts
+    step = total / n
+    points = (np.arange(n, dtype=np.float64) + 0.5) * step
+    cumulative = arr.cumsum()
+    # searchsorted(cumulative - 1e-10, points, 'right') mirrors the Python
+    # version's `while next_point < cumulative - 1e-10` boundary condition.
+    bucket_ids = np.searchsorted(cumulative - 1e-10, points, side="right")
+    np.clip(bucket_ids, 0, len(weights) - 1, out=bucket_ids)
+    counts = np.bincount(bucket_ids, minlength=len(weights))
+    return counts[: len(weights)].tolist()
 
 
 def fit_ipf(
@@ -245,6 +260,172 @@ def fit_ipf(
             return IPFResult(records, weights, True, iteration, max_abs_error)
 
     return IPFResult(records, weights, False, max_iterations, max_abs_error)
+
+
+@dataclass(frozen=True)
+class _NumpyEncoding:
+    dimensions: tuple[str, ...]
+    cat_ids: np.ndarray
+    key_to_id: dict[CategoryKey, int]
+    n_cats: int
+
+
+class NumpyIPFIndex:
+    """Pre-built category index for vectorized numpy IPF.
+
+    Build once for a fixed candidate pool, then pass to :func:`fit_ipf_numpy`
+    for each target geography.  The records and margin dimensions must be the
+    same across all geography fits — only the target counts change.
+
+    Parameters
+    ----------
+    records:
+        Candidate pool whose columns define the category encodings.
+    margins:
+        Margins whose ``.dimensions`` are encoded.  Only the dimension
+        structure is used here; targets are supplied per geography to
+        :func:`fit_ipf_numpy`.
+    """
+
+    def __init__(
+        self,
+        records: Sequence[Record],
+        encodings: list[_NumpyEncoding],
+    ) -> None:
+        self.records = records
+        self.encodings = encodings
+
+    @classmethod
+    def build(
+        cls,
+        records: Sequence[Record],
+        margins: Sequence[IPFMargin],
+    ) -> "NumpyIPFIndex":
+        """Encode *records* for every margin in *margins*."""
+        encodings: list[_NumpyEncoding] = []
+        for margin in margins:
+            keys = [_category_key(record, margin.dimensions) for record in records]
+            unique = sorted(set(keys))
+            key_to_id = {k: i for i, k in enumerate(unique)}
+            cat_ids = np.array([key_to_id[k] for k in keys], dtype=np.int32)
+            encodings.append(
+                _NumpyEncoding(
+                    dimensions=margin.dimensions,
+                    cat_ids=cat_ids,
+                    key_to_id=key_to_id,
+                    n_cats=len(unique),
+                )
+            )
+        return cls(records, encodings)
+
+    def fit(
+        self,
+        margins: Sequence["IPFMargin"],
+        *,
+        max_iterations: int = 100,
+        tolerance: float = 1e-6,
+    ) -> "tuple[np.ndarray, bool, int, float]":
+        """Run numpy IPF and return raw ``(weights, converged, iterations, max_abs_error)``.
+
+        The returned ``weights`` is a float64 numpy array — no Python list
+        conversion.  Use this inside tight loops when you need the numpy array
+        immediately (e.g. to compute weighted totals via :meth:`compute_totals`)
+        and will convert to a list only once at the end.
+        """
+
+        if len(margins) != len(self.encodings):
+            raise ValueError(
+                f"margins count {len(margins)} does not match index encodings "
+                f"{len(self.encodings)}"
+            )
+
+        t_arrays: list[np.ndarray] = []
+        for enc, margin in zip(self.encodings, margins):
+            t = np.zeros(enc.n_cats, dtype=np.float64)
+            for key, val in margin.targets.items():
+                cid = enc.key_to_id.get(key)
+                if cid is not None:
+                    t[cid] = float(val)
+                elif float(val) > 0:
+                    raise ValueError(
+                        f"margin {margin.dimensions!r} target {key!r} has no seed records"
+                    )
+            t_arrays.append(t)
+
+        weights = np.ones(len(self.records), dtype=np.float64)
+
+        max_abs_error = float("inf")
+        for iteration in range(1, max_iterations + 1):
+            for enc, t in zip(self.encodings, t_arrays):
+                current = np.bincount(enc.cat_ids, weights=weights, minlength=enc.n_cats)
+                safe = np.where(current > 0, current, 1.0)
+                ratio = np.where(current > 0, t / safe, 1.0)
+                weights *= ratio[enc.cat_ids]
+
+            max_abs_error = max(
+                float(
+                    np.max(
+                        np.abs(
+                            np.bincount(enc.cat_ids, weights=weights, minlength=enc.n_cats) - t
+                        )
+                    )
+                )
+                for enc, t in zip(self.encodings, t_arrays)
+            )
+            if max_abs_error <= tolerance:
+                return weights, True, iteration, max_abs_error
+
+        return weights, False, max_iterations, max_abs_error
+
+    def compute_totals(
+        self, weights: np.ndarray
+    ) -> "dict[tuple[str, ...], dict[CategoryKey, float]]":
+        """Return ``{dimensions: {category_key: total}}`` for all encodings.
+
+        Uses numpy ``bincount`` — O(n_records) in C rather than in Python.
+        Pass results to :func:`~synthpopcan.diagnostics.build_ipf_fit_report`
+        via its ``precomputed_totals`` parameter to skip the Python
+        ``weighted_totals`` loop.
+        """
+
+        out: dict[tuple[str, ...], dict[CategoryKey, float]] = {}
+        for enc in self.encodings:
+            current = np.bincount(enc.cat_ids, weights=weights, minlength=enc.n_cats)
+            out[enc.dimensions] = {
+                key: float(current[idx]) for key, idx in enc.key_to_id.items()
+            }
+        return out
+
+
+def fit_ipf_numpy(
+    index: NumpyIPFIndex,
+    margins: Sequence[IPFMargin],
+    *,
+    max_iterations: int = 100,
+    tolerance: float = 1e-6,
+) -> IPFResult:
+    """Vectorized IPF using a pre-built :class:`NumpyIPFIndex`.
+
+    Equivalent to :func:`fit_ipf` but uses numpy ``bincount`` and array
+    multiplication instead of Python loops.  Call :meth:`NumpyIPFIndex.build`
+    once for a candidate pool, then call this function once per geography.
+
+    Parameters
+    ----------
+    index:
+        Pre-built index for the candidate pool.  Must have been built with the
+        same margin dimension structure as *margins*.
+    margins:
+        Per-geography :class:`IPFMargin` targets.  The dimensions of each
+        margin must match the corresponding encoding in *index*.
+    """
+
+    if not margins:
+        raise ValueError("IPF requires at least one margin")
+    weights, converged, iteration, max_abs_error = index.fit(
+        margins, max_iterations=max_iterations, tolerance=tolerance
+    )
+    return IPFResult(index.records, weights.tolist(), converged, iteration, max_abs_error)
 
 
 def _initial_weights(
