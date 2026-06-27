@@ -15,13 +15,20 @@ _CENSUS_PROFILE_2016_BASE_URL = (
     "https://www12.statcan.gc.ca/census-recensement/2016/dp-pd/prof/"
     "details/download-telecharger/comp/GetFile.cfm"
 )
+# StatCan hosts 2016 boundary files under the 2011 geo program path.
+_BOUNDARY_2016_BASE_URL = (
+    "https://www12.statcan.gc.ca/census-recensement/2011/geo/bound-limit/"
+    "files-fichiers/2016/"
+)
 
 __all__ = [
+    "BoundaryDownload",
     "CensusProfileDownload",
     "WDSTableSearchResult",
     "classify_wds_ipf_suitability",
     "extract_wds_dimension_names",
     "extract_wds_dimension_previews",
+    "fetch_boundary_zip",
     "fetch_census_profile_2016",
     "fetch_wds_metadata",
     "fetch_wds_table",
@@ -62,6 +69,133 @@ class CensusProfileDownload:
         """Return the local filename used for this download."""
 
         return f"2016-census-profile-{self.geo_level}.csv"
+
+
+@dataclass(frozen=True)
+class BoundaryDownload:
+    """Metadata for one StatCan census boundary file download.
+
+    Covers the 2016 census boundary files (NAD83 / Statistics Canada Lambert
+    projection). The 2016 files are hosted under StatCan's 2011 geography
+    program path — this is intentional on StatCan's end, not a typo.
+    """
+
+    geo_level: str
+    description: str
+    zip_name: str
+    shp_name: str
+    id_field: str
+
+    @property
+    def url(self) -> str:
+        """Return the Statistics Canada download URL for this boundary file."""
+        return f"{_BOUNDARY_2016_BASE_URL}{self.zip_name}"
+
+
+_BOUNDARY_2016_DOWNLOADS: dict[str, BoundaryDownload] = {
+    "ct": BoundaryDownload(
+        geo_level="ct",
+        description="Census tracts (2016)",
+        zip_name="lct_000b16a_e.zip",
+        shp_name="lct_000b16a_e.shp",
+        id_field="CTUID",
+    ),
+    "ada": BoundaryDownload(
+        geo_level="ada",
+        description="Aggregate dissemination areas (2016)",
+        zip_name="lada000b16a_e.zip",
+        shp_name="lada000b16a_e.shp",
+        id_field="ADAUID",
+    ),
+    "da": BoundaryDownload(
+        geo_level="da",
+        description="Dissemination areas (2016)",
+        zip_name="lda_000b16a_e.zip",
+        shp_name="lda_000b16a_e.shp",
+        id_field="DAUID",
+    ),
+    "csd": BoundaryDownload(
+        geo_level="csd",
+        description="Census subdivisions (2016)",
+        zip_name="lcsd000b16a_e.zip",
+        shp_name="lcsd000b16a_e.shp",
+        id_field="CSDUID",
+    ),
+    "cd": BoundaryDownload(
+        geo_level="cd",
+        description="Census divisions (2016)",
+        zip_name="lcd_000b16a_e.zip",
+        shp_name="lcd_000b16a_e.shp",
+        id_field="CDUID",
+    ),
+    "pr": BoundaryDownload(
+        geo_level="pr",
+        description="Provinces and territories (2016)",
+        zip_name="lpr_000b16a_e.zip",
+        shp_name="lpr_000b16a_e.shp",
+        id_field="PRUID",
+    ),
+}
+
+
+def fetch_boundary_zip(
+    geo_level: str,
+    out_dir: Path,
+    *,
+    url: str | None = None,
+) -> Path:
+    """Download and extract a StatCan 2016 census boundary shapefile.
+
+    Downloads the boundary ZIP for *geo_level* (one of ``ct``, ``ada``,
+    ``da``, ``csd``, ``cd``, ``pr``) to *out_dir*, extracts all shapefile
+    components (.shp, .dbf, .shx, .prj), and returns the path to the .shp.
+
+    Pass *url* to override the default StatCan URL (useful for mirrors,
+    cached copies, or future census vintages).
+    """
+    try:
+        entry = _BOUNDARY_2016_DOWNLOADS[geo_level.lower()]
+    except KeyError as exc:
+        known = ", ".join(sorted(_BOUNDARY_2016_DOWNLOADS))
+        raise ValueError(
+            f"Unknown geography level {geo_level!r} for boundary download. "
+            f"Supported: {known}."
+        ) from exc
+
+    out_dir.mkdir(parents=True, exist_ok=True)
+    download_url_ = url or entry.url
+    zip_path = out_dir / entry.zip_name
+    download_url(download_url_, zip_path)
+
+    with ZipFile(zip_path) as archive:
+        shp_exts = {".shp", ".dbf", ".shx", ".prj", ".cpg"}
+        for member in archive.namelist():
+            if Path(member).suffix.lower() in shp_exts:
+                archive.extract(member, out_dir)
+
+    zip_path.unlink(missing_ok=True)
+
+    shp_path = out_dir / entry.shp_name
+    if not shp_path.exists():
+        # Some ZIPs nest the files inside a subdirectory — find the .shp
+        candidates = list(out_dir.rglob(entry.shp_name))
+        if not candidates:
+            raise FileNotFoundError(
+                f"Could not find {entry.shp_name} after extracting {zip_path.name}"
+            )
+        shp_path = candidates[0]
+
+    write_manifest(
+        out_dir / f"2016-boundary-{entry.geo_level}.json",
+        {
+            "source": "Statistics Canada 2016 census boundary files",
+            "geo_level": entry.geo_level,
+            "description": entry.description,
+            "source_url": download_url_,
+            "shp_path": str(shp_path),
+        },
+    )
+    return shp_path
 
 
 @dataclass(frozen=True)

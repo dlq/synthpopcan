@@ -68,11 +68,12 @@ def _lcc_to_wgs84(x: np.ndarray, y: np.ndarray) -> tuple[np.ndarray, np.ndarray]
 def _read_shapefile_geojson(
     shp_path: Path,
     id_field: str,
-    keep_ids: set[str],
+    keep_ids: set[str] | None,
     coord_precision: int = 5,
 ) -> tuple[dict[str, Any], tuple[float, float, float, float]]:
     """Read a StatCan LCC shapefile and return a WGS-84 GeoJSON FeatureCollection.
 
+    When *keep_ids* is ``None``, all features are included.
     Returns (geojson_dict, (west, south, east, north)) bounding box.
     """
     import shapefile  # pyshp
@@ -86,7 +87,7 @@ def _read_shapefile_geojson(
 
         for sr in sf.iterShapeRecords():
             geo_id = str(sr.record[id_idx]).strip()
-            if geo_id not in keep_ids:
+            if keep_ids is not None and geo_id not in keep_ids:
                 continue
 
             shape = sr.shape
@@ -122,6 +123,74 @@ def _read_shapefile_geojson(
                     "geometry": {"type": geom_type, "coordinates": coords},
                 }
             )
+
+    return (
+        {"type": "FeatureCollection", "features": features},
+        (bbox[0], bbox[1], bbox[2], bbox[3]),
+    )
+
+
+def prepare_boundaries_geojson(
+    shp_path: Path,
+    id_field: str,
+    out_path: Path,
+    coord_precision: int = 5,
+) -> Path:
+    """Convert a StatCan LCC shapefile to a WGS-84 GeoJSON file.
+
+    Reads *all* features from *shp_path*, reprojects coordinates from
+    NAD83 / Statistics Canada Lambert to WGS-84, and writes a
+    FeatureCollection to *out_path*.  Each feature carries a ``geo_id``
+    property taken from *id_field*.
+
+    The resulting file can be passed directly to ``render_synthesis_map``
+    as the *boundaries_path* argument (suffix ``.geojson``), avoiding the
+    need to ship the full shapefile alongside the synthesis outputs.
+    """
+    geojson, _ = _read_shapefile_geojson(
+        shp_path,
+        id_field=id_field,
+        keep_ids=None,  # type: ignore[arg-type]  # None → keep all
+        coord_precision=coord_precision,
+    )
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text(json.dumps(geojson, separators=(",", ":")))
+    return out_path
+
+
+def _read_geojson_file(
+    geojson_path: Path,
+    keep_ids: set[str],
+) -> tuple[dict[str, Any], tuple[float, float, float, float]]:
+    """Read a pre-converted WGS-84 GeoJSON file and filter to *keep_ids*.
+
+    Returns (geojson_dict, (west, south, east, north)) bounding box.
+    """
+    raw = json.loads(geojson_path.read_text())
+    features = [
+        f
+        for f in raw.get("features", [])
+        if str(f.get("properties", {}).get("geo_id", "")).strip() in keep_ids
+    ]
+
+    bbox = [math.inf, math.inf, -math.inf, -math.inf]
+    for feature in features:
+        geom = feature.get("geometry") or {}
+        coords_iter: list[Any] = []
+        if geom.get("type") == "Polygon":
+            coords_iter = [pt for ring in geom["coordinates"] for pt in ring]
+        elif geom.get("type") == "MultiPolygon":
+            coords_iter = [
+                pt for poly in geom["coordinates"] for ring in poly for pt in ring
+            ]
+        for lon, lat in coords_iter:
+            bbox[0] = min(bbox[0], lon)
+            bbox[1] = min(bbox[1], lat)
+            bbox[2] = max(bbox[2], lon)
+            bbox[3] = max(bbox[3], lat)
+
+    if bbox[0] == math.inf:
+        bbox = [-180.0, -90.0, 180.0, 90.0]
 
     return (
         {"type": "FeatureCollection", "features": features},
@@ -581,12 +650,15 @@ def render_synthesis_map(
     keep_ids = set(stats)
 
     # 2. Read + reproject + simplify boundaries
-    geojson, bbox = _read_shapefile_geojson(
-        boundaries_path,
-        id_field=geography_id_field,
-        keep_ids=keep_ids,
-        coord_precision=coord_precision,
-    )
+    if boundaries_path.suffix.lower() == ".geojson":
+        geojson, bbox = _read_geojson_file(boundaries_path, keep_ids)
+    else:
+        geojson, bbox = _read_shapefile_geojson(
+            boundaries_path,
+            id_field=geography_id_field,
+            keep_ids=keep_ids,
+            coord_precision=coord_precision,
+        )
 
     # 3. Join stats into feature properties
     for feature in geojson["features"]:

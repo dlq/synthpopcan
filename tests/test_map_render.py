@@ -14,7 +14,9 @@ from synthpopcan.map_render import (
     _lcc_to_wgs84,
     _median,
     _pct_of,
+    _read_geojson_file,
     _simplify_ring,
+    prepare_boundaries_geojson,
     render_synthesis_map,
 )
 
@@ -1260,5 +1262,305 @@ def test_cli_map_command_value_error(tmp_path: Path) -> None:
                     "ct",
                     "--out",
                     str(out),
+                ]
+            )
+
+
+# ---------------------------------------------------------------------------
+# _resolve_boundaries — GeoJSON passthrough
+# ---------------------------------------------------------------------------
+
+
+def test_resolve_boundaries_passes_through_geojson(tmp_path: Path) -> None:
+    from synthpopcan.cli_geo import _resolve_boundaries
+
+    gj = tmp_path / "boundaries.geojson"
+    gj.write_text("{}")
+
+    result = _resolve_boundaries(gj, "ct")
+
+    assert result == gj
+
+
+# ---------------------------------------------------------------------------
+# _read_geojson_file
+# ---------------------------------------------------------------------------
+
+
+def _write_fake_geojson(path: Path, geo_ids: list[str]) -> None:
+    """Write a minimal WGS-84 GeoJSON FeatureCollection."""
+    import json as _json
+
+    features = [
+        {
+            "type": "Feature",
+            "properties": {"geo_id": gid},
+            "geometry": {
+                "type": "Polygon",
+                "coordinates": [
+                    [
+                        [-73.6, 45.5],
+                        [-73.5, 45.5],
+                        [-73.5, 45.6],
+                        [-73.6, 45.6],
+                        [-73.6, 45.5],
+                    ]
+                ],
+            },
+        }
+        for gid in geo_ids
+    ]
+    path.write_text(_json.dumps({"type": "FeatureCollection", "features": features}))
+
+
+def test_read_geojson_file_filters_to_keep_ids(tmp_path: Path) -> None:
+    gj = tmp_path / "b.geojson"
+    _write_fake_geojson(gj, ["A1", "A2", "A3"])
+
+    result, bbox = _read_geojson_file(gj, {"A1", "A3"})
+
+    ids = [f["properties"]["geo_id"] for f in result["features"]]
+    assert sorted(ids) == ["A1", "A3"]
+    assert bbox[0] < bbox[2]
+    assert bbox[1] < bbox[3]
+
+
+def test_read_geojson_file_empty_keep_ids_returns_empty(tmp_path: Path) -> None:
+    gj = tmp_path / "b.geojson"
+    _write_fake_geojson(gj, ["A1"])
+
+    result, bbox = _read_geojson_file(gj, set())
+
+    assert result["features"] == []
+    assert bbox == (-180.0, -90.0, 180.0, 90.0)
+
+
+def test_read_geojson_file_multipolygon(tmp_path: Path) -> None:
+    import json as _json
+
+    gj = tmp_path / "b.geojson"
+    gj.write_text(
+        _json.dumps(
+            {
+                "type": "FeatureCollection",
+                "features": [
+                    {
+                        "type": "Feature",
+                        "properties": {"geo_id": "X1"},
+                        "geometry": {
+                            "type": "MultiPolygon",
+                            "coordinates": [
+                                [[[-73.6, 45.5], [-73.5, 45.5], [-73.6, 45.5]]],
+                                [[[-74.0, 46.0], [-73.9, 46.0], [-74.0, 46.0]]],
+                            ],
+                        },
+                    }
+                ],
+            }
+        )
+    )
+
+    result, bbox = _read_geojson_file(gj, {"X1"})
+
+    assert len(result["features"]) == 1
+    assert bbox[0] < -73.9
+
+
+# ---------------------------------------------------------------------------
+# prepare_boundaries_geojson
+# ---------------------------------------------------------------------------
+
+
+def test_prepare_boundaries_geojson_writes_geojson(tmp_path: Path) -> None:
+    pytest.importorskip("shapefile")
+    import json as _json
+
+    shp_path = _write_fake_shapefile(tmp_path, "4620001.00")
+    out = tmp_path / "out.geojson"
+
+    result = prepare_boundaries_geojson(shp_path, "CTUID", out, coord_precision=3)
+
+    assert result == out
+    assert out.exists()
+    data = _json.loads(out.read_text())
+    assert data["type"] == "FeatureCollection"
+    assert len(data["features"]) == 1
+    assert data["features"][0]["properties"]["geo_id"] == "4620001.00"
+
+
+# ---------------------------------------------------------------------------
+# render_synthesis_map — GeoJSON boundaries path
+# ---------------------------------------------------------------------------
+
+
+def test_render_synthesis_map_with_geojson_boundaries(tmp_path: Path) -> None:
+    """render_synthesis_map accepts a pre-converted .geojson boundaries file."""
+    geo_id = "4620001.00"
+    gj_path = tmp_path / "boundaries.geojson"
+    _write_fake_geojson(gj_path, [geo_id])
+
+    hh = tmp_path / "households.csv"
+    hh.write_text(
+        "synthetic_household_id,ct,household_size,TENUR,DTYPE,REPAIR,SHELCO\n"
+        f"h1,{geo_id},2,1,1,1,1200\n"
+    )
+    out = tmp_path / "map.html"
+
+    render_synthesis_map(
+        households_path=hh,
+        boundaries_path=gj_path,
+        geography_column="ct",
+        geography_id_field="CTUID",
+        out_path=out,
+        title="GeoJSON Map",
+        coord_precision=5,
+    )
+
+    assert out.exists()
+    assert geo_id in out.read_text()
+
+
+# ---------------------------------------------------------------------------
+# geo prepare-boundaries CLI
+# ---------------------------------------------------------------------------
+
+
+def test_cli_prepare_boundaries_success(tmp_path: Path) -> None:
+    pytest.importorskip("shapefile")
+    from unittest.mock import patch
+
+    from synthpopcan.cli import main as cli_main
+
+    shp_path = _write_fake_shapefile(tmp_path, "4620001.00")
+
+    with (
+        patch(
+            "synthpopcan.statcan.fetch_boundary_zip", return_value=shp_path
+        ) as mock_dl,
+        patch(
+            "synthpopcan.map_render.prepare_boundaries_geojson",
+            return_value=tmp_path / "2016-boundary-ct.geojson",
+        ) as mock_conv,
+    ):
+        exit_code = cli_main(
+            [
+                "geo",
+                "prepare-boundaries",
+                "--geo-level",
+                "ct",
+                "--out-dir",
+                str(tmp_path),
+            ]
+        )
+
+    assert exit_code == 0
+    mock_dl.assert_called_once()
+    mock_conv.assert_called_once()
+
+
+def test_cli_prepare_boundaries_download_oserror(tmp_path: Path) -> None:
+    from unittest.mock import patch
+
+    import click
+
+    from synthpopcan.cli import main as cli_main
+
+    with patch(
+        "synthpopcan.statcan.fetch_boundary_zip",
+        side_effect=OSError("network error"),
+    ):
+        with pytest.raises(click.ClickException, match="network error"):
+            cli_main(
+                [
+                    "geo",
+                    "prepare-boundaries",
+                    "--geo-level",
+                    "ada",
+                    "--out-dir",
+                    str(tmp_path),
+                ]
+            )
+
+
+def test_cli_prepare_boundaries_convert_import_error(tmp_path: Path) -> None:
+    pytest.importorskip("shapefile")
+    from unittest.mock import patch
+
+    import click
+
+    from synthpopcan.cli import main as cli_main
+
+    shp_path = _write_fake_shapefile(tmp_path, "4620001.00")
+
+    with (
+        patch("synthpopcan.statcan.fetch_boundary_zip", return_value=shp_path),
+        patch(
+            "synthpopcan.map_render.prepare_boundaries_geojson",
+            side_effect=ImportError("no shapefile"),
+        ),
+    ):
+        with pytest.raises(click.ClickException, match="no shapefile"):
+            cli_main(
+                [
+                    "geo",
+                    "prepare-boundaries",
+                    "--geo-level",
+                    "ct",
+                    "--out-dir",
+                    str(tmp_path),
+                ]
+            )
+
+
+def test_cli_prepare_boundaries_convert_oserror(tmp_path: Path) -> None:
+    pytest.importorskip("shapefile")
+    from unittest.mock import patch
+
+    import click
+
+    from synthpopcan.cli import main as cli_main
+
+    shp_path = _write_fake_shapefile(tmp_path, "4620001.00")
+
+    with (
+        patch("synthpopcan.statcan.fetch_boundary_zip", return_value=shp_path),
+        patch(
+            "synthpopcan.map_render.prepare_boundaries_geojson",
+            side_effect=OSError("disk full"),
+        ),
+    ):
+        with pytest.raises(click.ClickException, match="disk full"):
+            cli_main(
+                [
+                    "geo",
+                    "prepare-boundaries",
+                    "--geo-level",
+                    "ct",
+                    "--out-dir",
+                    str(tmp_path),
+                ]
+            )
+
+
+def test_cli_prepare_boundaries_download_value_error(tmp_path: Path) -> None:
+    from unittest.mock import patch
+
+    import click
+
+    from synthpopcan.cli import main as cli_main
+
+    with patch(
+        "synthpopcan.statcan.fetch_boundary_zip",
+        side_effect=ValueError("bad zip"),
+    ):
+        with pytest.raises(click.ClickException, match="bad zip"):
+            cli_main(
+                [
+                    "geo",
+                    "prepare-boundaries",
+                    "--geo-level",
+                    "ct",
+                    "--out-dir",
+                    str(tmp_path),
                 ]
             )

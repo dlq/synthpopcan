@@ -22,6 +22,37 @@ This first pass is intentionally household-first. Person rows inherit geography
 from their assigned household. Person-level small-area calibration is a later
 quality step.
 
+## Step 0 — Prepare Boundary Files (once)
+
+Before running `geo map`, you need a local boundary file for the target
+geography.  `geo prepare-boundaries` downloads the StatCan 2016 boundary ZIP,
+extracts the shapefile, and converts it from NAD83 / Statistics Canada Lambert
+to WGS-84 GeoJSON in one step.  Run this once per geography level and reuse the
+result across all maps.
+
+```bash
+synthpopcan geo prepare-boundaries \
+  --geo-level ct \
+  --out-dir data/boundaries/
+```
+
+This writes `data/boundaries/2016-boundary-ct.geojson`.  Pass it directly to
+`geo map --boundaries`.  An internet connection is required for the download
+(~10–50 MB depending on geography level).
+
+Supported levels: `ct` (census tracts), `ada` (aggregate dissemination areas),
+`da` (dissemination areas), `csd` (census subdivisions), `cd` (census
+divisions), `pr` (provinces and territories).
+
+If census profile data for controls is not yet downloaded, use the `statcan`
+commands:
+
+```bash
+synthpopcan statcan census-profile fetch --geo-level ct
+```
+
+See `synthpopcan statcan --help` for the full list of available downloads.
+
 ## Step 1 — Generate Candidates
 
 ```bash
@@ -100,6 +131,10 @@ synthpopcan geo map \
   --boundaries /path/to/lct_000b16a_e.shp \
   --geography-column ct
 ```
+
+Pass `--boundaries` either as a `.geojson` produced by `geo prepare-boundaries`
+or as a path to the original StatCan `.shp` file (reprojection is automatic in
+both cases).
 
 The resulting file opens directly in any browser. It requires an internet
 connection to fetch base-map tiles from OpenFreeMap but otherwise embeds all

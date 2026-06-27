@@ -12,9 +12,11 @@ from synthpopcan.console import print_wrote
 from synthpopcan.small_area_synthesis import calibrate_linked_household_csvs
 
 _BOUNDARIES_HELP = (
-    "StatCan boundary shapefile (.shp) or the directory that contains it. "
+    "StatCan boundary shapefile (.shp), pre-converted GeoJSON (.geojson), "
+    "or the directory containing the shapefile. "
     "For CTs: lct_000b16a_e.shp; for ADAs: lada000b16a_e.shp. "
-    "The shapefile stays in its original LCC projection — reprojection is automatic."
+    "Shapefiles are reprojected automatically. "
+    "Use 'geo prepare-boundaries' to produce a local GeoJSON once."
 )
 
 # Known StatCan geography column → (shapefile name fragment, attribute field)
@@ -29,7 +31,13 @@ _GEO_DEFAULTS: dict[str, tuple[str, str]] = {
 
 
 def _resolve_boundaries(boundaries_path: Path, geography_column: str) -> Path:
-    """If *boundaries_path* is a directory, find the right .shp inside it."""
+    """Return the resolved boundary file path.
+
+    Accepts a ``.geojson`` file directly, a ``.shp`` file directly, or a
+    directory (in which case the correct ``.shp`` is located by name).
+    """
+    if boundaries_path.suffix.lower() == ".geojson":
+        return boundaries_path
     if boundaries_path.is_dir():
         col = geography_column.lower()
         fragment, _ = _GEO_DEFAULTS.get(col, ("", ""))
@@ -582,3 +590,110 @@ def build_controls_command(
         f"    --households-out <output-households.csv> \\\n"
         f"    --persons-out <output-persons.csv>"
     )
+
+
+# ---------------------------------------------------------------------------
+# prepare-boundaries command
+# ---------------------------------------------------------------------------
+
+_KNOWN_GEO_LEVELS = ("ct", "ada", "da", "csd", "cd", "pr")
+
+
+@small_area.command("prepare-boundaries")
+@click.option(
+    "--geo-level",
+    required=True,
+    type=click.Choice(_KNOWN_GEO_LEVELS, case_sensitive=False),
+    help="Geography level to download: ct, ada, da, csd, cd, or pr.",
+)
+@click.option(
+    "--out-dir",
+    "out_dir",
+    required=True,
+    type=_PATH,
+    help="Directory where the GeoJSON file (and temporary shapefile) will be saved.",
+)
+@click.option(
+    "--coord-precision",
+    default=5,
+    type=int,
+    show_default=True,
+    help="Decimal places kept in WGS-84 coordinates (5 ≈ 1 m; 3 halves file size).",
+)
+@click.option(
+    "--url",
+    default=None,
+    help="Override the StatCan download URL (useful for cached mirrors).",
+)
+def prepare_boundaries_command(
+    geo_level: str,
+    out_dir: Path,
+    coord_precision: int,
+    url: str | None,
+) -> None:
+    """Download and convert a StatCan 2016 census boundary shapefile to GeoJSON.
+
+    Downloads the boundary ZIP for the specified geography level from Statistics
+    Canada, extracts the shapefile, and converts it from NAD83 / Statistics
+    Canada Lambert to WGS-84 GeoJSON.  The resulting ``.geojson`` file can be
+    passed directly to ``geo map --boundaries``, eliminating the need to keep
+    the original shapefile around.
+
+    \b
+    Supported geography levels:
+        ct   — Census tracts
+        ada  — Aggregate dissemination areas
+        da   — Dissemination areas
+        csd  — Census subdivisions
+        cd   — Census divisions
+        pr   — Provinces and territories
+
+    \b
+    Example:
+
+        synthpopcan geo prepare-boundaries --geo-level ct --out-dir data/boundaries/
+
+    The 2016 boundary ZIPs are sourced from Statistics Canada's geography
+    program.  An internet connection is required.
+    """
+    from synthpopcan.map_render import prepare_boundaries_geojson
+    from synthpopcan.statcan import (
+        _BOUNDARY_2016_DOWNLOADS,
+        BoundaryDownload,
+        fetch_boundary_zip,
+    )
+
+    entry: BoundaryDownload = _BOUNDARY_2016_DOWNLOADS[geo_level.lower()]
+
+    click.echo(f"Downloading {entry.description} boundary file…")
+    try:
+        shp_path = fetch_boundary_zip(geo_level, out_dir, url=url)
+    except OSError as exc:
+        raise click.ClickException(f"Download failed: {exc}") from exc
+    except ValueError as exc:
+        raise click.ClickException(str(exc)) from exc
+
+    click.echo(f"  Shapefile: {shp_path}")
+    click.echo("Converting to WGS-84 GeoJSON…")
+
+    geojson_path = out_dir / f"2016-boundary-{geo_level.lower()}.geojson"
+    try:
+        prepare_boundaries_geojson(
+            shp_path,
+            id_field=entry.id_field,
+            out_path=geojson_path,
+            coord_precision=coord_precision,
+        )
+    except ImportError as exc:
+        raise click.ClickException(
+            f"Missing dependency: {exc}. Install pyshp: pip install pyshp"
+        ) from exc
+    except OSError as exc:
+        raise click.ClickException(
+            format_file_access_error(geojson_path, "write", exc)
+        ) from exc
+
+    from synthpopcan.console import print_wrote
+
+    print_wrote(geojson_path)
+    click.echo(f"\nPass this file to geo map with:\n  --boundaries {geojson_path}")

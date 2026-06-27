@@ -14,12 +14,14 @@ from synthpopcan.cli import (
     parse_columns as parse_cli_columns,
 )
 from synthpopcan.statcan import (
+    _BOUNDARY_2016_DOWNLOADS,
     _CENSUS_PROFILE_2016_DOWNLOADS,
     WDSTableSearchResult,
     classify_wds_ipf_suitability,
     download_url,
     extract_wds_dimension_names,
     extract_wds_dimension_previews,
+    fetch_boundary_zip,
     fetch_census_profile_2016,
     fetch_json,
     fetch_wds_metadata,
@@ -765,3 +767,125 @@ def test_cli_explains_wds_metadata_table_with_member_preview(
     assert "Geography" in output
     assert "Canada" in output
     assert "Quebec" in output
+
+
+# ---------------------------------------------------------------------------
+# BoundaryDownload and fetch_boundary_zip
+# ---------------------------------------------------------------------------
+
+
+def test_boundary_download_url_for_ct() -> None:
+    entry = _BOUNDARY_2016_DOWNLOADS["ct"]
+    assert entry.url.endswith("lct_000b16a_e.zip")
+    assert "statcan" in entry.url.lower()
+
+
+def test_boundary_download_all_levels_present() -> None:
+    for level in ("ct", "ada", "da", "csd", "cd", "pr"):
+        assert level in _BOUNDARY_2016_DOWNLOADS
+
+
+def test_fetch_boundary_zip_rejects_unknown_level(tmp_path: Path) -> None:
+    with pytest.raises(ValueError, match="Unknown geography level"):
+        fetch_boundary_zip("xyz", tmp_path)
+
+
+def test_fetch_boundary_zip_downloads_and_extracts(tmp_path: Path, monkeypatch) -> None:
+    """fetch_boundary_zip: download, extract .shp, remove ZIP, write manifest."""
+    import io
+    from zipfile import ZipFile
+
+    entry = _BOUNDARY_2016_DOWNLOADS["ct"]
+
+    # Build a fake ZIP containing the expected shapefile components.
+    buf = io.BytesIO()
+    with ZipFile(buf, "w") as zf:
+        zf.writestr(entry.shp_name, b"FAKE SHP DATA")
+        zf.writestr(entry.shp_name.replace(".shp", ".dbf"), b"FAKE DBF DATA")
+
+    zip_bytes = buf.getvalue()
+
+    def fake_download(url: str, dest: Path) -> None:
+        dest.write_bytes(zip_bytes)
+
+    monkeypatch.setattr("synthpopcan.statcan.download_url", fake_download)
+
+    shp_path = fetch_boundary_zip("ct", tmp_path)
+
+    assert shp_path.name == entry.shp_name
+    assert shp_path.exists()
+    # ZIP should have been removed
+    assert not (tmp_path / entry.zip_name).exists()
+    # Manifest should exist
+    manifest = tmp_path / "2016-boundary-ct.json"
+    assert manifest.exists()
+
+
+def test_fetch_boundary_zip_finds_shp_in_subdirectory(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """When ZIP extracts into a subdirectory, the .shp is found via rglob."""
+    import io
+    from zipfile import ZipFile
+
+    entry = _BOUNDARY_2016_DOWNLOADS["ada"]
+
+    buf = io.BytesIO()
+    with ZipFile(buf, "w") as zf:
+        # Nest the .shp inside a subdirectory
+        zf.writestr(f"subdir/{entry.shp_name}", b"FAKE SHP DATA")
+
+    zip_bytes = buf.getvalue()
+
+    def fake_download(url: str, dest: Path) -> None:
+        dest.write_bytes(zip_bytes)
+
+    monkeypatch.setattr("synthpopcan.statcan.download_url", fake_download)
+
+    shp_path = fetch_boundary_zip("ada", tmp_path)
+
+    assert shp_path.name == entry.shp_name
+    assert shp_path.exists()
+
+
+def test_fetch_boundary_zip_raises_when_shp_not_in_zip(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """FileNotFoundError when ZIP contains no .shp at any path depth."""
+    import io
+    from zipfile import ZipFile
+
+    entry = _BOUNDARY_2016_DOWNLOADS["ct"]
+
+    buf = io.BytesIO()
+    with ZipFile(buf, "w") as zf:
+        # ZIP has no .shp file at all
+        zf.writestr("README.txt", b"no shapefile here")
+
+    def fake_download(url: str, dest: Path) -> None:
+        dest.write_bytes(buf.getvalue())
+
+    monkeypatch.setattr("synthpopcan.statcan.download_url", fake_download)
+
+    with pytest.raises(FileNotFoundError, match=entry.shp_name):
+        fetch_boundary_zip("ct", tmp_path)
+
+
+def test_extract_census_profile_csv_raises_when_no_csv_in_zip(
+    tmp_path: Path,
+) -> None:
+    """ValueError when a Census Profile ZIP contains no matching CSV."""
+    import io
+    from zipfile import ZipFile
+
+    from synthpopcan.statcan import extract_census_profile_csv
+
+    buf = io.BytesIO()
+    with ZipFile(buf, "w") as zf:
+        zf.writestr("METADATA.txt", b"no csv here")
+
+    zip_path = tmp_path / "profile.zip"
+    zip_path.write_bytes(buf.getvalue())
+
+    with pytest.raises(ValueError, match="Census Profile ZIP did not contain"):
+        extract_census_profile_csv(zip_path, tmp_path / "out.csv")
