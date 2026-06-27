@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
 from synthpopcan.cli import main
 from synthpopcan.controls import ControlCell, ControlMargin, ControlTable
 from synthpopcan.small_area_synthesis import (
@@ -224,7 +226,7 @@ def test_cli_calibrates_linked_households_to_small_area_controls(
 
     exit_code = main(
         [
-            "small-area",
+            "geo",
             "calibrate-linked",
             "--households",
             str(households),
@@ -246,3 +248,168 @@ def test_cli_calibrates_linked_households_to_small_area_controls(
     assert exit_code == 0
     assert out_households.exists()
     assert out_persons.exists()
+
+
+def _minimal_calibrate_files(tmp_path: Path) -> dict[str, Path]:
+    """Return a dict of minimal CSV paths for the calibrate-linked command."""
+    households = tmp_path / "households.csv"
+    households.write_text(
+        "synthetic_household_id,household_size,TENUR\nh1,1,owner\nh2,2,renter\n"
+    )
+    persons = tmp_path / "persons.csv"
+    persons.write_text(
+        "synthetic_person_id,synthetic_household_id,AGEGRP\n"
+        "p1,h1,adult\np2,h2,adult\np3,h2,child\n"
+    )
+    controls = tmp_path / "controls.csv"
+    controls.write_text(
+        "margin,dimensions,tract,household_size,count\n"
+        'size,"tract,household_size",4620001.00,1,1\n'
+        'size,"tract,household_size",4620001.00,2,1\n'
+    )
+    return {
+        "households": households,
+        "persons": persons,
+        "controls": controls,
+        "households_out": tmp_path / "hh-out.csv",
+        "persons_out": tmp_path / "p-out.csv",
+    }
+
+
+def test_cli_calibrate_linked_weights_out_and_report_out(tmp_path: Path) -> None:
+    f = _minimal_calibrate_files(tmp_path)
+    weights = tmp_path / "weights.csv"
+    report = tmp_path / "report.json"
+
+    exit_code = main(
+        [
+            "geo",
+            "calibrate-linked",
+            "--households",
+            str(f["households"]),
+            "--persons",
+            str(f["persons"]),
+            "--controls",
+            str(f["controls"]),
+            "--geography-dimension",
+            "tract",
+            "--geography-column",
+            "tract",
+            "--households-out",
+            str(f["households_out"]),
+            "--persons-out",
+            str(f["persons_out"]),
+            "--weights-out",
+            str(weights),
+            "--report",
+            str(report),
+        ]
+    )
+
+    assert exit_code == 0
+    assert weights.exists()
+    assert report.exists()
+
+
+def test_cli_calibrate_linked_format_json(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    import json as _json
+
+    f = _minimal_calibrate_files(tmp_path)
+
+    exit_code = main(
+        [
+            "geo",
+            "calibrate-linked",
+            "--households",
+            str(f["households"]),
+            "--persons",
+            str(f["persons"]),
+            "--controls",
+            str(f["controls"]),
+            "--geography-dimension",
+            "tract",
+            "--geography-column",
+            "tract",
+            "--households-out",
+            str(f["households_out"]),
+            "--persons-out",
+            str(f["persons_out"]),
+            "--format",
+            "json",
+        ]
+    )
+
+    assert exit_code == 0
+    out = capsys.readouterr().out
+    parsed = _json.loads(out)
+    assert "assigned_households" in parsed
+
+
+def test_cli_calibrate_linked_oserror(tmp_path: Path) -> None:
+    from unittest.mock import patch
+
+    import click
+
+    f = _minimal_calibrate_files(tmp_path)
+
+    with patch(
+        "synthpopcan.cli_geo.calibrate_linked_household_csvs",
+        side_effect=OSError("no space"),
+    ):
+        with pytest.raises(click.ClickException, match="no space"):
+            main(
+                [
+                    "geo",
+                    "calibrate-linked",
+                    "--households",
+                    str(f["households"]),
+                    "--persons",
+                    str(f["persons"]),
+                    "--controls",
+                    str(f["controls"]),
+                    "--geography-dimension",
+                    "tract",
+                    "--geography-column",
+                    "tract",
+                    "--households-out",
+                    str(f["households_out"]),
+                    "--persons-out",
+                    str(f["persons_out"]),
+                ]
+            )
+
+
+def test_cli_calibrate_linked_value_error(tmp_path: Path) -> None:
+    from unittest.mock import patch
+
+    import click
+
+    f = _minimal_calibrate_files(tmp_path)
+
+    with patch(
+        "synthpopcan.cli_geo.calibrate_linked_household_csvs",
+        side_effect=ValueError("bad controls"),
+    ):
+        with pytest.raises(click.ClickException, match="bad controls"):
+            main(
+                [
+                    "geo",
+                    "calibrate-linked",
+                    "--households",
+                    str(f["households"]),
+                    "--persons",
+                    str(f["persons"]),
+                    "--controls",
+                    str(f["controls"]),
+                    "--geography-dimension",
+                    "tract",
+                    "--geography-column",
+                    "tract",
+                    "--households-out",
+                    str(f["households_out"]),
+                    "--persons-out",
+                    str(f["persons_out"]),
+                ]
+            )

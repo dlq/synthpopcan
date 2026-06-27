@@ -548,6 +548,76 @@ def calibrate_small_area_linked(
     )
 
 
+def render_small_area_map(
+    *,
+    households: str | Path,
+    persons: str | Path | None = None,
+    boundaries: str | Path,
+    geography_column: str,
+    geography_id_field: str,
+    out: str | Path,
+    title: str = "Synthetic Population",
+    coord_precision: int = 5,
+) -> Path:
+    """Generate a MapLibre GL JS choropleth HTML file from synthesis output.
+
+    The resulting file is self-contained (~3–10 MB) and opens directly in any
+    modern browser. It uses WebGL for fast rendering and fetches base-map tiles
+    from OpenFreeMap (requires an internet connection when viewing).
+
+    Parameters
+    ----------
+    households:
+        Synthesis household CSV (output of :func:`calibrate_small_area_linked`).
+    boundaries:
+        StatCan boundary shapefile (.shp) for the target geography level.
+        For census tracts use ``lct_000b16a_e.shp``; for ADAs use
+        ``lada000b16a_e.shp``.  The file may stay in its original Lambert
+        Conformal Conic projection — reprojection to WGS-84 is automatic.
+    geography_column:
+        Column in ``households`` that holds the geography ID (e.g. ``ct``).
+    geography_id_field:
+        Attribute field in the shapefile matching that column (e.g. ``CTUID``
+        or ``ADAUID``).
+    out:
+        Destination HTML file path.
+    title:
+        Map title shown in the side panel and browser tab.
+    coord_precision:
+        Decimal places kept in WGS-84 coordinates.  5 gives ≈ 1 m accuracy
+        (default); 3 reduces file size ~50 % with ≈ 110 m accuracy, adequate
+        for province-wide ADA maps.
+
+    Returns
+    -------
+    pathlib.Path
+        The path of the written HTML file.
+
+    Examples
+    --------
+    >>> path = render_small_area_map(
+    ...     households="synthetic-households.csv",
+    ...     boundaries="lct_000b16a_e.shp",
+    ...     geography_column="ct",
+    ...     geography_id_field="CTUID",
+    ...     out="montreal-ct-map.html",
+    ...     title="Montreal Census Tracts",
+    ... )
+    """
+    from synthpopcan.map_render import render_synthesis_map
+
+    return render_synthesis_map(
+        households_path=Path(households),
+        persons_path=Path(persons) if persons is not None else None,
+        boundaries_path=Path(boundaries),
+        geography_column=geography_column,
+        geography_id_field=geography_id_field,
+        out_path=Path(out),
+        title=title,
+        coord_precision=coord_precision,
+    )
+
+
 def _seed_records(seed: SeedInput) -> list[Record]:
     if isinstance(seed, str | Path):
         return read_seed(seed)

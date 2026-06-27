@@ -300,7 +300,7 @@ class NumpyIPFIndex:
         cls,
         records: Sequence[Record],
         margins: Sequence[IPFMargin],
-    ) -> "NumpyIPFIndex":
+    ) -> NumpyIPFIndex:
         """Encode *records* for every margin in *margins*."""
         encodings: list[_NumpyEncoding] = []
         for margin in margins:
@@ -320,12 +320,12 @@ class NumpyIPFIndex:
 
     def fit(
         self,
-        margins: Sequence["IPFMargin"],
+        margins: Sequence[IPFMargin],
         *,
         max_iterations: int = 100,
         tolerance: float = 1e-6,
-    ) -> "tuple[np.ndarray, bool, int, float]":
-        """Run numpy IPF and return raw ``(weights, converged, iterations, max_abs_error)``.
+    ) -> tuple[np.ndarray, bool, int, float]:
+        """Run numpy IPF; return ``(weights, converged, iterations, max_abs_error)``.
 
         The returned ``weights`` is a float64 numpy array — no Python list
         conversion.  Use this inside tight loops when you need the numpy array
@@ -340,7 +340,7 @@ class NumpyIPFIndex:
             )
 
         t_arrays: list[np.ndarray] = []
-        for enc, margin in zip(self.encodings, margins):
+        for enc, margin in zip(self.encodings, margins, strict=True):
             t = np.zeros(enc.n_cats, dtype=np.float64)
             for key, val in margin.targets.items():
                 cid = enc.key_to_id.get(key)
@@ -348,7 +348,8 @@ class NumpyIPFIndex:
                     t[cid] = float(val)
                 elif float(val) > 0:
                     raise ValueError(
-                        f"margin {margin.dimensions!r} target {key!r} has no seed records"
+                        f"margin {margin.dimensions!r} target {key!r} "
+                        "has no seed records"
                     )
             t_arrays.append(t)
 
@@ -356,8 +357,10 @@ class NumpyIPFIndex:
 
         max_abs_error = float("inf")
         for iteration in range(1, max_iterations + 1):
-            for enc, t in zip(self.encodings, t_arrays):
-                current = np.bincount(enc.cat_ids, weights=weights, minlength=enc.n_cats)
+            for enc, t in zip(self.encodings, t_arrays, strict=True):
+                current = np.bincount(
+                    enc.cat_ids, weights=weights, minlength=enc.n_cats
+                )
                 safe = np.where(current > 0, current, 1.0)
                 ratio = np.where(current > 0, t / safe, 1.0)
                 weights *= ratio[enc.cat_ids]
@@ -366,11 +369,14 @@ class NumpyIPFIndex:
                 float(
                     np.max(
                         np.abs(
-                            np.bincount(enc.cat_ids, weights=weights, minlength=enc.n_cats) - t
+                            np.bincount(
+                                enc.cat_ids, weights=weights, minlength=enc.n_cats
+                            )
+                            - t
                         )
                     )
                 )
-                for enc, t in zip(self.encodings, t_arrays)
+                for enc, t in zip(self.encodings, t_arrays, strict=True)
             )
             if max_abs_error <= tolerance:
                 return weights, True, iteration, max_abs_error
@@ -379,7 +385,7 @@ class NumpyIPFIndex:
 
     def compute_totals(
         self, weights: np.ndarray
-    ) -> "dict[tuple[str, ...], dict[CategoryKey, float]]":
+    ) -> dict[tuple[str, ...], dict[CategoryKey, float]]:
         """Return ``{dimensions: {category_key: total}}`` for all encodings.
 
         Uses numpy ``bincount`` — O(n_records) in C rather than in Python.
@@ -425,7 +431,9 @@ def fit_ipf_numpy(
     weights, converged, iteration, max_abs_error = index.fit(
         margins, max_iterations=max_iterations, tolerance=tolerance
     )
-    return IPFResult(index.records, weights.tolist(), converged, iteration, max_abs_error)
+    return IPFResult(
+        index.records, weights.tolist(), converged, iteration, max_abs_error
+    )
 
 
 def _initial_weights(

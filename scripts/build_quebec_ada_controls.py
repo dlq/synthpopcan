@@ -20,7 +20,6 @@ from __future__ import annotations
 
 import argparse
 import csv
-import sys
 from collections import defaultdict
 from pathlib import Path
 
@@ -28,9 +27,7 @@ ADA_PROFILE_PATH = Path(
     "data/raw/statscan/2016-census/ADA-Profile-2016"
     "/98-401-X2016020_English_CSV_data.csv"
 )
-TENURE_CONTROLS_PATH = Path(
-    "data/private/small-area/quebec-ada-tenure-controls.csv"
-)
+TENURE_CONTROLS_PATH = Path("data/private/small-area/quebec-ada-tenure-controls.csv")
 
 # ADA profile member IDs for household size (100% data, same as CT profile)
 HHSIZE_MEMBER_IDS: dict[str, str] = {
@@ -105,7 +102,9 @@ def scale_controls(
     scaled: dict[str, dict[str, dict[str, int]]] = {}
     for ada in sorted(set(hhsize_raw) | set(tenure_raw)):
         hhsize_cats = hhsize_raw.get(ada, {})
-        hhsize_scaled = {cat: round(count * scale) for cat, count in hhsize_cats.items()}
+        hhsize_scaled = {
+            cat: round(count * scale) for cat, count in hhsize_cats.items()
+        }
         hhsize_total = sum(hhsize_scaled.values())
 
         tenure_cats = tenure_raw.get(ada, {})
@@ -145,23 +144,27 @@ def write_combined_controls(
         writer.writeheader()
         for ada in sorted(scaled):
             for cat, count in sorted(scaled[ada].get("tenure", {}).items()):
-                writer.writerow({
-                    "margin": "ada tenure",
-                    "dimensions": "ada,TENUR",
-                    "ada": ada,
-                    "TENUR": cat,
-                    "household_size": "",
-                    "count": count,
-                })
+                writer.writerow(
+                    {
+                        "margin": "ada tenure",
+                        "dimensions": "ada,TENUR",
+                        "ada": ada,
+                        "TENUR": cat,
+                        "household_size": "",
+                        "count": count,
+                    }
+                )
             for cat, count in sorted(scaled[ada].get("hhsize", {}).items()):
-                writer.writerow({
-                    "margin": "ada hhsize",
-                    "dimensions": "ada,household_size",
-                    "ada": ada,
-                    "TENUR": "",
-                    "household_size": cat,
-                    "count": count,
-                })
+                writer.writerow(
+                    {
+                        "margin": "ada hhsize",
+                        "dimensions": "ada,household_size",
+                        "ada": ada,
+                        "TENUR": "",
+                        "household_size": cat,
+                        "count": count,
+                    }
+                )
 
 
 def write_recoded_candidates(
@@ -195,8 +198,11 @@ def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--target", type=int, default=3_750_000)
     parser.add_argument(
-        "--households", type=Path,
-        default=Path("data/private/benchmarks/tree-release-2016-pr24-all-fields/synthetic-households-3.75m.csv"),
+        "--households",
+        type=Path,
+        default=Path(
+            "data/private/benchmarks/tree-release-2016-pr24-all-fields/synthetic-households-3.75m.csv"
+        ),
     )
     parser.add_argument("--out-dir", type=Path, default=Path("data/private/small-area"))
     parser.add_argument("--profile", type=Path, default=ADA_PROFILE_PATH)
@@ -216,9 +222,13 @@ def main(argv: list[str] | None = None) -> None:
     missing_hhsize = set(tenure_raw) - set(hhsize_raw)
     missing_tenure = set(hhsize_raw) - set(tenure_raw)
     if missing_hhsize:
-        print(f"  WARNING: {len(missing_hhsize)} ADAs have tenure but no hhsize: {sorted(missing_hhsize)[:5]}")
+        print(
+            f"  WARNING: {len(missing_hhsize)} ADAs have tenure but no hhsize: {sorted(missing_hhsize)[:5]}"
+        )
     if missing_tenure:
-        print(f"  WARNING: {len(missing_tenure)} ADAs have hhsize but no tenure: {sorted(missing_tenure)[:5]}")
+        print(
+            f"  WARNING: {len(missing_tenure)} ADAs have hhsize but no tenure: {sorted(missing_tenure)[:5]}"
+        )
 
     print(f"Scaling to {args.target:,} households")
     scaled = scale_controls(hhsize_raw, tenure_raw, args.target)
@@ -234,18 +244,26 @@ def main(argv: list[str] | None = None) -> None:
 
     candidates_out = args.out_dir / "quebec-ada-candidates-households-recoded.csv"
     n = write_recoded_candidates(args.households, candidates_out)
-    print(f"Recoded candidates ({n:,} rows, household_size capped at 5) → {candidates_out}")
+    print(
+        f"Recoded candidates ({n:,} rows, household_size capped at 5) → {candidates_out}"
+    )
 
-    persons_path = str(args.households).replace("synthetic-households-3.75m.csv", "synthetic-persons-3.75m.csv")
+    persons_path = str(args.households).replace(
+        "synthetic-households-3.75m.csv", "synthetic-persons-3.75m.csv"
+    )
     print("\nNext step:")
-    print(f"  uv run synthpopcan small-area calibrate-linked \\")
+    print("  uv run synthpopcan geo calibrate-linked \\")
     print(f"    --households {candidates_out} \\")
     print(f"    --persons {persons_path} \\")
     print(f"    --controls {controls_out} \\")
-    print(f"    --geography-dimension ada \\")
-    print(f"    --geography-column ada \\")
-    print(f"    --households-out {args.out_dir}/quebec-ada-synthetic-households-{suffix}.csv \\")
-    print(f"    --persons-out {args.out_dir}/quebec-ada-synthetic-persons-{suffix}.csv \\")
+    print("    --geography-dimension ada \\")
+    print("    --geography-column ada \\")
+    print(
+        f"    --households-out {args.out_dir}/quebec-ada-synthetic-households-{suffix}.csv \\"
+    )
+    print(
+        f"    --persons-out {args.out_dir}/quebec-ada-synthetic-persons-{suffix}.csv \\"
+    )
     print(f"    --report {args.out_dir}/quebec-ada-calibration-report-{suffix}.json")
 
 

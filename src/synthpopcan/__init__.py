@@ -14,6 +14,7 @@ from synthpopcan.api import (
     read_controls,
     read_model_package,
     read_seed,
+    render_small_area_map,
     write_population,
     write_weights,
 )
@@ -28,6 +29,7 @@ __all__ = [
     "read_controls",
     "read_model_package",
     "read_seed",
+    "render_small_area_map",
     "write_population",
     "write_weights",
 ]

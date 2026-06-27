@@ -22,7 +22,11 @@ from synthpopcan.controls import (
     read_control_table,
 )
 from synthpopcan.diagnostics import build_ipf_fit_report
-from synthpopcan.ipf import IPFResult, NumpyIPFIndex, fit_ipf, fit_ipf_numpy, integerize_weights
+from synthpopcan.ipf import (
+    IPFResult,
+    NumpyIPFIndex,
+    integerize_weights,
+)
 
 HouseholdRow = dict[str, str]
 PersonRow = dict[str, str]
@@ -164,7 +168,9 @@ def fit_households_by_geography(
         # compute_totals uses numpy bincount, replacing the Python weighted_totals loop
         precomputed = numpy_index.compute_totals(weights_np)
         weights_list = weights_np.tolist()
-        result = IPFResult(households, weights_list, converged, iterations, max_abs_error)
+        result = IPFResult(
+            households, weights_list, converged, iterations, max_abs_error
+        )
         report = build_ipf_fit_report(
             geo_controls, result, precomputed_totals=precomputed
         )
@@ -425,8 +431,8 @@ def _write_realized_population_to_csv(
         idx_parts.append(repeated)
         geo_parts.append(np.full(len(repeated), geography, dtype=object))
 
-    all_idxs = np.concatenate(idx_parts)       # (total_households,)
-    all_geos = np.concatenate(geo_parts)        # (total_households,)
+    all_idxs = np.concatenate(idx_parts)  # (total_households,)
+    all_geos = np.concatenate(geo_parts)  # (total_households,)
     n_hh = len(all_idxs)
 
     # --- Expand households ---
@@ -444,8 +450,11 @@ def _write_realized_population_to_csv(
     df_hh_exp["_new_hh_id"] = new_hh_ids
     df_hh_exp["_cand_idx"] = all_idxs
 
-    hh_extra = [c for c in [geography_column, "source_candidate_household_id"]
-                if c not in df_hh.columns]
+    hh_extra = [
+        c
+        for c in [geography_column, "source_candidate_household_id"]
+        if c not in df_hh.columns
+    ]
     hh_cols = list(df_hh.columns) + hh_extra
 
     households_path.parent.mkdir(parents=True, exist_ok=True)
@@ -479,10 +488,12 @@ def _write_realized_population_to_csv(
             seq_p.astype("U"),
         )
 
-        p_extra = [c for c in [geography_column, "source_candidate_person_id"]
-                   if c not in df_p.columns]
-        p_cols = [c for c in list(df_p.columns) + p_extra
-                  if c in df_p_exp.columns]
+        p_extra = [
+            c
+            for c in [geography_column, "source_candidate_person_id"]
+            if c not in df_p.columns
+        ]
+        p_cols = [c for c in list(df_p.columns) + p_extra if c in df_p_exp.columns]
         persons_path.parent.mkdir(parents=True, exist_ok=True)
         df_p_exp[p_cols].to_csv(persons_path, index=False)
         assigned_persons = n_p

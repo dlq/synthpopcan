@@ -9,19 +9,20 @@ information:
 - Census Profile tables contain public small-area totals, but they do not
   contain household/person microdata rows.
 
-The current workflow generates a candidate household/person population from a
-prepared model package, calibrates candidate households to household-level
-small-area controls, assigns each realized household to the target geography,
-and copies linked person rows into those assigned households.
+The current workflow has four steps:
+
+1. **Generate** candidate linked household/person rows from a model package.
+2. **Build controls** from the StatCan Census Profile (household size and tenure
+   margins per target geography).
+3. **Calibrate** candidate households to those controls, assigning each
+   realized household to a census tract or ADA.
+4. **Map** the output to a self-contained browser choropleth.
 
 This first pass is intentionally household-first. Person rows inherit geography
 from their assigned household. Person-level small-area calibration is a later
 quality step.
 
-## Command-Line Shape
-
-The first command creates candidate linked household/person rows from a reviewed
-package:
+## Step 1 — Generate Candidates
 
 ```bash
 synthpopcan tree generate-from-package MODEL_PACKAGE.json \
@@ -32,15 +33,51 @@ synthpopcan tree generate-from-package MODEL_PACKAGE.json \
   --random-seed 462
 ```
 
-The second command calibrates those candidates to small-area controls:
+## Step 2 — Build Controls from Census Profile
+
+The `build-controls` command reads a StatCan 2247-variable Census Profile bulk
+CSV, extracts household-size (members 52–56: 1, 2, 3, 4, 5-or-more persons) and
+tenure (members 1618–1619: owner, renter) margins per geography, scales both to
+the target household count, and writes:
+
+- a long-format controls CSV ready for `calibrate-linked`;
+- a recoded copy of the candidate CSV with `household_size` capped at 5 to
+  match the Census categories.
+
+Geographies missing either margin are dropped automatically, preventing the IPF
+dimension-mismatch error in `calibrate-linked`.
 
 ```bash
-synthpopcan small-area calibrate-linked \
-  --households candidate-households.csv \
+synthpopcan geo build-controls \
+  --profile 98-401-X2016044_English_CSV_data.csv \
+  --geography-column ada \
+  --geo-prefix 35 \
+  --target 5500000 \
+  --candidates candidate-households.csv
+```
+
+| Option | Description |
+| --- | --- |
+| `--profile` | StatCan Census Profile bulk CSV (2247-variable form). Fetch with `synthpopcan statcan census-profile fetch --geo-level ada`. |
+| `--geography-column` | Target geography type: `ada`, `ct`, `csd`, `cd`, or `da`. Determines which `GEO_LEVEL` rows to read. |
+| `--target` | Total household count to scale controls to (e.g. 5 500 000). |
+| `--candidates` | Household CSV to recode; values above 5 are capped at 5. |
+| `--geo-prefix` | Filter to geographies whose ID starts with this prefix. Use the two-digit province code for ADAs (e.g. `35`=Ontario, `24`=Quebec) or the three-digit CMA code for CTs (e.g. `535`=Toronto, `462`=Montreal). |
+| `--controls-out` | Output controls CSV. Defaults to `<candidates-stem>-controls-<target>.csv`. |
+| `--candidates-out` | Output recoded CSV. Defaults to `<candidates-stem>-recoded.csv`. |
+
+The Census Profile for a given geography level can be downloaded free from
+Statistics Canada's Census Profile, 2016 Census page.
+
+## Step 3 — Calibrate to Controls
+
+```bash
+synthpopcan geo calibrate-linked \
+  --households candidate-households-recoded.csv \
   --persons candidate-persons.csv \
-  --controls ct-tenure-controls.csv \
-  --geography-dimension ct \
-  --geography-column ct \
+  --controls candidate-households-controls-5500000.csv \
+  --geography-dimension ada \
+  --geography-column ada \
   --households-out synthetic-households.csv \
   --persons-out synthetic-persons.csv \
   --report small-area-report.json
@@ -48,12 +85,37 @@ synthpopcan small-area calibrate-linked \
 
 The controls must be a normalized SynthPopCan control CSV. One dimension should
 name the target geography, such as `ct` or `ada`. The remaining dimensions must
-already exist in the candidate household CSV. For example, a first-pass tenure
-control can use `ct,TENUR` when candidate households contain `TENUR`.
+already exist in the candidate household CSV.
+
+## Step 4 — Explore Results as an Interactive Map
+
+The `map` command generates a self-contained MapLibre GL JS choropleth HTML file
+from the synthesis output. It reprojects StatCan LCC boundary shapefiles to
+WGS-84 automatically; no external GIS tools are required.
+
+```bash
+synthpopcan geo map \
+  --households synthetic-households.csv \
+  --persons synthetic-persons.csv \
+  --boundaries /path/to/lct_000b16a_e.shp \
+  --geography-column ct
+```
+
+The resulting file opens directly in any browser. It requires an internet
+connection to fetch base-map tiles from OpenFreeMap but otherwise embeds all
+data inline.
+
+Variables shown (household-level, always): household count, average household
+size, % homeowners, % detached dwellings, % needing major repairs, median
+shelter cost.
+
+Variables shown (person-level, when `--persons` is supplied): person count,
+% children (≤14), % seniors (≥65), % immigrants, % visible minority, median
+household income.
 
 ## Beginner API Shape
 
-The same calibration step is available from the beginner API:
+The calibration step is also available from the beginner API:
 
 ```python
 from pathlib import Path
@@ -61,11 +123,11 @@ from pathlib import Path
 import synthpopcan as spc
 
 summary = spc.calibrate_small_area_linked(
-    households=Path("candidate-households.csv"),
+    households=Path("candidate-households-recoded.csv"),
     persons=Path("candidate-persons.csv"),
-    controls=Path("ct-tenure-controls.csv"),
-    geography_dimension="ct",
-    geography_column="ct",
+    controls=Path("candidate-households-controls-5500000.csv"),
+    geography_dimension="ada",
+    geography_column="ada",
     households_out=Path("synthetic-households.csv"),
     persons_out=Path("synthetic-persons.csv"),
     report_out=Path("small-area-report.json"),
@@ -78,26 +140,24 @@ Use the API when a notebook needs to keep prose, file choices, and generated
 output together. Use the CLI when the output is large enough that streaming CSV
 writing and progress feedback are more useful.
 
-## Montreal CT And Quebec ADA Run
+## Real-Data Runs
 
-The current local real-data smoke run used:
+Completed runs against private benchmark data, stored under
+`data/private/small-area/` (git-ignored):
 
-- the reviewed Montreal CMA 2016 all-fields package;
-- the reviewed Quebec 2016 all-fields package;
-- 2016 Census Profile tenure controls from census tracts for Montreal and
-  aggregate dissemination areas for Quebec;
-- scaled tenure controls to match the large household counts used in earlier
-  model-generation experiments.
+| Run | Geography | Households | Persons | Controls | Map size |
+| --- | --- | ---: | ---: | --- | ---: |
+| Montreal CMA | Census tract (`ct`) | 1,830,000 | 4,170,389 | Tenure (`TENUR`) | — |
+| Quebec | Aggregate dissemination area (`ada`) | 3,750,000 | 8,330,828 | Tenure (`TENUR`) | — |
+| Toronto CMA | Census tract (`ct`) | 2,135,900 | 5,808,776 | Household size + tenure (Census Profile) | 3.2 MB |
 
-Output artifacts were written under `data/private/small-area/`, which is
-ignored by git:
+The Toronto run was the first to use the full `build-controls` → `calibrate-linked` → `map`
+pipeline. Controls were built from the 2016 Census Profile for CTs (2247-variable
+bulk CSV, CMA prefix `535`), scaled to 2,135,910 households (the Toronto CMA
+census total). 1,146 census tracts were calibrated; 0 were dropped for missing
+margins.
 
-| Run | Geography | Households | Persons | Control used | Output |
-| --- | --- | ---: | ---: | --- | --- |
-| Montreal | Census tract (`ct`) | 1,830,000 | 4,170,389 | Tenure (`TENUR`) | `montreal-ct-synthetic-households-1830000.csv`, `montreal-ct-synthetic-persons-1830000.csv` |
-| Quebec | Aggregate dissemination area (`ada`) | 3,750,000 | 8,330,828 | Tenure (`TENUR`) | `quebec-ada-synthetic-households-3750000.csv`, `quebec-ada-synthetic-persons-3750000.csv` |
-
-Both linked outputs passed `synthpopcan validate linked-output`.
+All linked outputs passed `synthpopcan validate linked-output`.
 
 The person counts are model-derived. They were not forced to exact official
 population totals in this first pass. For example, the Quebec run creates
@@ -112,8 +172,6 @@ small-area analysis:
 - it fits household-level controls only;
 - persons inherit the assigned household geography;
 - candidate-pool size affects the variety available inside each small area;
-- household-size controls from Census Profile need a recoded candidate column
-  such as `household_size_profile` before fitting categories like `5 or more`;
 - DA-level runs are expected to be sparser than ADA-level runs and need stronger
   diagnostics.
 

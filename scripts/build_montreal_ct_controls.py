@@ -20,7 +20,6 @@ from __future__ import annotations
 
 import argparse
 import csv
-import sys
 from collections import defaultdict
 from pathlib import Path
 
@@ -38,12 +37,12 @@ HHSIZE_MEMBER_IDS: dict[str, str] = {
     "53": "2",
     "54": "3",
     "55": "4",
-    "56": "5",   # "5 or more persons" — candidates are recoded to cap at 5
+    "56": "5",  # "5 or more persons" — candidates are recoded to cap at 5
 }
 # Tenure (25% sample data, member IDs 1618-1619)
 TENURE_MEMBER_IDS: dict[str, str] = {
-    "1618": "1",   # Owner
-    "1619": "2",   # Renter
+    "1618": "1",  # Owner
+    "1619": "2",  # Renter
     # 1620 = Band housing, always 0 in Montreal — omitted
 }
 
@@ -89,8 +88,7 @@ def scale_controls(
     consistent across both margins.
     """
     raw_total = sum(
-        sum(cats.get("hhsize", {}).values())
-        for cats in ct_controls.values()
+        sum(cats.get("hhsize", {}).values()) for cats in ct_controls.values()
     )
     if raw_total == 0:
         raise ValueError("no household-size totals found in controls")
@@ -140,24 +138,28 @@ def write_combined_controls(
             margins = scaled[ct]
             # tenure margin
             for cat, count in sorted(margins.get("tenure", {}).items()):
-                writer.writerow({
-                    "margin": "ct tenure",
-                    "dimensions": "ct,TENUR",
-                    "ct": ct,
-                    "TENUR": cat,
-                    "household_size": "",
-                    "count": count,
-                })
+                writer.writerow(
+                    {
+                        "margin": "ct tenure",
+                        "dimensions": "ct,TENUR",
+                        "ct": ct,
+                        "TENUR": cat,
+                        "household_size": "",
+                        "count": count,
+                    }
+                )
             # household_size margin
             for cat, count in sorted(margins.get("hhsize", {}).items()):
-                writer.writerow({
-                    "margin": "ct hhsize",
-                    "dimensions": "ct,household_size",
-                    "ct": ct,
-                    "TENUR": "",
-                    "household_size": cat,
-                    "count": count,
-                })
+                writer.writerow(
+                    {
+                        "margin": "ct hhsize",
+                        "dimensions": "ct,household_size",
+                        "ct": ct,
+                        "TENUR": "",
+                        "household_size": cat,
+                        "count": count,
+                    }
+                )
 
 
 def write_recoded_candidates(
@@ -197,16 +199,30 @@ def _suffix(target: int) -> str:
 
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--target", type=int, default=1_830_000,
-                        help="Target total households (default: 1830000)")
-    parser.add_argument("--households", type=Path,
-                        default=Path("data/private/small-area/montreal-candidates-households.csv"),
-                        help="Candidate households CSV to recode")
-    parser.add_argument("--out-dir", type=Path,
-                        default=Path("data/private/small-area"),
-                        help="Output directory")
-    parser.add_argument("--profile", type=Path, default=PROFILE_PATH,
-                        help="Montreal CT Census Profile CSV")
+    parser.add_argument(
+        "--target",
+        type=int,
+        default=1_830_000,
+        help="Target total households (default: 1830000)",
+    )
+    parser.add_argument(
+        "--households",
+        type=Path,
+        default=Path("data/private/small-area/montreal-candidates-households.csv"),
+        help="Candidate households CSV to recode",
+    )
+    parser.add_argument(
+        "--out-dir",
+        type=Path,
+        default=Path("data/private/small-area"),
+        help="Output directory",
+    )
+    parser.add_argument(
+        "--profile",
+        type=Path,
+        default=PROFILE_PATH,
+        help="Montreal CT Census Profile CSV",
+    )
     args = parser.parse_args(argv)
 
     suffix = _suffix(args.target)
@@ -217,11 +233,14 @@ def main(argv: list[str] | None = None) -> None:
 
     # Validate completeness
     incomplete = [
-        ct for ct, m in ct_controls.items()
+        ct
+        for ct, m in ct_controls.items()
         if len(m.get("hhsize", {})) < 5 or len(m.get("tenure", {})) < 2
     ]
     if incomplete:
-        print(f"  WARNING: {len(incomplete)} CTs have incomplete controls: {incomplete[:5]}")
+        print(
+            f"  WARNING: {len(incomplete)} CTs have incomplete controls: {incomplete[:5]}"
+        )
 
     print(f"Scaling to {args.target:,} households")
     scaled = scale_controls(ct_controls, args.target)
@@ -236,20 +255,28 @@ def main(argv: list[str] | None = None) -> None:
     write_combined_controls(scaled, controls_out)
     print(f"Controls written → {controls_out}")
 
-    candidates_out = args.out_dir / f"montreal-candidates-households-recoded.csv"
+    candidates_out = args.out_dir / "montreal-candidates-households-recoded.csv"
     n = write_recoded_candidates(args.households, candidates_out)
-    print(f"Recoded candidates ({n:,} rows, household_size capped at 5) → {candidates_out}")
+    print(
+        f"Recoded candidates ({n:,} rows, household_size capped at 5) → {candidates_out}"
+    )
 
     print("\nNext step:")
-    print(f"  uv run synthpopcan small-area calibrate-linked \\")
+    print("  uv run synthpopcan geo calibrate-linked \\")
     print(f"    --households {candidates_out} \\")
-    print(f"    --persons data/private/small-area/montreal-candidates-persons.csv \\")
+    print("    --persons data/private/small-area/montreal-candidates-persons.csv \\")
     print(f"    --controls {controls_out} \\")
-    print(f"    --geography-dimension ct \\")
-    print(f"    --geography-column ct \\")
-    print(f"    --households-out data/private/small-area/montreal-ct-synthetic-households-{suffix}.csv \\")
-    print(f"    --persons-out data/private/small-area/montreal-ct-synthetic-persons-{suffix}.csv \\")
-    print(f"    --report data/private/small-area/montreal-ct-calibration-report-{suffix}.json")
+    print("    --geography-dimension ct \\")
+    print("    --geography-column ct \\")
+    print(
+        f"    --households-out data/private/small-area/montreal-ct-synthetic-households-{suffix}.csv \\"
+    )
+    print(
+        f"    --persons-out data/private/small-area/montreal-ct-synthetic-persons-{suffix}.csv \\"
+    )
+    print(
+        f"    --report data/private/small-area/montreal-ct-calibration-report-{suffix}.json"
+    )
 
 
 if __name__ == "__main__":

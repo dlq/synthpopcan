@@ -12,7 +12,8 @@ def build_ipf_fit_report(
     control_table: ControlTable,
     result: IPFResult,
     *,
-    precomputed_totals: dict[tuple[str, ...], dict[tuple[str, ...], float]] | None = None,
+    precomputed_totals: dict[tuple[str, ...], dict[tuple[str, ...], float]]
+    | None = None,
 ) -> dict[str, Any]:
     """Build a fit-quality report for a completed IPF result.
 
@@ -48,7 +49,10 @@ def build_ipf_fit_report(
             }
         )
     for control_margin in control_table.margins:
-        if precomputed_totals is not None and control_margin.dimensions in precomputed_totals:
+        if (
+            precomputed_totals is not None
+            and control_margin.dimensions in precomputed_totals
+        ):
             totals = precomputed_totals[control_margin.dimensions]
         else:
             totals = weighted_totals(

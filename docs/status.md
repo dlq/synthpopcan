@@ -156,7 +156,7 @@ household/person links.
 Current command shape:
 
 ```bash
-synthpopcan small-area calibrate-linked \
+synthpopcan geo calibrate-linked \
   --households candidate-households.csv \
   --persons candidate-persons.csv \
   --controls ct-tenure-controls.csv \

@@ -20,6 +20,7 @@ from rich.progress import (
 from rich.table import Table
 
 from synthpopcan import __version__
+from synthpopcan.cli_geo import small_area
 from synthpopcan.cli_ipf import ipf, read_population_artifact
 from synthpopcan.cli_microdata import microdata
 from synthpopcan.cli_output import (
@@ -33,7 +34,6 @@ from synthpopcan.cli_output import (
     write_output,
     write_wds_search_results,
 )
-from synthpopcan.cli_small_area import small_area
 from synthpopcan.cli_tree import tree
 from synthpopcan.console import (
     print_checks_table,
