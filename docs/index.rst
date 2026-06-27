@@ -91,7 +91,3 @@ beginner generation workflows.
    library
    api
 
-.. toctree::
-   :hidden:
-
-   superpowers/plans/2026-06-25-small-area-linked-synthesis
