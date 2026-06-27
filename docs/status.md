@@ -160,8 +160,8 @@ synthpopcan geo calibrate-linked \
   --households candidate-households.csv \
   --persons candidate-persons.csv \
   --controls ct-tenure-controls.csv \
-  --geography-dimension ct \
-  --geography-column ct \
+  --geo-dimension ct \
+  --geo-column ct \
   --households-out synthetic-households.csv \
   --persons-out synthetic-persons.csv \
   --report small-area-report.json

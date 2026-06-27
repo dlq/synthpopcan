@@ -81,7 +81,7 @@ dimension-mismatch error in `calibrate-linked`.
 ```bash
 synthpopcan geo build-controls \
   --profile 98-401-X2016044_English_CSV_data.csv \
-  --geography-column ada \
+  --geo-column ada \
   --geo-prefix 35 \
   --target 5500000 \
   --candidates candidate-households.csv
@@ -90,7 +90,7 @@ synthpopcan geo build-controls \
 | Option | Description |
 | --- | --- |
 | `--profile` | StatCan Census Profile bulk CSV (2247-variable form). Fetch with `synthpopcan statcan census-profile fetch --geo-level ada`. |
-| `--geography-column` | Target geography type: `ada`, `ct`, `csd`, `cd`, or `da`. Determines which `GEO_LEVEL` rows to read. |
+| `--geo-column` | Target geography type: `ada`, `ct`, `csd`, `cd`, or `da`. Determines which `GEO_LEVEL` rows to read. |
 | `--target` | Total household count to scale controls to (e.g. 5 500 000). |
 | `--candidates` | Household CSV to recode; values above 5 are capped at 5. |
 | `--geo-prefix` | Filter to geographies whose ID starts with this prefix. Use the two-digit province code for ADAs (e.g. `35`=Ontario, `24`=Quebec) or the three-digit CMA code for CTs (e.g. `535`=Toronto, `462`=Montreal). |
@@ -107,8 +107,8 @@ synthpopcan geo calibrate-linked \
   --households candidate-households-recoded.csv \
   --persons candidate-persons.csv \
   --controls candidate-households-controls-5500000.csv \
-  --geography-dimension ada \
-  --geography-column ada \
+  --geo-dimension ada \
+  --geo-column ada \
   --households-out synthetic-households.csv \
   --persons-out synthetic-persons.csv \
   --report small-area-report.json
@@ -129,7 +129,7 @@ synthpopcan geo map \
   --households synthetic-households.csv \
   --persons synthetic-persons.csv \
   --boundaries /path/to/lct_000b16a_e.shp \
-  --geography-column ct
+  --geo-column ct
 ```
 
 Pass `--boundaries` either as a `.geojson` produced by `geo prepare-boundaries`

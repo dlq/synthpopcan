@@ -80,7 +80,7 @@ def tree() -> None:
     help="Comma-separated columns used to condition generation.",
 )
 @click.option(
-    "--geography-column",
+    "--geo-column",
     default=None,
     help="Optional geography column in the training sample.",
 )
@@ -118,7 +118,7 @@ def train_tree_generator(
     level: str,
     target_columns: str,
     conditioning_columns: str,
-    geography_column: str | None,
+    geo_column: str | None,
     weight_column: str | None,
     out_path: Path,
     random_seed: int,
@@ -136,7 +136,7 @@ def train_tree_generator(
                 conditioning_columns,
                 "conditioning columns",
             ),
-            geography_column=geography_column,
+            geography_column=geo_column,
             weight_column=weight_column,
         )
         if method == "cart":
@@ -189,12 +189,12 @@ def train_tree_generator(
     help="Suggested person block to train. Use 'all' to combine person blocks.",
 )
 @click.option(
-    "--geography-column",
+    "--geo-column",
     default=None,
     help="Optional source geography column to filter before training, such as PR.",
 )
 @click.option(
-    "--geography-value",
+    "--geo-value",
     default=None,
     help="Optional source geography value to train, such as 24 or 11.",
 )
@@ -258,8 +258,8 @@ def train_linked_tree_generator(
     suggested_blocks: bool,
     household_block: str,
     person_block: str,
-    geography_column: str | None,
-    geography_value: str | None,
+    geo_column: str | None,
+    geo_value: str | None,
     target_profile: str,
     household_model_out: Path,
     person_model_out: Path,
@@ -295,8 +295,8 @@ def train_linked_tree_generator(
             progress.update(task_id, description="Filtering and choosing columns")
             sample = filter_training_sample_by_geography(
                 sample,
-                geography_column=geography_column,
-                geography_value=geography_value,
+                geography_column=geo_column,
+                geography_value=geo_value,
             )
             (
                 household_target_columns,
@@ -376,8 +376,8 @@ def train_linked_tree_generator(
                     "column_source": column_source,
                     "target_profile": target_profile,
                     "geography_filter": geography_filter_manifest(
-                        geography_column,
-                        geography_value,
+                        geo_column,
+                        geo_value,
                     ),
                     "method": method,
                     "random_seed": random_seed,

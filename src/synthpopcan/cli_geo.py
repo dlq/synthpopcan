@@ -30,7 +30,7 @@ _GEO_DEFAULTS: dict[str, tuple[str, str]] = {
 }
 
 
-def _resolve_boundaries(boundaries_path: Path, geography_column: str) -> Path:
+def _resolve_boundaries(boundaries_path: Path, geo_column: str) -> Path:
     """Return the resolved boundary file path.
 
     Accepts a ``.geojson`` file directly, a ``.shp`` file directly, or a
@@ -39,7 +39,7 @@ def _resolve_boundaries(boundaries_path: Path, geography_column: str) -> Path:
     if boundaries_path.suffix.lower() == ".geojson":
         return boundaries_path
     if boundaries_path.is_dir():
-        col = geography_column.lower()
+        col = geo_column.lower()
         fragment, _ = _GEO_DEFAULTS.get(col, ("", ""))
         candidates = list(boundaries_path.glob("*.shp"))
         if fragment:
@@ -47,7 +47,7 @@ def _resolve_boundaries(boundaries_path: Path, geography_column: str) -> Path:
         if not candidates:
             raise click.ClickException(
                 f"No .shp file found in {boundaries_path} "
-                f"for geography '{geography_column}'. "
+                f"for geography '{geo_column}'. "
                 "Pass the full path to the .shp file instead."
             )
         if len(candidates) > 1:
@@ -60,9 +60,9 @@ def _resolve_boundaries(boundaries_path: Path, geography_column: str) -> Path:
     return boundaries_path
 
 
-def _resolve_id_field(geography_column: str, boundaries_path: Path) -> str:
-    """Return the StatCan attribute field name for *geography_column*, or raise."""
-    col = geography_column.lower()
+def _resolve_id_field(geo_column: str, boundaries_path: Path) -> str:
+    """Return the StatCan attribute field name for *geo_column*, or raise."""
+    col = geo_column.lower()
     if col in _GEO_DEFAULTS:
         return _GEO_DEFAULTS[col][1]
     # Fallback: uppercase the column and append UID
@@ -71,8 +71,8 @@ def _resolve_id_field(geography_column: str, boundaries_path: Path) -> str:
     import click as _click
 
     _click.echo(
-        f"Warning: unknown geography '{geography_column}', guessing shapefile field "
-        f"'{guessed}'. Pass --geography-id-field to override.",
+        f"Warning: unknown geography '{geo_column}', guessing shapefile field "
+        f"'{guessed}'. Pass --geo-id-field to override.",
         err=True,
     )
     return guessed
@@ -109,12 +109,12 @@ def small_area() -> None:
     help="Normalized controls with one target geography dimension.",
 )
 @click.option(
-    "--geography-dimension",
+    "--geo-dimension",
     required=True,
     help="Control dimension naming the target geography, such as ct or ada.",
 )
 @click.option(
-    "--geography-column",
+    "--geo-column",
     required=True,
     help="Column name to write on assigned household and person rows.",
 )
@@ -192,8 +192,8 @@ def calibrate_linked_command(
     households_path: Path,
     persons_path: Path,
     controls_path: Path,
-    geography_dimension: str,
-    geography_column: str,
+    geo_dimension: str,
+    geo_column: str,
     households_out: Path,
     persons_out: Path,
     weights_out: Path | None,
@@ -213,8 +213,8 @@ def calibrate_linked_command(
             households_path=households_path,
             persons_path=persons_path,
             controls_path=controls_path,
-            geography_dimension=geography_dimension,
-            geography_column=geography_column,
+            geography_dimension=geo_dimension,
+            geography_column=geo_column,
             households_out=households_out,
             persons_out=persons_out,
             weights_out=weights_out,
@@ -247,7 +247,7 @@ def calibrate_linked_command(
         "Assigned "
         f"{summary['assigned_households']:,} household row(s) and "
         f"{summary['assigned_persons']:,} person row(s) across "
-        f"{len(summary['geographies']):,} {geography_column} value(s)."
+        f"{len(summary['geographies']):,} {geo_column} value(s)."
     )
 
 
@@ -283,12 +283,12 @@ def calibrate_linked_command(
     help=_BOUNDARIES_HELP,
 )
 @click.option(
-    "--geography-column",
+    "--geo-column",
     required=True,
     help="Column in the household CSV that holds the geography ID (e.g. ct or ada).",
 )
 @click.option(
-    "--geography-id-field",
+    "--geo-id-field",
     default=None,
     help=(
         "Attribute field in the shapefile matching the geography column. "
@@ -322,8 +322,8 @@ def map_command(
     households_path: Path,
     persons_path: Path | None,
     boundaries_path: Path,
-    geography_column: str,
-    geography_id_field: str | None,
+    geo_column: str,
+    geo_id_field: str | None,
     out_path: Path | None,
     title: str | None,
     coord_precision: int,
@@ -340,14 +340,14 @@ def map_command(
         synthpopcan geo map \\
             --households synthetic-households.csv \\
             --boundaries /path/to/statcan-boundaries/ \\
-            --geography-column ct
+            --geo-column ct
     """
     from synthpopcan.map_render import render_synthesis_map
 
     # Resolve optional args
-    boundaries_path = _resolve_boundaries(boundaries_path, geography_column)
-    if geography_id_field is None:
-        geography_id_field = _resolve_id_field(geography_column, boundaries_path)
+    boundaries_path = _resolve_boundaries(boundaries_path, geo_column)
+    if geo_id_field is None:
+        geo_id_field = _resolve_id_field(geo_column, boundaries_path)
     if out_path is None:
         out_path = households_path.parent / (households_path.stem + "-map.html")
     if title is None:
@@ -358,8 +358,8 @@ def map_command(
             households_path=households_path,
             persons_path=persons_path,
             boundaries_path=boundaries_path,
-            geography_column=geography_column,
-            geography_id_field=geography_id_field,
+            geography_column=geo_column,
+            geography_id_field=geo_id_field,
             out_path=out_path,
             title=title,
             coord_precision=coord_precision,
@@ -397,7 +397,7 @@ def map_command(
     ),
 )
 @click.option(
-    "--geography-column",
+    "--geo-column",
     required=True,
     help=(
         "Target geography type: ada, ct, csd, cd, or da. "
@@ -470,7 +470,7 @@ def map_command(
 )
 def build_controls_command(
     profile_path: Path,
-    geography_column: str,
+    geo_column: str,
     target_total: int,
     candidates_path: Path,
     geo_prefix: str | None,
@@ -495,7 +495,7 @@ def build_controls_command(
 
         synthpopcan geo build-controls \\
             --profile 2016-census-profile-ada.csv \\
-            --geography-column ada \\
+            --geo-column ada \\
             --geo-prefix 35 \\
             --target 5500000 \\
             --candidates synthetic-households-5.5m.csv
@@ -520,7 +520,7 @@ def build_controls_command(
     try:
         raw = extract_controls_from_profile(
             profile_path,
-            geography_column,
+            geo_column,
             geo_prefix=geo_prefix,
             geo_level_value=geo_level_value,
         )
@@ -538,14 +538,14 @@ def build_controls_command(
         1 for d in raw.values() if d.get("tenure") and sum(d["tenure"].values()) > 0
     )
     click.echo(
-        f"  {len(raw):,} {geography_column} units found  "
+        f"  {len(raw):,} {geo_column} units found  "
         f"({n_hhsize:,} with hhsize data, {n_tenure:,} with tenure data)"
     )
 
     scaled, dropped = scale_and_validate_controls(raw, target_total)
     if dropped:
         click.echo(
-            f"  Dropped {len(dropped):,} {geography_column} unit(s) "
+            f"  Dropped {len(dropped):,} {geo_column} unit(s) "
             "missing hhsize or tenure data"
         )
     hhsize_total = sum(sum(m["hhsize"].values()) for m in scaled.values())
@@ -556,7 +556,7 @@ def build_controls_command(
     )
 
     try:
-        write_controls_csv(scaled, controls_out, geography_column)
+        write_controls_csv(scaled, controls_out, geo_column)
     except OSError as exc:
         raise click.ClickException(
             format_file_access_error(controls_out, "write", exc)
@@ -584,8 +584,8 @@ def build_controls_command(
         f"    --households {candidates_out} \\\n"
         f"    --persons <persons-csv> \\\n"
         f"    --controls {controls_out} \\\n"
-        f"    --geography-dimension {geography_column} \\\n"
-        f"    --geography-column {geography_column} \\\n"
+        f"    --geo-dimension {geo_column} \\\n"
+        f"    --geo-column {geo_column} \\\n"
         f"    --pool-size 10000 \\\n"
         f"    --households-out <output-households.csv> \\\n"
         f"    --persons-out <output-persons.csv>"
@@ -716,12 +716,12 @@ def prepare_boundaries_command(
     help="Normalized controls CSV with a geography dimension column.",
 )
 @click.option(
-    "--geography-dimension",
+    "--geo-dimension",
     required=True,
     help="Dimension name in controls (e.g. ct, ada).",
 )
 @click.option(
-    "--geography-column",
+    "--geo-column",
     required=True,
     help="Column name to write in output rows.",
 )
@@ -750,8 +750,8 @@ def synthesize_from_package_command(
     package_path: Path,
     household_count: int,
     controls_path: Path,
-    geography_dimension: str,
-    geography_column: str,
+    geo_dimension: str,
+    geo_column: str,
     households_out: Path,
     persons_out: Path,
     weights_out: Path | None,
@@ -770,8 +770,8 @@ def synthesize_from_package_command(
         synthpopcan geo synthesize-from-package package.json \\
           --households 50000 \\
           --controls ada-controls.csv \\
-          --geography-dimension ada \\
-          --geography-column ada \\
+          --geo-dimension ada \\
+          --geo-column ada \\
           --households-out small-area-households.csv \\
           --persons-out small-area-persons.csv \\
           --report calibration-report.json
@@ -821,8 +821,8 @@ def synthesize_from_package_command(
                 households_path=candidates_households,
                 persons_path=candidates_persons,
                 controls_path=controls_path,
-                geography_dimension=geography_dimension,
-                geography_column=geography_column,
+                geography_dimension=geo_dimension,
+                geography_column=geo_column,
                 households_out=households_out,
                 persons_out=persons_out,
                 weights_out=weights_out,

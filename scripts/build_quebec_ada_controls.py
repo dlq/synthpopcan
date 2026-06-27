@@ -256,8 +256,8 @@ def main(argv: list[str] | None = None) -> None:
     print(f"    --households {candidates_out} \\")
     print(f"    --persons {persons_path} \\")
     print(f"    --controls {controls_out} \\")
-    print("    --geography-dimension ada \\")
-    print("    --geography-column ada \\")
+    print("    --geo-dimension ada \\")
+    print("    --geo-column ada \\")
     print(
         f"    --households-out {args.out_dir}/quebec-ada-synthetic-households-{suffix}.csv \\"
     )

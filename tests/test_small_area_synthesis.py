@@ -264,9 +264,9 @@ def test_cli_calibrates_linked_households_to_small_area_controls(
             str(persons),
             "--controls",
             str(controls),
-            "--geography-dimension",
+            "--geo-dimension",
             "tract",
-            "--geography-column",
+            "--geo-column",
             "tract",
             "--households-out",
             str(out_households),
@@ -321,9 +321,9 @@ def test_cli_calibrate_linked_weights_out_and_report_out(tmp_path: Path) -> None
             str(f["persons"]),
             "--controls",
             str(f["controls"]),
-            "--geography-dimension",
+            "--geo-dimension",
             "tract",
-            "--geography-column",
+            "--geo-column",
             "tract",
             "--households-out",
             str(f["households_out"]),
@@ -358,9 +358,9 @@ def test_cli_calibrate_linked_format_json(
             str(f["persons"]),
             "--controls",
             str(f["controls"]),
-            "--geography-dimension",
+            "--geo-dimension",
             "tract",
-            "--geography-column",
+            "--geo-column",
             "tract",
             "--households-out",
             str(f["households_out"]),
@@ -399,9 +399,9 @@ def test_cli_calibrate_linked_oserror(tmp_path: Path) -> None:
                     str(f["persons"]),
                     "--controls",
                     str(f["controls"]),
-                    "--geography-dimension",
+                    "--geo-dimension",
                     "tract",
-                    "--geography-column",
+                    "--geo-column",
                     "tract",
                     "--households-out",
                     str(f["households_out"]),
@@ -433,9 +433,9 @@ def test_cli_calibrate_linked_value_error(tmp_path: Path) -> None:
                     str(f["persons"]),
                     "--controls",
                     str(f["controls"]),
-                    "--geography-dimension",
+                    "--geo-dimension",
                     "tract",
-                    "--geography-column",
+                    "--geo-column",
                     "tract",
                     "--households-out",
                     str(f["households_out"]),
@@ -484,48 +484,63 @@ def _write_minimal_linked_package(tmp_path: Path) -> Path:
 
     training_manifest = tmp_path / "training-manifest.json"
     training_manifest.write_text(
-        json.dumps({
-            "schema_version": "synthpopcan-linked-tree-training-v1",
-            "source": {
-                "path": "data/private/census.csv",
-                "source_format": "statcan-2016-hierarchical",
-                "records": 10,
-                "households": 5,
-            },
-            "target_profile": "minimal",
-            "geography_filter": {"column": "geo", "value": "QC"},
-            "method": "conditional-frequency",
-            "random_seed": 7,
-            "training": {"household": {"records": 5}, "person": {"records": 5}},
-            "models": {
-                "household": {"path": str(hh_path)},
-                "person": {"path": str(p_path)},
-            },
-        })
+        json.dumps(
+            {
+                "schema_version": "synthpopcan-linked-tree-training-v1",
+                "source": {
+                    "path": "data/private/census.csv",
+                    "source_format": "statcan-2016-hierarchical",
+                    "records": 10,
+                    "households": 5,
+                },
+                "target_profile": "minimal",
+                "geography_filter": {"column": "geo", "value": "QC"},
+                "method": "conditional-frequency",
+                "random_seed": 7,
+                "training": {"household": {"records": 5}, "person": {"records": 5}},
+                "models": {
+                    "household": {"path": str(hh_path)},
+                    "person": {"path": str(p_path)},
+                },
+            }
+        )
     )
     source_provenance = tmp_path / "source-provenance.json"
     source_provenance.write_text(
-        json.dumps({
-            "schema_version": "synthpopcan-source-provenance-v1",
-            "title": "Test Census",
-            "provider": "Statistics Canada",
-            "access_class": "restricted",
-            "citation": "Statistics Canada. Test.",
-            "redistribution_note": "Do not redistribute.",
-        })
+        json.dumps(
+            {
+                "schema_version": "synthpopcan-source-provenance-v1",
+                "title": "Test Census",
+                "provider": "Statistics Canada",
+                "access_class": "restricted",
+                "citation": "Statistics Canada. Test.",
+                "redistribution_note": "Do not redistribute.",
+            }
+        )
     )
     package_path = tmp_path / "package.json"
-    exit_code = main([
-        "tree", "package-linked-models",
-        "--household-model", str(hh_path),
-        "--person-model", str(p_path),
-        "--training-manifest", str(training_manifest),
-        "--source-provenance", str(source_provenance),
-        "--review-note", "test fixture",
-        "--out", str(package_path),
-        "--min-support", "1",
-        "--max-purity", "1",
-    ])
+    exit_code = main(
+        [
+            "tree",
+            "package-linked-models",
+            "--household-model",
+            str(hh_path),
+            "--person-model",
+            str(p_path),
+            "--training-manifest",
+            str(training_manifest),
+            "--source-provenance",
+            str(source_provenance),
+            "--review-note",
+            "test fixture",
+            "--out",
+            str(package_path),
+            "--min-support",
+            "1",
+            "--max-purity",
+            "1",
+        ]
+    )
     assert exit_code == 0, "package-linked-models failed"
     return package_path
 
@@ -543,17 +558,27 @@ def test_cli_synthesize_from_package(tmp_path: Path) -> None:
         'size,"tract,household_size",4620002.00,1,3\n'
     )
 
-    exit_code = main([
-        "geo", "synthesize-from-package",
-        str(package_path),
-        "--households", "4",
-        "--controls", str(controls),
-        "--geography-dimension", "tract",
-        "--geography-column", "tract",
-        "--households-out", str(households_out),
-        "--persons-out", str(persons_out),
-        "--report", str(report_out),
-    ])
+    exit_code = main(
+        [
+            "geo",
+            "synthesize-from-package",
+            str(package_path),
+            "--households",
+            "4",
+            "--controls",
+            str(controls),
+            "--geo-dimension",
+            "tract",
+            "--geo-column",
+            "tract",
+            "--households-out",
+            str(households_out),
+            "--persons-out",
+            str(persons_out),
+            "--report",
+            str(report_out),
+        ]
+    )
 
     assert exit_code == 0
     assert households_out.exists()

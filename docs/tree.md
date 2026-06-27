@@ -367,8 +367,8 @@ Trains household and person models from mixed hierarchical microdata.
 ```bash
 synthpopcan tree train-linked hierarchical.csv \
   --suggested-blocks \
-  --geography-column PR \
-  --geography-value 24 \
+  --geo-column PR \
+  --geo-value 24 \
   --target-profile reduced \
   --household-model-out household-pr24.json \
   --person-model-out person-pr24.json \
@@ -554,8 +554,8 @@ synthpopcan tree train-linked \
   --suggested-blocks \
   --household-block all \
   --person-block all \
-  --geography-column CMA \
-  --geography-value 462 \
+  --geo-column CMA \
+  --geo-value 462 \
   --target-profile full \
   --random-seed 7 \
   --household-model-out data/private/benchmarks/tree-release-2016-cma462-all-fields/household-model.json \

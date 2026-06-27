@@ -122,7 +122,7 @@ Important options:
   `fixture-v1`.
 - `--level`: required for `fixture-v1`, where the fixture must be declared as
   `household` or `person`.
-- `--weight-column`, `--geography-columns`, and `--id-columns`: fixture-oriented
+- `--weight-column`, `--geo-columns`, and `--id-columns`: fixture-oriented
   options used when a small local file needs explicit metadata.
 - `--format json|table`: choose machine-readable or reader-facing output.
 
@@ -197,7 +197,7 @@ tree-model work.
 ```bash
 synthpopcan microdata tree-geography-feasibility hierarchical.csv \
   --input-format statcan-2016-hierarchical \
-  --geography-column PR \
+  --geo-column PR \
   --household-block household_core \
   --person-block person_demographics
 ```

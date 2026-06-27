@@ -266,8 +266,8 @@ def main(argv: list[str] | None = None) -> None:
     print(f"    --households {candidates_out} \\")
     print("    --persons data/private/small-area/montreal-candidates-persons.csv \\")
     print(f"    --controls {controls_out} \\")
-    print("    --geography-dimension ct \\")
-    print("    --geography-column ct \\")
+    print("    --geo-dimension ct \\")
+    print("    --geo-column ct \\")
     print(
         f"    --households-out data/private/small-area/montreal-ct-synthetic-households-{suffix}.csv \\"
     )

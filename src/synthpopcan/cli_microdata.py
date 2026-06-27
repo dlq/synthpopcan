@@ -52,7 +52,7 @@ def microdata() -> None:
 )
 @click.option("--weight-column", default=None, help="Optional weight column.")
 @click.option(
-    "--geography-columns",
+    "--geo-columns",
     default="",
     help="Comma-separated geography columns.",
 )
@@ -70,7 +70,7 @@ def inspect_microdata(
     source_format: str,
     level: str,
     weight_column: str | None,
-    geography_columns: str,
+    geo_columns: str,
     id_columns: str,
     output_format: str,
 ) -> None:
@@ -86,7 +86,7 @@ def inspect_microdata(
                 path,
                 level=level,
                 weight_column=weight_column,
-                geography_columns=_parse_optional_columns(geography_columns),
+                geography_columns=_parse_optional_columns(geo_columns),
                 id_columns=_parse_optional_columns(id_columns),
             )
         else:
@@ -199,7 +199,7 @@ def suggest_microdata_tree_columns(
     help="Input microdata adapter format.",
 )
 @click.option(
-    "--geography-column",
+    "--geo-column",
     default="PR",
     show_default=True,
     help="Geography column to evaluate, such as PR or CMA.",
@@ -269,7 +269,7 @@ def suggest_microdata_tree_columns(
 def tree_geography_feasibility(
     path: Path,
     source_format: str,
-    geography_column: str,
+    geo_column: str,
     household_block: str,
     person_block: str,
     likely_person_rows: int,
@@ -285,7 +285,7 @@ def tree_geography_feasibility(
         sample = read_statcan_2016_hierarchical_seed_sample(path)
         report = build_tree_geography_feasibility_report(
             sample,
-            geography_column=geography_column,
+            geography_column=geo_column,
             household_block=household_block,
             person_block=person_block,
             likely_person_rows=likely_person_rows,
@@ -328,7 +328,7 @@ def tree_geography_feasibility(
 )
 @click.option("--weight-column", default=None, help="Optional fixture weight column.")
 @click.option(
-    "--geography-columns",
+    "--geo-columns",
     default="",
     help="Comma-separated fixture geography columns.",
 )
@@ -354,7 +354,7 @@ def export_microdata_seed(
     level: str | None,
     columns: str,
     weight_column: str | None,
-    geography_columns: str,
+    geo_columns: str,
     id_columns: str,
     out_path: Path,
     output_format: str,
@@ -372,7 +372,7 @@ def export_microdata_seed(
                 path,
                 level=level,
                 weight_column=weight_column,
-                geography_columns=_parse_optional_columns(geography_columns),
+                geography_columns=_parse_optional_columns(geo_columns),
                 id_columns=_parse_optional_columns(id_columns),
             )
         else:
