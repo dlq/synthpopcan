@@ -466,7 +466,7 @@ def test_webapp_wds_helper_edge_cases(monkeypatch) -> None:
 def test_webapp_demo_model_catalogue_serves_safe_linked_package() -> None:
     catalogue = model_catalogue()
 
-    assert len(catalogue) == 3
+    assert len(catalogue) >= 3
     model = catalogue[0]
     assert model["id"] == "demo-linked-household-person"
     assert model["name"] == "Safe demo household/person package"

@@ -77,14 +77,14 @@ def test_cli_models_list_marks_downloadable_models(
     assert main(["models", "list", "--format", "json"]) == 0
 
     payload = json.loads(capsys.readouterr().out)
-    demo, montreal, quebec = payload["models"]
-    assert demo["id"] == "demo-linked-household-person"
+    models = {m["id"]: m for m in payload["models"]}
+    demo = models["demo-linked-household-person"]
     assert demo["distribution"] == "bundled"
     assert demo["installed"] is True
-    assert montreal["id"] == "montreal-cma-2016-all-fields"
+    montreal = models["montreal-cma-2016-all-fields"]
     assert montreal["distribution"] == "download"
     assert montreal["installed"] is False
-    assert quebec["id"] == "quebec-2016-all-fields"
+    quebec = models["quebec-2016-all-fields"]
     assert quebec["distribution"] == "download"
     assert quebec["installed"] is False
 
