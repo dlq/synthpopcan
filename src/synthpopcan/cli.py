@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+__all__ = ["main", "resolve_data_root"]
+
 import csv
 import json
 import os

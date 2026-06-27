@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+__all__ = ["small_area"]
+
 import json
 from pathlib import Path
 

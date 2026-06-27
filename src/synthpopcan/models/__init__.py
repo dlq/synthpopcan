@@ -18,7 +18,7 @@ from urllib.request import urlopen
 
 ProgressCallback = Callable[[int, int | None], None]
 
-_RELEASE_BASE_URL = "https://github.com/dlq/synthpopcan/releases/download/v0.1.0"
+_RELEASE_BASE_URL = "https://github.com/dlq/synthpopcan/releases/download/v0.2.0"
 
 _MODEL_PACKAGES: dict[str, dict[str, object]] = {
     "demo-linked-household-person": {

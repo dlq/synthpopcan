@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+__all__ = ["microdata"]
+
 import csv
 import json
 from pathlib import Path
