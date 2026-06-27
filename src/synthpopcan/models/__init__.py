@@ -75,8 +75,269 @@ _MODEL_PACKAGES: dict[str, dict[str, object]] = {
         "safe_demo": False,
         "distribution": "download",
         "size_bytes": 122_079_409,
-        "sha256": ("7fbfa64e29ae5539f382475c472cb1fe48b988161e0b3a10ecd81fcaa942a7d7"),
+        "sha256": "7fbfa64e29ae5539f382475c472cb1fe48b988161e0b3a10ecd81fcaa942a7d7",
         "url": f"{_RELEASE_BASE_URL}/quebec-2016-all-fields-package.json",
+    },
+    "ontario-2016-all-fields": {
+        "filename": "ontario-2016-all-fields-package.json",
+        "name": "Ontario 2016 broad linked package",
+        "description": (
+            "Publishable-candidate linked household/person model trained from "
+            "the local 2016 hierarchical PUMF for Ontario (PR 35)."
+        ),
+        "geography": "Ontario (PR 35)",
+        "provenance": "Statistics Canada 2016 Census hierarchical PUMF.",
+        "conditions": ["PR", "household_size", "TENUR"],
+        "default_generation": {
+            "households": 1000,
+            "conditions": "",
+        },
+        "safe_demo": False,
+        "distribution": "download",
+        "size_bytes": 205_757_139,
+        "sha256": "0967ba99c4179e3de1d8436a14e0b3082bd4a7353c68b9c59a4c32977711e7ed",
+        "url": f"{_RELEASE_BASE_URL}/ontario-2016-all-fields-package.json",
+    },
+    "bc-2016-all-fields": {
+        "filename": "bc-2016-all-fields-package.json",
+        "name": "British Columbia 2016 broad linked package",
+        "description": (
+            "Publishable-candidate linked household/person model trained from "
+            "the local 2016 hierarchical PUMF for British Columbia (PR 59)."
+        ),
+        "geography": "British Columbia (PR 59)",
+        "provenance": "Statistics Canada 2016 Census hierarchical PUMF.",
+        "conditions": ["PR", "household_size", "TENUR"],
+        "default_generation": {
+            "households": 1000,
+            "conditions": "",
+        },
+        "safe_demo": False,
+        "distribution": "download",
+        "size_bytes": 75_781_376,
+        "sha256": "76e855c2d2bd6b62ef7e7073c4df5ea288fe0f8e060c5e36859c24047a56fb54",
+        "url": f"{_RELEASE_BASE_URL}/bc-2016-all-fields-package.json",
+    },
+    "alberta-2016-all-fields": {
+        "filename": "alberta-2016-all-fields-package.json",
+        "name": "Alberta 2016 broad linked package",
+        "description": (
+            "Publishable-candidate linked household/person model trained from "
+            "the local 2016 hierarchical PUMF for Alberta (PR 48)."
+        ),
+        "geography": "Alberta (PR 48)",
+        "provenance": "Statistics Canada 2016 Census hierarchical PUMF.",
+        "conditions": ["PR", "household_size", "TENUR"],
+        "default_generation": {
+            "households": 1000,
+            "conditions": "",
+        },
+        "safe_demo": False,
+        "distribution": "download",
+        "size_bytes": 63_448_287,
+        "sha256": "0f0f61fc0a3e188b1c64ea02acc3f05fbfdb0d993ffee3a901b5b51f7fe81814",
+        "url": f"{_RELEASE_BASE_URL}/alberta-2016-all-fields-package.json",
+    },
+    "toronto-cma-2016-all-fields": {
+        "filename": "toronto-cma-2016-all-fields-package.json",
+        "name": "Toronto CMA 2016 broad linked package",
+        "description": (
+            "Publishable-candidate linked household/person model trained from "
+            "the local 2016 hierarchical PUMF for Toronto CMA (CMA 535)."
+        ),
+        "geography": "Toronto CMA (CMA 535)",
+        "provenance": "Statistics Canada 2016 Census hierarchical PUMF.",
+        "conditions": ["CMA", "household_size", "TENUR"],
+        "default_generation": {
+            "households": 1000,
+            "conditions": "",
+        },
+        "safe_demo": False,
+        "distribution": "download",
+        "size_bytes": 93_385_062,
+        "sha256": "dd0caf299c852ed526861b9bc6e6a2d654bf0bbe51809d76c9b5e30da0381ae0",
+        "url": f"{_RELEASE_BASE_URL}/toronto-cma-2016-all-fields-package.json",
+    },
+    "vancouver-cma-2016-all-fields": {
+        "filename": "vancouver-cma-2016-all-fields-package.json",
+        "name": "Vancouver CMA 2016 broad linked package",
+        "description": (
+            "Publishable-candidate linked household/person model trained from "
+            "the local 2016 hierarchical PUMF for Vancouver CMA (CMA 933)."
+        ),
+        "geography": "Vancouver CMA (CMA 933)",
+        "provenance": "Statistics Canada 2016 Census hierarchical PUMF.",
+        "conditions": ["CMA", "household_size", "TENUR"],
+        "default_generation": {
+            "households": 1000,
+            "conditions": "",
+        },
+        "safe_demo": False,
+        "distribution": "download",
+        "size_bytes": 40_937_245,
+        "sha256": "3e3565c2ba4dbfdab28bf907e256d48bb766971270dde09fde597afb57c210cf",
+        "url": f"{_RELEASE_BASE_URL}/vancouver-cma-2016-all-fields-package.json",
+    },
+    "manitoba-2016-all-fields": {
+        "filename": "manitoba-2016-all-fields-package.json",
+        "name": "Manitoba 2016 broad linked package",
+        "description": (
+            "Publishable-candidate linked household/person model trained from "
+            "the local 2016 hierarchical PUMF for Manitoba (PR 46)."
+        ),
+        "geography": "Manitoba (PR 46)",
+        "provenance": "Statistics Canada 2016 Census hierarchical PUMF.",
+        "conditions": ["PR", "household_size", "TENUR"],
+        "default_generation": {
+            "households": 1000,
+            "conditions": "",
+        },
+        "safe_demo": False,
+        "distribution": "download",
+        "size_bytes": 20_186_538,
+        "sha256": "82e8f03152568a3898c80de36705827f8a22101a1390a2b9f381df366a9088f4",
+        "url": f"{_RELEASE_BASE_URL}/manitoba-2016-all-fields-package.json",
+    },
+    "calgary-cma-2016-all-fields": {
+        "filename": "calgary-cma-2016-all-fields-package.json",
+        "name": "Calgary CMA 2016 broad linked package",
+        "description": (
+            "Publishable-candidate linked household/person model trained from "
+            "the local 2016 hierarchical PUMF for Calgary CMA (CMA 825)."
+        ),
+        "geography": "Calgary CMA (CMA 825)",
+        "provenance": "Statistics Canada 2016 Census hierarchical PUMF.",
+        "conditions": ["CMA", "household_size", "TENUR"],
+        "default_generation": {
+            "households": 1000,
+            "conditions": "",
+        },
+        "safe_demo": False,
+        "distribution": "download",
+        "size_bytes": 22_635_036,
+        "sha256": "d55fe22cfa66c5b78545b65e3275972ebc2f37e714f9a6b266040ec9a0a407a2",
+        "url": f"{_RELEASE_BASE_URL}/calgary-cma-2016-all-fields-package.json",
+    },
+    "edmonton-cma-2016-all-fields": {
+        "filename": "edmonton-cma-2016-all-fields-package.json",
+        "name": "Edmonton CMA 2016 broad linked package",
+        "description": (
+            "Publishable-candidate linked household/person model trained from "
+            "the local 2016 hierarchical PUMF for Edmonton CMA (CMA 835)."
+        ),
+        "geography": "Edmonton CMA (CMA 835)",
+        "provenance": "Statistics Canada 2016 Census hierarchical PUMF.",
+        "conditions": ["CMA", "household_size", "TENUR"],
+        "default_generation": {
+            "households": 1000,
+            "conditions": "",
+        },
+        "safe_demo": False,
+        "distribution": "download",
+        "size_bytes": 21_367_337,
+        "sha256": "c18b593c93fd02cc30ee07a956ace912b0072a8c14c6a538e94087592c27818a",
+        "url": f"{_RELEASE_BASE_URL}/edmonton-cma-2016-all-fields-package.json",
+    },
+    "saskatchewan-2016-all-fields": {
+        "filename": "saskatchewan-2016-all-fields-package.json",
+        "name": "Saskatchewan 2016 broad linked package",
+        "description": (
+            "Publishable-candidate linked household/person model trained from "
+            "the local 2016 hierarchical PUMF for Saskatchewan (PR 47)."
+        ),
+        "geography": "Saskatchewan (PR 47)",
+        "provenance": "Statistics Canada 2016 Census hierarchical PUMF.",
+        "conditions": ["PR", "household_size", "TENUR"],
+        "default_generation": {
+            "households": 1000,
+            "conditions": "",
+        },
+        "safe_demo": False,
+        "distribution": "download",
+        "size_bytes": 17_458_623,
+        "sha256": "1bcb91caf412ba6c1b760fc51fb57ffcdc95608bdf20fb854237a4d5751f1a8f",
+        "url": f"{_RELEASE_BASE_URL}/saskatchewan-2016-all-fields-package.json",
+    },
+    "nova-scotia-2016-all-fields": {
+        "filename": "nova-scotia-2016-all-fields-package.json",
+        "name": "Nova Scotia 2016 broad linked package",
+        "description": (
+            "Publishable-candidate linked household/person model trained from "
+            "the local 2016 hierarchical PUMF for Nova Scotia (PR 12)."
+        ),
+        "geography": "Nova Scotia (PR 12)",
+        "provenance": "Statistics Canada 2016 Census hierarchical PUMF.",
+        "conditions": ["PR", "household_size", "TENUR"],
+        "default_generation": {
+            "households": 1000,
+            "conditions": "",
+        },
+        "safe_demo": False,
+        "distribution": "download",
+        "size_bytes": 15_356_566,
+        "sha256": "70062e8d721d8ff29da0dbbfdbb455b9a9e519f9a69465898c571c6f799f06a4",
+        "url": f"{_RELEASE_BASE_URL}/nova-scotia-2016-all-fields-package.json",
+    },
+    "new-brunswick-2016-all-fields": {
+        "filename": "new-brunswick-2016-all-fields-package.json",
+        "name": "New Brunswick 2016 broad linked package",
+        "description": (
+            "Publishable-candidate linked household/person model trained from "
+            "the local 2016 hierarchical PUMF for New Brunswick (PR 13)."
+        ),
+        "geography": "New Brunswick (PR 13)",
+        "provenance": "Statistics Canada 2016 Census hierarchical PUMF.",
+        "conditions": ["PR", "household_size", "TENUR"],
+        "default_generation": {
+            "households": 1000,
+            "conditions": "",
+        },
+        "safe_demo": False,
+        "distribution": "download",
+        "size_bytes": 12_499_103,
+        "sha256": "607a7a368746b755fb2e6b345a69219b6e655c3dd9f41aac670e6cbf1dd94876",
+        "url": f"{_RELEASE_BASE_URL}/new-brunswick-2016-all-fields-package.json",
+    },
+    "newfoundland-2016-all-fields": {
+        "filename": "newfoundland-2016-all-fields-package.json",
+        "name": "Newfoundland and Labrador 2016 broad linked package",
+        "description": (
+            "Publishable-candidate linked household/person model trained from "
+            "the local 2016 hierarchical PUMF for Newfoundland and Labrador (PR 10)."
+        ),
+        "geography": "Newfoundland and Labrador (PR 10)",
+        "provenance": "Statistics Canada 2016 Census hierarchical PUMF.",
+        "conditions": ["PR", "household_size", "TENUR"],
+        "default_generation": {
+            "households": 1000,
+            "conditions": "",
+        },
+        "safe_demo": False,
+        "distribution": "download",
+        "size_bytes": 8_537_569,
+        "sha256": "c107a61c85d2f12b3c4b95656229e191287d6af927c53a7f18ad33ba8e9fe7c7",
+        "url": f"{_RELEASE_BASE_URL}/newfoundland-2016-all-fields-package.json",
+    },
+    "pei-2016-minimal": {
+        "filename": "pei-2016-minimal-package.json",
+        "name": "Prince Edward Island 2016 minimal linked package",
+        "description": (
+            "Publishable-candidate linked household/person model trained from "
+            "the local 2016 hierarchical PUMF for Prince Edward Island (PR 11). "
+            "Uses a minimal column profile due to small sample size."
+        ),
+        "geography": "Prince Edward Island (PR 11)",
+        "provenance": "Statistics Canada 2016 Census hierarchical PUMF.",
+        "conditions": ["PR", "household_size", "TENUR"],
+        "default_generation": {
+            "households": 100,
+            "conditions": "",
+        },
+        "safe_demo": False,
+        "distribution": "download",
+        "size_bytes": 65_948,
+        "sha256": "b9733fb70d83020444e811b3597fbb4621164290aa4982255a940b702f31a4ff",
+        "url": f"{_RELEASE_BASE_URL}/pei-2016-minimal-package.json",
     },
 }
 
