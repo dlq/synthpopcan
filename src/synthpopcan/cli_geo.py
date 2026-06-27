@@ -697,3 +697,145 @@ def prepare_boundaries_command(
 
     print_wrote(geojson_path)
     click.echo(f"\nPass this file to geo map with:\n  --boundaries {geojson_path}")
+
+
+@small_area.command("synthesize-from-package")
+@click.argument("package_path", type=_PATH, metavar="PACKAGE")
+@click.option(
+    "--households",
+    "household_count",
+    required=True,
+    type=int,
+    help="Number of candidate households to generate before calibration.",
+)
+@click.option(
+    "--controls",
+    "controls_path",
+    required=True,
+    type=_PATH,
+    help="Normalized controls CSV with a geography dimension column.",
+)
+@click.option(
+    "--geography-dimension",
+    required=True,
+    help="Dimension name in controls (e.g. ct, ada).",
+)
+@click.option(
+    "--geography-column",
+    required=True,
+    help="Column name to write in output rows.",
+)
+@click.option("--households-out", required=True, type=_PATH)
+@click.option("--persons-out", required=True, type=_PATH)
+@click.option("--weights-out", type=_PATH, help="Optional weights CSV path.")
+@click.option(
+    "--report",
+    "report_out",
+    type=_PATH,
+    help="Optional calibration report JSON path.",
+)
+@click.option(
+    "--random-seed",
+    type=int,
+    default=None,
+    help="Random seed for generation.",
+)
+@click.option(
+    "--pool-size",
+    type=int,
+    default=None,
+    help="Maximum candidate households to use for calibration.",
+)
+def synthesize_from_package_command(
+    package_path: Path,
+    household_count: int,
+    controls_path: Path,
+    geography_dimension: str,
+    geography_column: str,
+    households_out: Path,
+    persons_out: Path,
+    weights_out: Path | None,
+    report_out: Path | None,
+    random_seed: int | None,
+    pool_size: int | None,
+) -> None:
+    """Generate linked candidates from a package and calibrate to small-area controls.
+
+    PACKAGE is a local linked model package JSON produced by
+    ``geo tree package-linked-models``.
+
+    \b
+    Example:
+
+        synthpopcan geo synthesize-from-package package.json \\
+          --households 50000 \\
+          --controls ada-controls.csv \\
+          --geography-dimension ada \\
+          --geography-column ada \\
+          --households-out small-area-households.csv \\
+          --persons-out small-area-persons.csv \\
+          --report calibration-report.json
+    """
+    import tempfile
+
+    from synthpopcan.cli_tree import (
+        package_models,
+        read_linked_model_package,
+        validate_package_allows_generation,
+    )
+    from synthpopcan.tree import generate_linked_population_to_csv
+
+    try:
+        package = read_linked_model_package(package_path)
+    except (OSError, ValueError) as exc:
+        raise click.ClickException(str(exc)) from exc
+
+    try:
+        validate_package_allows_generation(package)
+    except ValueError as exc:
+        raise click.ClickException(str(exc)) from exc
+
+    household_model, person_model = package_models(package)
+    household_size_column = str(package.get("household_size_column", "household_size"))
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmp = Path(tmpdir)
+        candidates_households = tmp / "candidates-households.csv"
+        candidates_persons = tmp / "candidates-persons.csv"
+
+        try:
+            generate_linked_population_to_csv(
+                household_model,
+                person_model,
+                households=household_count,
+                households_path=candidates_households,
+                persons_path=candidates_persons,
+                household_size_column=household_size_column,
+                random_seed=random_seed,
+            )
+        except (OSError, ValueError) as exc:
+            raise click.ClickException(str(exc)) from exc
+
+        try:
+            summary = calibrate_linked_household_csvs(
+                households_path=candidates_households,
+                persons_path=candidates_persons,
+                controls_path=controls_path,
+                geography_dimension=geography_dimension,
+                geography_column=geography_column,
+                households_out=households_out,
+                persons_out=persons_out,
+                weights_out=weights_out,
+                report_out=report_out,
+                pool_size=pool_size,
+            )
+        except (OSError, ValueError) as exc:
+            raise click.ClickException(str(exc)) from exc
+
+    print_wrote(households_out)
+    print_wrote(persons_out)
+    if weights_out:
+        print_wrote(weights_out)
+    if report_out:
+        print_wrote(report_out)
+    click.echo(json.dumps(summary, sort_keys=True))

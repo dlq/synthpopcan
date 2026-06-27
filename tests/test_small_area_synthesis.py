@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -12,6 +14,30 @@ from synthpopcan.small_area_synthesis import (
     fit_households_by_geography,
     realize_linked_geography_population,
 )
+from synthpopcan.tree import (
+    TreeModelSpec,
+    TreeTrainingSample,
+    train_frequency_model,
+    write_tree_model,
+)
+
+
+def _train_frequency_model_from_rows(
+    spec: TreeModelSpec,
+    *,
+    rows: tuple[dict[str, str], ...],
+):
+    source = TreeTrainingSample(
+        level=spec.level,
+        source_format="csv-v1",
+        records=rows,
+        columns=(*spec.conditioning_columns, *spec.target_columns),
+        target_columns=spec.target_columns,
+        conditioning_columns=spec.conditioning_columns,
+        geography_column=spec.geography_column,
+        weight_column=spec.weight_column,
+    )
+    return train_frequency_model(source, random_seed=spec.random_seed)
 
 
 def test_controls_by_geography_removes_target_geography_dimension() -> None:
@@ -194,10 +220,14 @@ def test_calibrate_linked_household_csvs_writes_outputs(tmp_path: Path) -> None:
         out_households.read_text().splitlines()[0].startswith("synthetic_household_id,")
     )
     assert "4620001.00" in out_persons.read_text()
-    assert "geography" in report.read_text()
     assert weights.read_text().splitlines()[0] == (
         "target_geography,source_candidate_household_id,weight,integer_weight"
     )
+    report_data = json.loads(report.read_text())
+    assert report_data["summary"]["total_geographies"] == 1
+    assert report_data["summary"]["converged_count"] == 1
+    assert report_data["summary"]["non_converged_count"] == 0
+    assert "margin_summaries" in report_data["geographies"]["4620001.00"]
 
 
 def test_cli_calibrates_linked_households_to_small_area_controls(
@@ -413,3 +443,122 @@ def test_cli_calibrate_linked_value_error(tmp_path: Path) -> None:
                     str(f["persons_out"]),
                 ]
             )
+
+
+def _write_minimal_linked_package(tmp_path: Path) -> Path:
+    household_model = replace(
+        _train_frequency_model_from_rows(
+            TreeModelSpec(
+                level="household",
+                target_columns=("household_size", "TENUR"),
+                conditioning_columns=("geo",),
+                geography_column="geo",
+            ),
+            rows=({"geo": "QC", "household_size": "1", "TENUR": "owner"},),
+        ),
+        release_class="publishable_candidate",
+    )
+    person_model = replace(
+        _train_frequency_model_from_rows(
+            TreeModelSpec(
+                level="person",
+                target_columns=("AGEGRP",),
+                conditioning_columns=("geo", "household_size", "TENUR"),
+                geography_column="geo",
+            ),
+            rows=(
+                {
+                    "geo": "QC",
+                    "household_size": "1",
+                    "TENUR": "owner",
+                    "AGEGRP": "adult",
+                },
+            ),
+        ),
+        release_class="publishable_candidate",
+    )
+    hh_path = tmp_path / "hh-model.json"
+    p_path = tmp_path / "p-model.json"
+    write_tree_model(hh_path, household_model)
+    write_tree_model(p_path, person_model)
+
+    training_manifest = tmp_path / "training-manifest.json"
+    training_manifest.write_text(
+        json.dumps({
+            "schema_version": "synthpopcan-linked-tree-training-v1",
+            "source": {
+                "path": "data/private/census.csv",
+                "source_format": "statcan-2016-hierarchical",
+                "records": 10,
+                "households": 5,
+            },
+            "target_profile": "minimal",
+            "geography_filter": {"column": "geo", "value": "QC"},
+            "method": "conditional-frequency",
+            "random_seed": 7,
+            "training": {"household": {"records": 5}, "person": {"records": 5}},
+            "models": {
+                "household": {"path": str(hh_path)},
+                "person": {"path": str(p_path)},
+            },
+        })
+    )
+    source_provenance = tmp_path / "source-provenance.json"
+    source_provenance.write_text(
+        json.dumps({
+            "schema_version": "synthpopcan-source-provenance-v1",
+            "title": "Test Census",
+            "provider": "Statistics Canada",
+            "access_class": "restricted",
+            "citation": "Statistics Canada. Test.",
+            "redistribution_note": "Do not redistribute.",
+        })
+    )
+    package_path = tmp_path / "package.json"
+    exit_code = main([
+        "tree", "package-linked-models",
+        "--household-model", str(hh_path),
+        "--person-model", str(p_path),
+        "--training-manifest", str(training_manifest),
+        "--source-provenance", str(source_provenance),
+        "--review-note", "test fixture",
+        "--out", str(package_path),
+        "--min-support", "1",
+        "--max-purity", "1",
+    ])
+    assert exit_code == 0, "package-linked-models failed"
+    return package_path
+
+
+def test_cli_synthesize_from_package(tmp_path: Path) -> None:
+    package_path = _write_minimal_linked_package(tmp_path)
+    controls = tmp_path / "controls.csv"
+    households_out = tmp_path / "households.csv"
+    persons_out = tmp_path / "persons.csv"
+    report_out = tmp_path / "report.json"
+
+    controls.write_text(
+        "margin,dimensions,tract,household_size,count\n"
+        'size,"tract,household_size",4620001.00,1,5\n'
+        'size,"tract,household_size",4620002.00,1,3\n'
+    )
+
+    exit_code = main([
+        "geo", "synthesize-from-package",
+        str(package_path),
+        "--households", "4",
+        "--controls", str(controls),
+        "--geography-dimension", "tract",
+        "--geography-column", "tract",
+        "--households-out", str(households_out),
+        "--persons-out", str(persons_out),
+        "--report", str(report_out),
+    ])
+
+    assert exit_code == 0
+    assert households_out.exists()
+    assert persons_out.exists()
+    report = json.loads(report_out.read_text())
+    assert report["summary"]["total_geographies"] == 2
+    assert report["summary"]["converged_count"] == 2
+    assert report["assigned_households"] == 8

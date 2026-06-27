@@ -573,6 +573,12 @@ def _small_area_report(
     geography_dimension: str,
     geography_column: str,
 ) -> dict[str, Any]:
+    non_converged = sorted(
+        geography
+        for geography, report in fit.reports.items()
+        if not report["converged"]
+    )
+    all_errors = [report["max_abs_error"] for report in fit.reports.values()]
     return {
         "schema_version": "synthpopcan-small-area-linked-calibration-v1",
         "geography_dimension": geography_dimension,
@@ -581,6 +587,13 @@ def _small_area_report(
         "candidate_persons": len(persons),
         "assigned_households": assigned_household_count,
         "assigned_persons": assigned_person_count,
+        "summary": {
+            "total_geographies": len(fit.reports),
+            "converged_count": len(fit.reports) - len(non_converged),
+            "non_converged_count": len(non_converged),
+            "max_abs_error": max(all_errors) if all_errors else 0.0,
+            "non_converged_geographies": non_converged,
+        },
         "geographies": {
             geography: {
                 "converged": report["converged"],
@@ -590,6 +603,7 @@ def _small_area_report(
                     geography,
                     0,
                 ),
+                "margin_summaries": report["margin_summaries"],
             }
             for geography, report in sorted(fit.reports.items())
         },
