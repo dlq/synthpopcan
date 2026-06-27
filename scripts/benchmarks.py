@@ -159,7 +159,7 @@ def _run_current_backend(case) -> dict[str, object]:
 def _run_numpy_backend(case) -> dict[str, object]:
     if importlib.util.find_spec("numpy") is None:
         return _unavailable_row(case.name, "numpy_bincount", "NumPy is not installed.")
-    import numpy as np
+    import numpy as np  # type: ignore[import-not-found]
 
     start = perf_counter()
     encoded = _encode_numpy_margins(case.records, case.margins, np)
@@ -180,8 +180,8 @@ def _run_scipy_sparse_backend(case) -> dict[str, object]:
         return _unavailable_row(case.name, "scipy_csr", "NumPy is not installed.")
     if importlib.util.find_spec("scipy") is None:
         return _unavailable_row(case.name, "scipy_csr", "SciPy is not installed.")
-    import numpy as np
-    from scipy import sparse
+    import numpy as np  # type: ignore[import-not-found]
+    from scipy import sparse  # type: ignore[import-not-found]
 
     start = perf_counter()
     encoded = _encode_sparse_margins(case.records, case.margins, np, sparse)
@@ -205,7 +205,7 @@ def _run_polars_probe(case) -> dict[str, object]:
             "Polars is not installed; likely useful for CSV/table prep, "
             "not IPF updates.",
         )
-    import polars as pl
+    import polars as pl  # type: ignore[import-not-found]
 
     start = perf_counter()
     result = _fit_polars_groupby(

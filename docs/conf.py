@@ -41,7 +41,7 @@ autodoc_member_order = "bysource"
 autodoc_typehints = "description"
 autodoc_mock_imports = [
     package
-    for package in ("numpy", "sklearn")
+    for package in ("numpy", "pandas", "sklearn", "scipy", "polars")
     if importlib.util.find_spec(package) is None
 ]
 napoleon_use_param = True
