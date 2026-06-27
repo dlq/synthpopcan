@@ -116,7 +116,7 @@ Remaining 0.1.x work:
 
 ### 0.2.x - Small-Area Linked Synthesis MVP
 
-Status: next substantive development phase.
+Status: complete; all exit criteria met as of 0.2.0.
 
 Purpose: turn the existing IPF, Census Profile, tree package, linked
 generation, and validation pieces into the first workflow that assigns linked
@@ -192,11 +192,12 @@ Completed in the first implementation pass:
   calls with ignored local data. **Met for tenure controls; broaden controls
   after recoding household-size categories.**
 - Validation clearly reports fitted household margins, inherited person
-  geography, household/person link consistency, and limitations. **Partly met;
-  add richer geography-level residual summaries.**
+  geography, household/person link consistency, and limitations. **Met;
+  calibration report includes geography-level residual summaries and a
+  top-level convergence summary block.**
 - The beginner-facing story remains one workflow, not a pile of intermediate
-  files. **Partly met; add a convenience wrapper that can generate candidates
-  from a package and calibrate them in one command or API call.**
+  files. **Met; `geo synthesize-from-package` generates candidates from a
+  package and calibrates in one command.**
 
 ### 0.3.x - Small-Area Quality, Validation, And Performance
 
