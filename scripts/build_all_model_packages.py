@@ -1,28 +1,24 @@
 """Build all province- and CMA-level linked model packages for release.
 
 Trains, audits, and packages a linked household/person model for every
-Canadian province (and PEI at minimal profile) and the four largest CMAs
-not already covered by geography-specific scripts. Output packages land in
-``data/private/model-release-assets/`` ready for upload as GitHub Release
-assets.
+Canadian province (and PEI at minimal profile) and the five PUMF-coded CMAs.
+Output packages land in ``data/private/model-release-assets/`` ready for
+upload as GitHub Release assets.
 
 Usage::
 
     uv run python scripts/build_all_model_packages.py
     uv run python scripts/build_all_model_packages.py --only ontario-2016 toronto-cma-2016
-
-The Quebec and Montreal packages are excluded because they are maintained by
-their own dedicated scripts (``build_quebec_model_package.py`` and
-``build_montreal_ct_controls.py``).
 """
 
 from __future__ import annotations
 
-import argparse
 import json
 import time
 from dataclasses import replace
 from pathlib import Path
+
+import click
 
 from synthpopcan.cli_tree import (
     apply_target_profile,
@@ -444,25 +440,22 @@ def _repo_path(path: Path) -> str:
     return str(path.resolve(strict=False).relative_to(ROOT))
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser(
-        description="Build all province- and CMA-level linked model packages."
-    )
-    parser.add_argument(
-        "--only",
-        nargs="+",
-        metavar="ID",
-        help="Build only these package IDs (e.g. ontario-2016 toronto-cma-2016).",
-    )
-    args = parser.parse_args()
-
+@click.command()
+@click.option(
+    "--only",
+    multiple=True,
+    metavar="ID",
+    help="Build only these package IDs (e.g. ontario-2016 toronto-cma-2016). Repeat as needed.",
+)
+def main(only: tuple[str, ...]) -> None:
+    """Build all province- and CMA-level linked model packages."""
     targets = TARGETS
-    if args.only:
-        ids = set(args.only)
+    if only:
+        ids = set(only)
         targets = [t for t in TARGETS if t["id"] in ids]
         missing = ids - {t["id"] for t in targets}
         if missing:
-            raise SystemExit(f"Unknown package IDs: {sorted(missing)}")
+            raise click.UsageError(f"Unknown package IDs: {sorted(missing)}")
 
     ASSETS_DIR.mkdir(parents=True, exist_ok=True)
 
