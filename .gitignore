@@ -37,5 +37,5 @@ venv/
 /outputs/
 .ipynb_checkpoints/
 
-# Claude Code personal settings (project settings.json is intentionally tracked).
-.claude/settings.local.json
+# Claude Code settings.
+.claude/
