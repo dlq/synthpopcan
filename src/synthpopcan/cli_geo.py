@@ -748,6 +748,16 @@ def prepare_boundaries_command(
     default=None,
     help="Maximum candidate households to use for calibration.",
 )
+@click.option(
+    "--max-household-size",
+    type=int,
+    default=None,
+    help=(
+        "Cap household_size at this value before calibration. Use 5 when controls "
+        "are built from the Census Profile, which groups '5 or more persons' into "
+        "a single category."
+    ),
+)
 def synthesize_from_package_command(
     package_path: Path,
     household_count: int,
@@ -760,6 +770,7 @@ def synthesize_from_package_command(
     report_out: Path | None,
     random_seed: int | None,
     pool_size: int | None,
+    max_household_size: int | None,
 ) -> None:
     """Generate linked candidates from a package and calibrate to small-area controls.
 
@@ -818,6 +829,11 @@ def synthesize_from_package_command(
         except (OSError, ValueError) as exc:
             raise click.ClickException(str(exc)) from exc
 
+        if max_household_size is not None:
+            _cap_column_inplace(
+                candidates_households, household_size_column, max_household_size
+            )
+
         try:
             summary = calibrate_linked_household_csvs(
                 households_path=candidates_households,
@@ -841,3 +857,23 @@ def synthesize_from_package_command(
     if report_out:
         print_wrote(report_out)
     click.echo(json.dumps(summary, sort_keys=True))
+
+
+def _cap_column_inplace(path: Path, column: str, cap: int) -> None:
+    """Rewrite *path* with integer values in *column* capped at *cap*."""
+    import csv as _csv
+
+    tmp = path.with_suffix(".tmp")
+    with path.open(newline="") as src, tmp.open("w", newline="") as dst:
+        reader = _csv.DictReader(src)
+        assert reader.fieldnames
+        writer = _csv.DictWriter(dst, fieldnames=reader.fieldnames)
+        writer.writeheader()
+        for row in reader:
+            try:
+                if int(row[column]) > cap:
+                    row[column] = str(cap)
+            except (ValueError, KeyError):
+                pass
+            writer.writerow(row)
+    tmp.replace(path)
