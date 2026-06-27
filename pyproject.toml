@@ -25,9 +25,6 @@ classifiers = [
 ]
 dependencies = [
     "click>=8.4.1",
-    "folium>=0.20.0",
-    "geopandas>=1.1.4",
-    "matplotlib>=3.11.0",
     "numpy>=1.26",
     "pandas>=2.0",
     "rich>=15.0.0",
