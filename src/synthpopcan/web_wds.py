@@ -2,6 +2,14 @@
 
 from __future__ import annotations
 
+__all__ = [
+    "fetch_wds_zip_bytes",
+    "generate_wds_seed_controls_from_zip_bytes",
+    "parse_dimensions",
+    "resolve_wds_dimensions",
+    "suggest_wds_dimensions",
+]
+
 import csv
 from io import BytesIO, StringIO, TextIOWrapper
 from urllib.request import urlopen
@@ -45,7 +53,7 @@ def generate_wds_seed_controls_from_zip_bytes(
 ) -> dict[str, object]:
     """Normalize a WDS ZIP into browser-ready seed and control CSV strings."""
     with ZipFile(BytesIO(zip_bytes)) as archive:
-        csv_member = choose_wds_data_csv_member(archive)
+        csv_member = _choose_wds_data_csv_member(archive)
         with archive.open(csv_member) as raw_handle:
             handle = TextIOWrapper(raw_handle, encoding="utf-8-sig", newline="")
             rows = list(csv.DictReader(handle))
@@ -56,15 +64,15 @@ def generate_wds_seed_controls_from_zip_bytes(
     resolved_dimensions = resolve_wds_dimensions(rows, dimensions)
     if not resolved_dimensions:
         resolved_dimensions = suggest_wds_dimensions(rows, count_column)
-    snapshot_rows, reference_period = snapshot_wds_rows(
+    snapshot_rows, reference_period = _snapshot_wds_rows(
         numbered_rows, resolved_dimensions
     )
-    control_rows = normalize_wds_rows(
+    control_rows = _normalize_wds_rows(
         snapshot_rows,
         dimensions=resolved_dimensions,
         count_column=count_column,
     )
-    seed_rows = build_seed_rows(control_rows)
+    seed_rows = _build_seed_rows(control_rows)
     return {
         "csvMember": csv_member,
         "referencePeriod": reference_period,
@@ -72,12 +80,12 @@ def generate_wds_seed_controls_from_zip_bytes(
         "countColumn": count_column,
         "seedRows": len(seed_rows),
         "controlRows": len(control_rows),
-        "seedCsv": write_csv(seed_rows),
-        "controlsCsv": write_csv(control_rows),
+        "seedCsv": _write_csv(seed_rows),
+        "controlsCsv": _write_csv(control_rows),
     }
 
 
-def choose_wds_data_csv_member(archive: ZipFile) -> str:
+def _choose_wds_data_csv_member(archive: ZipFile) -> str:
     csv_names = [
         name
         for name in archive.namelist()
@@ -128,7 +136,7 @@ def suggest_wds_dimensions(
     )
 
 
-def snapshot_wds_rows(
+def _snapshot_wds_rows(
     rows: list[WdsRow], dimensions: tuple[str, ...]
 ) -> tuple[list[WdsRow], str | None]:
     first_row = rows[0][1]
@@ -136,7 +144,7 @@ def snapshot_wds_rows(
         return rows, None
     reference_periods = sorted(
         {row["REF_DATE"] for _, row in rows if row.get("REF_DATE")},
-        key=reference_period_sort_key,
+        key=_reference_period_sort_key,
     )
     if not reference_periods:
         return rows, None
@@ -149,14 +157,14 @@ def snapshot_wds_rows(
     return snapshot_rows, reference_period
 
 
-def reference_period_sort_key(value: str) -> tuple[int, float | str]:
+def _reference_period_sort_key(value: str) -> tuple[int, float | str]:
     try:
         return (0, float(value))
     except ValueError:
         return (1, value)
 
 
-def normalize_wds_rows(
+def _normalize_wds_rows(
     rows: list[WdsRow], *, dimensions: tuple[str, ...], count_column: str
 ) -> list[dict[str, str]]:
     seen: set[tuple[str, ...]] = set()
@@ -184,13 +192,13 @@ def normalize_wds_rows(
                 "margin": "wds",
                 "dimensions": ",".join(dimensions),
                 **{dimension: row[dimension] for dimension in dimensions},
-                "count": format_count(count),
+                "count": _format_count(count),
             }
         )
     return control_rows
 
 
-def build_seed_rows(control_rows: list[dict[str, str]]) -> list[dict[str, str]]:
+def _build_seed_rows(control_rows: list[dict[str, str]]) -> list[dict[str, str]]:
     seen: set[tuple[tuple[str, str], ...]] = set()
     seed_rows: list[dict[str, str]] = []
     for row in control_rows:
@@ -203,7 +211,7 @@ def build_seed_rows(control_rows: list[dict[str, str]]) -> list[dict[str, str]]:
     return seed_rows
 
 
-def write_csv(rows: list[dict[str, str]]) -> str:
+def _write_csv(rows: list[dict[str, str]]) -> str:
     if not rows:
         return ""
     handle = StringIO()
@@ -213,5 +221,5 @@ def write_csv(rows: list[dict[str, str]]) -> str:
     return handle.getvalue()
 
 
-def format_count(value: float) -> str:
+def _format_count(value: float) -> str:
     return str(int(value)) if value.is_integer() else str(value)

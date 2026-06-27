@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+__all__ = ["build_control_suggestion_report"]
+
 from collections.abc import Iterable, Sequence
 
 _HOUSEHOLD_CONTROL_CATALOG = (
@@ -82,7 +84,7 @@ def build_control_suggestion_report(
     if not rows:
         raise ValueError("control suggestions require at least one seed row")
     available_columns = list(rows[0].keys())
-    selected_unit = infer_unit(available_columns) if unit == "auto" else unit
+    selected_unit = _infer_unit(available_columns) if unit == "auto" else unit
     if selected_unit not in {"household", "person"}:
         raise ValueError("unit must be household, person, or auto")
 
@@ -91,13 +93,13 @@ def build_control_suggestion_report(
         if selected_unit == "household"
         else _PERSON_CONTROL_CATALOG
     )
-    usable_controls, enrichment_candidates = classify_controls(
+    usable_controls, enrichment_candidates = _classify_controls(
         available_columns, catalog
     )
     geography_columns = [
         column for column in available_columns if column in _GEOGRAPHY_ALIASES
     ]
-    first_search = first_search_query(usable_controls, selected_unit)
+    first_search = _first_search_query(usable_controls, selected_unit)
     next_commands = [
         f"synthpopcan statcan wds search {first_search}",
         "synthpopcan statcan wds explain PRODUCT_ID",
@@ -116,20 +118,20 @@ def build_control_suggestion_report(
         "geography_columns": geography_columns,
         "usable_controls": usable_controls,
         "enrichment_candidates": enrichment_candidates,
-        "review_notes": build_review_notes(
+        "review_notes": _build_review_notes(
             selected_unit, usable_controls, geography_columns
         ),
         "next_commands": next_commands,
     }
 
 
-def classify_controls(
+def _classify_controls(
     columns: Sequence[str], catalog: Iterable[dict[str, object]]
 ) -> tuple[list[dict[str, str]], list[dict[str, str]]]:
     usable: list[dict[str, str]] = []
     enrichment: list[dict[str, str]] = []
     for item in catalog:
-        match = matching_column(columns, item["aliases"])  # type: ignore[arg-type]
+        match = _matching_column(columns, item["aliases"])  # type: ignore[arg-type]
         suggestion = {
             "column": match or str(item["canonical"]),
             "canonical": str(item["canonical"]),
@@ -146,7 +148,7 @@ def classify_controls(
     return usable, enrichment
 
 
-def matching_column(columns: Sequence[str], aliases: object) -> str | None:
+def _matching_column(columns: Sequence[str], aliases: object) -> str | None:
     if not isinstance(aliases, tuple):
         return None
     lower_lookup = {column.lower(): column for column in columns}
@@ -160,7 +162,7 @@ def matching_column(columns: Sequence[str], aliases: object) -> str | None:
     return None
 
 
-def infer_unit(columns: Sequence[str]) -> str:
+def _infer_unit(columns: Sequence[str]) -> str:
     lower_columns = {column.lower() for column in columns}
     if (
         "synthetic_person_id" in lower_columns
@@ -170,13 +172,13 @@ def infer_unit(columns: Sequence[str]) -> str:
     return "household"
 
 
-def first_search_query(usable_controls: list[dict[str, str]], unit: str) -> str:
+def _first_search_query(usable_controls: list[dict[str, str]], unit: str) -> str:
     if usable_controls:
         return usable_controls[0]["statcan_search"]
     return f"{unit} totals"
 
 
-def build_review_notes(
+def _build_review_notes(
     unit: str,
     usable_controls: list[dict[str, str]],
     geography_columns: list[str],

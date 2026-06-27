@@ -86,8 +86,8 @@ def inspect_microdata(
                 path,
                 level=level,
                 weight_column=weight_column,
-                geography_columns=parse_optional_columns(geography_columns),
-                id_columns=parse_optional_columns(id_columns),
+                geography_columns=_parse_optional_columns(geography_columns),
+                id_columns=_parse_optional_columns(id_columns),
             )
         else:
             sample = read_statcan_2016_hierarchical_seed_sample(path)
@@ -372,8 +372,8 @@ def export_microdata_seed(
                 path,
                 level=level,
                 weight_column=weight_column,
-                geography_columns=parse_optional_columns(geography_columns),
-                id_columns=parse_optional_columns(id_columns),
+                geography_columns=_parse_optional_columns(geography_columns),
+                id_columns=_parse_optional_columns(id_columns),
             )
         else:
             sample = read_statcan_2016_hierarchical_seed_sample(path)
@@ -476,7 +476,7 @@ def parse_columns(value: str) -> tuple[str, ...]:
     return columns
 
 
-def parse_optional_columns(value: str) -> tuple[str, ...]:
+def _parse_optional_columns(value: str) -> tuple[str, ...]:
     return tuple(part.strip() for part in value.split(",") if part.strip())
 
 

@@ -130,8 +130,8 @@ def list_models(output_format: str) -> None:
     for model in catalogue["models"]:
         table.add_row(
             str(model["id"]),
-            format_model_availability(model),
-            format_model_catalogue_summary(model),
+            _format_model_availability(model),
+            _format_model_catalogue_summary(model),
         )
     print_table(table)
 
@@ -198,19 +198,19 @@ def remove_model(model_id: str) -> None:
 def guide(ctx: click.Context) -> None:
     """Show beginner workflow guidance."""
     if ctx.invoked_subcommand is None:
-        print_workflow_choice_guide()
+        _print_workflow_choice_guide()
 
 
 @guide.command("ipf")
 def guide_ipf() -> None:
     """Show the IPF from margin tables path."""
-    print_ipf_workflow_guide()
+    _print_ipf_workflow_guide()
 
 
 @guide.command("model")
 def guide_model() -> None:
     """Show the generate from existing model path."""
-    print_model_workflow_guide()
+    _print_model_workflow_guide()
 
 
 @cli.command("serve")
@@ -240,7 +240,7 @@ def serve(host: str, port: int, open_browser: bool) -> None:
     serve_webapp(host=host, port=port, open_browser=open_browser)
 
 
-def print_workflow_choice_guide() -> None:
+def _print_workflow_choice_guide() -> None:
     table = Table(title="Choose a Workflow")
     table.add_column("Workflow", no_wrap=True)
     table.add_column("Use When")
@@ -264,7 +264,7 @@ def print_workflow_choice_guide() -> None:
     print_table(table)
 
 
-def print_ipf_workflow_guide() -> None:
+def _print_ipf_workflow_guide() -> None:
     table = Table(title="IPF from Margin Tables")
     table.add_column("Step", justify="right", no_wrap=True)
     table.add_column("Setup Path", no_wrap=True)
@@ -314,7 +314,7 @@ def print_ipf_workflow_guide() -> None:
     print_table(table)
 
 
-def print_model_workflow_guide() -> None:
+def _print_model_workflow_guide() -> None:
     table = Table(title="Generate from Existing Model")
     table.add_column("Step", justify="right", no_wrap=True)
     table.add_column("Setup Path", no_wrap=True)
@@ -351,7 +351,7 @@ def print_model_workflow_guide() -> None:
     print_table(table)
 
 
-def format_model_availability(model: dict[str, object]) -> str:
+def _format_model_availability(model: dict[str, object]) -> str:
     if model.get("distribution") == "bundled":
         return "Bundled"
     if model.get("installed"):
@@ -359,7 +359,7 @@ def format_model_availability(model: dict[str, object]) -> str:
     return "Download with `synthpopcan models fetch`"
 
 
-def format_model_catalogue_summary(model: dict[str, object]) -> str:
+def _format_model_catalogue_summary(model: dict[str, object]) -> str:
     parts = [
         str(model.get("name", "")),
         f"Geography: {model.get('geography', '')}",
@@ -514,8 +514,8 @@ def validate_linked_output(
     """Validate person rows are linked to generated households."""
     try:
         report = validate_linked_population(
-            households=read_csv(households_path),
-            persons=read_csv(persons_path),
+            households=_read_csv(households_path),
+            persons=_read_csv(persons_path),
             household_id_column=household_id_column,
             person_household_id_column=person_household_id_column,
             household_size_column=household_size_column,
@@ -585,10 +585,10 @@ def validate_tree_output(
     """Compare generated tree rows with the training-view distributions."""
     try:
         report = build_tree_output_validation_report(
-            training_rows=read_csv(training_path),
-            generated_rows=read_csv(generated_path),
-            target_columns=parse_column_list(target_columns, "target columns"),
-            conditioning_columns=parse_optional_column_list(conditioning_columns),
+            training_rows=_read_csv(training_path),
+            generated_rows=_read_csv(generated_path),
+            target_columns=_parse_column_list(target_columns, "target columns"),
+            conditioning_columns=_parse_optional_column_list(conditioning_columns),
             weight_field=weight_field,
             tolerance=tolerance,
         )
@@ -657,14 +657,14 @@ def resolve_data_root(data_root: Path | None) -> Path:
     return Path("data")
 
 
-def read_csv(path: Path) -> list[dict[str, str]]:
+def _read_csv(path: Path) -> list[dict[str, str]]:
     """Read a CSV file as string-valued dictionaries for validation commands."""
 
     with path.open(newline="") as handle:
         return list(csv.DictReader(handle))
 
 
-def parse_column_list(value: str, label: str) -> tuple[str, ...]:
+def _parse_column_list(value: str, label: str) -> tuple[str, ...]:
     """Parse a required comma-separated column list for Click callbacks."""
 
     columns = tuple(part.strip() for part in value.split(",") if part.strip())
@@ -673,7 +673,7 @@ def parse_column_list(value: str, label: str) -> tuple[str, ...]:
     return columns
 
 
-def parse_optional_column_list(value: str) -> tuple[str, ...]:
+def _parse_optional_column_list(value: str) -> tuple[str, ...]:
     """Parse an optional comma-separated column list for Click callbacks."""
 
     return tuple(part.strip() for part in value.split(",") if part.strip())

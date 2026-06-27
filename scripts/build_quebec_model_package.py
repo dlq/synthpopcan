@@ -42,7 +42,7 @@ from synthpopcan.tree import (
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = (
     ROOT
-    / "data/raw/statscan/2016-census/PUMF Census 2016"
+    / "data/raw/statcan/2016-census/PUMF Census 2016"
     / "pumf-98M0002-E-2016-hierarchical"
     / "pumf-98M0002-E-2016-hierarchical_F1.csv"
 )

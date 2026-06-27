@@ -550,7 +550,7 @@ Train the broad linked household/person model:
 
 ```bash
 synthpopcan tree train-linked \
-  "data/raw/statscan/2016-census/PUMF Census 2016/pumf-98M0002-E-2016-hierarchical/pumf-98M0002-E-2016-hierarchical_F1.csv" \
+  "data/raw/statcan/2016-census/PUMF Census 2016/pumf-98M0002-E-2016-hierarchical/pumf-98M0002-E-2016-hierarchical_F1.csv" \
   --suggested-blocks \
   --household-block all \
   --person-block all \
@@ -606,7 +606,7 @@ should match the source access terms and citation used by the project:
   "access_class": "local restricted/source-controlled data root",
   "citation": "Statistics Canada, 2016 Census Hierarchical Public Use Microdata File.",
   "redistribution_note": "Do not redistribute source microdata. Package contains model artifacts only.",
-  "local_path": "data/raw/statscan/2016-census/PUMF Census 2016/pumf-98M0002-E-2016-hierarchical/pumf-98M0002-E-2016-hierarchical_F1.csv"
+  "local_path": "data/raw/statcan/2016-census/PUMF Census 2016/pumf-98M0002-E-2016-hierarchical/pumf-98M0002-E-2016-hierarchical_F1.csv"
 }
 ```
 

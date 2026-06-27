@@ -1,12 +1,12 @@
 import pytest
 
 from synthpopcan.calibration import (
+    _build_review_notes,
+    _classify_controls,
+    _first_search_query,
+    _infer_unit,
+    _matching_column,
     build_control_suggestion_report,
-    build_review_notes,
-    classify_controls,
-    first_search_query,
-    infer_unit,
-    matching_column,
 )
 
 
@@ -59,15 +59,15 @@ def test_control_classification_and_review_helper_edges() -> None:
         },
     ]
 
-    usable, enrichment = classify_controls(["agegrp"], catalog)
+    usable, enrichment = _classify_controls(["agegrp"], catalog)
 
-    assert matching_column(["AgeGrp"], ("agegrp",)) == "AgeGrp"
-    assert matching_column(["AgeGrp"], "agegrp") is None
+    assert _matching_column(["AgeGrp"], ("agegrp",)) == "AgeGrp"
+    assert _matching_column(["AgeGrp"], "agegrp") is None
     assert usable[0]["column"] == "agegrp"
     assert enrichment[0]["status"] == "needs_enrichment_or_modeling"
-    assert infer_unit(["synthetic_person_id"]) == "person"
-    assert infer_unit(["HH_ID"]) == "household"
-    assert first_search_query([], "person") == "person totals"
-    assert build_review_notes("person", [], [])[-1] == (
+    assert _infer_unit(["synthetic_person_id"]) == "person"
+    assert _infer_unit(["HH_ID"]) == "household"
+    assert _first_search_query([], "person") == "person totals"
+    assert _build_review_notes("person", [], [])[-1] == (
         "No common calibration columns were found; add attributes before IPF."
     )

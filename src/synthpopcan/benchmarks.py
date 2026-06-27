@@ -2,6 +2,13 @@
 
 from __future__ import annotations
 
+__all__ = [
+    "assess_ipf_benchmark_case",
+    "build_ipf_benchmark_cases",
+    "run_ipf_benchmark",
+    "run_ipf_benchmarks",
+]
+
 from dataclasses import dataclass
 from time import perf_counter
 
@@ -26,9 +33,9 @@ def build_ipf_benchmark_cases(seed_records: int = 50_000) -> list[_IPFBenchmarkC
     if seed_records < 12:
         raise ValueError("seed_records must be at least 12")
     return [
-        build_easy_balanced_case(seed_records),
-        build_moderate_three_margin_case(seed_records),
-        build_high_cardinality_inconsistent_case(seed_records),
+        _build_easy_balanced_case(seed_records),
+        _build_moderate_three_margin_case(seed_records),
+        _build_high_cardinality_inconsistent_case(seed_records),
     ]
 
 
@@ -44,14 +51,14 @@ def assess_ipf_benchmark_case(
         "margin_cells": case.margin_cell_count,
         "record_memberships": record_memberships,
         "average_records_per_margin_cell": average_records_per_margin_cell,
-        "dependency_hint": classify_ipf_dependency_need(
+        "dependency_hint": _classify_ipf_dependency_need(
             case.margin_cell_count,
             average_records_per_margin_cell,
         ),
     }
 
 
-def classify_ipf_dependency_need(
+def _classify_ipf_dependency_need(
     margin_cells: int,
     average_records_per_margin_cell: float,
 ) -> str:
@@ -60,7 +67,7 @@ def classify_ipf_dependency_need(
     return "pure_python_ok"
 
 
-def build_easy_balanced_case(seed_records: int) -> _IPFBenchmarkCase:
+def _build_easy_balanced_case(seed_records: int) -> _IPFBenchmarkCase:
     records = [
         {
             "id": str(index + 1),
@@ -79,7 +86,7 @@ def build_easy_balanced_case(seed_records: int) -> _IPFBenchmarkCase:
     )
 
 
-def build_moderate_three_margin_case(seed_records: int) -> _IPFBenchmarkCase:
+def _build_moderate_three_margin_case(seed_records: int) -> _IPFBenchmarkCase:
     age_groups = [f"age_{index:02d}" for index in range(10)]
     regions = [f"region_{index:02d}" for index in range(6)]
     sexes = ["female", "male"]
@@ -113,7 +120,7 @@ def build_moderate_three_margin_case(seed_records: int) -> _IPFBenchmarkCase:
     )
 
 
-def build_high_cardinality_inconsistent_case(seed_records: int) -> _IPFBenchmarkCase:
+def _build_high_cardinality_inconsistent_case(seed_records: int) -> _IPFBenchmarkCase:
     age_groups = [f"age_{index:02d}" for index in range(36)]
     sexes = ["female", "male"]
     records = [

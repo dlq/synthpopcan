@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+__all__ = ["resolve_benchmark_columns", "run_linked_tree_benchmark"]
+
 import csv
 import json
 import resource
@@ -47,12 +49,12 @@ def run_linked_tree_benchmark(
     tolerance: float = 0.05,
 ) -> dict[str, object]:
     output_dir.mkdir(parents=True, exist_ok=True)
-    paths = benchmark_paths(output_dir)
+    paths = _benchmark_paths(output_dir)
     timings: dict[str, float] = {}
 
     start = time.perf_counter()
     sample = read_statcan_2016_hierarchical_seed_sample(source)
-    timings["read_source_seconds"] = elapsed_seconds(start)
+    timings["read_source_seconds"] = _elapsed_seconds(start)
     (
         household_target_columns,
         household_conditioning_columns,
@@ -76,18 +78,18 @@ def run_linked_tree_benchmark(
         target_columns=household_target_columns,
         conditioning_columns=household_conditioning_columns,
     )
-    write_csv(paths["household_training"], household_rows)
+    _write_csv(paths["household_training"], household_rows)
     person_rows, person_export = export_training_rows(
         sample,
         level="person",
         target_columns=person_target_columns,
         conditioning_columns=person_conditioning_columns,
     )
-    write_csv(paths["person_training"], person_rows)
-    timings["derive_training_seconds"] = elapsed_seconds(start)
+    _write_csv(paths["person_training"], person_rows)
+    timings["derive_training_seconds"] = _elapsed_seconds(start)
 
     start = time.perf_counter()
-    household_model = train_model_from_csv(
+    household_model = _train_model_from_csv(
         paths["household_training"],
         level="household",
         target_columns=household_target_columns,
@@ -98,7 +100,7 @@ def run_linked_tree_benchmark(
         min_samples_leaf=min_samples_leaf,
         max_depth=max_depth,
     )
-    person_model = train_model_from_csv(
+    person_model = _train_model_from_csv(
         paths["person_training"],
         level="person",
         target_columns=person_target_columns,
@@ -111,7 +113,7 @@ def run_linked_tree_benchmark(
     )
     write_tree_model(paths["household_model"], household_model)
     write_tree_model(paths["person_model"], person_model)
-    timings["train_models_seconds"] = elapsed_seconds(start)
+    timings["train_models_seconds"] = _elapsed_seconds(start)
 
     start = time.perf_counter()
     synthetic_households, synthetic_persons = generate_linked_population(
@@ -123,7 +125,7 @@ def run_linked_tree_benchmark(
     )
     write_generated_rows(paths["synthetic_households"], synthetic_households)
     write_generated_rows(paths["synthetic_persons"], synthetic_persons)
-    timings["generate_seconds"] = elapsed_seconds(start)
+    timings["generate_seconds"] = _elapsed_seconds(start)
 
     start = time.perf_counter()
     linked_validation = validate_linked_population(
@@ -131,8 +133,8 @@ def run_linked_tree_benchmark(
         synthetic_persons,
     )
     validation_conditions = conditions or {}
-    household_validation_rows = filter_rows(household_rows, validation_conditions)
-    person_validation_rows = filter_rows(person_rows, validation_conditions)
+    household_validation_rows = _filter_rows(household_rows, validation_conditions)
+    person_validation_rows = _filter_rows(person_rows, validation_conditions)
     household_distribution_validation = build_tree_output_validation_report(
         training_rows=household_validation_rows,
         generated_rows=synthetic_households,
@@ -149,13 +151,13 @@ def run_linked_tree_benchmark(
         weight_field="WEIGHT",
         tolerance=tolerance,
     )
-    write_json(paths["linked_validation"], linked_validation)
-    write_json(
+    _write_json(paths["linked_validation"], linked_validation)
+    _write_json(
         paths["household_distribution_validation"],
         household_distribution_validation,
     )
-    write_json(paths["person_distribution_validation"], person_distribution_validation)
-    timings["validate_seconds"] = elapsed_seconds(start)
+    _write_json(paths["person_distribution_validation"], person_distribution_validation)
+    timings["validate_seconds"] = _elapsed_seconds(start)
 
     summary = {
         "source": {
@@ -175,7 +177,7 @@ def run_linked_tree_benchmark(
         "generation": {
             "households": len(synthetic_households),
             "persons": len(synthetic_persons),
-            "average_household_size": average_household_size(synthetic_households),
+            "_average_household_size": _average_household_size(synthetic_households),
         },
         "linked_validation": {
             "passed": linked_validation["passed"],
@@ -194,17 +196,17 @@ def run_linked_tree_benchmark(
             "person_warnings": len(person_distribution_validation["issues"]),
             "training_household_records": len(household_validation_rows),
             "training_person_records": len(person_validation_rows),
-            "training_average_household_size": average_household_size(
+            "training_average_household_size": _average_household_size(
                 household_validation_rows
             ),
             "tolerance": tolerance,
         },
         "timings": timings,
-        "peak_rss_bytes": peak_rss_bytes(),
-        "artifact_sizes_bytes": artifact_sizes(paths),
+        "_peak_rss_bytes": _peak_rss_bytes(),
+        "artifact_sizes_bytes": _artifact_sizes(paths),
         "outputs": {key: str(path) for key, path in paths.items()},
     }
-    write_json(paths["summary"], summary)
+    _write_json(paths["summary"], summary)
     return summary
 
 
@@ -236,16 +238,16 @@ def resolve_benchmark_columns(
         )
 
     return (
-        require_explicit_columns(
+        _require_explicit_columns(
             household_target_columns,
             label="household target columns",
         ),
-        require_explicit_columns(
+        _require_explicit_columns(
             household_conditioning_columns,
             label="household conditioning columns",
         ),
-        require_explicit_columns(person_target_columns, label="person target columns"),
-        require_explicit_columns(
+        _require_explicit_columns(person_target_columns, label="person target columns"),
+        _require_explicit_columns(
             person_conditioning_columns,
             label="person conditioning columns",
         ),
@@ -253,7 +255,7 @@ def resolve_benchmark_columns(
     )
 
 
-def require_explicit_columns(
+def _require_explicit_columns(
     columns: tuple[str, ...] | None,
     *,
     label: str,
@@ -263,7 +265,7 @@ def require_explicit_columns(
     return columns
 
 
-def train_model_from_csv(
+def _train_model_from_csv(
     path: Path,
     *,
     level: str,
@@ -298,7 +300,7 @@ def train_model_from_csv(
     raise ValueError(f"unsupported tree benchmark method: {method}")
 
 
-def benchmark_paths(output_dir: Path) -> dict[str, Path]:
+def _benchmark_paths(output_dir: Path) -> dict[str, Path]:
     return {
         "household_training": output_dir / "household-training.csv",
         "person_training": output_dir / "person-training.csv",
@@ -316,7 +318,7 @@ def benchmark_paths(output_dir: Path) -> dict[str, Path]:
     }
 
 
-def write_csv(path: Path, rows: list[dict[str, str]]) -> None:
+def _write_csv(path: Path, rows: list[dict[str, str]]) -> None:
     if not rows:
         raise ValueError("cannot write empty benchmark CSV")
     with path.open("w", newline="") as handle:
@@ -325,11 +327,11 @@ def write_csv(path: Path, rows: list[dict[str, str]]) -> None:
         writer.writerows(rows)
 
 
-def write_json(path: Path, payload: dict[str, object]) -> None:
+def _write_json(path: Path, payload: dict[str, object]) -> None:
     path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n")
 
 
-def filter_rows(
+def _filter_rows(
     rows: list[dict[str, str]],
     conditions: dict[str, str],
 ) -> list[dict[str, str]]:
@@ -342,14 +344,14 @@ def filter_rows(
     ]
 
 
-def average_household_size(rows: list[dict[str, str]]) -> float:
+def _average_household_size(rows: list[dict[str, str]]) -> float:
     if not rows:
         return 0.0
     total = sum(int(row["household_size"]) for row in rows)
     return round(total / len(rows), 4)
 
 
-def artifact_sizes(paths: dict[str, Path]) -> dict[str, int]:
+def _artifact_sizes(paths: dict[str, Path]) -> dict[str, int]:
     return {
         key: path.stat().st_size
         for key, path in paths.items()
@@ -357,11 +359,11 @@ def artifact_sizes(paths: dict[str, Path]) -> dict[str, int]:
     }
 
 
-def elapsed_seconds(start: float) -> float:
+def _elapsed_seconds(start: float) -> float:
     return round(time.perf_counter() - start, 6)
 
 
-def peak_rss_bytes() -> int:
+def _peak_rss_bytes() -> int:
     peak_rss = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
     if sys.platform == "darwin":
         return int(peak_rss)

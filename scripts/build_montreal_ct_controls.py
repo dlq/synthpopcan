@@ -24,7 +24,7 @@ from collections import defaultdict
 from pathlib import Path
 
 PROFILE_PATH = Path(
-    "data/raw/statscan/2016-census"
+    "data/raw/statcan/2016-census"
     "/Census Tract Summaries 2016"
     "/98-401-X2016043_eng_CSV"
     "/98-401-X2016043_English_montreal.csv"

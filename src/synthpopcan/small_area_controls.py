@@ -2,6 +2,13 @@
 
 from __future__ import annotations
 
+__all__ = [
+    "extract_controls_from_profile",
+    "scale_and_validate_controls",
+    "write_controls_csv",
+    "write_recoded_candidates",
+]
+
 import csv
 from collections import defaultdict
 from pathlib import Path

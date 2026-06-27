@@ -458,7 +458,7 @@ def generate_tree_population(
                     "rows": rows,
                     "conditions": conditions,
                     "random_seed": random_seed,
-                    "effective_random_seed": effective_random_seed(
+                    "effective_random_seed": _effective_random_seed(
                         model,
                         random_seed,
                     ),
@@ -566,7 +566,7 @@ def generate_linked_tree_population(
                     "household_conditions": household_conditions,
                     "household_size_column": household_size_column,
                     "random_seed": random_seed,
-                    "effective_random_seed": effective_random_seed(
+                    "effective_random_seed": _effective_random_seed(
                         household_model_payload,
                         random_seed,
                     ),
@@ -611,10 +611,10 @@ def list_tree_model_packages(output_format: str) -> None:
     table.add_column("Package ID")
     table.add_column("Summary")
     for model in catalogue["models"]:
-        default_generation = object_or_empty(model.get("default_generation"))
+        default_generation = _object_or_empty(model.get("default_generation"))
         table.add_row(
             str(model.get("id", "")),
-            format_package_catalogue_summary(model, default_generation),
+            _format_package_catalogue_summary(model, default_generation),
         )
     print_table(table)
 
@@ -670,11 +670,11 @@ def generate_linked_tree_population_from_package(
     """Generate linked household/person CSVs from a package path or bundled ID."""
     package_source_path: Path | None = None
     try:
-        package, package_label, package_source_path = read_package_path_or_id(
+        package, package_label, package_source_path = _read_package_path_or_id(
             package_path
         )
         validate_package_allows_generation(package)
-        package_inspection = build_linked_package_inspection(
+        package_inspection = _build_linked_package_inspection(
             package,
             package_source_path,
         )
@@ -738,7 +738,7 @@ def generate_linked_tree_population_from_package(
                     "household_conditions": household_conditions,
                     "household_size_column": effective_household_size_column,
                     "random_seed": random_seed,
-                    "effective_random_seed": effective_random_seed(
+                    "effective_random_seed": _effective_random_seed(
                         household_model_payload,
                         random_seed,
                     ),
@@ -1006,7 +1006,7 @@ def linked_tree_release_readiness_command(
     except ValueError as exc:
         raise click.ClickException(_format_tree_value_error(exc)) from exc
 
-    report = build_linked_release_readiness_report(
+    report = _build_linked_release_readiness_report(
         household_model=household_model_payload,
         person_model=person_model_payload,
         household_model_path=household_model,
@@ -1202,10 +1202,10 @@ def inspect_linked_tree_package_command(
     """Inspect a linked household/person model package path or bundled ID."""
     package_source_path: Path | None = None
     try:
-        package, package_label, package_source_path = read_package_path_or_id(
+        package, package_label, package_source_path = _read_package_path_or_id(
             package_path
         )
-        report = build_linked_package_inspection(package, package_source_path)
+        report = _build_linked_package_inspection(package, package_source_path)
         report["package_path"] = package_label
     except OSError as exc:
         raise click.ClickException(
@@ -1220,7 +1220,7 @@ def inspect_linked_tree_package_command(
     if output_format == "json":
         write_output(report, "json")
     else:
-        print_linked_package_inspection_table(report)
+        _print_linked_package_inspection_table(report)
 
 
 def parse_column_list(value: str, label: str) -> tuple[str, ...]:
@@ -1241,10 +1241,10 @@ def _format_tree_file_error(
     failing_path = Path(exc.filename) if exc.filename else None
     if failing_path is not None:
         for path in read_paths:
-            if path is not None and same_model_path(failing_path, path):
+            if path is not None and _same_model_path(failing_path, path):
                 return format_file_access_error(path, "read", exc)
         for path in write_paths:
-            if path is not None and same_model_path(failing_path, path):
+            if path is not None and _same_model_path(failing_path, path):
                 return format_file_access_error(path, "write", exc)
         return format_file_access_error(failing_path, "access", exc)
     if read_paths:
@@ -1310,7 +1310,7 @@ def release_blocking_issues(audit: dict[str, object]) -> list[dict[str, object]]
     ]
 
 
-def build_linked_release_readiness_report(
+def _build_linked_release_readiness_report(
     *,
     household_model,
     person_model,
@@ -1407,7 +1407,7 @@ def validate_linked_training_manifest_model_paths(
         if not isinstance(entry, dict) or not entry.get("path"):
             raise ValueError(f"training manifest must include models.{level}.path")
         recorded_path = Path(str(entry["path"]))
-        if same_model_path(recorded_path, actual_path):
+        if _same_model_path(recorded_path, actual_path):
             continue
         release_manifest = (release_manifests or {}).get(level)
         if release_manifest_matches_model_paths(
@@ -1506,7 +1506,7 @@ def read_linked_model_package(path: Path) -> dict[str, object]:
     return payload
 
 
-def read_package_path_or_id(
+def _read_package_path_or_id(
     package_path_or_id: str,
 ) -> tuple[dict[str, object], str, Path | None]:
     """Read a linked package from a local path or packaged model ID."""
@@ -1529,7 +1529,7 @@ def read_package_path_or_id(
 
 
 def validate_package_allows_generation(package: dict[str, object]) -> None:
-    privacy = object_or_empty(package.get("privacy"))
+    privacy = _object_or_empty(package.get("privacy"))
     if privacy.get("publishable_candidate") is not True:
         raise ValueError(
             "linked package is not marked as a publishable candidate; inspect the "
@@ -1538,9 +1538,9 @@ def validate_package_allows_generation(package: dict[str, object]) -> None:
 
 
 def package_models(package: dict[str, object]):
-    models = object_or_empty(package.get("models"))
-    household_model = object_or_empty(models.get("household"))
-    person_model = object_or_empty(models.get("person"))
+    models = _object_or_empty(package.get("models"))
+    household_model = _object_or_empty(models.get("household"))
+    person_model = _object_or_empty(models.get("person"))
     if not household_model or not person_model:
         raise ValueError("linked package must include household and person models")
     return tree_model_from_payload(household_model), tree_model_from_payload(
@@ -1557,21 +1557,21 @@ def tree_model_from_payload(payload: dict[str, object]):
     raise ValueError("unsupported tree model type in linked package")
 
 
-def build_linked_package_inspection(
+def _build_linked_package_inspection(
     package: dict[str, object],
     package_path: Path,
 ) -> dict[str, object]:
-    training_manifest = object_or_empty(package.get("training_manifest"))
-    source_provenance = object_or_empty(
+    training_manifest = _object_or_empty(package.get("training_manifest"))
+    source_provenance = _object_or_empty(
         package.get("source_provenance") or package.get("provenance")
     )
-    privacy = object_or_empty(package.get("privacy"))
-    thresholds = object_or_empty(package.get("thresholds"))
-    model_summaries = object_or_empty(package.get("model_summaries"))
-    embedded_models = object_or_empty(package.get("models"))
-    audits = object_or_empty(package.get("audits"))
-    release_manifests = object_or_empty(package.get("release_manifests"))
-    review = object_or_empty(package.get("review"))
+    privacy = _object_or_empty(package.get("privacy"))
+    thresholds = _object_or_empty(package.get("thresholds"))
+    model_summaries = _object_or_empty(package.get("model_summaries"))
+    embedded_models = _object_or_empty(package.get("models"))
+    audits = _object_or_empty(package.get("audits"))
+    release_manifests = _object_or_empty(package.get("release_manifests"))
+    review = _object_or_empty(package.get("review"))
 
     return {
         "schema_version": "synthpopcan-linked-tree-package-inspection-v1",
@@ -1605,23 +1605,23 @@ def build_linked_package_inspection(
             "contains_source_identifiers": privacy.get("contains_source_identifiers"),
         },
         "thresholds": thresholds,
-        "models": summarize_package_models(model_summaries or embedded_models),
-        "audits": summarize_package_audits(audits),
-        "release_manifests": summarize_release_manifests(release_manifests),
+        "models": _summarize_package_models(model_summaries or embedded_models),
+        "audits": _summarize_package_audits(audits),
+        "release_manifests": _summarize_release_manifests(release_manifests),
     }
 
 
-def object_or_empty(value: object) -> dict[str, object]:
+def _object_or_empty(value: object) -> dict[str, object]:
     return value if isinstance(value, dict) else {}
 
 
-def summarize_package_models(
+def _summarize_package_models(
     model_summaries: dict[str, object],
 ) -> dict[str, dict[str, object]]:
     summaries: dict[str, dict[str, object]] = {}
     for level in ("household", "person"):
-        summary = object_or_empty(model_summaries.get(level))
-        spec = object_or_empty(summary.get("spec"))
+        summary = _object_or_empty(model_summaries.get(level))
+        spec = _object_or_empty(summary.get("spec"))
         summaries[level] = {
             "level": summary.get("level") or spec.get("level"),
             "model_type": summary.get("model_type"),
@@ -1636,13 +1636,13 @@ def summarize_package_models(
     return summaries
 
 
-def summarize_package_audits(
+def _summarize_package_audits(
     audits: dict[str, object],
 ) -> dict[str, dict[str, object]]:
     summaries: dict[str, dict[str, object]] = {}
     for level in ("household", "person"):
-        audit = object_or_empty(audits.get(level))
-        summary = object_or_empty(audit.get("summary"))
+        audit = _object_or_empty(audits.get(level))
+        summary = _object_or_empty(audit.get("summary"))
         issues = audit.get("issues")
         summaries[level] = {
             "passed": audit.get("passed"),
@@ -1657,12 +1657,12 @@ def summarize_package_audits(
     return summaries
 
 
-def summarize_release_manifests(
+def _summarize_release_manifests(
     release_manifests: dict[str, object],
 ) -> dict[str, dict[str, object]]:
     summaries: dict[str, dict[str, object]] = {}
     for level in ("household", "person"):
-        manifest = object_or_empty(release_manifests.get(level))
+        manifest = _object_or_empty(release_manifests.get(level))
         summaries[level] = {
             "path": manifest.get("path"),
             "source_model": manifest.get("source_model"),
@@ -1673,48 +1673,48 @@ def summarize_release_manifests(
     return summaries
 
 
-def print_linked_package_inspection_table(report: dict[str, object]) -> None:
+def _print_linked_package_inspection_table(report: dict[str, object]) -> None:
     table = Table(title="Linked Model Package")
     table.add_column("Field", no_wrap=True)
     table.add_column("Value")
 
-    source = object_or_empty(report.get("source"))
-    training = object_or_empty(report.get("training"))
-    privacy = object_or_empty(report.get("privacy"))
-    models = object_or_empty(report.get("models"))
-    audits = object_or_empty(report.get("audits"))
+    source = _object_or_empty(report.get("source"))
+    training = _object_or_empty(report.get("training"))
+    privacy = _object_or_empty(report.get("privacy"))
+    models = _object_or_empty(report.get("models"))
+    audits = _object_or_empty(report.get("audits"))
 
-    add_optional_table_row(table, "Name", report.get("name"))
+    _add_optional_table_row(table, "Name", report.get("name"))
     table.add_row("Package", str(report.get("package_path", "")))
-    add_optional_table_row(table, "Type", report.get("package_type"))
-    add_optional_table_row(table, "Source", format_source_label(source))
-    add_optional_table_row(table, "Access", source.get("access_class"))
-    add_optional_table_row(table, "Redistribution", source.get("redistribution_note"))
-    add_optional_table_row(
+    _add_optional_table_row(table, "Type", report.get("package_type"))
+    _add_optional_table_row(table, "Source", format_source_label(source))
+    _add_optional_table_row(table, "Access", source.get("access_class"))
+    _add_optional_table_row(table, "Redistribution", source.get("redistribution_note"))
+    _add_optional_table_row(
         table, "Geography", format_geography_filter(training.get("geography_filter"))
     )
-    add_optional_table_row(table, "Target profile", training.get("target_profile"))
-    add_optional_table_row(table, "Method", training.get("method"))
+    _add_optional_table_row(table, "Target profile", training.get("target_profile"))
+    _add_optional_table_row(table, "Method", training.get("method"))
     table.add_row("Privacy", format_privacy_summary(privacy))
     table.add_row("Household model", format_model_summary(models.get("household")))
     table.add_row("Person model", format_model_summary(models.get("person")))
-    add_optional_table_row(
+    _add_optional_table_row(
         table, "Household audit", format_audit_summary(audits.get("household"))
     )
-    add_optional_table_row(
+    _add_optional_table_row(
         table, "Person audit", format_audit_summary(audits.get("person"))
     )
-    add_optional_table_row(table, "Review note", report.get("review_note"))
+    _add_optional_table_row(table, "Review note", report.get("review_note"))
     print_table(table)
 
 
-def add_optional_table_row(table: Table, label: str, value: object) -> None:
-    text = format_optional(value)
+def _add_optional_table_row(table: Table, label: str, value: object) -> None:
+    text = _format_optional(value)
     if text:
         table.add_row(label, text)
 
 
-def format_optional(value: object) -> str:
+def _format_optional(value: object) -> str:
     return "" if value is None else str(value)
 
 
@@ -1754,7 +1754,7 @@ def format_privacy_summary(privacy: dict[str, object]) -> str:
 
 
 def format_model_summary(value: object) -> str:
-    model = object_or_empty(value)
+    model = _object_or_empty(value)
     if not model:
         return ""
     target_columns = model.get("target_columns")
@@ -1775,7 +1775,7 @@ def format_model_summary(value: object) -> str:
 
 
 def format_audit_summary(value: object) -> str:
-    audit = object_or_empty(value)
+    audit = _object_or_empty(value)
     if not audit or not any(value is not None for value in audit.values()):
         return ""
     return (
@@ -1786,7 +1786,7 @@ def format_audit_summary(value: object) -> str:
     )
 
 
-def format_default_generation(value: dict[str, object]) -> str:
+def _format_default_generation(value: dict[str, object]) -> str:
     parts: list[str] = []
     households = format_int_or_blank(value.get("households"))
     if households:
@@ -1797,7 +1797,7 @@ def format_default_generation(value: dict[str, object]) -> str:
     return "; ".join(parts)
 
 
-def format_package_catalogue_summary(
+def _format_package_catalogue_summary(
     model: dict[str, object],
     default_generation: dict[str, object],
 ) -> str:
@@ -1808,7 +1808,7 @@ def format_package_catalogue_summary(
     ]
     if model.get("distribution") == "download" and not model.get("installed"):
         parts.append("Availability: download with `synthpopcan models fetch`")
-    default_text = format_default_generation(default_generation)
+    default_text = _format_default_generation(default_generation)
     if default_text:
         parts.append(f"Default: {default_text}")
     return "\n".join(part for part in parts if part)
@@ -1832,7 +1832,7 @@ def _format_level(value: object) -> str:
         return "Household"
     if value == "person":
         return "Person"
-    return format_optional(value)
+    return _format_optional(value)
 
 
 def _format_model_type(value: object) -> str:
@@ -1840,7 +1840,7 @@ def _format_model_type(value: object) -> str:
         return "Conditional frequency"
     if value == "cart":
         return "CART"
-    return format_optional(value)
+    return _format_optional(value)
 
 
 def _format_release_class(value: object) -> str:
@@ -1848,7 +1848,7 @@ def _format_release_class(value: object) -> str:
         return "Publishable candidate"
     if value == "private_working":
         return "Private working model"
-    return format_optional(value)
+    return _format_optional(value)
 
 
 def _format_audit_passed(value: object) -> str:
@@ -1896,13 +1896,13 @@ def release_manifest_matches_model_paths(
     output_model = release_manifest.get("output_model")
     if not isinstance(source_model, str) or not isinstance(output_model, str):
         return False
-    return same_model_path(Path(source_model), source_model_path) and same_model_path(
+    return _same_model_path(Path(source_model), source_model_path) and _same_model_path(
         Path(output_model),
         output_model_path,
     )
 
 
-def same_model_path(left: Path, right: Path) -> bool:
+def _same_model_path(left: Path, right: Path) -> bool:
     return left.expanduser().resolve(strict=False) == right.expanduser().resolve(
         strict=False
     )
@@ -2021,7 +2021,7 @@ def validate_linked_model_package_inputs(
         raise ValueError("household model must have level 'household'")
     if person_model.spec.level != "person":
         raise ValueError("person model must have level 'person'")
-    if household_size_column not in generated_model_columns(household_model):
+    if household_size_column not in _generated_model_columns(household_model):
         raise ValueError(
             f"household model must generate or condition on {household_size_column!r}"
         )
@@ -2029,7 +2029,7 @@ def validate_linked_model_package_inputs(
         raise ValueError(f"person model must condition on {household_size_column!r}")
 
 
-def generated_model_columns(model) -> set[str]:
+def _generated_model_columns(model) -> set[str]:
     return set(model.spec.conditioning_columns) | set(model.spec.target_columns)
 
 
@@ -2085,7 +2085,7 @@ def model_manifest(model, path: Path) -> dict[str, object]:
     }
 
 
-def effective_random_seed(model, random_seed: int | None) -> int:
+def _effective_random_seed(model, random_seed: int | None) -> int:
     return model.spec.random_seed if random_seed is None else random_seed
 
 

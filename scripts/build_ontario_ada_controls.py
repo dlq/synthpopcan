@@ -20,7 +20,7 @@ from collections import defaultdict
 from pathlib import Path
 
 ADA_PROFILE_PATH = Path(
-    "data/raw/statscan/2016-census/ADA-Census-Profile-2016/2016-census-profile-ada.csv"
+    "data/raw/statcan/census-profile/2016/2016-census-profile-ada.csv"
 )
 
 HHSIZE_MEMBER_IDS: dict[str, str] = {

@@ -339,7 +339,7 @@ def map_command(
     \b
         synthpopcan geo map \\
             --households synthetic-households.csv \\
-            --boundaries /path/to/statscan-boundaries/ \\
+            --boundaries /path/to/statcan-boundaries/ \\
             --geography-column ct
     """
     from synthpopcan.map_render import render_synthesis_map

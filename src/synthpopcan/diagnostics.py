@@ -2,6 +2,16 @@
 
 from __future__ import annotations
 
+__all__ = [
+    "build_control_total_checks",
+    "build_ipf_fit_report",
+    "build_ipf_input_report",
+    "format_categories",
+    "format_number",
+    "relative_error",
+    "suggest_ipf_fit_next_steps",
+]
+
 from typing import Any
 
 from synthpopcan.controls import ControlTable
@@ -198,10 +208,10 @@ def build_ipf_input_report(
     control_table: ControlTable,
 ) -> dict[str, Any]:
     dimensions = [
-        build_dimension_input_check(seed_rows, control_table, dimension)
+        _build_dimension_input_check(seed_rows, control_table, dimension)
         for dimension in control_table.dimensions
     ]
-    unsupported_cells = find_unsupported_control_cells(seed_rows, control_table)
+    unsupported_cells = _find_unsupported_control_cells(seed_rows, control_table)
     return {
         "passed": all(check["status"] == "ok" for check in dimensions)
         and not unsupported_cells,
@@ -209,17 +219,17 @@ def build_ipf_input_report(
         "control_margins": len(control_table.margins),
         "dimensions": dimensions,
         "unsupported_cells": unsupported_cells,
-        "suggested_next_steps": suggest_ipf_input_next_steps(dimensions),
+        "suggested_next_steps": _suggest_ipf_input_next_steps(dimensions),
     }
 
 
-def build_dimension_input_check(
+def _build_dimension_input_check(
     seed_rows: list[Record],
     control_table: ControlTable,
     dimension: str,
 ) -> dict[str, Any]:
     control_categories = sorted(
-        control_categories_for_dimension(control_table, dimension)
+        _control_categories_for_dimension(control_table, dimension)
     )
     if any(dimension not in row for row in seed_rows):
         return {
@@ -255,7 +265,7 @@ def build_dimension_input_check(
     }
 
 
-def suggest_ipf_input_next_steps(dimension_checks: list[dict[str, Any]]) -> list[str]:
+def _suggest_ipf_input_next_steps(dimension_checks: list[dict[str, Any]]) -> list[str]:
     steps: list[str] = []
     for check in dimension_checks:
         if check["status"] == "ok":
@@ -285,7 +295,7 @@ def suggest_ipf_input_next_steps(dimension_checks: list[dict[str, Any]]) -> list
     return steps
 
 
-def control_categories_for_dimension(
+def _control_categories_for_dimension(
     control_table: ControlTable, dimension: str
 ) -> set[str]:
     categories: set[str] = set()
@@ -297,7 +307,7 @@ def control_categories_for_dimension(
     return categories
 
 
-def find_unsupported_control_cells(
+def _find_unsupported_control_cells(
     seed_rows: list[Record],
     control_table: ControlTable,
 ) -> list[dict[str, Any]]:

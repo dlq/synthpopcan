@@ -4,14 +4,14 @@ import json
 import pytest
 
 from synthpopcan.tree_benchmark import (
-    average_household_size,
-    filter_rows,
-    peak_rss_bytes,
-    require_explicit_columns,
+    _average_household_size,
+    _filter_rows,
+    _peak_rss_bytes,
+    _require_explicit_columns,
+    _train_model_from_csv,
+    _write_csv,
     resolve_benchmark_columns,
     run_linked_tree_benchmark,
-    train_model_from_csv,
-    write_csv,
 )
 
 
@@ -42,7 +42,7 @@ def test_runs_linked_tree_benchmark_fixture(tmp_path) -> None:
     assert summary["source"]["households"] == 3
     assert summary["generation"]["households"] == 2
     assert summary["generation"]["persons"] >= 2
-    assert summary["generation"]["average_household_size"] == round(
+    assert summary["generation"]["_average_household_size"] == round(
         summary["generation"]["persons"] / summary["generation"]["households"],
         4,
     )
@@ -158,15 +158,15 @@ def test_runs_linked_tree_benchmark_from_suggested_blocks(tmp_path) -> None:
 def test_tree_benchmark_helper_edges(tmp_path) -> None:
     rows = [{"household_size": "2", "PR": "24"}, {"household_size": "4", "PR": "35"}]
 
-    assert require_explicit_columns(("AGEGRP",), label="person targets") == ("AGEGRP",)
+    assert _require_explicit_columns(("AGEGRP",), label="person targets") == ("AGEGRP",)
     with pytest.raises(ValueError, match="person targets are required"):
-        require_explicit_columns(None, label="person targets")
-    assert filter_rows(rows, {}) == rows
-    assert filter_rows(rows, {"PR": "24"}) == [{"household_size": "2", "PR": "24"}]
-    assert average_household_size([]) == 0.0
-    assert average_household_size(rows) == 3.0
+        _require_explicit_columns(None, label="person targets")
+    assert _filter_rows(rows, {}) == rows
+    assert _filter_rows(rows, {"PR": "24"}) == [{"household_size": "2", "PR": "24"}]
+    assert _average_household_size([]) == 0.0
+    assert _average_household_size(rows) == 3.0
     with pytest.raises(ValueError, match="cannot write empty"):
-        write_csv(tmp_path / "empty.csv", [])
+        _write_csv(tmp_path / "empty.csv", [])
 
 
 def test_tree_benchmark_rejects_partial_blocks_and_unknown_methods(
@@ -186,7 +186,7 @@ def test_tree_benchmark_rejects_partial_blocks_and_unknown_methods(
             person_block=None,
         )
     with pytest.raises(ValueError, match="unsupported tree benchmark method"):
-        train_model_from_csv(
+        _train_model_from_csv(
             source,
             level="household",
             target_columns=("household_size",),
@@ -197,7 +197,7 @@ def test_tree_benchmark_rejects_partial_blocks_and_unknown_methods(
             min_samples_leaf=1,
             max_depth=None,
         )
-    cart_model = train_model_from_csv(
+    cart_model = _train_model_from_csv(
         source,
         level="household",
         target_columns=("household_size",),
@@ -215,4 +215,4 @@ def test_tree_benchmark_rejects_partial_blocks_and_unknown_methods(
         "synthpopcan.tree_benchmark.resource.getrusage",
         lambda _who: type("Usage", (), {"ru_maxrss": 2})(),
     )
-    assert peak_rss_bytes() == 2048
+    assert _peak_rss_bytes() == 2048

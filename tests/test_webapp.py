@@ -13,14 +13,14 @@ import pytest
 from synthpopcan.cli import main
 from synthpopcan.models import model_catalogue, model_payload
 from synthpopcan.web_wds import (
-    choose_wds_data_csv_member,
+    _choose_wds_data_csv_member,
+    _normalize_wds_rows,
+    _reference_period_sort_key,
+    _snapshot_wds_rows,
+    _write_csv,
     fetch_wds_zip_bytes,
     generate_wds_seed_controls_from_zip_bytes,
-    normalize_wds_rows,
     parse_dimensions,
-    reference_period_sort_key,
-    snapshot_wds_rows,
-    write_csv,
 )
 from synthpopcan.webapp import (
     build_webapp_server,
@@ -383,23 +383,23 @@ def test_webapp_wds_helper_edge_cases(monkeypatch) -> None:
     assert parse_dimensions("GEO|Sex, Age") == ("GEO", "Sex", "Age")
     assert parse_dimensions(["GEO", " Sex "]) == ("GEO", "Sex")
     assert parse_dimensions(None) == ()
-    assert reference_period_sort_key("2020") == (0, 2020.0)
-    assert reference_period_sort_key("2020/2021") == (1, "2020/2021")
-    assert write_csv([]) == ""
+    assert _reference_period_sort_key("2020") == (0, 2020.0)
+    assert _reference_period_sort_key("2020/2021") == (1, "2020/2021")
+    assert _write_csv([]) == ""
 
     metadata_only_zip = build_wds_zip(
         {"table_MetaData.csv": "Cube Title,Product Id\nExample,13100005\n"}
     )
     with ZipFile(BytesIO(metadata_only_zip)) as archive:
-        assert choose_wds_data_csv_member(archive) == "table_MetaData.csv"
+        assert _choose_wds_data_csv_member(archive) == "table_MetaData.csv"
     empty_zip = build_wds_zip({"readme.txt": "not a table"})
     with ZipFile(BytesIO(empty_zip)) as archive:
         with pytest.raises(ValueError, match="does not contain a CSV"):
-            choose_wds_data_csv_member(archive)
+            _choose_wds_data_csv_member(archive)
 
     rows = [(2, {"GEO": "Canada", "VALUE": "1"})]
-    assert snapshot_wds_rows(rows, ("GEO",)) == (rows, None)
-    assert snapshot_wds_rows([(2, {"REF_DATE": "", "GEO": "Canada"})], ("GEO",)) == (
+    assert _snapshot_wds_rows(rows, ("GEO",)) == (rows, None)
+    assert _snapshot_wds_rows([(2, {"REF_DATE": "", "GEO": "Canada"})], ("GEO",)) == (
         [(2, {"REF_DATE": "", "GEO": "Canada"})],
         None,
     )
@@ -420,9 +420,9 @@ def test_webapp_wds_helper_edge_cases(monkeypatch) -> None:
         )
 
     with pytest.raises(ValueError, match="missing columns"):
-        normalize_wds_rows(rows, dimensions=("GEO", "Sex"), count_column="VALUE")
+        _normalize_wds_rows(rows, dimensions=("GEO", "Sex"), count_column="VALUE")
     with pytest.raises(ValueError, match="duplicates control cell"):
-        normalize_wds_rows(
+        _normalize_wds_rows(
             [
                 (2, {"GEO": "Canada", "VALUE": "1"}),
                 (3, {"GEO": "Canada", "VALUE": "2"}),

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+__all__ = ["prepare_boundaries_geojson", "render_synthesis_map"]
+
 import csv
 import json
 import math
