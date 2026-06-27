@@ -305,40 +305,36 @@ not part of the beginner API. It is still useful to keep that workflow in
 Python when the goal is a reproducible release artifact rather than a one-off
 interactive command.
 
-The repository includes a maintained script for the Quebec 2016 all-fields
-linked model:
+The repository includes `scripts/build_all_model_packages.py`, which builds
+every province and PUMF-coded CMA package in a single run:
 
 ```bash
-uv run python scripts/build_quebec_model_package.py
+uv run python scripts/build_all_model_packages.py
+```
+
+Pass `--only` to build a subset:
+
+```bash
+uv run python scripts/build_all_model_packages.py --only quebec-2016 ontario-2016
 ```
 
 That script uses library modules directly to:
 
-- read the local 2016 hierarchical PUMF;
-- filter the source sample to Quebec (`PR=24`);
+- read the local 2016 hierarchical PUMF once, then filter per geography;
 - resolve all currently supported household and person column blocks;
 - train linked conditional-frequency household and person models;
-- audit the private working models;
+- audit the private working models and block on any release-blocking issues;
 - write publishable-candidate model copies and release manifests;
-- write a linked package JSON for release-asset upload;
-- optionally generate a large linked synthetic population under
-  `data/private/benchmarks/`.
+- write a linked package JSON under `data/private/model-release-assets/`
+  ready for upload as a GitHub Release asset.
 
-Run the large-output step only when you really want the local CSV artifacts:
-
-```bash
-uv run python scripts/build_quebec_model_package.py --generate
-```
-
-The generated CSVs stay under `data/private`, which is ignored by Git. The
-reviewed package JSON is copied to `data/private/model-release-assets/` for
-maintainer upload as a GitHub Release asset; ordinary installs fetch it only
-when requested.
+Ordinary installs never run this script — they fetch packages on demand via
+`synthpopcan models fetch`.
 
 The current script is reproduced below so documentation readers can see the
 exact library calls used by the workflow:
 
-```{literalinclude} ../scripts/build_quebec_model_package.py
+```{literalinclude} ../scripts/build_all_model_packages.py
 :language: python
 ```
 
