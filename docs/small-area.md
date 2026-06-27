@@ -175,6 +175,61 @@ Use the API when a notebook needs to keep prose, file choices, and generated
 output together. Use the CLI when the output is large enough that streaming CSV
 writing and progress feedback are more useful.
 
+## Example: Quebec City CMA at Census-Tract Level
+
+Quebec City (CMA 421) is a good illustration of the full two-command workflow.
+The PUMF does not contain a Quebec City CMA code — only the five largest CMAs
+are individually coded in the public microdata. But the Quebec provincial model
+covers all Quebec households, and the publicly available 2016 Census Profile
+contains CT-level household-size and tenure margins for every CMA in Canada.
+Together they are enough to produce a calibrated, CT-level synthetic population
+for Quebec City.
+
+**Prerequisites:**
+
+- Quebec provincial model package (installed or downloaded):
+  `quebec-2016-all-fields-package.json`
+- National CT Census Profile CSV:
+  `98-401-X2016043_English_CSV_data.csv`
+  (download free from StatCan, or use `synthpopcan statcan census-profile fetch --geo-level ct`)
+
+**Step 1 — Build CT controls (Quebec City prefix = 421)**
+
+```bash
+synthpopcan geo build-controls \
+  --profile 98-401-X2016043_English_CSV_data.csv \
+  --geo-column ct \
+  --geo-prefix 421 \
+  --target 338000 \
+  --controls-out quebec-city-ct-controls.csv
+```
+
+This extracts 181 census tracts and scales household-size and tenure margins
+to 338 000 households (the approximate 2016 Quebec City CMA total).
+
+**Step 2 — Generate candidates and calibrate**
+
+```bash
+synthpopcan geo synthesize-from-package \
+  quebec-2016-all-fields-package.json \
+  --households 338000 \
+  --controls quebec-city-ct-controls.csv \
+  --geo-dimension ct \
+  --geo-column ct \
+  --max-household-size 5 \
+  --households-out quebec-city-synthetic-households.csv \
+  --persons-out quebec-city-synthetic-persons.csv \
+  --report quebec-city-calibration-report.json
+```
+
+`--max-household-size 5` recodes any generated household of size 6 or 7 to 5
+before calibration, matching the Census Profile's "5 or more persons" category.
+
+The same pattern works for any Canadian CMA whose provincial model is
+available: substitute the CMA code prefix (e.g. `602` for Winnipeg, `205` for
+Halifax, `505` for Ottawa) and the matching provincial package
+(`manitoba-2016-all-fields-package.json`, etc.).
+
 ## Real-Data Runs
 
 Completed runs against private benchmark data, stored under
@@ -185,6 +240,7 @@ Completed runs against private benchmark data, stored under
 | Montreal CMA | Census tract (`ct`) | 1,830,000 | 4,170,389 | Tenure (`TENUR`) | — |
 | Quebec | Aggregate dissemination area (`ada`) | 3,750,000 | 8,330,828 | Tenure (`TENUR`) | — |
 | Toronto CMA | Census tract (`ct`) | 2,135,900 | 5,808,776 | Household size + tenure (Census Profile) | 3.2 MB |
+| Quebec City CMA | Census tract (`ct`) | 337,994 | 727,586 | Household size + tenure (Census Profile) | — |
 
 The Toronto run was the first to use the full `build-controls` → `calibrate-linked` → `map`
 pipeline. Controls were built from the 2016 Census Profile for CTs (2247-variable

@@ -416,11 +416,12 @@ def map_command(
 @click.option(
     "--candidates",
     "candidates_path",
-    required=True,
+    default=None,
     type=_PATH,
     help=(
         "Synthesis household CSV to recode for use as calibrate-linked candidates. "
-        "household_size values above 5 are capped at 5 to match Census categories."
+        "household_size values above 5 are capped at 5 to match Census categories. "
+        "Omit when using synthesize-from-package, which handles recoding itself."
     ),
 )
 @click.option(
@@ -474,7 +475,7 @@ def build_controls_command(
     profile_path: Path,
     geo_column: str,
     target_total: int,
-    candidates_path: Path,
+    candidates_path: Path | None,
     geo_prefix: str | None,
     geo_level_value: str | None,
     controls_out: Path | None,
@@ -485,15 +486,15 @@ def build_controls_command(
 
     Reads household-size (members 52–56) and tenure (members 1618–1619) margins
     from a 2247-variable Census Profile, scales them to the target household count,
-    and writes a long-format controls CSV ready for ``calibrate-linked``.  Also
-    recodes the candidate household CSV by capping household_size at 5 to match
-    the Census categories.
+    and writes a long-format controls CSV ready for ``calibrate-linked`` or
+    ``synthesize-from-package``.  When --candidates is supplied, also recodes
+    that CSV by capping household_size at 5 to match the Census categories.
 
     Geographies missing either margin are automatically dropped (they would cause
     an IPF dimension mismatch in calibrate-linked).
 
     \b
-    Example — Ontario ADAs, scaled to 5.5 M households:
+    Example — Ontario ADAs, scaled to 5.5 M households (with candidate recoding):
 
         synthpopcan geo build-controls \\
             --profile 2016-census-profile-ada.csv \\
@@ -501,6 +502,16 @@ def build_controls_command(
             --geo-prefix 35 \\
             --target 5500000 \\
             --candidates synthetic-households-5.5m.csv
+
+    \b
+    Example — Quebec City CTs, controls only (for use with synthesize-from-package):
+
+        synthpopcan geo build-controls \\
+            --profile 98-401-X2016043_English_CSV_data.csv \\
+            --geo-column ct \\
+            --geo-prefix 421 \\
+            --target 338000 \\
+            --controls-out quebec-city-ct-controls.csv
     """
     from synthpopcan.small_area_controls import (
         extract_controls_from_profile,
@@ -511,11 +522,14 @@ def build_controls_command(
 
     # Default output paths
     if controls_out is None:
-        controls_out = (
-            candidates_path.parent
-            / f"{candidates_path.stem}-controls-{target_total}.csv"
-        )
-    if candidates_out is None:
+        if candidates_path is not None:
+            controls_out = (
+                candidates_path.parent
+                / f"{candidates_path.stem}-controls-{target_total}.csv"
+            )
+        else:
+            controls_out = Path(f"{geo_column}-controls-{target_total}.csv")
+    if candidates_out is None and candidates_path is not None:
         candidates_out = candidates_path.parent / f"{candidates_path.stem}-recoded.csv"
 
     click.echo(f"Reading profile: {profile_path}")
@@ -565,33 +579,45 @@ def build_controls_command(
         ) from exc
     print_wrote(controls_out)
 
-    click.echo(
-        f"Recoding candidates (household_size capped at {hhsize_cap}): "
-        f"{candidates_path}"
-    )
-    try:
-        n_rows = write_recoded_candidates(
-            candidates_path, candidates_out, cap=hhsize_cap
+    if candidates_path is not None:
+        click.echo(
+            f"Recoding candidates (household_size capped at {hhsize_cap}): "
+            f"{candidates_path}"
         )
-    except OSError as exc:
-        raise click.ClickException(
-            format_file_access_error(candidates_path, "recode", exc)
-        ) from exc
-    click.echo(f"  {n_rows:,} rows written")
-    print_wrote(candidates_out)
-
-    click.echo("\nNext step:")
-    click.echo(
-        f"  synthpopcan geo calibrate-linked \\\n"
-        f"    --households {candidates_out} \\\n"
-        f"    --persons <persons-csv> \\\n"
-        f"    --controls {controls_out} \\\n"
-        f"    --geo-dimension {geo_column} \\\n"
-        f"    --geo-column {geo_column} \\\n"
-        f"    --pool-size 10000 \\\n"
-        f"    --households-out <output-households.csv> \\\n"
-        f"    --persons-out <output-persons.csv>"
-    )
+        try:
+            n_rows = write_recoded_candidates(
+                candidates_path, candidates_out, cap=hhsize_cap
+            )
+        except OSError as exc:
+            raise click.ClickException(
+                format_file_access_error(candidates_path, "recode", exc)
+            ) from exc
+        click.echo(f"  {n_rows:,} rows written")
+        print_wrote(candidates_out)
+        click.echo("\nNext step:")
+        click.echo(
+            f"  synthpopcan geo calibrate-linked \\\n"
+            f"    --households {candidates_out} \\\n"
+            f"    --persons <persons-csv> \\\n"
+            f"    --controls {controls_out} \\\n"
+            f"    --geo-dimension {geo_column} \\\n"
+            f"    --geo-column {geo_column} \\\n"
+            f"    --pool-size 10000 \\\n"
+            f"    --households-out <output-households.csv> \\\n"
+            f"    --persons-out <output-persons.csv>"
+        )
+    else:
+        click.echo("\nNext step:")
+        click.echo(
+            f"  synthpopcan geo synthesize-from-package <package.json> \\\n"
+            f"    --households {target_total} \\\n"
+            f"    --controls {controls_out} \\\n"
+            f"    --geo-dimension {geo_column} \\\n"
+            f"    --geo-column {geo_column} \\\n"
+            f"    --max-household-size 5 \\\n"
+            f"    --households-out <output-households.csv> \\\n"
+            f"    --persons-out <output-persons.csv>"
+        )
 
 
 # ---------------------------------------------------------------------------
