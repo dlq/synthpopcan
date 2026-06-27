@@ -37,5 +37,6 @@ venv/
 /outputs/
 .ipynb_checkpoints/
 
-# Claude Code settings.
+# Editor settings.
 .claude/
+.vscode/
