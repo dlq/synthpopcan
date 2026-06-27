@@ -24,8 +24,7 @@ from collections import defaultdict
 from pathlib import Path
 
 ADA_PROFILE_PATH = Path(
-    "data/raw/statcan/2016-census/ADA-Profile-2016"
-    "/98-401-X2016020_English_CSV_data.csv"
+    "data/raw/statcan/2016-census/ADA-Profile-2016/98-401-X2016020_English_CSV_data.csv"
 )
 TENURE_CONTROLS_PATH = Path("data/private/small-area/quebec-ada-tenure-controls.csv")
 
