@@ -1,10 +1,10 @@
 """Shared terminal rendering helpers."""
 
 from __future__ import annotations
-from typing import Any
 
 import json
 from pathlib import Path
+from typing import Any
 
 from rich.console import Console
 from rich.table import Table

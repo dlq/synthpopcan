@@ -6,7 +6,6 @@ local cache only when a user asks for them.
 """
 
 from __future__ import annotations
-from typing import Any
 
 import hashlib
 import json
@@ -15,6 +14,7 @@ import sys
 from collections.abc import Callable
 from importlib.resources import files
 from pathlib import Path
+from typing import Any
 from urllib.request import urlopen
 
 ProgressCallback = Callable[[int, int | None], None]

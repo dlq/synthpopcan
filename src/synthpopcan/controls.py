@@ -1,13 +1,13 @@
 """Normalized control table parsing."""
 
 from __future__ import annotations
-from typing import Any
 
 import csv
 import json
 from dataclasses import dataclass
 from io import TextIOWrapper
 from pathlib import Path
+from typing import Any
 from zipfile import BadZipFile, ZipFile
 
 from synthpopcan.ipf import IPFMargin

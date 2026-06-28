@@ -1,6 +1,7 @@
 """WDS download and normalization helpers for the local web app."""
 
 from __future__ import annotations
+
 from typing import Any
 
 __all__ = [

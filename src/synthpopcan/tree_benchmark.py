@@ -1,6 +1,7 @@
 """Developer-facing linked tree benchmark workflow."""
 
 from __future__ import annotations
+
 from typing import Any
 
 __all__ = ["resolve_benchmark_columns", "run_linked_tree_benchmark"]

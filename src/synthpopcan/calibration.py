@@ -1,6 +1,7 @@
 """Advisory helpers for choosing IPF calibration controls."""
 
 from __future__ import annotations
+
 from typing import Any
 
 __all__ = ["build_control_suggestion_report"]

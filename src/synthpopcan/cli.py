@@ -1,6 +1,7 @@
 """Command-line entry point for SynthPopCan."""
 
 from __future__ import annotations
+
 from typing import Any
 
 __all__ = ["main", "resolve_data_root"]
