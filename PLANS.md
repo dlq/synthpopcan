@@ -388,6 +388,10 @@ Documentation should keep distinguishing:
   Python for indexed IPF, scikit-learn where CART models are used, and later
   optional NumPy/SciPy CSR/Polars/PyArrow experiments for larger sparse or
   table-ingestion-heavy workflows.
+- A technical internals document covering the Python implementation choices,
+  IPF backend experiments (pure Python vs NumPy bincount vs SciPy CSR vs
+  Polars), and design rationale would be worth writing eventually — either as
+  a dedicated docs page or a NOTES.md section.
 - Whether schemas should remain dataclasses or move to Pydantic once the API
   surface stabilizes.
 - First broadly supported Census Profile access path and default geography

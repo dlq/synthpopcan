@@ -75,31 +75,11 @@ present on generated rows.
 
 ## IPF Performance Notes
 
-The pure-Python indexed IPF implementation is the default. It precomputes
-seed-record membership for margin cells and streams expanded output.
-
-Local timing evidence after indexing:
-
-- Easy balanced fixture, 50,000 seed records to 500,000 expanded rows: fitting
-  about 0.03 seconds, expansion about 0.14 seconds.
-- High-cardinality inconsistent fixture, 50,000 seed records, 72 target cells,
-  100 iterations: fitting about 1.0 second, down from about 54.5 seconds in the
-  naive repeated-scan version.
-- The high-cardinality fixture still does not converge because its controls are
-  deliberately inconsistent, so diagnostics remain important.
-
-Experimental backend comparison results:
-
-| Seed rows | Case | Iterations | Current Python | [NumPy](https://numpy.org/) `bincount` | [SciPy](https://scipy.org/) CSR | [Polars](https://pola.rs/) `group_by` |
-| ---: | --- | ---: | ---: | ---: | ---: | ---: |
-| 50,000 | easy balanced | 1 | ~0.023s | ~0.032s | ~0.037s | ~0.046s |
-| 50,000 | moderate three-margin | 1 | ~0.037s | ~0.047s | ~0.056-0.064s | ~0.035-0.049s |
-| 50,000 | high-cardinality inconsistent | 100 | ~0.62-0.67s | ~0.11s | ~0.09-0.12s | ~0.69-0.73s |
-| 200,000 | high-cardinality inconsistent | 100 | ~2.8s | ~0.44s | ~0.36s | not rerun |
-
-Current decision: keep pure Python as the default for simple dense controls,
-prototype SciPy CSR later for large, sparse, or repeated-update fits, and treat
-Polars as a likely table-ingestion/prep tool rather than the IPF update kernel.
+The default IPF implementation uses pure Python with dict-based indexing and
+precomputed seed-record membership for each margin cell. This is fast enough for
+typical use: 50,000 seed records converge in about 0.03 seconds for a simple
+balanced case, and high-cardinality cases with 100 iterations run in about
+0.6–1.0 seconds.
 
 ## Completed Tree Packaging And Distribution Slice
 
