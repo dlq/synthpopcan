@@ -397,7 +397,7 @@ def _subsample_candidates(
     """Return a random subsample of the candidate pool with consistent persons."""
     rng = np.random.default_rng(seed)
     indices = rng.choice(len(households), size=pool_size, replace=False)
-    selected_hh = [households[i] for i in indices]
+    selected_hh = [households[int(i)] for i in indices]
     selected_ids = {hh[household_id_column] for hh in selected_hh}
     selected_persons = [
         p for p in persons if p.get(household_id_column, "") in selected_ids

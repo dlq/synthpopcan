@@ -3,5 +3,12 @@
   "venv": ".venv",
   "pythonVersion": "3.12",
   "typeCheckingMode": "basic",
-  "reportMissingModuleSource": "none"
+  "reportMissingModuleSource": "none",
+  "exclude": [
+    "tests",
+    "scripts",
+    "docs",
+    "**/.venv",
+    "**/__pycache__"
+  ]
 }

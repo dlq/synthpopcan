@@ -733,7 +733,7 @@ def train_cart_model(
         max_depth=max_depth,
     )
     classifier.fit(x, y, sample_weight=weights)
-    tree = classifier.tree_
+    tree: Any = classifier.tree_  # sklearn C-extension; stubs don't type internal attrs
     values = tree.value
     if values.ndim == 3:
         values = values[:, 0, :]
