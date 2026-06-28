@@ -184,3 +184,6 @@ notebooks to command-line workflows, start with
   [Copula-based transferable models for synthetic population generation](https://arxiv.org/abs/2302.09193).
 - Robin Lovelace and Dimitris Ballas,
   [Truncate, replicate, sample: a method for creating integer weights for spatial microsimulation](https://arxiv.org/abs/1303.5228).
+- David R. Pritchard and Eric J. Miller,
+  [Advances in population synthesis: fitting many attributes per agent and fitting to household and person margins simultaneously](https://doi.org/10.1007/s11116-011-9367-4),
+  *Transportation*, 39, 2012.

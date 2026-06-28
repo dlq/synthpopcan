@@ -10,14 +10,18 @@ household and person relationships, how to connect synthetic populations to
 place, and how to make the resulting tools useful for researchers outside a
 single technical specialty.
 
-I especially acknowledge Laurette Dubé and Shawn Brown for their leadership in
-that proposal and for the intellectual context in which this work began.
-SynthPopCan is not the same project, and it is currently a narrower research
-software effort focused on population synthesis. It should be understood as a
-spiritual and academic successor to that earlier work.
+I especially acknowledge
+[Laurette Dubé](https://www.mcgill.ca/desautels/laurette-dube)
+(<laurette.dube@mcgill.ca>) and
+[Shawn Brown](https://www.mcgill.ca/micm/speaker-shawn-brown)
+for their leadership in that proposal and for the intellectual context in which
+this work began. SynthPopCan is not the same project, and it is currently a
+narrower research software effort focused on population synthesis. It should be
+understood as a spiritual and academic successor to that earlier work.
 
-I also want to acknowledge the Pritchard/Miller population-synthesis paper and
-the associated legacy code. That work has been an important algorithmic
+I also want to acknowledge the
+[Pritchard and Miller (2012) population-synthesis paper](https://doi.org/10.1007/s11116-011-9367-4)
+and the associated legacy code. That work has been an important algorithmic
 reference for this project, especially for thinking about IPF, sparse/list-based
 representations, fitted expansion weights, and the practical difficulty of
 coordinating household and person controls. The legacy code is not treated here
