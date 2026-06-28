@@ -31,11 +31,11 @@ artifact.
 1. Confirm GitHub CI passes.
 
 1. Run the manual PyPI publishing workflow when the release should be published
-   to [PyPI](https://pypi.org/).
+   to PyPI.
 
 ## Model Package Release
 
-Large model packages should be [GitHub Release assets](https://docs.github.com/en/repositories/releasing-projects-on-github/about-releases), not files in the Python
+Large model packages should be GitHub Release assets, not files in the Python
 wheel or git history.
 
 Before publishing a model package:

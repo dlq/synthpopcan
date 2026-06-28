@@ -61,7 +61,6 @@ beginner generation workflows.
    field-primer
    status
    installation
-   release-checklist
 
 .. toctree::
    :maxdepth: 2
