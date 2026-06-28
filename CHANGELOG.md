@@ -2,6 +2,29 @@
 
 All notable public changes to SynthPopCan are tracked here.
 
+## 0.2.0 - 2026-06-28
+
+Small-area linked synthesis MVP.
+
+- Added `small-area calibrate-linked` command and `calibrate_small_area_linked`
+  API entry point to assign linked household/person candidates to target
+  geographies using Census Profile controls.
+- Added `geo` command group: `build-controls`, `map`, `prepare-boundaries`, and
+  `synthesize-from-package` subcommands covering the end-to-end small-area
+  workflow in a single command.
+- Added StatCan Census Profile 2016 fetch and preparation helpers for census
+  tracts and aggregate dissemination areas.
+- Added geography-level residual summaries to calibration reports.
+- Expanded the prepared model catalogue to include all provinces, territories,
+  and major CMAs.
+- Vectorized IPF and population expansion using NumPy (~2.3× speedup); added
+  threaded IPF loop and pool-size subsampling for large candidate sets.
+- Renamed `--geography-*` CLI flags to `--geo-*` for consistency.
+- Declared pandas as an explicit dependency.
+- Enforced public/private distinction across library modules with `__all__`.
+- Added pre-commit hooks for ruff, pyright, and pytest.
+- Raised test coverage from 95% to 99.5% (552 tests).
+
 ## 0.1.1 - 2026-06-26
 
 Public repository polish release.
