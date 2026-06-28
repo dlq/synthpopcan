@@ -12,8 +12,7 @@ single technical specialty.
 
 I especially acknowledge
 [Laurette Dubé](https://www.mcgill.ca/desautels/laurette-dube)
-(<laurette.dube@mcgill.ca>) and
-[Shawn Brown](https://www.mcgill.ca/micm/speaker-shawn-brown)
+(<laurette.dube@mcgill.ca>) and Shawn Brown
 for their leadership in that proposal and for the intellectual context in which
 this work began. SynthPopCan is not the same project, and it is currently a
 narrower research software effort focused on population synthesis. It should be
