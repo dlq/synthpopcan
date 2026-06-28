@@ -1,0 +1,33 @@
+<svg viewBox="0 0 560 162" xmlns="http://www.w3.org/2000/svg" role="img" font-family="system-ui,sans-serif" font-size="12">
+  <title>IPF calibration: controls define the targets that IPF must fit the seed to</title>
+  <desc>A flow diagram. A grey Seed records box on the left and a blue Controls public totals box below it both feed into a central IPF node. An arrow from IPF leads to a grey Calibrated weights box on the right, whose owner and renter sums match the control targets.</desc>
+
+  <rect x="10" y="28" width="148" height="88" rx="6" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="1.5"/>
+  <text x="84" y="52" text-anchor="middle" font-size="12" font-weight="600" fill="#334155">Seed records</text>
+  <text x="84" y="70" text-anchor="middle" font-size="11" fill="#64748b">joint distribution</text>
+  <text x="84" y="85" text-anchor="middle" font-size="11" fill="#64748b">from microdata</text>
+  <text x="84" y="101" text-anchor="middle" font-size="11" fill="#64748b">initial weight: 1</text>
+
+  <rect x="10" y="130" width="148" height="24" rx="4" fill="#dbeafe" stroke="#93c5fd" stroke-width="1"/>
+  <text x="84" y="146" text-anchor="middle" font-size="11" font-weight="600" fill="#1d4ed8">Controls — public totals</text>
+
+  <line x1="158" y1="72" x2="214" y2="72" stroke="#94a3b8" stroke-width="1.5"/>
+  <polygon points="214,67 224,72 214,77" fill="#94a3b8"/>
+
+  <line x1="158" y1="142" x2="214" y2="100" stroke="#2563eb" stroke-width="1.5"/>
+  <polygon points="209,96 219,96 214,106" fill="#2563eb"/>
+
+  <rect x="224" y="46" width="88" height="56" rx="8" fill="#fff" stroke="#2563eb" stroke-width="2"/>
+  <text x="268" y="70" text-anchor="middle" font-size="14" font-weight="700" fill="#2563eb">IPF</text>
+  <text x="268" y="88" text-anchor="middle" font-size="10" fill="#64748b">adjusts weights</text>
+
+  <line x1="312" y1="74" x2="368" y2="74" stroke="#94a3b8" stroke-width="1.5"/>
+  <polygon points="368,69 378,74 368,79" fill="#94a3b8"/>
+
+  <rect x="378" y="28" width="170" height="88" rx="6" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="1.5"/>
+  <text x="463" y="52" text-anchor="middle" font-size="12" font-weight="600" fill="#334155">Calibrated weights</text>
+  <text x="463" y="70" text-anchor="middle" font-size="11" fill="#64748b">Owner sum: 560</text>
+  <text x="463" y="85" text-anchor="middle" font-size="11" fill="#16a34a">= control target ✓</text>
+  <text x="463" y="100" text-anchor="middle" font-size="11" fill="#64748b">Renter sum: 440</text>
+  <text x="463" y="109" text-anchor="middle" font-size="9" fill="#16a34a">= control target ✓</text>
+</svg>

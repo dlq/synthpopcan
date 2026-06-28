@@ -59,7 +59,9 @@ More recent systems and papers broaden the field:
 
 SynthPopCan's first design deliberately stays closer to explainable, auditable
 methods: IPF, conditional-frequency models,
-[CART-style tree models](https://scikit-learn.org/stable/modules/tree.html),
+[CART-style tree models](https://scikit-learn.org/stable/modules/tree.html)
+(Classification And Regression Trees — decision trees that recursively split
+training data until each branch is relatively homogeneous),
 constrained generation, validation, and provenance.
 
 ## What Makes Canadian Data Awkward
@@ -100,6 +102,17 @@ coverage. It is weak when the controls ask for things the seed cannot represent.
 IPF cannot invent a missing variable, create a missing joint category, or fix
 controls that describe incompatible populations.
 
+```{figure} _static/ipf-diagram.svg
+:alt: Three tables connected by arrows. The first table shows seed weights (4, 6, 3, 7) with row targets of 20 and 15 and column targets of 12 and 23 highlighted in blue. An arrow labelled IPF leads to the second table of fitted weights (5.9, 14.1, 6.1, 8.9) whose row and column sums match the targets exactly. A second arrow labelled integerize leads to the third table of integer counts (6, 14, 6, 9), with the fractional weights shown in small grey text. All margin totals are preserved.
+:align: center
+
+IPF adjusts the seed weights (left) until each row sum and column sum matches
+the corresponding margin target (blue). The seed's proportional structure is
+preserved; only the scale of each cell changes. The final step converts
+fractional fitted weights into integer counts — a rounding decision that is
+separate from the fitting itself, but one that must preserve the margin totals.
+```
+
 The most important conceptual distinction is between fitting and realization.
 A weighted table is one object. An integer synthetic population is another. When
 fractional weights are expanded into rows, a rounding or sampling decision has
@@ -120,6 +133,16 @@ variables than simple margins. They can also support linked household/person
 generation: generate household attributes first, then generate people inside
 those households using shared conditions such as household size, tenure, or
 geography.
+
+```{figure} _static/tree-diagram.svg
+:alt: A decision tree splitting first on Tenure (Owner / Renter) then on Household Size (1-2 / 3+). The four leaf nodes show observed dwelling-type frequency distributions (Apartment, Semi-detached, Single detached) with training-set counts.
+:align: center
+
+A conditional-frequency tree splits training rows by conditioning columns
+(here Tenure then Household Size). Each leaf records the observed distribution
+of the target variable (dwelling type). To generate a new record, walk the
+tree using the row's known conditions and sample from the matching leaf.
+```
 
 Tree models do not remove the need for controls. A model can generate plausible
 records and still fail local margins. For SynthPopCan, tree output is best read
@@ -182,12 +205,10 @@ composition, even when no single person-level field looks rare. Release checks
 therefore need to consider household signatures, not just person rows one at a
 time.
 
-SynthPopCan's practical posture is conservative:
-
-- private working models stay private;
-- publishable-candidate models need audit evidence and provenance;
-- model packages should say what they are for and what they are not for;
-- no generated output should claim absolute anonymity.
+SynthPopCan's practical posture is conservative: working models stay private,
+publishable-candidate models require audit evidence and provenance, and no
+generated output should claim absolute anonymity. The detailed release rules
+and what each check covers are in {doc}`tree`.
 
 ## Evaluation Is Not One Number
 
@@ -253,8 +274,8 @@ This section maps field concepts to the current SynthPopCan documentation
 surface. It is deliberately short; the command pages contain the actual
 commands, options, examples, and troubleshooting.
 
-- **Source visibility:** use {doc}`data` and {doc}`sources` to check local data
-  layout and inspect source-file shape before deciding whether a file belongs
+- **Source visibility:** use {doc}`data` to check local data layout and inspect
+  source-file shape before deciding whether a file belongs
   in a workflow.
 - **Public aggregate tables:** use {doc}`statcan` to find, explain, and fetch
   Statistics Canada sources. The interpretive question is whether the table's

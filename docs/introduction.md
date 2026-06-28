@@ -15,10 +15,13 @@ social scientists, policy researchers, and technically curious project teams.
 The documentation assumes that many readers care more about source choices,
 categories, provenance, and interpretation than about Python internals.
 
-For a broader methods-oriented introduction, read the {doc}`field-primer`. It
-explains the field around synthetic populations, IPF, tree models, disclosure
-risk, validation, and why these outputs should be treated as interpretive
-artifacts rather than recovered facts.
+Before working through any workflow, read the {doc}`field-primer`. It explains
+the field around synthetic populations, IPF, tree models, disclosure risk,
+validation, and why these outputs should be treated as interpretive artifacts
+rather than recovered facts. The field primer also makes the case for why
+humanities and digital-humanities perspectives are methodologically central —
+not supplementary — to this kind of work. Readers who skip it and go straight
+to installation are likely to miss framing that shapes everything else.
 
 ## What Is a Synthetic Population?
 
@@ -120,6 +123,14 @@ of decisions.
 
 ## Important Terms
 
+**CSV file:** A comma-separated values file — a plain-text table where each line
+is a row and columns are separated by commas. Any spreadsheet application can
+open one. SynthPopCan reads and writes most of its inputs and outputs as CSVs.
+
+**JSON file:** A JavaScript Object Notation file — a structured text format for
+reports, manifests, and configuration. Readable in any text editor and easy to
+process in scripts.
+
 **Seed file:** The starting rows for IPF. IPF changes how much each row counts;
 it does not invent new columns.
 
@@ -163,14 +174,20 @@ Most SynthPopCan workflows follow the same pattern:
 This pattern is intentionally conservative. It helps readers understand not only
 what the tool produced, but what choices shaped the result.
 
-The rest of the documentation follows this pattern. Use [Sources](sources.md)
-and [Data](data.md) when you are still inspecting files, [Statistics Canada
+The rest of the documentation follows this pattern. Use [Data](data.md) when
+you are still inspecting files, [Statistics Canada
 Sources](statcan.md) and [Controls](controls.md) when you are preparing public
 aggregate totals, [IPF](ipf.md) when you are fitting seed rows to controls,
 [Tree Models](tree.md) when you are training or using conditional generation,
 and [Validate](validate.md) when you are checking outputs. If you prefer Python
 notebooks to command-line workflows, start with
 [Getting Started With the Beginner API](library-getting-started.md).
+
+## Find SynthPopCan Online
+
+- **Documentation:** <https://synthpopcan.readthedocs.io/>
+- **Source code and issues:** <https://github.com/dlq/synthpopcan>
+- **Package:** <https://pypi.org/project/synthpopcan/>
 
 ## Further Reading
 

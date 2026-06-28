@@ -1,5 +1,7 @@
 # Getting Started With the Beginner API
 
+{download}`Download as Jupyter notebook <_static/library-getting-started.ipynb>`
+
 The beginner API is the supported first path for notebooks, teaching examples,
 and short scripts. It is designed for readers who want to ask research
 questions with synthetic population data without first learning every internal
@@ -50,9 +52,13 @@ record of choices:
 - what caveats should travel with the output.
 
 Jupyter notebooks are a common way to do this kind of mixed narrative and
-computational work. The official Project Jupyter documentation describes a
-notebook as a shareable document that combines code, plain-language
-description, data, visualizations, and other output. See:
+computational work. If you have not used notebooks before, this introduction is
+written for humanities researchers and requires no prior programming experience:
+
+- [Introduction to Jupyter Notebooks](https://programminghistorian.org/en/lessons/jupyter-notebooks)
+  — Programming Historian
+
+For reference documentation once you are up and running:
 
 - [Project Jupyter documentation](https://docs.jupyter.org/en/latest/)
 - [JupyterLab notebooks user guide](https://jupyterlab.readthedocs.io/en/latest/user/notebook.html)
@@ -300,14 +306,12 @@ controls, or package version shaped the result.
 
 The beginner API exposes a small set of names:
 
-- `read_seed`
-- `read_controls`
-- `fit_ipf`
-- `expand_population`
-- `write_weights`
-- `read_model_package`
-- `generate_from_model`
-- `write_population`
-- `LinkedPopulation`
-
-See the [API Reference](api.rst) for signatures and return types.
+- {py:func}`~synthpopcan.api.read_seed`
+- {py:func}`~synthpopcan.api.read_controls`
+- {py:func}`~synthpopcan.api.fit_ipf`
+- {py:func}`~synthpopcan.api.expand_population`
+- {py:func}`~synthpopcan.api.write_weights`
+- {py:func}`~synthpopcan.api.read_model_package`
+- {py:func}`~synthpopcan.api.generate_from_model`
+- {py:func}`~synthpopcan.api.write_population`
+- {py:class}`~synthpopcan.api.LinkedPopulation`

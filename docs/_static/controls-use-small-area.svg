@@ -1,0 +1,39 @@
+<svg viewBox="0 0 580 220" xmlns="http://www.w3.org/2000/svg" role="img" font-family="system-ui,sans-serif" font-size="12">
+  <title>Small-area calibration: candidate households calibrated independently to per-geography control targets</title>
+  <desc>A grey Candidate households box on the left connects via dashed fan-out lines to three blue census tract boxes on the right, each showing its own owner and renter targets. CT-001 has owner target 80 and renter target 60 giving 140 households. CT-002 has owner target 40 and renter target 100 giving 140 households. CT-003 has owner target 60 and renter target 80 giving 140 households.</desc>
+
+  <!-- Candidate households box — vertically centred -->
+  <rect x="14" y="60" width="148" height="100" rx="6" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="1.5"/>
+  <text x="88" y="84"  text-anchor="middle" font-size="12" font-weight="600" fill="#334155">Candidate</text>
+  <text x="88" y="100" text-anchor="middle" font-size="12" font-weight="600" fill="#334155">households</text>
+  <text x="88" y="119" text-anchor="middle" font-size="11" fill="#64748b">generated from</text>
+  <text x="88" y="134" text-anchor="middle" font-size="11" fill="#64748b">tree model</text>
+  <text x="88" y="149" text-anchor="middle" font-size="11" fill="#64748b">(no geography yet)</text>
+
+  <!-- Fan-out label — centred in the gap, above the middle line -->
+  <text x="232" y="96"  text-anchor="middle" font-size="10.5" fill="#94a3b8">calibrate by</text>
+  <text x="232" y="110" text-anchor="middle" font-size="10.5" fill="#94a3b8">geography</text>
+
+  <!-- Dashed fan lines from right edge of candidates box to left edge of CT boxes -->
+  <line x1="162" y1="110" x2="304" y2="46"  stroke="#94a3b8" stroke-width="1.2" stroke-dasharray="4 2"/>
+  <line x1="162" y1="110" x2="304" y2="110" stroke="#94a3b8" stroke-width="1.2" stroke-dasharray="4 2"/>
+  <line x1="162" y1="110" x2="304" y2="174" stroke="#94a3b8" stroke-width="1.2" stroke-dasharray="4 2"/>
+
+  <!-- CT-001 -->
+  <rect x="304" y="20"  width="262" height="52" rx="6" fill="#dbeafe" stroke="#93c5fd" stroke-width="1.5"/>
+  <text x="328" y="40"  font-size="11" font-weight="600" fill="#1d4ed8">CT-001</text>
+  <text x="328" y="57"  font-size="10.5" fill="#3b82f6">Owner: 80 · Renter: 60</text>
+  <text x="560" y="57"  text-anchor="end" font-size="10" fill="#64748b">→ 140 hh</text>
+
+  <!-- CT-002 -->
+  <rect x="304" y="84"  width="262" height="52" rx="6" fill="#dbeafe" stroke="#93c5fd" stroke-width="1.5"/>
+  <text x="328" y="104" font-size="11" font-weight="600" fill="#1d4ed8">CT-002</text>
+  <text x="328" y="121" font-size="10.5" fill="#3b82f6">Owner: 40 · Renter: 100</text>
+  <text x="560" y="121" text-anchor="end" font-size="10" fill="#64748b">→ 140 hh</text>
+
+  <!-- CT-003 -->
+  <rect x="304" y="148" width="262" height="52" rx="6" fill="#dbeafe" stroke="#93c5fd" stroke-width="1.5"/>
+  <text x="328" y="168" font-size="11" font-weight="600" fill="#1d4ed8">CT-003</text>
+  <text x="328" y="185" font-size="10.5" fill="#3b82f6">Owner: 60 · Renter: 80</text>
+  <text x="560" y="185" text-anchor="end" font-size="10" fill="#64748b">→ 140 hh</text>
+</svg>

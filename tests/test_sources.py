@@ -14,7 +14,7 @@ def test_sources_inspect_counts_files_by_extension(tmp_path, capsys) -> None:
     nested.mkdir()
     (nested / "c.csv").write_text("x,y\n3,4\n")
 
-    assert main(["sources", "inspect", str(tmp_path), "--format", "json"]) == 0
+    assert main(["data", "inspect", str(tmp_path), "--format", "json"]) == 0
 
     payload = json.loads(capsys.readouterr().out)
     assert payload["files"] == 3
@@ -25,7 +25,7 @@ def test_sources_schema_reports_csv_columns_and_delimiter(tmp_path, capsys) -> N
     source = tmp_path / "sample.csv"
     source.write_text("age,sex,count\nold,F,10\n")
 
-    assert main(["sources", "schema", str(source), "--format", "json"]) == 0
+    assert main(["data", "schema", str(source), "--format", "json"]) == 0
 
     payload = json.loads(capsys.readouterr().out)
     assert payload["delimiter"] == ","
@@ -39,7 +39,7 @@ def test_sources_sample_outputs_limited_rows(tmp_path, capsys) -> None:
     assert (
         main(
             [
-                "sources",
+                "data",
                 "sample",
                 str(source),
                 "--rows",
@@ -80,12 +80,12 @@ def test_sources_sample_requires_private_override(tmp_path) -> None:
     source.write_text("age,sex\nold,F\n")
 
     with pytest.raises(ClickException, match="private data"):
-        main(["sources", "sample", str(source), "--format", "json"])
+        main(["data", "sample", str(source), "--format", "json"])
 
     assert (
         main(
             [
-                "sources",
+                "data",
                 "sample",
                 str(source),
                 "--allow-private",
@@ -102,14 +102,14 @@ def test_sources_sample_wraps_reader_errors(tmp_path) -> None:
     source.write_text("age,sex\nold,F\n")
 
     with pytest.raises(ClickException, match="rows must be at least 1"):
-        main(["sources", "sample", str(source), "--rows", "0", "--format", "json"])
+        main(["data", "sample", str(source), "--rows", "0", "--format", "json"])
 
 
 def test_sources_schema_reports_missing_file_without_traceback(tmp_path) -> None:
     missing = tmp_path / "missing.csv"
 
     with pytest.raises(ClickException) as excinfo:
-        main(["sources", "schema", str(missing)])
+        main(["data", "schema", str(missing)])
 
     message = str(excinfo.value)
     assert "Could not read" in message

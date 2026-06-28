@@ -13,7 +13,10 @@ household-level assumptions, and writes derived CSVs without printing private
 rows by default. That matters because census microdata can be restricted,
 sensitive, or simply easy to misread. A derived file is not neutral: the chosen
 columns, level, geography, and row weights all become part of the research
-argument.
+argument. If you export only age group and sex, the seed can only carry those
+relationships forward — household income, language, immigration status, and
+dwelling type will be absent from any generated output. That is a choice, and it
+should be a deliberate one.
 
 ## Concept
 
@@ -45,7 +48,11 @@ household columns are constant within each household.
 
 ## Getting Started
 
-Start by inspecting the file:
+Always inspect the file first. The `inspect` command reports row and household
+counts, detected identifier and weight columns, available geography columns,
+and the full column list — without printing any source rows. Use this output
+to confirm the file loaded correctly and to identify which columns are
+available before choosing what to export.
 
 ```bash
 synthpopcan microdata inspect \
@@ -53,7 +60,10 @@ synthpopcan microdata inspect \
   --input-format statcan-2016-hierarchical
 ```
 
-Then export a simple person-level IPF seed:
+**For an IPF seed (person level):** export the columns your controls use.
+IPF can only reweight rows that exist in the seed, so the seed must contain
+every column referenced in any control margin. The weight column is included
+automatically.
 
 ```bash
 synthpopcan microdata export-seed \
@@ -63,7 +73,11 @@ synthpopcan microdata export-seed \
   --out seed.csv
 ```
 
-If we want household-level seed rows, check the columns first:
+**For an IPF seed (household level):** household columns in a person-row file
+should be constant within each household — tenure is the same for all people
+in a household, but age is not. Run `check-seed` first to confirm this holds
+for the columns you want. If any column varies within a household, a
+household-level export would silently discard that variation.
 
 ```bash
 synthpopcan microdata check-seed \
@@ -72,8 +86,6 @@ synthpopcan microdata check-seed \
   --level household \
   --columns TENUR
 ```
-
-Then export the household seed:
 
 ```bash
 synthpopcan microdata export-seed \
@@ -84,7 +96,12 @@ synthpopcan microdata export-seed \
   --out household-seed.csv
 ```
 
-For tree modelling, ask for suggested column blocks before training:
+**For a tree model (training export):** the column choices here are a
+modelling decision, not just a technical step. `suggest-tree-columns` gives
+you a starting point organized by block (household core, person demographics,
+etc.) based on what the adapter considers safe and coherent at each level.
+Review the suggestions before accepting them — a block that is sensible at the
+provincial level may be too detailed for a small geography.
 
 ```bash
 synthpopcan microdata suggest-tree-columns \
@@ -92,7 +109,9 @@ synthpopcan microdata suggest-tree-columns \
   --input-format statcan-2016-hierarchical
 ```
 
-And export a training view only after deciding which fields belong in the model:
+Export a training view only after deciding which fields belong in the model.
+Target columns are what the model will generate; conditioning columns are what
+it conditions generation on.
 
 ```bash
 synthpopcan microdata export-training \
@@ -108,7 +127,11 @@ synthpopcan microdata export-training \
 
 ### `microdata inspect`
 
-Inspects a microdata file without printing source rows.
+Inspects a microdata file without printing source rows. Reports row count,
+household count, detected identifier columns (`HH_ID`, `PP_ID`, etc.), the
+weight column, available geography columns, and the full column inventory.
+Use this before any export to confirm the file is loaded correctly and to
+identify which columns are available for seed or training export.
 
 ```bash
 synthpopcan microdata inspect hierarchical.csv \
@@ -145,7 +168,10 @@ be exported without another modelling decision.
 
 ### `microdata export-seed`
 
-Exports selected microdata columns as an IPF seed CSV.
+Exports selected microdata columns as an IPF seed CSV. The weight column is
+always included. Only columns named in `--columns` appear in the output — any
+column your controls reference must be listed here, or IPF will fail with a
+missing-column error.
 
 ```bash
 synthpopcan microdata export-seed hierarchical.csv \
@@ -155,7 +181,9 @@ synthpopcan microdata export-seed hierarchical.csv \
 ```
 
 For `statcan-2016-hierarchical`, person-level export is the default. Use
-`--level household` when you intentionally want one row per household:
+`--level household` when you intentionally want one row per household. Run
+`check-seed` first to confirm the selected columns are constant within each
+household — if they are not, the export will collapse variation silently.
 
 ```bash
 synthpopcan microdata export-seed hierarchical.csv \
@@ -191,8 +219,17 @@ source adapter derives a household-level version.
 
 ### `microdata tree-geography-feasibility`
 
-Estimates which geography values have enough row support for publishable
-tree-model work.
+Reports how many person and household rows each geography value has, and flags
+which geographies are likely viable, borderline, or too sparse for the chosen
+column blocks at publishable quality thresholds. Use this before committing to
+a geography in `tree train-linked` — a geography with too few rows will produce
+a model with low support and high purity that fails the audit step.
+
+The output groups geographies into likely viable, borderline (may need a
+reduced column profile or private-only use), and too sparse (should not be
+trained at publishable thresholds with the chosen blocks). A borderline
+geography is not automatically excluded; it may still work with a reduced
+target profile or a broader category scheme.
 
 ```bash
 synthpopcan microdata tree-geography-feasibility hierarchical.csv \

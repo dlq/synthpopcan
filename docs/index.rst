@@ -59,7 +59,6 @@ beginner generation workflows.
    introduction
    acknowledgments
    field-primer
-   status
    installation
 
 .. toctree::
@@ -70,7 +69,9 @@ beginner generation workflows.
    ipf
    controls
    statcan
+   tree-generate
    small-area
+   validate
 
 .. toctree::
    :maxdepth: 2
@@ -78,9 +79,7 @@ beginner generation workflows.
 
    microdata
    tree
-   validate
    data
-   sources
 
 .. toctree::
    :maxdepth: 2

@@ -42,6 +42,16 @@ extra detail can preserve useful structure, but it also reduces the number of
 training rows behind each branch. A model that splits too finely may look
 sophisticated while relying on only a handful of examples.
 
+```{figure} _static/tree-diagram.svg
+:alt: A decision tree rooted at Tenure (Owner/Renter), splitting into Household Size (1–2 or 3+), with four leaf nodes showing observed dwelling-type distributions (Apt, Semi, Single) and record counts.
+:align: center
+
+A trained tree for dwelling type conditioned on tenure and household size. Each
+leaf contains the observed target distribution for records that reached that
+branch. Generation draws from that distribution — it does not predict a single
+outcome, it samples one plausible outcome given the conditioning path.
+```
+
 SynthPopCan has two tree-family model types:
 
 - `conditional-frequency`: groups rows by the conditioning columns and samples
@@ -133,6 +143,17 @@ Use these measures together:
 - low support and mixed outcomes is unstable;
 - high support and high purity may describe a real common pattern;
 - high support and mixed outcomes is usually safer but may generate noisy rows.
+
+```{figure} _static/tree-support-purity.svg
+:alt: Two leaf node cards side by side. The left green card shows n=240 with outcomes Single 38%, Semi 25%, Apt 37% — high support, mixed outcomes, stable. The right amber card shows n=4 with Single 100%, Semi 0%, Apt 0% — low support, high purity, warning.
+:align: center
+
+The same dwelling-type leaf in two very different states. High support with
+mixed outcomes (left) produces stable, varied generated rows. Low support with
+high purity (right) is the strongest audit warning: the model has almost no
+evidence for this branch, and one dominant outcome may reflect a handful of
+real records rather than a genuine pattern.
+```
 
 The default audit thresholds are conservative starting points, not universal
 rules. Choose stricter thresholds for public sharing, sensitive columns, or
@@ -272,7 +293,11 @@ columns, or a decision to keep the artifact private.
 
 ## Getting Started: Linked Household and Person Models
 
-Inspect suggested columns:
+Column choice is a research decision, not a technical default. Before training,
+ask the adapter to suggest which columns are safe and coherent for each record
+level. The suggestions are a starting point — review them before accepting,
+and consider whether the number of conditioning columns is appropriate for the
+geography's row count:
 
 ```bash
 synthpopcan microdata suggest-tree-columns \
@@ -280,7 +305,11 @@ synthpopcan microdata suggest-tree-columns \
   --input-format statcan-2016-hierarchical
 ```
 
-Train linked models:
+Train the linked household and person models. `--suggested-blocks` uses the
+adapter's default suggestion blocks (`household_core` and `person_demographics`).
+For a broader model with all supported blocks, use `--household-block all
+--person-block all`; those still exclude identifiers, weights, and columns that
+vary within a household on the person side:
 
 ```bash
 synthpopcan tree train-linked \
@@ -293,13 +322,9 @@ synthpopcan tree train-linked \
   --random-seed 7
 ```
 
-The beginner defaults train `household_core` plus `person_demographics`. For a
-broader source-adapter model, use `--household-block all --person-block all`.
-Those `all` blocks combine the adapter's supported household and person
-suggestion blocks; they still exclude identifiers, weights, replicate weights,
-and columns that are not safe or coherent at the requested record level.
-
-Generate linked rows:
+Generate a small linked sample to inspect before auditing. A small run (100–500
+households) is enough to check that the linkage structure is correct and the
+output looks plausible:
 
 ```bash
 synthpopcan tree generate-linked \
@@ -312,7 +337,9 @@ synthpopcan tree generate-linked \
   --random-seed 13
 ```
 
-Validate linkage:
+Validate the linkage — checks that household and person IDs are consistent,
+that household sizes match the generated person counts, and that no structural
+errors exist before treating the output as usable:
 
 ```bash
 synthpopcan validate linked-output \
@@ -320,7 +347,11 @@ synthpopcan validate linked-output \
   --persons synthetic-persons.csv
 ```
 
-Audit the models before thinking about release or reuse:
+Audit both models before considering release or reuse. The audit checks every
+group or leaf for support and purity against your thresholds, and checks whether
+the artifact metadata indicates raw rows or source identifiers may be present.
+A model that passes the audit at these thresholds is a candidate for release
+preparation; one that does not should be treated as a private working artifact:
 
 ```bash
 synthpopcan tree audit-model household-model.json \
@@ -332,9 +363,9 @@ synthpopcan tree audit-model person-model.json \
   --max-purity 0.95
 ```
 
-If the audit reports low support, high purity, or private release status, treat
-the model as a working artifact. Reduce the column profile, aggregate geography,
-or keep the model private.
+If the audit reports low support or high purity, the usual responses are:
+reduce the number of conditioning columns, combine fine categories, use a
+larger geography, or accept that this model stays private.
 
 ## Subcommands
 
@@ -385,7 +416,9 @@ training export has explicitly derived a household-level summary.
 
 ### `tree generate`
 
-Generates flat rows from one model.
+Generates flat rows from a single model file. Use this for non-linked (flat
+person or household) models. For generating from a reviewed package, see
+{doc}`tree-generate`.
 
 ```bash
 synthpopcan tree generate person-model.json \
@@ -397,7 +430,9 @@ synthpopcan tree generate person-model.json \
 
 ### `tree generate-linked`
 
-Generates households first and people second from separate linked models.
+Generates households and persons from two separate model JSON files rather than
+a packaged artifact. Use this when working with local model files that have not
+yet been packaged. For generating from a reviewed package, see {doc}`tree-generate`.
 
 ```bash
 synthpopcan tree generate-linked \
@@ -448,29 +483,56 @@ instead.
 
 ### `tree prepare-model-release`
 
-Writes a publishable-candidate copy after release checks.
+Applies release checks to a private working model and writes a
+publishable-candidate copy. The checks are the same as `audit-model` — support,
+purity, raw-row metadata — but the command refuses to write output if any check
+fails. The `--review-note` is embedded in the artifact and should describe what
+was reviewed and by whom. Run this separately for the household and person models
+before `release-readiness` or `package-linked-models`.
 
 ```bash
 synthpopcan tree prepare-model-release household-model.json \
   --out household-model-publishable.json \
   --manifest-out household-model-release.manifest.json \
+  --min-support 50 \
+  --max-purity 0.95 \
   --review-note "Reviewed for minimum support, purity, and raw-row metadata."
 ```
 
 ### `tree release-readiness`
 
-Reports whether linked models are ready for linked packaging.
+Checks whether a pair of publishable-candidate models and their training
+manifest are jointly ready for linked packaging. Reports support and purity
+across both models, checks that the household-size column is present and
+consistent, and confirms both models have been through `prepare-model-release`.
+Run this before `package-linked-models` — the packaging step applies the same
+checks and will also refuse on failure, but `release-readiness` gives a readable
+summary report without committing to writing the package.
 
 ```bash
 synthpopcan tree release-readiness \
   --household-model household-model-publishable.json \
   --person-model person-model-publishable.json \
-  --training-manifest linked-training.manifest.json
+  --training-manifest linked-training.manifest.json \
+  --household-size-column household_size \
+  --min-support 50 \
+  --max-purity 0.95
 ```
 
 ### `tree package-linked-models`
 
-Packages reviewed household/person models with provenance and audit reports.
+Bundles reviewed household and person models with their training manifest,
+source provenance, release manifests, and review notes into a single
+distributable package file. The package is the artifact that
+`tree generate-from-package` consumes; it embeds enough metadata for downstream
+users to understand what source data was used, what audit thresholds were
+applied, and what the reviewer attested.
+
+`--source-provenance` is required. It must be a JSON file with the schema
+`synthpopcan-source-provenance-v1`, recording the source title, provider,
+access class, citation, and redistribution terms. Do not omit it — the package
+is the public face of a workflow that used restricted data, and provenance is
+part of the research record.
 
 ```bash
 synthpopcan tree package-linked-models \
@@ -478,7 +540,11 @@ synthpopcan tree package-linked-models \
   --person-model person-model-publishable.json \
   --training-manifest linked-training.manifest.json \
   --source-provenance source-provenance.json \
+  --household-release-manifest household-release-manifest.json \
+  --person-release-manifest person-release-manifest.json \
   --review-note "Reviewed for release after readiness report." \
+  --min-support 50 \
+  --max-purity 0.95 \
   --out linked-model-package.json
 ```
 

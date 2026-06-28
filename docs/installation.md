@@ -1,13 +1,29 @@
 # Installation
 
-SynthPopCan can be installed from [PyPI](https://pypi.org/), run as a one-off command with `uvx`, or
-installed from a source checkout for development. If we only want to use the
-command line or beginner Python API, start with the PyPI installation. If we
-want to edit the code, documentation, or tests, use the source checkout.
+SynthPopCan is a command-line tool and Python library. Using it requires
+opening a terminal — a text window where you type commands rather than clicking
+buttons. If you have not used a terminal before, these introductions are written
+for humanities researchers and require no prior programming experience:
+
+- **Mac:** [Introduction to the Bash Command Line](https://programminghistorian.org/en/lessons/intro-to-bash)
+  — Programming Historian
+- **Windows:** [Introduction to the Windows Command Line with PowerShell](https://programminghistorian.org/en/lessons/intro-to-powershell)
+  — Programming Historian
+
+Read one of those first, then return here.
+
+SynthPopCan can be installed from [PyPI](https://pypi.org/), run as a one-off
+command with `uvx`, or installed from a source checkout for development. If we
+only want to use the command line or beginner Python API, start with the PyPI
+installation. If we want to edit the code, documentation, or tests, use the
+source checkout.
 
 ## Requirements
 
-- Python 3.11 or newer.
+- Python 3.11 or newer. Download from [python.org/downloads](https://www.python.org/downloads/).
+  If you have not used Python before, the Programming Historian's
+  [Introduction to Python](https://programminghistorian.org/en/lessons/introduction-and-installation)
+  is a good starting point.
 - Git, only when cloning from the repository.
 - `pip`, which is included with most Python installations.
 - Optional: [`uv`](https://docs.astral.sh/uv/), when using `uvx` for one-off commands or when working on the
@@ -61,7 +77,8 @@ to reason about.
 
 ## Install From a Source Checkout
 
-Use a source checkout when we want to edit SynthPopCan, run the tests, build the
+A source checkout is a local copy of the SynthPopCan repository cloned from
+GitHub. Use one when we want to edit SynthPopCan, run the tests, build the
 documentation locally, or work against unreleased changes.
 
 Clone the repository, then enter the checkout:
@@ -98,7 +115,9 @@ synthpopcan --help
 ```
 
 When working directly from a source checkout with `uv`, prefix commands with
-`uv run` so they use the checkout's development environment:
+`uv run` so they use the checkout's isolated Python environment — a separate
+installation that keeps SynthPopCan's dependencies from interfering with other
+Python projects on the same machine:
 
 ```bash
 uv run synthpopcan --help
@@ -106,8 +125,8 @@ uv run synthpopcan --help
 
 The rest of the documentation usually shows `synthpopcan ...` to focus on the
 tool itself. If we are using `uvx`, replace `synthpopcan ...` with
-`uvx synthpopcan ...`. If we are working from a checkout without activating the
-environment, use `uv run synthpopcan ...`.
+`uvx synthpopcan ...`. If we are working from a checkout, use
+`uv run synthpopcan ...`.
 
 Beginner command-line guidance is available with:
 
@@ -216,21 +235,8 @@ Most examples write small files such as `seed.csv`, `weights.csv`, and
 separate working folder so outputs from different runs do not get mixed
 together.
 
-## Read the Docs
+## Find SynthPopCan Online
 
-The project includes a `.readthedocs.yaml` file for Read the Docs. The published
-build installs the package and Sphinx requirements, then builds from
-`docs/conf.py`.
-
-Published documentation lives at <https://synthpopcan.readthedocs.io/>.
-
-## Release Publishing
-
-The repository includes a manual [GitHub Actions](https://docs.github.com/en/actions) workflow for PyPI publishing.
-The PyPI project owner should keep the trusted publisher configuration aligned
-with:
-
-- repository: `dlq/synthpopcan`
-- workflow: `.github/workflows/publish.yml`
-- environment: `pypi`
-- package: `synthpopcan`
+- **Documentation:** <https://synthpopcan.readthedocs.io/>
+- **Source code and issues:** <https://github.com/dlq/synthpopcan>
+- **Package:** <https://pypi.org/project/synthpopcan/>

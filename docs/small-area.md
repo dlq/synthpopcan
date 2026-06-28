@@ -1,5 +1,23 @@
 # Small-Area Linked Synthesis
 
+Statistics Canada divides Canada into a nested hierarchy of geographic units.
+The ones relevant to this workflow are:
+
+- **Census tract (CT):** a small, relatively stable urban area containing
+  roughly 2,500–8,000 people. Census tracts exist only in census metropolitan
+  areas and census agglomerations — large and medium-sized cities.
+- **Aggregate dissemination area (ADA):** a grouping of dissemination areas
+  designed to cover all of Canada, including rural areas where census tracts
+  do not exist. ADAs typically contain 5,000–15,000 people.
+- **Dissemination area (DA):** the smallest standard geographic unit for which
+  Statistics Canada releases census data, typically 400–700 people. DAs are
+  building blocks for ADAs.
+
+Small-area synthesis assigns generated households to one of these units. The
+Census Profile provides the public aggregate totals (controls) that anchor
+each unit's household composition, and the workflow uses those controls to
+decide which generated candidates go where.
+
 Small-area linked synthesis bridges two sources that do not contain the same
 information:
 
@@ -229,31 +247,6 @@ The same pattern works for any Canadian CMA whose provincial model is
 available: substitute the CMA code prefix (e.g. `602` for Winnipeg, `205` for
 Halifax, `505` for Ottawa) and the matching provincial package
 (`manitoba-2016-all-fields-package.json`, etc.).
-
-## Real-Data Runs
-
-Completed runs against private benchmark data, stored under
-`data/private/small-area/` (git-ignored):
-
-| Run | Geography | Households | Persons | Controls | Map size |
-| --- | --- | ---: | ---: | --- | ---: |
-| Montreal CMA | Census tract (`ct`) | 1,830,000 | 4,170,389 | Tenure (`TENUR`) | — |
-| Quebec | Aggregate dissemination area (`ada`) | 3,750,000 | 8,330,828 | Tenure (`TENUR`) | — |
-| Toronto CMA | Census tract (`ct`) | 2,135,900 | 5,808,776 | Household size + tenure (Census Profile) | 3.2 MB |
-| Quebec City CMA | Census tract (`ct`) | 337,994 | 727,586 | Household size + tenure (Census Profile) | — |
-
-The Toronto run was the first to use the full `build-controls` → `calibrate-linked` → `map`
-pipeline. Controls were built from the 2016 Census Profile for CTs (2247-variable
-bulk CSV, CMA prefix `535`), scaled to 2,135,910 households (the Toronto CMA
-census total). 1,146 census tracts were calibrated; 0 were dropped for missing
-margins.
-
-All linked outputs passed `synthpopcan validate linked-output`.
-
-The person counts are model-derived. They were not forced to exact official
-population totals in this first pass. For example, the Quebec run creates
-3,750,000 households and 8,330,828 people because persons are generated from the
-household/person package and then copied into calibrated households.
 
 ## Statistical Quality
 

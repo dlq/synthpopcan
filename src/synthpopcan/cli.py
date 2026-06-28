@@ -615,7 +615,7 @@ def validate_tree_output(
 
 @cli.group(name="data")
 def data_group() -> None:
-    """Check local data and metadata setup."""
+    """Inspect local data files and check setup."""
 
 
 @data_group.command("doctor")
@@ -681,12 +681,7 @@ def _parse_optional_column_list(value: str) -> tuple[str, ...]:
     return tuple(part.strip() for part in value.split(",") if part.strip())
 
 
-@cli.group()
-def sources() -> None:
-    """Inspect local source files safely."""
-
-
-@sources.command("inspect")
+@data_group.command("inspect")
 @click.argument("root", type=_PATH)
 @click.option(
     "--format",
@@ -703,7 +698,7 @@ def inspect_sources(root: Path, output_format: str) -> None:
         raise click.ClickException(format_file_access_error(root, "read", exc)) from exc
 
 
-@sources.command("schema")
+@data_group.command("schema")
 @click.argument("path", type=_PATH)
 @click.option(
     "--format",
@@ -720,7 +715,7 @@ def inspect_source_schema(path: Path, output_format: str) -> None:
         raise click.ClickException(format_file_access_error(path, "read", exc)) from exc
 
 
-@sources.command("sample")
+@data_group.command("sample")
 @click.argument("path", type=_PATH)
 @click.option("--rows", default=5, type=int, show_default=True)
 @click.option("--allow-private", is_flag=True, help="Allow sampling private paths.")

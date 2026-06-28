@@ -331,12 +331,8 @@ That script uses library modules directly to:
 Ordinary installs never run this script — they fetch packages on demand via
 `synthpopcan models fetch`.
 
-The current script is reproduced below so documentation readers can see the
-exact library calls used by the workflow:
-
-```{literalinclude} ../scripts/build_all_model_packages.py
-:language: python
-```
+The full script is at `scripts/build_all_model_packages.py` in the source
+checkout.
 
 ## Validation
 

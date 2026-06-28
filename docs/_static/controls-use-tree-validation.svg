@@ -1,0 +1,32 @@
+<svg viewBox="0 0 560 168" xmlns="http://www.w3.org/2000/svg" role="img" font-family="system-ui,sans-serif" font-size="12">
+  <title>Tree output validation: generated counts compared to control targets without reweighting</title>
+  <desc>Two tables side by side connected by a dashed compare arrow. The left grey table shows model output: Owner 540, Renter 420, Total 960. The right blue table shows controls: Owner 560, Renter 440, Total 1000. Below both tables a line reads: residuals — Owner minus 20 (minus 3.6%) Renter minus 20 (minus 4.5%) no reweighting.</desc>
+
+  <rect x="10" y="28" width="190" height="100" rx="6" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="1.5"/>
+  <text x="105" y="48" text-anchor="middle" font-size="12" font-weight="600" fill="#334155">Model output</text>
+  <line x1="20" y1="54" x2="190" y2="54" stroke="#e2e8f0" stroke-width="1"/>
+  <text x="50"  y="72" font-size="11" fill="#64748b">Owner</text>
+  <text x="188" y="72" text-anchor="end" font-size="13" fill="#334155">540</text>
+  <text x="50"  y="92" font-size="11" fill="#64748b">Renter</text>
+  <text x="188" y="92" text-anchor="end" font-size="13" fill="#334155">420</text>
+  <line x1="20" y1="101" x2="190" y2="101" stroke="#e2e8f0" stroke-width="1"/>
+  <text x="50"  y="118" font-size="11" fill="#64748b">Total</text>
+  <text x="188" y="118" text-anchor="end" font-size="12" fill="#94a3b8">960</text>
+
+  <text x="280" y="82" text-anchor="middle" font-size="12" fill="#94a3b8">compare</text>
+  <line x1="210" y1="78" x2="248" y2="78" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="3 2"/>
+  <line x1="312" y1="78" x2="350" y2="78" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="3 2"/>
+
+  <rect x="360" y="28" width="190" height="100" rx="6" fill="#dbeafe" stroke="#93c5fd" stroke-width="1.5"/>
+  <text x="455" y="48" text-anchor="middle" font-size="12" font-weight="600" fill="#1d4ed8">Controls</text>
+  <line x1="370" y1="54" x2="540" y2="54" stroke="#bfdbfe" stroke-width="1"/>
+  <text x="400" y="72" font-size="11" fill="#3b82f6">Owner</text>
+  <text x="538" y="72" text-anchor="end" font-size="13" font-weight="700" fill="#1d4ed8">560</text>
+  <text x="400" y="92" font-size="11" fill="#3b82f6">Renter</text>
+  <text x="538" y="92" text-anchor="end" font-size="13" font-weight="700" fill="#1d4ed8">440</text>
+  <line x1="370" y1="101" x2="540" y2="101" stroke="#bfdbfe" stroke-width="1"/>
+  <text x="400" y="118" font-size="11" fill="#3b82f6">Total</text>
+  <text x="538" y="118" text-anchor="end" font-size="12" fill="#93c5fd">1,000</text>
+
+  <text x="280" y="148" text-anchor="middle" font-size="10.5" fill="#64748b">residuals — Owner: −20 (−3.6%)   Renter: −20 (−4.5%)   no reweighting</text>
+</svg>

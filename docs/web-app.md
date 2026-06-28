@@ -98,7 +98,7 @@ synthpopcan serve --port 8001
 local URL manually.
 
 **The app cannot see expected local data:** run {doc}`data` first to check the
-local data layout, then use {doc}`sources` to inspect specific files.
+local data layout, then use `data inspect` and `data schema` to inspect specific files.
 
 **You need command-line reproducibility:** use the command-line pages for the
 workflow you are building. The web app is useful for guided inspection, while
