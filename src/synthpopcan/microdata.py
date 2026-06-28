@@ -620,16 +620,22 @@ def resolve_tree_column_block_pair(
         ]
         if not suggested_household_blocks:
             raise ValueError("no available household tree column blocks")
-        household_target_columns = unique_columns(tuple(
-            column
-            for block in suggested_household_blocks
-            for column in require_suggested_tree_columns(block, "target_columns")
-        ))
-        household_conditioning_columns = unique_columns(tuple(
-            column
-            for block in suggested_household_blocks
-            for column in require_suggested_tree_columns(block, "conditioning_columns")
-        ))
+        household_target_columns = unique_columns(
+            tuple(
+                column
+                for block in suggested_household_blocks
+                for column in require_suggested_tree_columns(block, "target_columns")
+            )
+        )
+        household_conditioning_columns = unique_columns(
+            tuple(
+                column
+                for block in suggested_household_blocks
+                for column in require_suggested_tree_columns(
+                    block, "conditioning_columns"
+                )
+            )
+        )
         household_conditioning_columns = tuple(
             column
             for column in household_conditioning_columns
@@ -661,16 +667,22 @@ def resolve_tree_column_block_pair(
         ]
         if not suggested_person_blocks:
             raise ValueError("no available person tree column blocks")
-        person_target_columns = unique_columns(tuple(
-            column
-            for block in suggested_person_blocks
-            for column in require_suggested_tree_columns(block, "target_columns")
-        ))
-        person_conditioning_columns = unique_columns(tuple(
-            column
-            for block in suggested_person_blocks
-            for column in require_suggested_tree_columns(block, "conditioning_columns")
-        ))
+        person_target_columns = unique_columns(
+            tuple(
+                column
+                for block in suggested_person_blocks
+                for column in require_suggested_tree_columns(block, "target_columns")
+            )
+        )
+        person_conditioning_columns = unique_columns(
+            tuple(
+                column
+                for block in suggested_person_blocks
+                for column in require_suggested_tree_columns(
+                    block, "conditioning_columns"
+                )
+            )
+        )
         person_conditioning_columns = tuple(
             column
             for column in person_conditioning_columns

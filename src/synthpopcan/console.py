@@ -21,9 +21,7 @@ __all__ = [
 ]
 
 
-def print_summary_table(
-    payload: dict[str, Any], *, title: str | None = None
-) -> None:
+def print_summary_table(payload: dict[str, Any], *, title: str | None = None) -> None:
     """Render a two-column Rich table for compact dictionary summaries."""
 
     table = Table(title=title)
