@@ -116,7 +116,7 @@ Remaining 0.1.x work:
 
 ### 0.2.x - Small-Area Linked Synthesis MVP
 
-Status: complete; all exit criteria met as of 0.2.0.
+Status: MVP complete as of 0.2.0; polish work remaining (see below).
 
 Purpose: turn the existing IPF, Census Profile, tree package, linked
 generation, and validation pieces into the first workflow that assigns linked
@@ -182,6 +182,16 @@ Completed in the first implementation pass:
 - A Quebec ADA tenure-control run generated 3,750,000 households and 8,330,828
   persons across 1,115 aggregate dissemination areas and passed linked-output
   validation.
+
+Remaining 0.2.x work:
+
+- Run first-run smoke tests from a clean installed wheel for both beginner
+  paths: `synthpopcan guide`, `synthpopcan serve`, IPF demo files, and prepared
+  model generation.
+- Add documentation-example checks for the most visible beginner workflows so
+  that code samples in the docs are verified to run.
+- Review generated artifacts as user documents: default filenames, CSV column
+  names, JSON manifest fields, provenance text, and validation/report wording.
 
 0.2.x exit criteria:
 
