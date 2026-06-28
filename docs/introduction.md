@@ -38,10 +38,12 @@ Synthetic populations are useful when a project needs row-shaped data but cannot
 use real individual records directly. They are also useful for simulation,
 teaching, exploratory modelling, and reproducible demonstrations.
 
-For broader context, Borysov, Rich, and Pereira describe population synthesis as
-generating realistic micro-agents for simulation work, while Gargiulo and
-co-authors show why household structure matters when synthetic people need to be
-grouped into realistic households. See the reading list at the end of this page.
+For broader context, [Borysov, Rich, and Pereira](https://arxiv.org/abs/1808.06910)
+describe population synthesis as generating realistic micro-agents for simulation
+work, while [Gargiulo and co-authors](https://arxiv.org/abs/0912.2826) show why
+household structure matters when synthetic people need to be grouped into
+realistic households. See the [further reading](#further-reading) list at the
+end of this page.
 
 ## Two Main Ways SynthPopCan Generates Rows
 
