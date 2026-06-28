@@ -33,26 +33,33 @@ validation choices.
 Synthetic population work has roots in spatial microsimulation, transportation
 planning, epidemiology, statistical disclosure control, and agent-based
 simulation. Older IPF-based approaches often start with a microdata sample and
-reweight it to match area-level margins. Pritchard and Miller's population
-synthesis work is an important local reference for SynthPopCan because it treats
-many categorical attributes sparsely and keeps household/person realization as a
+reweight it to match area-level margins.
+[Pritchard and Miller's population synthesis work](https://doi.org/10.1007/s11116-011-9367-4)
+is an important local reference for SynthPopCan because it treats many
+categorical attributes sparsely and keeps household/person realization as a
 separate stage after fitting.
 
 More recent systems and papers broaden the field:
 
-- PopulationSim provides a production-grade Python reference for expanding
-  household/person seed samples to match controls across geographies.
-- `synthpop` shows how tree-based models can synthesize tabular microdata while
-  raising utility and disclosure-risk questions.
-- Deep and hybrid population-synthesis work explores generative models for
-  household/person relationships, geographic transfer, and structural-zero
+- [PopulationSim](https://activitysim.github.io/populationsim/) provides a
+  production-grade Python reference for expanding household/person seed samples
+  to match controls across geographies.
+- [`synthpop`](https://www.synthpop.org.uk/resources.html) shows how tree-based
+  models can synthesize tabular microdata while raising utility and
+  disclosure-risk questions.
+- Deep and hybrid population-synthesis work, such as
+  [Borysov, Rich, and Pereira](https://arxiv.org/abs/1808.06910) and
+  [Kim and Bansal](https://arxiv.org/abs/2208.01403), explores generative models
+  for household/person relationships, geographic transfer, and structural-zero
   recovery.
-- Differential privacy work offers a formal way to reason about privacy loss,
-  but it changes the modelling problem: one often measures noisy aggregates and
-  synthesizes from those measurements rather than releasing raw trained models.
+- [Differential privacy work](https://csrc.nist.gov/pubs/sp/800/226/final)
+  offers a formal way to reason about privacy loss, but it changes the modelling
+  problem: one often measures noisy aggregates and synthesizes from those
+  measurements rather than releasing raw trained models.
 
-SynthPopCan's first design deliberately stays closer to explainable,
-auditable methods: IPF, conditional-frequency models, CART-style tree models,
+SynthPopCan's first design deliberately stays closer to explainable, auditable
+methods: IPF, conditional-frequency models,
+[CART-style tree models](https://scikit-learn.org/stable/modules/tree.html),
 constrained generation, validation, and provenance.
 
 ## What Makes Canadian Data Awkward
@@ -61,14 +68,15 @@ The Canadian case is not just "take a generic synthetic-population package and
 point it at Statistics Canada." Several details matter.
 
 Statistics Canada aggregate tables are not all shaped as ready-to-fit controls.
-The Census Profile is a long table of geographies and characteristics. WDS
-tables have their own dimensions, labels, value columns, metadata, and download
-formats. A table must be inspected and normalized before it becomes a control
-table.
+The [Census Profile](https://www12.statcan.gc.ca/census-recensement/2016/dp-pd/prof/index.cfm?Lang=E)
+is a long table of geographies and characteristics.
+[WDS](https://www.statcan.gc.ca/en/developers/wds) tables have their own
+dimensions, labels, value columns, metadata, and download formats. A table must
+be inspected and normalized before it becomes a control table.
 
-PUMF microdata also has structure. The 2016 hierarchical PUMF is especially
-important because it carries household, economic-family, census-family, and
-person identifiers. That makes it useful for household/person modelling, but it
+[PUMF microdata](https://www150.statcan.gc.ca/n1/pub/98m0002x/98m0002x2016001-eng.htm)
+also has structure. The 2016 hierarchical PUMF is especially important because
+it carries household, economic-family, census-family, and person identifiers. That makes it useful for household/person modelling, but it
 also means that a person row is not the whole story. Household structure,
 family relationships, and linked person composition are part of the model.
 
@@ -95,8 +103,9 @@ controls that describe incompatible populations.
 The most important conceptual distinction is between fitting and realization.
 A weighted table is one object. An integer synthetic population is another. When
 fractional weights are expanded into rows, a rounding or sampling decision has
-been made. Lovelace and Ballas discuss this problem directly in the spatial
-microsimulation context.
+been made.
+[Lovelace and Ballas](https://arxiv.org/abs/1303.5228) discuss this problem
+directly in the spatial microsimulation context.
 
 ### Tree-Based and Conditional Generation
 
