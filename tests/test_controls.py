@@ -1093,3 +1093,27 @@ def read_control_table_from_wds_for_test(
         count_column="VALUE",
         margin_name="wds",
     )
+
+
+# ---------------------------------------------------------------------------
+# controls.py — BadZipFile branches (from test_coverage_gaps2.py)
+# ---------------------------------------------------------------------------
+
+
+def test_read_wds_control_table_raises_for_non_zip_file(tmp_path) -> None:
+    bad_zip = tmp_path / "notazip.zip"
+    bad_zip.write_bytes(b"not a zip")
+    with pytest.raises(ValueError, match="not a valid WDS ZIP"):
+        read_wds_control_table(
+            bad_zip,
+            dimensions=("age",),
+            count_column="count",
+            margin_name="age",
+        )
+
+
+def test_build_wds_category_mapping_template_raises_for_non_zip_file(tmp_path) -> None:
+    bad_zip = tmp_path / "notazip.zip"
+    bad_zip.write_bytes(b"not a zip")
+    with pytest.raises(ValueError, match="not a valid WDS ZIP"):
+        build_wds_category_mapping_template(bad_zip, dimensions=("age",))

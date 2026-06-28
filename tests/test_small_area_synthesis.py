@@ -9,6 +9,11 @@ import pytest
 from synthpopcan.cli import main
 from synthpopcan.controls import ControlCell, ControlMargin, ControlTable
 from synthpopcan.small_area_synthesis import (
+    _ordered_fieldnames,
+    _subsample_candidates,
+    _write_csv_rows,
+    _write_realized_population_to_csv,
+    _write_weights_csv,
     calibrate_linked_household_csvs,
     controls_by_geography,
     fit_households_by_geography,
@@ -587,3 +592,275 @@ def test_cli_synthesize_from_package(tmp_path: Path) -> None:
     assert report["summary"]["total_geographies"] == 2
     assert report["summary"]["converged_count"] == 2
     assert report["assigned_households"] == 8
+
+
+# ---------------------------------------------------------------------------
+# small_area_synthesis.py gaps (from test_coverage_gaps2.py)
+# ---------------------------------------------------------------------------
+
+
+def test_controls_by_geography_raises_when_margin_missing_geography_dimension() -> None:
+    controls = ControlTable(
+        margins=(
+            ControlMargin(
+                name="size",
+                dimensions=("household_size",),
+                cells=(ControlCell({"household_size": "1"}, 10),),
+            ),
+        ),
+        dimensions=("household_size",),
+    )
+    with pytest.raises(ValueError, match="does not include geography dimension"):
+        controls_by_geography(controls, geography_dimension="tract")
+
+
+def test_controls_by_geography_raises_when_margin_only_has_geography_dimension() -> (
+    None
+):
+    controls = ControlTable(
+        margins=(
+            ControlMargin(
+                name="total",
+                dimensions=("tract",),
+                cells=(ControlCell({"tract": "4620001.00"}, 10),),
+            ),
+        ),
+        dimensions=("tract",),
+    )
+    with pytest.raises(ValueError, match="must include at least one dimension besides"):
+        controls_by_geography(controls, geography_dimension="tract")
+
+
+def test_controls_by_geography_raises_when_cell_has_empty_geography() -> None:
+    controls = ControlTable(
+        margins=(
+            ControlMargin(
+                name="size",
+                dimensions=("tract", "household_size"),
+                cells=(ControlCell({"tract": "", "household_size": "1"}, 10),),
+            ),
+        ),
+        dimensions=("tract", "household_size"),
+    )
+    with pytest.raises(ValueError, match="has a cell without"):
+        controls_by_geography(controls, geography_dimension="tract")
+
+
+def test_fit_households_by_geography_raises_when_households_empty() -> None:
+    controls = ControlTable(
+        margins=(
+            ControlMargin(
+                name="size",
+                dimensions=("tract", "household_size"),
+                cells=(ControlCell({"tract": "4620001.00", "household_size": "1"}, 1),),
+            ),
+        ),
+        dimensions=("tract", "household_size"),
+    )
+    with pytest.raises(
+        ValueError, match="at least one candidate household row is required"
+    ):
+        fit_households_by_geography([], controls, geography_dimension="tract")
+
+
+def test_fit_households_by_geography_raises_when_id_column_missing() -> None:
+    households = [{"household_size": "1", "TENUR": "owner"}]
+    controls = ControlTable(
+        margins=(
+            ControlMargin(
+                name="size",
+                dimensions=("tract", "household_size"),
+                cells=(ControlCell({"tract": "4620001.00", "household_size": "1"}, 1),),
+            ),
+        ),
+        dimensions=("tract", "household_size"),
+    )
+    with pytest.raises(ValueError, match="requires 'synthetic_household_id'"):
+        fit_households_by_geography(households, controls, geography_dimension="tract")
+
+
+def test_fit_households_by_geography_raises_when_controls_have_no_geographies() -> None:
+    controls = ControlTable(margins=(), dimensions=())
+    households = [{"synthetic_household_id": "h1", "household_size": "1"}]
+    with pytest.raises(ValueError, match="controls contain no target geographies"):
+        fit_households_by_geography(households, controls, geography_dimension="tract")
+
+
+def test_realize_linked_geography_population_raises_when_weights_empty() -> None:
+    households = [{"synthetic_household_id": "h1", "household_size": "1"}]
+    with pytest.raises(ValueError, match="at least one target geography is required"):
+        realize_linked_geography_population(
+            households,
+            [],
+            weights_by_geography={},
+            geography_column="tract",
+        )
+
+
+def test_realize_linked_geography_population_raises_when_weights_length_mismatch() -> (
+    None
+):
+    households = [{"synthetic_household_id": "h1", "household_size": "1"}]
+    with pytest.raises(ValueError, match="do not match household rows"):
+        realize_linked_geography_population(
+            households,
+            [],
+            weights_by_geography={"4620001.00": [1.0, 0.0]},
+            geography_column="tract",
+        )
+
+
+def test_calibrate_linked_household_csvs_subsamples_when_pool_size_smaller(
+    tmp_path,
+) -> None:
+    households = tmp_path / "households.csv"
+    persons = tmp_path / "persons.csv"
+    controls = tmp_path / "controls.csv"
+
+    households.write_text(
+        "synthetic_household_id,household_size\nh1,1\nh2,1\nh3,1\nh4,1\n"
+    )
+    persons.write_text(
+        "synthetic_person_id,synthetic_household_id\np1,h1\np2,h2\np3,h3\np4,h4\n"
+    )
+    controls.write_text(
+        "margin,dimensions,tract,household_size,count\n"
+        'size,"tract,household_size",4620001.00,1,2\n'
+    )
+
+    summary = calibrate_linked_household_csvs(
+        households_path=households,
+        persons_path=persons,
+        controls_path=controls,
+        geography_dimension="tract",
+        geography_column="tract",
+        households_out=tmp_path / "out-hh.csv",
+        persons_out=tmp_path / "out-p.csv",
+        pool_size=2,
+        max_iterations=50,
+        tolerance=1e-9,
+    )
+    assert summary["candidate_households"] == 2
+    assert summary["assigned_households"] == 2
+
+
+def test_write_csv_rows_raises_when_rows_empty(tmp_path) -> None:
+    with pytest.raises(ValueError, match="no rows to write"):
+        _write_csv_rows(tmp_path / "out.csv", [])
+
+
+def test_write_csv_rows_writes_file_when_rows_nonempty(tmp_path) -> None:
+    out = tmp_path / "out.csv"
+    _write_csv_rows(out, [{"a": "1", "b": "2"}, {"a": "3", "b": "4"}])
+    assert out.exists()
+    lines = out.read_text().splitlines()
+    assert lines[0] == "a,b"
+    assert lines[1] == "1,2"
+    assert lines[2] == "3,4"
+
+
+def test_subsample_candidates_returns_correct_pool_size() -> None:
+    households = [
+        {"synthetic_household_id": f"h{i}", "household_size": "1"} for i in range(10)
+    ]
+    persons = [
+        {"synthetic_person_id": f"p{i}", "synthetic_household_id": f"h{i}"}
+        for i in range(10)
+    ]
+    sampled_hh, sampled_p = _subsample_candidates(
+        households,
+        persons,
+        pool_size=4,
+        household_id_column="synthetic_household_id",
+    )
+    assert len(sampled_hh) == 4
+    sampled_ids = {hh["synthetic_household_id"] for hh in sampled_hh}
+    assert all(p["synthetic_household_id"] in sampled_ids for p in sampled_p)
+
+
+def test_write_realized_population_to_csv_raises_when_households_empty(
+    tmp_path,
+) -> None:
+    with pytest.raises(
+        ValueError, match="at least one candidate household row is required"
+    ):
+        _write_realized_population_to_csv(
+            tmp_path / "hh.csv",
+            tmp_path / "p.csv",
+            [],
+            [],
+            weights_by_geography={"4620001.00": []},
+            geography_column="tract",
+            household_id_column="synthetic_household_id",
+            person_id_column="synthetic_person_id",
+        )
+
+
+def test_write_realized_population_raises_when_weights_mismatch(tmp_path) -> None:
+    households = [{"synthetic_household_id": "h1", "household_size": "1"}]
+    with pytest.raises(ValueError, match="do not match household rows"):
+        _write_realized_population_to_csv(
+            tmp_path / "hh.csv",
+            tmp_path / "p.csv",
+            households,
+            [],
+            weights_by_geography={"4620001.00": [1.0, 0.0]},
+            geography_column="tract",
+            household_id_column="synthetic_household_id",
+            person_id_column="synthetic_person_id",
+        )
+
+
+def test_realize_population_with_no_persons_writes_empty_persons_file(tmp_path) -> None:
+    households = [
+        {"synthetic_household_id": "h1", "household_size": "1"},
+        {"synthetic_household_id": "h2", "household_size": "2"},
+    ]
+    hh_out = tmp_path / "hh.csv"
+    p_out = tmp_path / "p.csv"
+
+    result = _write_realized_population_to_csv(
+        hh_out,
+        p_out,
+        households,
+        [],
+        weights_by_geography={"4620001.00": [1.0, 1.0]},
+        geography_column="tract",
+        household_id_column="synthetic_household_id",
+        person_id_column="synthetic_person_id",
+    )
+    assert result["assigned_persons"] == 0
+    assert p_out.exists()
+    assert p_out.read_text() == ""
+
+
+def test_write_weights_csv_fallback_integerizes_without_precomputed(tmp_path) -> None:
+    households = [
+        {"synthetic_household_id": "h1", "household_size": "1"},
+        {"synthetic_household_id": "h2", "household_size": "2"},
+    ]
+    out = tmp_path / "weights.csv"
+    _write_weights_csv(
+        out,
+        households,
+        {"4620001.00": [1.5, 0.5]},
+        household_id_column="synthetic_household_id",
+        integer_weights_by_geography=None,
+    )
+    assert out.exists()
+    lines = out.read_text().splitlines()
+    assert (
+        lines[0]
+        == "target_geography,source_candidate_household_id,weight,integer_weight"
+    )
+    assert len(lines) == 3
+
+
+def test_ordered_fieldnames_returns_unique_ordered_keys() -> None:
+    rows = [
+        {"a": "1", "b": "2"},
+        {"b": "3", "c": "4"},
+        {"a": "5", "d": "6"},
+    ]
+    result = _ordered_fieldnames(rows)
+    assert result == ["a", "b", "c", "d"]

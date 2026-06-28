@@ -22,9 +22,11 @@ from synthpopcan.diagnostics import (
 )
 from synthpopcan.ipf import (
     IPFMargin,
+    NumpyIPFIndex,
     calculate_max_abs_error,
     expand_records,
     fit_ipf,
+    fit_ipf_numpy,
     integerize_weights,
     validate_margin_coverage,
     weighted_totals,
@@ -1379,3 +1381,68 @@ def write_csv(path: Path, fieldnames: list[str], rows: list[dict[str, str]]) -> 
         writer = csv.DictWriter(handle, fieldnames=fieldnames)
         writer.writeheader()
         writer.writerows(rows)
+
+
+# ---------------------------------------------------------------------------
+# ipf.py gaps (from test_coverage_gaps2.py)
+# ---------------------------------------------------------------------------
+
+
+def test_numpy_ipf_index_fit_raises_on_wrong_margins_count() -> None:
+    records = [{"age": "young"}, {"age": "old"}]
+    margins = [IPFMargin(("age",), {("young",): 60.0, ("old",): 40.0})]
+    index = NumpyIPFIndex.build(records, margins)
+
+    extra = IPFMargin(("sex",), {("F",): 50.0, ("M",): 50.0})
+    with pytest.raises(ValueError, match="margins count"):
+        index.fit([margins[0], extra])
+
+
+def test_numpy_ipf_index_fit_raises_on_missing_seed_category() -> None:
+    records = [{"age": "A"}, {"age": "A"}]
+    margins = [IPFMargin(("age",), {("A",): 2.0})]
+    index = NumpyIPFIndex.build(records, margins)
+
+    bad_margin = IPFMargin(("age",), {("Z",): 5.0})
+    with pytest.raises(ValueError, match="has no seed records"):
+        index.fit([bad_margin])
+
+
+def test_numpy_ipf_index_fit_returns_not_converged_when_max_iterations_reached() -> (
+    None
+):
+    records = [
+        {"age": "young", "sex": "F"},
+        {"age": "old", "sex": "M"},
+    ]
+    margins = [
+        IPFMargin(("age",), {("young",): 10.0, ("old",): 90.0}),
+        IPFMargin(("sex",), {("F",): 90.0, ("M",): 10.0}),
+    ]
+    index = NumpyIPFIndex.build(records, margins)
+
+    weights, converged, iterations, max_abs_error = index.fit(
+        margins, max_iterations=1, tolerance=0.0
+    )
+    assert converged is False
+    assert iterations == 1
+    assert max_abs_error > 0
+
+
+def test_fit_ipf_numpy_raises_on_empty_margins() -> None:
+    records = [{"age": "young"}, {"age": "old"}]
+    margin = IPFMargin(("age",), {("young",): 60.0, ("old",): 40.0})
+    index = NumpyIPFIndex.build(records, [margin])
+
+    with pytest.raises(ValueError, match="at least one margin"):
+        fit_ipf_numpy(index, [])
+
+
+def test_fit_ipf_numpy_with_valid_margins_returns_result() -> None:
+    records = [{"age": "young"}, {"age": "old"}]
+    margins = [IPFMargin(("age",), {("young",): 60.0, ("old",): 40.0})]
+    index = NumpyIPFIndex.build(records, margins)
+
+    result = fit_ipf_numpy(index, margins)
+    assert len(result.weights) == 2
+    assert result.converged is True

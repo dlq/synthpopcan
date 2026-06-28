@@ -1,4 +1,5 @@
 import json
+from unittest.mock import patch
 
 import pytest
 from click import ClickException
@@ -1554,3 +1555,90 @@ def test_fixture_inspection_still_requires_level(tmp_path) -> None:
                 "fixture-v1",
             ]
         )
+
+
+# ---------------------------------------------------------------------------
+# microdata.py gaps (from test_coverage_gaps2.py)
+# ---------------------------------------------------------------------------
+
+
+def test_resolve_tree_column_block_pair_raises_on_all_household_with_no_blocks() -> (
+    None
+):
+    sample = SeedSample(
+        level="household",
+        source_format="fixture-v1",
+        records=(),
+        columns=("geo", "age"),
+        weight_column=None,
+        geography_columns=("geo",),
+        id_columns=(),
+    )
+
+    with pytest.raises(ValueError):
+        resolve_tree_column_block_pair(
+            sample,
+            household_block="all",
+            person_block="all",
+        )
+
+
+def test_resolve_tree_column_block_pair_raises_on_all_hh_when_suggestion_empty() -> (
+    None
+):
+    sample = SeedSample(
+        level="household",
+        source_format="fixture-v1",
+        records=(),
+        columns=("geo", "age"),
+        weight_column=None,
+        geography_columns=("geo",),
+        id_columns=(),
+    )
+
+    with patch(
+        "synthpopcan.microdata.suggest_tree_column_blocks",
+        return_value={"blocks": []},
+    ):
+        with pytest.raises(
+            ValueError, match="no available household tree column blocks"
+        ):
+            resolve_tree_column_block_pair(
+                sample,
+                household_block="all",
+                person_block="all",
+            )
+
+
+def test_resolve_tree_column_block_pair_raises_on_all_person_with_no_blocks() -> None:
+    sample = SeedSample(
+        level="household",
+        source_format="fixture-v1",
+        records=(),
+        columns=("PR", "household_size"),
+        weight_column=None,
+        geography_columns=("PR",),
+        id_columns=(),
+    )
+
+    fake_suggestion = {
+        "blocks": [
+            {
+                "name": "household_core",
+                "level": "household",
+                "target_columns": ["household_size"],
+                "conditioning_columns": ["PR"],
+            }
+        ]
+    }
+
+    with patch(
+        "synthpopcan.microdata.suggest_tree_column_blocks",
+        return_value=fake_suggestion,
+    ):
+        with pytest.raises(ValueError, match="no available person tree column blocks"):
+            resolve_tree_column_block_pair(
+                sample,
+                household_block="all",
+                person_block="all",
+            )

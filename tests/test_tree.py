@@ -3,11 +3,22 @@ import json
 import random
 from dataclasses import replace
 from pathlib import Path
+from unittest.mock import MagicMock, patch
 
+import click
 import pytest
 
 from synthpopcan.cli import main
 from synthpopcan.cli_tree import (
+    _format_audit_passed,
+    _format_default_generation,
+    _format_level,
+    _format_model_type,
+    _format_package_catalogue_summary,
+    _format_release_class,
+    _format_tree_file_error,
+    _format_tree_value_error,
+    _read_package_path_or_id,
     apply_target_profile,
     classify_linked_release_readiness,
     filter_training_sample_by_geography,
@@ -37,6 +48,7 @@ from synthpopcan.cli_tree import (
 )
 from synthpopcan.tree import (
     CartTreeModel,
+    FrequencyOutcome,
     FrequencyTreeModel,
     TreeGenerationRequest,
     TreeModelSpec,
@@ -46,10 +58,12 @@ from synthpopcan.tree import (
     dominant_cart_outcome,
     dominant_frequency_outcome,
     encode_conditions,
+    generate_cart_rows,
     generate_frequency_rows,
     generate_linked_population,
     generate_linked_population_to_csv,
     generate_tree_rows,
+    iter_cart_rows,
     outcome_purity,
     parse_conditions,
     read_cart_model,
@@ -3379,3 +3393,486 @@ def train_frequency_model_from_rows(
         weight_column=spec.weight_column,
     )
     return train_frequency_model(source, random_seed=spec.random_seed)
+
+
+# ---------------------------------------------------------------------------
+# CLI tree (cli_tree.py) gaps (from test_coverage_gaps2.py)
+# ---------------------------------------------------------------------------
+
+
+def test_cli_tree_train_ioerror_raises_click_exception(tmp_path) -> None:
+    source = tmp_path / "training.csv"
+    source.write_text("geo,age_group,sex\nQC,adult,F\n")
+    out = tmp_path / "model.json"
+    with patch(
+        "synthpopcan.cli_tree.read_tree_training_sample",
+        side_effect=OSError("disk error"),
+    ):
+        with pytest.raises(click.ClickException):
+            main(
+                [
+                    "tree",
+                    "train",
+                    str(source),
+                    "--level",
+                    "person",
+                    "--target-columns",
+                    "age_group",
+                    "--conditioning-columns",
+                    "geo",
+                    "--out",
+                    str(out),
+                ]
+            )
+
+
+def test_cli_tree_train_linked_ioerror_raises_click_exception(tmp_path) -> None:
+    source = tmp_path / "seed.csv"
+    source.write_text("dummy\n")
+    with patch(
+        "synthpopcan.cli_tree.read_statcan_2016_hierarchical_seed_sample",
+        side_effect=OSError("disk error"),
+    ):
+        with pytest.raises(click.ClickException):
+            main(
+                [
+                    "tree",
+                    "train-linked",
+                    str(source),
+                    "--household-target-columns",
+                    "household_size",
+                    "--household-conditioning-columns",
+                    "geo",
+                    "--person-target-columns",
+                    "age_group",
+                    "--person-conditioning-columns",
+                    "geo,household_size",
+                    "--household-model-out",
+                    str(tmp_path / "hh.json"),
+                    "--person-model-out",
+                    str(tmp_path / "p.json"),
+                    "--manifest-out",
+                    str(tmp_path / "manifest.json"),
+                ]
+            )
+
+
+def test_cli_tree_list_packages_ioerror_raises_exception() -> None:
+    with patch(
+        "synthpopcan.cli_tree.model_catalogue", side_effect=OSError("disk error")
+    ):
+        with pytest.raises((click.ClickException, OSError)):
+            main(["tree", "list-packages"])
+
+
+def test_cli_tree_list_packages_table_output() -> None:
+    assert main(["tree", "list-packages"]) == 0
+
+
+def test_cli_tree_generate_from_package_ioerror_raises_click_exception(
+    tmp_path,
+) -> None:
+    with patch(
+        "synthpopcan.cli_tree._read_package_path_or_id",
+        side_effect=OSError("disk error"),
+    ):
+        with pytest.raises(click.ClickException):
+            main(
+                [
+                    "tree",
+                    "generate-from-package",
+                    "some-package-id",
+                    "--households",
+                    "5",
+                    "--households-out",
+                    str(tmp_path / "hh.csv"),
+                    "--persons-out",
+                    str(tmp_path / "p.csv"),
+                ]
+            )
+
+
+def test_cli_tree_audit_model_ioerror_raises_click_exception(tmp_path) -> None:
+    with pytest.raises(click.ClickException):
+        main(["tree", "audit-model", str(tmp_path / "missing-model.json")])
+
+
+def test_cli_tree_package_model_read_ioerror_raises_click_exception(tmp_path) -> None:
+    with pytest.raises(click.ClickException):
+        main(
+            [
+                "tree",
+                "package-model",
+                str(tmp_path / "missing-model.json"),
+                "--out",
+                str(tmp_path / "pkg.json"),
+            ]
+        )
+
+
+def test_cli_tree_prepare_model_release_read_ioerror_raises_click_exception(
+    tmp_path,
+) -> None:
+    with pytest.raises(click.ClickException):
+        main(
+            [
+                "tree",
+                "prepare-model-release",
+                str(tmp_path / "missing-model.json"),
+                "--out",
+                str(tmp_path / "candidate.json"),
+            ]
+        )
+
+
+def test_cli_tree_release_readiness_ioerror_raises_click_exception(tmp_path) -> None:
+    with pytest.raises(click.ClickException):
+        main(
+            [
+                "tree",
+                "release-readiness",
+                "--household-model",
+                str(tmp_path / "missing-hh.json"),
+                "--person-model",
+                str(tmp_path / "missing-p.json"),
+            ]
+        )
+
+
+def test_cli_tree_package_linked_models_ioerror_raises_click_exception(
+    tmp_path,
+) -> None:
+    with pytest.raises(click.ClickException):
+        main(
+            [
+                "tree",
+                "package-linked-models",
+                "--household-model",
+                str(tmp_path / "missing-hh.json"),
+                "--person-model",
+                str(tmp_path / "missing-p.json"),
+                "--out",
+                str(tmp_path / "package.json"),
+            ]
+        )
+
+
+def test_format_tree_file_error_read_path_match() -> None:
+    exc = OSError(2, "No such file", "/tmp/model.json")
+    result = _format_tree_file_error(
+        exc,
+        read_paths=(Path("/tmp/model.json"),),
+        write_paths=(),
+    )
+    assert "read" in result
+
+
+def test_format_tree_file_error_write_path_match() -> None:
+    exc = OSError(2, "No such file", "/tmp/out.json")
+    result = _format_tree_file_error(
+        exc,
+        read_paths=(),
+        write_paths=(Path("/tmp/out.json"),),
+    )
+    assert "write" in result
+
+
+def test_format_tree_file_error_access_fallback_when_path_unrecognized() -> None:
+    exc = OSError(2, "No such file", "/tmp/other.json")
+    result = _format_tree_file_error(
+        exc,
+        read_paths=(Path("/tmp/model.json"),),
+        write_paths=(Path("/tmp/out.json"),),
+    )
+    assert "access" in result
+
+
+def test_format_tree_file_error_none_filename_uses_first_read_path() -> None:
+    exc = OSError(2, "No such file")
+    exc.filename = None
+    result = _format_tree_file_error(
+        exc,
+        read_paths=(Path("/tmp/model.json"),),
+        write_paths=(),
+    )
+    assert "read" in result
+
+
+def test_format_tree_file_error_none_filename_uses_first_write_path() -> None:
+    exc = OSError(2, "No such file")
+    exc.filename = None
+    result = _format_tree_file_error(
+        exc,
+        read_paths=(),
+        write_paths=(Path("/tmp/out.json"),),
+    )
+    assert "write" in result
+
+
+def test_format_tree_file_error_none_filename_neither_falls_back_to_file() -> None:
+    exc = OSError(2, "No such file")
+    exc.filename = None
+    result = _format_tree_file_error(exc, read_paths=(), write_paths=())
+    assert "file" in result
+
+
+def test_format_tree_value_error_json_object_message_replaced() -> None:
+    exc = ValueError("The payload must be a JSON object")
+    result = _format_tree_value_error(exc)
+    assert "not a list or plain value" in result
+
+
+def test_read_package_path_or_id_unknown_id_raises_value_error() -> None:
+    with pytest.raises(ValueError, match="linked package not found"):
+        _read_package_path_or_id("nonexistent-package-id-xyz")
+
+
+def test_read_package_path_or_id_nonexistent_path_raises_file_not_found(
+    tmp_path,
+) -> None:
+    nonexistent = str(tmp_path / "subdir" / "package.json")
+    with pytest.raises(FileNotFoundError):
+        _read_package_path_or_id(nonexistent)
+
+
+def test_format_default_generation_empty_dict() -> None:
+    assert _format_default_generation({}) == ""
+
+
+def test_format_default_generation_households_and_conditions() -> None:
+    result = _format_default_generation({"households": 500, "conditions": "age=adult"})
+    assert "500 households" in result
+    assert "age=adult" in result
+
+
+def test_format_default_generation_only_households() -> None:
+    result = _format_default_generation({"households": 100})
+    assert "100 households" in result
+    assert ";" not in result
+
+
+def test_format_package_catalogue_summary_download_not_installed() -> None:
+    model = {
+        "name": "Test Model",
+        "geography": "Canada",
+        "release_status": "public",
+        "distribution": "download",
+        "installed": False,
+    }
+    result = _format_package_catalogue_summary(model, {})
+    assert "download" in result
+
+
+def test_format_package_catalogue_summary_bundled_no_download_text() -> None:
+    model = {
+        "name": "Test Model",
+        "geography": "Canada",
+        "release_status": "public",
+        "distribution": "bundled",
+    }
+    result = _format_package_catalogue_summary(model, {})
+    assert "download" not in result
+
+
+def test_format_audit_passed_true() -> None:
+    assert _format_audit_passed(True) == "Audit passed"
+
+
+def test_format_audit_passed_false_returns_warnings_text() -> None:
+    assert _format_audit_passed(False) == "Audit has warnings"
+
+
+def test_format_audit_passed_none_returns_not_available() -> None:
+    assert _format_audit_passed(None) == "Audit not available"
+
+
+def test_format_level_household() -> None:
+    assert _format_level("household") == "Household"
+
+
+def test_format_level_person() -> None:
+    assert _format_level("person") == "Person"
+
+
+def test_format_level_other_returns_value_as_string() -> None:
+    assert _format_level("region") == "region"
+
+
+def test_format_level_none_returns_empty_string() -> None:
+    assert _format_level(None) == ""
+
+
+def test_format_model_type_cart() -> None:
+    assert _format_model_type("cart") == "CART"
+
+
+def test_format_model_type_other_returns_value_as_string() -> None:
+    assert _format_model_type("unknown-type") == "unknown-type"
+
+
+def test_format_release_class_private_working() -> None:
+    assert _format_release_class("private_working") == "Private working model"
+
+
+def test_format_release_class_other_returns_value_as_string() -> None:
+    assert _format_release_class("unknown") == "unknown"
+
+
+# ---------------------------------------------------------------------------
+# tree.py gaps (from test_coverage_gaps2.py)
+# ---------------------------------------------------------------------------
+
+
+def test_generate_linked_population_to_csv_raises_on_wrong_household_level(
+    tmp_path,
+) -> None:
+    household_model = MagicMock()
+    household_model.spec.level = "person"
+    person_model = MagicMock()
+    person_model.spec.level = "person"
+
+    with pytest.raises(ValueError, match="household model must have level"):
+        generate_linked_population_to_csv(
+            household_model,
+            person_model,
+            households=10,
+            households_path=tmp_path / "hh.csv",
+            persons_path=tmp_path / "p.csv",
+        )
+
+
+def test_generate_linked_population_to_csv_raises_on_wrong_person_level(
+    tmp_path,
+) -> None:
+    household_model = MagicMock()
+    household_model.spec.level = "household"
+    person_model = MagicMock()
+    person_model.spec.level = "household"
+
+    with pytest.raises(ValueError, match="person model must have level"):
+        generate_linked_population_to_csv(
+            household_model,
+            person_model,
+            households=10,
+            households_path=tmp_path / "hh.csv",
+            persons_path=tmp_path / "p.csv",
+        )
+
+
+def test_generate_linked_population_to_csv_raises_on_non_positive_households(
+    tmp_path,
+) -> None:
+    household_model = MagicMock()
+    household_model.spec.level = "household"
+    person_model = MagicMock()
+    person_model.spec.level = "person"
+
+    with pytest.raises(ValueError, match="households must be greater than zero"):
+        generate_linked_population_to_csv(
+            household_model,
+            person_model,
+            households=0,
+            households_path=tmp_path / "hh.csv",
+            persons_path=tmp_path / "p.csv",
+        )
+
+
+def test_generate_linked_population_to_csv_raises_on_non_positive_progress_interval(
+    tmp_path,
+) -> None:
+    household_model = MagicMock()
+    household_model.spec.level = "household"
+    person_model = MagicMock()
+    person_model.spec.level = "person"
+
+    with pytest.raises(ValueError, match="progress interval must be greater than zero"):
+        generate_linked_population_to_csv(
+            household_model,
+            person_model,
+            households=10,
+            households_path=tmp_path / "hh.csv",
+            persons_path=tmp_path / "p.csv",
+            progress_interval=0,
+        )
+
+
+def test_generate_frequency_rows_raises_on_non_positive_rows() -> None:
+    spec = TreeModelSpec(
+        level="person",
+        target_columns=("age",),
+        conditioning_columns=("geo",),
+    )
+    model = FrequencyTreeModel(
+        spec=spec,
+        groups=(),
+        global_outcomes=(FrequencyOutcome(values={"age": "adult"}, weight=1.0),),
+        source_format="fixture-v1",
+        records_trained=1,
+    )
+
+    with pytest.raises(ValueError, match="rows must be greater than zero"):
+        generate_frequency_rows(model, rows=0)
+
+
+def _minimal_cart_model() -> CartTreeModel:
+    spec = TreeModelSpec(
+        level="person",
+        target_columns=("age",),
+        conditioning_columns=("geo",),
+    )
+    return CartTreeModel(
+        spec=spec,
+        feature_categories={"geo": ("ON", "QC")},
+        target_classes=({"age": "adult"},),
+        children_left=(-1,),
+        children_right=(-1,),
+        feature=(-2,),
+        threshold=(-2.0,),
+        value=((1.0,),),
+        n_node_samples=(5,),
+        weighted_n_node_samples=(5.0,),
+        source_format="fixture-v1",
+        records_trained=5,
+        min_samples_leaf=1,
+        max_depth=None,
+    )
+
+
+def test_generate_cart_rows_raises_on_non_positive_rows() -> None:
+    model = _minimal_cart_model()
+
+    with pytest.raises(ValueError, match="rows must be greater than zero"):
+        generate_cart_rows(model, rows=0)
+
+
+def test_iter_cart_rows_raises_on_non_positive_rows() -> None:
+    model = _minimal_cart_model()
+    with pytest.raises(ValueError, match="rows must be greater than zero"):
+        list(iter_cart_rows(model, rows=0))
+
+
+def test_iter_cart_rows_raises_when_leaf_has_no_positive_probabilities() -> None:
+    spec = TreeModelSpec(
+        level="person",
+        target_columns=("age",),
+        conditioning_columns=("geo",),
+    )
+    model = CartTreeModel(
+        spec=spec,
+        feature_categories={"geo": ("ON",)},
+        target_classes=({"age": "adult"},),
+        children_left=(-1,),
+        children_right=(-1,),
+        feature=(-2,),
+        threshold=(-2.0,),
+        value=((0.0,),),
+        n_node_samples=(0,),
+        weighted_n_node_samples=(0.0,),
+        source_format="fixture-v1",
+        records_trained=5,
+        min_samples_leaf=1,
+        max_depth=None,
+    )
+
+    with pytest.raises(ValueError, match="no positive target probabilities"):
+        list(iter_cart_rows(model, rows=1))

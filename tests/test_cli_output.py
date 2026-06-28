@@ -358,3 +358,20 @@ def test_cli_output_formatting_helpers() -> None:
     assert cli_output._format_date_range("2020-01-01", "2021-01-01") == (
         "2020-01-01 to 2021-01-01"
     )
+
+
+# ---------------------------------------------------------------------------
+# cli_output.py — _control_suggestion_note branches (from test_coverage_gaps2.py)
+# ---------------------------------------------------------------------------
+
+
+def test_control_suggestion_note_with_reason_but_no_role() -> None:
+    result = cli_output._control_suggestion_note(
+        {"reason": "Use this as a control"}, "Run synthpopcan validate"
+    )
+    assert result == "Use this as a control Run synthpopcan validate"
+
+
+def test_control_suggestion_note_with_no_role_and_no_reason() -> None:
+    result = cli_output._control_suggestion_note({}, "Run synthpopcan validate")
+    assert result == "Run synthpopcan validate"

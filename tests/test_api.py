@@ -3,10 +3,12 @@ from __future__ import annotations
 import csv
 import json
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 
 import synthpopcan as spc
+import synthpopcan.api as api
 from synthpopcan.controls import ControlCell, ControlMargin, ControlTable
 from synthpopcan.ipf import IPFResult
 from synthpopcan.models import model_payload
@@ -346,3 +348,30 @@ def write_csv(path: Path, fieldnames: list[str], rows: list[dict[str, str]]) -> 
 def read_csv(path: Path) -> list[dict[str, str]]:
     with path.open(newline="") as handle:
         return list(csv.DictReader(handle))
+
+
+# ---------------------------------------------------------------------------
+# api.py — render_small_area_map (from test_coverage_gaps2.py)
+# ---------------------------------------------------------------------------
+
+
+def test_render_small_area_map_delegates_to_render_synthesis_map(tmp_path) -> None:
+    calls: list[dict] = []
+
+    def _fake_render(**kwargs):
+        calls.append(kwargs)
+        return tmp_path / "out.html"
+
+    with patch("synthpopcan.map_render.render_synthesis_map", _fake_render):
+        result = api.render_small_area_map(
+            households=str(tmp_path / "hh.csv"),
+            boundaries=str(tmp_path / "bounds.shp"),
+            geography_column="ct",
+            geography_id_field="CTUID",
+            out=str(tmp_path / "out.html"),
+        )
+
+    assert len(calls) == 1
+    assert calls[0]["geography_column"] == "ct"
+    assert calls[0]["geography_id_field"] == "CTUID"
+    assert result == tmp_path / "out.html"
