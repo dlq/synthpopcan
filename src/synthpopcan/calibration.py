@@ -1,6 +1,7 @@
 """Advisory helpers for choosing IPF calibration controls."""
 
 from __future__ import annotations
+from typing import Any
 
 __all__ = ["build_control_suggestion_report"]
 
@@ -79,7 +80,7 @@ _GEOGRAPHY_ALIASES = ("geo", "GEO", "PR", "CMA", "CD", "CSD", "CT")
 
 def build_control_suggestion_report(
     rows: Sequence[dict[str, str]], *, unit: str = "auto", seed_path: str | None = None
-) -> dict[str, object]:
+) -> dict[str, Any]:
     """Suggest calibration-control directions from seed/generated columns."""
     if not rows:
         raise ValueError("control suggestions require at least one seed row")
@@ -126,7 +127,7 @@ def build_control_suggestion_report(
 
 
 def _classify_controls(
-    columns: Sequence[str], catalog: Iterable[dict[str, object]]
+    columns: Sequence[str], catalog: Iterable[dict[str, Any]]
 ) -> tuple[list[dict[str, str]], list[dict[str, str]]]:
     usable: list[dict[str, str]] = []
     enrichment: list[dict[str, str]] = []

@@ -1,6 +1,7 @@
 """Normalized control table parsing."""
 
 from __future__ import annotations
+from typing import Any
 
 import csv
 import json
@@ -315,7 +316,7 @@ def read_wds_control_table(
     )
 
 
-def inspect_wds_zip(path: Path, *, sample_rows: int = 5) -> dict[str, object]:
+def inspect_wds_zip(path: Path, *, sample_rows: int = 5) -> dict[str, Any]:
     """Inspect a WDS ZIP and return columns, sample rows, and command hints.
 
     The result is a plain dictionary suitable for JSON output. It includes the

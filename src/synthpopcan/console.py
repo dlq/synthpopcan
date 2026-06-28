@@ -1,6 +1,7 @@
 """Shared terminal rendering helpers."""
 
 from __future__ import annotations
+from typing import Any
 
 import json
 from pathlib import Path
@@ -21,7 +22,7 @@ __all__ = [
 
 
 def print_summary_table(
-    payload: dict[str, object], *, title: str | None = None
+    payload: dict[str, Any], *, title: str | None = None
 ) -> None:
     """Render a two-column Rich table for compact dictionary summaries."""
 

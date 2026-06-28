@@ -11,6 +11,7 @@ __all__ = [
 
 import csv
 from collections import defaultdict
+from collections.abc import Sequence
 from pathlib import Path
 
 # Member IDs are consistent across 2016 Census Profiles (2247-variable form).
@@ -36,7 +37,7 @@ _GEO_LEVEL_FOR_COLUMN: dict[str, str] = {
 }
 
 
-def _find_col(fields: list[str], fragment: str) -> str:
+def _find_col(fields: Sequence[str], fragment: str) -> str:
     try:
         return next(c for c in fields if fragment in c)
     except StopIteration as err:

@@ -18,7 +18,7 @@ from synthpopcan.ipf import IPFMargin, Record, fit_ipf, integerize_weights
 @dataclass(frozen=True)
 class _IPFBenchmarkCase:
     name: str
-    records: list[Record]
+    records: list[dict[str, str]]
     margins: list[IPFMargin]
     max_iterations: int = 100
     tolerance: float = 1e-6

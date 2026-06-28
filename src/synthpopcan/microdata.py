@@ -6,7 +6,7 @@ import csv
 from collections import Counter, defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
 
 SeedLevel = Literal["household", "person"]
 
@@ -63,9 +63,9 @@ class SeedSample:
     weight_column: str | None
     geography_columns: tuple[str, ...]
     id_columns: tuple[str, ...]
-    metadata: dict[str, object] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
-    def as_summary(self) -> dict[str, object]:
+    def as_summary(self) -> dict[str, Any]:
         """Return a compact, JSON-serializable summary of the sample."""
 
         summary = {
@@ -284,7 +284,7 @@ def export_seed_rows(
     sample: SeedSample,
     *,
     columns: tuple[str, ...],
-) -> tuple[list[dict[str, str]], dict[str, object]]:
+) -> tuple[list[dict[str, str]], dict[str, Any]]:
     """Select seed columns for IPF or simple synthetic-population examples.
 
     The returned tuple contains output rows and a JSON-serializable manifest.
@@ -329,7 +329,7 @@ def export_training_rows(
     level: SeedLevel,
     target_columns: tuple[str, ...],
     conditioning_columns: tuple[str, ...],
-) -> tuple[list[dict[str, str]], dict[str, object]]:
+) -> tuple[list[dict[str, str]], dict[str, Any]]:
     """Export a tree-training view from a supported seed sample.
 
     This dispatches to the supported source-specific household or person export
@@ -361,7 +361,7 @@ def export_statcan_2016_person_training_rows(
     *,
     target_columns: tuple[str, ...],
     conditioning_columns: tuple[str, ...],
-) -> tuple[list[dict[str, str]], dict[str, object]]:
+) -> tuple[list[dict[str, str]], dict[str, Any]]:
     """Export person-level training rows from 2016 hierarchical microdata.
 
     ``household_size`` may be requested even though it is not a source column;
@@ -407,7 +407,7 @@ def export_statcan_2016_household_training_rows(
     *,
     target_columns: tuple[str, ...],
     conditioning_columns: tuple[str, ...],
-) -> tuple[list[dict[str, str]], dict[str, object]]:
+) -> tuple[list[dict[str, str]], dict[str, Any]]:
     """Export one household-level training row per household ID.
 
     Household-level source columns must be constant within each household. Use
@@ -449,7 +449,7 @@ def training_export_summary(
     target_columns: tuple[str, ...],
     conditioning_columns: tuple[str, ...],
     id_columns: tuple[str, ...],
-) -> dict[str, object]:
+) -> dict[str, Any]:
     return {
         "source_format": sample.source_format,
         "level": level,
@@ -522,7 +522,7 @@ def check_statcan_2016_household_seed_columns(
     sample: SeedSample,
     *,
     columns: tuple[str, ...],
-) -> dict[str, object]:
+) -> dict[str, Any]:
     """Check whether selected columns are constant within each household.
 
     The report is JSON-serializable and includes one check per requested column,
@@ -560,7 +560,7 @@ def check_statcan_2016_household_seed_columns(
     }
 
 
-def suggest_tree_column_blocks(sample: SeedSample) -> dict[str, object]:
+def suggest_tree_column_blocks(sample: SeedSample) -> dict[str, Any]:
     """Suggest tree-model column blocks for a known source format.
 
     Suggestions are source-aware but not authoritative. They are intended to
@@ -602,7 +602,7 @@ def resolve_tree_column_block_pair(
     tuple[str, ...],
     tuple[str, ...],
     tuple[str, ...],
-    dict[str, object],
+    dict[str, Any],
 ]:
     """Resolve named household and person column blocks into column tuples.
 
@@ -620,16 +620,16 @@ def resolve_tree_column_block_pair(
         ]
         if not suggested_household_blocks:
             raise ValueError("no available household tree column blocks")
-        household_target_columns = unique_columns(
+        household_target_columns = unique_columns(tuple(
             column
             for block in suggested_household_blocks
             for column in require_suggested_tree_columns(block, "target_columns")
-        )
-        household_conditioning_columns = unique_columns(
+        ))
+        household_conditioning_columns = unique_columns(tuple(
             column
             for block in suggested_household_blocks
             for column in require_suggested_tree_columns(block, "conditioning_columns")
-        )
+        ))
         household_conditioning_columns = tuple(
             column
             for column in household_conditioning_columns
@@ -661,16 +661,16 @@ def resolve_tree_column_block_pair(
         ]
         if not suggested_person_blocks:
             raise ValueError("no available person tree column blocks")
-        person_target_columns = unique_columns(
+        person_target_columns = unique_columns(tuple(
             column
             for block in suggested_person_blocks
             for column in require_suggested_tree_columns(block, "target_columns")
-        )
-        person_conditioning_columns = unique_columns(
+        ))
+        person_conditioning_columns = unique_columns(tuple(
             column
             for block in suggested_person_blocks
             for column in require_suggested_tree_columns(block, "conditioning_columns")
-        )
+        ))
         person_conditioning_columns = tuple(
             column
             for column in person_conditioning_columns
@@ -723,7 +723,7 @@ def build_tree_geography_feasibility_report(
     borderline_household_rows: int = 1_000,
     min_support: float = 50,
     max_purity: float = 0.95,
-) -> dict[str, object]:
+) -> dict[str, Any]:
     """Assess which geographies have enough support for tree modelling.
 
     The report compares person and household row counts, condition-group
@@ -903,7 +903,7 @@ def geography_feasibility_region(
     borderline_household_rows: int,
     min_support: float,
     max_purity: float,
-) -> dict[str, object]:
+) -> dict[str, Any]:
     household_risk = support_and_purity_summary(
         household_records,
         conditioning_columns=columns_except(
@@ -974,7 +974,7 @@ def support_and_purity_summary(
     *,
     conditioning_columns: tuple[str, ...],
     target_columns: tuple[str, ...],
-) -> dict[str, object]:
+) -> dict[str, Any]:
     if not rows:
         return {"groups": 0, "minimum_support": 0.0, "maximum_purity": 0.0}
     grouped: dict[tuple[str, ...], dict[tuple[str, ...], float]] = defaultdict(
@@ -1001,8 +1001,8 @@ def feasibility_reasons(
     *,
     person_rows: int,
     household_rows: int,
-    household_risk: dict[str, object],
-    person_risk: dict[str, object],
+    household_risk: dict[str, Any],
+    person_risk: dict[str, Any],
     likely_person_rows: int,
     likely_household_rows: int,
     borderline_person_rows: int,
@@ -1069,7 +1069,7 @@ def model_design_advice(
     person_target_columns: tuple[str, ...],
     household_conditioning_columns: tuple[str, ...],
     person_conditioning_columns: tuple[str, ...],
-) -> dict[str, object]:
+) -> dict[str, Any]:
     household_review = columns_to_review(
         household_records,
         household_target_columns,
@@ -1219,11 +1219,11 @@ def weighted_total(rows: list[dict[str, str]]) -> float:
 
 
 def find_suggested_tree_column_block(
-    suggestion: dict[str, object],
+    suggestion: dict[str, Any],
     *,
     name: str,
     level: str,
-) -> dict[str, object]:
+) -> dict[str, Any]:
     blocks = suggestion["blocks"]
     if not isinstance(blocks, list):
         raise ValueError("tree column suggestion blocks must be a list")
@@ -1238,7 +1238,7 @@ def find_suggested_tree_column_block(
 
 
 def require_suggested_tree_columns(
-    block: dict[str, object],
+    block: dict[str, Any],
     key: str,
 ) -> tuple[str, ...]:
     value = block[key]
@@ -1252,7 +1252,7 @@ def require_suggested_tree_columns(
 def tree_column_block(
     block: TreeColumnBlockSpec,
     available: set[str],
-) -> dict[str, object]:
+) -> dict[str, Any]:
     available_targets = [
         column for column in block.target_columns if column in available
     ]
@@ -1338,7 +1338,7 @@ def household_column_check(
     column: str,
     *,
     role: str = "selected household column",
-) -> dict[str, object]:
+) -> dict[str, Any]:
     problem_households = sum(
         1
         for records in records_by_household.values()

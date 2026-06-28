@@ -1,6 +1,7 @@
 """Terminal output helpers for the SynthPopCan CLI."""
 
 from __future__ import annotations
+from typing import Any
 
 import csv
 import json
@@ -103,7 +104,7 @@ def _write_wds_search_table(rows: list[dict[str, str]]) -> None:
     print_table(table)
 
 
-def print_wds_metadata_explanation_table(summary: dict[str, object]) -> None:
+def print_wds_metadata_explanation_table(summary: dict[str, Any]) -> None:
     """Render a WDS product summary with dimension previews and next commands."""
 
     print_summary_table(
@@ -189,7 +190,7 @@ def print_census_profile_characteristics_table(rows: list[dict[str, str]]) -> No
     print_table(table)
 
 
-def print_wds_inspection_table(report: dict[str, object]) -> None:
+def print_wds_inspection_table(report: dict[str, Any]) -> None:
     """Render local WDS ZIP inspection results and starter normalization hints."""
 
     print_summary_table(
@@ -215,7 +216,7 @@ def print_wds_inspection_table(report: dict[str, object]) -> None:
     print_table(table)
 
 
-def print_tree_column_suggestions_table(report: dict[str, object]) -> None:
+def print_tree_column_suggestions_table(report: dict[str, Any]) -> None:
     """Render suggested household/person column blocks for tree workflows."""
 
     table = Table(title="Tree Column Suggestions")
@@ -249,7 +250,7 @@ def print_tree_column_suggestions_table(report: dict[str, object]) -> None:
     print_table(table)
 
 
-def print_tree_geography_feasibility_table(report: dict[str, object]) -> None:
+def print_tree_geography_feasibility_table(report: dict[str, Any]) -> None:
     """Render geography-level model-design feasibility advice."""
 
     print_summary_table(
@@ -291,7 +292,7 @@ def print_tree_geography_feasibility_table(report: dict[str, object]) -> None:
     print_table(table)
 
 
-def _first_model_design_move(model_design: dict[str, object]) -> str:
+def _first_model_design_move(model_design: dict[str, Any]) -> str:
     """Return the first actionable model-design move from an advisor payload."""
 
     strategy = str(model_design.get("block_strategy", ""))
@@ -304,7 +305,7 @@ def _first_model_design_move(model_design: dict[str, object]) -> str:
     return strategy
 
 
-def print_ipf_report_table(report: dict[str, object]) -> None:
+def print_ipf_report_table(report: dict[str, Any]) -> None:
     """Render an IPF fit report with summary, issues, next steps, and margins."""
 
     table = Table(title="IPF Fit Report")
@@ -343,7 +344,7 @@ def print_ipf_report_table(report: dict[str, object]) -> None:
     print_table(table)
 
 
-def print_ipf_input_check_table(report: dict[str, object]) -> None:
+def print_ipf_input_check_table(report: dict[str, Any]) -> None:
     """Render seed/control compatibility checks before fitting IPF."""
 
     print_summary_table(
@@ -383,7 +384,7 @@ def print_ipf_input_check_table(report: dict[str, object]) -> None:
     _print_next_steps_table(report.get("suggested_next_steps", []))
 
 
-def print_ipf_control_suggestions_table(report: dict[str, object]) -> None:
+def print_ipf_control_suggestions_table(report: dict[str, Any]) -> None:
     """Render suggested StatCan control directions for generated or seed rows."""
 
     print_summary_table(
@@ -425,7 +426,7 @@ def print_ipf_control_suggestions_table(report: dict[str, object]) -> None:
     _print_next_steps_table(report.get("next_commands", []))
 
 
-def _control_suggestion_note(row: dict[str, object], default_next_step: str) -> str:
+def _control_suggestion_note(row: dict[str, Any], default_next_step: str) -> str:
     """Combine the role and reason into one readable control-suggestion note."""
 
     role = str(row.get("role", "")).strip()
@@ -437,7 +438,7 @@ def _control_suggestion_note(row: dict[str, object], default_next_step: str) -> 
     return default_next_step
 
 
-def print_validation_report_table(report: dict[str, object]) -> None:
+def print_validation_report_table(report: dict[str, Any]) -> None:
     """Render control-validation results for weighted or expanded populations."""
 
     table = Table(title="Control Validation")
@@ -476,7 +477,7 @@ def print_validation_report_table(report: dict[str, object]) -> None:
     print_table(table)
 
 
-def print_tree_output_validation_report_table(report: dict[str, object]) -> None:
+def print_tree_output_validation_report_table(report: dict[str, Any]) -> None:
     """Render generated tree-output distribution checks against training rows."""
 
     table = Table(title="Tree Output Distribution Check")
@@ -512,7 +513,7 @@ def print_tree_output_validation_report_table(report: dict[str, object]) -> None
     print_table(table)
 
 
-def print_seed_check_table(report: dict[str, object]) -> None:
+def print_seed_check_table(report: dict[str, Any]) -> None:
     """Render microdata seed-column checks for household-level exports."""
 
     print_summary_table(
@@ -581,7 +582,7 @@ def _print_next_steps_table(steps: object) -> None:
     print_table(table)
 
 
-def format_nonconvergence_message(report: dict[str, object]) -> str:
+def format_nonconvergence_message(report: dict[str, Any]) -> str:
     """Build the terminal error shown when IPF stops before convergence."""
 
     message = (
@@ -595,7 +596,7 @@ def format_nonconvergence_message(report: dict[str, object]) -> str:
     return f"{message} Use --allow-nonconverged to write the fitted weights anyway."
 
 
-def _first_report_issue(report: dict[str, object]) -> dict[str, object] | None:
+def _first_report_issue(report: dict[str, Any]) -> dict[str, Any] | None:
     """Return the first structured issue from a report, if one exists."""
 
     issues = report.get("issues", [])

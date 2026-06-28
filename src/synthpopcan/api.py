@@ -280,7 +280,7 @@ def write_weights(
             writer.writerow({**row, output_weight_column: _format_weight(weight)})
 
 
-def read_model_package(path: str | Path) -> dict[str, object]:
+def read_model_package(path: str | Path) -> dict[str, Any]:
     """Read a linked household/person model package JSON.
 
     Model packages are prepared artifacts created by SynthPopCan tooling. They
@@ -294,7 +294,7 @@ def read_model_package(path: str | Path) -> dict[str, object]:
 
     Returns
     -------
-    dict[str, object]
+    dict[str, Any]
         The parsed package payload. Pass it to :func:`generate_from_model`.
 
     Raises
@@ -618,7 +618,7 @@ def render_small_area_map(
     )
 
 
-def _seed_records(seed: SeedInput) -> list[Record]:
+def _seed_records(seed: SeedInput) -> Sequence[Record]:
     if isinstance(seed, str | Path):
         return read_seed(seed)
     return list(seed)
@@ -632,7 +632,7 @@ def _control_margins(controls: ControlInput) -> list[IPFMargin]:
     return list(controls)
 
 
-def _model_package(package: ModelPackageInput) -> dict[str, object]:
+def _model_package(package: ModelPackageInput) -> dict[str, Any]:
     if isinstance(package, str | Path):
         return read_model_package(package)
     return dict(package)

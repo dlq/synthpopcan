@@ -584,6 +584,7 @@ def build_controls_command(
             f"Recoding candidates (household_size capped at {hhsize_cap}): "
             f"{candidates_path}"
         )
+        assert candidates_out is not None
         try:
             n_rows = write_recoded_candidates(
                 candidates_path, candidates_out, cap=hhsize_cap

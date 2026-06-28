@@ -6,6 +6,7 @@ local cache only when a user asks for them.
 """
 
 from __future__ import annotations
+from typing import Any
 
 import hashlib
 import json
@@ -20,7 +21,7 @@ ProgressCallback = Callable[[int, int | None], None]
 
 _RELEASE_BASE_URL = "https://github.com/dlq/synthpopcan/releases/download/v0.2.0"
 
-_MODEL_PACKAGES: dict[str, dict[str, object]] = {
+_MODEL_PACKAGES: dict[str, dict[str, Any]] = {
     "demo-linked-household-person": {
         "filename": "demo-linked-household-person-package.json",
         "name": "Safe demo household/person package",
@@ -342,7 +343,7 @@ _MODEL_PACKAGES: dict[str, dict[str, object]] = {
 }
 
 
-def model_catalogue() -> list[dict[str, object]]:
+def model_catalogue() -> list[dict[str, Any]]:
     """Return model packages known to SynthPopCan."""
 
     return [
@@ -367,7 +368,7 @@ def model_catalogue() -> list[dict[str, object]]:
     ]
 
 
-def model_payload(model_id: str) -> dict[str, object]:
+def model_payload(model_id: str) -> dict[str, Any]:
     """Return a linked model package by ID.
 
     Bundled demo packages load immediately. Downloadable packages must be
@@ -384,7 +385,7 @@ def model_payload(model_id: str) -> dict[str, object]:
     return payload
 
 
-def model_registry_entry(model_id: str) -> dict[str, object]:
+def model_registry_entry(model_id: str) -> dict[str, Any]:
     """Return metadata for one registered model package."""
 
     try:
@@ -494,7 +495,7 @@ def _model_path(model_id: str) -> Path:
     )
 
 
-def _verify_model_checksum(path: Path, metadata: dict[str, object]) -> None:
+def _verify_model_checksum(path: Path, metadata: dict[str, Any]) -> None:
     expected = metadata.get("sha256")
     if not expected:
         return
@@ -505,7 +506,7 @@ def _verify_model_checksum(path: Path, metadata: dict[str, object]) -> None:
         )
 
 
-def _download_size(response: object, metadata: dict[str, object]) -> int | None:
+def _download_size(response: object, metadata: dict[str, Any]) -> int | None:
     headers = getattr(response, "headers", {})
     content_length = None
     if hasattr(headers, "get"):

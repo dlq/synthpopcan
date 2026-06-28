@@ -86,7 +86,7 @@ def inspect_microdata(
                 )
             sample = read_fixture_seed_sample(
                 path,
-                level=level,
+                level=level,  # type: ignore[arg-type]
                 weight_column=weight_column,
                 geography_columns=_parse_optional_columns(geo_columns),
                 id_columns=_parse_optional_columns(id_columns),
@@ -372,7 +372,7 @@ def export_microdata_seed(
                 )
             sample = read_fixture_seed_sample(
                 path,
-                level=level,
+                level=level,  # type: ignore[arg-type]
                 weight_column=weight_column,
                 geography_columns=_parse_optional_columns(geo_columns),
                 id_columns=_parse_optional_columns(id_columns),

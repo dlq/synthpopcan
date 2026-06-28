@@ -10,7 +10,7 @@ from collections import defaultdict
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
 
 import numpy as np
 from sklearn.tree import DecisionTreeClassifier
@@ -77,9 +77,9 @@ class TreeTrainingSample:
     conditioning_columns: tuple[str, ...]
     geography_column: str | None = None
     weight_column: str | None = None
-    metadata: dict[str, object] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
-    def as_summary(self) -> dict[str, object]:
+    def as_summary(self) -> dict[str, Any]:
         """Return a compact, JSON-serializable summary of this sample."""
 
         summary = {
@@ -121,7 +121,7 @@ class TreeModelSpec:
             conditioning_columns=self.conditioning_columns,
         )
 
-    def as_summary(self) -> dict[str, object]:
+    def as_summary(self) -> dict[str, Any]:
         """Return a JSON-serializable summary of the model specification."""
 
         return {
@@ -165,7 +165,7 @@ class FrequencyOutcome:
     values: dict[str, str]
     weight: float
 
-    def to_dict(self) -> dict[str, object]:
+    def to_dict(self) -> dict[str, Any]:
         """Return a JSON-serializable representation."""
 
         return {"values": self.values, "weight": self.weight}
@@ -184,7 +184,7 @@ class FrequencyGroup:
     support: float
     outcomes: tuple[FrequencyOutcome, ...]
 
-    def to_dict(self) -> dict[str, object]:
+    def to_dict(self) -> dict[str, Any]:
         """Return a JSON-serializable representation."""
 
         return {
@@ -223,7 +223,7 @@ class FrequencyTreeModel:
     min_support_threshold: int = 5
     model_type: str = "conditional-frequency"
 
-    def to_dict(self) -> dict[str, object]:
+    def to_dict(self) -> dict[str, Any]:
         """Serialize the model to a JSON-compatible dictionary."""
 
         minimum_support = min((group.support for group in self.groups), default=0.0)
@@ -250,7 +250,7 @@ class FrequencyTreeModel:
         }
 
     @classmethod
-    def from_dict(cls, payload: dict[str, object]) -> FrequencyTreeModel:
+    def from_dict(cls, payload: dict[str, Any]) -> FrequencyTreeModel:
         """Deserialize a conditional-frequency model payload."""
 
         if payload.get("schema_version") != "synthpopcan-tree-model-v1":
@@ -338,7 +338,7 @@ class CartTreeModel:
             for category in self.feature_categories[column]
         )
 
-    def to_dict(self) -> dict[str, object]:
+    def to_dict(self) -> dict[str, Any]:
         """Serialize the CART model to a JSON-compatible dictionary."""
 
         leaf_supports = [
@@ -389,7 +389,7 @@ class CartTreeModel:
         }
 
     @classmethod
-    def from_dict(cls, payload: dict[str, object]) -> CartTreeModel:
+    def from_dict(cls, payload: dict[str, Any]) -> CartTreeModel:
         """Deserialize a CART model payload."""
 
         if payload.get("schema_version") != "synthpopcan-tree-model-v1":
@@ -510,7 +510,7 @@ def audit_tree_model(
     *,
     min_support: float = 50,
     max_purity: float = 0.95,
-) -> dict[str, object]:
+) -> dict[str, Any]:
     """Check whether a tree model meets basic release-review thresholds.
 
     The report flags low-support groups or leaves, high-purity groups or
@@ -536,7 +536,7 @@ def audit_tree_model(
         isinstance(privacy, dict) and privacy.get("contains_source_identifiers", True)
     )
 
-    issues: list[dict[str, object]] = []
+    issues: list[dict[str, Any]] = []
     if model.release_class != "publishable_candidate":
         issues.append(
             {
@@ -594,7 +594,7 @@ def audit_tree_model(
     }
 
 
-def audit_units(model: TreeModel) -> list[dict[str, object]]:
+def audit_units(model: TreeModel) -> list[dict[str, Any]]:
     if isinstance(model, FrequencyTreeModel):
         return [
             {
@@ -647,7 +647,7 @@ def dominant_cart_outcome(
     return model.target_classes[dominant_index]
 
 
-def support_issue(unit: dict[str, object], min_support: float) -> dict[str, object]:
+def support_issue(unit: dict[str, Any], min_support: float) -> dict[str, Any]:
     return {
         "severity": "error",
         "kind": "below_min_support",
@@ -664,7 +664,7 @@ def support_issue(unit: dict[str, object], min_support: float) -> dict[str, obje
     }
 
 
-def purity_issue(unit: dict[str, object], max_purity: float) -> dict[str, object]:
+def purity_issue(unit: dict[str, Any], max_purity: float) -> dict[str, Any]:
     return {
         "severity": "warning",
         "kind": "above_max_purity",
@@ -1140,7 +1140,7 @@ def validate_linked_population(
     household_id_column: str = "synthetic_household_id",
     person_household_id_column: str = "synthetic_household_id",
     household_size_column: str = "household_size",
-) -> dict[str, object]:
+) -> dict[str, Any]:
     """Validate household-person links and household-size consistency.
 
     The report checks that person rows reference generated households and that
@@ -1159,7 +1159,7 @@ def validate_linked_population(
             continue
         household_counts[household_id] += 1
 
-    issues: list[dict[str, object]] = []
+    issues: list[dict[str, Any]] = []
     for household in households:
         household_id = household.get(household_id_column, "")
         try:

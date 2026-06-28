@@ -12,6 +12,7 @@ __all__ = [
     "suggest_ipf_fit_next_steps",
 ]
 
+from collections.abc import Sequence
 from typing import Any
 
 from synthpopcan.controls import ControlTable
@@ -204,7 +205,7 @@ def suggest_ipf_fit_next_steps(
 
 
 def build_ipf_input_report(
-    seed_rows: list[Record],
+    seed_rows: Sequence[Record],
     control_table: ControlTable,
 ) -> dict[str, Any]:
     dimensions = [
@@ -224,7 +225,7 @@ def build_ipf_input_report(
 
 
 def _build_dimension_input_check(
-    seed_rows: list[Record],
+    seed_rows: Sequence[Record],
     control_table: ControlTable,
     dimension: str,
 ) -> dict[str, Any]:
@@ -308,7 +309,7 @@ def _control_categories_for_dimension(
 
 
 def _find_unsupported_control_cells(
-    seed_rows: list[Record],
+    seed_rows: Sequence[Record],
     control_table: ControlTable,
 ) -> list[dict[str, Any]]:
     unsupported: list[dict[str, Any]] = []

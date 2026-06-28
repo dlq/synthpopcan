@@ -11,7 +11,7 @@ from http import HTTPStatus
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from importlib.resources import files
 from pathlib import Path
-from typing import Protocol
+from typing import Any, Protocol
 from urllib.parse import urlparse
 
 from synthpopcan.models import model_catalogue, model_payload
@@ -87,14 +87,14 @@ class _SynthPopCanWebHandler(SimpleHTTPRequestHandler):
         except Exception as exc:  # noqa: BLE001
             self._send_json({"error": str(exc)}, status=HTTPStatus.BAD_REQUEST)
 
-    def _read_json_body(self) -> dict[str, object]:
+    def _read_json_body(self) -> dict[str, Any]:
         length = int(self.headers.get("Content-Length", "0"))
         if length <= 0:
             return {}
         return json.loads(self.rfile.read(length).decode("utf-8"))
 
     def _send_json(
-        self, payload: dict[str, object], *, status: HTTPStatus = HTTPStatus.OK
+        self, payload: dict[str, Any], *, status: HTTPStatus = HTTPStatus.OK
     ) -> None:
         body = json.dumps(payload).encode("utf-8")
         self.send_response(status)

@@ -1,6 +1,7 @@
 """Developer-facing linked tree benchmark workflow."""
 
 from __future__ import annotations
+from typing import Any
 
 __all__ = ["resolve_benchmark_columns", "run_linked_tree_benchmark"]
 
@@ -47,7 +48,7 @@ def run_linked_tree_benchmark(
     min_samples_leaf: int = 5,
     max_depth: int | None = None,
     tolerance: float = 0.05,
-) -> dict[str, object]:
+) -> dict[str, Any]:
     output_dir.mkdir(parents=True, exist_ok=True)
     paths = _benchmark_paths(output_dir)
     timings: dict[str, float] = {}
@@ -224,7 +225,7 @@ def resolve_benchmark_columns(
     tuple[str, ...],
     tuple[str, ...],
     tuple[str, ...],
-    dict[str, object],
+    dict[str, Any],
 ]:
     if household_block or person_block:
         if not household_block or not person_block:
@@ -327,7 +328,7 @@ def _write_csv(path: Path, rows: list[dict[str, str]]) -> None:
         writer.writerows(rows)
 
 
-def _write_json(path: Path, payload: dict[str, object]) -> None:
+def _write_json(path: Path, payload: dict[str, Any]) -> None:
     path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n")
 
 

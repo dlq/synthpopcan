@@ -353,7 +353,7 @@ def fetch_wds_metadata(product_id: str) -> dict[str, Any]:
     return dict(first["object"])
 
 
-def summarize_wds_metadata(metadata: dict[str, Any]) -> dict[str, object]:
+def summarize_wds_metadata(metadata: dict[str, Any]) -> dict[str, Any]:
     """Summarize WDS metadata into dimensions, suitability hints, and commands.
 
     The summary is designed for display and JSON output. It includes dimension
@@ -396,7 +396,7 @@ def summarize_wds_metadata(metadata: dict[str, Any]) -> dict[str, object]:
     }
 
 
-def classify_wds_ipf_suitability(dimensions: list[str]) -> dict[str, object]:
+def classify_wds_ipf_suitability(dimensions: list[str]) -> dict[str, Any]:
     """Classify whether WDS dimensions look useful for simple IPF controls.
 
     This is a heuristic based only on dimension names. It can suggest that age
@@ -484,14 +484,14 @@ def extract_wds_dimension_previews(
     metadata: dict[str, Any],
     *,
     member_limit: int = 3,
-) -> list[dict[str, object]]:
+) -> list[dict[str, Any]]:
     """Extract short member previews for each WDS dimension.
 
     Each preview includes the dimension name, total member count, a short member
     sample, and a ``truncated`` flag.
     """
 
-    previews: list[dict[str, object]] = []
+    previews: list[dict[str, Any]] = []
     dimensions = metadata.get("dimension") or metadata.get("dimensions", [])
     if not isinstance(dimensions, list):
         return previews

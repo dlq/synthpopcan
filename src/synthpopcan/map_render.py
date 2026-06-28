@@ -84,10 +84,10 @@ def _read_shapefile_geojson(
     bbox = [math.inf, math.inf, -math.inf, -math.inf]
 
     with shapefile.Reader(str(shp_path), encoding="latin1") as sf:
-        field_names = [f[0] for f in sf.fields[1:]]
+        field_names = [f[0] for f in sf.fields[1:]]  # type: ignore[attr-defined]
         id_idx = field_names.index(id_field)
 
-        for sr in sf.iterShapeRecords():
+        for sr in sf.iterShapeRecords():  # type: ignore[attr-defined]
             geo_id = str(sr.record[id_idx]).strip()
             if keep_ids is not None and geo_id not in keep_ids:
                 continue

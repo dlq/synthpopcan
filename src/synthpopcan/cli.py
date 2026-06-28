@@ -1,6 +1,7 @@
 """Command-line entry point for SynthPopCan."""
 
 from __future__ import annotations
+from typing import Any
 
 __all__ = ["main", "resolve_data_root"]
 
@@ -353,7 +354,7 @@ def _print_model_workflow_guide() -> None:
     print_table(table)
 
 
-def _format_model_availability(model: dict[str, object]) -> str:
+def _format_model_availability(model: dict[str, Any]) -> str:
     if model.get("distribution") == "bundled":
         return "Bundled"
     if model.get("installed"):
@@ -361,7 +362,7 @@ def _format_model_availability(model: dict[str, object]) -> str:
     return "Download with `synthpopcan models fetch`"
 
 
-def _format_model_catalogue_summary(model: dict[str, object]) -> str:
+def _format_model_catalogue_summary(model: dict[str, Any]) -> str:
     parts = [
         str(model.get("name", "")),
         f"Geography: {model.get('geography', '')}",

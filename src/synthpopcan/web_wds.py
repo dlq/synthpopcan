@@ -1,6 +1,7 @@
 """WDS download and normalization helpers for the local web app."""
 
 from __future__ import annotations
+from typing import Any
 
 __all__ = [
     "fetch_wds_zip_bytes",
@@ -50,7 +51,7 @@ def generate_wds_seed_controls_from_zip_bytes(
     *,
     dimensions: tuple[str, ...],
     count_column: str,
-) -> dict[str, object]:
+) -> dict[str, Any]:
     """Normalize a WDS ZIP into browser-ready seed and control CSV strings."""
     with ZipFile(BytesIO(zip_bytes)) as archive:
         csv_member = _choose_wds_data_csv_member(archive)

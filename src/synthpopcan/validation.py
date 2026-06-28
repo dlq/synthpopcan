@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from typing import Any
 
 from synthpopcan.controls import ControlTable
@@ -18,7 +19,7 @@ __all__ = [
 
 def build_control_validation_report(
     control_table: ControlTable,
-    records: list[Record],
+    records: Sequence[Record],
     weights: list[float],
     *,
     tolerance: float = 1e-6,
@@ -124,8 +125,8 @@ def build_control_validation_report(
 
 def build_tree_output_validation_report(
     *,
-    training_rows: list[Record],
-    generated_rows: list[Record],
+    training_rows: Sequence[Record],
+    generated_rows: Sequence[Record],
     target_columns: tuple[str, ...],
     conditioning_columns: tuple[str, ...],
     weight_field: str | None = None,
@@ -229,7 +230,7 @@ def comparison_dimensions(
     :func:`build_tree_output_validation_report`.
     """
 
-    dimensions = [(column,) for column in target_columns]
+    dimensions: list[tuple[str, ...]] = [(column,) for column in target_columns]
     if len(target_columns) > 1:
         dimensions.append(target_columns)
     dimensions.extend((column,) for column in conditioning_columns)
@@ -237,9 +238,9 @@ def comparison_dimensions(
 
 
 def build_distribution_comparison(
-    training_rows: list[Record],
+    training_rows: Sequence[Record],
     training_weights: list[float],
-    generated_rows: list[Record],
+    generated_rows: Sequence[Record],
     generated_weights: list[float],
     dimensions: tuple[str, ...],
 ) -> dict[str, Any]:

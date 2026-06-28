@@ -1,6 +1,7 @@
 """Tree generator commands for the SynthPopCan CLI."""
 
 from __future__ import annotations
+from typing import Any
 
 __all__ = [
     "apply_target_profile",
@@ -1331,7 +1332,7 @@ def _format_tree_value_error(exc: ValueError) -> str:
     return message
 
 
-def release_blocking_issues(audit: dict[str, object]) -> list[dict[str, object]]:
+def release_blocking_issues(audit: dict[str, Any]) -> list[dict[str, Any]]:
     issues = audit["issues"]
     if not isinstance(issues, list):
         raise ValueError("model audit issues must be a list")
@@ -1349,13 +1350,13 @@ def _build_linked_release_readiness_report(
     person_model,
     household_model_path: Path,
     person_model_path: Path,
-    household_audit: dict[str, object],
-    person_audit: dict[str, object],
-    training_provenance: dict[str, object] | None,
+    household_audit: dict[str, Any],
+    person_audit: dict[str, Any],
+    training_provenance: dict[str, Any] | None,
     household_size_column: str,
     min_support: float,
     max_purity: float,
-) -> dict[str, object]:
+) -> dict[str, Any]:
     readiness = classify_linked_release_readiness(household_audit, person_audit)
     return {
         "schema_version": "synthpopcan-linked-tree-readiness-v1",
@@ -1387,7 +1388,7 @@ def _build_linked_release_readiness_report(
     }
 
 
-def read_linked_training_manifest(path: Path | None) -> dict[str, object] | None:
+def read_linked_training_manifest(path: Path | None) -> dict[str, Any] | None:
     if path is None:
         return None
     try:
@@ -1415,11 +1416,11 @@ def read_linked_training_manifest(path: Path | None) -> dict[str, object] | None
 
 
 def validate_linked_training_manifest_model_paths(
-    training_provenance: dict[str, object] | None,
+    training_provenance: dict[str, Any] | None,
     *,
     household_model_path: Path,
     person_model_path: Path,
-    release_manifests: dict[str, dict[str, object] | None] | None = None,
+    release_manifests: dict[str, dict[str, Any] | None] | None = None,
 ) -> None:
     if training_provenance is None:
         raise ValueError("linked model package requires a training manifest")
@@ -1462,7 +1463,7 @@ def validate_linked_training_manifest_model_paths(
             )
 
 
-def read_model_release_manifest(path: Path | None) -> dict[str, object] | None:
+def read_model_release_manifest(path: Path | None) -> dict[str, Any] | None:
     if path is None:
         return None
     try:
@@ -1486,7 +1487,7 @@ def read_model_release_manifest(path: Path | None) -> dict[str, object] | None:
     }
 
 
-def read_source_provenance(path: Path) -> dict[str, object]:
+def read_source_provenance(path: Path) -> dict[str, Any]:
     try:
         payload = json.loads(path.read_text())
     except json.JSONDecodeError as exc:
@@ -1527,7 +1528,7 @@ def read_source_provenance(path: Path) -> dict[str, object]:
     return provenance
 
 
-def read_linked_model_package(path: Path) -> dict[str, object]:
+def read_linked_model_package(path: Path) -> dict[str, Any]:
     try:
         payload = json.loads(path.read_text())
     except json.JSONDecodeError as exc:
@@ -1541,7 +1542,7 @@ def read_linked_model_package(path: Path) -> dict[str, object]:
 
 def _read_package_path_or_id(
     package_path_or_id: str,
-) -> tuple[dict[str, object], str, Path | None]:
+) -> tuple[dict[str, Any], str, Path | None]:
     """Read a linked package from a local path or packaged model ID."""
 
     package_path = Path(package_path_or_id)
@@ -1561,7 +1562,7 @@ def _read_package_path_or_id(
     return package, package_path_or_id, None
 
 
-def validate_package_allows_generation(package: dict[str, object]) -> None:
+def validate_package_allows_generation(package: dict[str, Any]) -> None:
     privacy = _object_or_empty(package.get("privacy"))
     if privacy.get("publishable_candidate") is not True:
         raise ValueError(
@@ -1570,7 +1571,7 @@ def validate_package_allows_generation(package: dict[str, object]) -> None:
         )
 
 
-def package_models(package: dict[str, object]):
+def package_models(package: dict[str, Any]):
     models = _object_or_empty(package.get("models"))
     household_model = _object_or_empty(models.get("household"))
     person_model = _object_or_empty(models.get("person"))
@@ -1581,7 +1582,7 @@ def package_models(package: dict[str, object]):
     )
 
 
-def tree_model_from_payload(payload: dict[str, object]):
+def tree_model_from_payload(payload: dict[str, Any]):
     model_type = payload.get("model_type")
     if model_type == "conditional-frequency":
         return FrequencyTreeModel.from_dict(payload)
@@ -1591,9 +1592,9 @@ def tree_model_from_payload(payload: dict[str, object]):
 
 
 def _build_linked_package_inspection(
-    package: dict[str, object],
-    package_path: Path,
-) -> dict[str, object]:
+    package: dict[str, Any],
+    package_path: Path | None,
+) -> dict[str, Any]:
     training_manifest = _object_or_empty(package.get("training_manifest"))
     source_provenance = _object_or_empty(
         package.get("source_provenance") or package.get("provenance")
@@ -1608,7 +1609,7 @@ def _build_linked_package_inspection(
 
     return {
         "schema_version": "synthpopcan-linked-tree-package-inspection-v1",
-        "package_path": str(package_path),
+        "package_path": str(package_path) if package_path is not None else None,
         "name": package.get("name"),
         "package_type": package.get("package_type"),
         "package_schema_version": package.get("schema_version"),
@@ -1644,14 +1645,14 @@ def _build_linked_package_inspection(
     }
 
 
-def _object_or_empty(value: object) -> dict[str, object]:
+def _object_or_empty(value: object) -> dict[str, Any]:
     return value if isinstance(value, dict) else {}
 
 
 def _summarize_package_models(
-    model_summaries: dict[str, object],
-) -> dict[str, dict[str, object]]:
-    summaries: dict[str, dict[str, object]] = {}
+    model_summaries: dict[str, Any],
+) -> dict[str, dict[str, Any]]:
+    summaries: dict[str, dict[str, Any]] = {}
     for level in ("household", "person"):
         summary = _object_or_empty(model_summaries.get(level))
         spec = _object_or_empty(summary.get("spec"))
@@ -1670,9 +1671,9 @@ def _summarize_package_models(
 
 
 def _summarize_package_audits(
-    audits: dict[str, object],
-) -> dict[str, dict[str, object]]:
-    summaries: dict[str, dict[str, object]] = {}
+    audits: dict[str, Any],
+) -> dict[str, dict[str, Any]]:
+    summaries: dict[str, dict[str, Any]] = {}
     for level in ("household", "person"):
         audit = _object_or_empty(audits.get(level))
         summary = _object_or_empty(audit.get("summary"))
@@ -1691,9 +1692,9 @@ def _summarize_package_audits(
 
 
 def _summarize_release_manifests(
-    release_manifests: dict[str, object],
-) -> dict[str, dict[str, object]]:
-    summaries: dict[str, dict[str, object]] = {}
+    release_manifests: dict[str, Any],
+) -> dict[str, dict[str, Any]]:
+    summaries: dict[str, dict[str, Any]] = {}
     for level in ("household", "person"):
         manifest = _object_or_empty(release_manifests.get(level))
         summaries[level] = {
@@ -1706,7 +1707,7 @@ def _summarize_release_manifests(
     return summaries
 
 
-def _print_linked_package_inspection_table(report: dict[str, object]) -> None:
+def _print_linked_package_inspection_table(report: dict[str, Any]) -> None:
     table = Table(title="Linked Model Package")
     table.add_column("Field", no_wrap=True)
     table.add_column("Value")
@@ -1751,7 +1752,7 @@ def _format_optional(value: object) -> str:
     return "" if value is None else str(value)
 
 
-def format_source_label(source: dict[str, object]) -> str:
+def format_source_label(source: dict[str, Any]) -> str:
     title = source.get("title") or ""
     provider = source.get("provider") or ""
     return f"{provider}: {title}" if provider else str(title)
@@ -1767,7 +1768,7 @@ def format_geography_filter(value: object) -> str:
     return ""
 
 
-def format_privacy_summary(privacy: dict[str, object]) -> str:
+def format_privacy_summary(privacy: dict[str, Any]) -> str:
     status = (
         "Publishable candidate"
         if privacy.get("publishable_candidate")
@@ -1819,7 +1820,7 @@ def format_audit_summary(value: object) -> str:
     )
 
 
-def _format_default_generation(value: dict[str, object]) -> str:
+def _format_default_generation(value: dict[str, Any]) -> str:
     parts: list[str] = []
     households = format_int_or_blank(value.get("households"))
     if households:
@@ -1831,8 +1832,8 @@ def _format_default_generation(value: dict[str, object]) -> str:
 
 
 def _format_package_catalogue_summary(
-    model: dict[str, object],
-    default_generation: dict[str, object],
+    model: dict[str, Any],
+    default_generation: dict[str, Any],
 ) -> str:
     parts = [
         str(model.get("name", "")),
@@ -1918,7 +1919,7 @@ def format_number_or_blank(value: object) -> str:
 
 
 def release_manifest_matches_model_paths(
-    release_manifest: dict[str, object] | None,
+    release_manifest: dict[str, Any] | None,
     *,
     source_model_path: Path,
     output_model_path: Path,
@@ -1942,8 +1943,8 @@ def _same_model_path(left: Path, right: Path) -> bool:
 
 
 def classify_linked_release_readiness(
-    household_audit: dict[str, object],
-    person_audit: dict[str, object],
+    household_audit: dict[str, Any],
+    person_audit: dict[str, Any],
 ) -> str:
     blocking_issues = [
         *release_blocking_issues(household_audit),
@@ -2069,7 +2070,7 @@ def _generated_model_columns(model) -> set[str]:
 def tree_training_sample_from_export(
     *,
     rows: list[dict[str, str]],
-    export: dict[str, object],
+    export: dict[str, Any],
 ) -> TreeTrainingSample:
     return TreeTrainingSample(
         level=export["level"],  # type: ignore[arg-type]
@@ -2105,7 +2106,7 @@ def train_tree_sample(
     )
 
 
-def model_manifest(model, path: Path) -> dict[str, object]:
+def model_manifest(model, path: Path) -> dict[str, Any]:
     return {
         "path": str(path),
         "model_type": model.model_type,
@@ -2122,5 +2123,5 @@ def _effective_random_seed(model, random_seed: int | None) -> int:
     return model.spec.random_seed if random_seed is None else random_seed
 
 
-def write_tree_generation_manifest(path: Path, manifest: dict[str, object]) -> None:
+def write_tree_generation_manifest(path: Path, manifest: dict[str, Any]) -> None:
     path.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n")

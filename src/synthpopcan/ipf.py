@@ -4,10 +4,11 @@ from __future__ import annotations
 
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
+from typing import Any
 
 import numpy as np
 
-Record = Mapping[str, object]
+Record = Mapping[str, Any]
 CategoryKey = tuple[str, ...]
 
 __all__ = [
