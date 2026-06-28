@@ -67,7 +67,7 @@ different samples or feature subsets. Forests can be more stable for prediction,
 but they are harder to inspect as a single research object. SynthPopCan does not
 currently train random forests; it uses conditional-frequency and CART-style
 tree models because their groups, leaves, supports, and dominant outcomes can be
-audited and explained. The scikit-learn decision-tree guide is a useful
+audited and explained. The [scikit-learn decision-tree guide](https://scikit-learn.org/stable/modules/tree.html) is a useful
 technical reference for CART-style splits, while the population-synthesis
 literature listed below gives broader context for why household/person
 relationships matter.

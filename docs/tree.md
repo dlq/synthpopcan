@@ -51,7 +51,7 @@ SynthPopCan has two tree-family model types:
   or split patterns more flexibly than exact frequency groups, but it still
   needs support, purity, and validation checks.
 
-The scikit-learn decision-tree guide explains CART-style decision trees as
+The [scikit-learn decision-tree guide](https://scikit-learn.org/stable/modules/tree.html) explains CART-style decision trees as
 models that split records by feature values to predict a target class. In
 SynthPopCan, the point is not prediction for its own sake. The point is to
 generate plausible categorical rows while preserving enough structure to support
@@ -106,9 +106,8 @@ problems include:
 - **Missing provenance:** without source notes, commands, random seeds, and
   validation reports, readers cannot tell what choices shaped the output.
 
-These are methodological issues, not just software errors. Gargiulo and
-co-authors emphasize the importance of household structure in synthetic
-population generation, and privacy-preserving data-publishing surveys describe
+These are methodological issues, not just software errors. [Gargiulo and co-authors](https://arxiv.org/abs/0912.2826) emphasize the importance of household structure in synthetic
+population generation, and [privacy-preserving data-publishing surveys](https://arxiv.org/abs/2201.08120) describe
 the recurring tradeoff between utility and disclosure risk. SynthPopCan's audit
 commands are meant to make those issues visible before a model is treated as
 usable.

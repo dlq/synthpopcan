@@ -9,10 +9,10 @@ for users, contributors, and reviewers.
 SynthPopCan currently has working first-pass surfaces for:
 
 - a Python library with a beginner API exposed through `import synthpopcan as spc`;
-- a Click command-line interface for data inspection, control normalization,
+- a [Click](https://click.palletsprojects.com/) command-line interface for data inspection, control normalization,
   IPF, microdata adapters, tree-model workflows, validation, and local serving;
 - a local browser app started with `synthpopcan serve`;
-- Sphinx documentation with a task-first entry point and selective autodoc API
+- [Sphinx](https://www.sphinx-doc.org/) documentation with a task-first entry point and selective autodoc API
   reference;
 - fixture-based tests that do not require private or full raw data caches.
 
@@ -55,7 +55,7 @@ Completed StatCan/IPF usability work:
   `controls from-wds` settings.
 - `statcan wds explain` summarizes a product ID, reports available dimensions,
   gives an IPF suitability hint, and prints next commands.
-- `statcan wds fetch` and `controls from-wds` show Rich status indicators while
+- `statcan wds fetch` and `controls from-wds` show [Rich](https://rich.readthedocs.io/) status indicators while
   downloading, reading, normalizing, and writing WDS artifacts.
 - `controls wds mapping-template` writes a starter category mapping JSON from
   observed WDS labels in selected dimensions.
@@ -90,7 +90,7 @@ Local timing evidence after indexing:
 
 Experimental backend comparison results:
 
-| Seed rows | Case | Iterations | Current Python | NumPy `bincount` | SciPy CSR | Polars `group_by` |
+| Seed rows | Case | Iterations | Current Python | [NumPy](https://numpy.org/) `bincount` | [SciPy](https://scipy.org/) CSR | [Polars](https://pola.rs/) `group_by` |
 | ---: | --- | ---: | ---: | ---: | ---: | ---: |
 | 50,000 | easy balanced | 1 | ~0.023s | ~0.032s | ~0.037s | ~0.046s |
 | 50,000 | moderate three-margin | 1 | ~0.037s | ~0.047s | ~0.056-0.064s | ~0.035-0.049s |
@@ -210,7 +210,7 @@ Every new feature should include tests at the smallest practical scale:
 - fixture-based integration tests for one complete workflow;
 - documentation-example checks for runnable getting-started or workflow
   examples;
-- coverage measurement with `pytest-cov`.
+- coverage measurement with [`pytest-cov`](https://pytest-cov.readthedocs.io/).
 
 No default tests should require full private or raw data caches.
 

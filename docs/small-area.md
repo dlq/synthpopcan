@@ -98,7 +98,7 @@ synthpopcan geo build-controls \
 | `--candidates-out` | Output recoded CSV. Defaults to `<candidates-stem>-recoded.csv`. |
 
 The Census Profile for a given geography level can be downloaded free from
-Statistics Canada's Census Profile, 2016 Census page.
+[Statistics Canada's Census Profile, 2016 Census](https://www12.statcan.gc.ca/census-recensement/2016/dp-pd/prof/index.cfm?Lang=E) page.
 
 ## Step 3 — Calibrate to Controls
 
@@ -137,7 +137,7 @@ or as a path to the original StatCan `.shp` file (reprojection is automatic in
 both cases).
 
 The resulting file opens directly in any browser. It requires an internet
-connection to fetch base-map tiles from OpenFreeMap but otherwise embeds all
+connection to fetch base-map tiles from [OpenFreeMap](https://openfreemap.org/) but otherwise embeds all
 data inline.
 
 Variables shown (household-level, always): household count, average household

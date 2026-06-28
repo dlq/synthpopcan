@@ -35,7 +35,7 @@ from expanded rows.
 That separation matters. Fitting weights and realizing an integer population are
 different stages. A weighted seed can be the right analytical object for
 validation and review, while an expanded CSV is a rounded realization of those
-weights. The older Pritchard/Miller-style population-synthesis workflow makes a
+weights. The older [Pritchard and Miller](https://doi.org/10.1007/s11116-011-9367-4)-style population-synthesis workflow makes a
 similar distinction: first fit/calibrate sparse microdata rows to margins, then
 allocate or sample integer households and persons.
 
@@ -79,7 +79,7 @@ iterations:
 For a humanities or digital-humanities project, the practical question is not
 only "does the algorithm converge?" It is "do these controls describe the same
 population, in categories the seed can represent, at a level of detail the seed
-can support?" Naszodi's discussion of IPF and related matrix-adjustment methods
+can support?" [Naszodi's discussion](https://arxiv.org/abs/2303.05515) of IPF and related matrix-adjustment methods
 is useful here because it separates the mechanics of fitting from the
 interpretive question being asked.
 

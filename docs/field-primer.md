@@ -30,8 +30,8 @@ validation choices.
 
 ## A Short Lineage
 
-Synthetic population work has roots in spatial microsimulation, transportation
-planning, epidemiology, statistical disclosure control, and agent-based
+Synthetic population work has roots in [spatial microsimulation](https://en.wikipedia.org/wiki/Spatial_microsimulation), transportation
+planning, epidemiology, [statistical disclosure control](https://en.wikipedia.org/wiki/Statistical_disclosure_control), and agent-based
 simulation. Older IPF-based approaches often start with a microdata sample and
 reweight it to match area-level margins.
 [Pritchard and Miller's population synthesis work](https://doi.org/10.1007/s11116-011-9367-4)

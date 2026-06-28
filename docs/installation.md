@@ -1,6 +1,6 @@
 # Installation
 
-SynthPopCan can be installed from PyPI, run as a one-off command with `uvx`, or
+SynthPopCan can be installed from [PyPI](https://pypi.org/), run as a one-off command with `uvx`, or
 installed from a source checkout for development. If we only want to use the
 command line or beginner Python API, start with the PyPI installation. If we
 want to edit the code, documentation, or tests, use the source checkout.
@@ -10,7 +10,7 @@ want to edit the code, documentation, or tests, use the source checkout.
 - Python 3.11 or newer.
 - Git, only when cloning from the repository.
 - `pip`, which is included with most Python installations.
-- Optional: `uv`, when using `uvx` for one-off commands or when working on the
+- Optional: [`uv`](https://docs.astral.sh/uv/), when using `uvx` for one-off commands or when working on the
   source checkout.
 - Local source data staged outside git when working with real census or private files.
 
@@ -36,7 +36,7 @@ beginner API in a notebook, or build small teaching workflows without editing
 SynthPopCan itself.
 
 For notebook work, install SynthPopCan into the same Python environment that
-Jupyter uses. A minimal notebook smoke test is:
+[Jupyter](https://jupyter.org/) uses. A minimal notebook smoke test is:
 
 ```python
 import synthpopcan as spc
@@ -72,7 +72,7 @@ cd synthpopcan
 ```
 
 The repository currently uses `uv` for repeatable local development. If we do
-not have `uv`, install it from the official documentation for our platform.
+not have `uv`, install it from the [official installation guide](https://docs.astral.sh/uv/getting-started/installation/).
 
 From the repository root:
 
@@ -161,7 +161,7 @@ uv run sphinx-build -W -b html docs docs/_build/html
 ```
 
 The `-W` flag treats warnings as errors. This is intentional: it catches broken
-links and malformed documentation before Read the Docs publishes the site.
+links and malformed documentation before [Read the Docs](https://readthedocs.org/) publishes the site.
 
 Check the reStructuredText source files with:
 
@@ -226,7 +226,7 @@ Published documentation lives at <https://synthpopcan.readthedocs.io/>.
 
 ## Release Publishing
 
-The repository includes a manual GitHub Actions workflow for PyPI publishing.
+The repository includes a manual [GitHub Actions](https://docs.github.com/en/actions) workflow for PyPI publishing.
 The PyPI project owner should keep the trusted publisher configuration aligned
 with:
 

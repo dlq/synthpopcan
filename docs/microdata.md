@@ -34,7 +34,7 @@ geography-specific models.
 
 SynthPopCan currently exposes two adapter formats in the CLI:
 
-- `statcan-2016-hierarchical` for the Statistics Canada 2016 hierarchical PUMF
+- `statcan-2016-hierarchical` for the [Statistics Canada 2016 hierarchical PUMF](https://www150.statcan.gc.ca/n1/pub/98m0002x/98m0002x2016001-eng.htm)
   shape used by the current local workflow; and
 - `fixture-v1` for small test and demonstration files.
 

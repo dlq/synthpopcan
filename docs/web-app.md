@@ -32,7 +32,7 @@ Choose this when you want to fit seed rows to public margin/control totals.
 This path can start in two ways:
 
 - use the demo files or blank templates when you are learning the format; or
-- search for a Statistics Canada WDS product ID, inspect the table, and let the
+- search for a Statistics Canada [WDS](https://www.statcan.gc.ca/en/developers/wds) product ID, inspect the table, and let the
   local helper fill the seed CSV and normalized margin/control CSV.
 
 After the two IPF input files are loaded, keep **Weights CSV** as the first
