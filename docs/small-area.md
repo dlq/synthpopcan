@@ -119,6 +119,41 @@ synthpopcan geo build-controls \
 The Census Profile for a given geography level can be downloaded free from
 [Statistics Canada's Census Profile, 2016 Census](https://www12.statcan.gc.ca/census-recensement/2016/dp-pd/prof/index.cfm?Lang=E) page.
 
+## Step 2.5 — Estimate Run Size
+
+Before launching a large calibration, use `geo estimate-run` to check the scale
+of the job. The command reads the controls, counts target geographies and
+households, estimates person rows, and gives a plain recommendation about
+whether to use the web app, CLI, or Python API.
+
+```bash
+synthpopcan geo estimate-run \
+  --controls candidate-households-controls-5500000.csv \
+  --geo-dimension ada \
+  --candidate-households 50000 \
+  --pool-size 10000
+```
+
+Example summary:
+
+```text
+Target geographies: 1,115
+Target households: 3,750,000
+Estimated persons: 8,325,000
+Estimated output rows: 12,075,000
+Calibration pool: 10,000 of 50,000 candidates
+Fits to run: 1,115
+Recommended surface: CLI or Python API
+Guidance:
+  - Calibration will fit 10,000 candidate households for each target geography.
+  - Keep the web app for small demos; use the CLI or Python API for large linked CSV outputs.
+```
+
+Use `--format json` when a notebook, shell script, or workflow manager needs the
+same information in machine-readable form. For exploratory province-scale runs,
+start with `--pool-size 10000`; increase it only if validation reports show poor
+fit or too little household variety.
+
 ## Step 3 — Calibrate to Controls
 
 ```bash

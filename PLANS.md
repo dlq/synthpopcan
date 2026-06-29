@@ -225,7 +225,8 @@ Candidate work:
 - Reduce memory pressure in microdata adapters through narrower column loading
   or streaming where it meaningfully affects real workflows.
 - Add performance budgets and benchmark fixtures for province-scale generation
-  and calibration.
+  and calibration. **Partly met; `geo estimate-run` gives users a preflight
+  scale estimate and web app vs CLI/API recommendation before calibration.**
 
 0.3.x exit criteria:
 

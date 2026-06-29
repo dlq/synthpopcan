@@ -18,6 +18,7 @@ from synthpopcan.small_area_synthesis import (
     calibrate_linked_household_csvs,
     check_small_area_calibration_inputs,
     controls_by_geography,
+    estimate_small_area_run,
     fit_households_by_geography,
     realize_linked_geography_population,
 )
@@ -147,6 +148,72 @@ def test_check_small_area_calibration_inputs_reports_missing_group_column() -> N
             ),
         }
     ]
+
+
+def test_estimate_small_area_run_summarizes_scale_and_guidance() -> None:
+    controls = ControlTable(
+        margins=(
+            ControlMargin(
+                name="size",
+                dimensions=("tract", "household_size"),
+                cells=(
+                    ControlCell({"tract": "G1", "household_size": "1"}, 60),
+                    ControlCell({"tract": "G1", "household_size": "2"}, 40),
+                    ControlCell({"tract": "G2", "household_size": "1"}, 30),
+                    ControlCell({"tract": "G2", "household_size": "2"}, 70),
+                ),
+            ),
+        ),
+        dimensions=("tract", "household_size"),
+    )
+
+    estimate = estimate_small_area_run(
+        controls,
+        geography_dimension="tract",
+        candidate_households=50_000,
+        pool_size=10_000,
+        average_persons_per_household=2.5,
+    )
+
+    assert estimate == {
+        "schema_version": "synthpopcan-small-area-performance-estimate-v1",
+        "target_geographies": 2,
+        "target_households": 200,
+        "estimated_persons": 500,
+        "estimated_total_output_rows": 700,
+        "candidate_households": 50_000,
+        "calibration_pool_size": 10_000,
+        "candidate_pool_fraction": 0.2,
+        "fits_to_run": 2,
+        "recommended_surface": "cli_or_python_api",
+        "guidance": [
+            "Calibration will fit 10,000 candidate households "
+            "for each target geography.",
+            "Keep the web app for small demos; use the CLI or Python API "
+            "for large linked CSV outputs.",
+        ],
+    }
+
+
+def test_estimate_small_area_run_rejects_nonpositive_pool_size() -> None:
+    controls = ControlTable(
+        margins=(
+            ControlMargin(
+                name="size",
+                dimensions=("tract", "household_size"),
+                cells=(ControlCell({"tract": "G1", "household_size": "1"}, 1),),
+            ),
+        ),
+        dimensions=("tract", "household_size"),
+    )
+
+    with pytest.raises(ValueError, match="pool_size must be greater than zero"):
+        estimate_small_area_run(
+            controls,
+            geography_dimension="tract",
+            candidate_households=5,
+            pool_size=0,
+        )
 
 
 def test_check_small_area_calibration_inputs_reports_missing_category() -> None:
@@ -663,6 +730,70 @@ def test_cli_calibrate_linked_summary_mentions_largest_residual(
     assert "Largest residual: 30" in output
     assert "G1 size household_size=1" in output
     assert "Review the largest residual rows first." in output
+
+
+def test_cli_estimate_run_prints_small_area_performance_guidance(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    controls = tmp_path / "controls.csv"
+    controls.write_text(
+        "margin,dimensions,tract,household_size,count\n"
+        'size,"tract,household_size",G1,1,60\n'
+        'size,"tract,household_size",G1,2,40\n'
+        'size,"tract,household_size",G2,1,30\n'
+        'size,"tract,household_size",G2,2,70\n'
+    )
+
+    exit_code = main(
+        [
+            "geo",
+            "estimate-run",
+            "--controls",
+            str(controls),
+            "--geo-dimension",
+            "tract",
+            "--candidate-households",
+            "50000",
+            "--pool-size",
+            "10000",
+        ]
+    )
+
+    assert exit_code == 0
+    output = capsys.readouterr().out
+    assert "Target geographies: 2" in output
+    assert "Target households: 200" in output
+    assert "Calibration pool: 10,000 of 50,000 candidates" in output
+    assert "Recommended surface: CLI or Python API" in output
+
+
+def test_cli_estimate_run_prints_json(tmp_path: Path, capsys) -> None:
+    controls = tmp_path / "controls.csv"
+    controls.write_text(
+        "margin,dimensions,tract,household_size,count\n"
+        'size,"tract,household_size",G1,1,1\n'
+    )
+
+    exit_code = main(
+        [
+            "geo",
+            "estimate-run",
+            "--controls",
+            str(controls),
+            "--geo-dimension",
+            "tract",
+            "--candidate-households",
+            "5",
+            "--format",
+            "json",
+        ]
+    )
+
+    assert exit_code == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["target_geographies"] == 1
+    assert payload["recommended_surface"] == "web_app_ok"
 
 
 def test_cli_calibrate_linked_oserror(tmp_path: Path) -> None:

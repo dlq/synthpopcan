@@ -7,6 +7,7 @@ __all__ = [
     "calibrate_linked_household_csvs",
     "check_small_area_calibration_inputs",
     "controls_by_geography",
+    "estimate_small_area_run",
     "fit_households_by_geography",
     "realize_linked_geography_population",
 ]
@@ -163,6 +164,96 @@ def check_small_area_calibration_inputs(
         "geography_dimension": geography_dimension,
         "issues": issues,
     }
+
+
+def estimate_small_area_run(
+    controls: ControlTable,
+    *,
+    geography_dimension: str,
+    candidate_households: int,
+    pool_size: int | None = None,
+    average_persons_per_household: float = 2.22,
+) -> dict[str, Any]:
+    """Estimate small-area run scale before generating or calibrating rows.
+
+    The estimate is intentionally simple and file-free: callers provide the
+    controls already planned for calibration plus the expected candidate pool
+    size. The result is suitable for CLI summaries, notebook checks, and JSON
+    automation before launching a large linked synthesis job.
+    """
+    if candidate_households <= 0:
+        raise ValueError("candidate_households must be greater than zero")
+    if pool_size is not None and pool_size <= 0:
+        raise ValueError("pool_size must be greater than zero")
+    if average_persons_per_household < 0:
+        raise ValueError("average_persons_per_household cannot be negative")
+
+    controls_for_geographies = controls_by_geography(
+        controls,
+        geography_dimension=geography_dimension,
+    )
+    target_households = sum(
+        _first_margin_total(geo_controls)
+        for geo_controls in controls_for_geographies.values()
+    )
+    target_households_i = int(round(target_households))
+    estimated_persons = int(round(target_households * average_persons_per_household))
+    calibration_pool_size = min(pool_size or candidate_households, candidate_households)
+    recommended_surface = (
+        "web_app_ok"
+        if candidate_households <= 10_000
+        and target_households_i <= 50_000
+        and estimated_persons <= 125_000
+        else "cli_or_python_api"
+    )
+    return {
+        "schema_version": "synthpopcan-small-area-performance-estimate-v1",
+        "target_geographies": len(controls_for_geographies),
+        "target_households": target_households_i,
+        "estimated_persons": estimated_persons,
+        "estimated_total_output_rows": target_households_i + estimated_persons,
+        "candidate_households": candidate_households,
+        "calibration_pool_size": calibration_pool_size,
+        "candidate_pool_fraction": calibration_pool_size / candidate_households,
+        "fits_to_run": len(controls_for_geographies),
+        "recommended_surface": recommended_surface,
+        "guidance": _small_area_performance_guidance(
+            candidate_households=candidate_households,
+            calibration_pool_size=calibration_pool_size,
+            recommended_surface=recommended_surface,
+        ),
+    }
+
+
+def _first_margin_total(controls: ControlTable) -> float:
+    if not controls.margins:
+        return 0.0
+    return sum(cell.count for cell in controls.margins[0].cells)
+
+
+def _small_area_performance_guidance(
+    *,
+    candidate_households: int,
+    calibration_pool_size: int,
+    recommended_surface: str,
+) -> list[str]:
+    guidance = [
+        f"Calibration will fit {calibration_pool_size:,} candidate households "
+        "for each target geography."
+    ]
+    if calibration_pool_size == candidate_households and candidate_households > 10_000:
+        guidance.append(
+            "Start with --pool-size 10000 for exploratory runs; increase it only "
+            "if validation shows poor fit or too little household variety."
+        )
+    if recommended_surface == "cli_or_python_api":
+        guidance.append(
+            "Keep the web app for small demos; use the CLI or Python API for "
+            "large linked CSV outputs."
+        )
+    else:
+        guidance.append("This is small enough for the web app, CLI, or Python API.")
+    return guidance
 
 
 def _missing_candidate_column_issue(dimension: str) -> dict[str, Any]:

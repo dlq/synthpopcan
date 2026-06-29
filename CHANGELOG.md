@@ -15,6 +15,9 @@ All notable public changes to SynthPopCan are tracked here.
   calibration reports and CLI summaries.
 - Added small-area calibration preflight checks for missing candidate columns
   and categories before IPF fitting starts.
+- Added `geo estimate-run` to preview small-area run scale and recommend
+  whether the web app, CLI, or Python API is the right surface before launching
+  a large calibration.
 
 ## 0.2.1 - 2026-06-28
 

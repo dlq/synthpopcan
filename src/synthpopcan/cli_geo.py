@@ -12,7 +12,10 @@ import click
 from synthpopcan.cli_output import format_file_access_error
 from synthpopcan.console import print_wrote
 from synthpopcan.diagnostics import format_categories, format_number
-from synthpopcan.small_area_synthesis import calibrate_linked_household_csvs
+from synthpopcan.small_area_synthesis import (
+    calibrate_linked_household_csvs,
+    estimate_small_area_run,
+)
 
 _BOUNDARIES_HELP = (
     "StatCan boundary shapefile (.shp), pre-converted GeoJSON (.geojson), "
@@ -88,6 +91,102 @@ _PATH = click.Path(path_type=Path)
 # Keep the Python object named for the field term while exposing a shorter CLI group.
 def small_area() -> None:
     """Assign and calibrate linked households to target geographies."""
+
+
+@small_area.command("estimate-run")
+@click.option(
+    "--controls",
+    "controls_path",
+    required=True,
+    type=_PATH,
+    help="Normalized controls CSV with one target geography dimension.",
+)
+@click.option(
+    "--geo-dimension",
+    required=True,
+    help="Dimension name in controls, such as ct or ada.",
+)
+@click.option(
+    "--candidate-households",
+    required=True,
+    type=int,
+    help="Number of candidate household rows planned for calibration.",
+)
+@click.option(
+    "--pool-size",
+    type=int,
+    default=None,
+    help="Optional --pool-size value planned for calibrate-linked.",
+)
+@click.option(
+    "--average-persons-per-household",
+    default=2.22,
+    type=float,
+    show_default=True,
+    help="Approximate person rows per assigned household for output-size estimates.",
+)
+@click.option(
+    "--format",
+    "output_format",
+    default="summary",
+    type=click.Choice(["summary", "json"]),
+    show_default=True,
+    help="Print a short summary or the full machine-readable estimate.",
+)
+def estimate_run_command(
+    controls_path: Path,
+    geo_dimension: str,
+    candidate_households: int,
+    pool_size: int | None,
+    average_persons_per_household: float,
+    output_format: str,
+) -> None:
+    """Estimate small-area output scale and recommended run surface."""
+    from synthpopcan.controls import read_control_table
+
+    try:
+        controls = read_control_table(controls_path)
+        estimate = estimate_small_area_run(
+            controls,
+            geography_dimension=geo_dimension,
+            candidate_households=candidate_households,
+            pool_size=pool_size,
+            average_persons_per_household=average_persons_per_household,
+        )
+    except OSError as exc:
+        filename = exc.filename or controls_path
+        raise click.ClickException(
+            format_file_access_error(Path(filename), "read", exc)
+        ) from exc
+    except ValueError as exc:
+        raise click.ClickException(str(exc)) from exc
+
+    if output_format == "json":
+        click.echo(json.dumps(estimate, sort_keys=True))
+        return
+
+    click.echo(
+        f"Target geographies: {estimate['target_geographies']:,}\n"
+        f"Target households: {estimate['target_households']:,}\n"
+        f"Estimated persons: {estimate['estimated_persons']:,}\n"
+        f"Estimated output rows: {estimate['estimated_total_output_rows']:,}\n"
+        f"Calibration pool: {estimate['calibration_pool_size']:,} of "
+        f"{estimate['candidate_households']:,} candidates\n"
+        f"Fits to run: {estimate['fits_to_run']:,}\n"
+        "Recommended surface: "
+        f"{_format_surface_recommendation(str(estimate['recommended_surface']))}"
+    )
+    click.echo("Guidance:")
+    for item in estimate["guidance"]:
+        click.echo(f"  - {item}")
+
+
+def _format_surface_recommendation(recommendation: str) -> str:
+    if recommendation == "web_app_ok":
+        return "web app, CLI, or Python API"
+    if recommendation == "cli_or_python_api":
+        return "CLI or Python API"
+    return recommendation
 
 
 @small_area.command("calibrate-linked")
