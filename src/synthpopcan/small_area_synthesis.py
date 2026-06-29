@@ -29,7 +29,7 @@ from synthpopcan.controls import (
     ControlTable,
     read_control_table,
 )
-from synthpopcan.diagnostics import build_ipf_fit_report
+from synthpopcan.diagnostics import build_ipf_fit_report, relative_error
 from synthpopcan.ipf import (
     IPFResult,
     NumpyIPFIndex,
@@ -579,6 +579,7 @@ def _small_area_report(
         if not report["converged"]
     )
     all_errors = [report["max_abs_error"] for report in fit.reports.values()]
+    largest_residuals = _largest_small_area_residuals(fit.reports)
     return {
         "schema_version": "synthpopcan-small-area-linked-calibration-v1",
         "geography_dimension": geography_dimension,
@@ -593,7 +594,12 @@ def _small_area_report(
             "non_converged_count": len(non_converged),
             "max_abs_error": max(all_errors) if all_errors else 0.0,
             "non_converged_geographies": non_converged,
+            "largest_residuals": largest_residuals,
         },
+        "suggested_next_steps": _suggest_small_area_next_steps(
+            non_converged=non_converged,
+            largest_residuals=largest_residuals,
+        ),
         "geographies": {
             geography: {
                 "converged": report["converged"],
@@ -608,6 +614,66 @@ def _small_area_report(
             for geography, report in sorted(fit.reports.items())
         },
     }
+
+
+def _largest_small_area_residuals(
+    reports: dict[str, dict[str, Any]],
+    *,
+    limit: int = 10,
+) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for geography, report in reports.items():
+        for margin in report.get("margins", []):
+            margin_name = str(margin.get("name", ""))
+            dimensions = list(margin.get("dimensions", []))
+            for cell in margin.get("cells", []):
+                residual = float(cell.get("residual", 0.0))
+                abs_error = abs(residual)
+                if abs_error <= 1e-9:
+                    continue
+                target = float(cell.get("target", 0.0))
+                rows.append(
+                    {
+                        "geography": geography,
+                        "margin": margin_name,
+                        "dimensions": dimensions,
+                        "categories": dict(cell.get("categories", {})),
+                        "target": target,
+                        "fitted": float(cell.get("fitted", 0.0)),
+                        "residual": residual,
+                        "abs_error": abs_error,
+                        "relative_error": relative_error(abs_error, target),
+                    }
+                )
+    return sorted(
+        rows,
+        key=lambda row: (
+            -float(row["abs_error"]),
+            str(row["geography"]),
+            str(row["margin"]),
+            tuple(row["categories"].items()),
+        ),
+    )[:limit]
+
+
+def _suggest_small_area_next_steps(
+    *,
+    non_converged: Sequence[str],
+    largest_residuals: Sequence[dict[str, Any]],
+) -> list[str]:
+    steps: list[str] = []
+    if largest_residuals:
+        steps.append(
+            "Review the largest residual rows first; they identify the geography, "
+            "margin, and category that the calibration could not satisfy."
+        )
+    if non_converged:
+        steps.append(
+            "For non-converged geographies, check whether controls conflict, "
+            "categories were mapped consistently, or the candidate pool lacks "
+            "enough matching households."
+        )
+    return steps
 
 
 def _ordered_fieldnames(rows: Sequence[dict[str, str]]) -> list[str]:

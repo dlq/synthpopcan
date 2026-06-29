@@ -142,6 +142,13 @@ size dimension is usually `household_size_group`, not exact `household_size`.
 The grouped column lets IPF fit the public `5 or more persons` category without
 throwing away the exact size of generated households.
 
+The JSON report includes a top-level convergence summary and a
+`largest_residuals` list. Start with those rows when reviewing fit quality:
+each residual names the geography, margin, category, target total, fitted total,
+and remaining difference after calibration. Non-converged geographies usually
+mean the controls conflict, categories were not mapped consistently, or the
+candidate pool does not contain enough matching household types.
+
 ## Step 4 — Explore Results as an Interactive Map
 
 The `map` command generates a self-contained MapLibre GL JS choropleth HTML file
@@ -313,9 +320,9 @@ small-area analysis:
 - it fits household-level controls only;
 - persons inherit the assigned household geography;
 - candidate-pool size affects the variety available inside each small area;
-- DA-level runs are expected to be sparser than ADA-level runs and need stronger
-  diagnostics.
+- DA-level runs are expected to be sparser than ADA-level runs and may need
+  additional diagnostics beyond the current largest-residual summary.
 
 The next quality work belongs in `PLANS.md`: person-level validation and
-calibration, richer control mapping helpers, better residual diagnostics, and
-performance guidance for province-scale runs.
+calibration, richer control mapping helpers, and performance guidance for
+province-scale runs.

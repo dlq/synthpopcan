@@ -11,6 +11,7 @@ import click
 
 from synthpopcan.cli_output import format_file_access_error
 from synthpopcan.console import print_wrote
+from synthpopcan.diagnostics import format_categories, format_number
 from synthpopcan.small_area_synthesis import calibrate_linked_household_csvs
 
 _BOUNDARIES_HELP = (
@@ -253,6 +254,54 @@ def calibrate_linked_command(
         f"Assigned {hh_n:,} households and {p_n:,} persons "
         f"across {geo_n:,} {geo_column} geographies."
     )
+    _print_calibrate_linked_diagnostics(summary)
+
+
+def _print_calibrate_linked_diagnostics(summary: dict[str, object]) -> None:
+    report_summary = summary.get("summary", {})
+    if not isinstance(report_summary, dict):
+        return
+    non_converged_count = int(report_summary.get("non_converged_count", 0) or 0)
+    if non_converged_count:
+        noun = "geography" if non_converged_count == 1 else "geographies"
+        click.echo(f"{non_converged_count:,} {noun} did not converge.")
+
+    residuals = report_summary.get("largest_residuals", [])
+    if isinstance(residuals, list) and residuals:
+        first = residuals[0]
+        if isinstance(first, dict):
+            click.echo(f"Largest residual: {_format_small_area_residual(first)}")
+
+    steps = summary.get("suggested_next_steps", [])
+    if isinstance(steps, list) and steps:
+        click.echo("Next steps:")
+        for step in steps:
+            click.echo(f"  - {step}")
+
+
+def _format_small_area_residual(row: dict[str, object]) -> str:
+    categories = row.get("categories", {})
+    category_label = (
+        format_categories({str(k): str(v) for k, v in categories.items()})
+        if isinstance(categories, dict)
+        else ""
+    )
+    parts = [
+        format_number(_coerce_float(row.get("abs_error", 0.0))),
+        str(row.get("geography", "")),
+        str(row.get("margin", "")),
+        category_label,
+    ]
+    return " ".join(part for part in parts if part)
+
+
+def _coerce_float(value: object) -> float:
+    if not isinstance(value, int | float | str):
+        return 0.0
+    try:
+        return float(value)
+    except ValueError:
+        return 0.0
 
 
 # ---------------------------------------------------------------------------

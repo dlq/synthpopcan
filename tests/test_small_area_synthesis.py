@@ -272,6 +272,72 @@ def test_calibrate_linked_can_use_household_size_group_controls(
     assert {row["household_size_group"] for row in rows} == {"1", "5"}
 
 
+def test_calibration_report_highlights_largest_residuals(tmp_path: Path) -> None:
+    households = tmp_path / "households.csv"
+    persons = tmp_path / "persons.csv"
+    controls = tmp_path / "controls.csv"
+    out_households = tmp_path / "small-area-households.csv"
+    out_persons = tmp_path / "small-area-persons.csv"
+
+    households.write_text(
+        "synthetic_household_id,household_size,TENUR\nh1,1,owner\nh2,2,renter\n"
+    )
+    persons.write_text(
+        "synthetic_person_id,synthetic_household_id,AGEGRP\np1,h1,adult\np2,h2,adult\n"
+    )
+    controls.write_text(
+        "margin,dimensions,tract,household_size,TENUR,count\n"
+        'size,"tract,household_size",G1,1,,50\n'
+        'size,"tract,household_size",G1,2,,50\n'
+        'tenure,"tract,TENUR",G1,,owner,80\n'
+        'tenure,"tract,TENUR",G1,,renter,20\n'
+    )
+
+    summary = calibrate_linked_household_csvs(
+        households_path=households,
+        persons_path=persons,
+        controls_path=controls,
+        geography_dimension="tract",
+        geography_column="tract",
+        households_out=out_households,
+        persons_out=out_persons,
+        max_iterations=2,
+    )
+
+    assert summary["summary"]["non_converged_geographies"] == ["G1"]
+    assert summary["summary"]["largest_residuals"] == [
+        {
+            "geography": "G1",
+            "margin": "size",
+            "dimensions": ["household_size"],
+            "categories": {"household_size": "1"},
+            "target": 50.0,
+            "fitted": 80.0,
+            "residual": 30.0,
+            "abs_error": 30.0,
+            "relative_error": 0.6,
+        },
+        {
+            "geography": "G1",
+            "margin": "size",
+            "dimensions": ["household_size"],
+            "categories": {"household_size": "2"},
+            "target": 50.0,
+            "fitted": 20.0,
+            "residual": -30.0,
+            "abs_error": 30.0,
+            "relative_error": 0.6,
+        },
+    ]
+    assert summary["suggested_next_steps"] == [
+        "Review the largest residual rows first; they identify the geography, "
+        "margin, and category that the calibration could not satisfy.",
+        "For non-converged geographies, check whether controls conflict, "
+        "categories were mapped consistently, or the candidate pool lacks "
+        "enough matching households.",
+    ]
+
+
 def test_cli_calibrates_linked_households_to_small_area_controls(
     tmp_path: Path,
 ) -> None:
@@ -417,6 +483,65 @@ def test_cli_calibrate_linked_format_json(
     out = capsys.readouterr().out
     parsed = _json.loads(out)
     assert "assigned_households" in parsed
+
+
+def test_cli_calibrate_linked_summary_mentions_largest_residual(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    from unittest.mock import patch
+
+    f = _minimal_calibrate_files(tmp_path)
+    summary = {
+        "assigned_households": 100,
+        "assigned_persons": 210,
+        "geographies": {"G1": {"assigned_households": 100}},
+        "summary": {
+            "non_converged_count": 1,
+            "max_abs_error": 30.0,
+            "largest_residuals": [
+                {
+                    "geography": "G1",
+                    "margin": "size",
+                    "categories": {"household_size": "1"},
+                    "abs_error": 30.0,
+                }
+            ],
+        },
+        "suggested_next_steps": ["Review the largest residual rows first."],
+    }
+
+    with patch(
+        "synthpopcan.cli_geo.calibrate_linked_household_csvs",
+        return_value=summary,
+    ):
+        exit_code = main(
+            [
+                "geo",
+                "calibrate-linked",
+                "--households",
+                str(f["households"]),
+                "--persons",
+                str(f["persons"]),
+                "--controls",
+                str(f["controls"]),
+                "--geo-dimension",
+                "tract",
+                "--geo-column",
+                "tract",
+                "--households-out",
+                str(f["households_out"]),
+                "--persons-out",
+                str(f["persons_out"]),
+            ]
+        )
+
+    assert exit_code == 0
+    output = capsys.readouterr().out
+    assert "1 geography did not converge" in output
+    assert "Largest residual: 30" in output
+    assert "G1 size household_size=1" in output
+    assert "Review the largest residual rows first." in output
 
 
 def test_cli_calibrate_linked_oserror(tmp_path: Path) -> None:
