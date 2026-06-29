@@ -52,6 +52,12 @@ Download a package into the local model cache:
 synthpopcan models fetch montreal-cma-2016-all-fields
 ```
 
+For a Canada-wide package, use:
+
+```bash
+synthpopcan models fetch canada-2016-all-fields
+```
+
 Inspect a package before generating — confirms what geography, columns, and
 conditioning structure it contains:
 
@@ -99,11 +105,12 @@ synthpopcan models list --format json
 ### `models fetch`
 
 Downloads a published package into the local model cache by ID. The ID comes
-from `models list`. Large packages (full provincial models) are several hundred
-megabytes; download them once and reuse.
+from `models list`. Large packages (full provincial or Canada-wide models) can
+be several hundred megabytes; download them once and reuse.
 
 ```bash
 synthpopcan models fetch montreal-cma-2016-all-fields
+synthpopcan models fetch canada-2016-all-fields
 ```
 
 ### `tree inspect-package`

@@ -2,6 +2,11 @@
 
 All notable public changes to SynthPopCan are tracked here.
 
+## Unreleased
+
+- Added the Canada 2016 all-fields linked model package to the downloadable
+  model registry as `canada-2016-all-fields`.
+
 ## 0.2.1 - 2026-06-28
 
 Polish and CI hardening.

@@ -20,6 +20,7 @@ from urllib.request import urlopen
 ProgressCallback = Callable[[int, int | None], None]
 
 _RELEASE_BASE_URL = "https://github.com/dlq/synthpopcan/releases/download/v0.2.0"
+_RELEASE_021_BASE_URL = "https://github.com/dlq/synthpopcan/releases/download/v0.2.1"
 
 _MODEL_PACKAGES: dict[str, dict[str, Any]] = {
     "demo-linked-household-person": {
@@ -339,6 +340,26 @@ _MODEL_PACKAGES: dict[str, dict[str, Any]] = {
         "size_bytes": 65_948,
         "sha256": "b9733fb70d83020444e811b3597fbb4621164290aa4982255a940b702f31a4ff",
         "url": f"{_RELEASE_BASE_URL}/pei-2016-minimal-package.json",
+    },
+    "canada-2016-all-fields": {
+        "filename": "canada-2016-all-fields-package.json",
+        "name": "Canada 2016 broad linked package",
+        "description": (
+            "Publishable-candidate linked household/person model trained from "
+            "the local 2016 hierarchical PUMF for all Canada."
+        ),
+        "geography": "Canada",
+        "provenance": "Statistics Canada 2016 Census hierarchical PUMF.",
+        "conditions": ["PR", "household_size", "TENUR"],
+        "default_generation": {
+            "households": 1000,
+            "conditions": "",
+        },
+        "safe_demo": False,
+        "distribution": "download",
+        "size_bytes": 531_314_980,
+        "sha256": "ce0bffe4945ccebd962010593d3b316dc7f6d7b7b5803271a54e3da94b7073ab",
+        "url": f"{_RELEASE_021_BASE_URL}/canada-2016-all-fields-package.json",
     },
 }
 

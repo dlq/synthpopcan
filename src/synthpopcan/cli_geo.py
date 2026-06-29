@@ -84,6 +84,7 @@ _PATH = click.Path(path_type=Path)
 
 
 @click.group("geo")
+# Keep the Python object named for the field term while exposing a shorter CLI group.
 def small_area() -> None:
     """Assign and calibrate linked households to target geographies."""
 
