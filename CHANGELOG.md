@@ -2,6 +2,21 @@
 
 All notable public changes to SynthPopCan are tracked here.
 
+## 0.2.1 - 2026-06-28
+
+Polish and CI hardening.
+
+- Added a clean-install smoke-test CI job that builds the wheel, installs it in
+  an isolated environment, and exercises key CLI entry points including bundled
+  demo generation.
+- Added an end-to-end doc-example test that runs the five-command IPF workflow
+  from `docs/installation.md` against the repo's fixture files.
+- Fixed "Miss" column heading to "Missing" in the IPF input check table.
+- Replaced `(s)` plural shorthand with proper plurals in the calibrate-linked
+  summary message.
+- Replaced vague "process" action verb with "read or write" in the
+  calibrate-linked file-access error message.
+
 ## 0.2.0 - 2026-06-28
 
 Small-area linked synthesis MVP.
