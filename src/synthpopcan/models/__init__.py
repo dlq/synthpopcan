@@ -7,6 +7,7 @@ local cache only when a user asks for them.
 
 from __future__ import annotations
 
+import gzip
 import hashlib
 import json
 import os
@@ -19,8 +20,7 @@ from urllib.request import urlopen
 
 ProgressCallback = Callable[[int, int | None], None]
 
-_RELEASE_BASE_URL = "https://github.com/dlq/synthpopcan/releases/download/v0.2.0"
-_RELEASE_021_BASE_URL = "https://github.com/dlq/synthpopcan/releases/download/v0.2.1"
+_RELEASE_BASE_URL = "https://github.com/dlq/synthpopcan/releases/download/v0.2.1"
 
 _MODEL_PACKAGES: dict[str, dict[str, Any]] = {
     "demo-linked-household-person": {
@@ -56,9 +56,14 @@ _MODEL_PACKAGES: dict[str, dict[str, Any]] = {
         },
         "safe_demo": False,
         "distribution": "download",
-        "size_bytes": 64_234_759,
-        "sha256": ("ebad14c83bf2aef47e3ac6e0684c1994ea0fa8cd83df7eaeb78a76077174ef91"),
-        "url": (f"{_RELEASE_BASE_URL}/montreal-cma-2016-all-fields-package.json"),
+        "size_bytes": 1_009_496,
+        "sha256": "94ff771884ead36b604d05c8e4043e36869da85c75aa1919f31adf21fd4aee97",
+        "uncompressed_size_bytes": 64_234_759,
+        "uncompressed_sha256": (
+            "ebad14c83bf2aef47e3ac6e0684c1994ea0fa8cd83df7eaeb78a76077174ef91"
+        ),
+        "compression": "gzip",
+        "url": f"{_RELEASE_BASE_URL}/montreal-cma-2016-all-fields-package.json.gz",
     },
     "quebec-2016-all-fields": {
         "filename": "quebec-2016-all-fields-package.json",
@@ -76,9 +81,14 @@ _MODEL_PACKAGES: dict[str, dict[str, Any]] = {
         },
         "safe_demo": False,
         "distribution": "download",
-        "size_bytes": 122_079_409,
-        "sha256": "7fbfa64e29ae5539f382475c472cb1fe48b988161e0b3a10ecd81fcaa942a7d7",
-        "url": f"{_RELEASE_BASE_URL}/quebec-2016-all-fields-package.json",
+        "size_bytes": 1_770_789,
+        "sha256": "1f03b9c5e72c5641f31159f0af3d4c3839e142445f17c81d3fd2f969c74a0628",
+        "uncompressed_size_bytes": 122_079_409,
+        "uncompressed_sha256": (
+            "7fbfa64e29ae5539f382475c472cb1fe48b988161e0b3a10ecd81fcaa942a7d7"
+        ),
+        "compression": "gzip",
+        "url": f"{_RELEASE_BASE_URL}/quebec-2016-all-fields-package.json.gz",
     },
     "ontario-2016-all-fields": {
         "filename": "ontario-2016-all-fields-package.json",
@@ -96,9 +106,14 @@ _MODEL_PACKAGES: dict[str, dict[str, Any]] = {
         },
         "safe_demo": False,
         "distribution": "download",
-        "size_bytes": 205_757_139,
-        "sha256": "0967ba99c4179e3de1d8436a14e0b3082bd4a7353c68b9c59a4c32977711e7ed",
-        "url": f"{_RELEASE_BASE_URL}/ontario-2016-all-fields-package.json",
+        "size_bytes": 3_005_146,
+        "sha256": "7477a7161b8243aba5ef64c902a9db303290733edb5b2832210c1fd7075ff879",
+        "uncompressed_size_bytes": 205_757_139,
+        "uncompressed_sha256": (
+            "0967ba99c4179e3de1d8436a14e0b3082bd4a7353c68b9c59a4c32977711e7ed"
+        ),
+        "compression": "gzip",
+        "url": f"{_RELEASE_BASE_URL}/ontario-2016-all-fields-package.json.gz",
     },
     "bc-2016-all-fields": {
         "filename": "bc-2016-all-fields-package.json",
@@ -116,9 +131,14 @@ _MODEL_PACKAGES: dict[str, dict[str, Any]] = {
         },
         "safe_demo": False,
         "distribution": "download",
-        "size_bytes": 75_781_376,
-        "sha256": "76e855c2d2bd6b62ef7e7073c4df5ea288fe0f8e060c5e36859c24047a56fb54",
-        "url": f"{_RELEASE_BASE_URL}/bc-2016-all-fields-package.json",
+        "size_bytes": 1_198_845,
+        "sha256": "13b04e77c3aab726aaf1ef9164ec5ef1c2ed16d710f275f3b3dcfa09ca476f6a",
+        "uncompressed_size_bytes": 75_781_376,
+        "uncompressed_sha256": (
+            "76e855c2d2bd6b62ef7e7073c4df5ea288fe0f8e060c5e36859c24047a56fb54"
+        ),
+        "compression": "gzip",
+        "url": f"{_RELEASE_BASE_URL}/bc-2016-all-fields-package.json.gz",
     },
     "alberta-2016-all-fields": {
         "filename": "alberta-2016-all-fields-package.json",
@@ -136,9 +156,14 @@ _MODEL_PACKAGES: dict[str, dict[str, Any]] = {
         },
         "safe_demo": False,
         "distribution": "download",
-        "size_bytes": 63_448_287,
-        "sha256": "0f0f61fc0a3e188b1c64ea02acc3f05fbfdb0d993ffee3a901b5b51f7fe81814",
-        "url": f"{_RELEASE_BASE_URL}/alberta-2016-all-fields-package.json",
+        "size_bytes": 1_008_748,
+        "sha256": "da034db035a0ebc8d96cf012b3698fd6c14b648967389832446fe10c48b73ce8",
+        "uncompressed_size_bytes": 63_448_287,
+        "uncompressed_sha256": (
+            "0f0f61fc0a3e188b1c64ea02acc3f05fbfdb0d993ffee3a901b5b51f7fe81814"
+        ),
+        "compression": "gzip",
+        "url": f"{_RELEASE_BASE_URL}/alberta-2016-all-fields-package.json.gz",
     },
     "toronto-cma-2016-all-fields": {
         "filename": "toronto-cma-2016-all-fields-package.json",
@@ -156,9 +181,14 @@ _MODEL_PACKAGES: dict[str, dict[str, Any]] = {
         },
         "safe_demo": False,
         "distribution": "download",
-        "size_bytes": 93_385_062,
-        "sha256": "dd0caf299c852ed526861b9bc6e6a2d654bf0bbe51809d76c9b5e30da0381ae0",
-        "url": f"{_RELEASE_BASE_URL}/toronto-cma-2016-all-fields-package.json",
+        "size_bytes": 1_478_757,
+        "sha256": "157778bc2bd095d65b1fab91fdbcb0385ed5de76baad20abe82817211b0735c2",
+        "uncompressed_size_bytes": 93_385_062,
+        "uncompressed_sha256": (
+            "dd0caf299c852ed526861b9bc6e6a2d654bf0bbe51809d76c9b5e30da0381ae0"
+        ),
+        "compression": "gzip",
+        "url": f"{_RELEASE_BASE_URL}/toronto-cma-2016-all-fields-package.json.gz",
     },
     "vancouver-cma-2016-all-fields": {
         "filename": "vancouver-cma-2016-all-fields-package.json",
@@ -176,9 +206,14 @@ _MODEL_PACKAGES: dict[str, dict[str, Any]] = {
         },
         "safe_demo": False,
         "distribution": "download",
-        "size_bytes": 40_937_245,
-        "sha256": "3e3565c2ba4dbfdab28bf907e256d48bb766971270dde09fde597afb57c210cf",
-        "url": f"{_RELEASE_BASE_URL}/vancouver-cma-2016-all-fields-package.json",
+        "size_bytes": 687_436,
+        "sha256": "a92cbb27f0e149bd7b83da2055b43d3a4fa1e5bc1567a29208c335f10fba49c6",
+        "uncompressed_size_bytes": 40_937_245,
+        "uncompressed_sha256": (
+            "3e3565c2ba4dbfdab28bf907e256d48bb766971270dde09fde597afb57c210cf"
+        ),
+        "compression": "gzip",
+        "url": f"{_RELEASE_BASE_URL}/vancouver-cma-2016-all-fields-package.json.gz",
     },
     "manitoba-2016-all-fields": {
         "filename": "manitoba-2016-all-fields-package.json",
@@ -196,9 +231,14 @@ _MODEL_PACKAGES: dict[str, dict[str, Any]] = {
         },
         "safe_demo": False,
         "distribution": "download",
-        "size_bytes": 20_186_538,
-        "sha256": "82e8f03152568a3898c80de36705827f8a22101a1390a2b9f381df366a9088f4",
-        "url": f"{_RELEASE_BASE_URL}/manitoba-2016-all-fields-package.json",
+        "size_bytes": 336_929,
+        "sha256": "70ca5e7944ff135813d1aaff04f2f7c9a25f98bd3ecc27c069124aad784ffa6d",
+        "uncompressed_size_bytes": 20_186_538,
+        "uncompressed_sha256": (
+            "82e8f03152568a3898c80de36705827f8a22101a1390a2b9f381df366a9088f4"
+        ),
+        "compression": "gzip",
+        "url": f"{_RELEASE_BASE_URL}/manitoba-2016-all-fields-package.json.gz",
     },
     "calgary-cma-2016-all-fields": {
         "filename": "calgary-cma-2016-all-fields-package.json",
@@ -216,9 +256,14 @@ _MODEL_PACKAGES: dict[str, dict[str, Any]] = {
         },
         "safe_demo": False,
         "distribution": "download",
-        "size_bytes": 22_635_036,
-        "sha256": "d55fe22cfa66c5b78545b65e3275972ebc2f37e714f9a6b266040ec9a0a407a2",
-        "url": f"{_RELEASE_BASE_URL}/calgary-cma-2016-all-fields-package.json",
+        "size_bytes": 391_581,
+        "sha256": "0ed93270044c97fbd2d6b8e6222192dc438e990f2c5f70dbeb1ed9ada51b7500",
+        "uncompressed_size_bytes": 22_635_036,
+        "uncompressed_sha256": (
+            "d55fe22cfa66c5b78545b65e3275972ebc2f37e714f9a6b266040ec9a0a407a2"
+        ),
+        "compression": "gzip",
+        "url": f"{_RELEASE_BASE_URL}/calgary-cma-2016-all-fields-package.json.gz",
     },
     "edmonton-cma-2016-all-fields": {
         "filename": "edmonton-cma-2016-all-fields-package.json",
@@ -236,9 +281,14 @@ _MODEL_PACKAGES: dict[str, dict[str, Any]] = {
         },
         "safe_demo": False,
         "distribution": "download",
-        "size_bytes": 21_367_337,
-        "sha256": "c18b593c93fd02cc30ee07a956ace912b0072a8c14c6a538e94087592c27818a",
-        "url": f"{_RELEASE_BASE_URL}/edmonton-cma-2016-all-fields-package.json",
+        "size_bytes": 369_262,
+        "sha256": "b600f19ffe7e257c4afbe618fb50d21a4ecadd2c498c14159c97f5179ee4d554",
+        "uncompressed_size_bytes": 21_367_337,
+        "uncompressed_sha256": (
+            "c18b593c93fd02cc30ee07a956ace912b0072a8c14c6a538e94087592c27818a"
+        ),
+        "compression": "gzip",
+        "url": f"{_RELEASE_BASE_URL}/edmonton-cma-2016-all-fields-package.json.gz",
     },
     "saskatchewan-2016-all-fields": {
         "filename": "saskatchewan-2016-all-fields-package.json",
@@ -256,9 +306,14 @@ _MODEL_PACKAGES: dict[str, dict[str, Any]] = {
         },
         "safe_demo": False,
         "distribution": "download",
-        "size_bytes": 17_458_623,
-        "sha256": "1bcb91caf412ba6c1b760fc51fb57ffcdc95608bdf20fb854237a4d5751f1a8f",
-        "url": f"{_RELEASE_BASE_URL}/saskatchewan-2016-all-fields-package.json",
+        "size_bytes": 287_123,
+        "sha256": "2b4430944d18d8161d22c2ce5dcfce0f6720aed4259197769971c62d3d320b70",
+        "uncompressed_size_bytes": 17_458_623,
+        "uncompressed_sha256": (
+            "1bcb91caf412ba6c1b760fc51fb57ffcdc95608bdf20fb854237a4d5751f1a8f"
+        ),
+        "compression": "gzip",
+        "url": f"{_RELEASE_BASE_URL}/saskatchewan-2016-all-fields-package.json.gz",
     },
     "nova-scotia-2016-all-fields": {
         "filename": "nova-scotia-2016-all-fields-package.json",
@@ -276,9 +331,14 @@ _MODEL_PACKAGES: dict[str, dict[str, Any]] = {
         },
         "safe_demo": False,
         "distribution": "download",
-        "size_bytes": 15_356_566,
-        "sha256": "70062e8d721d8ff29da0dbbfdbb455b9a9e519f9a69465898c571c6f799f06a4",
-        "url": f"{_RELEASE_BASE_URL}/nova-scotia-2016-all-fields-package.json",
+        "size_bytes": 244_276,
+        "sha256": "f8212b336645225653b01f6976791efd7d58947bab4b95553978c62632686871",
+        "uncompressed_size_bytes": 15_356_566,
+        "uncompressed_sha256": (
+            "70062e8d721d8ff29da0dbbfdbb455b9a9e519f9a69465898c571c6f799f06a4"
+        ),
+        "compression": "gzip",
+        "url": f"{_RELEASE_BASE_URL}/nova-scotia-2016-all-fields-package.json.gz",
     },
     "new-brunswick-2016-all-fields": {
         "filename": "new-brunswick-2016-all-fields-package.json",
@@ -296,9 +356,14 @@ _MODEL_PACKAGES: dict[str, dict[str, Any]] = {
         },
         "safe_demo": False,
         "distribution": "download",
-        "size_bytes": 12_499_103,
-        "sha256": "607a7a368746b755fb2e6b345a69219b6e655c3dd9f41aac670e6cbf1dd94876",
-        "url": f"{_RELEASE_BASE_URL}/new-brunswick-2016-all-fields-package.json",
+        "size_bytes": 202_698,
+        "sha256": "167b5bd5a0398d48ceb50f01ef715add4c7e4d61c62713348a00f01e436787f1",
+        "uncompressed_size_bytes": 12_499_103,
+        "uncompressed_sha256": (
+            "607a7a368746b755fb2e6b345a69219b6e655c3dd9f41aac670e6cbf1dd94876"
+        ),
+        "compression": "gzip",
+        "url": f"{_RELEASE_BASE_URL}/new-brunswick-2016-all-fields-package.json.gz",
     },
     "newfoundland-2016-all-fields": {
         "filename": "newfoundland-2016-all-fields-package.json",
@@ -316,9 +381,14 @@ _MODEL_PACKAGES: dict[str, dict[str, Any]] = {
         },
         "safe_demo": False,
         "distribution": "download",
-        "size_bytes": 8_537_569,
-        "sha256": "c107a61c85d2f12b3c4b95656229e191287d6af927c53a7f18ad33ba8e9fe7c7",
-        "url": f"{_RELEASE_BASE_URL}/newfoundland-2016-all-fields-package.json",
+        "size_bytes": 138_661,
+        "sha256": "b552c09faca4ac1e51510c3464fd480ace6a50ed60eb77e739832acdff6393f7",
+        "uncompressed_size_bytes": 8_537_569,
+        "uncompressed_sha256": (
+            "c107a61c85d2f12b3c4b95656229e191287d6af927c53a7f18ad33ba8e9fe7c7"
+        ),
+        "compression": "gzip",
+        "url": f"{_RELEASE_BASE_URL}/newfoundland-2016-all-fields-package.json.gz",
     },
     "pei-2016-minimal": {
         "filename": "pei-2016-minimal-package.json",
@@ -337,9 +407,14 @@ _MODEL_PACKAGES: dict[str, dict[str, Any]] = {
         },
         "safe_demo": False,
         "distribution": "download",
-        "size_bytes": 65_948,
-        "sha256": "b9733fb70d83020444e811b3597fbb4621164290aa4982255a940b702f31a4ff",
-        "url": f"{_RELEASE_BASE_URL}/pei-2016-minimal-package.json",
+        "size_bytes": 4_486,
+        "sha256": "60fedf9fedddc13848338b006a70efb04cef4f6aee300c4d2f3ffd6acf1f5bcb",
+        "uncompressed_size_bytes": 65_948,
+        "uncompressed_sha256": (
+            "b9733fb70d83020444e811b3597fbb4621164290aa4982255a940b702f31a4ff"
+        ),
+        "compression": "gzip",
+        "url": f"{_RELEASE_BASE_URL}/pei-2016-minimal-package.json.gz",
     },
     "canada-2016-all-fields": {
         "filename": "canada-2016-all-fields-package.json",
@@ -357,9 +432,14 @@ _MODEL_PACKAGES: dict[str, dict[str, Any]] = {
         },
         "safe_demo": False,
         "distribution": "download",
-        "size_bytes": 531_314_980,
-        "sha256": "ce0bffe4945ccebd962010593d3b316dc7f6d7b7b5803271a54e3da94b7073ab",
-        "url": f"{_RELEASE_021_BASE_URL}/canada-2016-all-fields-package.json",
+        "size_bytes": 8_286_186,
+        "sha256": "2db0629d01ad91e050acfa956097ee48abb7ee07f2007a40df91786981127b04",
+        "uncompressed_size_bytes": 531_314_980,
+        "uncompressed_sha256": (
+            "ce0bffe4945ccebd962010593d3b316dc7f6d7b7b5803271a54e3da94b7073ab"
+        ),
+        "compression": "gzip",
+        "url": f"{_RELEASE_BASE_URL}/canada-2016-all-fields-package.json.gz",
     },
 }
 
@@ -466,6 +546,7 @@ def fetch_model_package(
         return destination
 
     destination.parent.mkdir(parents=True, exist_ok=True)
+    download_path = destination.with_suffix(destination.suffix + ".download")
     temporary_path = destination.with_suffix(destination.suffix + ".part")
     url = str(metadata["url"])
     try:
@@ -473,16 +554,20 @@ def fetch_model_package(
             total_bytes = _download_size(response, metadata)
             if progress_callback:
                 progress_callback(0, total_bytes)
-            with temporary_path.open("wb") as handle:
+            with download_path.open("wb") as handle:
                 downloaded = 0
                 while chunk := response.read(1024 * 1024):
                     handle.write(chunk)
                     downloaded += len(chunk)
                     if progress_callback:
                         progress_callback(downloaded, total_bytes)
+        _verify_download_checksum(download_path, metadata)
+        _unpack_downloaded_model(download_path, temporary_path, metadata)
         _verify_model_checksum(temporary_path, metadata)
         temporary_path.replace(destination)
     finally:
+        if download_path.exists():
+            download_path.unlink()
         if temporary_path.exists():
             temporary_path.unlink()
     return destination
@@ -517,6 +602,17 @@ def _model_path(model_id: str) -> Path:
 
 
 def _verify_model_checksum(path: Path, metadata: dict[str, Any]) -> None:
+    expected = metadata.get("uncompressed_sha256") or metadata.get("sha256")
+    if not expected:
+        return
+    digest = hashlib.sha256(path.read_bytes()).hexdigest()
+    if digest != expected:
+        raise ValueError(
+            f"downloaded model checksum did not match for {metadata.get('filename')}"
+        )
+
+
+def _verify_download_checksum(path: Path, metadata: dict[str, Any]) -> None:
     expected = metadata.get("sha256")
     if not expected:
         return
@@ -525,6 +621,22 @@ def _verify_model_checksum(path: Path, metadata: dict[str, Any]) -> None:
         raise ValueError(
             f"downloaded model checksum did not match for {metadata.get('filename')}"
         )
+
+
+def _unpack_downloaded_model(
+    download_path: Path,
+    destination: Path,
+    metadata: dict[str, Any],
+) -> None:
+    compression = metadata.get("compression")
+    if compression == "gzip":
+        with gzip.open(download_path, "rb") as source, destination.open("wb") as target:
+            while chunk := source.read(1024 * 1024):
+                target.write(chunk)
+        return
+    if compression:
+        raise ValueError(f"unsupported model package compression: {compression}")
+    download_path.replace(destination)
 
 
 def _download_size(response: object, metadata: dict[str, Any]) -> int | None:

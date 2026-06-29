@@ -105,8 +105,9 @@ synthpopcan models list --format json
 ### `models fetch`
 
 Downloads a published package into the local model cache by ID. The ID comes
-from `models list`. Large packages (full provincial or Canada-wide models) can
-be several hundred megabytes; download them once and reuse.
+from `models list`. GitHub Release assets are gzip-compressed to keep downloads
+small; `models fetch` decompresses them into normal JSON package files in the
+local cache.
 
 ```bash
 synthpopcan models fetch montreal-cma-2016-all-fields

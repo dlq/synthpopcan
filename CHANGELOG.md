@@ -6,6 +6,8 @@ All notable public changes to SynthPopCan are tracked here.
 
 - Added the Canada 2016 all-fields linked model package to the downloadable
   model registry as `canada-2016-all-fields`.
+- Switched downloadable model release assets to gzip-compressed JSON while
+  keeping the local model cache as normal JSON files.
 
 ## 0.2.1 - 2026-06-28
 

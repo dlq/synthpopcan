@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import gzip
 import hashlib
 import sys
 from io import BytesIO
@@ -9,6 +10,13 @@ from unittest.mock import patch
 import pytest
 
 from synthpopcan import models
+
+
+def gzip_bytes(content: bytes) -> bytes:
+    buffer = BytesIO()
+    with gzip.GzipFile(filename="", mode="wb", fileobj=buffer, mtime=0) as handle:
+        handle.write(content)
+    return buffer.getvalue()
 
 
 class FakeResponse(BytesIO):
@@ -45,19 +53,23 @@ def test_fetch_model_package_downloads_and_verifies(
     tmp_path,
 ) -> None:
     content = b'{"schema_version": "synthpopcan-linked-tree-package-v1"}'
+    compressed = gzip_bytes(content)
     monkeypatch.setenv("SYNTHPOPCAN_MODEL_CACHE", str(tmp_path))
     monkeypatch.setattr(
         models,
         "urlopen",
-        lambda url, timeout: FakeResponse(content),
+        lambda url, timeout: FakeResponse(compressed),
     )
     metadata = models.model_registry_entry("montreal-cma-2016-all-fields")
     original_sha = metadata["sha256"]
-    metadata["sha256"] = hashlib.sha256(content).hexdigest()
+    original_uncompressed_sha = metadata["uncompressed_sha256"]
+    metadata["sha256"] = hashlib.sha256(compressed).hexdigest()
+    metadata["uncompressed_sha256"] = hashlib.sha256(content).hexdigest()
     try:
         path = models.fetch_model_package("montreal-cma-2016-all-fields")
     finally:
         metadata["sha256"] = original_sha
+        metadata["uncompressed_sha256"] = original_uncompressed_sha
 
     assert path == tmp_path / "montreal-cma-2016-all-fields-package.json"
     assert path.read_bytes() == content
@@ -71,14 +83,17 @@ def test_fetch_model_package_reports_progress(
     tmp_path,
 ) -> None:
     content = b'{"schema_version": "synthpopcan-linked-tree-package-v1"}'
-    response = FakeResponse(content)
-    response.headers = {"Content-Length": str(len(content))}
+    compressed = gzip_bytes(content)
+    response = FakeResponse(compressed)
+    response.headers = {"Content-Length": str(len(compressed))}
     progress_events: list[tuple[int, int | None]] = []
     monkeypatch.setenv("SYNTHPOPCAN_MODEL_CACHE", str(tmp_path))
     monkeypatch.setattr(models, "urlopen", lambda url, timeout: response)
     metadata = models.model_registry_entry("montreal-cma-2016-all-fields")
     original_sha = metadata["sha256"]
-    metadata["sha256"] = hashlib.sha256(content).hexdigest()
+    original_uncompressed_sha = metadata["uncompressed_sha256"]
+    metadata["sha256"] = hashlib.sha256(compressed).hexdigest()
+    metadata["uncompressed_sha256"] = hashlib.sha256(content).hexdigest()
     try:
         models.fetch_model_package(
             "montreal-cma-2016-all-fields",
@@ -86,9 +101,10 @@ def test_fetch_model_package_reports_progress(
         )
     finally:
         metadata["sha256"] = original_sha
+        metadata["uncompressed_sha256"] = original_uncompressed_sha
 
-    assert progress_events[0] == (0, len(content))
-    assert progress_events[-1] == (len(content), len(content))
+    assert progress_events[0] == (0, len(compressed))
+    assert progress_events[-1] == (len(compressed), len(compressed))
 
 
 def test_model_payload_requires_download_for_large_models(
@@ -192,7 +208,7 @@ def test_fetch_model_package_cleans_up_temp_file_on_exception(
     with pytest.raises(OSError, match="network failure"):
         models.fetch_model_package("montreal-cma-2016-all-fields")
 
-    temp_files = list(tmp_path.glob("*.part"))
+    temp_files = list(tmp_path.glob("*.part")) + list(tmp_path.glob("*.download"))
     assert temp_files == []
 
 
@@ -225,6 +241,21 @@ def test_verify_model_checksum_raises_on_mismatch(tmp_path) -> None:
     f.write_bytes(b"actual content")
     with pytest.raises(ValueError, match="checksum did not match"):
         _verify_model_checksum(f, {"filename": "model.json", "sha256": "0" * 64})
+
+
+def test_unpack_downloaded_model_rejects_unknown_compression(tmp_path) -> None:
+    from synthpopcan.models import _unpack_downloaded_model
+
+    source = tmp_path / "model.json.custom"
+    destination = tmp_path / "model.json"
+    source.write_bytes(b"content")
+
+    with pytest.raises(ValueError, match="unsupported model package compression"):
+        _unpack_downloaded_model(
+            source,
+            destination,
+            {"compression": "custom"},
+        )
 
 
 def test_download_size_ignores_non_integer_content_length() -> None:

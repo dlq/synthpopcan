@@ -123,6 +123,9 @@ explicitly intended as public research artifacts. The installed package should
 stay small: only the tiny demo model is bundled. Larger published models are
 downloaded on demand with `synthpopcan models fetch MODEL_ID`.
 
+Release assets are gzip-compressed to keep downloads small. The CLI handles
+decompression and stores a normal JSON model package in the local cache.
+
 Bundled model packages are not raw Census microdata. They should still be
 treated as derived research artifacts with provenance, disclosure-risk checks,
 and limitations. A model package being marked as a publishable candidate means
