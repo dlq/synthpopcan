@@ -4,6 +4,10 @@ All notable public changes to SynthPopCan are tracked here.
 
 ## Unreleased
 
+## 0.3.0 - 2026-06-29
+
+Small-area quality, validation, and performance guidance.
+
 - Added the Canada 2016 all-fields linked model package to the downloadable
   model registry as `canada-2016-all-fields`.
 - Switched downloadable model release assets to gzip-compressed JSON while
