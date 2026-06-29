@@ -90,8 +90,9 @@ tenure (members 1618–1619: owner, renter) margins per geography, scales both t
 the target household count, and writes:
 
 - a long-format controls CSV ready for `calibrate-linked`;
-- a recoded copy of the candidate CSV with `household_size` capped at 5 to
-  match the Census categories.
+- a recoded copy of the candidate CSV with a `household_size_group` column
+  where 5, 6, 7, and larger households are grouped as `5`, matching the Census
+  categories while preserving the exact `household_size` column.
 
 Geographies missing either margin are dropped automatically, preventing the IPF
 dimension-mismatch error in `calibrate-linked`.
@@ -110,7 +111,7 @@ synthpopcan geo build-controls \
 | `--profile` | StatCan Census Profile bulk CSV (2247-variable form). Fetch with `synthpopcan statcan census-profile fetch --geo-level ada`. |
 | `--geo-column` | Target geography type: `ada`, `ct`, `csd`, `cd`, or `da`. Determines which `GEO_LEVEL` rows to read. |
 | `--target` | Total household count to scale controls to (e.g. 5 500 000). |
-| `--candidates` | Household CSV to recode; values above 5 are capped at 5. |
+| `--candidates` | Household CSV to recode; exact `household_size` is preserved and `household_size_group` is added for Census Profile controls. |
 | `--geo-prefix` | Filter to geographies whose ID starts with this prefix. Use the two-digit province code for ADAs (e.g. `35`=Ontario, `24`=Quebec) or the three-digit CMA code for CTs (e.g. `535`=Toronto, `462`=Montreal). |
 | `--controls-out` | Output controls CSV. Defaults to `<candidates-stem>-controls-<target>.csv`. |
 | `--candidates-out` | Output recoded CSV. Defaults to `<candidates-stem>-recoded.csv`. |
@@ -135,6 +136,11 @@ synthpopcan geo calibrate-linked \
 The controls must be a normalized SynthPopCan control CSV. One dimension should
 name the target geography, such as `ct` or `ada`. The remaining dimensions must
 already exist in the candidate household CSV.
+
+When controls come from Census Profile household-size categories, the household
+size dimension is usually `household_size_group`, not exact `household_size`.
+The grouped column lets IPF fit the public `5 or more persons` category without
+throwing away the exact size of generated households.
 
 ## Step 4 — Explore Results as an Interactive Map
 
@@ -240,8 +246,10 @@ synthpopcan geo synthesize-from-package \
   --report quebec-city-calibration-report.json
 ```
 
-`--max-household-size 5` recodes any generated household of size 6 or 7 to 5
-before calibration, matching the Census Profile's "5 or more persons" category.
+`--max-household-size 5` adds a `household_size_group` column before calibration
+so generated households of size 5, 6, 7, and larger all fit the Census
+Profile's "5 or more persons" category. The original exact `household_size`
+column remains in the household output.
 
 The same pattern works for any Canadian CMA whose provincial model is
 available: substitute the CMA code prefix (e.g. `602` for Winnipeg, `205` for

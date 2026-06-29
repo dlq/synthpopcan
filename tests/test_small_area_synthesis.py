@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import csv
 import json
 from dataclasses import replace
 from pathlib import Path
@@ -233,6 +234,42 @@ def test_calibrate_linked_household_csvs_writes_outputs(tmp_path: Path) -> None:
     assert report_data["summary"]["converged_count"] == 1
     assert report_data["summary"]["non_converged_count"] == 0
     assert "margin_summaries" in report_data["geographies"]["4620001.00"]
+
+
+def test_calibrate_linked_can_use_household_size_group_controls(
+    tmp_path: Path,
+) -> None:
+    households = tmp_path / "households.csv"
+    persons = tmp_path / "persons.csv"
+    controls = tmp_path / "controls.csv"
+    out_households = tmp_path / "small-area-households.csv"
+    out_persons = tmp_path / "small-area-persons.csv"
+
+    households.write_text(
+        "synthetic_household_id,household_size,household_size_group\nh1,1,1\nh2,6,5\n"
+    )
+    persons.write_text(
+        "synthetic_person_id,synthetic_household_id,AGEGRP\np1,h1,adult\np2,h2,adult\n"
+    )
+    controls.write_text(
+        "margin,dimensions,tract,household_size_group,count\n"
+        'size,"tract,household_size_group",4620001.00,1,1\n'
+        'size,"tract,household_size_group",4620001.00,5,1\n'
+    )
+
+    calibrate_linked_household_csvs(
+        households_path=households,
+        persons_path=persons,
+        controls_path=controls,
+        geography_dimension="tract",
+        geography_column="tract",
+        households_out=out_households,
+        persons_out=out_persons,
+    )
+
+    rows = list(csv.DictReader(out_households.open()))
+    assert {row["household_size"] for row in rows} == {"1", "6"}
+    assert {row["household_size_group"] for row in rows} == {"1", "5"}
 
 
 def test_cli_calibrates_linked_households_to_small_area_controls(

@@ -14,6 +14,7 @@ from synthpopcan.small_area_controls import (
     _TENURE_MEMBERS,
     _find_col,
     extract_controls_from_profile,
+    recode_household_size,
     scale_and_validate_controls,
     write_controls_csv,
     write_recoded_candidates,
@@ -305,7 +306,20 @@ def test_write_controls_csv_creates_parent_dir(tmp_path: Path) -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_write_recoded_candidates_caps_hhsize(tmp_path: Path) -> None:
+def test_recode_household_size_groups_large_households() -> None:
+    assert recode_household_size("1") == "1"
+    assert recode_household_size("4") == "4"
+    assert recode_household_size("5") == "5"
+    assert recode_household_size("6") == "5"
+    assert recode_household_size("10") == "5"
+
+
+def test_recode_household_size_preserves_non_numeric_values() -> None:
+    assert recode_household_size("N/A") == "N/A"
+    assert recode_household_size("") == ""
+
+
+def test_write_recoded_candidates_adds_group_column_by_default(tmp_path: Path) -> None:
     src = tmp_path / "households.csv"
     src.write_text("synthetic_household_id,household_size\nh1,3\nh2,6\nh3,1\n")
     out = tmp_path / "recoded.csv"
@@ -315,7 +329,9 @@ def test_write_recoded_candidates_caps_hhsize(tmp_path: Path) -> None:
     rows = list(csv.DictReader(out.open()))
     assert n == 3
     assert rows[0]["household_size"] == "3"
-    assert rows[1]["household_size"] == "5"  # capped from 6
+    assert rows[0]["household_size_group"] == "3"
+    assert rows[1]["household_size"] == "6"
+    assert rows[1]["household_size_group"] == "5"  # grouped from 6
     assert rows[2]["household_size"] == "1"
 
 
@@ -327,7 +343,19 @@ def test_write_recoded_candidates_custom_cap(tmp_path: Path) -> None:
     write_recoded_candidates(src, out, cap=3)
 
     rows = list(csv.DictReader(out.open()))
-    assert rows[0]["household_size"] == "3"
+    assert rows[0]["household_size"] == "4"
+    assert rows[0]["household_size_group"] == "3"
+
+
+def test_write_recoded_candidates_can_overwrite_when_requested(tmp_path: Path) -> None:
+    src = tmp_path / "households.csv"
+    src.write_text("synthetic_household_id,household_size\nh1,6\n")
+    out = tmp_path / "recoded.csv"
+
+    write_recoded_candidates(src, out, group_col="household_size")
+
+    rows = list(csv.DictReader(out.open()))
+    assert rows[0]["household_size"] == "5"
 
 
 def test_write_recoded_candidates_preserves_all_columns(tmp_path: Path) -> None:
@@ -392,9 +420,10 @@ def test_cli_build_controls_writes_outputs(tmp_path: Path) -> None:
     assert "ada hhsize" in margins
     assert "ada tenure" in margins
 
-    # Recoded candidates should cap hhsize at 5
+    # Recoded candidates should keep exact size and add a Census-style group.
     recoded_rows = list(csv.DictReader(candidates_out.open()))
-    assert recoded_rows[1]["household_size"] == "5"  # h2 was 6, now capped
+    assert recoded_rows[1]["household_size"] == "6"
+    assert recoded_rows[1]["household_size_group"] == "5"
 
 
 def test_cli_build_controls_default_output_paths(tmp_path: Path) -> None:

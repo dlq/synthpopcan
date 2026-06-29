@@ -8,6 +8,9 @@ All notable public changes to SynthPopCan are tracked here.
   model registry as `canada-2016-all-fields`.
 - Switched downloadable model release assets to gzip-compressed JSON while
   keeping the local model cache as normal JSON files.
+- Added Census Profile household-size recoding that preserves exact
+  `household_size` values and fits grouped controls through
+  `household_size_group`.
 
 ## 0.2.1 - 2026-06-28
 

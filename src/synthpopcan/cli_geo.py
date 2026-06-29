@@ -471,7 +471,17 @@ def map_command(
     default=5,
     type=int,
     show_default=True,
-    help="Cap household_size at this value when writing the recoded candidates CSV.",
+    help="Group household_size values at this maximum category.",
+)
+@click.option(
+    "--household-size-group-column",
+    default="household_size_group",
+    show_default=True,
+    help=(
+        "Column used for Census-style household-size groups. "
+        "Use household_size only for old workflows that intentionally overwrite "
+        "exact household sizes."
+    ),
 )
 def build_controls_command(
     profile_path: Path,
@@ -483,14 +493,17 @@ def build_controls_command(
     controls_out: Path | None,
     candidates_out: Path | None,
     hhsize_cap: int,
+    household_size_group_column: str,
 ) -> None:
     """Build IPF control tables from a StatCan Census Profile for small-area synthesis.
 
     Reads household-size (members 52–56) and tenure (members 1618–1619) margins
     from a 2247-variable Census Profile, scales them to the target household count,
     and writes a long-format controls CSV ready for ``calibrate-linked`` or
-    ``synthesize-from-package``.  When --candidates is supplied, also recodes
-    that CSV by capping household_size at 5 to match the Census categories.
+    ``synthesize-from-package``.  Household-size controls use
+    household_size_group by default because Census Profile combines 5-or-more
+    person households into one category.  When --candidates is supplied, also
+    writes that grouped column while preserving exact household_size.
 
     Geographies missing either margin are automatically dropped (they would cause
     an IPF dimension mismatch in calibrate-linked).
@@ -574,7 +587,12 @@ def build_controls_command(
     )
 
     try:
-        write_controls_csv(scaled, controls_out, geo_column)
+        write_controls_csv(
+            scaled,
+            controls_out,
+            geo_column,
+            household_size_column=household_size_group_column,
+        )
     except OSError as exc:
         raise click.ClickException(
             format_file_access_error(controls_out, "write", exc)
@@ -583,13 +601,17 @@ def build_controls_command(
 
     if candidates_path is not None:
         click.echo(
-            f"Recoding candidates (household_size capped at {hhsize_cap}): "
+            f"Recoding candidates ({household_size_group_column} grouped at "
+            f"{hhsize_cap}+): "
             f"{candidates_path}"
         )
         assert candidates_out is not None
         try:
             n_rows = write_recoded_candidates(
-                candidates_path, candidates_out, cap=hhsize_cap
+                candidates_path,
+                candidates_out,
+                group_col=household_size_group_column,
+                cap=hhsize_cap,
             )
         except OSError as exc:
             raise click.ClickException(
@@ -618,6 +640,7 @@ def build_controls_command(
             f"    --geo-dimension {geo_column} \\\n"
             f"    --geo-column {geo_column} \\\n"
             f"    --max-household-size 5 \\\n"
+            f"    --household-size-group-column {household_size_group_column} \\\n"
             f"    --households-out <output-households.csv> \\\n"
             f"    --persons-out <output-persons.csv>"
         )
@@ -782,9 +805,18 @@ def prepare_boundaries_command(
     type=int,
     default=None,
     help=(
-        "Cap household_size at this value before calibration. Use 5 when controls "
-        "are built from the Census Profile, which groups '5 or more persons' into "
-        "a single category."
+        "Group household_size at this maximum category before calibration. "
+        "Use 5 when controls are built from the Census Profile, which groups "
+        "'5 or more persons' into a single category."
+    ),
+)
+@click.option(
+    "--household-size-group-column",
+    default="household_size_group",
+    show_default=True,
+    help=(
+        "Temporary candidate column used for grouped household-size controls. "
+        "Use household_size only for old controls that expect destructive capping."
     ),
 )
 def synthesize_from_package_command(
@@ -800,6 +832,7 @@ def synthesize_from_package_command(
     random_seed: int | None,
     pool_size: int | None,
     max_household_size: int | None,
+    household_size_group_column: str,
 ) -> None:
     """Generate linked candidates from a package and calibrate to small-area controls.
 
@@ -859,9 +892,17 @@ def synthesize_from_package_command(
             raise click.ClickException(str(exc)) from exc
 
         if max_household_size is not None:
-            _cap_column_inplace(
-                candidates_households, household_size_column, max_household_size
+            from synthpopcan.small_area_controls import write_recoded_candidates
+
+            recoded_households = tmp / "candidates-households-recoded.csv"
+            write_recoded_candidates(
+                candidates_households,
+                recoded_households,
+                hhsize_col=household_size_column,
+                group_col=household_size_group_column,
+                cap=max_household_size,
             )
+            candidates_households = recoded_households
 
         try:
             summary = calibrate_linked_household_csvs(

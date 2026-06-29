@@ -4,6 +4,7 @@ from __future__ import annotations
 
 __all__ = [
     "extract_controls_from_profile",
+    "recode_household_size",
     "scale_and_validate_controls",
     "write_controls_csv",
     "write_recoded_candidates",
@@ -172,10 +173,19 @@ def write_controls_csv(
     scaled: dict[str, dict[str, dict[str, int]]],
     out_path: Path,
     geography_column: str,
+    *,
+    household_size_column: str = "household_size",
 ) -> None:
     """Write a long-format controls CSV consumable by ``calibrate-linked``."""
     geo_col = geography_column
-    fieldnames = ["margin", "dimensions", geo_col, "TENUR", "household_size", "count"]
+    fieldnames = [
+        "margin",
+        "dimensions",
+        geo_col,
+        "TENUR",
+        household_size_column,
+        "count",
+    ]
     out_path.parent.mkdir(parents=True, exist_ok=True)
     with out_path.open("w", newline="") as fh:
         writer = csv.DictWriter(fh, fieldnames=fieldnames)
@@ -188,7 +198,7 @@ def write_controls_csv(
                         "dimensions": f"{geo_col},TENUR",
                         geo_col: geo,
                         "TENUR": cat,
-                        "household_size": "",
+                        household_size_column: "",
                         "count": count,
                     }
                 )
@@ -196,13 +206,28 @@ def write_controls_csv(
                 writer.writerow(
                     {
                         "margin": f"{geo_col} hhsize",
-                        "dimensions": f"{geo_col},household_size",
+                        "dimensions": f"{geo_col},{household_size_column}",
                         geo_col: geo,
                         "TENUR": "",
-                        "household_size": cat,
+                        household_size_column: cat,
                         "count": count,
                     }
                 )
+
+
+def recode_household_size(value: str, *, cap: int = 5) -> str:
+    """Return the Census-style household-size group for an exact size value.
+
+    Canadian Census Profile household-size controls commonly publish exact
+    categories for one through four people, then a single ``5 or more`` bucket.
+    SynthPopCan stores that grouped bucket as ``"5"`` so it fits the member IDs
+    used by the 2016 Census Profile bulk files.
+    """
+    try:
+        size = int(value)
+    except ValueError:
+        return value
+    return str(min(size, cap))
 
 
 def write_recoded_candidates(
@@ -210,22 +235,28 @@ def write_recoded_candidates(
     out_path: Path,
     *,
     hhsize_col: str = "household_size",
+    group_col: str = "household_size_group",
     cap: int = 5,
 ) -> int:
-    """Copy *candidates_path* capping *hhsize_col* at *cap*, return row count."""
+    """Copy candidates with a Census-style household-size group column.
+
+    The exact household size is preserved unless ``group_col`` is the same as
+    ``hhsize_col``.  That explicit overwrite mode is kept for old workflows,
+    but new Census Profile controls should use ``household_size_group``.
+    """
     out_path.parent.mkdir(parents=True, exist_ok=True)
     n = 0
     with candidates_path.open(newline="") as src, out_path.open("w", newline="") as dst:
         reader = csv.DictReader(src)
         assert reader.fieldnames, "empty candidates file"
-        writer = csv.DictWriter(dst, fieldnames=reader.fieldnames)
+        fieldnames = list(reader.fieldnames)
+        if group_col not in fieldnames:
+            fieldnames.append(group_col)
+        writer = csv.DictWriter(dst, fieldnames=fieldnames)
         writer.writeheader()
         for row in reader:
-            try:
-                if int(row[hhsize_col]) > cap:
-                    row[hhsize_col] = str(cap)
-            except (ValueError, KeyError):
-                pass
+            if hhsize_col in row:
+                row[group_col] = recode_household_size(row[hhsize_col], cap=cap)
             writer.writerow(row)
             n += 1
     return n
