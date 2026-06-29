@@ -1193,3 +1193,89 @@ def test_cli_controls_from_wds_write_oserror_raises_click_exception(tmp_path) ->
                         str(tmp_path / "out.csv"),
                     ]
                 )
+
+
+_MICRODATA_IPF_FIXTURES = (
+    Path(__file__).parent / "fixtures" / "workflows" / "microdata_ipf"
+)
+
+
+def test_doc_example_installation_quick_getting_started(tmp_path) -> None:
+    """Verify the Quick Getting Started commands from docs/installation.md run."""
+    hierarchical = _MICRODATA_IPF_FIXTURES / "hierarchical.csv"
+    controls = _MICRODATA_IPF_FIXTURES / "controls.csv"
+    seed = tmp_path / "seed.csv"
+    weights = tmp_path / "weights.csv"
+    report = tmp_path / "fit-report.json"
+
+    assert (
+        main(
+            [
+                "microdata",
+                "export-seed",
+                str(hierarchical),
+                "--input-format",
+                "statcan-2016-hierarchical",
+                "--columns",
+                "AGEGRP,SEX",
+                "--out",
+                str(seed),
+            ]
+        )
+        == 0
+    )
+    assert seed.exists()
+
+    assert (
+        main(
+            [
+                "ipf",
+                "check-inputs",
+                "--seed",
+                str(seed),
+                "--controls",
+                str(controls),
+            ]
+        )
+        == 0
+    )
+
+    assert (
+        main(
+            [
+                "ipf",
+                "fit",
+                "--seed",
+                str(seed),
+                "--controls",
+                str(controls),
+                "--weight-field",
+                "WEIGHT",
+                "--out",
+                str(weights),
+                "--report",
+                str(report),
+            ]
+        )
+        == 0
+    )
+    assert weights.exists()
+    assert report.exists()
+
+    assert main(["ipf", "report", str(report)]) == 0
+
+    assert (
+        main(
+            [
+                "validate",
+                "controls",
+                "--population",
+                str(weights),
+                "--controls",
+                str(controls),
+                "--kind",
+                "weights",
+            ]
+        )
+        == 0
+    )

@@ -231,7 +231,7 @@ def calibrate_linked_command(
     except OSError as exc:
         filename = exc.filename or households_path
         raise click.ClickException(
-            format_file_access_error(Path(filename), "process", exc)
+            format_file_access_error(Path(filename), "read or write", exc)
         ) from exc
     except ValueError as exc:
         raise click.ClickException(str(exc)) from exc
@@ -245,11 +245,12 @@ def calibrate_linked_command(
     if output_format == "json":
         click.echo(json.dumps(summary, sort_keys=True))
         return
+    hh_n = summary["assigned_households"]
+    p_n = summary["assigned_persons"]
+    geo_n = len(summary["geographies"])
     click.echo(
-        "Assigned "
-        f"{summary['assigned_households']:,} household row(s) and "
-        f"{summary['assigned_persons']:,} person row(s) across "
-        f"{len(summary['geographies']):,} {geo_column} value(s)."
+        f"Assigned {hh_n:,} households and {p_n:,} persons "
+        f"across {geo_n:,} {geo_column} geographies."
     )
 
 

@@ -361,7 +361,7 @@ def print_ipf_input_check_table(report: dict[str, Any]) -> None:
     table.add_column("Dimension", no_wrap=True)
     table.add_column("Status", no_wrap=True)
     table.add_column("Seed Column", no_wrap=True)
-    table.add_column("Miss")
+    table.add_column("Missing")
     table.add_column("Unused")
     table.add_column("Detail", no_wrap=True)
     for row in report.get("dimensions", []):
