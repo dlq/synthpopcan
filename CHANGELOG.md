@@ -13,6 +13,8 @@ All notable public changes to SynthPopCan are tracked here.
   `household_size_group`.
 - Added largest-residual and suggested-next-step diagnostics to small-area
   calibration reports and CLI summaries.
+- Added small-area calibration preflight checks for missing candidate columns
+  and categories before IPF fitting starts.
 
 ## 0.2.1 - 2026-06-28
 

@@ -16,6 +16,7 @@ from synthpopcan.small_area_synthesis import (
     _write_realized_population_to_csv,
     _write_weights_csv,
     calibrate_linked_household_csvs,
+    check_small_area_calibration_inputs,
     controls_by_geography,
     fit_households_by_geography,
     realize_linked_geography_population,
@@ -95,6 +96,126 @@ def test_controls_by_geography_removes_target_geography_dimension() -> None:
         "household_size": "1",
         "TENUR": "owner",
     }
+
+
+def test_check_small_area_calibration_inputs_reports_missing_group_column() -> None:
+    households = [
+        {"synthetic_household_id": "h1", "household_size": "1"},
+        {"synthetic_household_id": "h2", "household_size": "6"},
+    ]
+    controls = ControlTable(
+        margins=(
+            ControlMargin(
+                name="size",
+                dimensions=("tract", "household_size_group"),
+                cells=(
+                    ControlCell(
+                        {"tract": "4620001.00", "household_size_group": "1"},
+                        1,
+                    ),
+                    ControlCell(
+                        {"tract": "4620001.00", "household_size_group": "5"},
+                        1,
+                    ),
+                ),
+            ),
+        ),
+        dimensions=("tract", "household_size_group"),
+    )
+
+    report = check_small_area_calibration_inputs(
+        households,
+        controls,
+        geography_dimension="tract",
+    )
+
+    assert report["passed"] is False
+    assert report["issues"] == [
+        {
+            "severity": "error",
+            "kind": "missing_candidate_column",
+            "dimension": "household_size_group",
+            "message": (
+                "Controls require candidate column 'household_size_group', "
+                "but household candidates do not have it."
+            ),
+            "tip": (
+                "For Census Profile household-size controls, run "
+                "`synthpopcan geo synthesize-from-package ... "
+                "--max-household-size 5`, or run `geo build-controls` with "
+                "candidate recoding so household_size_group is added."
+            ),
+        }
+    ]
+
+
+def test_check_small_area_calibration_inputs_reports_missing_category() -> None:
+    households = [
+        {
+            "synthetic_household_id": "h1",
+            "household_size_group": "1",
+            "TENUR": "owner",
+        },
+        {
+            "synthetic_household_id": "h2",
+            "household_size_group": "2",
+            "TENUR": "renter",
+        },
+    ]
+    controls = ControlTable(
+        margins=(
+            ControlMargin(
+                name="size",
+                dimensions=("tract", "household_size_group"),
+                cells=(
+                    ControlCell(
+                        {"tract": "4620001.00", "household_size_group": "5"},
+                        1,
+                    ),
+                ),
+            ),
+        ),
+        dimensions=("tract", "household_size_group"),
+    )
+
+    report = check_small_area_calibration_inputs(
+        households,
+        controls,
+        geography_dimension="tract",
+    )
+
+    assert report["passed"] is False
+    assert report["issues"][0]["kind"] == "missing_candidate_category"
+    assert report["issues"][0]["dimension"] == "household_size_group"
+    assert report["issues"][0]["category"] == "5"
+    assert "controls include '5'" in report["issues"][0]["message"]
+    assert "candidate households do not" in report["issues"][0]["message"]
+
+
+def test_calibrate_linked_fails_with_preflight_message_for_missing_column(
+    tmp_path: Path,
+) -> None:
+    households = tmp_path / "households.csv"
+    persons = tmp_path / "persons.csv"
+    controls = tmp_path / "controls.csv"
+
+    households.write_text("synthetic_household_id,household_size\nh1,6\n")
+    persons.write_text("synthetic_person_id,synthetic_household_id\np1,h1\n")
+    controls.write_text(
+        "margin,dimensions,tract,household_size_group,count\n"
+        'size,"tract,household_size_group",4620001.00,5,1\n'
+    )
+
+    with pytest.raises(ValueError, match="household_size_group"):
+        calibrate_linked_household_csvs(
+            households_path=households,
+            persons_path=persons,
+            controls_path=controls,
+            geography_dimension="tract",
+            geography_column="tract",
+            households_out=tmp_path / "households-out.csv",
+            persons_out=tmp_path / "persons-out.csv",
+        )
 
 
 def test_fit_households_by_geography_returns_weights_for_each_target() -> None:

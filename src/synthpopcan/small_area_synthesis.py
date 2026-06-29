@@ -5,6 +5,7 @@ from __future__ import annotations
 __all__ = [
     "GeographyHouseholdFit",
     "calibrate_linked_household_csvs",
+    "check_small_area_calibration_inputs",
     "controls_by_geography",
     "fit_households_by_geography",
     "realize_linked_geography_population",
@@ -111,6 +112,95 @@ def controls_by_geography(
         )
         for geography, margins in grouped.items()
     }
+
+
+def check_small_area_calibration_inputs(
+    households: Sequence[HouseholdRow],
+    controls: ControlTable,
+    *,
+    geography_dimension: str,
+) -> dict[str, Any]:
+    """Check that household candidates contain the columns and categories needed.
+
+    This preflight catches the common small-area setup errors before IPF starts,
+    so users see a workflow-level message rather than a lower-level seed-record
+    exception.
+    """
+    candidate_columns = set().union(*(household.keys() for household in households))
+    issues: list[dict[str, Any]] = []
+    for dimension in controls.dimensions:
+        if dimension == geography_dimension:
+            continue
+        if dimension not in candidate_columns:
+            issues.append(_missing_candidate_column_issue(dimension))
+            continue
+        candidate_categories = {
+            str(household.get(dimension, "")) for household in households
+        }
+        for category in sorted(_control_categories_for_dimension(controls, dimension)):
+            if category not in candidate_categories:
+                issues.append(
+                    {
+                        "severity": "error",
+                        "kind": "missing_candidate_category",
+                        "dimension": dimension,
+                        "category": category,
+                        "message": (
+                            f"For dimension '{dimension}', controls include "
+                            f"'{category}', but candidate households do not."
+                        ),
+                        "tip": (
+                            "Review category labels and mappings. If this is a "
+                            "Census Profile household-size control, use "
+                            "household_size_group or run with --max-household-size 5."
+                        ),
+                    }
+                )
+    return {
+        "passed": not issues,
+        "candidate_households": len(households),
+        "control_margins": len(controls.margins),
+        "geography_dimension": geography_dimension,
+        "issues": issues,
+    }
+
+
+def _missing_candidate_column_issue(dimension: str) -> dict[str, Any]:
+    if dimension == "household_size_group":
+        tip = (
+            "For Census Profile household-size controls, run "
+            "`synthpopcan geo synthesize-from-package ... --max-household-size 5`, "
+            "or run `geo build-controls` with candidate recoding so "
+            "household_size_group is added."
+        )
+    else:
+        tip = (
+            "Choose controls whose non-geography dimensions exist in the candidate "
+            "household CSV, or add/map this column before calibration."
+        )
+    return {
+        "severity": "error",
+        "kind": "missing_candidate_column",
+        "dimension": dimension,
+        "message": (
+            f"Controls require candidate column '{dimension}', but household "
+            "candidates do not have it."
+        ),
+        "tip": tip,
+    }
+
+
+def _control_categories_for_dimension(
+    controls: ControlTable,
+    dimension: str,
+) -> set[str]:
+    categories: set[str] = set()
+    for margin in controls.margins:
+        if dimension not in margin.dimensions:
+            continue
+        for cell in margin.cells:
+            categories.add(cell.categories[dimension])
+    return categories
 
 
 def fit_households_by_geography(
@@ -307,6 +397,14 @@ def calibrate_linked_household_csvs(
         persons = _p_f.result()
         controls = _ctrl_f.result()
 
+    input_report = check_small_area_calibration_inputs(
+        households,
+        controls,
+        geography_dimension=geography_dimension,
+    )
+    if not input_report["passed"]:
+        raise ValueError(_format_preflight_error(input_report))
+
     if pool_size is not None and pool_size < len(households):
         households, persons = _subsample_candidates(
             households,
@@ -359,6 +457,20 @@ def calibrate_linked_household_csvs(
         report_out.parent.mkdir(parents=True, exist_ok=True)
         report_out.write_text(json.dumps(summary, indent=2, sort_keys=True))
     return summary
+
+
+def _format_preflight_error(report: dict[str, Any]) -> str:
+    issues = report.get("issues", [])
+    if not isinstance(issues, list) or not issues:
+        return "small-area calibration inputs did not pass preflight checks"
+    first = issues[0]
+    if not isinstance(first, dict):
+        return "small-area calibration inputs did not pass preflight checks"
+    message = str(first.get("message", "small-area calibration input mismatch"))
+    tip = str(first.get("tip", "")).strip()
+    if tip:
+        return f"{message} {tip}"
+    return message
 
 
 def _control_dimensions(margins: Sequence[ControlMargin]) -> tuple[str, ...]:

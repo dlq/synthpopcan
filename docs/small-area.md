@@ -137,6 +137,12 @@ The controls must be a normalized SynthPopCan control CSV. One dimension should
 name the target geography, such as `ct` or `ada`. The remaining dimensions must
 already exist in the candidate household CSV.
 
+Before fitting, SynthPopCan checks that the candidate households contain the
+non-geography control columns and categories. If the controls require
+`household_size_group`, for example, but the candidates only have exact
+`household_size`, the command stops with a specific fix instead of failing deep
+inside the IPF step.
+
 When controls come from Census Profile household-size categories, the household
 size dimension is usually `household_size_group`, not exact `household_size`.
 The grouped column lets IPF fit the public `5 or more persons` category without
