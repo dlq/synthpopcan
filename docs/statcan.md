@@ -40,9 +40,9 @@ of the same variable, the mismatch should be documented, not papered over.
 The workflow is the same for both sources:
 
 1. Find the source (search WDS or choose a Census Profile geography level).
-2. Inspect it to confirm it has the dimensions and categories you need.
-3. Normalize only the dimensions relevant to your research question.
-4. Check compatibility with the seed before fitting.
+1. Inspect it to confirm it has the dimensions and categories you need.
+1. Normalize only the dimensions relevant to your research question.
+1. Check compatibility with the seed before fitting.
 
 Step 3 and 4 are covered in {doc}`controls`.
 
@@ -214,4 +214,3 @@ first fit. Add more dimensions after a simpler fit validates.
 - [Census Profile bulk downloads](https://www150.statcan.gc.ca/n1/en/catalogue/98-401-X) —
   Statistics Canada catalogue page listing all Census Profile CSV downloads
   by geography level and census year.
-

@@ -261,12 +261,15 @@ to make them explicit enough that readers can argue with them.
 
 Start with the command pages when you need to run a workflow:
 
+- {doc}`which-workflow` when you know the task but not the right surface;
 - {doc}`ipf` for margin-table calibration;
 - {doc}`tree` for conditional and linked household/person generation;
 - {doc}`controls` and {doc}`statcan` for preparing public aggregate sources;
 - {doc}`validate` for checking generated artifacts.
 
-Return to this primer when you need to explain what the output means.
+Return to this primer when you need to explain what the output means, and use
+{doc}`glossary` when a census, modelling, or software term needs a compact
+definition.
 
 ## Tool Reference Map
 

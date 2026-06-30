@@ -11,8 +11,20 @@ control tables, iterative proportional fitting, Statistics Canada source
 inspection, census microdata adapters, linked household/person tree models, and
 validation reports.
 
+.. figure:: _static/workflow-map.svg
+   :alt: A workflow map showing sources, preparation, synthesis, validation, and outputs.
+   :align: center
+
+   Most SynthPopCan workflows move from source inspection to controls or models,
+   then to synthesis, validation, and research outputs that keep their evidence.
+
 Start By Task
 -------------
+
+If you are unsure where to begin, start with
+:doc:`Which Workflow Should We Use? <which-workflow>`. It maps common research
+situations to the web app, command-line tools, notebook API, and advanced
+library pages.
 
 Most new users should start with one of two generation workflows:
 
@@ -57,8 +69,10 @@ beginner generation workflows.
    :caption: Overview
 
    introduction
+   which-workflow
    acknowledgments
    field-primer
+   glossary
    installation
 
 .. toctree::
@@ -88,4 +102,3 @@ beginner generation workflows.
    library-getting-started
    library
    api
-

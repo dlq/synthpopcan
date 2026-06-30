@@ -171,6 +171,7 @@ not check distributional fit against controls; it checks that the two files are
 internally consistent.
 
 Specifically, it verifies:
+
 - every person row references a household ID that exists in the households file
   (no orphaned persons);
 - the household size field on each household row matches the count of person

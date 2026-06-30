@@ -281,8 +281,7 @@ Writes a starter JSON file mapping raw WDS category labels to the values used
 in seed columns. WDS tables label categories in plain language ("25 to 34
 years", "Females") that rarely match seed column values directly; the mapping
 file is the explicit record of that correspondence. Use `--preset canonical` to
-pre-fill mappings for labels SynthPopCan already recognizes, or `--preset
-blank` for a completely empty template. Always review and edit the file before
+pre-fill mappings for labels SynthPopCan already recognizes, or `--preset blank` for a completely empty template. Always review and edit the file before
 passing it to `from-wds --mapping`.
 
 ```bash
@@ -324,8 +323,7 @@ synthpopcan controls census-profile template age5 \
 Normalizes a Census Profile CSV into SynthPopCan's control format using a
 reviewed mapping file. The mapping identifies which characteristic rows to
 extract and how to label their categories in the output. Produce the mapping
-with `census-profile template` or write it by hand using `census-profile
-inspect` to locate the right rows. The resulting controls CSV can be passed
+with `census-profile template` or write it by hand using `census-profile inspect` to locate the right rows. The resulting controls CSV can be passed
 directly to `controls validate` and `ipf check-inputs`.
 
 ```bash

@@ -12,6 +12,8 @@ sys.path.insert(0, str(ROOT / "src"))
 project = "SynthPopCan"
 author = "Darcy Quesnel"
 copyright = "2026, Darcy Quesnel"
+html_title = "SynthPopCan"
+html_baseurl = "https://synthpopcan.readthedocs.io/en/latest/"
 
 extensions = [
     "myst_parser",
@@ -33,6 +35,20 @@ html_theme = (
     else "alabaster"
 )
 html_static_path = ["_static"]
+html_logo = "../assets/branding/logo/synthpopcan-logo-512.png"
+html_favicon = "../assets/branding/logo/synthpopcan-logo-512.png"
+html_theme_options = {
+    "collapse_navigation": False,
+    "navigation_depth": 3,
+    "style_external_links": True,
+}
+html_context = {
+    "display_github": True,
+    "github_user": "dlq",
+    "github_repo": "synthpopcan",
+    "github_version": "main",
+    "conf_py_path": "/docs/",
+}
 
 myst_heading_anchors = 3
 

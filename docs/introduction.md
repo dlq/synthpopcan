@@ -23,6 +23,10 @@ humanities and digital-humanities perspectives are methodologically central —
 not supplementary — to this kind of work. Readers who skip it and go straight
 to installation are likely to miss framing that shapes everything else.
 
+If you already know the kind of task you want to do, use
+{doc}`which-workflow` as a map. If unfamiliar terms get in the way, keep the
+{doc}`glossary` open in another tab.
+
 ## What Is a Synthetic Population?
 
 A synthetic population is a generated table of people, households, or other
@@ -174,13 +178,15 @@ Most SynthPopCan workflows follow the same pattern:
 This pattern is intentionally conservative. It helps readers understand not only
 what the tool produced, but what choices shaped the result.
 
-The rest of the documentation follows this pattern. Use [Data](data.md) when
-you are still inspecting files, [Statistics Canada
+The rest of the documentation follows this pattern. Use
+[Which Workflow Should We Use?](which-workflow.md) when you are choosing a
+path, [Data](data.md) when you are still inspecting files, [Statistics Canada
 Sources](statcan.md) and [Controls](controls.md) when you are preparing public
 aggregate totals, [IPF](ipf.md) when you are fitting seed rows to controls,
 [Tree Models](tree.md) when you are training or using conditional generation,
-and [Validate](validate.md) when you are checking outputs. If you prefer Python
-notebooks to command-line workflows, start with
+[Small-Area Linked Synthesis](small-area.md) when assigning linked outputs to
+CTs, ADAs, or DAs, and [Validate](validate.md) when you are checking outputs.
+If you prefer Python notebooks to command-line workflows, start with
 [Getting Started With the Beginner API](library-getting-started.md).
 
 ## Find SynthPopCan Online

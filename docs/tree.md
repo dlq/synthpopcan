@@ -307,8 +307,7 @@ synthpopcan microdata suggest-tree-columns \
 
 Train the linked household and person models. `--suggested-blocks` uses the
 adapter's default suggestion blocks (`household_core` and `person_demographics`).
-For a broader model with all supported blocks, use `--household-block all
---person-block all`; those still exclude identifiers, weights, and columns that
+For a broader model with all supported blocks, use `--household-block all --person-block all`; those still exclude identifiers, weights, and columns that
 vary within a household on the person side:
 
 ```bash

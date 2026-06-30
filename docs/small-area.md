@@ -13,6 +13,15 @@ The ones relevant to this workflow are:
   Statistics Canada releases census data, typically 400–700 people. DAs are
   building blocks for ADAs.
 
+```{figure} _static/geography-ladder.svg
+:alt: A Canadian census geography ladder showing broad geographies, CT, ADA, and DA calibration geographies, and DB placement later.
+:align: center
+
+For SynthPopCan, CT, ADA, and DA are calibration geographies. Dissemination
+blocks are useful later for spatial placement after households have been
+calibrated to a larger small area.
+```
+
 Small-area synthesis assigns generated households to one of these units. The
 Census Profile provides the public aggregate totals (controls) that anchor
 each unit's household composition, and the workflow uses those controls to
@@ -30,11 +39,11 @@ information:
 The current workflow has four steps:
 
 1. **Generate** candidate linked household/person rows from a model package.
-2. **Build controls** from the StatCan Census Profile (household size and tenure
+1. **Build controls** from the StatCan Census Profile (household size and tenure
    margins per target geography).
-3. **Calibrate** candidate households to those controls, assigning each
+1. **Calibrate** candidate households to those controls, assigning each
    realized household to a census tract or ADA.
-4. **Map** the output to a self-contained browser choropleth.
+1. **Map** the output to a self-contained browser choropleth.
 
 This first pass is intentionally household-first. Person rows inherit geography
 from their assigned household. Person-level small-area calibration is a later
@@ -43,9 +52,9 @@ quality step.
 ## Step 0 — Prepare Boundary Files (once)
 
 Before running `geo map`, you need a local boundary file for the target
-geography.  `geo prepare-boundaries` downloads the StatCan 2016 boundary ZIP,
+geography. `geo prepare-boundaries` downloads the StatCan 2016 boundary ZIP,
 extracts the shapefile, and converts it from NAD83 / Statistics Canada Lambert
-to WGS-84 GeoJSON in one step.  Run this once per geography level and reuse the
+to WGS-84 GeoJSON in one step. Run this once per geography level and reuse the
 result across all maps.
 
 ```bash
@@ -54,8 +63,8 @@ synthpopcan geo prepare-boundaries \
   --out-dir data/boundaries/
 ```
 
-This writes `data/boundaries/2016-boundary-ct.geojson`.  Pass it directly to
-`geo map --boundaries`.  An internet connection is required for the download
+This writes `data/boundaries/2016-boundary-ct.geojson`. Pass it directly to
+`geo map --boundaries`. An internet connection is required for the download
 (~10–50 MB depending on geography level).
 
 Supported levels: `ct` (census tracts), `ada` (aggregate dissemination areas),
