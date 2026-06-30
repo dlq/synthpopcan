@@ -53,7 +53,7 @@ from rich.progress import (
 from rich.table import Table
 
 from synthpopcan.cli_output import format_file_access_error, write_output
-from synthpopcan.console import print_table, print_wrote
+from synthpopcan.console import make_table, print_table, print_wrote
 from synthpopcan.microdata import (
     SeedSample,
     export_training_rows,
@@ -642,7 +642,7 @@ def list_tree_model_packages(output_format: str) -> None:
     if output_format == "json":
         write_output(catalogue, "json")
         return
-    table = Table(title="Model Packages")
+    table = make_table(title="Model Packages")
     table.add_column("Package ID")
     table.add_column("Summary")
     for model in catalogue["models"]:
@@ -1709,7 +1709,7 @@ def _summarize_release_manifests(
 
 
 def _print_linked_package_inspection_table(report: dict[str, Any]) -> None:
-    table = Table(title="Linked Model Package")
+    table = make_table(title="Linked Model Package")
     table.add_column("Field", no_wrap=True)
     table.add_column("Value")
 

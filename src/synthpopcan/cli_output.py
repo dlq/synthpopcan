@@ -6,9 +6,7 @@ import csv
 import json
 from typing import Any
 
-from rich.table import Table
-
-from synthpopcan.console import print_summary_table, print_table
+from synthpopcan.console import make_table, print_summary_table, print_table
 
 __all__ = [
     "format_file_access_error",
@@ -87,7 +85,7 @@ def _write_wds_search_tsv(rows: list[dict[str, str]]) -> None:
 def _write_wds_search_table(rows: list[dict[str, str]]) -> None:
     """Render WDS search rows as a readable terminal table."""
 
-    table = Table(title="StatCan WDS Tables")
+    table = make_table(title="StatCan WDS Tables")
     table.add_column("Product ID", no_wrap=True)
     table.add_column("CANSIM ID", no_wrap=True)
     table.add_column("Date Range", no_wrap=True)
@@ -122,7 +120,7 @@ def print_wds_metadata_explanation_table(summary: dict[str, Any]) -> None:
 
     _print_wds_dimension_preview_table(summary.get("dimension_previews", []))
 
-    table = Table(title="Next Commands")
+    table = make_table(title="Next Commands")
     table.add_column("Step", justify="right", no_wrap=True)
     table.add_column("Command")
     for index, command in enumerate(summary.get("next_commands", []), start=1):
@@ -151,7 +149,7 @@ def _print_wds_dimension_preview_table(previews: object) -> None:
     if not isinstance(previews, list) or not previews:
         return
 
-    table = Table(title="Dimension Preview")
+    table = make_table(title="Dimension Preview")
     table.add_column("Dimension", no_wrap=True)
     table.add_column("Members")
     table.add_column("Total", justify="right", no_wrap=True)
@@ -177,7 +175,7 @@ def _print_wds_dimension_preview_table(previews: object) -> None:
 def print_census_profile_characteristics_table(rows: list[dict[str, str]]) -> None:
     """Render Census Profile characteristic counts for mapping inspection."""
 
-    table = Table(title="Census Profile Characteristics")
+    table = make_table(title="Census Profile Characteristics")
     table.add_column("Characteristic")
     table.add_column("Example Count", justify="right")
     table.add_column("Rows", justify="right")
@@ -205,7 +203,7 @@ def print_wds_inspection_table(report: dict[str, Any]) -> None:
         title="WDS Table Inspection",
     )
 
-    table = Table(title="Starter Normalization Settings")
+    table = make_table(title="Starter Normalization Settings")
     table.add_column("Setting", no_wrap=True)
     table.add_column("Value")
     table.add_row(
@@ -219,7 +217,7 @@ def print_wds_inspection_table(report: dict[str, Any]) -> None:
 def print_tree_column_suggestions_table(report: dict[str, Any]) -> None:
     """Render suggested household/person column blocks for tree workflows."""
 
-    table = Table(title="Tree Column Suggestions")
+    table = make_table(title="Tree Column Suggestions")
     table.add_column("Block")
     table.add_column("Level")
     table.add_column("Targets")
@@ -262,7 +260,7 @@ def print_tree_geography_feasibility_table(report: dict[str, Any]) -> None:
         title="Tree Geography Feasibility Summary",
     )
 
-    table = Table(title="Tree Geography Feasibility")
+    table = make_table(title="Tree Geography Feasibility")
     table.add_column("Geography", no_wrap=True)
     table.add_column("Tier", no_wrap=True)
     table.add_column("Persons", justify="right")
@@ -308,7 +306,7 @@ def _first_model_design_move(model_design: dict[str, Any]) -> str:
 def print_ipf_report_table(report: dict[str, Any]) -> None:
     """Render an IPF fit report with summary, issues, next steps, and margins."""
 
-    table = Table(title="IPF Fit Report")
+    table = make_table(title="IPF Fit Report")
     table.add_column("Margin")
     table.add_column("Dimensions")
     table.add_column("Cells", justify="right")
@@ -357,7 +355,7 @@ def print_ipf_input_check_table(report: dict[str, Any]) -> None:
         title="IPF Input Summary",
     )
 
-    table = Table(title="IPF Input Check")
+    table = make_table(title="IPF Input Check")
     table.add_column("Dimension", no_wrap=True)
     table.add_column("Status", no_wrap=True)
     table.add_column("Seed Column", no_wrap=True)
@@ -399,7 +397,7 @@ def print_ipf_control_suggestions_table(report: dict[str, Any]) -> None:
         title="IPF Control Suggestion Summary",
     )
 
-    table = Table(title="IPF Control Suggestions")
+    table = make_table(title="IPF Control Suggestions")
     table.add_column("Column", no_wrap=True)
     table.add_column("Decision", no_wrap=True)
     table.add_column("Search Terms")
@@ -441,7 +439,7 @@ def _control_suggestion_note(row: dict[str, Any], default_next_step: str) -> str
 def print_validation_report_table(report: dict[str, Any]) -> None:
     """Render control-validation results for weighted or expanded populations."""
 
-    table = Table(title="Control Validation")
+    table = make_table(title="Control Validation")
     table.add_column("Margin")
     table.add_column("Dimensions")
     table.add_column("Cells", justify="right")
@@ -480,7 +478,7 @@ def print_validation_report_table(report: dict[str, Any]) -> None:
 def print_tree_output_validation_report_table(report: dict[str, Any]) -> None:
     """Render generated tree-output distribution checks against training rows."""
 
-    table = Table(title="Tree Output Distribution Check")
+    table = make_table(title="Tree Output Distribution Check")
     table.add_column("Dimensions")
     table.add_column("Cells", justify="right")
     table.add_column("Training", justify="right")
@@ -527,7 +525,7 @@ def print_seed_check_table(report: dict[str, Any]) -> None:
         title="Seed Check Summary",
     )
 
-    table = Table(title="Seed Column Check")
+    table = make_table(title="Seed Column Check")
     table.add_column("Column", no_wrap=True)
     table.add_column("Role", no_wrap=True)
     table.add_column("Status", no_wrap=True)
@@ -553,7 +551,7 @@ def _print_issues_table(issues: object, *, title: str) -> None:
 
     if not isinstance(issues, list) or not issues:
         return
-    table = Table(title=title)
+    table = make_table(title=title)
     table.add_column("Severity")
     table.add_column("Margin")
     table.add_column("Problem")
@@ -575,7 +573,7 @@ def _print_next_steps_table(steps: object) -> None:
 
     if not isinstance(steps, list) or not steps:
         return
-    table = Table(title="Next Steps")
+    table = make_table(title="Next Steps")
     table.add_column("Step")
     for step in steps:
         table.add_row(str(step))

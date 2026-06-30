@@ -21,7 +21,6 @@ from rich.progress import (
     TimeElapsedColumn,
     TransferSpeedColumn,
 )
-from rich.table import Table
 
 from synthpopcan import __version__
 from synthpopcan.cli_geo import small_area
@@ -40,6 +39,7 @@ from synthpopcan.cli_output import (
 )
 from synthpopcan.cli_tree import tree
 from synthpopcan.console import (
+    make_table,
     print_checks_table,
     print_success,
     print_table,
@@ -127,7 +127,7 @@ def list_models(output_format: str) -> None:
     if output_format == "json":
         write_output(catalogue, "json")
         return
-    table = Table(title="Model Packages")
+    table = make_table(title="Model Packages")
     table.add_column("Package ID")
     table.add_column("Availability")
     table.add_column("Summary")
@@ -245,7 +245,7 @@ def serve(host: str, port: int, open_browser: bool) -> None:
 
 
 def _print_workflow_choice_guide() -> None:
-    table = Table(title="Choose a Workflow")
+    table = make_table(title="Choose a Workflow")
     table.add_column("Workflow", no_wrap=True)
     table.add_column("Use When")
     table.add_column("Next Command", no_wrap=True)
@@ -269,7 +269,7 @@ def _print_workflow_choice_guide() -> None:
 
 
 def _print_ipf_workflow_guide() -> None:
-    table = Table(title="IPF from Margin Tables")
+    table = make_table(title="IPF from Margin Tables")
     table.add_column("Step", justify="right", no_wrap=True)
     table.add_column("Setup Path", no_wrap=True)
     table.add_column("Command or Next Step")
@@ -319,7 +319,7 @@ def _print_ipf_workflow_guide() -> None:
 
 
 def _print_model_workflow_guide() -> None:
-    table = Table(title="Generate from Existing Model")
+    table = make_table(title="Generate from Existing Model")
     table.add_column("Step", justify="right", no_wrap=True)
     table.add_column("Setup Path", no_wrap=True)
     table.add_column("Command or Next Step")

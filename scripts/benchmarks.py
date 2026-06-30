@@ -16,9 +16,9 @@ from time import perf_counter
 
 import click
 from rich.console import Console
-from rich.table import Table
 
 from synthpopcan.benchmarks import build_ipf_benchmark_cases, run_ipf_benchmarks
+from synthpopcan.console import make_table
 from synthpopcan.ipf import IPFResult, fit_ipf
 from synthpopcan.tree_benchmark import run_linked_tree_benchmark
 
@@ -44,7 +44,7 @@ def cli() -> None:
 def benchmark_ipf(seed_records: int) -> None:
     """Run IPF benchmark fixtures."""
     rows = run_ipf_benchmarks(seed_records=seed_records)
-    table = Table(title="IPF Benchmarks")
+    table = make_table(title="IPF Benchmarks")
     table.add_column("Case")
     table.add_column("Seed Rows", justify="right")
     table.add_column("Cells", justify="right")
@@ -122,7 +122,7 @@ def benchmark_ipf_backends(seed_records: int, case: str) -> None:
         rows.append(_run_scipy_sparse_backend(c))
         rows.append(_run_polars_probe(c))
 
-    table = Table(title="Experimental IPF Backend Benchmarks")
+    table = make_table(title="Experimental IPF Backend Benchmarks")
     table.add_column("Case")
     table.add_column("Backend")
     table.add_column("Status")
@@ -540,7 +540,7 @@ def _parse_columns(value: str) -> tuple[str, ...]:
 
 
 def _print_tree_summary(summary: dict[str, object]) -> None:
-    table = Table(title="Linked Tree Benchmark")
+    table = make_table(title="Linked Tree Benchmark")
     table.add_column("Metric")
     table.add_column("Value", justify="right")
 

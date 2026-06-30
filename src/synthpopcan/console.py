@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 from typing import Any
 
+from rich import box
 from rich.console import Console
 from rich.table import Table
 
@@ -13,6 +14,7 @@ __all__ = [
     "format_display_value",
     "format_field_label",
     "format_status",
+    "make_table",
     "print_checks_table",
     "print_success",
     "print_summary_table",
@@ -21,10 +23,17 @@ __all__ = [
 ]
 
 
+def make_table(*args: Any, **kwargs: Any) -> Table:
+    """Create a Rich table with SynthPopCan's default terminal style."""
+
+    kwargs.setdefault("box", box.SIMPLE)
+    return Table(*args, **kwargs)
+
+
 def print_summary_table(payload: dict[str, Any], *, title: str | None = None) -> None:
     """Render a two-column Rich table for compact dictionary summaries."""
 
-    table = Table(title=title)
+    table = make_table(title=title)
     table.add_column("Field")
     table.add_column("Value")
     for key, value in payload.items():
@@ -41,7 +50,7 @@ def print_table(table: Table) -> None:
 def print_checks_table(rows: list[dict[str, str]], *, title: str) -> None:
     """Render data-doctor style checks with status, detail, and tip columns."""
 
-    table = Table(title=title)
+    table = make_table(title=title)
     table.add_column("Check")
     table.add_column("Status")
     table.add_column("Detail")
