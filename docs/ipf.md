@@ -1,11 +1,11 @@
 # IPF
 
-IPF stands for iterative proportional fitting. In SynthPopCan, IPF adjusts seed
-record weights until the weighted totals match control tables.
+IPF stands for **iterative proportional fitting**. In SynthPopCan, IPF adjusts
+**seed record weights** until the weighted totals match **control tables**.
 
 ## Concept
 
-Imagine you have a small set of example people:
+Imagine we have a small set of example people:
 
 ```text
 PP_ID,AGEGRP,SEX,WEIGHT
@@ -24,18 +24,18 @@ sex,SEX,,F,100
 sex,SEX,,M,100
 ```
 
-IPF does not create new variables. It changes the row weights so the selected
-columns add up to the requested controls.
+IPF does **not create new variables**. It changes the row weights so the
+selected columns add up to the requested controls.
 
 The method is also known as raking in survey weighting and has a long history in
 contingency-table adjustment. In spatial microsimulation, IPF commonly produces
 non-integer weights, which is why SynthPopCan keeps weighted output separate
 from expanded rows.
 
-That separation matters. Fitting weights and realizing an integer population are
-different stages. A weighted seed can be the right analytical object for
-validation and review, while an expanded CSV is a rounded realization of those
-weights. The older [Pritchard and Miller](https://doi.org/10.1007/s11116-011-9367-4)-style population-synthesis workflow makes a
+That separation matters. **Fitting weights** and **realizing an integer
+population** are different stages. A weighted seed can be the right analytical
+object for validation and review, while an expanded CSV is a rounded
+realization of those weights. The older [Pritchard and Miller](https://doi.org/10.1007/s11116-011-9367-4)-style population-synthesis workflow makes a
 similar distinction: first fit/calibrate sparse microdata rows to margins, then
 allocate or sample integer households and persons.
 
@@ -49,7 +49,7 @@ fractional fitted weights (centre) into whole counts (right) while keeping the
 margin totals exact.
 ```
 
-This is powerful, but it has limits:
+This is powerful, but it has **limits**:
 
 - the seed must already contain every control dimension;
 - category labels must match or be mapped;
@@ -60,12 +60,12 @@ This is powerful, but it has limits:
 ## When Controls Cannot Be Fit
 
 IPF can only redistribute weight among rows that already exist in the seed. This
-is the most important limitation to understand. IPF cannot invent a missing
+is the **most important limitation** to understand. IPF cannot invent a missing
 category, add a missing column, or repair controls that describe a different
 population universe.
 
-Some failures are structural. They cannot be solved by increasing the number of
-iterations:
+Some failures are **structural**. They cannot be solved by increasing the number
+of iterations:
 
 - **Missing dimension:** controls use a column such as `education`, but the seed
   has no `education` column. The seed must be enriched first, or the controls
@@ -87,9 +87,9 @@ iterations:
   make only a few rows carry most of the population.
 
 For a humanities or digital-humanities project, the practical question is not
-only "does the algorithm converge?" It is "do these controls describe the same
-population, in categories the seed can represent, at a level of detail the seed
-can support?" [Naszodi's discussion](https://arxiv.org/abs/2303.05515) of IPF and related matrix-adjustment methods
+only **"does the algorithm converge?"** It is **"do these controls describe the
+same population, in categories the seed can represent, at a level of detail the
+seed can support?"** [Naszodi's discussion](https://arxiv.org/abs/2303.05515) of IPF and related matrix-adjustment methods
 is useful here because it separates the mechanics of fitting from the
 interpretive question being asked.
 
@@ -153,7 +153,7 @@ synthpopcan ipf check-inputs \
 `check-inputs` is a compatibility check, not a full proof that the controls are
 methodologically appropriate. It cannot decide whether two public tables use the
 same population universe. It cannot know whether a geography is too small for
-your interpretive claim. It also cannot promise that a converged fit will have
+the interpretive claim. It also cannot promise that a converged fit will have
 reasonable weights.
 
 After fitting, inspect the fit report:
@@ -198,11 +198,11 @@ Common methodological problems include:
 - **Integer expansion changes the object.** Expanding fractional weights into
   rows requires rounding. The expanded CSV may no longer match controls exactly,
   especially for small populations.
-- **Validation is scoped to what you validate.** A control-validation report
+- **Validation is scoped to what we validate.** A control-validation report
   checks selected margins. It does not certify every other relationship in the
   output.
 
-Once you have fitted weights you are satisfied with, use {doc}`validate` to
+Once we have fitted weights we are satisfied with, use {doc}`validate` to
 compare the output against the controls and produce a shareable validation
 report. The validate page also explains what a validation report does and does
 not prove.
@@ -210,8 +210,8 @@ not prove.
 Additional issues that deserve explicit notes in a research workflow:
 
 - **Structural zeros versus sampling zeros:** a missing cell can mean the
-  combination is impossible in the real world, or it can mean the seed simply
-  failed to observe it. Those are different problems. IPF treats both as "no row
+  combination is impossible in the real world, or it can mean the seed did not
+  observe it. Those are different problems. IPF treats both as "no row
   available."
 - **Controls are often estimates or rounded counts:** public tables can include
   survey error, random rounding, suppression, or disclosure treatment. Matching

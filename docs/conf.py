@@ -11,9 +11,10 @@ sys.path.insert(0, str(ROOT / "src"))
 
 project = "SynthPopCan"
 author = "Darcy Quesnel"
-copyright = "2026, Darcy Quesnel"
+copyright = "2026, SynthPopCan contributors"
 html_title = "SynthPopCan"
 html_baseurl = "https://synthpopcan.readthedocs.io/en/latest/"
+html_show_sphinx = False
 
 extensions = [
     "myst_parser",
@@ -35,8 +36,8 @@ html_theme = (
     else "alabaster"
 )
 html_static_path = ["_static"]
-html_logo = "../assets/branding/logo/synthpopcan-logo-512.png"
-html_favicon = "../assets/branding/logo/synthpopcan-logo-512.png"
+html_logo = "../assets/branding/logo/synthpopcan-logo-256.png"
+html_favicon = "../assets/branding/icon/favicon.ico"
 html_theme_options = {
     "collapse_navigation": False,
     "navigation_depth": 3,

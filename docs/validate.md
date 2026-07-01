@@ -1,21 +1,21 @@
 # Validate
 
-Validation commands check generated artifacts. They do not prove a synthetic
+Validation commands check **generated artifacts**. They do **not** prove a synthetic
 population is substantively good, but they catch important mechanical and
 calibration errors.
 
 ## Concept
 
-Use validation as a normal step in every workflow:
+Use validation as a **normal step in every workflow**:
 
 - after IPF fitting;
 - after expanding rows;
 - after linked household/person generation;
 - before interpreting or sharing outputs.
 
-Keep validation reports with the run notes.
+Keep **validation reports** with the run notes.
 
-Validation is both a technical check and a provenance practice. It records what
+Validation is both a **technical check** and a **provenance practice**. It records what
 was checked, against which target, and with what tolerance.
 
 For IPF-specific fit reports and residuals, see {doc}`ipf`. For generating
@@ -24,7 +24,7 @@ and release, see {doc}`tree`.
 
 ## What Validation Does Not Prove
 
-A passing validation report is not a certificate that the synthetic population is
+A passing validation report is **not a certificate** that the synthetic population is
 substantively correct. It proves only that the checks we asked for passed.
 
 Validation can miss:
@@ -38,15 +38,15 @@ Validation can miss:
   totals;
 - disclosure or interpretive risks that require human review.
 
-Treat validation as evidence in a research note. Pair it with the source
+Treat validation as **evidence in a research note**. Pair it with the source
 provenance, category mappings, modelling choices, random seeds, and a short
 statement of what the output should not be used to claim.
 
 ## What a Serious Validation Note Should Include
 
-For exploratory examples, a short pass/fail report may be enough. For a serious
-run, keep enough evidence for another reader to understand both the success and
-the weak spots:
+For exploratory examples, a short pass/fail report may be enough. For a
+**serious run**, keep enough evidence for another reader to understand both the
+success and the weak spots:
 
 - total population and household counts by geography;
 - absolute and relative error for each controlled margin;
@@ -60,11 +60,11 @@ the weak spots:
 - random seed, command, package version, and input provenance.
 
 The goal is not to make validation longer for its own sake. The goal is to stop
-a neat pass/fail summary from hiding the exact places where the model is weakest.
+a neat pass/fail summary from hiding **where the model is weakest**.
 
 ## Getting Started
 
-The typical validation sequence follows your generation steps. After IPF
+The typical validation sequence follows the generation steps. After IPF
 fitting, validate the fitted weights against the controls that were used to fit
 them — this confirms the optimizer converged and the weights reproduce the
 target totals within tolerance:
@@ -212,12 +212,12 @@ Options:
 
 Checks flat (non-linked) tree-generated output by comparing the marginal
 distributions of selected columns in the generated file against the same columns
-in a training sample. Use this after `tree generate` when you have not used
+in a training sample. Use this after `tree generate` when we have not used
 linked generation and therefore cannot use `validate linked-output`.
 
 The comparison is column-by-column: for each column named in `--target-columns`,
 it computes the category distribution in the generated rows and in the training
-sample and reports the difference. This tells you whether the tree model is
+sample and reports the difference. This tells us whether the tree model is
 reproducing the rough shape of the training distribution, but it does not
 validate against public control totals — for that, use `validate controls`.
 

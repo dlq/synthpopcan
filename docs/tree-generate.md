@@ -1,42 +1,42 @@
 # Generate From a Model Package
 
-A model package is a reviewed, self-contained artifact that bundles a trained
+A model package is a **reviewed, self-contained artifact** that bundles a trained
 household model and a person model together with the provenance and audit
 results needed to trust the output. Packages are the normal starting point for
-linked household/person generation: you do not need access to restricted
-microdata, and you do not need to train or audit a model yourself.
+**linked household/person generation**: we do not need access to restricted
+microdata, and we do not need to train or audit a model ourselves.
 
-If you need to train a model from microdata — because no suitable published
-package exists for your geography or period — see {doc}`tree`.
+If we need to train a model from microdata — because no suitable published
+package exists for the geography or period — see {doc}`tree`.
 
 ## Concept
 
-Generation from a package is a two-step process. The household model generates
+Generation from a package is a **two-step process**. The household model generates
 household records (tenure, dwelling type, size, and other attributes). The
 person model then generates the people inside each household, conditioned on
 household attributes so that household and person rows remain consistent with
 each other. Both steps are driven by the distributions the model learned from
 its training microdata.
 
-The output is a linked pair of CSVs: one row per household and one row per
+The output is a **linked pair of CSVs**: one row per household and one row per
 person, joined by a shared household identifier. Person rows inherit geography
 from their household after any small-area calibration step.
 
-Generated values preserve the source model's raw codes. For packages derived
+Generated values preserve the source model's **raw codes**. For packages derived
 from the 2016 PUMF, values such as `99999999`, `9999`, `99`, and `9` are
 Statistics Canada special codes (not applicable, not available, valid skip)
 that vary by column. Do not treat them as ordinary numeric values without
 checking the field metadata for the relevant table.
 
-**Choosing a package for your research question.** A package trained on 2016
+**Choosing a package for the research question.** A package trained on 2016
 Census microdata will reproduce the household and person relationships present
 in that microdata, including its category definitions, its geographic scope, and
-the population universe it covers. If your research requires a different census
+the population universe it covers. If the research requires a different census
 year, a different province or city, or different category boundaries, a
 pre-trained package may not be appropriate — and training a custom model from
-suitable microdata is the right path instead. Inspect any package you plan to
+suitable microdata is the right path instead. Inspect any package we plan to
 use with `tree inspect-package` and check the source provenance and review notes
-before generating output you intend to publish or share.
+before generating output we intend to publish or share.
 
 ## Getting Started
 
@@ -84,7 +84,7 @@ synthpopcan validate linked-output \
   --persons synthetic-persons.csv
 ```
 
-If you want to assign the generated households to census tracts or aggregate
+If we want to assign the generated households to census tracts or aggregate
 dissemination areas, continue with {doc}`small-area`.
 
 ## Subcommands
@@ -118,7 +118,7 @@ synthpopcan models fetch canada-2016-all-fields
 
 Prints a summary of a package — its geography, training period, column
 inventory, and embedded audit results — without dumping the full model payload.
-Use this to confirm a package is suitable for your use case before generating.
+Use this to confirm a package is suitable for the intended use before generating.
 
 ```bash
 synthpopcan tree inspect-package montreal-cma-2016-all-fields
@@ -210,7 +210,7 @@ size capping conventions. See {doc}`tree` for audit details.
 
 ## Training Your Own Model
 
-If no suitable package exists for your geography, census year, or column
-profile, you can train a model from restricted microdata. That workflow —
+If no suitable package exists for the geography, census year, or column profile,
+we can train a model from restricted microdata. That workflow —
 including source preparation, training, audit, release checks, and packaging —
 is covered in {doc}`tree`.

@@ -4,22 +4,23 @@ SynthPopCan has several entry points because people come to synthetic
 population work with different questions. This page helps us choose a first
 path before we learn the command names.
 
-```{figure} _static/user-routes.svg
-:alt: Three parallel routes through SynthPopCan: web app, command line, and Python notebook. Each route starts from a research question and ends with generated data plus validation notes.
-:align: center
+SynthPopCan has three friendly surfaces: the **local web app**, the **command
+line**, and the **beginner Python API**. They can do related work, but they
+serve different research habits.
 
-SynthPopCan has three friendly surfaces: the local web app, the command line,
-and the beginner Python API. They can do related work, but they serve different
-research habits.
-```
+In practice, we usually start with a **research question**, choose the surface
+that fits our working style, and keep the generated files together with
+**validation reports** and **method notes**. A web session is good for guided
+inspection, the command line is good for reproducible runs, and a notebook is
+good when code, prose, and interpretation need to sit side by side.
 
 ## If We Want To Try SynthPopCan
 
 Start with the {doc}`web-app`.
 
-The local web app is the gentlest first contact because it gives us forms,
-previews, and downloads. It is useful when we are learning what the inputs look
-like or when we want to inspect a result before writing a script.
+The local web app is the gentlest first contact because it gives us **forms**,
+**previews**, and **downloads**. It is useful when we are learning what the
+inputs look like or when we want to inspect a result before writing a script.
 
 Use this path when:
 
@@ -33,9 +34,9 @@ After that, move to the command-line pages when we need reproducibility.
 
 Start with {doc}`library-getting-started`.
 
-The beginner Python API is designed for Jupyter notebooks, classroom examples,
-and research notes where code and prose live together. It exposes a small
-surface:
+The beginner Python API is designed for **Jupyter notebooks**, **classroom
+examples**, and **research notes** where code and prose live together. It
+exposes a small surface:
 
 - read seed rows;
 - read controls;
@@ -56,10 +57,10 @@ is in {doc}`api`.
 
 Start with {doc}`ipf`, then use {doc}`controls` and {doc}`statcan` as needed.
 
-IPF is the right first method when our seed table already contains the columns
-we want to fit. For example, if the seed rows contain age group and sex, and the
-controls contain age and sex totals, IPF can adjust weights so the seed rows
-match those totals.
+IPF is the right first method when our **seed table already contains the
+columns we want to fit**. For example, if the seed rows contain age group and
+sex, and the controls contain age and sex totals, IPF can adjust weights so the
+seed rows match those totals.
 
 Use this path when:
 
@@ -68,18 +69,18 @@ Use this path when:
   table;
 - weighted output is acceptable, or we can expand weights later.
 
-Do not use IPF to invent a missing variable. If the seed rows do not contain a
-column, IPF cannot fit controls for that column.
+Do not use IPF to **invent a missing variable**. If the seed rows do not contain
+a column, IPF cannot fit controls for that column.
 
 ## If We Have or Need Linked Households and People
 
 Start with {doc}`tree-generate` if we have a reviewed package. Use {doc}`tree`
 when we need to train, audit, or package models.
 
-Linked household/person workflows are useful when generated people need to
-belong to generated households. The model package supplies candidate household
-and person rows. Validation then checks whether the household/person links still
-make sense.
+Linked household/person workflows are useful when **generated people need to
+belong to generated households**. The model package supplies candidate
+household and person rows. Validation then checks whether the household/person
+links still make sense.
 
 Use this path when:
 
@@ -87,17 +88,18 @@ Use this path when:
 - we need person rows that inherit household context;
 - we are working from a reviewed model package or preparing one.
 
-Tree output should be read as modelled candidate data. It still needs
+Tree output should be read as **modelled candidate data**. It still needs
 validation, and it may need calibration to public controls.
 
 ## If We Need Small-Area Geography
 
 Start with {doc}`small-area`.
 
-Small-area linked synthesis is the bridge between broad generated
+Small-area linked synthesis is the **bridge** between broad generated
 household/person candidates and public Census Profile controls for target
 geographies. It is the path we use when generated households need to be assigned
-to census tracts, aggregate dissemination areas, or dissemination areas.
+to **census tracts**, **aggregate dissemination areas**, or **dissemination
+areas**.
 
 Use this path when:
 
@@ -106,16 +108,16 @@ Use this path when:
 - we want output households and people with an assigned geography column.
 
 Dissemination blocks belong later in the workflow. They are better understood
-as a placement geography after households have been calibrated to CTs, ADAs, or
-DAs.
+as a **placement geography** after households have been calibrated to CTs, ADAs,
+or DAs.
 
 ## If We Are Still Inspecting Sources
 
 Start with {doc}`data`, {doc}`statcan`, and {doc}`microdata`.
 
-Synthetic population work often begins before modelling. We need to know what a
-source file contains, which categories it uses, which geography it covers, and
-whether the file can be redistributed.
+Synthetic population work often begins **before modelling**. We need to know
+what a source file contains, which categories it uses, which geography it
+covers, and whether the file can be redistributed.
 
 Use this path when:
 
@@ -128,7 +130,7 @@ Use this path when:
 
 Start with {doc}`validate`.
 
-Validation is not a final polish step. It is how we learn what the generated
+Validation is **not a final polish step**. It is how we learn what the generated
 population can and cannot support.
 
 Use this path when:
@@ -163,4 +165,4 @@ the run:
 - validation reports;
 - notes about controls that failed, sparse categories, and unresolved caveats.
 
-That record is part of the research output.
+That record is part of the **research output**.

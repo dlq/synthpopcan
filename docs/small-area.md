@@ -22,13 +22,13 @@ blocks are useful later for spatial placement after households have been
 calibrated to a larger small area.
 ```
 
-Small-area synthesis assigns generated households to one of these units. The
-Census Profile provides the public aggregate totals (controls) that anchor
-each unit's household composition, and the workflow uses those controls to
-decide which generated candidates go where.
+Small-area synthesis **assigns generated households** to one of these units.
+The Census Profile provides the public aggregate totals, or **controls**, that
+anchor each unit's household composition, and the workflow uses those controls
+to decide which generated candidates go where.
 
-Small-area linked synthesis bridges two sources that do not contain the same
-information:
+Small-area linked synthesis bridges **two sources that do not contain the same
+information**:
 
 - prepared linked household/person model packages can generate plausible
   synthetic households and people, but they do not know census tract or ADA
@@ -45,13 +45,13 @@ The current workflow has four steps:
    realized household to a census tract or ADA.
 1. **Map** the output to a self-contained browser choropleth.
 
-This first pass is intentionally household-first. Person rows inherit geography
-from their assigned household. Person-level small-area calibration is a later
-quality step.
+This first pass is intentionally **household-first**. Person rows inherit
+geography from their assigned household. Person-level small-area calibration is
+a later quality step.
 
 ## Step 0 — Prepare Boundary Files (once)
 
-Before running `geo map`, you need a local boundary file for the target
+Before running `geo map`, we need a local boundary file for the target
 geography. `geo prepare-boundaries` downloads the StatCan 2016 boundary ZIP,
 extracts the shapefile, and converts it from NAD83 / Statistics Canada Lambert
 to WGS-84 GeoJSON in one step. Run this once per geography level and reuse the

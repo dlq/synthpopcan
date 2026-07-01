@@ -33,8 +33,7 @@ Project planning and research notes are tracked separately:
 
 - `PLANS.md`: current roadmap, open work, sequencing, and design decisions.
 - `NOTES.md`: research synthesis from local materials and external literature.
-- `docs/status.md`: completed implementation status and benchmark notes.
-- `CHANGELOG.md`: public release notes.
+- `CHANGELOG.md`: public release notes and completed release highlights.
 
 ## Quick Start
 
@@ -50,8 +49,8 @@ Then inspect the command line:
 synthpopcan --help
 ```
 
-For a one-off command without installing the tool into your current
-environment, use `uvx`:
+For a one-off command without installing the tool into the current environment,
+use `uvx`:
 
 ```bash
 uvx synthpopcan --help
@@ -71,7 +70,8 @@ For installation details, see `docs/installation.md`.
 
 ## Where To Start
 
-Most users should start in the Sphinx documentation rather than in this README:
+Most readers should start in the Sphinx documentation rather than in this
+README:
 
 | Task | Documentation |
 | --- | --- |
@@ -79,11 +79,11 @@ Most users should start in the Sphinx documentation rather than in this README:
 | Generate with IPF from margin/control tables | `docs/ipf.md`, `docs/controls.md`, `docs/statcan.md` |
 | Use the beginner Python API | `docs/library-getting-started.md` |
 | Work with local data layout and `data doctor` | `docs/data.md` |
-| Inspect source files safely | `docs/sources.md` |
+| Inspect source files safely | `docs/data.md`, `docs/statcan.md`, `docs/microdata.md` |
 | Work with census microdata adapters | `docs/microdata.md` |
 | Train, audit, package, or use tree models | `docs/tree.md` |
 | Validate generated outputs | `docs/validate.md` |
-| Check current implementation status | `docs/status.md` |
+| Check current plans and implementation notes | `PLANS.md`, `CHANGELOG.md` |
 
 Build the documentation locally with:
 
@@ -133,4 +133,4 @@ it passed the project's current checks; it is not a claim of official approval,
 legal privacy certification, or fitness for every research use.
 
 Before publishing a new model package, review `docs/data.md`, `docs/tree.md`,
-`docs/release-checklist.md`, and `CONTRIBUTING.md`.
+`PLANS.md`, and `CONTRIBUTING.md`.

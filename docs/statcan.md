@@ -6,22 +6,22 @@ inventory, and the **Census Profile**, a bulk download that gives hundreds of
 demographic characteristics for each census geography. Both sources are fetched
 over the network directly from Statistics Canada's public servers. If a server
 is unavailable or a URL changes, the command fails — treat downloaded files as
-worth keeping locally so you do not need to re-fetch them.
+worth keeping locally so we do not need to re-fetch them.
 
-Downloading a file is only the first step. The fetched files are raw — wide
-format, Statistics Canada labels, characteristic codes — and cannot be used as
-controls directly. After downloading, use {doc}`controls` to inspect, map
-categories, and normalize before fitting.
+Downloading a file is **only the first step**. The fetched files are **raw**:
+wide format, Statistics Canada labels, characteristic codes, and not ready to
+use as controls directly. After downloading, use {doc}`controls` to inspect,
+map categories, and normalize before fitting.
 
 ## Concept
 
-**WDS tables** are the general-purpose source. The CANSIM inventory contains
+**WDS tables** are the **general-purpose source**. The CANSIM inventory contains
 thousands of tables covering demographics, income, housing, labour, and more.
-Each table has a stable product ID (e.g. `98100001`) that you use to fetch,
+Each table has a stable product ID (e.g. `98100001`) that we use to fetch,
 explain, and download it. WDS tables come as CSV ZIPs in a wide format; the
 columns and category labels vary by table.
 
-**Census Profile** is a specific bulk product from the decennial census. It
+**Census Profile** is a **specific bulk product** from the decennial census. It
 gives several hundred demographic characteristics for every geographic unit at
 a chosen level — census tract, dissemination area, province, and others. It
 is the primary source for small-area controls because it reports counts at the
@@ -29,25 +29,25 @@ census tract level that are not available from WDS. The download is large and
 the file uses Statistics Canada's characteristic-row format, which requires
 inspection and mapping before normalization.
 
-A note on categories: Statistics Canada tables use their own category
-definitions for age groups, household types, dwelling types, income bands, and
+A note on categories: Statistics Canada tables use their **own category
+definitions** for age groups, household types, dwelling types, income bands, and
 geography levels. These definitions are not universal — they reflect specific
 administrative and methodological choices, and they change between census years.
-When you map a Statistics Canada category to a control dimension, you are
-adopting that definition. If your research question uses a different conception
+When we map a Statistics Canada category to a control dimension, we are
+adopting that definition. If the research question uses a different conception
 of the same variable, the mismatch should be documented, not papered over.
 
 The workflow is the same for both sources:
 
 1. Find the source (search WDS or choose a Census Profile geography level).
-1. Inspect it to confirm it has the dimensions and categories you need.
-1. Normalize only the dimensions relevant to your research question.
+1. Inspect it to confirm it has the dimensions and categories we need.
+1. Normalize only the dimensions relevant to the research question.
 1. Check compatibility with the seed before fitting.
 
 Step 3 and 4 are covered in {doc}`controls`.
 
 Statistics Canada tables are official aggregate sources, but the work of
-choosing dimensions, geographies, and category mappings belongs to the
+**choosing dimensions, geographies, and category mappings** belongs to the
 researcher. A table that is appropriate for one geography or population
 universe may be misleading for another.
 
@@ -96,7 +96,7 @@ Normalization for both source types is covered in {doc}`controls`.
 Searches the WDS table inventory by keyword against table titles and
 descriptions. Returns a list of matching tables with their product IDs and
 titles. The inventory is large; use specific terms (a characteristic name, a
-census year, a geography keyword) and cap results with `--limit` until you find
+census year, a geography keyword) and cap results with `--limit` until we find
 a plausible candidate. Take the product ID to `statcan wds explain` before
 downloading.
 
@@ -115,7 +115,7 @@ Options:
 Summarizes the metadata for a product ID in human-readable form: the table
 title, geographic coverage, available dimensions (e.g. Age group, Sex, Tenure
 type), category labels within each dimension, and the approximate row count.
-Run this before `statcan wds fetch` to confirm the table has the variables you
+Run this before `statcan wds fetch` to confirm the table has the variables we
 need, covers the right geography, and is not impractically large. A table with
 millions of rows may be better accessed through a more targeted WDS query or
 a Census Profile instead.

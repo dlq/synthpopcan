@@ -2,17 +2,17 @@ API Reference
 =============
 
 The Python API is still early, but the objects on this page are the intended
-public library surface for scripts, notebooks, and reusable research workflows.
-For beginner workflow examples, start with :doc:`library-getting-started`; for
-module-level examples, see :doc:`library`. This page is the generated member
+**public library surface** for scripts, notebooks, and reusable research workflows.
+For **beginner workflow examples**, start with :doc:`library-getting-started`; for
+**module-level examples**, see :doc:`library`. This page is the generated member
 reference.
 
-This page is generated with Sphinx autodoc, which imports modules and renders
+This page is generated with **Sphinx autodoc**, which imports modules and renders
 their docstrings and public members. See the Sphinx
 `autodoc documentation <https://www.sphinx-doc.org/en/master/usage/extensions/autodoc.html>`_
 for the underlying mechanism.
 
-The lower-level sections are intentionally curated. They include objects that
+The lower-level sections are **intentionally curated**. They include objects that
 are useful for notebooks, scripts, reusable research workflows, and contributor
 extensions. CLI callbacks, formatting helpers, web-app internals, benchmark
 helpers, and other implementation details are left out even when they are
@@ -21,7 +21,7 @@ public-by-name in the source tree.
 Package
 -------
 
-The top-level package exposes a small beginner-friendly API for concise
+The top-level package exposes a **small beginner-friendly API** for concise
 notebooks and examples. The lower-level generated reference below is organized
 by the module that owns each concept.
 

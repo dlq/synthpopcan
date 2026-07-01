@@ -1,12 +1,12 @@
 # Tree Models
 
-Tree commands train and use tree-based synthetic population models. They are
-most useful when you need generated rows with multivariate structure, or when
+Tree commands train and use **tree-based synthetic population models**. They are
+most useful when we need generated rows with multivariate structure, or when
 households and people need to remain linked.
 
 ## Concept
 
-An IPF workflow reweights existing seed rows. A tree workflow learns patterns
+**An IPF workflow** reweights existing seed rows. **A tree workflow** learns patterns
 from training rows and generates new rows. In SynthPopCan, tree models can be:
 
 - flat person or household models from a training CSV;
@@ -14,17 +14,17 @@ from training rows and generates new rows. In SynthPopCan, tree models can be:
 - private working artifacts;
 - reviewed publishable-candidate artifacts after audit and release checks.
 
-Treat models trained from restricted microdata as private unless they have been
+Treat models trained from restricted microdata as **private** unless they have been
 audited, reviewed, and packaged with provenance.
 
-SynthPopCan currently uses transparent frequency-based and CART-style tree
+SynthPopCan currently uses **transparent frequency-based** and **CART-style** tree
 models. CART models are useful here because they expose conditional splits that
 can be audited more easily than many opaque generative models, but the audit
 step is still necessary.
 
 ### What a Tree Model Is
 
-A decision tree is a model made from branching questions. Each question splits
+A decision tree is a model made from **branching questions**. Each question splits
 the training rows into smaller groups. In a classification tree, the end of a
 branch is called a leaf, and the leaf contains the observed outcomes for records
 that reached that point.
@@ -38,8 +38,8 @@ Is tenure owner?
 ```
 
 A deeper tree might also split by province, household size, or age group. That
-extra detail can preserve useful structure, but it also reduces the number of
-training rows behind each branch. A model that splits too finely may look
+extra detail can preserve useful structure, but it also **reduces the number of
+training rows behind each branch**. A model that splits too finely may look
 sophisticated while relying on only a handful of examples.
 
 ```{figure} _static/tree-diagram.svg
@@ -52,16 +52,16 @@ branch. Generation draws from that distribution — it does not predict a single
 outcome, it samples one plausible outcome given the conditioning path.
 ```
 
-SynthPopCan has two tree-family model types:
+SynthPopCan has **two tree-family model types**:
 
 - `conditional-frequency`: groups rows by the conditioning columns and samples
-  from the observed target outcomes in each group. This is transparent and easy
+  from the observed target outcomes in each group. This is transparent and straightforward
   to audit, but sparse groups can be fragile.
-- `cart`: trains a CART-style decision tree using scikit-learn. This can merge
+- `cart`: trains a **CART-style** decision tree using scikit-learn. This can merge
   or split patterns more flexibly than exact frequency groups, but it still
   needs support, purity, and validation checks.
 
-The [scikit-learn decision-tree guide](https://scikit-learn.org/stable/modules/tree.html) explains CART-style decision trees as
+The [scikit-learn decision-tree guide](https://scikit-learn.org/stable/modules/tree.html) explains **CART-style** decision trees as
 models that split records by feature values to predict a target class. In
 SynthPopCan, the point is not prediction for its own sake. The point is to
 generate plausible categorical rows while preserving enough structure to support
@@ -74,7 +74,7 @@ Each tree is trained on a different sample of rows or a different subset of
 columns, and the forest combines their results. In predictive modelling this can
 reduce the instability of one tree.
 
-SynthPopCan does not currently train forest models. That is deliberate. A forest
+SynthPopCan does **not currently train forest models**. That is deliberate. A forest
 can be useful, but it is harder to explain to a humanities or digital-humanities
 reader because there is no single branch or leaf to inspect. For this project,
 the first priority is a model artifact that can be audited, packaged with
@@ -88,7 +88,7 @@ depend on reading one tree by eye.
 ### What Makes a Tree Model Bad
 
 A bad tree model is not just a model that fails to run. It is a model that
-generates rows that are misleading, unstable, or unsafe to share. Common
+generates rows that are **misleading**, **unstable**, or **unsafe to share**. Common
 problems include:
 
 - **Too little support:** a group or leaf is based on too few training records.
@@ -347,7 +347,7 @@ synthpopcan validate linked-output \
 ```
 
 Audit both models before considering release or reuse. The audit checks every
-group or leaf for support and purity against your thresholds, and checks whether
+group or leaf for support and purity against the chosen thresholds, and checks whether
 the artifact metadata indicates raw rows or source identifiers may be present.
 A model that passes the audit at these thresholds is a candidate for release
 preparation; one that does not should be treated as a private working artifact:
@@ -384,7 +384,7 @@ synthpopcan tree train person-training.csv \
 Options include `--method conditional-frequency|cart`, `--random-seed`,
 `--min-support`, `--min-samples-leaf`, and `--max-depth`.
 
-Use `conditional-frequency` when you want a direct, inspectable relationship
+Use `conditional-frequency` when we want a direct, inspectable relationship
 between conditioning columns and generated target outcomes. Use `cart` when exact
 conditioning groups are too sparse and a decision tree can pool similar cases.
 Neither method removes the need for validation.
@@ -524,7 +524,7 @@ Bundles reviewed household and person models with their training manifest,
 source provenance, release manifests, and review notes into a single
 distributable package file. The package is the artifact that
 `tree generate-from-package` consumes; it embeds enough metadata for downstream
-users to understand what source data was used, what audit thresholds were
+readers to understand what source data was used, what audit thresholds were
 applied, and what the reviewer attested.
 
 `--source-provenance` is required. It must be a JSON file with the schema
@@ -718,7 +718,7 @@ web app, but the large JSON is downloaded into a local cache only after
 ## Example: Quebec Province Linked Model With Python
 
 The advanced library documentation includes a maintained Python script for the
-same release pattern applied to Quebec (`PR=24`). Use it when you want a
+same release pattern applied to Quebec (`PR=24`). Use it when we want a
 reproducible library workflow rather than a long command-line transcript:
 
 ```bash
@@ -779,7 +779,7 @@ manifests, and review notes.
 
 - scikit-learn,
   [Decision Trees user guide](https://scikit-learn.org/stable/modules/tree.html),
-  for background on CART-style models.
+  for background on **CART-style** models.
 - Floriana Gargiulo and co-authors,
   [An iterative approach for generating statistically realistic populations of households](https://arxiv.org/abs/0912.2826),
   for why household structure matters.

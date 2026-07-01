@@ -1,9 +1,10 @@
 # Installation
 
-SynthPopCan is a command-line tool and Python library. Using it requires
-opening a terminal — a text window where you type commands rather than clicking
-buttons. If you have not used a terminal before, these introductions are written
-for humanities researchers and require no prior programming experience:
+SynthPopCan is a **command-line tool** and **Python library**. Using it requires
+opening a **terminal** — a text window where we type commands rather than click
+buttons. For readers who have not used a terminal before, these introductions
+are written for humanities researchers and require no prior programming
+experience:
 
 - **Mac:** [Introduction to the Bash Command Line](https://programminghistorian.org/en/lessons/intro-to-bash)
   — Programming Historian
@@ -14,14 +15,14 @@ Read one of those first, then return here.
 
 SynthPopCan can be installed from [PyPI](https://pypi.org/), run as a one-off
 command with `uvx`, or installed from a source checkout for development. If we
-only want to use the command line or beginner Python API, start with the PyPI
-installation. If we want to edit the code, documentation, or tests, use the
-source checkout.
+only want to **use the command line or beginner Python API**, start with the
+PyPI installation. If we want to **edit the code, documentation, or tests**, use
+the source checkout.
 
 ## Requirements
 
 - Python 3.11 or newer. Download from [python.org/downloads](https://www.python.org/downloads/).
-  If you have not used Python before, the Programming Historian's
+  For readers who have not used Python before, the Programming Historian's
   [Introduction to Python](https://programminghistorian.org/en/lessons/introduction-and-installation)
   is a good starting point.
 - Git, only when cloning from the repository.
@@ -30,12 +31,12 @@ source checkout.
   source checkout.
 - Local source data staged outside git when working with real census or private files.
 
-You do not need a database, a cloud account, or a web server for the
+We do not need a database, a cloud account, or a web server for the
 command-line workflows.
 
 ## Install From PyPI
 
-For most users, install the published package from PyPI:
+For most readers, the best first path is the **published package from PyPI**:
 
 ```bash
 python -m pip install synthpopcan
@@ -47,9 +48,9 @@ Then check that the command is available:
 synthpopcan --help
 ```
 
-This is the best path when we want to run command-line examples, use the
-beginner API in a notebook, or build small teaching workflows without editing
-SynthPopCan itself.
+This is the best path when we want to run **command-line examples**, use the
+**beginner API in a notebook**, or build small teaching workflows without
+editing SynthPopCan itself.
 
 For notebook work, install SynthPopCan into the same Python environment that
 [Jupyter](https://jupyter.org/) uses. A minimal notebook smoke test is:
@@ -78,8 +79,8 @@ to reason about.
 ## Install From a Source Checkout
 
 A source checkout is a local copy of the SynthPopCan repository cloned from
-GitHub. Use one when we want to edit SynthPopCan, run the tests, build the
-documentation locally, or work against unreleased changes.
+GitHub. Use one when we want to **edit SynthPopCan**, **run the tests**, **build
+the documentation locally**, or work against unreleased changes.
 
 Clone the repository, then enter the checkout:
 

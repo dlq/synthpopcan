@@ -1,6 +1,6 @@
 # Microdata
 
-Microdata commands turn source-level census records into the smaller working
+Microdata commands turn **source-level census records** into the smaller working
 tables that SynthPopCan can fit, train, inspect, and validate. We use them when
 we need to move from a local census file to either:
 
@@ -8,29 +8,29 @@ we need to move from a local census file to either:
 - a tree-training CSV, where selected columns become targets and conditioning
   variables for a model.
 
-The command group is deliberately cautious. It inspects structure, checks
+The command group is **deliberately cautious**. It inspects structure, checks
 household-level assumptions, and writes derived CSVs without printing private
 rows by default. That matters because census microdata can be restricted,
-sensitive, or simply easy to misread. A derived file is not neutral: the chosen
+sensitive, or easy to misread. A derived file is **not neutral**: the chosen
 columns, level, geography, and row weights all become part of the research
-argument. If you export only age group and sex, the seed can only carry those
+argument. If we export only age group and sex, the seed can only carry those
 relationships forward — household income, language, immigration status, and
 dwelling type will be absent from any generated output. That is a choice, and it
 should be a deliberate one.
 
 ## Concept
 
-Public aggregate tables tell us counts by category. Microdata gives us example
+Public aggregate tables tell us **counts by category**. Microdata gives us example
 records with relationships among fields. Synthetic-population workflows often
 need both: microdata gives row structure, while controls or model conditions
 give the target population context.
 
-For IPF, the microdata export creates seed rows. IPF can only reweight those
+For IPF, the microdata export creates **seed rows**. IPF can only reweight those
 rows, so the seed has to contain the columns used in the controls. If a control
 uses `AGEGRP` and `SEX`, the seed must contain `AGEGRP` and `SEX`.
 
-For tree models, the microdata export creates training rows. Target columns are
-the fields the model will generate; conditioning columns are the fields we use
+For tree models, the microdata export creates **training rows**. **Target columns** are
+the fields the model will generate; **conditioning columns** are the fields we use
 to choose an appropriate distribution. The tree documentation explains the
 model risks in more detail, especially low support, high purity, and overfit
 geography-specific models.
@@ -48,7 +48,7 @@ household columns are constant within each household.
 
 ## Getting Started
 
-Always inspect the file first. The `inspect` command reports row and household
+Always **inspect the file first**. The `inspect` command reports row and household
 counts, detected identifier and weight columns, available geography columns,
 and the full column list — without printing any source rows. Use this output
 to confirm the file loaded correctly and to identify which columns are
@@ -60,7 +60,7 @@ synthpopcan microdata inspect \
   --input-format statcan-2016-hierarchical
 ```
 
-**For an IPF seed (person level):** export the columns your controls use.
+**For an IPF seed (person level):** export the columns the controls use.
 IPF can only reweight rows that exist in the seed, so the seed must contain
 every column referenced in any control margin. The weight column is included
 automatically.
@@ -76,7 +76,7 @@ synthpopcan microdata export-seed \
 **For an IPF seed (household level):** household columns in a person-row file
 should be constant within each household — tenure is the same for all people
 in a household, but age is not. Run `check-seed` first to confirm this holds
-for the columns you want. If any column varies within a household, a
+for the columns we want. If any column varies within a household, a
 household-level export would silently discard that variation.
 
 ```bash
@@ -97,8 +97,8 @@ synthpopcan microdata export-seed \
 ```
 
 **For a tree model (training export):** the column choices here are a
-modelling decision, not just a technical step. `suggest-tree-columns` gives
-you a starting point organized by block (household core, person demographics,
+**modelling decision**, not just a technical step. `suggest-tree-columns` gives
+us a starting point organized by block (household core, person demographics,
 etc.) based on what the adapter considers safe and coherent at each level.
 Review the suggestions before accepting them — a block that is sensible at the
 provincial level may be too detailed for a small geography.
@@ -110,7 +110,7 @@ synthpopcan microdata suggest-tree-columns \
 ```
 
 Export a training view only after deciding which fields belong in the model.
-Target columns are what the model will generate; conditioning columns are what
+**Target columns** are what the model will generate; **conditioning columns** are what
 it conditions generation on.
 
 ```bash
@@ -170,7 +170,7 @@ be exported without another modelling decision.
 
 Exports selected microdata columns as an IPF seed CSV. The weight column is
 always included. Only columns named in `--columns` appear in the output — any
-column your controls reference must be listed here, or IPF will fail with a
+column the controls reference must be listed here, or IPF will fail with a
 missing-column error.
 
 ```bash
@@ -181,7 +181,7 @@ synthpopcan microdata export-seed hierarchical.csv \
 ```
 
 For `statcan-2016-hierarchical`, person-level export is the default. Use
-`--level household` when you intentionally want one row per household. Run
+`--level household` when we intentionally want one row per household. Run
 `check-seed` first to confirm the selected columns are constant within each
 household — if they are not, the export will collapse variation silently.
 

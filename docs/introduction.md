@@ -23,14 +23,14 @@ humanities and digital-humanities perspectives are methodologically central —
 not supplementary — to this kind of work. Readers who skip it and go straight
 to installation are likely to miss framing that shapes everything else.
 
-If you already know the kind of task you want to do, use
+If we already know the kind of task we want to do, use
 {doc}`which-workflow` as a map. If unfamiliar terms get in the way, keep the
 {doc}`glossary` open in another tab.
 
 ## What Is a Synthetic Population?
 
-A synthetic population is a generated table of people, households, or other
-units. The rows are not real people. They are constructed so that selected
+A synthetic population is a **generated table** of people, households, or other
+units. The rows are **not real people**. They are constructed so that selected
 features match a target population.
 
 For example, a synthetic population might be designed so that:
@@ -41,8 +41,8 @@ For example, a synthetic population might be designed so that:
 - generated people remain linked to generated households;
 - validation reports show which targets were matched and where errors remain.
 
-Synthetic populations are useful when a project needs row-shaped data but cannot
-use real individual records directly. They are also useful for simulation,
+Synthetic populations are useful when a project needs **row-shaped data** but
+cannot use real individual records directly. They are also useful for simulation,
 teaching, exploratory modelling, and reproducible demonstrations.
 
 For broader context, [Borysov, Rich, and Pereira](https://arxiv.org/abs/1808.06910)
@@ -54,12 +54,12 @@ end of this page.
 
 ## Two Main Ways SynthPopCan Generates Rows
 
-SynthPopCan currently has two main generation paths.
+SynthPopCan currently has **two main generation paths**.
 
 **IPF calibration** starts with a seed table. The seed contains example rows and
 columns such as age group, sex, tenure, or geography. IPF adjusts the row weights
 until the weighted totals match a set of control totals. This is best when the
-seed already contains the variables you want to fit.
+seed already contains the variables we want to fit.
 
 **Tree-based generation** trains a model from microdata-derived training rows,
 then generates new rows from the model. The linked tree workflow trains
@@ -79,7 +79,7 @@ technical reference for CART-style splits, while the population-synthesis
 literature listed below gives broader context for why household/person
 relationships matter.
 
-Tree-based generation is not automatically better than IPF. It can produce rows
+Tree-based generation is **not automatically better than IPF**. It can produce rows
 with richer combinations of variables, but the quality of the model depends on
 the training rows, the column choices, and the amount of support behind each
 branch. A bad model may reproduce a biased training sample, memorize rare
@@ -102,8 +102,8 @@ synthpopcan guide model
 
 Synthetic populations can be persuasive because they look like ordinary data:
 one row per person, one row per household, familiar column names, and tidy CSV
-files. That familiar shape can create false confidence. A generated table is not
-a recovered census file. It is an argument made from source data, modelling
+files. That familiar shape can create false confidence. A **generated table** is
+not a recovered census file. It is an argument made from source data, modelling
 choices, category mappings, random seeds, and validation thresholds.
 
 This matters especially for humanities and digital-humanities work, where the
@@ -179,14 +179,13 @@ This pattern is intentionally conservative. It helps readers understand not only
 what the tool produced, but what choices shaped the result.
 
 The rest of the documentation follows this pattern. Use
-[Which Workflow Should We Use?](which-workflow.md) when you are choosing a
-path, [Data](data.md) when you are still inspecting files, [Statistics Canada
-Sources](statcan.md) and [Controls](controls.md) when you are preparing public
-aggregate totals, [IPF](ipf.md) when you are fitting seed rows to controls,
-[Tree Models](tree.md) when you are training or using conditional generation,
+[Which Workflow Should We Use?](which-workflow.md) when we are choosing a path, [Data](data.md) when we are still inspecting files, [Statistics Canada
+Sources](statcan.md) and [Controls](controls.md) when we are preparing public
+aggregate totals, [IPF](ipf.md) when we are fitting seed rows to controls,
+[Tree Models](tree.md) when we are training or using conditional generation,
 [Small-Area Linked Synthesis](small-area.md) when assigning linked outputs to
-CTs, ADAs, or DAs, and [Validate](validate.md) when you are checking outputs.
-If you prefer Python notebooks to command-line workflows, start with
+CTs, ADAs, or DAs, and [Validate](validate.md) when we are checking outputs.
+If we prefer Python notebooks to command-line workflows, start with
 [Getting Started With the Beginner API](library-getting-started.md).
 
 ## Find SynthPopCan Online

@@ -1,16 +1,16 @@
 # Field Primer
 
 This page is a broad introduction to the field around SynthPopCan. It is meant
-to sit somewhere between a primer, a short methods essay, and a map of the
-research area. You can use the command sections without reading it first, but it
+to sit somewhere between a **primer**, a **methods essay**, and a **research
+map**. We can use the command sections without reading it first, but it
 explains why the commands are shaped the way they are.
 
 ## Why Synthetic Populations Exist
 
-A synthetic population is a modelled population made of records that look like
-people, households, families, dwellings, or other units. The records are not
-supposed to be the original people. They are generated so that selected features
-match a target population closely enough for a particular use.
+A synthetic population is a **modelled population** made of records that look
+like people, households, families, dwellings, or other units. The records are
+**not supposed to be the original people**. They are generated so that selected
+features match a target population closely enough for a particular use.
 
 This idea is useful because many research questions need row-shaped data:
 
@@ -24,7 +24,7 @@ This idea is useful because many research questions need row-shaped data:
 
 The danger is that a synthetic population looks more concrete than it is. A CSV
 with one row per person can feel like evidence. It is better to read it as a
-model: a disciplined argument about what a population could look like, given
+**model**: a disciplined argument about what a population could look like, given
 source tables, microdata, category mappings, assumptions, random seeds, and
 validation choices.
 
@@ -67,9 +67,10 @@ constrained generation, validation, and provenance.
 ## What Makes Canadian Data Awkward
 
 The Canadian case is not just "take a generic synthetic-population package and
-point it at Statistics Canada." Several details matter.
+point it at Statistics Canada." **Several details matter.**
 
-Statistics Canada aggregate tables are not all shaped as ready-to-fit controls.
+Statistics Canada aggregate tables are **not all shaped as ready-to-fit
+controls**.
 The [Census Profile](https://www12.statcan.gc.ca/census-recensement/2016/dp-pd/prof/index.cfm?Lang=E)
 is a long table of geographies and characteristics.
 [WDS](https://www.statcan.gc.ca/en/developers/wds) tables have their own
@@ -259,15 +260,15 @@ to make them explicit enough that readers can argue with them.
 
 ## Reading Map
 
-Start with the command pages when you need to run a workflow:
+Start with the command pages when we need to run a workflow:
 
-- {doc}`which-workflow` when you know the task but not the right surface;
+- {doc}`which-workflow` when we know the task but not the right surface;
 - {doc}`ipf` for margin-table calibration;
 - {doc}`tree` for conditional and linked household/person generation;
 - {doc}`controls` and {doc}`statcan` for preparing public aggregate sources;
 - {doc}`validate` for checking generated artifacts.
 
-Return to this primer when you need to explain what the output means, and use
+Return to this primer when we need to explain what the output means, and use
 {doc}`glossary` when a census, modelling, or software term needs a compact
 definition.
 

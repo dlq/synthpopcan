@@ -1,4 +1,4 @@
-<svg viewBox="0 0 740 360" xmlns="http://www.w3.org/2000/svg" role="img" font-family="system-ui, sans-serif" font-size="13">
+<svg viewBox="0 0 740 388" xmlns="http://www.w3.org/2000/svg" role="img" font-family="system-ui, sans-serif" font-size="13">
   <title>Tree-based generation: a decision tree splits on conditioning columns and samples from leaf frequency distributions</title>
   <desc>A decision tree rooted at Tenure splits into Owner and Renter branches. Each branch splits further on Household Size into 1-2 and 3+ groups. The four leaf nodes show the observed dwelling-type frequency distributions used to sample generated values. Owner/1-2: Apt 22%, Semi 18%, Single 60%, n=841. Owner/3+: Apt 5%, Semi 20%, Single 75%, n=1204. Renter/1-2: Apt 61%, Semi 14%, Single 25%, n=592. Renter/3+: Apt 45%, Semi 22%, Single 33%, n=388.</desc>
 
@@ -75,6 +75,9 @@
   <text x="672" y="308" text-anchor="middle" font-size="9" fill="#16a34a">n = 388</text>
 
   <!-- Caption bar -->
-  <rect x="14" y="330" width="712" height="22" rx="4" fill="#f1f5f9"/>
-  <text x="28" y="345" font-size="10.5" fill="#555">Each leaf holds the observed target frequencies from training data. To generate, walk the tree using a row's conditions and sample from the matching leaf.</text>
+  <rect x="14" y="330" width="712" height="44" rx="4" fill="#f1f5f9"/>
+  <text x="370" y="348" text-anchor="middle" font-size="10.5" fill="#555">
+    <tspan x="370" dy="0">Each leaf holds observed target frequencies from training data.</tspan>
+    <tspan x="370" dy="16">To generate, walk the tree using a row's conditions and sample from the matching leaf.</tspan>
+  </text>
 </svg>

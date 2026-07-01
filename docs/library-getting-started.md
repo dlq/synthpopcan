@@ -2,12 +2,12 @@
 
 {download}`Download as Jupyter notebook <_static/library-getting-started.ipynb>`
 
-The beginner API is the supported first path for notebooks, teaching examples,
+The beginner API is the **supported first path** for notebooks, teaching examples,
 and short scripts. It is designed for readers who want to ask research
 questions with synthetic population data without first learning every internal
 module in SynthPopCan.
 
-It gives you a few functions for common work:
+It gives us a few functions for **common work**:
 
 - fit seed rows to control totals with IPF;
 - save weighted or expanded IPF output;
@@ -15,13 +15,13 @@ It gives you a few functions for common work:
 - calibrate generated linked household/person candidates to small-area
   household controls.
 
-It does not expose training, auditing, packaging, source inspection, or release
+It does **not** expose training, auditing, packaging, source inspection, or release
 workflows at the top level. Those remain available in the command line and in
 the lower-level library modules described in [Advanced Library Use](library.md).
 
 ## The Same Two Beginner Workflows
 
-The beginner API mirrors the two main web app paths:
+The beginner API mirrors the **two main web app paths**:
 
 1. **IPF from margin tables:** read seed rows, read normalized controls, fit
    IPF weights, then write a weighted or expanded population artifact.
@@ -34,13 +34,13 @@ It also exposes one follow-on workflow:
    candidate CSVs, calibrate household rows to small-area controls, and write
    household/person CSVs with an assigned geography such as census tract or ADA.
 
-Use the web app when you want guided local controls, previews, and downloads.
-Use the beginner API when you want the same work inside a notebook, script, or
+Use the **web app** when we want guided local controls, previews, and downloads.
+Use the **beginner API** when we want the same work inside a notebook, script, or
 teaching example.
 
 ## Why Use a Notebook?
 
-A notebook lets you keep prose, code, output, and interpretation together. That
+A notebook lets us keep **prose, code, output, and interpretation together**. That
 is useful for humanities and digital humanities work because the important part
 of a synthetic population workflow is not only the final CSV. It is also the
 record of choices:
@@ -52,13 +52,14 @@ record of choices:
 - what caveats should travel with the output.
 
 Jupyter notebooks are a common way to do this kind of mixed narrative and
-computational work. If you have not used notebooks before, this introduction is
-written for humanities researchers and requires no prior programming experience:
+computational work. For readers who have not used notebooks before, this
+introduction is written for humanities researchers and requires no prior
+programming experience:
 
 - [Introduction to Jupyter Notebooks](https://programminghistorian.org/en/lessons/jupyter-notebooks)
   — Programming Historian
 
-For reference documentation once you are up and running:
+For reference documentation once the notebook environment is running:
 
 - [Project Jupyter documentation](https://docs.jupyter.org/en/latest/)
 - [JupyterLab notebooks user guide](https://jupyterlab.readthedocs.io/en/latest/user/notebook.html)
@@ -91,8 +92,8 @@ process that actually runs the code cells.
 A notebook is a good place to inspect files, try a small fit, and record the
 choices that shaped the output.
 
-The source checkout includes a tiny already-exported seed file and a matching
-control file. We will use those first so the notebook example has concrete
+The source checkout includes a **tiny already-exported seed file** and a **matching
+control file**. We will use those first so the notebook example has concrete
 paths:
 
 ```python
@@ -102,7 +103,7 @@ controls_path = fixture_root / "controls.csv"
 ```
 
 Read a seed file and look at its shape before fitting. The first line asks how
-many rows were read. The second shows one row so you can inspect the column
+many rows were read. The second shows one row so we can inspect the column
 names and values:
 
 ```python
@@ -112,7 +113,7 @@ len(seed), seed[0]
 ```
 
 The beginner API represents CSV rows as ordinary dictionaries. That keeps the
-data easy to inspect without learning a dataframe library first. This cell
+data straightforward to inspect without learning a dataframe library first. This cell
 lists the column names from the first row:
 
 ```python
@@ -161,8 +162,8 @@ spc.write_weights(fit, "synthetic-weights.csv")
 ```
 
 For many research workflows, weighted output is the best first artifact: it is
-small, auditable, and keeps the relationship to the seed records visible. You
-can still expand it when a downstream tool needs one row per generated record:
+small, auditable, and keeps the relationship to the seed records visible. We can
+still expand it when a downstream tool needs one row per generated record:
 
 ```python
 expanded = spc.expand_population(fit)
@@ -181,7 +182,7 @@ small examples. Expanded population files can be much larger than the seed file.
 
 ## Work Directly From Paths
 
-When you do not need to inspect or filter rows between steps, pass paths
+When we do not need to inspect or filter rows between steps, pass paths
 directly:
 
 ```python

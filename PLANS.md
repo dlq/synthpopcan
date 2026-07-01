@@ -8,11 +8,9 @@ Last updated: 2026-06-26
 Build SynthPopCan as a Python library, CLI, and local web app for Canadian
 synthetic population generation.
 
-This file says what belongs in each release phase. Detailed completed
-implementation status, benchmark notes, and verification evidence belong in the
-Sphinx documentation, especially `docs/status.md`. Research background and
-source synthesis belong in `NOTES.md`. Full implementation task plans belong in
-`docs/superpowers/plans/`.
+This file says what belongs in each release phase. Completed release notes
+belong in `CHANGELOG.md`; research background and source synthesis belong in
+`NOTES.md`; full implementation task plans belong in `docs/superpowers/plans/`.
 
 The core product scope remains:
 
@@ -33,7 +31,7 @@ The core product scope remains:
   storing copies in the project.
 - Make the library usable without the web app. The CLI should expose the same
   core workflows as the Python API.
-- Keep beginner workflows readable for humanities and digital-humanities users:
+- Keep beginner workflows readable for humanities and digital-humanities readers:
   approachable defaults, helpful errors, visible next steps, and optional
   machine-readable output for automation.
 - Treat geography, variables, margins, seed samples, weights, generated rows,
@@ -150,7 +148,7 @@ Primary deliverables:
 - Validation reports that check household controls, person margins used only
   for validation, and linked-output consistency.
 - CLI and Python API entry points that are explicit about the workflow without
-  forcing users to understand every intermediate command.
+  forcing researchers to understand every intermediate command.
 - Documentation workflow with a small reproducible fixture and a real-data
   optional path.
 
@@ -213,7 +211,7 @@ Candidate work:
 - Add household-size recoding helpers for Census Profile categories such as
   `1`, `2`, `3`, `4`, and `5 or more` before fitting generated exact household
   sizes to small-area controls.
-- Improve margin-selection helpers so users can see which StatCan tables are
+- Improve margin-selection helpers so researchers can see which StatCan tables are
   usable controls, which are validation-only, and which require enrichment.
 - Add richer non-convergence diagnostics for inconsistent small-area controls,
   sparse geographies, structural zeros, and category mismatches.
@@ -225,13 +223,13 @@ Candidate work:
 - Reduce memory pressure in microdata adapters through narrower column loading
   or streaming where it meaningfully affects real workflows.
 - Add performance budgets and benchmark fixtures for province-scale generation
-  and calibration. **Partly met; `geo estimate-run` gives users a preflight
+  and calibration. **Partly met; `geo estimate-run` gives researchers a preflight
   scale estimate and web app vs CLI/API recommendation before calibration.**
 
 0.3.x exit criteria:
 
 - Small-area runs have predictable diagnostics for both success and failure.
-- Performance guidance is concrete enough to tell users when to use the web
+- Performance guidance is concrete enough to tell researchers when to use the web
   app, CLI, or Python API.
 - Optional faster backends remain invisible unless they clearly help a real
   user workflow.

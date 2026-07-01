@@ -1,13 +1,13 @@
 # Advanced Library Use
 
-The Python library is for people who want to use SynthPopCan inside notebooks,
-scripts, reproducible research pipelines, or teaching materials. The command
-line remains the friendliest surface for one-off work, but the library provides
-a small beginner API for common workflows and lower-level modules for research
-code that needs more control.
+The Python library is for people who want to use SynthPopCan inside
+**notebooks**, **scripts**, **research pipelines**, or **teaching materials**.
+The command line remains the friendliest surface for one-off work, but the
+library provides a **small beginner API** for common workflows and
+**lower-level modules** for research code that needs more control.
 
-This section does not repeat the methodological discussion from the command
-line chapters. If you are new to a modelling approach, start with the
+This section does **not** repeat the methodological discussion from the command
+line chapters. If we are new to a modelling approach, start with the
 corresponding command-line page first:
 
 - [IPF](ipf.md) explains calibration, impossible controls, non-convergence, and
@@ -21,13 +21,13 @@ corresponding command-line page first:
 - [Validate](validate.md) explains what validation reports do and do not prove.
 
 Start with [Getting Started With the Beginner API](library-getting-started.md)
-unless you already know you need lower-level objects such as `IPFMargin`,
+unless we already know we need **lower-level objects** such as `IPFMargin`,
 `ControlTable`, or `FrequencyTreeModel`. This page is the advanced guide to the
 full library surface.
 
 ## Import Style
 
-For longer research code, import from the module that owns a concept:
+For longer research code, import from the **module that owns a concept**:
 
 ```python
 from pathlib import Path
@@ -42,15 +42,15 @@ validation.
 
 Use `synthpopcan.api` or `import synthpopcan as spc` for the beginner-friendly
 workflow functions. Use modules such as `synthpopcan.ipf`,
-`synthpopcan.controls`, and `synthpopcan.tree` when you need lower-level
+`synthpopcan.controls`, and `synthpopcan.tree` when we need lower-level
 objects or advanced options.
 
 ## Controls
 
-Controls are the public library representation of target totals. A
+Controls are the public library representation of **target totals**. A
 `ControlTable` contains one or more `ControlMargin` objects; each margin contains
 `ControlCell` objects with category labels and counts. Use these objects when
-you want to inspect or transform controls before fitting.
+we want to inspect or transform controls before fitting.
 
 ```python
 from pathlib import Path
@@ -236,7 +236,7 @@ downloads during every run.
 The tree library exposes two model families: `FrequencyTreeModel`, which stores
 conditional aggregate outcomes, and `CartTreeModel`, which stores a serialized
 scikit-learn CART classifier. The command-line [Tree Models](tree.md) chapter
-discusses the methodological risks; the library API gives you the objects needed
+discusses the methodological risks; the library API gives us the objects needed
 to train, audit, serialize, and generate from those models.
 
 When we are ready to train from a file, the training CSV should contain the
@@ -378,4 +378,4 @@ validation reports in research notes.
 
 The [API Reference](api.rst) is generated from docstrings with Sphinx autodoc.
 It is the place to look for signatures, return types, and member-level notes
-after you understand the workflow-level concepts above.
+after we understand the workflow-level concepts above.

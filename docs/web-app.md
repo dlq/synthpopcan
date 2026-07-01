@@ -1,9 +1,9 @@
 # Local Web App
 
-The `serve` command starts the local SynthPopCan web app. It is meant for local
-inspection and guided workflows: configuring runs, reviewing controls, checking
-outputs, and downloading generated artifacts. It is not a public deployment
-command.
+The `serve` command starts the **local SynthPopCan web app**. It is meant for
+local inspection and guided workflows: configuring runs, reviewing controls,
+checking outputs, and downloading generated artifacts. It is **not a public
+deployment command**.
 
 ## Getting Started
 
@@ -24,14 +24,14 @@ browser.
 
 ## Choose a Workflow
 
-The first screen has two beginner paths. Both run locally on your machine.
+The first screen has **two beginner paths**. Both run locally on our machine.
 
 ### IPF from margin tables
 
-Choose this when you want to fit seed rows to public margin/control totals.
+Choose this when we want to fit **seed rows** to **public margin/control totals**.
 This path can start in two ways:
 
-- use the demo files or blank templates when you are learning the format; or
+- use the demo files or blank templates when we are learning the format; or
 - search for a Statistics Canada [WDS](https://www.statcan.gc.ca/en/developers/wds) product ID, inspect the table, and let the
   local helper fill the seed CSV and normalized margin/control CSV.
 
@@ -45,8 +45,8 @@ The same workflow is documented for command-line use in {doc}`statcan`,
 
 ### Generate from existing model
 
-Choose this when you have a prepared model JSON or a linked household/person
-package JSON. The web app can also load premade packages served by the local
+Choose this when we have a **prepared model JSON** or a **linked household/person
+package JSON**. The web app can also load premade packages served by the local
 helper. The bundled safe demo package is synthetic toy data, not Census
 microdata; published models such as `montreal-cma-2016-all-fields` appear in
 the same chooser after they are fetched into the local model cache.
@@ -66,7 +66,7 @@ usually Statistics Canada special codes such as not applicable, not available,
 or valid skip, depending on the column. They should be decoded with field
 metadata before being treated as numeric analysis values.
 
-The first web app deliberately does not train models. Training, audit, and
+The first web app deliberately does **not train models**. Training, audit, and
 release workflows remain advanced command-line/library work; see {doc}`tree`.
 
 ## Options
@@ -100,6 +100,6 @@ local URL manually.
 **The app cannot see expected local data:** run {doc}`data` first to check the
 local data layout, then use `data inspect` and `data schema` to inspect specific files.
 
-**You need command-line reproducibility:** use the command-line pages for the
-workflow you are building. The web app is useful for guided inspection, while
+**We need command-line reproducibility:** use the command-line pages for the
+workflow we are building. The web app is useful for guided inspection, while
 the CLI is easier to record in scripts, notebooks, and methods sections.
