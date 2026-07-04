@@ -10,7 +10,8 @@ import click
 
 from synthpopcan.calibration import build_control_suggestion_report
 from synthpopcan.cli_output import (
-    format_file_access_error,
+    click_file_access_error,
+    click_value_error,
     format_fit_value_error,
     format_nonconvergence_message,
     print_ipf_control_suggestions_table,
@@ -64,11 +65,9 @@ def _check_ipf_inputs(
         seed_rows = _read_csv(seed_path)
         control_table = read_control_table(controls_path)
     except OSError as exc:
-        raise click.ClickException(
-            format_file_access_error(exc.filename, "read", exc)
-        ) from exc
+        raise click_file_access_error(exc.filename, "read", exc) from exc
     except ValueError as exc:
-        raise click.ClickException(str(exc)) from exc
+        raise click_value_error(exc) from exc
     report = build_ipf_input_report(seed_rows, control_table)
     write_report(report, output_format, print_ipf_input_check_table)
 
@@ -100,9 +99,7 @@ def _suggest_ipf_controls(
     try:
         seed_rows = _read_csv(seed_path)
     except OSError as exc:
-        raise click.ClickException(
-            format_file_access_error(seed_path, "read", exc)
-        ) from exc
+        raise click_file_access_error(seed_path, "read", exc) from exc
     report = build_control_suggestion_report(
         seed_rows, unit=unit, seed_path=str(seed_path)
     )
@@ -158,27 +155,21 @@ def _fit_ipf_command(
             tolerance=tolerance,
         )
     except OSError as exc:
-        raise click.ClickException(
-            format_file_access_error(exc.filename or seed_path, "read", exc)
-        ) from exc
+        raise click_file_access_error(exc.filename or seed_path, "read", exc) from exc
     except ValueError as exc:
-        raise click.ClickException(format_fit_value_error(exc)) from exc
+        raise click_value_error(exc, format_fit_value_error) from exc
     report = build_ipf_fit_report(control_table, result)
     if report_path:
         try:
             report_path.write_text(json.dumps(report, indent=2) + "\n")
         except OSError as exc:
-            raise click.ClickException(
-                format_file_access_error(report_path, "write", exc)
-            ) from exc
+            raise click_file_access_error(report_path, "write", exc) from exc
     if not result.converged and not allow_nonconverged:
         raise click.ClickException(format_nonconvergence_message(report))
     try:
         _write_weighted_seed(out_path, seed_rows, result.weights)
     except OSError as exc:
-        raise click.ClickException(
-            format_file_access_error(out_path, "write", exc)
-        ) from exc
+        raise click_file_access_error(out_path, "write", exc) from exc
     if report_path:
         print_wrote(report_path)
     print_wrote(out_path)
@@ -207,11 +198,11 @@ def _expand_ipf(weights_path: Path, out_path: Path, weight_field: str) -> None:
         seed_rows, weights = _read_weighted_seed(weights_path, weight_field)
         _write_expanded_seed(out_path, seed_rows, weights)
     except OSError as exc:
-        raise click.ClickException(
-            format_file_access_error(exc.filename or weights_path, "access", exc)
+        raise click_file_access_error(
+            exc.filename or weights_path, "access", exc
         ) from exc
     except ValueError as exc:
-        raise click.ClickException(str(exc)) from exc
+        raise click_value_error(exc) from exc
     print_wrote(out_path)
 
 
@@ -229,7 +220,7 @@ def _report_ipf(path: Path, output_format: str) -> None:
     try:
         report = json.loads(path.read_text())
     except OSError as exc:
-        raise click.ClickException(format_file_access_error(path, "read", exc)) from exc
+        raise click_file_access_error(path, "read", exc) from exc
     except json.JSONDecodeError as exc:
         raise click.ClickException(f"{path} is not valid JSON") from exc
     write_report(report, output_format, print_ipf_report_table)

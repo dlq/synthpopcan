@@ -10,7 +10,8 @@ from pathlib import Path
 import click
 
 from synthpopcan.cli_output import (
-    format_file_access_error,
+    click_file_access_error,
+    click_value_error,
     print_seed_check_table,
     print_tree_column_suggestions_table,
     print_tree_geography_feasibility_table,
@@ -94,9 +95,9 @@ def inspect_microdata(
         else:
             sample = read_statcan_2016_hierarchical_seed_sample(path)
     except OSError as exc:
-        raise click.ClickException(format_file_access_error(path, "read", exc)) from exc
+        raise click_file_access_error(path, "read", exc) from exc
     except ValueError as exc:
-        raise click.ClickException(str(exc)) from exc
+        raise click_value_error(exc) from exc
     write_output(sample.as_summary(), output_format, title="Microdata Summary")
 
 
@@ -144,9 +145,9 @@ def check_microdata_seed(
             columns=selected_columns,
         )
     except OSError as exc:
-        raise click.ClickException(format_file_access_error(path, "read", exc)) from exc
+        raise click_file_access_error(path, "read", exc) from exc
     except ValueError as exc:
-        raise click.ClickException(str(exc)) from exc
+        raise click_value_error(exc) from exc
 
     write_report(report, output_format, print_seed_check_table)
 
@@ -178,9 +179,9 @@ def suggest_microdata_tree_columns(
         sample = read_statcan_2016_hierarchical_seed_sample(path)
         report = suggest_tree_column_blocks(sample)
     except OSError as exc:
-        raise click.ClickException(format_file_access_error(path, "read", exc)) from exc
+        raise click_file_access_error(path, "read", exc) from exc
     except ValueError as exc:
-        raise click.ClickException(str(exc)) from exc
+        raise click_value_error(exc) from exc
 
     write_report(report, output_format, print_tree_column_suggestions_table)
 
@@ -292,9 +293,9 @@ def tree_geography_feasibility(
             max_purity=max_purity,
         )
     except OSError as exc:
-        raise click.ClickException(format_file_access_error(path, "read", exc)) from exc
+        raise click_file_access_error(path, "read", exc) from exc
     except ValueError as exc:
-        raise click.ClickException(str(exc)) from exc
+        raise click_value_error(exc) from exc
 
     write_report(report, output_format, print_tree_geography_feasibility_table)
 
@@ -378,11 +379,9 @@ def export_microdata_seed(
         rows, summary = export_seed_rows(sample, columns=selected_columns)
         write_rows(out_path, rows)
     except OSError as exc:
-        raise click.ClickException(
-            format_file_access_error(exc.filename or path, "access", exc)
-        ) from exc
+        raise click_file_access_error(exc.filename or path, "access", exc) from exc
     except ValueError as exc:
-        raise click.ClickException(str(exc)) from exc
+        raise click_value_error(exc) from exc
     write_report(
         summary,
         output_format,
@@ -453,11 +452,9 @@ def export_microdata_training(
         )
         write_rows(out_path, rows)
     except OSError as exc:
-        raise click.ClickException(
-            format_file_access_error(exc.filename or path, "access", exc)
-        ) from exc
+        raise click_file_access_error(exc.filename or path, "access", exc) from exc
     except ValueError as exc:
-        raise click.ClickException(str(exc)) from exc
+        raise click_value_error(exc) from exc
     write_report(
         summary,
         output_format,

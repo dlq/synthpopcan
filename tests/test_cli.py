@@ -426,84 +426,150 @@ def test_cap_column_inplace_missing_column_leaves_rows_unchanged(tmp_path) -> No
     assert rows[0]["other_col"] == "hello"
 
 
-# ---------------------------------------------------------------------------
-# cli_ipf.py — check-inputs OSError (lines 65-68)
-# ---------------------------------------------------------------------------
-
-
-def test_ipf_check_inputs_oserror_on_seed_read(tmp_path) -> None:
-    """Lines 65-68: OSError reading seed raises ClickException."""
-    missing_seed = tmp_path / "missing_seed.csv"
-    controls = tmp_path / "controls.csv"
-    controls.write_text(
-        "margin,dimensions,age,count\nage,age,young,50\nage,age,old,50\n"
-    )
-
-    with pytest.raises(ClickException):
-        main(
+@pytest.mark.parametrize(
+    "command_template,needs_controls,needs_out",
+    [
+        (
             [
                 "ipf",
                 "check-inputs",
                 "--seed",
-                str(missing_seed),
+                "{missing}",
                 "--controls",
-                str(controls),
-            ]
-        )
-
-
-# ---------------------------------------------------------------------------
-# cli_ipf.py — suggest-controls OSError (lines 104-107)
-# ---------------------------------------------------------------------------
-
-
-def test_ipf_suggest_controls_oserror_on_seed_read(tmp_path) -> None:
-    """Lines 104-107: OSError reading seed raises ClickException."""
-    missing_seed = tmp_path / "no_such_seed.csv"
-
-    with pytest.raises(ClickException):
-        main(
-            [
-                "ipf",
-                "suggest-controls",
-                "--seed",
-                str(missing_seed),
-            ]
-        )
-
-
-# ---------------------------------------------------------------------------
-# cli_ipf.py — fit OSError on read (lines 165-168)
-# ---------------------------------------------------------------------------
-
-
-def test_ipf_fit_oserror_on_missing_seed(tmp_path) -> None:
-    """Lines 165-168: missing seed CSV raises ClickException."""
-    missing_seed = tmp_path / "missing.csv"
-    controls = tmp_path / "controls.csv"
-    controls.write_text(
-        "margin,dimensions,age,count\nage,age,young,50\nage,age,old,50\n"
-    )
-    out = tmp_path / "out.csv"
-
-    with pytest.raises(ClickException):
-        main(
+                "{controls}",
+            ],
+            True,
+            False,
+        ),
+        (["ipf", "suggest-controls", "--seed", "{missing}"], False, False),
+        (
             [
                 "ipf",
                 "fit",
                 "--seed",
-                str(missing_seed),
+                "{missing}",
                 "--controls",
-                str(controls),
+                "{controls}",
                 "--out",
-                str(out),
-            ]
+                "{out}",
+            ],
+            True,
+            True,
+        ),
+        (
+            [
+                "microdata",
+                "inspect",
+                "{missing}",
+                "--input-format",
+                "statcan-2016-hierarchical",
+            ],
+            False,
+            False,
+        ),
+        (
+            [
+                "microdata",
+                "check-seed",
+                "{missing}",
+                "--input-format",
+                "statcan-2016-hierarchical",
+                "--level",
+                "household",
+                "--columns",
+                "HHSIZE",
+            ],
+            False,
+            False,
+        ),
+        (
+            [
+                "microdata",
+                "suggest-tree-columns",
+                "{missing}",
+                "--input-format",
+                "statcan-2016-hierarchical",
+            ],
+            False,
+            False,
+        ),
+        (
+            [
+                "microdata",
+                "tree-geography-feasibility",
+                "{missing}",
+                "--input-format",
+                "statcan-2016-hierarchical",
+                "--geo-column",
+                "PR",
+                "--household-block",
+                "HHSIZE",
+                "--person-block",
+                "AGEGRP",
+            ],
+            False,
+            False,
+        ),
+        (
+            [
+                "microdata",
+                "export-seed",
+                "{missing}",
+                "--input-format",
+                "statcan-2016-hierarchical",
+                "--columns",
+                "HHSIZE",
+                "--out",
+                "{out}",
+            ],
+            False,
+            True,
+        ),
+        (
+            [
+                "microdata",
+                "export-training",
+                "{missing}",
+                "--input-format",
+                "statcan-2016-hierarchical",
+                "--level",
+                "person",
+                "--target-columns",
+                "AGEGRP",
+                "--conditioning-columns",
+                "HHSIZE",
+                "--out",
+                "{out}",
+            ],
+            False,
+            True,
+        ),
+    ],
+)
+def test_cli_missing_input_files_raise_click_exception(
+    tmp_path,
+    command_template: list[str],
+    needs_controls: bool,
+    needs_out: bool,
+) -> None:
+    missing = tmp_path / "missing.csv"
+    controls = tmp_path / "controls.csv"
+    if needs_controls:
+        controls.write_text(
+            "margin,dimensions,age,count\nage,age,young,50\nage,age,old,50\n"
         )
+    out = tmp_path / "out.csv"
+    replacements = {
+        "{missing}": str(missing),
+        "{controls}": str(controls),
+        "{out}": str(out),
+    }
+    command = [replacements.get(part, part) for part in command_template]
 
-
-# ---------------------------------------------------------------------------
-# cli_ipf.py — fit non-convergence (line 179-180)
-# ---------------------------------------------------------------------------
+    with pytest.raises(ClickException):
+        main(command)
+    if needs_out:
+        assert not out.exists()
 
 
 def test_ipf_fit_nonconvergence_raises_click_exception(tmp_path) -> None:
@@ -541,164 +607,6 @@ def test_ipf_fit_nonconvergence_raises_click_exception(tmp_path) -> None:
                 "2",
                 "--tolerance",
                 "1e-100",
-            ]
-        )
-
-
-# ---------------------------------------------------------------------------
-# cli_microdata.py — inspect OSError (line 97)
-# ---------------------------------------------------------------------------
-
-
-def test_microdata_inspect_oserror_raises_click_exception(tmp_path) -> None:
-    """Line 97: OSError from reading hierarchical seed raises ClickException."""
-    missing = tmp_path / "no_such_file.csv"
-
-    with pytest.raises(ClickException):
-        main(
-            [
-                "microdata",
-                "inspect",
-                str(missing),
-                "--input-format",
-                "statcan-2016-hierarchical",
-            ]
-        )
-
-
-# ---------------------------------------------------------------------------
-# cli_microdata.py — check-seed OSError (line 147)
-# ---------------------------------------------------------------------------
-
-
-def test_microdata_check_seed_oserror_raises_click_exception(tmp_path) -> None:
-    """Line 147: OSError from reading hierarchical seed raises ClickException."""
-    missing = tmp_path / "no_such_file.csv"
-
-    with pytest.raises(ClickException):
-        main(
-            [
-                "microdata",
-                "check-seed",
-                str(missing),
-                "--input-format",
-                "statcan-2016-hierarchical",
-                "--level",
-                "household",
-                "--columns",
-                "HHSIZE",
-            ]
-        )
-
-
-# ---------------------------------------------------------------------------
-# cli_microdata.py — suggest-tree-columns OSError (line 184)
-# ---------------------------------------------------------------------------
-
-
-def test_microdata_suggest_tree_columns_oserror_raises_click_exception(
-    tmp_path,
-) -> None:
-    """Line 184: OSError from reading hierarchical seed raises ClickException."""
-    missing = tmp_path / "no_such_file.csv"
-
-    with pytest.raises(ClickException):
-        main(
-            [
-                "microdata",
-                "suggest-tree-columns",
-                str(missing),
-                "--input-format",
-                "statcan-2016-hierarchical",
-            ]
-        )
-
-
-# ---------------------------------------------------------------------------
-# cli_microdata.py — inspect-geography OSError (line 301)
-# ---------------------------------------------------------------------------
-
-
-def test_microdata_inspect_geography_oserror_raises_click_exception(
-    tmp_path,
-) -> None:
-    """Line 301: OSError from reading hierarchical seed raises ClickException."""
-    missing = tmp_path / "no_such_file.csv"
-
-    with pytest.raises(ClickException):
-        main(
-            [
-                "microdata",
-                "tree-geography-feasibility",
-                str(missing),
-                "--input-format",
-                "statcan-2016-hierarchical",
-                "--geo-column",
-                "PR",
-                "--household-block",
-                "HHSIZE",
-                "--person-block",
-                "AGEGRP",
-            ]
-        )
-
-
-# ---------------------------------------------------------------------------
-# cli_microdata.py — export-seed OSError on read (line 390)
-# ---------------------------------------------------------------------------
-
-
-def test_microdata_export_seed_oserror_on_missing_file_raises_click_exception(
-    tmp_path,
-) -> None:
-    """Line 390: OSError when input file is missing raises ClickException."""
-    missing = tmp_path / "no_such_file.csv"
-    out = tmp_path / "seed_out.csv"
-
-    with pytest.raises(ClickException):
-        main(
-            [
-                "microdata",
-                "export-seed",
-                str(missing),
-                "--input-format",
-                "statcan-2016-hierarchical",
-                "--columns",
-                "HHSIZE",
-                "--out",
-                str(out),
-            ]
-        )
-
-
-# ---------------------------------------------------------------------------
-# cli_microdata.py — export-training OSError on read (line 462)
-# ---------------------------------------------------------------------------
-
-
-def test_microdata_export_training_oserror_on_missing_file_raises_click_exception(
-    tmp_path,
-) -> None:
-    """Line 462: OSError when input file is missing raises ClickException."""
-    missing = tmp_path / "no_such_file.csv"
-    out = tmp_path / "training_out.csv"
-
-    with pytest.raises(ClickException):
-        main(
-            [
-                "microdata",
-                "export-training",
-                str(missing),
-                "--input-format",
-                "statcan-2016-hierarchical",
-                "--level",
-                "person",
-                "--target-columns",
-                "AGEGRP",
-                "--conditioning-columns",
-                "HHSIZE",
-                "--out",
-                str(out),
             ]
         )
 

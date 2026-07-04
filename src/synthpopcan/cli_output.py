@@ -7,9 +7,13 @@ import json
 from collections.abc import Callable
 from typing import Any
 
+import click
+
 from synthpopcan.console import make_table, print_summary_table, print_table
 
 __all__ = [
+    "click_file_access_error",
+    "click_value_error",
     "format_file_access_error",
     "format_fit_value_error",
     "format_nonconvergence_message",
@@ -41,6 +45,25 @@ def format_file_access_error(path: object, action: str, exc: OSError) -> str:
         "Check that the path is correct and that SynthPopCan has permission "
         "to access it."
     )
+
+
+def click_file_access_error(
+    path: object,
+    action: str,
+    exc: OSError,
+) -> click.ClickException:
+    """Wrap a file access failure in a user-facing Click exception."""
+
+    return click.ClickException(format_file_access_error(path, action, exc))
+
+
+def click_value_error(
+    exc: ValueError,
+    formatter: Callable[[ValueError], str] = str,
+) -> click.ClickException:
+    """Wrap a domain validation error in a Click exception."""
+
+    return click.ClickException(formatter(exc))
 
 
 def write_output(
