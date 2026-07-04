@@ -225,6 +225,57 @@ Candidate work:
 - Add performance budgets and benchmark fixtures for province-scale generation
   and calibration. **Partly met; `geo estimate-run` gives researchers a preflight
   scale estimate and web app vs CLI/API recommendation before calibration.**
+- Rationalize user scenarios into an explicit end-to-end integration-test
+  source of truth. The repo already has scenario material in
+  `docs/which-workflow.md`, `docs/library-getting-started.md`,
+  `docs/web-app.md`, and `tests/test_workflows.py`, but the stories are
+  currently implicit and scattered across docs and test names. Add a durable
+  scenario inventory with stable IDs that can be referenced from tests, docs,
+  and release checks without duplicating the full command transcript everywhere.
+
+  Initial scenario inventory:
+
+  - `SCN-IPF-001`: a beginner or notebook user has seed rows plus public control
+    totals, exports or reads the seed, fits IPF weights, keeps the fit report,
+    and validates the weighted or expanded artifact against controls.
+  - `SCN-WDS-001`: a command-line user starts from a Statistics Canada WDS table,
+    creates a category mapping template, normalizes controls, checks IPF inputs,
+    fits weights, and validates the result.
+  - `SCN-TREE-001`: a researcher with hierarchical microdata derives a training
+    table, trains a tree model, generates rows under explicit conditions, and
+    validates generated output against the training distribution.
+  - `SCN-MODEL-001`: a user starts from a reviewed linked household/person model
+    package, generates candidate households and people, validates links, then
+    uses IPF to calibrate generated household candidates to controls.
+  - `SCN-SMALLAREA-001`: a user starts from linked household/person candidates
+    and small-area controls, calibrates households to target geographies,
+    writes assigned household/person CSVs, and keeps validation reports with
+    the outputs.
+  - `SCN-WEB-001`: a first-time user uses the local web app's IPF path with demo
+    or helper-generated files, previews inputs and outputs, and downloads the
+    generated artifacts.
+  - `SCN-WEB-002`: a first-time user uses the local web app's prepared-model
+    path, generates linked household/person rows from a safe package, reviews
+    validation summaries, and downloads both CSV files.
+
+  Testing approach:
+
+  - Keep `tests/test_workflows.py` as the CLI-level integration home, but rename
+    or annotate tests so each one cites a scenario ID.
+  - Add missing scenario coverage incrementally rather than creating one
+    monolithic E2E test. Each scenario should assert the user-visible artifacts:
+    CSV headers and row counts, JSON report fields, validation pass/fail status,
+    provenance fields, and beginner-facing error or next-step text where
+    relevant.
+  - Keep fixtures tiny and public. Scenarios that depend on private Census
+    material should use synthetic fixture rows or be documented as optional
+    local/manual checks.
+  - Add documentation-example checks for any scenario that appears as a copied
+    command transcript in the docs, so docs, fixtures, and integration tests do
+    not drift.
+  - Treat web-app E2E tests separately from CLI workflow tests: browser tests
+    should cover the two beginner paths and download artifacts, while CLI tests
+    should remain fast and deterministic.
 
 0.3.x exit criteria:
 
@@ -233,6 +284,9 @@ Candidate work:
   app, CLI, or Python API.
 - Optional faster backends remain invisible unless they clearly help a real
   user workflow.
+- The main beginner and reviewer scenarios have stable IDs, documented fixtures,
+  and at least one integration or browser test that exercises the workflow from
+  user-visible input to user-visible artifact.
 
 ### 0.4.x - Model Catalogue And Privacy Hardening
 
