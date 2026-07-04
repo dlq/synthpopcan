@@ -27,7 +27,8 @@ from synthpopcan.cli_geo import small_area
 from synthpopcan.cli_ipf import ipf, read_population_artifact
 from synthpopcan.cli_microdata import microdata
 from synthpopcan.cli_output import (
-    format_file_access_error,
+    click_file_access_error,
+    click_value_error,
     format_report_number,
     print_census_profile_characteristics_table,
     print_tree_output_validation_report_table,
@@ -35,6 +36,7 @@ from synthpopcan.cli_output import (
     print_wds_inspection_table,
     print_wds_metadata_explanation_table,
     write_output,
+    write_report,
     write_wds_search_results,
 )
 from synthpopcan.cli_tree import tree
@@ -168,7 +170,7 @@ def fetch_model(model_id: str) -> None:
     except OSError as exc:
         raise click.ClickException(f"could not fetch {model_id}: {exc}") from exc
     except ValueError as exc:
-        raise click.ClickException(str(exc)) from exc
+        raise click_value_error(exc) from exc
     print_success(f"Model package ready: {path}")
 
 
@@ -449,16 +451,13 @@ def validate_controls_output(
             artifact_kind=artifact_kind,
         )
     except OSError as exc:
-        raise click.ClickException(
-            format_file_access_error(exc.filename or controls_path, "read", exc)
+        raise click_file_access_error(
+            exc.filename or controls_path, "read", exc
         ) from exc
     except ValueError as exc:
-        raise click.ClickException(str(exc)) from exc
+        raise click_value_error(exc) from exc
 
-    if output_format == "json":
-        print(json.dumps(report, indent=2, sort_keys=True))
-    else:
-        print_validation_report_table(report)
+    write_report(report, output_format, print_validation_report_table)
 
     if not report["passed"]:
         raise click.ClickException(
@@ -525,11 +524,11 @@ def validate_linked_output(
             household_size_column=household_size_column,
         )
     except OSError as exc:
-        raise click.ClickException(
-            format_file_access_error(exc.filename or households_path, "read", exc)
+        raise click_file_access_error(
+            exc.filename or households_path, "read", exc
         ) from exc
     except ValueError as exc:
-        raise click.ClickException(str(exc)) from exc
+        raise click_value_error(exc) from exc
 
     write_output(report, output_format, title="Linked Output Validation")
 
@@ -597,16 +596,13 @@ def validate_tree_output(
             tolerance=tolerance,
         )
     except OSError as exc:
-        raise click.ClickException(
-            format_file_access_error(exc.filename or training_path, "read", exc)
+        raise click_file_access_error(
+            exc.filename or training_path, "read", exc
         ) from exc
     except ValueError as exc:
-        raise click.ClickException(str(exc)) from exc
+        raise click_value_error(exc) from exc
 
-    if output_format == "json":
-        print(json.dumps(report, indent=2, sort_keys=True))
-    else:
-        print_tree_output_validation_report_table(report)
+    write_report(report, output_format, print_tree_output_validation_report_table)
 
     if not report["passed"]:
         raise click.ClickException(
@@ -645,7 +641,7 @@ def data_doctor(data_root: Path, output_format: str) -> None:
         "checks": [check.as_dict() for check in checks],
     }
     if output_format == "json":
-        print(json.dumps(payload, indent=2, sort_keys=True))
+        write_output(payload, "json")
         return
     print_checks_table(payload["checks"], title="Local Data Check")
 
@@ -697,7 +693,7 @@ def inspect_sources(root: Path, output_format: str) -> None:
     try:
         write_output(inspect_source_root(root), output_format)
     except OSError as exc:
-        raise click.ClickException(format_file_access_error(root, "read", exc)) from exc
+        raise click_file_access_error(root, "read", exc) from exc
 
 
 @data_group.command("schema")
@@ -714,7 +710,7 @@ def inspect_source_schema(path: Path, output_format: str) -> None:
     try:
         write_output(read_source_schema(path), output_format)
     except OSError as exc:
-        raise click.ClickException(format_file_access_error(path, "read", exc)) from exc
+        raise click_file_access_error(path, "read", exc) from exc
 
 
 @data_group.command("sample")
@@ -740,9 +736,9 @@ def sample_source(
     try:
         write_output(read_source_sample(path, rows), output_format)
     except OSError as exc:
-        raise click.ClickException(format_file_access_error(path, "read", exc)) from exc
+        raise click_file_access_error(path, "read", exc) from exc
     except ValueError as exc:
-        raise click.ClickException(str(exc)) from exc
+        raise click_value_error(exc) from exc
 
 
 @cli.group()
@@ -767,9 +763,9 @@ def validate_controls(path: Path) -> None:
     try:
         read_control_margins(path)
     except OSError as exc:
-        raise click.ClickException(format_file_access_error(path, "read", exc)) from exc
+        raise click_file_access_error(path, "read", exc) from exc
     except ValueError as exc:
-        raise click.ClickException(str(exc)) from exc
+        raise click_value_error(exc) from exc
 
 
 @controls.command("from-csv")
@@ -787,11 +783,9 @@ def normalize_controls_from_csv(source: Path, out_path: Path) -> None:
         table = read_control_table(source)
         write_control_table(out_path, table)
     except OSError as exc:
-        raise click.ClickException(
-            format_file_access_error(exc.filename or source, "access", exc)
-        ) from exc
+        raise click_file_access_error(exc.filename or source, "access", exc) from exc
     except ValueError as exc:
-        raise click.ClickException(str(exc)) from exc
+        raise click_value_error(exc) from exc
     print_wrote(out_path)
 
 
@@ -843,11 +837,11 @@ def normalize_controls_from_wds(
         with console.status("Writing normalized controls CSV..."):
             write_control_table(out_path, table)
     except OSError as exc:
-        raise click.ClickException(
-            format_file_access_error(exc.filename or source, "access", exc)
-        ) from exc
+        raise click_file_access_error(exc.filename or source, "access", exc) from exc
     except ValueError as exc:
-        raise click.ClickException(format_wds_control_error(exc, source)) from exc
+        raise click_value_error(
+            exc, lambda error: format_wds_control_error(error, source)
+        ) from exc
     print_wrote(out_path)
 
 
@@ -887,15 +881,10 @@ def inspect_wds_controls(source: Path, sample_rows: int, output_format: str) -> 
     try:
         report = inspect_wds_zip(source, sample_rows=sample_rows)
     except OSError as exc:
-        raise click.ClickException(
-            format_file_access_error(source, "read", exc)
-        ) from exc
+        raise click_file_access_error(source, "read", exc) from exc
     except ValueError as exc:
-        raise click.ClickException(str(exc)) from exc
-    if output_format == "json":
-        print(json.dumps(report, indent=2, sort_keys=True))
-        return
-    print_wds_inspection_table(report)
+        raise click_value_error(exc) from exc
+    write_report(report, output_format, print_wds_inspection_table)
 
 
 @wds_controls.command("mapping-template")
@@ -928,11 +917,9 @@ def write_wds_mapping_template(
         )
         out_path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n")
     except OSError as exc:
-        raise click.ClickException(
-            format_file_access_error(exc.filename or source, "access", exc)
-        ) from exc
+        raise click_file_access_error(exc.filename or source, "access", exc) from exc
     except ValueError as exc:
-        raise click.ClickException(str(exc)) from exc
+        raise click_value_error(exc) from exc
     print_wrote(out_path)
 
 
@@ -962,11 +949,9 @@ def normalize_controls_from_census_profile(
         table = read_census_profile_control_table(source, mapping_path)
         write_control_table(out_path, table)
     except OSError as exc:
-        raise click.ClickException(
-            format_file_access_error(exc.filename or source, "access", exc)
-        ) from exc
+        raise click_file_access_error(exc.filename or source, "access", exc) from exc
     except ValueError as exc:
-        raise click.ClickException(str(exc)) from exc
+        raise click_value_error(exc) from exc
     print_wrote(out_path)
 
 
@@ -1011,15 +996,10 @@ def inspect_census_profile_controls(
             limit=limit,
         )
     except OSError as exc:
-        raise click.ClickException(
-            format_file_access_error(source, "read", exc)
-        ) from exc
+        raise click_file_access_error(source, "read", exc) from exc
     except ValueError as exc:
-        raise click.ClickException(str(exc)) from exc
-    if output_format == "json":
-        print(json.dumps(rows, indent=2, sort_keys=True))
-        return
-    print_census_profile_characteristics_table(rows)
+        raise click_value_error(exc) from exc
+    write_report(rows, output_format, print_census_profile_characteristics_table)
 
 
 @census_profile_controls.command("template")
@@ -1068,11 +1048,9 @@ def write_census_profile_template(
         )
         out_path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n")
     except OSError as exc:
-        raise click.ClickException(
-            format_file_access_error(out_path, "write", exc)
-        ) from exc
+        raise click_file_access_error(out_path, "write", exc) from exc
     except ValueError as exc:
-        raise click.ClickException(str(exc)) from exc
+        raise click_value_error(exc) from exc
     print_wrote(out_path)
 
 
@@ -1100,11 +1078,9 @@ def run_statcan_wds_fetch(product_id: str, out_dir: Path, lang: str) -> None:
             zip_path = fetch_wds_table(product_id, out_dir, lang)
         print_wrote(zip_path)
     except OSError as exc:
-        raise click.ClickException(
-            format_file_access_error(out_dir, "write to", exc)
-        ) from exc
+        raise click_file_access_error(out_dir, "write to", exc) from exc
     except ValueError as exc:
-        raise click.ClickException(str(exc)) from exc
+        raise click_value_error(exc) from exc
 
 
 @wds.command("search")
@@ -1125,7 +1101,7 @@ def run_statcan_wds_search(query: str, limit: int, output_format: str) -> None:
     except OSError as exc:
         raise click.ClickException(f"Could not search StatCan WDS: {exc}") from exc
     except ValueError as exc:
-        raise click.ClickException(str(exc)) from exc
+        raise click_value_error(exc) from exc
     write_wds_search_results(rows, output_format)
 
 
@@ -1145,11 +1121,9 @@ def run_statcan_wds_metadata(product_id: str, out_path: Path | None) -> None:
     except OSError as exc:
         action = "write" if out_path else "fetch"
         target = out_path if out_path else f"StatCan WDS metadata for {product_id}"
-        raise click.ClickException(
-            format_file_access_error(target, action, exc)
-        ) from exc
+        raise click_file_access_error(target, action, exc) from exc
     except ValueError as exc:
-        raise click.ClickException(str(exc)) from exc
+        raise click_value_error(exc) from exc
 
 
 @wds.command("explain")
@@ -1170,11 +1144,8 @@ def run_statcan_wds_explain(product_id: str, output_format: str) -> None:
             f"Could not fetch StatCan WDS metadata for {product_id}: {exc}"
         ) from exc
     except ValueError as exc:
-        raise click.ClickException(str(exc)) from exc
-    if output_format == "json":
-        print(json.dumps(summary, indent=2, sort_keys=True))
-        return
-    print_wds_metadata_explanation_table(summary)
+        raise click_value_error(exc) from exc
+    write_report(summary, output_format, print_wds_metadata_explanation_table)
 
 
 @statcan.group(name="census-profile")
@@ -1195,11 +1166,9 @@ def run_statcan_census_profile_fetch(year: str, geo_level: str, out_dir: Path) -
     try:
         print_wrote(fetch_census_profile_2016(geo_level, out_dir))
     except ValueError as exc:
-        raise click.ClickException(str(exc)) from exc
+        raise click_value_error(exc) from exc
     except OSError as exc:
-        raise click.ClickException(
-            format_file_access_error(out_dir, "write to", exc)
-        ) from exc
+        raise click_file_access_error(out_dir, "write to", exc) from exc
 
 
 def search_wds_tables_for_cli(query: str, limit: int) -> list[dict[str, str]]:
