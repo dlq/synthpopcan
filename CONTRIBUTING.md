@@ -27,6 +27,28 @@ uv run sphinx-build -W -b html docs docs/_build/html
 npm run check:web
 ```
 
+## Module Boundaries
+
+Keep dependency direction easy to reason about:
+
+- `synthpopcan.__init__` re-exports the small beginner API from
+  `synthpopcan.api`;
+- `synthpopcan.api` is the stable notebook and short-script surface for
+  beginner workflows;
+- `cli.py`, `cli_*.py`, `cli_output.py`, and `console.py` are CLI and terminal
+  adapters;
+- core workflow modules such as `ipf`, `controls`, `tree`, `microdata`,
+  `validation`, `diagnostics`, `small_area_synthesis`, `small_area_controls`,
+  `calibration`, `statcan`, `sources`, `localdata`, `map_render`, and
+  `benchmarks` should stay independent of CLI and UI code;
+- `webapp.py`, `web_wds.py`, and `src/synthpopcan/web/*.mjs` are local web app
+  and browser-side adapters.
+
+Adapters may depend on core modules, but core modules should not import Click,
+Rich, `synthpopcan.cli*`, `synthpopcan.console`, `synthpopcan.web`, or
+`synthpopcan.webapp`. The architecture checks in `tests/test_architecture.py`
+enforce these boundaries as part of the normal `uv run pytest` gate.
+
 ## Data And Model Safety
 
 Do not commit raw Census microdata, downloaded bulk data caches, generated CSV
