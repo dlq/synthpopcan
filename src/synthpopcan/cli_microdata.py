@@ -5,7 +5,6 @@ from __future__ import annotations
 __all__ = ["microdata"]
 
 import csv
-import json
 from pathlib import Path
 
 import click
@@ -16,6 +15,7 @@ from synthpopcan.cli_output import (
     print_tree_column_suggestions_table,
     print_tree_geography_feasibility_table,
     write_output,
+    write_report,
 )
 from synthpopcan.console import print_summary_table, print_wrote
 from synthpopcan.microdata import (
@@ -148,10 +148,7 @@ def check_microdata_seed(
     except ValueError as exc:
         raise click.ClickException(str(exc)) from exc
 
-    if output_format == "json":
-        print(json.dumps(report, indent=2, sort_keys=True))
-        return
-    print_seed_check_table(report)
+    write_report(report, output_format, print_seed_check_table)
 
 
 @microdata.command("suggest-tree-columns")
@@ -185,10 +182,7 @@ def suggest_microdata_tree_columns(
     except ValueError as exc:
         raise click.ClickException(str(exc)) from exc
 
-    if output_format == "json":
-        print(json.dumps(report, indent=2, sort_keys=True))
-        return
-    print_tree_column_suggestions_table(report)
+    write_report(report, output_format, print_tree_column_suggestions_table)
 
 
 @microdata.command("tree-geography-feasibility")
@@ -302,10 +296,7 @@ def tree_geography_feasibility(
     except ValueError as exc:
         raise click.ClickException(str(exc)) from exc
 
-    if output_format == "json":
-        print(json.dumps(report, indent=2, sort_keys=True))
-        return
-    print_tree_geography_feasibility_table(report)
+    write_report(report, output_format, print_tree_geography_feasibility_table)
 
 
 @microdata.command("export-seed")
@@ -392,10 +383,13 @@ def export_microdata_seed(
         ) from exc
     except ValueError as exc:
         raise click.ClickException(str(exc)) from exc
+    write_report(
+        summary,
+        output_format,
+        lambda payload: print_summary_table(payload, title="Seed Export Summary"),
+    )
     if output_format == "json":
-        print(json.dumps(summary, indent=2, sort_keys=True))
         return
-    print_summary_table(summary, title="Seed Export Summary")
     print_wrote(out_path)
 
 
@@ -464,10 +458,13 @@ def export_microdata_training(
         ) from exc
     except ValueError as exc:
         raise click.ClickException(str(exc)) from exc
+    write_report(
+        summary,
+        output_format,
+        lambda payload: print_summary_table(payload, title="Training Export Summary"),
+    )
     if output_format == "json":
-        print(json.dumps(summary, indent=2, sort_keys=True))
         return
-    print_summary_table(summary, title="Training Export Summary")
     print_wrote(out_path)
 
 

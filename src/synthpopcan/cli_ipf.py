@@ -16,6 +16,7 @@ from synthpopcan.cli_output import (
     print_ipf_control_suggestions_table,
     print_ipf_input_check_table,
     print_ipf_report_table,
+    write_report,
 )
 from synthpopcan.console import print_wrote
 from synthpopcan.controls import read_control_table
@@ -69,10 +70,7 @@ def _check_ipf_inputs(
     except ValueError as exc:
         raise click.ClickException(str(exc)) from exc
     report = build_ipf_input_report(seed_rows, control_table)
-    if output_format == "json":
-        print(json.dumps(report, indent=2, sort_keys=True))
-        return
-    print_ipf_input_check_table(report)
+    write_report(report, output_format, print_ipf_input_check_table)
 
 
 @ipf.command("suggest-controls")
@@ -108,10 +106,7 @@ def _suggest_ipf_controls(
     report = build_control_suggestion_report(
         seed_rows, unit=unit, seed_path=str(seed_path)
     )
-    if output_format == "json":
-        print(json.dumps(report, indent=2, sort_keys=True))
-        return
-    print_ipf_control_suggestions_table(report)
+    write_report(report, output_format, print_ipf_control_suggestions_table)
 
 
 @ipf.command("fit")
@@ -237,10 +232,7 @@ def _report_ipf(path: Path, output_format: str) -> None:
         raise click.ClickException(format_file_access_error(path, "read", exc)) from exc
     except json.JSONDecodeError as exc:
         raise click.ClickException(f"{path} is not valid JSON") from exc
-    if output_format == "json":
-        print(json.dumps(report, indent=2, sort_keys=True))
-        return
-    print_ipf_report_table(report)
+    write_report(report, output_format, print_ipf_report_table)
 
 
 def _read_csv(path: Path) -> list[dict[str, str]]:

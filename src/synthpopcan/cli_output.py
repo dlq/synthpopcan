@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import csv
 import json
+from collections.abc import Callable
 from typing import Any
 
 from synthpopcan.console import make_table, print_summary_table, print_table
@@ -26,6 +27,7 @@ __all__ = [
     "print_wds_inspection_table",
     "print_wds_metadata_explanation_table",
     "write_output",
+    "write_report",
     "write_wds_search_results",
 ]
 
@@ -53,6 +55,19 @@ def write_output(
         print_summary_table(payload, title=title)
         return
     print(payload)
+
+
+def write_report(
+    payload: Any,
+    output_format: str,
+    table_renderer: Callable[[Any], None],
+) -> None:
+    """Write a report as JSON or hand it to a table renderer."""
+
+    if output_format == "json":
+        print(json.dumps(payload, indent=2, sort_keys=True))
+        return
+    table_renderer(payload)
 
 
 def write_wds_search_results(rows: list[dict[str, str]], output_format: str) -> None:

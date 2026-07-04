@@ -7,7 +7,7 @@ import json
 import random
 from bisect import bisect_left
 from collections import defaultdict
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Iterator, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Literal
@@ -894,59 +894,18 @@ def generate_linked_population(
         identifiers so the records can be joined.
     """
 
-    if household_model.spec.level != "household":
-        raise ValueError("household model must have level 'household'")
-    if person_model.spec.level != "person":
-        raise ValueError("person model must have level 'person'")
-    if households <= 0:
-        raise ValueError("households must be greater than zero")
-
-    effective_random_seed = (
-        household_model.spec.random_seed if random_seed is None else random_seed
-    )
-    seed_rng = random.Random(effective_random_seed)
-    generated_households = generate_tree_rows(
-        household_model,
-        rows=households,
-        conditions=household_conditions,
-        random_seed=random_seed,
-    )
-
     linked_households: list[dict[str, str]] = []
     linked_persons: list[dict[str, str]] = []
-    person_selection_cache: dict[tuple[tuple[str, str], ...], _FrequencySelection] = {}
-    next_person_id = 1
-    for household_index, generated_household in enumerate(
-        generated_households,
-        start=1,
+    for _, household_row, person_rows in _iter_linked_population_rows(
+        household_model,
+        person_model,
+        households=households,
+        household_conditions=household_conditions,
+        household_size_column=household_size_column,
+        random_seed=random_seed,
     ):
-        household_id = str(household_index)
-        household_row = {
-            "synthetic_household_id": household_id,
-            **strip_synthetic_id(generated_household),
-        }
         linked_households.append(household_row)
-        household_size = read_household_size(household_row, household_size_column)
-        person_conditions = household_conditions_for_person_model(
-            household_row,
-            person_model,
-        )
-        generated_persons = generate_person_rows_for_household(
-            person_model,
-            rows=household_size,
-            conditions=person_conditions,
-            rng=seed_rng,
-            selection_cache=person_selection_cache,
-        )
-        for generated_person in generated_persons:
-            linked_persons.append(
-                {
-                    "synthetic_person_id": str(next_person_id),
-                    "synthetic_household_id": household_id,
-                    **strip_synthetic_id(generated_person),
-                }
-            )
-            next_person_id += 1
+        linked_persons.extend(person_rows)
 
     return linked_households, linked_persons
 
@@ -973,19 +932,10 @@ def generate_linked_population_to_csv(
     terminal UI.
     """
 
-    if household_model.spec.level != "household":
-        raise ValueError("household model must have level 'household'")
-    if person_model.spec.level != "person":
-        raise ValueError("person model must have level 'person'")
-    if households <= 0:
-        raise ValueError("households must be greater than zero")
+    _validate_linked_population_request(household_model, person_model, households)
     if progress_interval <= 0:
         raise ValueError("progress interval must be greater than zero")
 
-    effective_random_seed = (
-        household_model.spec.random_seed if random_seed is None else random_seed
-    )
-    seed_rng = random.Random(effective_random_seed)
     household_fieldnames = unique_fieldnames(
         (
             "synthetic_household_id",
@@ -1003,7 +953,6 @@ def generate_linked_population_to_csv(
     )
 
     person_count = 0
-    person_selection_cache: dict[tuple[tuple[str, str], ...], _FrequencySelection] = {}
     with households_path.open("w", newline="") as households_handle:
         with persons_path.open("w", newline="") as persons_handle:
             household_writer = csv.writer(households_handle)
@@ -1011,51 +960,23 @@ def generate_linked_population_to_csv(
             household_writer.writerow(household_fieldnames)
             person_writer.writerow(person_fieldnames)
 
-            household_rows = iter_tree_rows(
+            linked_rows = _iter_linked_population_rows(
                 household_model,
-                rows=households,
-                conditions=household_conditions,
+                person_model,
+                households=households,
+                household_conditions=household_conditions,
+                household_size_column=household_size_column,
                 random_seed=random_seed,
             )
-            for household_index, generated_household in enumerate(
-                household_rows,
-                start=1,
-            ):
-                household_id = str(household_index)
-                generated_household.pop("synthetic_id", None)
-                household_row = {
-                    "synthetic_household_id": household_id,
-                    **generated_household,
-                }
+            for household_index, household_row, person_rows in linked_rows:
                 household_writer.writerow(
                     [
                         household_row.get(fieldname, "")
                         for fieldname in household_fieldnames
                     ]
                 )
-                household_size = read_household_size(
-                    household_row,
-                    household_size_column,
-                )
-                person_conditions = household_conditions_for_person_model(
-                    household_row,
-                    person_model,
-                )
-                generated_persons = iter_person_rows_for_household(
-                    person_model,
-                    rows=household_size,
-                    conditions=person_conditions,
-                    rng=seed_rng,
-                    selection_cache=person_selection_cache,
-                )
-                for generated_person in generated_persons:
+                for person_row in person_rows:
                     person_count += 1
-                    generated_person.pop("synthetic_id", None)
-                    person_row = {
-                        "synthetic_person_id": str(person_count),
-                        "synthetic_household_id": household_id,
-                        **generated_person,
-                    }
                     person_writer.writerow(
                         [
                             person_row.get(fieldname, "")
@@ -1069,6 +990,73 @@ def generate_linked_population_to_csv(
                     progress_callback(household_index, person_count)
 
     return households, person_count
+
+
+def _validate_linked_population_request(
+    household_model: TreeModel,
+    person_model: TreeModel,
+    households: int,
+) -> None:
+    if household_model.spec.level != "household":
+        raise ValueError("household model must have level 'household'")
+    if person_model.spec.level != "person":
+        raise ValueError("person model must have level 'person'")
+    if households <= 0:
+        raise ValueError("households must be greater than zero")
+
+
+def _iter_linked_population_rows(
+    household_model: TreeModel,
+    person_model: TreeModel,
+    *,
+    households: int,
+    household_conditions: dict[str, str] | None = None,
+    household_size_column: str = "household_size",
+    random_seed: int | None = None,
+) -> Iterator[tuple[int, dict[str, str], list[dict[str, str]]]]:
+    _validate_linked_population_request(household_model, person_model, households)
+    effective_random_seed = (
+        household_model.spec.random_seed if random_seed is None else random_seed
+    )
+    seed_rng = random.Random(effective_random_seed)
+    person_selection_cache: dict[tuple[tuple[str, str], ...], _FrequencySelection] = {}
+    next_person_id = 1
+
+    household_rows = iter_tree_rows(
+        household_model,
+        rows=households,
+        conditions=household_conditions,
+        random_seed=random_seed,
+    )
+    for household_index, generated_household in enumerate(household_rows, start=1):
+        household_id = str(household_index)
+        household_row = {
+            "synthetic_household_id": household_id,
+            **strip_synthetic_id(generated_household),
+        }
+        household_size = read_household_size(household_row, household_size_column)
+        person_conditions = household_conditions_for_person_model(
+            household_row,
+            person_model,
+        )
+        generated_persons = iter_person_rows_for_household(
+            person_model,
+            rows=household_size,
+            conditions=person_conditions,
+            rng=seed_rng,
+            selection_cache=person_selection_cache,
+        )
+        person_rows: list[dict[str, str]] = []
+        for generated_person in generated_persons:
+            person_rows.append(
+                {
+                    "synthetic_person_id": str(next_person_id),
+                    "synthetic_household_id": household_id,
+                    **strip_synthetic_id(generated_person),
+                }
+            )
+            next_person_id += 1
+        yield household_index, household_row, person_rows
 
 
 def generate_person_rows_for_household(
@@ -1264,43 +1252,14 @@ def generate_cart_rows(
     conditions: dict[str, str] | None = None,
     random_seed: int | None = None,
 ) -> list[dict[str, str]]:
-    if rows <= 0:
-        raise ValueError("rows must be greater than zero")
-    requested_conditions = conditions or {}
-    validate_condition_columns(model.spec.conditioning_columns, requested_conditions)
-    rng = random.Random(model.spec.random_seed if random_seed is None else random_seed)
-    feature_row = {
-        column: requested_conditions.get(column, "")
-        for column in model.spec.conditioning_columns
-    }
-    encoded = encode_conditions(
-        feature_row,
-        model.spec.conditioning_columns,
-        model.feature_categories,
-    )
-    leaf_id = cart_leaf_id(model, encoded)
-    outcomes = tuple(
-        FrequencyOutcome(values=target_class, weight=weight)
-        for target_class, weight in zip(
-            model.target_classes,
-            model.value[leaf_id],
-            strict=True,
+    return list(
+        iter_cart_rows(
+            model,
+            rows=rows,
+            conditions=conditions,
+            random_seed=random_seed,
         )
-        if weight > 0
     )
-    if not outcomes:
-        raise ValueError("selected CART leaf has no positive target probabilities")
-    generated_rows: list[dict[str, str]] = []
-    for index in range(1, rows + 1):
-        outcome = choose_outcome(outcomes, rng)
-        generated_rows.append(
-            {
-                "synthetic_id": str(index),
-                **feature_row,
-                **outcome.values,
-            }
-        )
-    return generated_rows
 
 
 def iter_cart_rows(
