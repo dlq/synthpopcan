@@ -896,7 +896,7 @@ def package_tree_model_command(
         "audit": audit,
     }
     try:
-        out_path.write_text(json.dumps(package, indent=2, sort_keys=True) + "\n")
+        write_json_object(out_path, package)
     except OSError as exc:
         raise click.ClickException(
             format_file_access_error(out_path, "write", exc)
@@ -1213,7 +1213,7 @@ def package_linked_tree_models_command(
         },
     }
     try:
-        out_path.write_text(json.dumps(package, indent=2, sort_keys=True) + "\n")
+        write_json_object(out_path, package)
     except OSError as exc:
         raise click.ClickException(
             format_file_access_error(out_path, "write", exc)
@@ -1392,12 +1392,7 @@ def _build_linked_release_readiness_report(
 def read_linked_training_manifest(path: Path | None) -> dict[str, Any] | None:
     if path is None:
         return None
-    try:
-        payload = json.loads(path.read_text())
-    except json.JSONDecodeError as exc:
-        raise ValueError(f"{path} is not valid JSON") from exc
-    if not isinstance(payload, dict):
-        raise ValueError("training manifest must be a JSON object")
+    payload = read_json_object(path, "training manifest")
     if payload.get("schema_version") != "synthpopcan-linked-tree-training-v1":
         raise ValueError("unsupported linked tree training manifest schema")
     provenance = {
@@ -1467,12 +1462,7 @@ def validate_linked_training_manifest_model_paths(
 def read_model_release_manifest(path: Path | None) -> dict[str, Any] | None:
     if path is None:
         return None
-    try:
-        payload = json.loads(path.read_text())
-    except json.JSONDecodeError as exc:
-        raise ValueError(f"{path} is not valid JSON") from exc
-    if not isinstance(payload, dict):
-        raise ValueError("model release manifest must be a JSON object")
+    payload = read_json_object(path, "model release manifest")
     if payload.get("schema_version") != "synthpopcan-tree-release-manifest-v1":
         raise ValueError("unsupported tree release manifest schema")
     return {
@@ -1489,12 +1479,7 @@ def read_model_release_manifest(path: Path | None) -> dict[str, Any] | None:
 
 
 def read_source_provenance(path: Path) -> dict[str, Any]:
-    try:
-        payload = json.loads(path.read_text())
-    except json.JSONDecodeError as exc:
-        raise ValueError(f"{path} is not valid JSON") from exc
-    if not isinstance(payload, dict):
-        raise ValueError("source provenance must be a JSON object")
+    payload = read_json_object(path, "source provenance")
     if payload.get("schema_version") != "synthpopcan-source-provenance-v1":
         raise ValueError("unsupported source provenance schema")
     required_fields = (
@@ -1530,12 +1515,7 @@ def read_source_provenance(path: Path) -> dict[str, Any]:
 
 
 def read_linked_model_package(path: Path) -> dict[str, Any]:
-    try:
-        payload = json.loads(path.read_text())
-    except json.JSONDecodeError as exc:
-        raise ValueError(f"{path} is not valid JSON") from exc
-    if not isinstance(payload, dict):
-        raise ValueError("linked model package must be a JSON object")
+    payload = read_json_object(path, "linked model package")
     if payload.get("schema_version") != "synthpopcan-linked-tree-package-v1":
         raise ValueError("unsupported linked model package schema")
     return payload
@@ -2125,4 +2105,18 @@ def _effective_random_seed(model, random_seed: int | None) -> int:
 
 
 def write_tree_generation_manifest(path: Path, manifest: dict[str, Any]) -> None:
-    path.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n")
+    write_json_object(path, manifest)
+
+
+def read_json_object(path: Path, label: str) -> dict[str, Any]:
+    try:
+        payload = json.loads(path.read_text())
+    except json.JSONDecodeError as exc:
+        raise ValueError(f"{path} is not valid JSON") from exc
+    if not isinstance(payload, dict):
+        raise ValueError(f"{label} must be a JSON object")
+    return payload
+
+
+def write_json_object(path: Path, payload: dict[str, Any]) -> None:
+    path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n")

@@ -1,7 +1,7 @@
 import csv
 import json
 import random
-from dataclasses import replace
+from dataclasses import dataclass, replace
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -1612,7 +1612,16 @@ def _write_source_provenance(path) -> None:
     )
 
 
-def test_cli_packages_publishable_linked_models(tmp_path) -> None:
+@dataclass(frozen=True)
+class LinkedPackageFixture:
+    household_model_path: Path
+    person_model_path: Path
+    training_manifest_path: Path
+    source_provenance_path: Path
+    package_path: Path
+
+
+def _write_publishable_linked_package(tmp_path) -> LinkedPackageFixture:
     household_model_path, person_model_path = _write_publishable_linked_model_fixtures(
         tmp_path
     )
@@ -1652,19 +1661,31 @@ def test_cli_packages_publishable_linked_models(tmp_path) -> None:
         == 0
     )
 
-    package = json.loads(package_path.read_text())
+    return LinkedPackageFixture(
+        household_model_path=household_model_path,
+        person_model_path=person_model_path,
+        training_manifest_path=training_manifest_path,
+        source_provenance_path=source_provenance_path,
+        package_path=package_path,
+    )
+
+
+def test_cli_packages_publishable_linked_models(tmp_path) -> None:
+    fixture = _write_publishable_linked_package(tmp_path)
+
+    package = json.loads(fixture.package_path.read_text())
     assert package["schema_version"] == "synthpopcan-linked-tree-package-v1"
     assert package["package_type"] == "linked_household_person"
     assert package["household_size_column"] == "household_size"
     assert package["review_note"] == "reviewed fixture package"
     assert package["thresholds"] == {"min_support": 1.0, "max_purity": 1.0}
-    assert package["training_manifest"]["path"] == str(training_manifest_path)
+    assert package["training_manifest"]["path"] == str(fixture.training_manifest_path)
     assert package["training_manifest"]["target_profile"] == "minimal"
     assert package["training_manifest"]["geography_filter"] == {
         "column": "PR",
         "value": "24",
     }
-    assert package["source_provenance"]["path"] == str(source_provenance_path)
+    assert package["source_provenance"]["path"] == str(fixture.source_provenance_path)
     assert package["source_provenance"]["provider"] == "Statistics Canada"
     assert package["source_provenance"]["access_class"] == "restricted"
     assert package["model_summaries"]["household"]["bytes"] > 0
@@ -1752,43 +1773,7 @@ def test_cli_packages_release_copies_with_model_release_manifests(tmp_path) -> N
 
 
 def test_cli_inspects_linked_model_package_as_json(tmp_path, capsys) -> None:
-    household_model_path, person_model_path = _write_publishable_linked_model_fixtures(
-        tmp_path
-    )
-    training_manifest_path = tmp_path / "linked-training-manifest.json"
-    source_provenance_path = tmp_path / "source-provenance.json"
-    package_path = tmp_path / "linked-model-package.json"
-    _write_linked_training_manifest(
-        training_manifest_path,
-        household_model_path=household_model_path,
-        person_model_path=person_model_path,
-    )
-    _write_source_provenance(source_provenance_path)
-    assert (
-        main(
-            [
-                "tree",
-                "package-linked-models",
-                "--household-model",
-                str(household_model_path),
-                "--person-model",
-                str(person_model_path),
-                "--training-manifest",
-                str(training_manifest_path),
-                "--source-provenance",
-                str(source_provenance_path),
-                "--review-note",
-                "reviewed fixture package",
-                "--out",
-                str(package_path),
-                "--min-support",
-                "1",
-                "--max-purity",
-                "1",
-            ]
-        )
-        == 0
-    )
+    fixture = _write_publishable_linked_package(tmp_path)
     capsys.readouterr()
 
     assert (
@@ -1796,7 +1781,7 @@ def test_cli_inspects_linked_model_package_as_json(tmp_path, capsys) -> None:
             [
                 "tree",
                 "inspect-package",
-                str(package_path),
+                str(fixture.package_path),
                 "--format",
                 "json",
             ]
@@ -1875,46 +1860,10 @@ def test_cli_inspect_package_uses_plain_schema_error(tmp_path) -> None:
 
 
 def test_cli_inspects_linked_model_package_as_table(tmp_path, capsys) -> None:
-    household_model_path, person_model_path = _write_publishable_linked_model_fixtures(
-        tmp_path
-    )
-    training_manifest_path = tmp_path / "linked-training-manifest.json"
-    source_provenance_path = tmp_path / "source-provenance.json"
-    package_path = tmp_path / "linked-model-package.json"
-    _write_linked_training_manifest(
-        training_manifest_path,
-        household_model_path=household_model_path,
-        person_model_path=person_model_path,
-    )
-    _write_source_provenance(source_provenance_path)
-    assert (
-        main(
-            [
-                "tree",
-                "package-linked-models",
-                "--household-model",
-                str(household_model_path),
-                "--person-model",
-                str(person_model_path),
-                "--training-manifest",
-                str(training_manifest_path),
-                "--source-provenance",
-                str(source_provenance_path),
-                "--review-note",
-                "reviewed fixture package",
-                "--out",
-                str(package_path),
-                "--min-support",
-                "1",
-                "--max-purity",
-                "1",
-            ]
-        )
-        == 0
-    )
+    fixture = _write_publishable_linked_package(tmp_path)
     capsys.readouterr()
 
-    assert main(["tree", "inspect-package", str(package_path)]) == 0
+    assert main(["tree", "inspect-package", str(fixture.package_path)]) == 0
 
     output = capsys.readouterr().out
     assert "Linked Model Package" in output
@@ -2003,53 +1952,17 @@ def test_cli_generates_linked_population_from_bundled_demo_package(
 
 
 def test_cli_generates_linked_population_from_package(tmp_path) -> None:
-    household_model_path, person_model_path = _write_publishable_linked_model_fixtures(
-        tmp_path
-    )
-    training_manifest_path = tmp_path / "linked-training-manifest.json"
-    source_provenance_path = tmp_path / "source-provenance.json"
-    package_path = tmp_path / "linked-model-package.json"
+    fixture = _write_publishable_linked_package(tmp_path)
     households_path = tmp_path / "synthetic-households.csv"
     persons_path = tmp_path / "synthetic-persons.csv"
     manifest_path = tmp_path / "synthetic-linked-manifest.json"
-    _write_linked_training_manifest(
-        training_manifest_path,
-        household_model_path=household_model_path,
-        person_model_path=person_model_path,
-    )
-    _write_source_provenance(source_provenance_path)
-    assert (
-        main(
-            [
-                "tree",
-                "package-linked-models",
-                "--household-model",
-                str(household_model_path),
-                "--person-model",
-                str(person_model_path),
-                "--training-manifest",
-                str(training_manifest_path),
-                "--source-provenance",
-                str(source_provenance_path),
-                "--review-note",
-                "reviewed fixture package",
-                "--out",
-                str(package_path),
-                "--min-support",
-                "1",
-                "--max-purity",
-                "1",
-            ]
-        )
-        == 0
-    )
 
     assert (
         main(
             [
                 "tree",
                 "generate-from-package",
-                str(package_path),
+                str(fixture.package_path),
                 "--households",
                 "3",
                 "--condition",
@@ -2081,7 +1994,7 @@ def test_cli_generates_linked_population_from_package(tmp_path) -> None:
     assert len(households) == 3
     assert len(persons) == 6
     assert manifest["command"] == "tree generate-from-package"
-    assert manifest["package"]["package_path"] == str(package_path)
+    assert manifest["package"]["package_path"] == str(fixture.package_path)
     assert manifest["package"]["source"]["provider"] == "Statistics Canada"
     assert manifest["household_conditions"] == {"geo": "QC"}
     assert manifest["generated_households"] == 3
@@ -2092,55 +2005,19 @@ def test_cli_generates_linked_population_from_package(tmp_path) -> None:
 def test_cli_refuses_generation_from_non_publishable_package(tmp_path) -> None:
     from click import ClickException
 
-    household_model_path, person_model_path = _write_publishable_linked_model_fixtures(
-        tmp_path
-    )
-    training_manifest_path = tmp_path / "linked-training-manifest.json"
-    source_provenance_path = tmp_path / "source-provenance.json"
-    package_path = tmp_path / "linked-model-package.json"
+    fixture = _write_publishable_linked_package(tmp_path)
     households_path = tmp_path / "synthetic-households.csv"
     persons_path = tmp_path / "synthetic-persons.csv"
-    _write_linked_training_manifest(
-        training_manifest_path,
-        household_model_path=household_model_path,
-        person_model_path=person_model_path,
-    )
-    _write_source_provenance(source_provenance_path)
-    assert (
-        main(
-            [
-                "tree",
-                "package-linked-models",
-                "--household-model",
-                str(household_model_path),
-                "--person-model",
-                str(person_model_path),
-                "--training-manifest",
-                str(training_manifest_path),
-                "--source-provenance",
-                str(source_provenance_path),
-                "--review-note",
-                "reviewed fixture package",
-                "--out",
-                str(package_path),
-                "--min-support",
-                "1",
-                "--max-purity",
-                "1",
-            ]
-        )
-        == 0
-    )
-    package = json.loads(package_path.read_text())
+    package = json.loads(fixture.package_path.read_text())
     package["privacy"]["publishable_candidate"] = False
-    package_path.write_text(json.dumps(package) + "\n")
+    fixture.package_path.write_text(json.dumps(package) + "\n")
 
     with pytest.raises(ClickException, match="publishable candidate"):
         main(
             [
                 "tree",
                 "generate-from-package",
-                str(package_path),
+                str(fixture.package_path),
                 "--households",
                 "3",
                 "--households-out",

@@ -9,7 +9,7 @@ from pathlib import Path
 
 import click
 
-from synthpopcan.cli_output import format_file_access_error
+from synthpopcan.cli_output import click_file_access_error, click_value_error
 from synthpopcan.console import print_wrote
 from synthpopcan.diagnostics import format_categories, format_number
 from synthpopcan.small_area_synthesis import (
@@ -155,11 +155,9 @@ def estimate_run_command(
         )
     except OSError as exc:
         filename = exc.filename or controls_path
-        raise click.ClickException(
-            format_file_access_error(Path(filename), "read", exc)
-        ) from exc
+        raise click_file_access_error(Path(filename), "read", exc) from exc
     except ValueError as exc:
-        raise click.ClickException(str(exc)) from exc
+        raise click_value_error(exc) from exc
 
     if output_format == "json":
         click.echo(json.dumps(estimate, sort_keys=True))
@@ -331,11 +329,9 @@ def calibrate_linked_command(
         )
     except OSError as exc:
         filename = exc.filename or households_path
-        raise click.ClickException(
-            format_file_access_error(Path(filename), "read or write", exc)
-        ) from exc
+        raise click_file_access_error(Path(filename), "read or write", exc) from exc
     except ValueError as exc:
-        raise click.ClickException(str(exc)) from exc
+        raise click_value_error(exc) from exc
 
     print_wrote(households_out)
     print_wrote(persons_out)
@@ -522,11 +518,11 @@ def map_command(
         ) from exc
     except OSError as exc:
         filename = exc.filename or households_path
-        raise click.ClickException(
-            format_file_access_error(Path(filename), "process", exc)
-        ) from exc
-    except (KeyError, ValueError) as exc:
+        raise click_file_access_error(Path(filename), "process", exc) from exc
+    except KeyError as exc:
         raise click.ClickException(str(exc)) from exc
+    except ValueError as exc:
+        raise click_value_error(exc) from exc
 
     print_wrote(out_path)
     click.echo(f"Open {out_path} in a browser to explore the synthesis results.")
@@ -704,11 +700,9 @@ def build_controls_command(
             geo_level_value=geo_level_value,
         )
     except OSError as exc:
-        raise click.ClickException(
-            format_file_access_error(profile_path, "read", exc)
-        ) from exc
+        raise click_file_access_error(profile_path, "read", exc) from exc
     except ValueError as exc:
-        raise click.ClickException(str(exc)) from exc
+        raise click_value_error(exc) from exc
 
     n_hhsize = sum(
         1 for d in raw.values() if d.get("hhsize") and sum(d["hhsize"].values()) > 0
@@ -742,9 +736,7 @@ def build_controls_command(
             household_size_column=household_size_group_column,
         )
     except OSError as exc:
-        raise click.ClickException(
-            format_file_access_error(controls_out, "write", exc)
-        ) from exc
+        raise click_file_access_error(controls_out, "write", exc) from exc
     print_wrote(controls_out)
 
     if candidates_path is not None:
@@ -762,9 +754,7 @@ def build_controls_command(
                 cap=hhsize_cap,
             )
         except OSError as exc:
-            raise click.ClickException(
-                format_file_access_error(candidates_path, "recode", exc)
-            ) from exc
+            raise click_file_access_error(candidates_path, "recode", exc) from exc
         click.echo(f"  {n_rows:,} rows written")
         print_wrote(candidates_out)
         click.echo("\nNext step:")
@@ -873,7 +863,7 @@ def prepare_boundaries_command(
     except OSError as exc:
         raise click.ClickException(f"Download failed: {exc}") from exc
     except ValueError as exc:
-        raise click.ClickException(str(exc)) from exc
+        raise click_value_error(exc) from exc
 
     click.echo(f"  Shapefile: {shp_path}")
     click.echo("Converting to WGS-84 GeoJSON…")
@@ -891,9 +881,7 @@ def prepare_boundaries_command(
             f"Missing dependency: {exc}. Install pyshp: pip install pyshp"
         ) from exc
     except OSError as exc:
-        raise click.ClickException(
-            format_file_access_error(geojson_path, "write", exc)
-        ) from exc
+        raise click_file_access_error(geojson_path, "write", exc) from exc
 
     from synthpopcan.console import print_wrote
 
@@ -1010,13 +998,15 @@ def synthesize_from_package_command(
 
     try:
         package = read_linked_model_package(package_path)
-    except (OSError, ValueError) as exc:
-        raise click.ClickException(str(exc)) from exc
+    except OSError as exc:
+        raise click_file_access_error(package_path, "read", exc) from exc
+    except ValueError as exc:
+        raise click_value_error(exc) from exc
 
     try:
         validate_package_allows_generation(package)
     except ValueError as exc:
-        raise click.ClickException(str(exc)) from exc
+        raise click_value_error(exc) from exc
 
     household_model, person_model = package_models(package)
     household_size_column = str(package.get("household_size_column", "household_size"))
@@ -1036,8 +1026,10 @@ def synthesize_from_package_command(
                 household_size_column=household_size_column,
                 random_seed=random_seed,
             )
-        except (OSError, ValueError) as exc:
-            raise click.ClickException(str(exc)) from exc
+        except OSError as exc:
+            raise click_file_access_error(candidates_households, "write", exc) from exc
+        except ValueError as exc:
+            raise click_value_error(exc) from exc
 
         if max_household_size is not None:
             from synthpopcan.small_area_controls import write_recoded_candidates
@@ -1065,8 +1057,14 @@ def synthesize_from_package_command(
                 report_out=report_out,
                 pool_size=pool_size,
             )
-        except (OSError, ValueError) as exc:
-            raise click.ClickException(str(exc)) from exc
+        except OSError as exc:
+            raise click_file_access_error(
+                exc.filename or controls_path,
+                "read or write",
+                exc,
+            ) from exc
+        except ValueError as exc:
+            raise click_value_error(exc) from exc
 
     print_wrote(households_out)
     print_wrote(persons_out)
