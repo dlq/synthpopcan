@@ -5,6 +5,7 @@ from __future__ import annotations
 import csv
 import json
 from collections.abc import Callable
+from pathlib import Path
 from typing import Any
 
 import click
@@ -30,6 +31,8 @@ __all__ = [
     "print_validation_report_table",
     "print_wds_inspection_table",
     "print_wds_metadata_explanation_table",
+    "read_json_object",
+    "write_json_object",
     "write_output",
     "write_report",
     "write_wds_search_results",
@@ -66,13 +69,31 @@ def click_value_error(
     return click.ClickException(formatter(exc))
 
 
+def read_json_object(path: Path, label: str) -> dict[str, Any]:
+    """Read a JSON object from *path* with a label-specific validation error."""
+
+    try:
+        payload = json.loads(path.read_text())
+    except json.JSONDecodeError as exc:
+        raise ValueError(f"{path} is not valid JSON") from exc
+    if not isinstance(payload, dict):
+        raise ValueError(f"{label} must be a JSON object")
+    return payload
+
+
+def write_json_object(path: Path, payload: dict[str, Any]) -> None:
+    """Write a JSON object with stable formatting and a trailing newline."""
+
+    path.write_text(_format_json(payload) + "\n")
+
+
 def write_output(
     payload: object, output_format: str, *, title: str | None = None
 ) -> None:
     """Write a JSON payload or render a compact human-readable table."""
 
     if output_format == "json":
-        print(json.dumps(payload, indent=2, sort_keys=True))
+        print(_format_json(payload))
         return
     if isinstance(payload, dict):
         print_summary_table(payload, title=title)
@@ -88,7 +109,7 @@ def write_report(
     """Write a report as JSON or hand it to a table renderer."""
 
     if output_format == "json":
-        print(json.dumps(payload, indent=2, sort_keys=True))
+        print(_format_json(payload))
         return
     table_renderer(payload)
 
@@ -97,12 +118,16 @@ def write_wds_search_results(rows: list[dict[str, str]], output_format: str) -> 
     """Render WDS search results in table, TSV, or JSON form."""
 
     if output_format == "json":
-        print(json.dumps(rows, indent=2, sort_keys=True))
+        print(_format_json(rows))
         return
     if output_format == "tsv":
         _write_wds_search_tsv(rows)
         return
     _write_wds_search_table(rows)
+
+
+def _format_json(payload: object) -> str:
+    return json.dumps(payload, indent=2, sort_keys=True)
 
 
 def _write_wds_search_tsv(rows: list[dict[str, str]]) -> None:

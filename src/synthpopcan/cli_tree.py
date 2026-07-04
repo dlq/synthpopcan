@@ -37,7 +37,6 @@ __all__ = [
     "write_tree_generation_manifest",
 ]
 
-import json
 from dataclasses import replace
 from pathlib import Path
 
@@ -52,7 +51,12 @@ from rich.progress import (
 )
 from rich.table import Table
 
-from synthpopcan.cli_output import format_file_access_error, write_output
+from synthpopcan.cli_output import (
+    format_file_access_error,
+    read_json_object,
+    write_json_object,
+    write_output,
+)
 from synthpopcan.console import make_table, print_table, print_wrote
 from synthpopcan.microdata import (
     SeedSample,
@@ -2106,17 +2110,3 @@ def _effective_random_seed(model, random_seed: int | None) -> int:
 
 def write_tree_generation_manifest(path: Path, manifest: dict[str, Any]) -> None:
     write_json_object(path, manifest)
-
-
-def read_json_object(path: Path, label: str) -> dict[str, Any]:
-    try:
-        payload = json.loads(path.read_text())
-    except json.JSONDecodeError as exc:
-        raise ValueError(f"{path} is not valid JSON") from exc
-    if not isinstance(payload, dict):
-        raise ValueError(f"{label} must be a JSON object")
-    return payload
-
-
-def write_json_object(path: Path, payload: dict[str, Any]) -> None:
-    path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n")

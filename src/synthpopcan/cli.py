@@ -7,7 +7,6 @@ from typing import Any
 __all__ = ["main", "resolve_data_root"]
 
 import csv
-import json
 import os
 from pathlib import Path
 
@@ -35,6 +34,7 @@ from synthpopcan.cli_output import (
     print_validation_report_table,
     print_wds_inspection_table,
     print_wds_metadata_explanation_table,
+    write_json_object,
     write_output,
     write_report,
     write_wds_search_results,
@@ -915,7 +915,7 @@ def write_wds_mapping_template(
             dimensions=parse_columns(dimensions),
             preset=preset,
         )
-        out_path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n")
+        write_json_object(out_path, payload)
     except OSError as exc:
         raise click_file_access_error(exc.filename or source, "access", exc) from exc
     except ValueError as exc:
@@ -1046,7 +1046,7 @@ def write_census_profile_template(
             characteristic_column=characteristic_column,
             count_column=count_column,
         )
-        out_path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n")
+        write_json_object(out_path, payload)
     except OSError as exc:
         raise click_file_access_error(out_path, "write", exc) from exc
     except ValueError as exc:
@@ -1112,12 +1112,11 @@ def run_statcan_wds_metadata(product_id: str, out_path: Path | None) -> None:
     """Fetch WDS cube metadata by product ID."""
     try:
         metadata = fetch_wds_metadata(product_id)
-        payload = json.dumps(metadata, indent=2, sort_keys=True) + "\n"
         if out_path:
-            out_path.write_text(payload)
+            write_json_object(out_path, metadata)
             print_wrote(out_path)
         else:
-            print(payload, end="")
+            write_output(metadata, "json")
     except OSError as exc:
         action = "write" if out_path else "fetch"
         target = out_path if out_path else f"StatCan WDS metadata for {product_id}"
