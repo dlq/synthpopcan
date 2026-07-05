@@ -97,7 +97,7 @@ IPF benchmark fixtures are available as developer tooling, not as a normal user
 workflow:
 
 ```bash
-uv run python scripts/benchmark_ipf.py
+uv run python scripts/benchmarks.py ipf
 ```
 
 Use `--seed-records` for smaller or larger local runs while checking
