@@ -1,0 +1,31 @@
+.highlight {
+  border: 1px solid var(--color-background-border);
+  box-shadow: 0 0.2rem 0.6rem rgba(0, 0, 0, 0.04);
+}
+
+.highlight pre {
+  line-height: 1.55;
+}
+
+.highlight button.copybtn {
+  border: 1px solid var(--color-background-border);
+  border-radius: 0.25rem;
+}
+
+.highlight button.copybtn:hover {
+  border-color: var(--color-brand-content);
+}
+
+body {
+  --color-code-background: #f6f8fa;
+}
+
+body[data-theme="dark"] {
+  --color-code-background: #161b22;
+}
+
+@media (prefers-color-scheme: dark) {
+  body:not([data-theme="light"]) {
+    --color-code-background: #161b22;
+  }
+}
