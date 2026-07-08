@@ -1305,6 +1305,46 @@ def test_realize_population_with_no_persons_writes_empty_persons_file(tmp_path) 
     assert p_out.read_text() == ""
 
 
+def test_realize_in_memory_and_csv_paths_produce_identical_rows(tmp_path) -> None:
+    # Both realization entry points share one core; this locks them together so
+    # the in-memory rows and the streamed CSV rows can never silently diverge.
+    households = [
+        {"synthetic_household_id": "h1", "household_size": "1", "TENUR": "owner"},
+        {"synthetic_household_id": "h2", "household_size": "2", "TENUR": "renter"},
+        {"synthetic_household_id": "h3", "household_size": "1", "TENUR": "owner"},
+    ]
+    persons = [
+        {"synthetic_person_id": "p1", "synthetic_household_id": "h1", "AGEGRP": "a"},
+        {"synthetic_person_id": "p2", "synthetic_household_id": "h2", "AGEGRP": "a"},
+        {"synthetic_person_id": "p3", "synthetic_household_id": "h2", "AGEGRP": "c"},
+    ]
+    weights_by_geography = {
+        "4620001.00": [2.0, 1.0, 0.0],
+        "4620002.00": [0.0, 1.0, 2.0],
+    }
+    common = {
+        "weights_by_geography": weights_by_geography,
+        "geography_column": "tract",
+        "household_id_column": "synthetic_household_id",
+        "person_id_column": "synthetic_person_id",
+    }
+
+    mem_households, mem_persons = realize_linked_geography_population(
+        households, persons, **common
+    )
+
+    hh_out = tmp_path / "hh.csv"
+    p_out = tmp_path / "p.csv"
+    _write_realized_population_to_csv(hh_out, p_out, households, persons, **common)
+    with hh_out.open(newline="") as handle:
+        csv_households = list(csv.DictReader(handle))
+    with p_out.open(newline="") as handle:
+        csv_persons = list(csv.DictReader(handle))
+
+    assert mem_households == csv_households
+    assert mem_persons == csv_persons
+
+
 def test_write_weights_csv_fallback_integerizes_without_precomputed(tmp_path) -> None:
     households = [
         {"synthetic_household_id": "h1", "household_size": "1"},

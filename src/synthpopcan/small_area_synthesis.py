@@ -407,55 +407,28 @@ def realize_linked_geography_population(
     household_id_column: str = "synthetic_household_id",
     person_id_column: str = "synthetic_person_id",
 ) -> tuple[list[HouseholdRow], list[PersonRow]]:
-    """Integerize geography weights and copy linked persons into households."""
+    """Integerize geography weights and copy linked persons into households.
 
-    if not weights_by_geography:
-        raise ValueError("at least one target geography is required")
-    persons_by_household: dict[str, list[PersonRow]] = defaultdict(list)
-    for person in persons:
-        household_id = person.get(household_id_column, "")
-        if household_id:
-            persons_by_household[household_id].append(person)
+    This is the in-memory form of the realization step. It shares its expansion
+    logic with :func:`_write_realized_population_to_csv`; use that function when
+    streaming to disk for large runs.
+    """
 
-    assigned_households: list[HouseholdRow] = []
-    assigned_persons: list[PersonRow] = []
-    next_household_number = 1
-    next_person_number = 1
-    for geography in sorted(weights_by_geography):
-        weights = weights_by_geography[geography]
-        if len(weights) != len(households):
-            raise ValueError(
-                f"weights for geography {geography!r} do not match household rows"
-            )
-        integer_weights = integerize_weights(weights)
-        for candidate_index, repeats in enumerate(integer_weights):
-            source_household = households[candidate_index]
-            source_household_id = source_household[household_id_column]
-            for _copy_index in range(repeats):
-                assigned_household_id = f"{geography}-{next_household_number}"
-                next_household_number += 1
-                assigned_household = {
-                    **source_household,
-                    household_id_column: assigned_household_id,
-                    geography_column: geography,
-                    "source_candidate_household_id": source_household_id,
-                }
-                assigned_households.append(assigned_household)
-                for source_person in persons_by_household.get(source_household_id, []):
-                    assigned_person = {
-                        **source_person,
-                        person_id_column: f"{geography}-{next_person_number}",
-                        household_id_column: assigned_household_id,
-                        geography_column: geography,
-                        "source_candidate_person_id": source_person.get(
-                            person_id_column,
-                            "",
-                        ),
-                    }
-                    next_person_number += 1
-                    assigned_persons.append(assigned_person)
-
-    return assigned_households, assigned_persons
+    realized = _expand_realized_population(
+        households,
+        persons,
+        weights_by_geography=weights_by_geography,
+        geography_column=geography_column,
+        household_id_column=household_id_column,
+        person_id_column=person_id_column,
+    )
+    household_rows = _frame_to_string_rows(realized.household_frame)
+    person_rows = (
+        _frame_to_string_rows(realized.person_frame)
+        if realized.person_frame is not None
+        else []
+    )
+    return household_rows, person_rows
 
 
 def calibrate_linked_household_csvs(
@@ -624,9 +597,19 @@ def _subsample_candidates(
     return selected_hh, selected_persons
 
 
-def _write_realized_population_to_csv(
-    households_path: Path,
-    persons_path: Path,
+@dataclass(frozen=True)
+class _RealizedPopulation:
+    """Expanded household/person frames plus realization metadata."""
+
+    household_frame: pd.DataFrame
+    person_frame: pd.DataFrame | None
+    integer_weights: dict[str, list[int]]
+    assigned_by_geography: dict[str, int]
+    assigned_households: int
+    assigned_persons: int
+
+
+def _expand_realized_population(
     households: Sequence[HouseholdRow],
     persons: Sequence[PersonRow],
     *,
@@ -634,13 +617,24 @@ def _write_realized_population_to_csv(
     geography_column: str,
     household_id_column: str,
     person_id_column: str,
-) -> dict[str, Any]:
+) -> _RealizedPopulation:
+    """Integerize geography weights and expand candidates into assigned frames.
+
+    This is the single realization implementation shared by the in-memory
+    :func:`realize_linked_geography_population` and the streaming
+    :func:`_write_realized_population_to_csv`. It assigns each integerized
+    household copy a ``{geography}-{n}`` identifier and fans linked persons out
+    into every household copy, inheriting the assigned geography.
+    """
+
     if not households:
         raise ValueError("at least one candidate household row is required")
+    if not weights_by_geography:
+        raise ValueError("at least one target geography is required")
 
     # --- Build expand index across all geographies ---
-    # Integerize once per geography; cache the result so _write_weights_csv
-    # can reuse it without re-calling integerize_weights.
+    # Integerize once per geography; the caller reuses the result for the
+    # weights CSV without re-calling integerize_weights.
     integer_weights: dict[str, list[int]] = {}
     idx_parts: list[np.ndarray] = []
     geo_parts: list[np.ndarray] = []
@@ -683,13 +677,13 @@ def _write_realized_population_to_csv(
         if c not in df_hh.columns
     ]
     hh_cols = list(df_hh.columns) + hh_extra
-
-    households_path.parent.mkdir(parents=True, exist_ok=True)
-    df_hh_exp[hh_cols].to_csv(households_path, index=False)
+    household_frame = df_hh_exp[hh_cols]
 
     # --- Expand persons ---
-    df_p = pd.DataFrame(persons)
+    person_frame: pd.DataFrame | None = None
+    n_p = 0
     if persons:
+        df_p = pd.DataFrame(persons)
         df_hh_idx = df_hh[[household_id_column]].copy()
         df_hh_idx["_cand_idx"] = np.arange(len(df_hh), dtype=np.int32)
         df_p_idx = df_p.merge(df_hh_idx, on=household_id_column, how="left")
@@ -721,21 +715,63 @@ def _write_realized_population_to_csv(
             if c not in df_p.columns
         ]
         p_cols = [c for c in list(df_p.columns) + p_extra if c in df_p_exp.columns]
-        persons_path.parent.mkdir(parents=True, exist_ok=True)
-        df_p_exp[p_cols].to_csv(persons_path, index=False)
-        assigned_persons = n_p
-    else:
-        persons_path.parent.mkdir(parents=True, exist_ok=True)
-        persons_path.write_text("")
-        assigned_persons = 0
+        person_frame = pd.DataFrame(df_p_exp[p_cols])
 
     assigned_by_geography = df_hh_exp[geography_column].value_counts().to_dict()
 
+    return _RealizedPopulation(
+        household_frame=household_frame,
+        person_frame=person_frame,
+        integer_weights=integer_weights,
+        assigned_by_geography=assigned_by_geography,
+        assigned_households=n_hh,
+        assigned_persons=n_p,
+    )
+
+
+def _frame_to_string_rows(frame: pd.DataFrame) -> list[dict[str, str]]:
+    """Convert a realized frame to list-of-dict rows with string values."""
+
+    return [
+        {str(column): str(value) for column, value in record.items()}
+        for record in frame.fillna("").to_dict("records")
+    ]
+
+
+def _write_realized_population_to_csv(
+    households_path: Path,
+    persons_path: Path,
+    households: Sequence[HouseholdRow],
+    persons: Sequence[PersonRow],
+    *,
+    weights_by_geography: dict[str, list[float]],
+    geography_column: str,
+    household_id_column: str,
+    person_id_column: str,
+) -> dict[str, Any]:
+    realized = _expand_realized_population(
+        households,
+        persons,
+        weights_by_geography=weights_by_geography,
+        geography_column=geography_column,
+        household_id_column=household_id_column,
+        person_id_column=person_id_column,
+    )
+
+    households_path.parent.mkdir(parents=True, exist_ok=True)
+    realized.household_frame.to_csv(households_path, index=False)
+
+    persons_path.parent.mkdir(parents=True, exist_ok=True)
+    if realized.person_frame is not None:
+        realized.person_frame.to_csv(persons_path, index=False)
+    else:
+        persons_path.write_text("")
+
     return {
-        "assigned_households": n_hh,
-        "assigned_persons": assigned_persons,
-        "geographies": assigned_by_geography,
-        "integer_weights": integer_weights,
+        "assigned_households": realized.assigned_households,
+        "assigned_persons": realized.assigned_persons,
+        "geographies": realized.assigned_by_geography,
+        "integer_weights": realized.integer_weights,
     }
 
 

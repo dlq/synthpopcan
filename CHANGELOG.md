@@ -14,6 +14,8 @@ All notable public changes to SynthPopCan are tracked here.
   "Residual is ..." instead of every issue claiming to be the largest.
 - Reported a clearer error for empty candidate CSVs and for training rows
   missing their weight column.
+- Unified the in-memory and streaming small-area realization paths onto one
+  shared implementation so their output can no longer drift apart.
 
 ## 0.3.0 - 2026-06-29
 
