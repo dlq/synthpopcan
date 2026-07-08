@@ -176,7 +176,7 @@ def test_tree_model_spec_records_contract() -> None:
     )
 
     assert spec.model_family == "tree-based"
-    assert spec.as_summary() == {
+    assert spec.to_dict() == {
         "level": "household",
         "model_family": "tree-based",
         "target_columns": ["TENUR"],

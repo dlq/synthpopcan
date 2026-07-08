@@ -20,6 +20,10 @@ All notable public changes to SynthPopCan are tracked here.
   API's `write_weights` now formats near-integer weights the same way as
   `ipf fit`, absorbing floating-point noise instead of writing values such as
   `2.9999999998`.
+- Renamed `TreeModelSpec.as_summary()` to `TreeModelSpec.to_dict()` so the name
+  matches the other complete model serializers; `as_summary()` now denotes only
+  lossy summaries (as on `TreeTrainingSample`). The returned dictionary is
+  unchanged.
 
 ## 0.3.0 - 2026-06-29
 

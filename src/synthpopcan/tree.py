@@ -123,8 +123,14 @@ class TreeModelSpec:
             conditioning_columns=self.conditioning_columns,
         )
 
-    def as_summary(self) -> dict[str, Any]:
-        """Return a JSON-serializable summary of the model specification."""
+    def to_dict(self) -> dict[str, Any]:
+        """Serialize the model specification to a JSON-compatible dictionary.
+
+        This is the complete spec representation embedded in a model's
+        :meth:`to_dict` output and read back by its ``from_dict``; it uses the
+        ``to_dict`` name (rather than ``as_summary``) because it is round-trip
+        serialization, not a lossy summary.
+        """
 
         return {
             "level": self.level,
@@ -236,7 +242,7 @@ class FrequencyTreeModel:
             "schema_version": "synthpopcan-tree-model-v1",
             "model_type": self.model_type,
             "release_class": self.release_class,
-            "spec": self.spec.as_summary(),
+            "spec": self.spec.to_dict(),
             "source_format": self.source_format,
             "records_trained": self.records_trained,
             "groups": [group.to_dict() for group in self.groups],
@@ -361,7 +367,7 @@ class CartTreeModel:
             "schema_version": "synthpopcan-tree-model-v1",
             "model_type": self.model_type,
             "release_class": self.release_class,
-            "spec": self.spec.as_summary(),
+            "spec": self.spec.to_dict(),
             "source_format": self.source_format,
             "records_trained": self.records_trained,
             "feature_categories": {
