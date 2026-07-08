@@ -11,6 +11,7 @@ from typing import Any
 from zipfile import BadZipFile, ZipFile
 
 from synthpopcan.ipf import IPFMargin
+from synthpopcan.tabular import format_csv_number
 
 __all__ = [
     "CategoryMapping",
@@ -798,7 +799,7 @@ def write_control_table(path: Path, table: ControlTable) -> None:
                             dimension: cell.categories.get(dimension, "")
                             for dimension in table.dimensions
                         },
-                        "count": _format_count(cell.count),
+                        "count": format_csv_number(cell.count),
                     }
                 )
 
@@ -806,10 +807,3 @@ def write_control_table(path: Path, table: ControlTable) -> None:
 def _parse_dimensions(value: str) -> tuple[str, ...]:
     separator = "|" if "|" in value else ","
     return tuple(part.strip() for part in value.split(separator) if part.strip())
-
-
-def _format_count(count: float) -> str:
-    rounded = round(count)
-    if abs(count - rounded) < 1e-9:
-        return str(rounded)
-    return f"{count:.12g}"

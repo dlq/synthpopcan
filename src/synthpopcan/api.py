@@ -36,6 +36,7 @@ from synthpopcan.controls import ControlTable, read_control_table
 from synthpopcan.ipf import IPFMargin, IPFResult, Record, expand_records
 from synthpopcan.ipf import fit_ipf as fit_ipf_records
 from synthpopcan.small_area_synthesis import calibrate_linked_household_csvs
+from synthpopcan.tabular import format_csv_number
 from synthpopcan.tree import (
     CartTreeModel,
     FrequencyTreeModel,
@@ -277,7 +278,7 @@ def write_weights(
         writer = csv.DictWriter(handle, fieldnames=fieldnames)
         writer.writeheader()
         for row, weight in zip(rows, result.weights, strict=True):
-            writer.writerow({**row, output_weight_column: _format_weight(weight)})
+            writer.writerow({**row, output_weight_column: format_csv_number(weight)})
 
 
 def read_model_package(path: str | Path) -> dict[str, Any]:
@@ -690,7 +691,3 @@ def _string_row(record: Mapping[str, object]) -> dict[str, str]:
 
 def _default_weight_column(rows: PopulationRows) -> str:
     return "weight" if "weight" not in rows[0] else "fitted_weight"
-
-
-def _format_weight(weight: float) -> str:
-    return str(int(weight)) if weight.is_integer() else f"{weight:.12g}"

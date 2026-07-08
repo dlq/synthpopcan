@@ -15,6 +15,8 @@ from typing import Any, Literal
 import numpy as np
 from sklearn.tree import DecisionTreeClassifier
 
+from synthpopcan.tabular import validate_columns
+
 TreeLevel = Literal["household", "person"]
 
 __all__ = [
@@ -1453,12 +1455,6 @@ def validate_tree_roles(
         raise ValueError(
             f"target and conditioning columns must not overlap: {', '.join(overlap)}"
         )
-
-
-def validate_columns(columns: tuple[str, ...], *, required: tuple[str, ...]) -> None:
-    missing = [column for column in required if column not in columns]
-    if missing:
-        raise ValueError(f"missing required columns: {', '.join(missing)}")
 
 
 def encode_conditions(

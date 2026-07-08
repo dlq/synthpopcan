@@ -19,6 +19,7 @@ CORE_MODULES = (
     "small_area_synthesis",
     "sources",
     "statcan",
+    "tabular",
     "tree",
     "tree_benchmark",
     "validation",

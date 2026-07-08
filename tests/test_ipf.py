@@ -7,7 +7,6 @@ import pytest
 
 import synthpopcan.ipf as ipf_module
 from synthpopcan.cli_ipf import (
-    _format_weight,
     _read_weighted_seed,
     _write_expanded_seed,
     _write_weighted_seed,
@@ -32,6 +31,7 @@ from synthpopcan.ipf import (
     validate_margin_coverage,
     weighted_totals,
 )
+from synthpopcan.tabular import format_csv_number
 
 
 def test_fit_ipf_matches_two_one_way_margins() -> None:
@@ -1048,8 +1048,8 @@ def test_ipf_writers_reject_empty_outputs_and_format_weights(tmp_path: Path) -> 
     assert list(csv.DictReader(output_path.open(newline=""))) == [
         {"id": "1", "age": "young", "weight": "1", "fitted_weight": "1.25"}
     ]
-    assert _format_weight(2.0) == "2"
-    assert _format_weight(1.25) == "1.25"
+    assert format_csv_number(2.0) == "2"
+    assert format_csv_number(1.25) == "1.25"
 
 
 def test_cli_expands_fitted_weight_when_seed_has_initial_weight(tmp_path: Path) -> None:

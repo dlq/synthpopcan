@@ -8,7 +8,6 @@ from click.exceptions import ClickException
 from synthpopcan.controls import (
     ControlCell,
     _find_wds_csv_member,
-    _format_count,
     _values_are_numeric,
     build_wds_category_mapping_template,
     census_profile_template,
@@ -21,6 +20,7 @@ from synthpopcan.controls import (
     read_control_table,
     read_wds_control_table,
 )
+from synthpopcan.tabular import format_csv_number
 
 
 def test_reads_normalized_controls_as_control_table(tmp_path: Path) -> None:
@@ -941,7 +941,7 @@ def test_category_mapping_validation_and_numeric_detection(tmp_path: Path) -> No
     assert _values_are_numeric([]) is False
     assert _values_are_numeric(["1", "2.5"]) is True
     assert _values_are_numeric(["1", "not-a-number"]) is False
-    assert _format_count(1.25) == "1.25"
+    assert format_csv_number(1.25) == "1.25"
 
 
 def test_census_profile_mapping_validation_errors(tmp_path: Path) -> None:

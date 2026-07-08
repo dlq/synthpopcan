@@ -24,6 +24,7 @@ from synthpopcan.console import print_wrote
 from synthpopcan.controls import read_control_table
 from synthpopcan.diagnostics import build_ipf_fit_report, build_ipf_input_report
 from synthpopcan.ipf import fit_ipf, integerize_weights
+from synthpopcan.tabular import format_csv_number
 
 _PATH = click.Path(path_type=Path)
 
@@ -285,7 +286,7 @@ def _write_weighted_seed(
         writer = csv.DictWriter(handle, fieldnames=fieldnames)
         writer.writeheader()
         for row, weight in zip(rows, weights, strict=True):
-            writer.writerow({**row, weight_column: _format_weight(weight)})
+            writer.writerow({**row, weight_column: format_csv_number(weight)})
 
 
 def _write_expanded_seed(
@@ -317,12 +318,3 @@ def _write_expanded_seed(
                     }
                 )
                 synthetic_id += 1
-
-
-def _format_weight(weight: float) -> str:
-    """Format fitted weights without unnecessary decimal places."""
-
-    rounded = round(weight)
-    if abs(weight - rounded) < 1e-9:
-        return str(rounded)
-    return f"{weight:.12g}"

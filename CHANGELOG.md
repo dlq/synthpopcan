@@ -16,6 +16,10 @@ All notable public changes to SynthPopCan are tracked here.
   missing their weight column.
 - Unified the in-memory and streaming small-area realization paths onto one
   shared implementation so their output can no longer drift apart.
+- Made numeric CSV output consistent across the library and CLI: the beginner
+  API's `write_weights` now formats near-integer weights the same way as
+  `ipf fit`, absorbing floating-point noise instead of writing values such as
+  `2.9999999998`.
 
 ## 0.3.0 - 2026-06-29
 

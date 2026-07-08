@@ -18,6 +18,7 @@ from urllib.request import urlopen
 from zipfile import ZipFile
 
 from synthpopcan.statcan import fetch_json, wds_download_url
+from synthpopcan.tabular import format_csv_number
 
 _WDS_METADATA_COLUMNS = {
     "STATUS",
@@ -194,7 +195,7 @@ def _normalize_wds_rows(
                 "margin": "wds",
                 "dimensions": ",".join(dimensions),
                 **{dimension: row[dimension] for dimension in dimensions},
-                "count": _format_count(count),
+                "count": format_csv_number(count),
             }
         )
     return control_rows
@@ -221,7 +222,3 @@ def _write_csv(rows: list[dict[str, str]]) -> str:
     writer.writeheader()
     writer.writerows(rows)
     return handle.getvalue()
-
-
-def _format_count(value: float) -> str:
-    return str(int(value)) if value.is_integer() else str(value)

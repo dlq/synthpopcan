@@ -38,6 +38,7 @@ from synthpopcan.ipf import (
     _initial_weights,
     integerize_weights,
 )
+from synthpopcan.tabular import format_csv_number
 
 HouseholdRow = dict[str, str]
 PersonRow = dict[str, str]
@@ -798,7 +799,7 @@ def _write_weights_csv(
                     {
                         "target_geography": geography,
                         "source_candidate_household_id": household[household_id_column],
-                        "weight": _format_float(weight),
+                        "weight": format_csv_number(weight),
                         "integer_weight": integer_weight,
                     }
                 )
@@ -925,7 +926,3 @@ def _ordered_fieldnames(rows: Sequence[dict[str, str]]) -> list[str]:
             if fieldname not in fieldnames:
                 fieldnames.append(fieldname)
     return fieldnames
-
-
-def _format_float(value: float) -> str:
-    return str(int(value)) if value.is_integer() else f"{value:.12g}"

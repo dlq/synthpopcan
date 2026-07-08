@@ -8,6 +8,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Literal
 
+from synthpopcan.tabular import validate_columns
+
 SeedLevel = Literal["household", "person"]
 
 __all__ = [
@@ -1381,12 +1383,6 @@ def unique_household_value(
     if len(values) != 1:
         raise ValueError(f"conflicting {label} {column!r} for HH_ID {household_id!r}")
     return next(iter(values))
-
-
-def validate_columns(columns: tuple[str, ...], *, required: tuple[str, ...]) -> None:
-    missing = [column for column in required if column not in columns]
-    if missing:
-        raise ValueError(f"missing required columns: {', '.join(missing)}")
 
 
 def unique_columns(columns: tuple[str | None, ...]) -> tuple[str, ...]:
