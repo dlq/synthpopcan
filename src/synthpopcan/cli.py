@@ -6,7 +6,6 @@ from typing import Any
 
 __all__ = ["main", "resolve_data_root"]
 
-import csv
 import os
 from pathlib import Path
 
@@ -29,11 +28,13 @@ from synthpopcan.cli_output import (
     click_file_access_error,
     click_value_error,
     format_report_number,
+    parse_columns,
     print_census_profile_characteristics_table,
     print_tree_output_validation_report_table,
     print_validation_report_table,
     print_wds_inspection_table,
     print_wds_metadata_explanation_table,
+    read_csv_rows,
     write_json_object,
     write_output,
     write_report,
@@ -517,8 +518,8 @@ def validate_linked_output(
     """Validate person rows are linked to generated households."""
     try:
         report = validate_linked_population(
-            households=_read_csv(households_path),
-            persons=_read_csv(persons_path),
+            households=read_csv_rows(households_path),
+            persons=read_csv_rows(persons_path),
             household_id_column=household_id_column,
             person_household_id_column=person_household_id_column,
             household_size_column=household_size_column,
@@ -588,8 +589,8 @@ def validate_tree_output(
     """Compare generated tree rows with the training-view distributions."""
     try:
         report = build_tree_output_validation_report(
-            training_rows=_read_csv(training_path),
-            generated_rows=_read_csv(generated_path),
+            training_rows=read_csv_rows(training_path),
+            generated_rows=read_csv_rows(generated_path),
             target_columns=_parse_column_list(target_columns, "target columns"),
             conditioning_columns=_parse_optional_column_list(conditioning_columns),
             weight_field=weight_field,
@@ -655,13 +656,6 @@ def resolve_data_root(data_root: Path | None) -> Path:
     if env_value:
         return Path(env_value)
     return Path("data")
-
-
-def _read_csv(path: Path) -> list[dict[str, str]]:
-    """Read a CSV file as string-valued dictionaries for validation commands."""
-
-    with path.open(newline="") as handle:
-        return list(csv.DictReader(handle))
 
 
 def _parse_column_list(value: str, label: str) -> tuple[str, ...]:
@@ -1172,13 +1166,6 @@ def run_statcan_census_profile_fetch(year: str, geo_level: str, out_dir: Path) -
 
 def search_wds_tables_for_cli(query: str, limit: int) -> list[dict[str, str]]:
     return [result.as_dict() for result in search_wds_tables(query, limit)]
-
-
-def parse_columns(value: str) -> tuple[str, ...]:
-    columns = tuple(part.strip() for part in value.split(",") if part.strip())
-    if not columns:
-        raise click.ClickException("at least one column is required")
-    return columns
 
 
 if __name__ == "__main__":  # pragma: no cover

@@ -17,6 +17,7 @@ from synthpopcan.cli_output import (
     print_ipf_control_suggestions_table,
     print_ipf_input_check_table,
     print_ipf_report_table,
+    read_csv_rows,
     write_report,
 )
 from synthpopcan.console import print_wrote
@@ -62,7 +63,7 @@ def _check_ipf_inputs(
 ) -> None:
     """Check whether seed records cover the control dimensions and categories."""
     try:
-        seed_rows = _read_csv(seed_path)
+        seed_rows = read_csv_rows(seed_path)
         control_table = read_control_table(controls_path)
     except OSError as exc:
         raise click_file_access_error(exc.filename, "read", exc) from exc
@@ -97,7 +98,7 @@ def _suggest_ipf_controls(
 ) -> None:
     """Suggest calibration-control directions from generated or seed rows."""
     try:
-        seed_rows = _read_csv(seed_path)
+        seed_rows = read_csv_rows(seed_path)
     except OSError as exc:
         raise click_file_access_error(seed_path, "read", exc) from exc
     report = build_control_suggestion_report(
@@ -145,7 +146,7 @@ def _fit_ipf_command(
 ) -> None:
     """Fit seed records to controls and write compact weights."""
     try:
-        seed_rows = _read_csv(seed_path)
+        seed_rows = read_csv_rows(seed_path)
         control_table = read_control_table(controls_path)
         result = fit_ipf(
             seed_rows,
@@ -226,13 +227,6 @@ def _report_ipf(path: Path, output_format: str) -> None:
     write_report(report, output_format, print_ipf_report_table)
 
 
-def _read_csv(path: Path) -> list[dict[str, str]]:
-    """Read a CSV file as string-valued dictionaries for CLI workflows."""
-
-    with path.open(newline="") as handle:
-        return list(csv.DictReader(handle))
-
-
 def _read_weighted_seed(
     path: Path, weight_field: str
 ) -> tuple[list[dict[str, str]], list[float]]:
@@ -273,7 +267,7 @@ def read_population_artifact(
     if artifact_kind == "weights":
         return _read_weighted_seed(path, weight_field)
     if artifact_kind == "expanded":
-        rows = _read_csv(path)
+        rows = read_csv_rows(path)
         return rows, [1.0 for _row in rows]
     raise ValueError(f"unknown population artifact kind {artifact_kind!r}")
 

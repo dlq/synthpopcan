@@ -139,7 +139,7 @@ def check_small_area_calibration_inputs(
         candidate_categories = {
             str(household.get(dimension, "")) for household in households
         }
-        for category in sorted(_control_categories_for_dimension(controls, dimension)):
+        for category in sorted(controls.categories_for(dimension)):
             if category not in candidate_categories:
                 issues.append(
                     {
@@ -280,19 +280,6 @@ def _missing_candidate_column_issue(dimension: str) -> dict[str, Any]:
         ),
         "tip": tip,
     }
-
-
-def _control_categories_for_dimension(
-    controls: ControlTable,
-    dimension: str,
-) -> set[str]:
-    categories: set[str] = set()
-    for margin in controls.margins:
-        if dimension not in margin.dimensions:
-            continue
-        for cell in margin.cells:
-            categories.add(cell.categories[dimension])
-    return categories
 
 
 def fit_households_by_geography(

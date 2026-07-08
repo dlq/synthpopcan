@@ -117,6 +117,17 @@ class ControlTable:
 
         return [margin.to_ipf_margin() for margin in self.margins]
 
+    def categories_for(self, dimension: str) -> set[str]:
+        """Return every category value used for ``dimension`` across margins."""
+
+        categories: set[str] = set()
+        for margin in self.margins:
+            if dimension not in margin.dimensions:
+                continue
+            for cell in margin.cells:
+                categories.add(cell.categories[dimension])
+        return categories
+
 
 CategoryMapping = dict[str, dict[str, str]]
 _WDS_METADATA_COLUMNS = {

@@ -20,6 +20,7 @@ __all__ = [
     "format_nonconvergence_message",
     "format_report_number",
     "format_report_percent",
+    "parse_columns",
     "print_census_profile_characteristics_table",
     "print_ipf_control_suggestions_table",
     "print_ipf_input_check_table",
@@ -31,6 +32,7 @@ __all__ = [
     "print_validation_report_table",
     "print_wds_inspection_table",
     "print_wds_metadata_explanation_table",
+    "read_csv_rows",
     "read_json_object",
     "write_json_object",
     "write_output",
@@ -67,6 +69,22 @@ def click_value_error(
     """Wrap a domain validation error in a Click exception."""
 
     return click.ClickException(formatter(exc))
+
+
+def read_csv_rows(path: Path) -> list[dict[str, str]]:
+    """Read a CSV file as string-valued dictionaries for CLI workflows."""
+
+    with path.open(newline="") as handle:
+        return list(csv.DictReader(handle))
+
+
+def parse_columns(value: str) -> tuple[str, ...]:
+    """Parse a required comma-separated column list, rejecting an empty result."""
+
+    columns = tuple(part.strip() for part in value.split(",") if part.strip())
+    if not columns:
+        raise click.ClickException("at least one column is required")
+    return columns
 
 
 def read_json_object(path: Path, label: str) -> dict[str, Any]:

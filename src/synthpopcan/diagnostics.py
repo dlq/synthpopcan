@@ -229,9 +229,7 @@ def _build_dimension_input_check(
     control_table: ControlTable,
     dimension: str,
 ) -> dict[str, Any]:
-    control_categories = sorted(
-        _control_categories_for_dimension(control_table, dimension)
-    )
+    control_categories = sorted(control_table.categories_for(dimension))
     if any(dimension not in row for row in seed_rows):
         return {
             "dimension": dimension,
@@ -294,18 +292,6 @@ def _suggest_ipf_input_next_steps(dimension_checks: list[dict[str, Any]]) -> lis
                 "--mapping categories.json`."
             )
     return steps
-
-
-def _control_categories_for_dimension(
-    control_table: ControlTable, dimension: str
-) -> set[str]:
-    categories: set[str] = set()
-    for margin in control_table.margins:
-        if dimension not in margin.dimensions:
-            continue
-        for cell in margin.cells:
-            categories.add(cell.categories[dimension])
-    return categories
 
 
 def _find_unsupported_control_cells(

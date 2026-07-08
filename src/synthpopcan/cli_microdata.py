@@ -12,6 +12,7 @@ import click
 from synthpopcan.cli_output import (
     click_file_access_error,
     click_value_error,
+    parse_columns,
     print_seed_check_table,
     print_tree_column_suggestions_table,
     print_tree_geography_feasibility_table,
@@ -463,13 +464,6 @@ def export_microdata_training(
     if output_format == "json":
         return
     print_wrote(out_path)
-
-
-def parse_columns(value: str) -> tuple[str, ...]:
-    columns = tuple(part.strip() for part in value.split(",") if part.strip())
-    if not columns:
-        raise click.ClickException("at least one column is required")
-    return columns
 
 
 def _parse_optional_columns(value: str) -> tuple[str, ...]:
