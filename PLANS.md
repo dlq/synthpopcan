@@ -1,7 +1,7 @@
 # SynthPopCan Plan
 
 Status: release-phased roadmap\
-Last updated: 2026-07-05
+Last updated: 2026-07-08
 
 ## Goal
 
@@ -199,7 +199,9 @@ Completed in the first implementation pass:
 
 ### 0.3.x - Small-Area Quality, Validation, And Performance
 
-Status: planned after the 0.2.x MVP proves the workflow.
+Status: in progress. `0.3.0` shipped the first quality/diagnostics pass and
+`0.3.1` followed with bug fixes and output-consistency work. The unchecked items
+below remain for later `0.3.x` releases.
 
 Purpose: make small-area synthesis robust enough for larger geographies and
 serious review.
@@ -211,16 +213,24 @@ Candidate work:
 
 - Add household-size recoding helpers for Census Profile categories such as
   `1`, `2`, `3`, `4`, and `5 or more` before fitting generated exact household
-  sizes to small-area controls.
+  sizes to small-area controls. **Met in 0.3.0; Census Profile household-size
+  recoding preserves exact `household_size` values and fits grouped controls
+  through `household_size_group`.**
 
 - Improve margin-selection helpers so researchers can see which StatCan tables are
   usable controls, which are validation-only, and which require enrichment.
 
 - Add richer non-convergence diagnostics for inconsistent small-area controls,
-  sparse geographies, structural zeros, and category mismatches.
+  sparse geographies, structural zeros, and category mismatches. **Partly met;
+  0.3.0 added calibration preflight checks for missing candidate columns and
+  categories. Sparse-geography, structural-zero, and category-mismatch
+  diagnostics remain.**
 
 - Improve validation reports with geography-level summaries, largest residuals,
-  linked household/person checks, and suggested next steps.
+  linked household/person checks, and suggested next steps. **Met across 0.3.0
+  and 0.3.1; calibration reports now carry geography-level residual summaries,
+  largest-residual rows, and suggested next steps, and per-cell residual
+  messages were clarified.**
 
 - Prototype optional SciPy CSR or other sparse backends for high-cardinality or
   repeated IPF updates while keeping the current pure-Python indexed fitter as

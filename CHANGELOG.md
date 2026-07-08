@@ -4,6 +4,10 @@ All notable public changes to SynthPopCan are tracked here.
 
 ## Unreleased
 
+## 0.3.1 - 2026-07-08
+
+Bug fixes, output consistency, and internal cleanup.
+
 - Fixed `--weight-field` being silently ignored in small-area calibration:
   `geo calibrate-linked` and `calibrate_small_area_linked` now start each
   geography fit from the candidate starting weights instead of uniform ones.
