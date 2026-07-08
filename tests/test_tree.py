@@ -962,6 +962,8 @@ def test_tree_low_level_validation_and_cart_edges(tmp_path) -> None:
         validate_condition_columns(("geo",), {"bad": "value"})
     with pytest.raises(ValueError, match="invalid weight"):
         read_record_weight({"weight": "bad"}, "weight", 2)
+    with pytest.raises(ValueError, match="missing weight column"):
+        read_record_weight({"other": "1"}, "weight", 2)
     assert dominant_frequency_outcome(()) is None
     assert dominant_cart_outcome(replace(cart_model, value=((),)), 0) is None
 

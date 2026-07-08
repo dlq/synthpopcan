@@ -195,6 +195,35 @@ def test_fetch_model_package_returns_cached_file_without_redownloading(
     assert result == cached
 
 
+def test_fetch_model_package_replaces_corrupt_cached_file(
+    monkeypatch, tmp_path
+) -> None:
+    monkeypatch.setenv("SYNTHPOPCAN_MODEL_CACHE", str(tmp_path))
+    cached = tmp_path / "montreal-cma-2016-all-fields-package.json"
+    cached.write_bytes(b"corrupt")
+
+    content = b'{"schema_version": "synthpopcan-linked-tree-package-v1"}'
+    compressed = gzip_bytes(content)
+    monkeypatch.setattr(
+        models,
+        "urlopen",
+        lambda url, timeout: FakeResponse(compressed),
+    )
+    metadata = models.model_registry_entry("montreal-cma-2016-all-fields")
+    original_sha = metadata["sha256"]
+    original_uncompressed_sha = metadata["uncompressed_sha256"]
+    metadata["sha256"] = hashlib.sha256(compressed).hexdigest()
+    metadata["uncompressed_sha256"] = hashlib.sha256(content).hexdigest()
+    try:
+        result = models.fetch_model_package("montreal-cma-2016-all-fields")
+    finally:
+        metadata["sha256"] = original_sha
+        metadata["uncompressed_sha256"] = original_uncompressed_sha
+
+    assert result == cached
+    assert cached.read_bytes() == content
+
+
 def test_fetch_model_package_cleans_up_temp_file_on_exception(
     monkeypatch, tmp_path
 ) -> None:

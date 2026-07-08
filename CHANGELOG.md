@@ -4,6 +4,17 @@ All notable public changes to SynthPopCan are tracked here.
 
 ## Unreleased
 
+- Fixed `--weight-field` being silently ignored in small-area calibration:
+  `geo calibrate-linked` and `calibrate_small_area_linked` now start each
+  geography fit from the candidate starting weights instead of uniform ones.
+- Corrupt cached model packages are now removed and re-downloaded by
+  `models fetch` instead of failing on every retry; checksum verification
+  streams instead of loading whole packages into memory.
+- Clarified validation and fit-report residual messages: each issue now reads
+  "Residual is ..." instead of every issue claiming to be the largest.
+- Reported a clearer error for empty candidate CSVs and for training rows
+  missing their weight column.
+
 ## 0.3.0 - 2026-06-29
 
 Small-area quality, validation, and performance guidance.

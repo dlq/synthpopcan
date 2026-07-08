@@ -325,6 +325,7 @@ class NumpyIPFIndex:
         *,
         max_iterations: int = 100,
         tolerance: float = 1e-6,
+        initial_weights: np.ndarray | None = None,
     ) -> tuple[np.ndarray, bool, int, float]:
         """Run numpy IPF; return ``(weights, converged, iterations, max_abs_error)``.
 
@@ -332,6 +333,10 @@ class NumpyIPFIndex:
         conversion.  Use this inside tight loops when you need the numpy array
         immediately (e.g. to compute weighted totals via :meth:`compute_totals`)
         and will convert to a list only once at the end.
+
+        ``initial_weights`` provides per-record starting weights; every record
+        starts at ``1.0`` when omitted. The array is copied, so one starting
+        array can be shared across many fits.
         """
 
         if len(margins) != len(self.encodings):
@@ -339,6 +344,15 @@ class NumpyIPFIndex:
                 f"margins count {len(margins)} does not match index encodings "
                 f"{len(self.encodings)}"
             )
+        starting: np.ndarray | None = None
+        if initial_weights is not None:
+            starting = np.asarray(initial_weights, dtype=np.float64)
+            if starting.shape != (len(self.records),):
+                raise ValueError(
+                    f"initial weights do not match {len(self.records)} records"
+                )
+            if np.any(starting < 0):
+                raise ValueError("seed weights must be non-negative")
 
         t_arrays: list[np.ndarray] = []
         for enc, margin in zip(self.encodings, margins, strict=True):
@@ -354,7 +368,10 @@ class NumpyIPFIndex:
                     )
             t_arrays.append(t)
 
-        weights = np.ones(len(self.records), dtype=np.float64)
+        if starting is None:
+            weights = np.ones(len(self.records), dtype=np.float64)
+        else:
+            weights = starting.copy()
 
         max_abs_error = float("inf")
         for iteration in range(1, max_iterations + 1):
@@ -362,6 +379,12 @@ class NumpyIPFIndex:
                 current = np.bincount(
                     enc.cat_ids, weights=weights, minlength=enc.n_cats
                 )
+                # Unlike fit_ipf, a positive target whose supporting records
+                # have all been driven to zero weight is left unadjusted
+                # (ratio 1.0) and surfaces as non-convergence instead of
+                # raising. This is intentional: per-geography fits run in a
+                # thread pool, and one degenerate geography should produce a
+                # non-converged report rather than abort the whole run.
                 safe = np.where(current > 0, current, 1.0)
                 ratio = np.where(current > 0, t / safe, 1.0)
                 weights *= ratio[enc.cat_ids]

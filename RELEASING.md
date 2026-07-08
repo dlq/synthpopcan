@@ -51,7 +51,11 @@ Before publishing a model package:
 
 1. Record the package size and SHA-256 checksum.
 
-1. Upload the package to the intended GitHub Release.
+1. Upload the package to the intended GitHub Release. Model assets do not have
+   to live on the newest release: `_RELEASE_BASE_URL` in
+   `src/synthpopcan/models/__init__.py` names the release that hosts them, and
+   all assets must stay on that release until the base URL is updated in the
+   same change that moves them.
 
 1. Update the model registry with the release URL, size, and checksum.
 

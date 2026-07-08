@@ -1503,6 +1503,10 @@ def read_record_weight(
         return 1.0
     try:
         return float(record[weight_column])
+    except KeyError as exc:
+        raise ValueError(
+            f"row {row_number} is missing weight column {weight_column!r}"
+        ) from exc
     except ValueError as exc:
         raise ValueError(f"row {row_number} has invalid weight") from exc
 

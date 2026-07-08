@@ -323,6 +323,63 @@ def test_fit_households_by_geography_returns_weights_for_each_target() -> None:
     assert result.reports["4620001.00"]["converged"] is True
 
 
+def test_fit_households_by_geography_honors_weight_field() -> None:
+    households = [
+        {"synthetic_household_id": "h1", "household_size": "1", "start": "3"},
+        {"synthetic_household_id": "h2", "household_size": "1", "start": "1"},
+    ]
+    controls = ControlTable(
+        margins=(
+            ControlMargin(
+                name="size",
+                dimensions=("tract", "household_size"),
+                cells=(ControlCell({"tract": "0001.00", "household_size": "1"}, 4),),
+            ),
+        ),
+        dimensions=("tract", "household_size"),
+    )
+
+    result = fit_households_by_geography(
+        households,
+        controls,
+        geography_dimension="tract",
+        household_id_column="synthetic_household_id",
+        weight_field="start",
+        max_iterations=50,
+        tolerance=1e-9,
+    )
+
+    # Both candidates share the only control cell, so IPF cannot separate
+    # them; the fit must preserve the 3:1 starting proportions instead of
+    # splitting the target evenly.
+    assert result.weights_by_geography["0001.00"] == [3.0, 1.0]
+
+
+def test_fit_households_by_geography_rejects_missing_weight_field() -> None:
+    households = [
+        {"synthetic_household_id": "h1", "household_size": "1"},
+    ]
+    controls = ControlTable(
+        margins=(
+            ControlMargin(
+                name="size",
+                dimensions=("tract", "household_size"),
+                cells=(ControlCell({"tract": "0001.00", "household_size": "1"}, 1),),
+            ),
+        ),
+        dimensions=("tract", "household_size"),
+    )
+
+    with pytest.raises(ValueError, match="weight field"):
+        fit_households_by_geography(
+            households,
+            controls,
+            geography_dimension="tract",
+            household_id_column="synthetic_household_id",
+            weight_field="start",
+        )
+
+
 def test_realize_linked_geography_population_preserves_person_links() -> None:
     households = [
         {"synthetic_household_id": "h1", "household_size": "1", "TENUR": "owner"},

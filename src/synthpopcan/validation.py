@@ -76,8 +76,8 @@ def build_control_validation_report(
                         "margin": control_margin.name,
                         "categories": dict(cell.categories),
                         "message": (
-                            "Largest validation error is "
-                            f"{format_number(abs_error)} for {category_label}."
+                            f"Validation error is {format_number(abs_error)} "
+                            f"for {category_label}."
                         ),
                         "tip": (
                             "Check that the population artifact was generated from "

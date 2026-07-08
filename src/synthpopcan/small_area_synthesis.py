@@ -35,6 +35,7 @@ from synthpopcan.diagnostics import build_ipf_fit_report, relative_error
 from synthpopcan.ipf import (
     IPFResult,
     NumpyIPFIndex,
+    _initial_weights,
     integerize_weights,
 )
 
@@ -309,6 +310,11 @@ def fit_households_by_geography(
 
     Parameters
     ----------
+    weight_field:
+        Optional household column with non-negative starting weights.  Every
+        geography fit starts from these weights instead of uniform ``1.0``,
+        so candidates that IPF cannot distinguish keep their relative
+        starting proportions.
     n_workers:
         Number of threads for parallel geography fitting.  Each geography's
         IPF is independent and numpy releases the GIL during ``bincount``
@@ -340,6 +346,12 @@ def fit_households_by_geography(
     first_margins = next(iter(controls_for_geographies.values())).to_ipf_margins()
     numpy_index = NumpyIPFIndex.build(households, first_margins)
 
+    starting_weights: np.ndarray | None = None
+    if weight_field is not None:
+        starting_weights = np.asarray(
+            _initial_weights(households, weight_field), dtype=np.float64
+        )
+
     _n_workers = min(n_workers or (os.cpu_count() or 1), 8)
 
     def _fit_geo(
@@ -353,6 +365,7 @@ def fit_households_by_geography(
             ipf_margins,
             max_iterations=max_iterations,
             tolerance=tolerance,
+            initial_weights=starting_weights,
         )
         # compute_totals uses numpy bincount, replacing the Python weighted_totals loop
         precomputed = numpy_index.compute_totals(weights_np)
@@ -487,6 +500,9 @@ def calibrate_linked_household_csvs(
         households = _hh_f.result()
         persons = _p_f.result()
         controls = _ctrl_f.result()
+
+    if not households:
+        raise ValueError(f"candidate household CSV has no data rows: {households_path}")
 
     input_report = check_small_area_calibration_inputs(
         households,

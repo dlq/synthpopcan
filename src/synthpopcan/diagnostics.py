@@ -106,7 +106,7 @@ def build_ipf_fit_report(
                         "margin": control_margin.name,
                         "categories": dict(cell.categories),
                         "message": (
-                            f"Largest residual is {format_number(abs_error)} "
+                            f"Residual is {format_number(abs_error)} "
                             f"for {category_label}."
                         ),
                         "tip": (

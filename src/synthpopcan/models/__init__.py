@@ -542,8 +542,14 @@ def fetch_model_package(
         return _model_path(model_id)
     destination = model_cache_path(model_id)
     if destination.exists():
-        _verify_model_checksum(destination, metadata)
-        return destination
+        try:
+            _verify_model_checksum(destination, metadata)
+        except ValueError:
+            # A corrupt cached file would fail verification on every retry;
+            # remove it and fall through to a fresh download.
+            destination.unlink()
+        else:
+            return destination
 
     destination.parent.mkdir(parents=True, exist_ok=True)
     download_path = destination.with_suffix(destination.suffix + ".download")
@@ -603,20 +609,20 @@ def _model_path(model_id: str) -> Path:
 
 def _verify_model_checksum(path: Path, metadata: dict[str, Any]) -> None:
     expected = metadata.get("uncompressed_sha256") or metadata.get("sha256")
-    if not expected:
-        return
-    digest = hashlib.sha256(path.read_bytes()).hexdigest()
-    if digest != expected:
-        raise ValueError(
-            f"downloaded model checksum did not match for {metadata.get('filename')}"
-        )
+    _verify_checksum(path, expected, metadata)
 
 
 def _verify_download_checksum(path: Path, metadata: dict[str, Any]) -> None:
-    expected = metadata.get("sha256")
+    _verify_checksum(path, metadata.get("sha256"), metadata)
+
+
+def _verify_checksum(path: Path, expected: object, metadata: dict[str, Any]) -> None:
     if not expected:
         return
-    digest = hashlib.sha256(path.read_bytes()).hexdigest()
+    # file_digest streams the file, so the 0.5 GB Canada package is not read
+    # into memory just to hash it.
+    with path.open("rb") as handle:
+        digest = hashlib.file_digest(handle, "sha256").hexdigest()
     if digest != expected:
         raise ValueError(
             f"downloaded model checksum did not match for {metadata.get('filename')}"

@@ -2,6 +2,7 @@ import csv
 import json
 from pathlib import Path
 
+import numpy as np
 import pytest
 
 import synthpopcan.ipf as ipf_module
@@ -775,7 +776,7 @@ def test_nonconverged_ipf_report_includes_actionable_issues() -> None:
     assert report["issues"][0]["kind"] == "cell_residual"
     assert report["issues"][0]["margin"] == "age"
     assert report["issues"][0]["categories"] == {"age": "young"}
-    assert report["issues"][0]["message"].startswith("Largest residual is 30")
+    assert report["issues"][0]["message"].startswith("Residual is 30")
     assert "Check whether this control conflicts" in report["issues"][0]["tip"]
 
 
@@ -871,7 +872,7 @@ def test_cli_prints_human_readable_ipf_report(tmp_path: Path, capsys) -> None:
                         "kind": "cell_residual",
                         "margin": "age",
                         "categories": {"age": "young"},
-                        "message": "Largest residual is 30 for age=young.",
+                        "message": "Residual is 30 for age=young.",
                         "tip": (
                             "Check whether this control conflicts with another margin."
                         ),
@@ -899,7 +900,7 @@ def test_cli_prints_human_readable_ipf_report(tmp_path: Path, capsys) -> None:
     assert "IPF Fit Report" in output
     assert "Converged" in output
     assert "Fit Issues" in output
-    assert "Largest residual" in output
+    assert "Residual is" in output
     assert "Next Steps" in output
     assert "Review the source tables" in output
     assert "age" in output
@@ -1207,7 +1208,7 @@ def test_cli_fit_fails_when_ipf_does_not_converge(tmp_path: Path) -> None:
         ],
     )
 
-    with pytest.raises(ClickException, match="Largest residual"):
+    with pytest.raises(ClickException, match="Residual is"):
         main(
             [
                 "ipf",
@@ -1427,6 +1428,37 @@ def test_numpy_ipf_index_fit_returns_not_converged_when_max_iterations_reached()
     assert converged is False
     assert iterations == 1
     assert max_abs_error > 0
+
+
+def test_numpy_ipf_index_fit_starts_from_initial_weights() -> None:
+    records = [{"age": "A"}, {"age": "A"}]
+    margins = [IPFMargin(("age",), {("A",): 4.0})]
+    index = NumpyIPFIndex.build(records, margins)
+
+    weights, converged, _, _ = index.fit(margins, initial_weights=np.array([3.0, 1.0]))
+
+    # Both records share the only margin cell, so the fit scales them
+    # together and the 3:1 starting proportions survive.
+    assert converged is True
+    assert weights.tolist() == [3.0, 1.0]
+
+
+def test_numpy_ipf_index_fit_rejects_wrong_length_initial_weights() -> None:
+    records = [{"age": "A"}, {"age": "A"}]
+    margins = [IPFMargin(("age",), {("A",): 4.0})]
+    index = NumpyIPFIndex.build(records, margins)
+
+    with pytest.raises(ValueError, match="initial weights"):
+        index.fit(margins, initial_weights=np.array([1.0]))
+
+
+def test_numpy_ipf_index_fit_rejects_negative_initial_weights() -> None:
+    records = [{"age": "A"}, {"age": "A"}]
+    margins = [IPFMargin(("age",), {("A",): 4.0})]
+    index = NumpyIPFIndex.build(records, margins)
+
+    with pytest.raises(ValueError, match="non-negative"):
+        index.fit(margins, initial_weights=np.array([1.0, -1.0]))
 
 
 def test_fit_ipf_numpy_raises_on_empty_margins() -> None:

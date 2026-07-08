@@ -66,10 +66,7 @@ def test_validation_report_fails_when_artifact_differs_from_controls(
 
     assert report["passed"] is False
     assert report["max_abs_error"] == 10.0
-    assert (
-        report["issues"][0]["message"]
-        == "Largest validation error is 10 for age=young."
-    )
+    assert report["issues"][0]["message"] == "Validation error is 10 for age=young."
 
 
 def test_cli_validates_weight_output_as_json(tmp_path: Path, capsys) -> None:
