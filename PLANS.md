@@ -208,23 +208,31 @@ Candidate work:
 
 - Add staged or joint person-level calibration after household-level calibration
   is stable.
+
 - Add household-size recoding helpers for Census Profile categories such as
   `1`, `2`, `3`, `4`, and `5 or more` before fitting generated exact household
   sizes to small-area controls.
+
 - Improve margin-selection helpers so researchers can see which StatCan tables are
   usable controls, which are validation-only, and which require enrichment.
+
 - Add richer non-convergence diagnostics for inconsistent small-area controls,
   sparse geographies, structural zeros, and category mismatches.
+
 - Improve validation reports with geography-level summaries, largest residuals,
   linked household/person checks, and suggested next steps.
+
 - Prototype optional SciPy CSR or other sparse backends for high-cardinality or
   repeated IPF updates while keeping the current pure-Python indexed fitter as
   the default until dependency and browser implications are clear.
+
 - Reduce memory pressure in microdata adapters through narrower column loading
   or streaming where it meaningfully affects real workflows.
+
 - Add performance budgets and benchmark fixtures for province-scale generation
   and calibration. **Partly met; `geo estimate-run` gives researchers a preflight
   scale estimate and web app vs CLI/API recommendation before calibration.**
+
 - Rationalize user scenarios into an explicit end-to-end integration-test
   source of truth. The repo already has scenario material in
   `docs/which-workflow.md`, `docs/library-getting-started.md`,

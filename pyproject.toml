@@ -51,10 +51,10 @@ dev = [
 ]
 docs = [
     "doc8>=2.0.0",
+    "furo>=2025.7.19",
     "mdformat>=1.0.0",
     "myst-parser>=5.1.0",
     "sphinx>=9.0.4",
-    "sphinx-rtd-theme>=3.1.0",
 ]
 
 [build-system]
