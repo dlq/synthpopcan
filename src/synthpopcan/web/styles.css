@@ -679,7 +679,16 @@ select:focus-visible {
   }
 
   .help-label::before {
-    width: min(240px, calc(100vw - 48px));
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    width: min(320px, calc(100vw - 48px));
+    max-width: none;
+    transform: translate(-50%, 4px);
+  }
+
+  .help-label:hover::before {
+    transform: translate(-50%, 0);
   }
 
   .topbar {
