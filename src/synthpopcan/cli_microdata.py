@@ -140,7 +140,10 @@ def check_microdata_seed(
     """Check whether selected microdata columns can be exported as seed rows."""
     try:
         selected_columns = parse_columns(columns)
-        sample = read_statcan_2016_hierarchical_seed_sample(path)
+        sample = read_statcan_2016_hierarchical_seed_sample(
+            path,
+            columns=selected_columns,
+        )
         report = check_statcan_2016_household_seed_columns(
             sample,
             columns=selected_columns,
@@ -371,7 +374,10 @@ def export_microdata_seed(
                 id_columns=_parse_optional_columns(id_columns),
             )
         else:
-            sample = read_statcan_2016_hierarchical_seed_sample(path)
+            sample = read_statcan_2016_hierarchical_seed_sample(
+                path,
+                columns=selected_columns,
+            )
             if level == "household":
                 sample = derive_statcan_2016_household_seed_sample(
                     sample,
@@ -444,12 +450,20 @@ def export_microdata_training(
 ) -> None:
     """Export selected microdata columns as tree training rows."""
     try:
-        sample = read_statcan_2016_hierarchical_seed_sample(path)
+        selected_targets = parse_columns(target_columns)
+        selected_conditions = parse_columns(conditioning_columns)
+        projected_columns = tuple(
+            dict.fromkeys((*selected_conditions, *selected_targets))
+        )
+        sample = read_statcan_2016_hierarchical_seed_sample(
+            path,
+            columns=projected_columns,
+        )
         rows, summary = export_training_rows(
             sample,
             level=level,  # type: ignore[arg-type]
-            target_columns=parse_columns(target_columns),
-            conditioning_columns=parse_columns(conditioning_columns),
+            target_columns=selected_targets,
+            conditioning_columns=selected_conditions,
         )
         write_rows(out_path, rows)
     except OSError as exc:

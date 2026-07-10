@@ -4,6 +4,32 @@ All notable public changes to SynthPopCan are tracked here.
 
 ## Unreleased
 
+## 0.3.2 - 2026-07-10
+
+Linked-person calibration, diagnostics, performance guidance, and end-to-end
+workflow coverage.
+
+- Added optional linked person-level small-area controls. Household controls
+  are fitted first, then household weights are jointly refined against
+  linked-person category counts without separating people from households.
+- Expanded small-area preflight diagnostics for inconsistent margin totals,
+  unsupported cross-category cells, sparse geographies, sparse candidate
+  support, and broken household/person links.
+- Classified suggested controls as usable now, validation-only for the current
+  row unit, or requiring enrichment/model changes.
+- Reduced retained memory for common microdata checks and exports by loading
+  only identifiers, weights, and requested modelling columns.
+- Added an executable small-area benchmark fixture and explicit province-scale
+  timing and retained-weight budgets while keeping experimental SciPy CSR and
+  Polars probes out of the runtime path.
+- Added a stable seven-scenario end-to-end inventory, linked pytest scenario
+  markers, a linked small-area integration workflow, and Playwright coverage
+  for the browser IPF and prepared-model paths.
+- Fixed narrow-screen web-app tooltip and brand-layout overflow.
+- Reframed the planned web-app runtime around shared Python workflows, durable
+  local runs, and streamed artifacts while keeping the standalone MapLibre map
+  export independent.
+
 ## 0.3.1 - 2026-07-08
 
 Bug fixes, output consistency, and internal cleanup.

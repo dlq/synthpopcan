@@ -246,6 +246,7 @@ summary = spc.calibrate_small_area_linked(
     households="candidate-households.csv",
     persons="candidate-persons.csv",
     controls="ct-tenure-controls.csv",
+    person_controls="ct-age-sex-controls.csv",  # optional
     geography_dimension="ct",
     geography_column="ct",
     households_out="synthetic-households.csv",
@@ -256,9 +257,10 @@ summary = spc.calibrate_small_area_linked(
 summary["assigned_households"], summary["assigned_persons"]
 ```
 
-The current small-area workflow calibrates household-level controls. Person rows
-inherit the assigned household geography, so validate linked output and document
-which person-level totals were not fitted directly.
+Household controls are fitted first. If compatible person controls are supplied,
+SynthPopCan refines the household weights against linked-person category counts
+without splitting households. Keep both fractional and integerized residual
+summaries with the output.
 
 ## Reproducible Generation
 

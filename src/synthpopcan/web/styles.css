@@ -320,6 +320,7 @@ label {
 
 .help-label::before {
   content: attr(data-help);
+  box-sizing: border-box;
   position: absolute;
   z-index: 10;
   bottom: calc(100% + 8px);
@@ -659,6 +660,10 @@ select:focus-visible {
     grid-column: auto;
   }
 
+  .help-label::before {
+    width: min(240px, calc(100vw - 48px));
+  }
+
   .topbar {
     align-items: start;
     padding-bottom: 22px;
@@ -670,5 +675,16 @@ select:focus-visible {
 
   .primary-panel {
     grid-row: auto;
+  }
+}
+
+@media (max-width: 380px) {
+  .brand-lockup {
+    gap: 12px;
+  }
+
+  .brand-logo {
+    width: 72px;
+    height: 72px;
   }
 }

@@ -5,6 +5,8 @@ from dataclasses import replace
 from pathlib import Path
 from zipfile import ZipFile
 
+import pytest
+
 from synthpopcan.cli import main
 from synthpopcan.tree import (
     TreeModelSpec,
@@ -105,6 +107,7 @@ def test_microdata_seed_to_validated_ipf_weights_workflow(
     assert validation_report["passed"] is True
 
 
+@pytest.mark.scenario("SCN-IPF-001")
 def test_tracked_microdata_ipf_tutorial_fixture_workflow(
     tmp_path: Path,
     capsys,
@@ -184,6 +187,7 @@ def test_tracked_microdata_ipf_tutorial_fixture_workflow(
     assert report["passed"] is True
 
 
+@pytest.mark.scenario("SCN-WDS-001")
 def test_tracked_wds_ipf_mapping_tutorial_fixture_workflow(
     tmp_path: Path,
     capsys,
@@ -308,6 +312,7 @@ def test_tracked_wds_ipf_mapping_tutorial_fixture_workflow(
     assert validation_report["passed"] is True
 
 
+@pytest.mark.scenario("SCN-TREE-001")
 def test_tracked_microdata_tree_tutorial_fixture_workflow(
     tmp_path: Path,
     capsys,
@@ -442,6 +447,7 @@ def test_tracked_microdata_tree_tutorial_fixture_workflow(
     assert report["artifact_kind"] == "tree-output"
 
 
+@pytest.mark.scenario("SCN-MODEL-001")
 def test_tracked_model_output_to_ipf_tutorial_fixture_workflow(
     tmp_path: Path,
     capsys,
@@ -615,6 +621,86 @@ def test_tracked_model_output_to_ipf_tutorial_fixture_workflow(
     assert validation_report["passed"] is True
     assert len(expanded_rows) == 6
     assert {row["tenure"] for row in expanded_rows} == {"owner"}
+
+
+@pytest.mark.scenario("SCN-SMALLAREA-001")
+def test_linked_candidates_to_small_area_artifacts_workflow(
+    tmp_path: Path,
+    capsys,
+) -> None:
+    households_path = tmp_path / "candidate-households.csv"
+    persons_path = tmp_path / "candidate-persons.csv"
+    household_controls_path = tmp_path / "household-controls.csv"
+    person_controls_path = tmp_path / "person-controls.csv"
+    households_out = tmp_path / "assigned-households.csv"
+    persons_out = tmp_path / "assigned-persons.csv"
+    report_out = tmp_path / "calibration-report.json"
+
+    households_path.write_text(
+        "synthetic_household_id,household_size\nh1,1\nh2,2\nh3,2\n"
+    )
+    persons_path.write_text(
+        "synthetic_person_id,synthetic_household_id,AGEGRP\n"
+        "p1,h1,adult\n"
+        "p2,h2,adult\n"
+        "p3,h2,child\n"
+        "p4,h3,child\n"
+        "p5,h3,child\n"
+    )
+    household_controls_path.write_text(
+        "margin,dimensions,tract,household_size,count\n"
+        'size,"tract,household_size",G1,1,1\n'
+        'size,"tract,household_size",G1,2,3\n'
+    )
+    person_controls_path.write_text(
+        "margin,dimensions,tract,AGEGRP,count\n"
+        'age,"tract,AGEGRP",G1,adult,3\n'
+        'age,"tract,AGEGRP",G1,child,4\n'
+    )
+
+    assert (
+        main(
+            [
+                "geo",
+                "calibrate-linked",
+                "--households",
+                str(households_path),
+                "--persons",
+                str(persons_path),
+                "--controls",
+                str(household_controls_path),
+                "--person-controls",
+                str(person_controls_path),
+                "--geo-dimension",
+                "tract",
+                "--geo-column",
+                "tract",
+                "--households-out",
+                str(households_out),
+                "--persons-out",
+                str(persons_out),
+                "--report",
+                str(report_out),
+                "--format",
+                "json",
+            ]
+        )
+        == 0
+    )
+    command_report = json.loads(capsys.readouterr().out.splitlines()[-1])
+    report = json.loads(report_out.read_text())
+    household_rows = list(csv.DictReader(households_out.open(newline="")))
+    person_rows = list(csv.DictReader(persons_out.open(newline="")))
+
+    assert command_report["calibration_mode"] == "household_and_person"
+    assert report["summary"]["non_converged_count"] == 0
+    assert report["summary"]["realized_max_abs_error"] == 0
+    assert len(household_rows) == 4
+    assert len(person_rows) == 7
+    assert {row["tract"] for row in household_rows + person_rows} == {"G1"}
+    assert {row["synthetic_household_id"] for row in person_rows} <= {
+        row["synthetic_household_id"] for row in household_rows
+    }
 
 
 def _write_publishable_linked_models(tmp_path: Path) -> tuple[Path, Path]:

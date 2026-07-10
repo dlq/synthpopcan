@@ -3,10 +3,13 @@ import os
 import pytest
 
 from synthpopcan.benchmarks import (
+    PROVINCE_SCALE_SMALL_AREA_BUDGET,
     assess_ipf_benchmark_case,
     build_ipf_benchmark_cases,
+    build_small_area_benchmark_fixture,
     run_ipf_benchmark,
     run_ipf_benchmarks,
+    run_small_area_benchmark,
 )
 
 PERFORMANCE_ENV = "SYNTHPOPCAN_PERF_TESTS"
@@ -92,3 +95,37 @@ def test_moderate_ipf_benchmark_stays_under_browser_budget() -> None:
 
     assert result["converged"] is True
     assert result["fit_seconds"] < BROWSER_BUDGET_SECONDS
+
+
+def test_builds_and_runs_small_area_benchmark_fixture() -> None:
+    households, controls = build_small_area_benchmark_fixture(
+        candidate_households=120,
+        target_geographies=3,
+        target_households_per_geography=40,
+    )
+
+    result = run_small_area_benchmark(
+        households,
+        controls,
+        geography_dimension="geo",
+        n_workers=1,
+    )
+
+    assert len(households) == 120
+    assert result["candidate_households"] == 120
+    assert result["target_geographies"] == 3
+    assert result["target_households"] == 120
+    assert result["weight_cells"] == 360
+    assert result["estimated_retained_weight_bytes"] == 360 * 32
+    assert result["converged_geographies"] == 3
+    assert result["fit_seconds"] >= 0
+
+
+def test_province_scale_small_area_budget_is_explicit() -> None:
+    budget = PROVINCE_SCALE_SMALL_AREA_BUDGET.to_dict()
+
+    assert budget["name"] == "province_scale"
+    assert budget["candidate_households"] == 10_000
+    assert budget["target_geographies"] == 1_200
+    assert budget["weight_cells"] == 12_000_000
+    assert budget["max_retained_weight_bytes"] == 512 * 1024 * 1024

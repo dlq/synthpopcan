@@ -40,7 +40,6 @@ def test_top_level_api_runs_path_based_ipf_workflow(tmp_path: Path) -> None:
             {"margin": "sex", "dimensions": "sex", "sex": "M", "count": "50"},
         ],
     )
-
     fit = spc.fit_ipf(seed_path, controls_path)
     expanded = spc.expand_population(fit)
     spc.write_weights(fit, weights_path)
@@ -272,6 +271,7 @@ def test_top_level_api_calibrates_linked_small_area_csvs(tmp_path: Path) -> None
     households_path = tmp_path / "households.csv"
     persons_path = tmp_path / "persons.csv"
     controls_path = tmp_path / "controls.csv"
+    person_controls_path = tmp_path / "person-controls.csv"
     households_out = tmp_path / "small-area-households.csv"
     persons_out = tmp_path / "small-area-persons.csv"
     report_out = tmp_path / "small-area-report.json"
@@ -319,11 +319,25 @@ def test_top_level_api_calibrates_linked_small_area_csvs(tmp_path: Path) -> None
             },
         ],
     )
+    write_csv(
+        person_controls_path,
+        ["margin", "dimensions", "ct", "age_group", "count"],
+        [
+            {
+                "margin": "ct_age",
+                "dimensions": "ct,age_group",
+                "ct": "4620001",
+                "age_group": "adult",
+                "count": "3",
+            },
+        ],
+    )
 
     summary = spc.calibrate_small_area_linked(
         households=households_path,
         persons=persons_path,
         controls=controls_path,
+        person_controls=person_controls_path,
         geography_dimension="ct",
         geography_column="ct",
         households_out=households_out,
@@ -333,6 +347,7 @@ def test_top_level_api_calibrates_linked_small_area_csvs(tmp_path: Path) -> None
 
     assert summary["assigned_households"] == 3
     assert summary["assigned_persons"] == 3
+    assert summary["calibration_mode"] == "household_and_person"
     assert {row["ct"] for row in read_csv(households_out)} == {"4620001"}
     assert {row["ct"] for row in read_csv(persons_out)} == {"4620001"}
     assert report_out.is_file()

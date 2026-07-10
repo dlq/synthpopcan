@@ -236,7 +236,11 @@ def read_fixture_seed_sample(
     )
 
 
-def read_statcan_2016_hierarchical_seed_sample(path: Path) -> SeedSample:
+def read_statcan_2016_hierarchical_seed_sample(
+    path: Path,
+    *,
+    columns: tuple[str, ...] | None = None,
+) -> SeedSample:
     """Read a Statistics Canada 2016 hierarchical microdata extract.
 
     The returned sample is person-level and records known identifier columns,
@@ -246,10 +250,32 @@ def read_statcan_2016_hierarchical_seed_sample(path: Path) -> SeedSample:
 
     with path.open(newline="") as handle:
         reader = csv.DictReader(handle)
-        records = tuple(dict(row) for row in reader)
-        columns = tuple(reader.fieldnames or ())
+        source_columns = tuple(reader.fieldnames or ())
+        required_columns = ("HH_ID", "EF_ID", "CF_ID", "PP_ID", "WEIGHT")
+        requested_source_columns = tuple(
+            column for column in (columns or ()) if column != "household_size"
+        )
+        validate_columns(
+            source_columns,
+            required=(*required_columns, *requested_source_columns),
+        )
+        if columns is None:
+            retained_columns = source_columns
+        else:
+            retained_set = {
+                "HH_ID",
+                "PP_ID",
+                "WEIGHT",
+                *requested_source_columns,
+            }
+            retained_columns = tuple(
+                column for column in source_columns if column in retained_set
+            )
+        records = tuple(
+            {column: row.get(column, "") for column in retained_columns}
+            for row in reader
+        )
 
-    validate_columns(columns, required=("HH_ID", "EF_ID", "CF_ID", "PP_ID", "WEIGHT"))
     household_ids = [record["HH_ID"] for record in records if record.get("HH_ID")]
     person_ids = [record["PP_ID"] for record in records if record.get("PP_ID")]
     household_count = len(set(household_ids))
@@ -261,24 +287,34 @@ def read_statcan_2016_hierarchical_seed_sample(path: Path) -> SeedSample:
         round(person_count / household_count, 4) if household_count else 0
     )
 
+    metadata: dict[str, Any] = {
+        "household_id_column": "HH_ID",
+        "economic_family_id_column": "EF_ID",
+        "census_family_id_column": "CF_ID",
+        "person_id_column": "PP_ID",
+        "households": household_count,
+        "people": person_count,
+        "average_household_size": average_household_size,
+        "duplicate_person_ids": duplicate_person_ids,
+    }
+    if columns is not None:
+        metadata.update(
+            {
+                "source_column_count": len(source_columns),
+                "retained_column_count": len(retained_columns),
+                "column_projection": True,
+            }
+        )
+
     return SeedSample(
         level="person",
         source_format="statcan-2016-hierarchical",
         records=records,
-        columns=columns,
+        columns=retained_columns,
         weight_column="WEIGHT",
         geography_columns=(),
         id_columns=("PP_ID",),
-        metadata={
-            "household_id_column": "HH_ID",
-            "economic_family_id_column": "EF_ID",
-            "census_family_id_column": "CF_ID",
-            "person_id_column": "PP_ID",
-            "households": household_count,
-            "people": person_count,
-            "average_household_size": average_household_size,
-            "duplicate_person_ids": duplicate_person_ids,
-        },
+        metadata=metadata,
     )
 
 

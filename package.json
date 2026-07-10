@@ -3,10 +3,12 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "check:web": "biome check src/synthpopcan/web tests/web",
-    "format:web": "biome format --write src/synthpopcan/web tests/web"
+    "check:web": "biome check src/synthpopcan/web tests/web playwright.config.mjs",
+    "format:web": "biome format --write src/synthpopcan/web tests/web",
+    "test:web:e2e": "playwright test"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.3.8"
+    "@biomejs/biome": "^2.3.8",
+    "@playwright/test": "^1.61.1"
   }
 }

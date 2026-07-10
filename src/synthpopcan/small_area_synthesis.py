@@ -5,10 +5,12 @@ from __future__ import annotations
 __all__ = [
     "GeographyHouseholdFit",
     "calibrate_linked_household_csvs",
+    "check_linked_person_calibration_inputs",
     "check_small_area_calibration_inputs",
     "controls_by_geography",
     "estimate_small_area_run",
     "fit_households_by_geography",
+    "fit_linked_by_geography",
     "realize_linked_geography_population",
 ]
 
@@ -46,10 +48,109 @@ PersonRow = dict[str, str]
 
 @dataclass(frozen=True)
 class GeographyHouseholdFit:
-    """Fitted candidate-household weights for each target geography."""
+    """Fitted candidate-household weights and reports for each target geography."""
 
     weights_by_geography: dict[str, list[float]]
     reports: dict[str, dict[str, Any]]
+
+
+@dataclass(frozen=True)
+class _ConstraintSpec:
+    unit: str
+    margin: str
+    dimensions: tuple[str, ...]
+    categories: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class _LinkedCalibrationIndex:
+    specs: tuple[_ConstraintSpec, ...]
+    contributions: np.ndarray
+
+    @classmethod
+    def build(
+        cls,
+        households: Sequence[HouseholdRow],
+        persons: Sequence[PersonRow],
+        household_controls: ControlTable,
+        person_controls: ControlTable,
+        *,
+        household_id_column: str,
+    ) -> _LinkedCalibrationIndex:
+        specs = tuple(
+            _constraint_specs(household_controls, unit="household")
+            + _constraint_specs(person_controls, unit="person")
+        )
+        household_indexes = {
+            household[household_id_column]: index
+            for index, household in enumerate(households)
+        }
+        rows: list[np.ndarray] = []
+        for spec in specs:
+            if spec.unit == "household":
+                rows.append(
+                    np.fromiter(
+                        (
+                            all(
+                                household.get(dimension, "") == category
+                                for dimension, category in zip(
+                                    spec.dimensions,
+                                    spec.categories,
+                                    strict=True,
+                                )
+                            )
+                            for household in households
+                        ),
+                        dtype=np.float64,
+                        count=len(households),
+                    )
+                )
+                continue
+            contribution = np.zeros(len(households), dtype=np.float64)
+            for person in persons:
+                if not all(
+                    person.get(dimension, "") == category
+                    for dimension, category in zip(
+                        spec.dimensions,
+                        spec.categories,
+                        strict=True,
+                    )
+                ):
+                    continue
+                household_index = household_indexes.get(
+                    person.get(household_id_column, "")
+                )
+                if household_index is not None:
+                    contribution[household_index] += 1.0
+            rows.append(contribution)
+        return cls(
+            specs=specs,
+            contributions=np.vstack(rows),
+        )
+
+    def targets(
+        self,
+        household_controls: ControlTable,
+        person_controls: ControlTable,
+    ) -> np.ndarray:
+        targets_by_spec = {
+            _constraint_spec_key(spec): target
+            for controls, unit in (
+                (household_controls, "household"),
+                (person_controls, "person"),
+            )
+            for spec, target in _control_spec_targets(controls, unit=unit)
+        }
+        expected = {_constraint_spec_key(spec) for spec in self.specs}
+        if set(targets_by_spec) != expected:
+            raise ValueError(
+                "household and person control cells must have the same category "
+                "structure in every target geography"
+            )
+        return np.asarray(
+            [targets_by_spec[_constraint_spec_key(spec)] for spec in self.specs],
+            dtype=np.float64,
+        )
 
 
 def controls_by_geography(
@@ -129,19 +230,118 @@ def check_small_area_calibration_inputs(
     so users see a workflow-level message rather than a lower-level seed-record
     exception.
     """
-    candidate_columns = set().union(*(household.keys() for household in households))
+    return _check_calibration_inputs(
+        households,
+        controls,
+        geography_dimension=geography_dimension,
+        candidate_unit="household",
+    )
+
+
+def check_linked_person_calibration_inputs(
+    households: Sequence[HouseholdRow],
+    persons: Sequence[PersonRow],
+    controls: ControlTable,
+    *,
+    geography_dimension: str,
+    household_id_column: str = "synthetic_household_id",
+) -> dict[str, Any]:
+    """Check person controls and household linkage before linked calibration."""
+    report = _check_calibration_inputs(
+        persons,
+        controls,
+        geography_dimension=geography_dimension,
+        candidate_unit="person",
+    )
+    household_ids = {
+        household[household_id_column]
+        for household in households
+        if household.get(household_id_column)
+    }
+    missing_link_count = sum(not person.get(household_id_column) for person in persons)
+    orphan_count = sum(
+        bool(person.get(household_id_column))
+        and person.get(household_id_column) not in household_ids
+        for person in persons
+    )
+    link_issues: list[dict[str, Any]] = []
+    if missing_link_count:
+        link_issues.append(
+            {
+                "severity": "error",
+                "kind": "missing_person_household_id",
+                "missing_persons": missing_link_count,
+                "message": (
+                    f"{missing_link_count} candidate person rows do not have "
+                    f"'{household_id_column}'."
+                ),
+                "tip": "Regenerate or repair linked candidates before calibration.",
+            }
+        )
+    if orphan_count:
+        link_issues.append(
+            {
+                "severity": "error",
+                "kind": "orphan_person_household",
+                "orphan_persons": orphan_count,
+                "message": (
+                    f"{orphan_count} candidate person rows refer to households "
+                    "outside the candidate household pool."
+                ),
+                "tip": (
+                    "Use household and person CSVs from the same generation run, "
+                    "or subsample them together."
+                ),
+            }
+        )
+    issues = [*link_issues, *report["issues"]]
+    report.update(
+        {
+            "passed": not any(issue["severity"] == "error" for issue in issues),
+            "candidate_persons": len(persons),
+            "linked_households": len(household_ids),
+            "error_count": sum(issue["severity"] == "error" for issue in issues),
+            "warning_count": sum(issue["severity"] == "warning" for issue in issues),
+            "issues": issues,
+        }
+    )
+    return report
+
+
+def _check_calibration_inputs(
+    candidates: Sequence[dict[str, str]],
+    controls: ControlTable,
+    *,
+    geography_dimension: str,
+    candidate_unit: str,
+) -> dict[str, Any]:
+    candidate_label = (
+        "candidate households"
+        if candidate_unit == "household"
+        else "candidate person rows"
+    )
+    candidate_columns = set().union(*(candidate.keys() for candidate in candidates))
     issues: list[dict[str, Any]] = []
+    missing_dimensions: set[str] = set()
+    missing_categories: set[tuple[str, str]] = set()
     for dimension in controls.dimensions:
         if dimension == geography_dimension:
             continue
         if dimension not in candidate_columns:
-            issues.append(_missing_candidate_column_issue(dimension))
+            issues.append(
+                _missing_candidate_column_issue(
+                    dimension,
+                    candidate_unit=candidate_unit,
+                )
+            )
+            missing_dimensions.add(dimension)
             continue
         candidate_categories = {
-            str(household.get(dimension, "")) for household in households
+            str(candidate.get(dimension, "")) for candidate in candidates
         }
         for category in sorted(controls.categories_for(dimension)):
             if category not in candidate_categories:
+                missing_categories.add((dimension, category))
                 issues.append(
                     {
                         "severity": "error",
@@ -150,22 +350,249 @@ def check_small_area_calibration_inputs(
                         "category": category,
                         "message": (
                             f"For dimension '{dimension}', controls include "
-                            f"'{category}', but candidate households do not."
+                            f"'{category}', but {candidate_label} do not."
                         ),
-                        "tip": (
-                            "Review category labels and mappings. If this is a "
-                            "Census Profile household-size control, use "
-                            "household_size_group or run with --max-household-size 5."
-                        ),
+                        "tip": _missing_category_tip(candidate_unit),
                     }
                 )
+
+    issues.extend(
+        _inconsistent_margin_total_issues(
+            controls,
+            geography_dimension=geography_dimension,
+        )
+    )
+    issues.extend(
+        _structural_zero_issues(
+            candidates,
+            controls,
+            geography_dimension=geography_dimension,
+            missing_dimensions=missing_dimensions,
+            missing_categories=missing_categories,
+            candidate_unit=candidate_unit,
+        )
+    )
+    if not any(issue["severity"] == "error" for issue in issues):
+        issues.extend(
+            _sparse_support_warnings(
+                candidates,
+                controls,
+                geography_dimension=geography_dimension,
+                candidate_unit=candidate_unit,
+            )
+        )
+    candidate_key = f"candidate_{candidate_unit}s"
     return {
-        "passed": not issues,
-        "candidate_households": len(households),
+        "passed": not any(issue["severity"] == "error" for issue in issues),
+        candidate_key: len(candidates),
         "control_margins": len(controls.margins),
         "geography_dimension": geography_dimension,
+        "error_count": sum(issue["severity"] == "error" for issue in issues),
+        "warning_count": sum(issue["severity"] == "warning" for issue in issues),
         "issues": issues,
     }
+
+
+def _missing_category_tip(candidate_unit: str) -> str:
+    if candidate_unit == "person":
+        return (
+            "Review person-control category labels and mappings, or treat this "
+            "margin as validation-only until linked candidates cover it."
+        )
+    return (
+        "Review category labels and mappings. If this is a Census Profile "
+        "household-size control, use household_size_group or run with "
+        "--max-household-size 5."
+    )
+
+
+def _inconsistent_margin_total_issues(
+    controls: ControlTable,
+    *,
+    geography_dimension: str,
+) -> list[dict[str, Any]]:
+    issues: list[dict[str, Any]] = []
+    for geography, geography_controls in controls_by_geography(
+        controls,
+        geography_dimension=geography_dimension,
+    ).items():
+        margin_totals = {
+            margin.name: sum(cell.count for cell in margin.cells)
+            for margin in geography_controls.margins
+        }
+        if len(margin_totals) < 2:
+            continue
+        totals = list(margin_totals.values())
+        if max(totals) - min(totals) <= 1e-6:
+            continue
+        issues.append(
+            {
+                "severity": "error",
+                "kind": "inconsistent_margin_totals",
+                "geography": geography,
+                "margin_totals": margin_totals,
+                "message": (
+                    f"Control margins for geography '{geography}' do not have "
+                    "the same total."
+                ),
+                "tip": (
+                    "Use margins for the same population universe and reference "
+                    "period, then reconcile suppression or rounding differences."
+                ),
+            }
+        )
+    return issues
+
+
+def _structural_zero_issues(
+    candidates: Sequence[dict[str, str]],
+    controls: ControlTable,
+    *,
+    geography_dimension: str,
+    missing_dimensions: set[str],
+    missing_categories: set[tuple[str, str]],
+    candidate_unit: str,
+) -> list[dict[str, Any]]:
+    unsupported: dict[
+        tuple[str, tuple[str, ...], tuple[tuple[str, str], ...]], list[str]
+    ] = defaultdict(list)
+    for margin in controls.margins:
+        dimensions = tuple(
+            dimension
+            for dimension in margin.dimensions
+            if dimension != geography_dimension
+        )
+        if any(dimension in missing_dimensions for dimension in dimensions):
+            continue
+        for cell in margin.cells:
+            if cell.count <= 0:
+                continue
+            categories = tuple(
+                (dimension, cell.categories[dimension]) for dimension in dimensions
+            )
+            if any(item in missing_categories for item in categories):
+                continue
+            if any(
+                all(
+                    candidate.get(dimension, "") == category
+                    for dimension, category in categories
+                )
+                for candidate in candidates
+            ):
+                continue
+            key = (margin.name, dimensions, categories)
+            geography = cell.categories.get(geography_dimension, "")
+            if geography and geography not in unsupported[key]:
+                unsupported[key].append(geography)
+
+    return [
+        {
+            "severity": "error",
+            "kind": "structural_zero",
+            "margin": margin,
+            "dimensions": list(dimensions),
+            "categories": dict(categories),
+            "geographies": sorted(geographies),
+            "message": (
+                f"Control cell {dict(categories)!r} in margin '{margin}' has a "
+                f"positive target but no matching candidate {candidate_unit} row."
+            ),
+            "tip": (
+                f"Add candidate {candidate_unit} rows for this category "
+                "combination, coarsen the "
+                "control, or treat the margin as validation-only."
+            ),
+        }
+        for (margin, dimensions, categories), geographies in unsupported.items()
+    ]
+
+
+def _sparse_support_warnings(
+    candidates: Sequence[dict[str, str]],
+    controls: ControlTable,
+    *,
+    geography_dimension: str,
+    candidate_unit: str,
+) -> list[dict[str, Any]]:
+    warnings: list[dict[str, Any]] = []
+    sparse_geographies: list[str] = []
+    controls_for_geographies = controls_by_geography(
+        controls,
+        geography_dimension=geography_dimension,
+    )
+    for geography, geography_controls in controls_for_geographies.items():
+        if _first_margin_total(geography_controls) < 50:
+            sparse_geographies.append(geography)
+    if sparse_geographies:
+        target_unit = "households" if candidate_unit == "household" else "people"
+        warnings.append(
+            {
+                "severity": "warning",
+                "kind": "sparse_geography",
+                "geography_count": len(sparse_geographies),
+                "geographies": sorted(sparse_geographies)[:10],
+                "message": (
+                    f"{len(sparse_geographies)} target geographies contain fewer "
+                    f"than 50 {target_unit}."
+                ),
+                "tip": (
+                    "Review residuals and disclosure risk carefully, or use this "
+                    "margin only for validation at a broader geography."
+                ),
+            }
+        )
+
+    seen_cells: set[tuple[str, tuple[tuple[str, str], ...]]] = set()
+    sparse_cells: list[dict[str, Any]] = []
+    for margin in controls.margins:
+        dimensions = tuple(
+            dimension
+            for dimension in margin.dimensions
+            if dimension != geography_dimension
+        )
+        for cell in margin.cells:
+            if cell.count <= 0:
+                continue
+            categories = tuple(
+                (dimension, cell.categories[dimension]) for dimension in dimensions
+            )
+            cell_key = (margin.name, categories)
+            if cell_key in seen_cells:
+                continue
+            seen_cells.add(cell_key)
+            support = sum(
+                all(
+                    candidate.get(dimension, "") == category
+                    for dimension, category in categories
+                )
+                for candidate in candidates
+            )
+            if support < 2:
+                sparse_cells.append(
+                    {
+                        "margin": margin.name,
+                        "categories": dict(categories),
+                        f"candidate_{candidate_unit}s": support,
+                    }
+                )
+    if sparse_cells:
+        warnings.append(
+            {
+                "severity": "warning",
+                "kind": "sparse_candidate_support",
+                "cell_count": len(sparse_cells),
+                "cells": sparse_cells[:10],
+                "message": (
+                    f"{len(sparse_cells)} positive control cells are represented "
+                    f"by fewer than two candidate {candidate_unit} rows."
+                ),
+                "tip": (
+                    "Increase or broaden the candidate pool before relying on "
+                    "uncalibrated attributes in those cells."
+                ),
+            }
+        )
+    return warnings
 
 
 def estimate_small_area_run(
@@ -258,8 +685,12 @@ def _small_area_performance_guidance(
     return guidance
 
 
-def _missing_candidate_column_issue(dimension: str) -> dict[str, Any]:
-    if dimension == "household_size_group":
+def _missing_candidate_column_issue(
+    dimension: str,
+    *,
+    candidate_unit: str = "household",
+) -> dict[str, Any]:
+    if candidate_unit == "household" and dimension == "household_size_group":
         tip = (
             "For Census Profile household-size controls, run "
             "`synthpopcan geo synthesize-from-package ... --max-household-size 5`, "
@@ -269,16 +700,22 @@ def _missing_candidate_column_issue(dimension: str) -> dict[str, Any]:
     else:
         tip = (
             "Choose controls whose non-geography dimensions exist in the candidate "
-            "household CSV, or add/map this column before calibration."
+            f"{candidate_unit} CSV, or add/map this column before calibration."
         )
+    message = (
+        f"Controls require candidate column '{dimension}', but household "
+        "candidates do not have it."
+        if candidate_unit == "household"
+        else (
+            f"Controls require candidate column '{dimension}', but candidate "
+            "person rows do not have it."
+        )
+    )
     return {
         "severity": "error",
         "kind": "missing_candidate_column",
         "dimension": dimension,
-        "message": (
-            f"Controls require candidate column '{dimension}', but household "
-            "candidates do not have it."
-        ),
+        "message": message,
         "tip": tip,
     }
 
@@ -386,6 +823,304 @@ def fit_households_by_geography(
     )
 
 
+def fit_linked_by_geography(
+    households: Sequence[HouseholdRow],
+    persons: Sequence[PersonRow],
+    household_controls: ControlTable,
+    person_controls: ControlTable,
+    *,
+    geography_dimension: str,
+    household_id_column: str = "synthetic_household_id",
+    weight_field: str | None = None,
+    max_iterations: int = 100,
+    tolerance: float = 1e-6,
+    n_workers: int | None = None,
+) -> GeographyHouseholdFit:
+    """Fit household and linked-person controls with household weights.
+
+    Household-only IPF supplies the initial weights. A joint iterative
+    proportional updating pass then adjusts those same household weights using
+    household indicators and linked-person category counts. Selecting a
+    household therefore always selects all people linked to it.
+    """
+    household_fit = fit_households_by_geography(
+        households,
+        household_controls,
+        geography_dimension=geography_dimension,
+        household_id_column=household_id_column,
+        weight_field=weight_field,
+        max_iterations=max_iterations,
+        tolerance=tolerance,
+        n_workers=n_workers,
+    )
+    household_by_geography = controls_by_geography(
+        household_controls,
+        geography_dimension=geography_dimension,
+    )
+    person_by_geography = controls_by_geography(
+        person_controls,
+        geography_dimension=geography_dimension,
+    )
+    if set(household_by_geography) != set(person_by_geography):
+        missing_person = sorted(set(household_by_geography) - set(person_by_geography))
+        missing_household = sorted(
+            set(person_by_geography) - set(household_by_geography)
+        )
+        raise ValueError(
+            "household and person controls must cover the same geographies; "
+            f"missing person controls for {missing_person[:5]!r}, missing household "
+            f"controls for {missing_household[:5]!r}"
+        )
+
+    first_geography = sorted(household_by_geography)[0]
+    index = _LinkedCalibrationIndex.build(
+        households,
+        persons,
+        household_by_geography[first_geography],
+        person_by_geography[first_geography],
+        household_id_column=household_id_column,
+    )
+    worker_count = min(n_workers or (os.cpu_count() or 1), 8)
+
+    def _fit_geography(
+        geography: str,
+    ) -> tuple[str, list[float], dict[str, Any]]:
+        targets = index.targets(
+            household_by_geography[geography],
+            person_by_geography[geography],
+        )
+        initial_weights = np.asarray(
+            household_fit.weights_by_geography[geography],
+            dtype=np.float64,
+        )
+        weights, converged, iterations, max_abs_error = _fit_joint_constraints(
+            index.contributions,
+            targets,
+            initial_weights=initial_weights,
+            max_iterations=max_iterations,
+            tolerance=tolerance,
+        )
+        fitted = index.contributions @ weights
+        integer_weights = np.asarray(
+            integerize_weights(weights.tolist()),
+            dtype=np.float64,
+        )
+        realized = index.contributions @ integer_weights
+        report = _linked_constraint_report(
+            index.specs,
+            targets,
+            fitted,
+            converged=converged,
+            iterations=iterations,
+            max_abs_error=max_abs_error,
+            seed_records=len(households),
+        )
+        report["household_stage"] = household_fit.reports[geography]
+        report["realized"] = _linked_constraint_report(
+            index.specs,
+            targets,
+            realized,
+            converged=bool(np.max(np.abs(realized - targets)) <= tolerance),
+            iterations=0,
+            max_abs_error=float(np.max(np.abs(realized - targets))),
+            seed_records=len(households),
+            include_issues=False,
+        )
+        return geography, weights.tolist(), report
+
+    weights_by_geography: dict[str, list[float]] = {}
+    reports: dict[str, dict[str, Any]] = {}
+    with ThreadPoolExecutor(max_workers=worker_count) as executor:
+        for geography, weights, report in executor.map(
+            _fit_geography,
+            sorted(household_by_geography),
+        ):
+            weights_by_geography[geography] = weights
+            reports[geography] = report
+    return GeographyHouseholdFit(weights_by_geography, reports)
+
+
+def _constraint_specs(
+    controls: ControlTable,
+    *,
+    unit: str,
+) -> list[_ConstraintSpec]:
+    return [spec for spec, _target in _control_spec_targets(controls, unit=unit)]
+
+
+def _control_spec_targets(
+    controls: ControlTable,
+    *,
+    unit: str,
+) -> list[tuple[_ConstraintSpec, float]]:
+    return [
+        (
+            _ConstraintSpec(
+                unit=unit,
+                margin=margin.name,
+                dimensions=margin.dimensions,
+                categories=tuple(
+                    cell.categories[dimension] for dimension in margin.dimensions
+                ),
+            ),
+            cell.count,
+        )
+        for margin in controls.margins
+        for cell in margin.cells
+    ]
+
+
+def _constraint_spec_key(
+    spec: _ConstraintSpec,
+) -> tuple[str, str, tuple[str, ...], tuple[str, ...]]:
+    return spec.unit, spec.margin, spec.dimensions, spec.categories
+
+
+def _fit_joint_constraints(
+    contributions: np.ndarray,
+    targets: np.ndarray,
+    *,
+    initial_weights: np.ndarray,
+    max_iterations: int,
+    tolerance: float,
+) -> tuple[np.ndarray, bool, int, float]:
+    """Run iterative proportional updating over household contribution rows."""
+    if max_iterations < 1:
+        raise ValueError("max_iterations must be at least 1")
+    if tolerance < 0:
+        raise ValueError("tolerance must be non-negative")
+    if contributions.shape[1] != len(initial_weights):
+        raise ValueError("joint calibration contributions do not match households")
+    weights = np.asarray(initial_weights, dtype=np.float64).copy()
+    if np.any(weights < 0):
+        raise ValueError("initial household weights must be non-negative")
+
+    for row, target in zip(contributions, targets, strict=True):
+        if target == 0:
+            weights[row > 0] = 0.0
+    for row, target in zip(contributions, targets, strict=True):
+        if target > 0 and float(row @ weights) <= 0:
+            raise ValueError(
+                "a positive linked calibration target has no household support "
+                "after applying structural-zero controls"
+            )
+
+    max_abs_error = float("inf")
+    for iteration in range(1, max_iterations + 1):
+        for row, target in zip(contributions, targets, strict=True):
+            if target == 0:
+                continue
+            current = float(row @ weights)
+            if current <= 0:
+                continue
+            log_ratio = np.clip(np.log(target / current), -50.0, 50.0)
+            exponent = row / max(float(np.max(row)), 1.0)
+            weights *= np.exp(log_ratio * exponent)
+        max_abs_error = float(np.max(np.abs(contributions @ weights - targets)))
+        if max_abs_error <= tolerance:
+            return weights, True, iteration, max_abs_error
+    return weights, False, max_iterations, max_abs_error
+
+
+def _linked_constraint_report(
+    specs: Sequence[_ConstraintSpec],
+    targets: np.ndarray,
+    fitted: np.ndarray,
+    *,
+    converged: bool,
+    iterations: int,
+    max_abs_error: float,
+    seed_records: int,
+    include_issues: bool = True,
+) -> dict[str, Any]:
+    grouped: dict[
+        tuple[str, str, tuple[str, ...]], list[tuple[_ConstraintSpec, float, float]]
+    ] = defaultdict(list)
+    for spec, target, actual in zip(specs, targets, fitted, strict=True):
+        grouped[(spec.unit, spec.margin, spec.dimensions)].append(
+            (spec, float(target), float(actual))
+        )
+
+    margins: list[dict[str, Any]] = []
+    margin_summaries: list[dict[str, Any]] = []
+    issues: list[dict[str, Any]] = []
+    for (unit, margin_name, dimensions), cells in grouped.items():
+        cell_rows: list[dict[str, Any]] = []
+        margin_max_abs_error = 0.0
+        margin_max_relative_error = 0.0
+        for spec, target, actual in cells:
+            residual = actual - target
+            abs_error = abs(residual)
+            categories = dict(zip(dimensions, spec.categories, strict=True))
+            margin_max_abs_error = max(margin_max_abs_error, abs_error)
+            margin_max_relative_error = max(
+                margin_max_relative_error,
+                relative_error(abs_error, target),
+            )
+            cell_rows.append(
+                {
+                    "categories": categories,
+                    "target": target,
+                    "fitted": actual,
+                    "residual": residual,
+                }
+            )
+            if include_issues and not converged and abs_error > 0:
+                issues.append(
+                    {
+                        "severity": "warning",
+                        "kind": "cell_residual",
+                        "unit": unit,
+                        "margin": margin_name,
+                        "categories": categories,
+                        "message": f"Residual is {abs_error:.12g} for {categories}.",
+                        "tip": (
+                            "Review conflicting controls, sparse linked household "
+                            "support, and category mappings."
+                        ),
+                        "abs_error": abs_error,
+                    }
+                )
+        margins.append(
+            {
+                "unit": unit,
+                "name": margin_name,
+                "dimensions": list(dimensions),
+                "cells": cell_rows,
+            }
+        )
+        margin_summaries.append(
+            {
+                "unit": unit,
+                "name": margin_name,
+                "dimensions": list(dimensions),
+                "cells": len(cell_rows),
+                "target_total": sum(cell[1] for cell in cells),
+                "fitted_total": sum(cell[2] for cell in cells),
+                "max_abs_error": margin_max_abs_error,
+                "max_relative_error": margin_max_relative_error,
+            }
+        )
+    return {
+        "calibration_mode": "household_and_person",
+        "converged": converged,
+        "iterations": iterations,
+        "max_abs_error": max_abs_error,
+        "seed_records": seed_records,
+        "issues": sorted(issues, key=lambda issue: issue["abs_error"], reverse=True),
+        "suggested_next_steps": (
+            [
+                "Inspect the largest household and person residuals; linked "
+                "controls may conflict or have too little household support."
+            ]
+            if issues
+            else []
+        ),
+        "margin_summaries": margin_summaries,
+        "margins": margins,
+    }
+
+
 def realize_linked_geography_population(
     households: Sequence[HouseholdRow],
     persons: Sequence[PersonRow],
@@ -424,6 +1159,7 @@ def calibrate_linked_household_csvs(
     households_path: Path,
     persons_path: Path,
     controls_path: Path,
+    person_controls_path: Path | None = None,
     geography_dimension: str,
     geography_column: str,
     households_out: Path,
@@ -453,25 +1189,26 @@ def calibrate_linked_household_csvs(
         ``min(os.cpu_count(), 8)`` when ``None``.
     """
 
-    # Read all three inputs concurrently — they are I/O-bound and independent.
-    with ThreadPoolExecutor(max_workers=3) as _io_ex:
+    # Read independent inputs concurrently; CSV parsing and control loading are
+    # I/O-bound at this stage.
+    with ThreadPoolExecutor(max_workers=4) as _io_ex:
         _hh_f = _io_ex.submit(_read_csv_rows, households_path)
         _p_f = _io_ex.submit(_read_csv_rows, persons_path)
         _ctrl_f = _io_ex.submit(read_control_table, controls_path)
+        _person_ctrl_f = (
+            _io_ex.submit(read_control_table, person_controls_path)
+            if person_controls_path is not None
+            else None
+        )
         households = _hh_f.result()
         persons = _p_f.result()
         controls = _ctrl_f.result()
+        person_controls = (
+            _person_ctrl_f.result() if _person_ctrl_f is not None else None
+        )
 
     if not households:
         raise ValueError(f"candidate household CSV has no data rows: {households_path}")
-
-    input_report = check_small_area_calibration_inputs(
-        households,
-        controls,
-        geography_dimension=geography_dimension,
-    )
-    if not input_report["passed"]:
-        raise ValueError(_format_preflight_error(input_report))
 
     if pool_size is not None and pool_size < len(households):
         households, persons = _subsample_candidates(
@@ -481,16 +1218,47 @@ def calibrate_linked_household_csvs(
             household_id_column=household_id_column,
         )
 
-    fit = fit_households_by_geography(
+    household_input_report = check_small_area_calibration_inputs(
         households,
         controls,
         geography_dimension=geography_dimension,
-        household_id_column=household_id_column,
-        weight_field=weight_field,
-        max_iterations=max_iterations,
-        tolerance=tolerance,
-        n_workers=n_workers,
     )
+    if not household_input_report["passed"]:
+        raise ValueError(_format_preflight_error(household_input_report))
+    person_input_report: dict[str, Any] | None = None
+    if person_controls is not None:
+        person_input_report = check_linked_person_calibration_inputs(
+            households,
+            persons,
+            person_controls,
+            geography_dimension=geography_dimension,
+            household_id_column=household_id_column,
+        )
+        if not person_input_report["passed"]:
+            raise ValueError(_format_preflight_error(person_input_report))
+        fit = fit_linked_by_geography(
+            households,
+            persons,
+            controls,
+            person_controls,
+            geography_dimension=geography_dimension,
+            household_id_column=household_id_column,
+            weight_field=weight_field,
+            max_iterations=max_iterations,
+            tolerance=tolerance,
+            n_workers=n_workers,
+        )
+    else:
+        fit = fit_households_by_geography(
+            households,
+            controls,
+            geography_dimension=geography_dimension,
+            household_id_column=household_id_column,
+            weight_field=weight_field,
+            max_iterations=max_iterations,
+            tolerance=tolerance,
+            n_workers=n_workers,
+        )
     realization = _write_realized_population_to_csv(
         households_out,
         persons_out,
@@ -520,6 +1288,8 @@ def calibrate_linked_household_csvs(
         fit=fit,
         geography_dimension=geography_dimension,
         geography_column=geography_column,
+        household_input_report=household_input_report,
+        person_input_report=person_input_report,
     )
     if report_out:
         report_out.parent.mkdir(parents=True, exist_ok=True)
@@ -815,6 +1585,8 @@ def _small_area_report(
     fit: GeographyHouseholdFit,
     geography_dimension: str,
     geography_column: str,
+    household_input_report: dict[str, Any],
+    person_input_report: dict[str, Any] | None,
 ) -> dict[str, Any]:
     non_converged = sorted(
         geography
@@ -822,9 +1594,23 @@ def _small_area_report(
         if not report["converged"]
     )
     all_errors = [report["max_abs_error"] for report in fit.reports.values()]
+    realized_errors = [
+        float(realized.get("max_abs_error", 0.0))
+        for report in fit.reports.values()
+        if isinstance((realized := report.get("realized")), dict)
+    ]
     largest_residuals = _largest_small_area_residuals(fit.reports)
+    realized_max_abs_error = max(realized_errors) if realized_errors else None
+    calibration_mode = (
+        "household_and_person" if person_input_report is not None else "household_only"
+    )
     return {
-        "schema_version": "synthpopcan-small-area-linked-calibration-v1",
+        "schema_version": (
+            "synthpopcan-small-area-linked-calibration-v2"
+            if person_input_report is not None
+            else "synthpopcan-small-area-linked-calibration-v1"
+        ),
+        "calibration_mode": calibration_mode,
         "geography_dimension": geography_dimension,
         "geography_column": geography_column,
         "candidate_households": len(households),
@@ -838,11 +1624,17 @@ def _small_area_report(
             "max_abs_error": max(all_errors) if all_errors else 0.0,
             "non_converged_geographies": non_converged,
             "largest_residuals": largest_residuals,
+            "realized_max_abs_error": realized_max_abs_error,
         },
         "suggested_next_steps": _suggest_small_area_next_steps(
             non_converged=non_converged,
             largest_residuals=largest_residuals,
+            realized_max_abs_error=realized_max_abs_error,
         ),
+        "input_checks": {
+            "household": household_input_report,
+            "person": person_input_report,
+        },
         "geographies": {
             geography: {
                 "converged": report["converged"],
@@ -853,6 +1645,11 @@ def _small_area_report(
                     0,
                 ),
                 "margin_summaries": report["margin_summaries"],
+                "realized_margin_summaries": (
+                    report.get("realized", {}).get("margin_summaries", [])
+                    if isinstance(report.get("realized"), dict)
+                    else []
+                ),
             }
             for geography, report in sorted(fit.reports.items())
         },
@@ -875,19 +1672,20 @@ def _largest_small_area_residuals(
                 if abs_error <= 1e-9:
                     continue
                 target = float(cell.get("target", 0.0))
-                rows.append(
-                    {
-                        "geography": geography,
-                        "margin": margin_name,
-                        "dimensions": dimensions,
-                        "categories": dict(cell.get("categories", {})),
-                        "target": target,
-                        "fitted": float(cell.get("fitted", 0.0)),
-                        "residual": residual,
-                        "abs_error": abs_error,
-                        "relative_error": relative_error(abs_error, target),
-                    }
-                )
+                row = {
+                    "geography": geography,
+                    "margin": margin_name,
+                    "dimensions": dimensions,
+                    "categories": dict(cell.get("categories", {})),
+                    "target": target,
+                    "fitted": float(cell.get("fitted", 0.0)),
+                    "residual": residual,
+                    "abs_error": abs_error,
+                    "relative_error": relative_error(abs_error, target),
+                }
+                if margin.get("unit"):
+                    row["unit"] = str(margin["unit"])
+                rows.append(row)
     return sorted(
         rows,
         key=lambda row: (
@@ -903,6 +1701,7 @@ def _suggest_small_area_next_steps(
     *,
     non_converged: Sequence[str],
     largest_residuals: Sequence[dict[str, Any]],
+    realized_max_abs_error: float | None = None,
 ) -> list[str]:
     steps: list[str] = []
     if largest_residuals:
@@ -915,6 +1714,11 @@ def _suggest_small_area_next_steps(
             "For non-converged geographies, check whether controls conflict, "
             "categories were mapped consistently, or the candidate pool lacks "
             "enough matching households."
+        )
+    if realized_max_abs_error is not None and realized_max_abs_error > 1e-9:
+        steps.append(
+            "Review the realized margin summaries: integer household selection "
+            "introduced residuals after the fractional household/person fit."
         )
     return steps
 

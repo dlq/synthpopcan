@@ -17,7 +17,13 @@ from time import perf_counter
 import click
 from rich.console import Console
 
-from synthpopcan.benchmarks import build_ipf_benchmark_cases, run_ipf_benchmarks
+from synthpopcan.benchmarks import (
+    PROVINCE_SCALE_SMALL_AREA_BUDGET,
+    build_ipf_benchmark_cases,
+    build_small_area_benchmark_fixture,
+    run_ipf_benchmarks,
+    run_small_area_benchmark,
+)
 from synthpopcan.console import make_table
 from synthpopcan.ipf import IPFResult, fit_ipf
 from synthpopcan.tree_benchmark import run_linked_tree_benchmark
@@ -66,6 +72,74 @@ def benchmark_ipf(seed_records: int) -> None:
             _fmt_int(row["expanded_rows"]),
             str(row["dependency_hint"]),
         )
+    Console(width=120).print(table)
+
+
+@cli.command("small-area")
+@click.option("--candidate-households", default=10_000, show_default=True, type=int)
+@click.option("--target-geographies", default=100, show_default=True, type=int)
+@click.option(
+    "--target-households-per-geography",
+    default=4_000,
+    show_default=True,
+    type=int,
+)
+@click.option(
+    "--province-scale",
+    is_flag=True,
+    help="Use the tracked province-scale calibration budget profile.",
+)
+@click.option("--workers", default=None, type=int)
+def benchmark_small_area(
+    candidate_households: int,
+    target_geographies: int,
+    target_households_per_geography: int,
+    province_scale: bool,
+    workers: int | None,
+) -> None:
+    """Run the repeated-geography small-area calibration benchmark."""
+    budget = None
+    if province_scale:
+        budget = PROVINCE_SCALE_SMALL_AREA_BUDGET
+        candidate_households = budget.candidate_households
+        target_geographies = budget.target_geographies
+        target_households_per_geography = (
+            budget.target_households // budget.target_geographies
+        )
+    households, controls = build_small_area_benchmark_fixture(
+        candidate_households=candidate_households,
+        target_geographies=target_geographies,
+        target_households_per_geography=target_households_per_geography,
+    )
+    result = run_small_area_benchmark(
+        households,
+        controls,
+        geography_dimension="geo",
+        n_workers=workers,
+    )
+    table = make_table(title="Small-Area Calibration Benchmark")
+    table.add_column("Metric")
+    table.add_column("Value", justify="right")
+    table.add_row("Candidate households", _fmt_int(result["candidate_households"]))
+    table.add_row("Target geographies", _fmt_int(result["target_geographies"]))
+    table.add_row("Target households", _fmt_int(result["target_households"]))
+    table.add_row("Retained weight cells", _fmt_int(result["weight_cells"]))
+    table.add_row(
+        "Estimated retained weights",
+        _fmt_bytes(result["estimated_retained_weight_bytes"]),
+    )
+    table.add_row("Fit seconds", _fmt_float(result["fit_seconds"]))
+    table.add_row(
+        "Converged geographies",
+        _fmt_int(result["converged_geographies"]),
+    )
+    if budget is not None:
+        within_budget = (
+            float(result["fit_seconds"]) <= budget.max_fit_seconds
+            and int(result["estimated_retained_weight_bytes"])
+            <= budget.max_retained_weight_bytes
+        )
+        table.add_row("Province-scale budget", "pass" if within_budget else "fail")
     Console(width=120).print(table)
 
 

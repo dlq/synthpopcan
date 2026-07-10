@@ -65,6 +65,11 @@ IPF can only reweight rows that exist in the seed, so the seed must contain
 every column referenced in any control margin. The weight column is included
 automatically.
 
+For seed checks and seed/training exports, the StatCan adapter retains only the
+identifier, weight, and requested modelling columns in memory. `inspect`,
+column-suggestion, and geography-feasibility commands still load the full
+column set because those workflows must examine the source schema.
+
 ```bash
 synthpopcan microdata export-seed \
   tests/fixtures/workflows/linked_tree/hierarchical.csv \

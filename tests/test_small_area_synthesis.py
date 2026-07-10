@@ -16,10 +16,12 @@ from synthpopcan.small_area_synthesis import (
     _write_realized_population_to_csv,
     _write_weights_csv,
     calibrate_linked_household_csvs,
+    check_linked_person_calibration_inputs,
     check_small_area_calibration_inputs,
     controls_by_geography,
     estimate_small_area_run,
     fit_households_by_geography,
+    fit_linked_by_geography,
     realize_linked_geography_population,
 )
 from synthpopcan.tree import (
@@ -259,6 +261,137 @@ def test_check_small_area_calibration_inputs_reports_missing_category() -> None:
     assert "candidate households do not" in report["issues"][0]["message"]
 
 
+def test_check_small_area_inputs_reports_structural_zero_cross_category() -> None:
+    households = [
+        {
+            "synthetic_household_id": "h1",
+            "household_size": "1",
+            "TENUR": "owner",
+        },
+        {
+            "synthetic_household_id": "h2",
+            "household_size": "2",
+            "TENUR": "renter",
+        },
+    ]
+    controls = ControlTable(
+        margins=(
+            ControlMargin(
+                name="size by tenure",
+                dimensions=("tract", "household_size", "TENUR"),
+                cells=(
+                    ControlCell(
+                        {"tract": "G1", "household_size": "1", "TENUR": "renter"},
+                        5,
+                    ),
+                ),
+            ),
+        ),
+        dimensions=("tract", "household_size", "TENUR"),
+    )
+
+    report = check_small_area_calibration_inputs(
+        households,
+        controls,
+        geography_dimension="tract",
+    )
+
+    assert report["passed"] is False
+    assert report["issues"][0]["kind"] == "structural_zero"
+    assert report["issues"][0]["categories"] == {
+        "household_size": "1",
+        "TENUR": "renter",
+    }
+    assert report["issues"][0]["geographies"] == ["G1"]
+
+
+def test_check_small_area_inputs_reports_inconsistent_totals() -> None:
+    households = [
+        {
+            "synthetic_household_id": "h1",
+            "household_size": "1",
+            "TENUR": "owner",
+        },
+        {
+            "synthetic_household_id": "h2",
+            "household_size": "2",
+            "TENUR": "renter",
+        },
+    ]
+    controls = ControlTable(
+        margins=(
+            ControlMargin(
+                name="size",
+                dimensions=("tract", "household_size"),
+                cells=(
+                    ControlCell({"tract": "G1", "household_size": "1"}, 4),
+                    ControlCell({"tract": "G1", "household_size": "2"}, 6),
+                ),
+            ),
+            ControlMargin(
+                name="tenure",
+                dimensions=("tract", "TENUR"),
+                cells=(
+                    ControlCell({"tract": "G1", "TENUR": "owner"}, 4),
+                    ControlCell({"tract": "G1", "TENUR": "renter"}, 7),
+                ),
+            ),
+        ),
+        dimensions=("tract", "household_size", "TENUR"),
+    )
+
+    report = check_small_area_calibration_inputs(
+        households,
+        controls,
+        geography_dimension="tract",
+    )
+
+    assert report["passed"] is False
+    assert report["issues"][0]["kind"] == "inconsistent_margin_totals"
+    assert report["issues"][0]["geography"] == "G1"
+    assert report["issues"][0]["margin_totals"] == {"size": 10, "tenure": 11}
+
+
+def test_check_small_area_inputs_preserves_sparse_support_warnings() -> None:
+    households = [
+        {
+            "synthetic_household_id": "h1",
+            "household_size": "1",
+            "TENUR": "owner",
+        },
+        {
+            "synthetic_household_id": "h2",
+            "household_size": "2",
+            "TENUR": "renter",
+        },
+    ]
+    controls = ControlTable(
+        margins=(
+            ControlMargin(
+                name="size",
+                dimensions=("tract", "household_size"),
+                cells=(
+                    ControlCell({"tract": "G1", "household_size": "1"}, 10),
+                    ControlCell({"tract": "G1", "household_size": "2"}, 10),
+                ),
+            ),
+        ),
+        dimensions=("tract", "household_size"),
+    )
+
+    report = check_small_area_calibration_inputs(
+        households,
+        controls,
+        geography_dimension="tract",
+    )
+
+    assert report["passed"] is True
+    assert {issue["kind"] for issue in report["issues"]} == {
+        "sparse_candidate_support",
+        "sparse_geography",
+    }
+
+
 def test_calibrate_linked_fails_with_preflight_message_for_missing_column(
     tmp_path: Path,
 ) -> None:
@@ -353,6 +486,94 @@ def test_fit_households_by_geography_honors_weight_field() -> None:
     # them; the fit must preserve the 3:1 starting proportions instead of
     # splitting the target evenly.
     assert result.weights_by_geography["0001.00"] == [3.0, 1.0]
+
+
+def test_fit_linked_by_geography_matches_household_and_person_controls() -> None:
+    households = [
+        {"synthetic_household_id": "h1", "household_size": "1"},
+        {"synthetic_household_id": "h2", "household_size": "2"},
+        {"synthetic_household_id": "h3", "household_size": "2"},
+    ]
+    persons = [
+        {"synthetic_household_id": "h1", "AGEGRP": "adult"},
+        {"synthetic_household_id": "h2", "AGEGRP": "adult"},
+        {"synthetic_household_id": "h2", "AGEGRP": "child"},
+        {"synthetic_household_id": "h3", "AGEGRP": "child"},
+        {"synthetic_household_id": "h3", "AGEGRP": "child"},
+    ]
+    household_controls = ControlTable(
+        margins=(
+            ControlMargin(
+                name="household size",
+                dimensions=("tract", "household_size"),
+                cells=(
+                    ControlCell({"tract": "G1", "household_size": "1"}, 1),
+                    ControlCell({"tract": "G1", "household_size": "2"}, 3),
+                ),
+            ),
+        ),
+        dimensions=("tract", "household_size"),
+    )
+    person_controls = ControlTable(
+        margins=(
+            ControlMargin(
+                name="age",
+                dimensions=("tract", "AGEGRP"),
+                cells=(
+                    ControlCell({"tract": "G1", "AGEGRP": "adult"}, 3),
+                    ControlCell({"tract": "G1", "AGEGRP": "child"}, 4),
+                ),
+            ),
+        ),
+        dimensions=("tract", "AGEGRP"),
+    )
+
+    result = fit_linked_by_geography(
+        households,
+        persons,
+        household_controls,
+        person_controls,
+        geography_dimension="tract",
+        household_id_column="synthetic_household_id",
+        max_iterations=200,
+        tolerance=1e-8,
+    )
+
+    assert result.weights_by_geography["G1"] == pytest.approx([1.0, 2.0, 1.0])
+    report = result.reports["G1"]
+    assert report["converged"] is True
+    assert {margin["unit"] for margin in report["margin_summaries"]} == {
+        "household",
+        "person",
+    }
+    assert report["realized"]["max_abs_error"] == pytest.approx(0.0)
+
+
+def test_linked_person_preflight_rejects_orphan_person_rows() -> None:
+    households = [{"synthetic_household_id": "h1", "household_size": "1"}]
+    persons = [{"synthetic_household_id": "missing", "AGEGRP": "adult"}]
+    controls = ControlTable(
+        margins=(
+            ControlMargin(
+                name="age",
+                dimensions=("tract", "AGEGRP"),
+                cells=(ControlCell({"tract": "G1", "AGEGRP": "adult"}, 1),),
+            ),
+        ),
+        dimensions=("tract", "AGEGRP"),
+    )
+
+    report = check_linked_person_calibration_inputs(
+        households,
+        persons,
+        controls,
+        geography_dimension="tract",
+        household_id_column="synthetic_household_id",
+    )
+
+    assert report["passed"] is False
+    assert report["issues"][0]["kind"] == "orphan_person_household"
+    assert report["issues"][0]["orphan_persons"] == 1
 
 
 def test_fit_households_by_geography_rejects_missing_weight_field() -> None:
@@ -450,7 +671,6 @@ def test_calibrate_linked_household_csvs_writes_outputs(tmp_path: Path) -> None:
         'size,"tract,household_size",4620001.00,1,1\n'
         'size,"tract,household_size",4620001.00,2,1\n'
     )
-
     summary = calibrate_linked_household_csvs(
         households_path=households,
         persons_path=persons,
@@ -479,6 +699,56 @@ def test_calibrate_linked_household_csvs_writes_outputs(tmp_path: Path) -> None:
     assert report_data["summary"]["converged_count"] == 1
     assert report_data["summary"]["non_converged_count"] == 0
     assert "margin_summaries" in report_data["geographies"]["4620001.00"]
+
+
+def test_calibrate_linked_csvs_applies_optional_person_controls(tmp_path: Path) -> None:
+    households = tmp_path / "households.csv"
+    persons = tmp_path / "persons.csv"
+    household_controls = tmp_path / "household-controls.csv"
+    person_controls = tmp_path / "person-controls.csv"
+    out_households = tmp_path / "small-area-households.csv"
+    out_persons = tmp_path / "small-area-persons.csv"
+
+    households.write_text("synthetic_household_id,household_size\nh1,1\nh2,2\nh3,2\n")
+    persons.write_text(
+        "synthetic_person_id,synthetic_household_id,AGEGRP\n"
+        "p1,h1,adult\n"
+        "p2,h2,adult\n"
+        "p3,h2,child\n"
+        "p4,h3,child\n"
+        "p5,h3,child\n"
+    )
+    household_controls.write_text(
+        "margin,dimensions,tract,household_size,count\n"
+        'size,"tract,household_size",G1,1,1\n'
+        'size,"tract,household_size",G1,2,3\n'
+    )
+    person_controls.write_text(
+        "margin,dimensions,tract,AGEGRP,count\n"
+        'age,"tract,AGEGRP",G1,adult,3\n'
+        'age,"tract,AGEGRP",G1,child,4\n'
+    )
+
+    summary = calibrate_linked_household_csvs(
+        households_path=households,
+        persons_path=persons,
+        controls_path=household_controls,
+        person_controls_path=person_controls,
+        geography_dimension="tract",
+        geography_column="tract",
+        households_out=out_households,
+        persons_out=out_persons,
+        max_iterations=200,
+        tolerance=1e-8,
+    )
+
+    assigned_persons = list(csv.DictReader(out_persons.open(newline="")))
+    assert summary["schema_version"] == ("synthpopcan-small-area-linked-calibration-v2")
+    assert summary["calibration_mode"] == "household_and_person"
+    assert summary["assigned_households"] == 4
+    assert summary["assigned_persons"] == 7
+    assert sum(row["AGEGRP"] == "adult" for row in assigned_persons) == 3
+    assert sum(row["AGEGRP"] == "child" for row in assigned_persons) == 4
 
 
 def test_calibrate_linked_can_use_household_size_group_controls(
@@ -589,6 +859,7 @@ def test_cli_calibrates_linked_households_to_small_area_controls(
     households = tmp_path / "households.csv"
     persons = tmp_path / "persons.csv"
     controls = tmp_path / "controls.csv"
+    person_controls = tmp_path / "person-controls.csv"
     out_households = tmp_path / "small-area-households.csv"
     out_persons = tmp_path / "small-area-persons.csv"
 
@@ -606,6 +877,11 @@ def test_cli_calibrates_linked_households_to_small_area_controls(
         'size,"tract,household_size",4620001.00,1,1\n'
         'size,"tract,household_size",4620001.00,2,1\n'
     )
+    person_controls.write_text(
+        "margin,dimensions,tract,AGEGRP,count\n"
+        'age,"tract,AGEGRP",4620001.00,adult,2\n'
+        'age,"tract,AGEGRP",4620001.00,child,1\n'
+    )
 
     exit_code = main(
         [
@@ -617,6 +893,8 @@ def test_cli_calibrates_linked_households_to_small_area_controls(
             str(persons),
             "--controls",
             str(controls),
+            "--person-controls",
+            str(person_controls),
             "--geo-dimension",
             "tract",
             "--geo-column",

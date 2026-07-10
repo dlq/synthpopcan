@@ -210,6 +210,15 @@ def _format_surface_recommendation(recommendation: str) -> str:
     help="Normalized controls with one target geography dimension.",
 )
 @click.option(
+    "--person-controls",
+    "person_controls_path",
+    type=_PATH,
+    help=(
+        "Optional person-level controls with the same target geographies. "
+        "Household weights are jointly refined while links remain intact."
+    ),
+)
+@click.option(
     "--geo-dimension",
     required=True,
     help="Control dimension naming the target geography, such as ct or ada.",
@@ -293,6 +302,7 @@ def calibrate_linked_command(
     households_path: Path,
     persons_path: Path,
     controls_path: Path,
+    person_controls_path: Path | None,
     geo_dimension: str,
     geo_column: str,
     households_out: Path,
@@ -314,6 +324,7 @@ def calibrate_linked_command(
             households_path=households_path,
             persons_path=persons_path,
             controls_path=controls_path,
+            person_controls_path=person_controls_path,
             geography_dimension=geo_dimension,
             geography_column=geo_column,
             households_out=households_out,
@@ -360,6 +371,15 @@ def _print_calibrate_linked_diagnostics(summary: dict[str, object]) -> None:
     if non_converged_count:
         noun = "geography" if non_converged_count == 1 else "geographies"
         click.echo(f"{non_converged_count:,} {noun} did not converge.")
+
+    input_checks = summary.get("input_checks", {})
+    if isinstance(input_checks, dict):
+        for unit_report in input_checks.values():
+            if not isinstance(unit_report, dict):
+                continue
+            for issue in unit_report.get("issues", []):
+                if isinstance(issue, dict) and issue.get("severity") == "warning":
+                    click.echo(f"Preflight warning: {issue.get('message', '')}")
 
     residuals = report_summary.get("largest_residuals", [])
     if isinstance(residuals, list) and residuals:
@@ -906,6 +926,12 @@ def prepare_boundaries_command(
     help="Normalized controls CSV with a geography dimension column.",
 )
 @click.option(
+    "--person-controls",
+    "person_controls_path",
+    type=_PATH,
+    help="Optional linked-person controls CSV for joint calibration.",
+)
+@click.option(
     "--geo-dimension",
     required=True,
     help="Dimension name in controls (e.g. ct, ada).",
@@ -959,6 +985,7 @@ def synthesize_from_package_command(
     package_path: Path,
     household_count: int,
     controls_path: Path,
+    person_controls_path: Path | None,
     geo_dimension: str,
     geo_column: str,
     households_out: Path,
@@ -1049,6 +1076,7 @@ def synthesize_from_package_command(
                 households_path=candidates_households,
                 persons_path=candidates_persons,
                 controls_path=controls_path,
+                person_controls_path=person_controls_path,
                 geography_dimension=geo_dimension,
                 geography_column=geo_column,
                 households_out=households_out,

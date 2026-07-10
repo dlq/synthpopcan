@@ -31,6 +31,10 @@ def test_control_suggestion_report_handles_household_and_person_paths() -> None:
     assert household_report["unit"] == "household"
     assert household_report["geography_columns"] == ["GEO"]
     assert household_report["usable_controls"][0]["column"] == "TENUR"
+    assert household_report["validation_only_controls"][0]["canonical"] == ("age_group")
+    assert household_report["validation_only_controls"][0]["status"] == (
+        "validation_only_for_household_rows"
+    )
     assert household_report["next_commands"][2].endswith(
         "--seed households.csv --controls controls.csv"
     )
@@ -39,6 +43,9 @@ def test_control_suggestion_report_handles_household_and_person_paths() -> None:
         "AGEGRP",
         "SEX",
     ]
+    assert person_report["validation_only_controls"][0]["canonical"] == (
+        "household_size"
+    )
 
 
 def test_control_classification_and_review_helper_edges() -> None:

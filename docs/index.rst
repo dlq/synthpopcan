@@ -67,6 +67,7 @@ beginner generation workflows.
 
    introduction
    which-workflow
+   scenarios
    acknowledgments
    field-primer
    glossary
@@ -99,3 +100,8 @@ beginner generation workflows.
    library-getting-started
    library
    api
+
+.. toctree::
+   :hidden:
+
+   superpowers/plans/2026-07-10-local-web-application-runtime

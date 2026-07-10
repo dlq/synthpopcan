@@ -79,3 +79,18 @@ def parse_api_reference_members(path: Path) -> dict[str, list[str]]:
 
 def split_members(raw_members: str) -> list[str]:
     return [member.strip() for member in raw_members.split(",") if member.strip()]
+
+
+def test_documented_scenarios_have_automated_test_references() -> None:
+    scenario_text = Path("docs/scenarios.md").read_text()
+    scenario_ids = re.findall(r"^## (SCN-[A-Z]+-\d{3})$", scenario_text, re.MULTILINE)
+    test_text = "\n".join(
+        (
+            Path("tests/test_workflows.py").read_text(),
+            Path("tests/web/scenarios.spec.mjs").read_text(),
+        )
+    )
+    referenced_ids = set(re.findall(r"SCN-[A-Z]+-\d{3}", test_text))
+
+    assert len(scenario_ids) == len(set(scenario_ids))
+    assert set(scenario_ids) == referenced_ids

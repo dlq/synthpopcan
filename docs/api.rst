@@ -56,6 +56,18 @@ IPF
              calculate_max_abs_error
    :show-inheritance:
 
+Small-Area Synthesis
+--------------------
+
+.. automodule:: synthpopcan.small_area_synthesis
+   :members: GeographyHouseholdFit, controls_by_geography,
+             check_small_area_calibration_inputs,
+             check_linked_person_calibration_inputs,
+             fit_households_by_geography, fit_linked_by_geography,
+             estimate_small_area_run, realize_linked_geography_population,
+             calibrate_linked_household_csvs
+   :show-inheritance:
+
 Microdata
 ---------
 

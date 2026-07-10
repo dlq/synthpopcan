@@ -492,6 +492,18 @@ def print_ipf_control_suggestions_table(report: dict[str, Any]) -> None:
             str(row.get("statcan_search", "")),
             _control_suggestion_note(row, "Review categories before IPF."),
         )
+    for row in report.get("validation_only_controls", []):
+        if not isinstance(row, dict):
+            continue
+        table.add_row(
+            str(row.get("column", "")),
+            "Validate only",
+            str(row.get("statcan_search", "")),
+            _control_suggestion_note(
+                row,
+                "Use this with rows at the matching unit, or as an output check.",
+            ),
+        )
     for row in report.get("enrichment_candidates", []):
         if not isinstance(row, dict):
             continue

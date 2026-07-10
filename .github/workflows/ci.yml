@@ -98,3 +98,9 @@ jobs:
 
       - name: Check web assets
         run: npm run check:web
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Run browser scenarios
+        run: npm run test:web:e2e

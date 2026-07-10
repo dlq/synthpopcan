@@ -182,6 +182,26 @@ def test_reads_statcan_2016_hierarchical_seed_sample(tmp_path) -> None:
     }
 
 
+def test_statcan_reader_can_retain_only_requested_microdata_columns(tmp_path) -> None:
+    source = tmp_path / "hierarchical.csv"
+    source.write_text(
+        "HH_ID,EF_ID,CF_ID,PP_ID,WEIGHT,AGEGRP,SEX,UNUSED\n"
+        "1,11,111,11101,100.5,adult,F,large unused value\n"
+        "1,11,111,11102,100.5,child,M,another unused value\n"
+    )
+
+    sample = read_statcan_2016_hierarchical_seed_sample(
+        source,
+        columns=("AGEGRP",),
+    )
+
+    assert sample.columns == ("HH_ID", "PP_ID", "WEIGHT", "AGEGRP")
+    assert all(set(row) == set(sample.columns) for row in sample.records)
+    assert sample.metadata["source_column_count"] == 8
+    assert sample.metadata["retained_column_count"] == 4
+    assert sample.metadata["column_projection"] is True
+
+
 def test_cli_inspects_statcan_2016_hierarchical_microdata(tmp_path, capsys) -> None:
     source = tmp_path / "hierarchical.csv"
     source.write_text(

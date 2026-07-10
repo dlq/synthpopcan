@@ -1,7 +1,7 @@
 # SynthPopCan Plan
 
 Status: release-phased roadmap\
-Last updated: 2026-07-08
+Last updated: 2026-07-10
 
 ## Goal
 
@@ -29,8 +29,12 @@ The core product scope remains:
   and reproducible metadata.
 - Prefer public fetches for public geography and service layers rather than
   storing copies in the project.
-- Make the library usable without the web app. The CLI should expose the same
-  core workflows as the Python API.
+- Make the library usable without the web app. The CLI, beginner Python API,
+  and local web app should share the same Python workflow and domain layers.
+- Treat `synthpopcan serve` as a local guided workbench, not as a separately
+  deployable frontend or a second implementation of the synthesis algorithms.
+  Keep standalone outputs such as `geo map` HTML exports independent from that
+  application-runtime decision.
 - Keep beginner workflows readable for humanities and digital-humanities readers:
   approachable defaults, helpful errors, visible next steps, and optional
   machine-readable output for automation.
@@ -152,11 +156,6 @@ Primary deliverables:
 - Documentation workflow with a small reproducible fixture and a real-data
   optional path.
 
-Implementation anchor:
-
-- Detailed implementation plan:
-  `docs/superpowers/plans/2026-06-25-small-area-linked-synthesis.md`.
-
 Geography strategy:
 
 - Use Montreal census tracts for the first prototype because the files and
@@ -199,9 +198,9 @@ Completed in the first implementation pass:
 
 ### 0.3.x - Small-Area Quality, Validation, And Performance
 
-Status: in progress. `0.3.0` shipped the first quality/diagnostics pass and
-`0.3.1` followed with bug fixes and output-consistency work. The unchecked items
-below remain for later `0.3.x` releases.
+Status: complete as of `0.3.2`. `0.3.0` shipped the first quality/diagnostics
+pass, `0.3.1` followed with bug fixes and output consistency, and `0.3.2`
+completed the remaining work below.
 
 Purpose: make small-area synthesis robust enough for larger geographies and
 serious review.
@@ -209,7 +208,10 @@ serious review.
 Candidate work:
 
 - Add staged or joint person-level calibration after household-level calibration
-  is stable.
+  is stable. **Met; an optional person-control file now triggers a household-first
+  joint refinement over household indicators and linked-person category counts.
+  Household/person links remain intact, and reports distinguish fractional from
+  integerized residuals.**
 
 - Add household-size recoding helpers for Census Profile categories such as
   `1`, `2`, `3`, `4`, and `5 or more` before fitting generated exact household
@@ -219,12 +221,15 @@ Candidate work:
 
 - Improve margin-selection helpers so researchers can see which StatCan tables are
   usable controls, which are validation-only, and which require enrichment.
+  **Met; `ipf suggest-controls` now presents all three decisions explicitly for
+  the selected household or person row unit.**
 
 - Add richer non-convergence diagnostics for inconsistent small-area controls,
-  sparse geographies, structural zeros, and category mismatches. **Partly met;
-  0.3.0 added calibration preflight checks for missing candidate columns and
-  categories. Sparse-geography, structural-zero, and category-mismatch
-  diagnostics remain.**
+  sparse geographies, structural zeros, and category mismatches. **Met; 0.3.0
+  added calibration preflight checks for missing candidate columns and
+  categories, followed by inconsistent-total errors, unsupported
+  cross-category structural-zero errors, sparse-geography and sparse-support
+  warnings, and linked-person ID checks.**
 
 - Improve validation reports with geography-level summaries, largest residuals,
   linked household/person checks, and suggested next steps. **Met across 0.3.0
@@ -234,14 +239,23 @@ Candidate work:
 
 - Prototype optional SciPy CSR or other sparse backends for high-cardinality or
   repeated IPF updates while keeping the current pure-Python indexed fitter as
-  the default until dependency and browser implications are clear.
+  the default until dependency and browser implications are clear. **Met as a
+  developer benchmark: `scripts/benchmarks.py ipf-backends` compares the current
+  fitter, NumPy `bincount`, optional SciPy CSR, and optional Polars paths. Only
+  the proven NumPy repeated-geography index is used by small-area runtime code.**
 
 - Reduce memory pressure in microdata adapters through narrower column loading
-  or streaming where it meaningfully affects real workflows.
+  or streaming where it meaningfully affects real workflows. **Met for the
+  common check and export paths: the StatCan adapter retains only identifiers,
+  weights, and requested modelling columns; schema-inspection commands continue
+  to load the complete column set intentionally.**
 
 - Add performance budgets and benchmark fixtures for province-scale generation
-  and calibration. **Partly met; `geo estimate-run` gives researchers a preflight
-  scale estimate and web app vs CLI/API recommendation before calibration.**
+  and calibration. **Met; `geo estimate-run` gives researchers a preflight scale
+  estimate and web app vs CLI/API recommendation before calibration, backed by
+  an executable synthetic small-area benchmark and a tracked
+  province-scale profile covering candidate rows, geographies, output scale,
+  fit time, and retained-weight memory.**
 
 - Rationalize user scenarios into an explicit end-to-end integration-test
   source of truth. The repo already has scenario material in
@@ -295,16 +309,21 @@ Candidate work:
     should cover the two beginner paths and download artifacts, while CLI tests
     should remain fast and deterministic.
 
+  **Met; `docs/scenarios.md` is the stable seven-scenario inventory. CLI
+  workflows carry pytest scenario markers, documentation tests enforce complete
+  ID references, and Playwright covers the browser IPF and prepared-model paths.**
+
 0.3.x exit criteria:
 
 - Small-area runs have predictable diagnostics for both success and failure.
+  **Met.**
 - Performance guidance is concrete enough to tell researchers when to use the web
-  app, CLI, or Python API.
+  app, CLI, or Python API. **Met.**
 - Optional faster backends remain invisible unless they clearly help a real
-  user workflow.
+  user workflow. **Met; optional probes remain developer-only.**
 - The main beginner and reviewer scenarios have stable IDs, documented fixtures,
   and at least one integration or browser test that exercises the workflow from
-  user-visible input to user-visible artifact.
+  user-visible input to user-visible artifact. **Met.**
 
 ### 0.4.x - Model Catalogue And Privacy Hardening
 
@@ -330,7 +349,7 @@ Candidate work:
   - geography thresholding and model simplification constraints;
   - provenance metadata covering source description, columns, geography,
     parameters, random seed, package date, privacy audit, and warnings.
-- Improve model-size and browser-readiness guidance for prepared packages.
+- Improve model-size and local-generation guidance for prepared packages.
 - Keep public claims precise: a publishable model has passed SynthPopCan
   disclosure-risk checks and still requires appropriate human review.
 
@@ -342,34 +361,90 @@ Candidate work:
   review status, release version, model size, generation limits, and known
   limitations for each prepared model.
 
-### 0.5.x - Browser Scale And Reusable Web Runtime
+### 0.5.x - Local Web Application Runtime
 
 Status: planned.
 
-Purpose: decide how far the web app can go as a frontend-first local tool.
+Purpose: turn `synthpopcan serve` into a task-oriented local research workbench
+backed by the same Python workflows as the CLI and beginner API.
+
+Architecture decision:
+
+- Static hosting and frontend-only portability are no longer design
+  constraints. The browser guides setup, starts and monitors jobs, previews
+  diagnostics, and exposes artifacts; Python performs synthesis, validation,
+  and file writing.
+- The web app must call shared application services directly through structured
+  HTTP requests. It must not shell out to Click commands or parse terminal
+  output.
+- Browser-side IPF and model generation are migration code, not permanent
+  parallel implementations. Remove them after backend parity and end-to-end
+  coverage are established.
+- The standalone `geo map` HTML export remains an artifact-oriented path using
+  MapLibre GL JS and OpenFreeMap. It does not need to become part of the local
+  application runtime.
+
+Implementation plan:
+
+- `docs/superpowers/plans/2026-07-10-local-web-application-runtime.md`
 
 Candidate work:
 
-- Investigate browser streaming exports for larger web-app runs using
-  `ReadableStream`, `TextEncoderStream`, Web Workers, and the File System
-  Access API where supported.
-- Keep hard memory guardrails and show exact CLI commands when browser export
-  is too large.
-- Evaluate Pyodide/WebAssembly for selected Python-backed workflows if it
-  reduces the need for a local backend without making the app brittle.
-- Keep the local Python helper narrow: serving assets, StatCan download support,
-  model catalogue access, and possibly streaming file output when browser
-  writing is not reliable.
-- Decide whether browser-side IPF/model-generation modules are stable enough
-  for an npm package. Do not create an npm surface until the terminology and
-  workflows rhyme with the Python API, CLI, and web app.
+- Introduce a small application-workflow layer for file-backed IPF, prepared
+  model generation, small-area synthesis, validation, and artifact metadata.
+  Keep Click, Rich, HTTP, and browser concerns outside this layer and extend the
+  architecture tests to enforce the boundary.
+- Replace the standard-library static helper with a supported loopback HTTP
+  application runtime that provides structured request validation, streaming
+  uploads, job status, cancellation, server-sent progress events, and artifact
+  downloads.
+- Add a controlled local workspace with durable run directories. Each run keeps
+  a versioned manifest, parameters, input provenance, random seed, status,
+  diagnostics, exact reproducible CLI command, and named output artifacts.
+- Execute synthesis jobs outside the web-server process, initially with one
+  local worker at a time. Interrupted or cancelled jobs must leave an explicit
+  terminal state and must not expose partial files as completed artifacts.
+- Migrate the current IPF and prepared-model browser workflows to backend jobs,
+  preserving demos, file previews, model provenance, validation summaries, and
+  downloadable outputs before deleting duplicated JavaScript computation.
+- Add a guided small-area workflow that connects prepared-model generation,
+  controls, preflight scale estimation, calibration, linked-output validation,
+  and map generation without requiring users to assemble every intermediate
+  command manually.
+- Support larger local runs by writing rows and reports incrementally to disk.
+  Browser memory must not scale with generated population size, and the UI must
+  show preflight estimates for output rows, disk use, retained weights, and
+  expected runtime before launching expensive work.
+- Organize the UI around durable runs rather than a single long form: start a
+  workflow, inspect inputs, configure approachable defaults, review preflight
+  checks, monitor progress, and inspect results. Keep advanced model training,
+  privacy auditing, and release packaging CLI-first during this phase.
+- Keep the frontend as packaged HTML, CSS, and ES modules unless measured UI
+  complexity provides a concrete reason for a framework. The removal of
+  browser-side synthesis does not itself justify a frontend rewrite.
+- Keep the default server loopback-only, reject unrestricted filesystem paths
+  from HTTP requests, restrict file access to the configured workspace, and
+  require an explicit future security design before supporting network serving.
+- Revise the stable web scenarios to cover job creation, progress, completion,
+  cancellation, restart/interruption handling, validation, artifact download,
+  and reproducible-command output.
 
 0.5.x exit criteria:
 
-- The web app has clear limits for file size, output size, memory, and expected
-  runtime.
-- Any reusable JavaScript package has a reason to exist beyond the packaged
-  Python web assets.
+- The CLI and HTTP adapters use the same application services for IPF and
+  prepared-model generation, with small-area synthesis available through the
+  same run model.
+- The web app can launch, monitor, cancel, revisit, and reproduce durable local
+  runs without loading complete generated populations into browser memory.
+- Completed run directories contain sufficient provenance, diagnostics, and
+  artifacts to understand and reproduce the work outside the browser.
+- Browser-side IPF and tree-generation implementations have been removed after
+  parity tests pass; browser code is responsible only for interaction,
+  inspection, and presentation.
+- Loopback, workspace, upload, artifact, and path-traversal protections have
+  automated coverage.
+- Deterministic end-to-end scenarios cover a successful IPF run, prepared-model
+  run, small-area run, failed preflight, cancellation, and artifact download.
 
 ### 0.6.x And Later - Enrichment And Scenario Layers
 
@@ -429,8 +504,8 @@ Documentation should keep distinguishing:
   than one brittle global gate while public surfaces are still moving.
 - Keep live StatCan and full-data smoke tests opt-in and documented separately
   from the default test suite.
-- Preserve web checks: Biome formatting/linting and static asset tests for the
-  local app.
+- Preserve web checks: Biome formatting/linting, static asset tests, local API
+  contract tests, job-lifecycle tests, and browser scenarios for the local app.
 
 ### Documentation And Notes
 
@@ -455,23 +530,19 @@ Documentation should keep distinguishing:
 
 ## Open Decisions
 
-- Exact dependency stack for arrays/tables/models: current default is pure
-  Python for indexed IPF, scikit-learn where CART models are used, and later
-  optional NumPy/SciPy CSR/Polars/PyArrow experiments for larger sparse or
-  table-ingestion-heavy workflows.
+- Exact dependency stack for larger arrays/tables/models: the general IPF path
+  remains pure Python, repeated-geography calibration uses the proven NumPy
+  index, pandas is used for linked realization, and SciPy CSR/Polars remain
+  developer benchmark probes rather than runtime choices.
 - A technical internals document covering the Python implementation choices,
   IPF backend experiments (pure Python vs NumPy bincount vs SciPy CSR vs
   Polars), and design rationale would be worth writing eventually — either as
   a dedicated docs page or a NOTES.md section.
-- Whether schemas should remain dataclasses or move to Pydantic once the API
-  surface stabilizes.
 - First broadly supported Census Profile access path and default geography
   levels for small-area synthesis.
 - First stable small-area generated-output schema for linked
   household/person/geography rows.
 - Integerization alternatives beyond the current deterministic expansion path.
-- How far the web app can remain static/frontend-first before a backend or
-  Pyodide-style runtime is justified.
 
 ## Done Means
 

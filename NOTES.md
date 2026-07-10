@@ -11,12 +11,12 @@ recent external work relevant to a narrower near-term goal:
 1. Build a second workflow that creates household- and person-level synthetic populations with a tree-based synthetic population generator for geographic subregions using Canadian 2016 Census data.
 1. Leave broader SynthEco ecosystem enrichment, cohort attachment, and simulation work for later.
 
-Current codebase status, 2026-07-08:
+Current codebase status, 2026-07-10:
 
 - The active roadmap is now `PLANS.md`; this file is the research and design
   notes companion.
 - The Python library, Click CLI, local web app, Sphinx docs, and fixture tests
-  are implemented and at v0.3.1.
+  are implemented and at v0.3.2.
 - IPF from normalized controls, StatCan WDS source discovery/normalization,
   microdata adapters, linked household/person model generation, validation,
   prepared-model web generation, and small-area linked synthesis all have
@@ -25,6 +25,9 @@ Current codebase status, 2026-07-08:
   household/person candidates to census tracts and aggregate dissemination
   areas using Census Profile controls, with a prepared model catalogue covering
   all provinces, territories, and major CMAs.
+- Small-area fitting can optionally refine household weights against linked
+  person controls while preserving whole-household assignment, with diagnostics
+  that separate fractional fit from integerized residuals.
 - The older phase sketch near the end of this file should be read as research
   background, not the live implementation checklist.
 

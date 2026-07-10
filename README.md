@@ -93,16 +93,19 @@ uv run sphinx-build -W -b html docs docs/_build/html
 
 ## Developer Benchmarks
 
-IPF benchmark fixtures are available as developer tooling, not as a normal user
-workflow:
+Benchmark fixtures are developer tooling, not normal user workflows:
 
 ```bash
 uv run python scripts/benchmarks.py ipf
+uv run python scripts/benchmarks.py small-area
+uv run python scripts/benchmarks.py small-area --province-scale
+uv run python scripts/benchmarks.py ipf-backends
 ```
 
-Use `--seed-records` for smaller or larger local runs while checking
-performance changes. Optional full-data tree-model smoke tests are documented
-as status and planning evidence rather than as default test-suite requirements.
+Use `--seed-records` for smaller or larger IPF runs. The province-scale
+small-area timing check is opt-in because it depends on the machine. Optional
+SciPy CSR and Polars comparisons remain benchmark probes rather than runtime
+backends, and full-data tree-model smoke tests remain outside the default suite.
 
 ## Data Policy
 

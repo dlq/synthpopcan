@@ -400,9 +400,11 @@ synthpopcan ipf suggest-controls \
   --unit household
 ```
 
-This command is advisory. It helps identify generated columns that might be
-usable controls, but the researcher still chooses the source table and category
-mapping.
+This command is advisory. It separates columns into controls that can be used
+with the current row unit, controls that belong to the other unit and should be
+used for validation or linked calibration, and attributes that require
+enrichment or model changes first. The researcher still chooses the source
+table and reviews every category mapping.
 
 ## Worked Example: Model Output to IPF
 
@@ -449,8 +451,9 @@ synthpopcan ipf expand \
 IPF cannot create missing variables. If the controls use `tenure`, the seed or
 candidate population must already contain a compatible `tenure` column. If the
 controls use household age-sex composition, a household-only candidate file is
-not enough; generate or join the person-level rows first and validate the linked
-population before calibration.
+not enough; generate or join linked person rows first, then use
+`geo calibrate-linked --person-controls` or keep those margins as validation-only
+checks.
 
 ## Troubleshooting
 

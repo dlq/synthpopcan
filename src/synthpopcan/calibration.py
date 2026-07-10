@@ -95,8 +95,17 @@ def build_control_suggestion_report(
         if selected_unit == "household"
         else _PERSON_CONTROL_CATALOG
     )
+    validation_catalog = (
+        _PERSON_CONTROL_CATALOG
+        if selected_unit == "household"
+        else _HOUSEHOLD_CONTROL_CATALOG
+    )
     usable_controls, enrichment_candidates = _classify_controls(
         available_columns, catalog
+    )
+    validation_only_controls = _validation_only_controls(
+        validation_catalog,
+        selected_unit=selected_unit,
     )
     geography_columns = [
         column for column in available_columns if column in _GEOGRAPHY_ALIASES
@@ -119,6 +128,7 @@ def build_control_suggestion_report(
         "available_columns": available_columns,
         "geography_columns": geography_columns,
         "usable_controls": usable_controls,
+        "validation_only_controls": validation_only_controls,
         "enrichment_candidates": enrichment_candidates,
         "review_notes": _build_review_notes(
             selected_unit, usable_controls, geography_columns
@@ -148,6 +158,26 @@ def _classify_controls(
             suggestion["status"] = "needs_enrichment_or_modeling"
             enrichment.append(suggestion)
     return usable, enrichment
+
+
+def _validation_only_controls(
+    catalog: Iterable[dict[str, Any]],
+    *,
+    selected_unit: str,
+) -> list[dict[str, str]]:
+    controls: list[dict[str, str]] = []
+    for item in catalog:
+        controls.append(
+            {
+                "column": str(item["canonical"]),
+                "canonical": str(item["canonical"]),
+                "role": str(item["role"]),
+                "statcan_search": str(item["search"]),
+                "reason": str(item["reason"]),
+                "status": f"validation_only_for_{selected_unit}_rows",
+            }
+        )
+    return controls
 
 
 def _matching_column(columns: Sequence[str], aliases: object) -> str | None:

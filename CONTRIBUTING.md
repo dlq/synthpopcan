@@ -68,7 +68,7 @@ Before contributing a model artifact:
 - run the relevant SynthPopCan audit/release workflow;
 - confirm large files are distributed as release assets with checksums and
   fetched on demand by `synthpopcan models fetch`.
-- follow `docs/release-checklist.md` before updating the public model registry.
+- follow `RELEASING.md` before updating the public model registry.
 
 ## Documentation
 

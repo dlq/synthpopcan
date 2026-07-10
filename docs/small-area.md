@@ -41,13 +41,15 @@ The current workflow has four steps:
 1. **Generate** candidate linked household/person rows from a model package.
 1. **Build controls** from the StatCan Census Profile (household size and tenure
    margins per target geography).
-1. **Calibrate** candidate households to those controls, assigning each
-   realized household to a census tract or ADA.
+1. **Calibrate** candidate households to household controls and, when supplied,
+   linked-person controls, assigning each realized household to a census tract
+   or ADA.
 1. **Map** the output to a self-contained browser choropleth.
 
-This first pass is intentionally **household-first**. Person rows inherit
-geography from their assigned household. Person-level small-area calibration is
-a later quality step.
+Calibration remains **household-first**. Person rows inherit geography from
+their assigned household. Optional person controls refine the household weights
+using linked-person category counts; they never separate people from their
+household.
 
 ## Step 0 — Prepare Boundary Files (once)
 
@@ -163,6 +165,18 @@ same information in machine-readable form. For exploratory province-scale runs,
 start with `--pool-size 10000`; increase it only if validation reports show poor
 fit or too little household variety.
 
+Contributors can exercise the tracked calibration benchmark with:
+
+```bash
+uv run python scripts/benchmarks.py small-area
+uv run python scripts/benchmarks.py small-area --province-scale
+```
+
+The province-scale profile records 10,000 retained candidates, 1,200 target
+geographies, 4.5 million target households, a 180-second fit budget, and a
+512 MiB retained-weight budget. Timing is opt-in because it depends on the
+machine; fixture shape and memory estimates are checked by the default tests.
+
 ## Step 3 — Calibrate to Controls
 
 ```bash
@@ -177,12 +191,40 @@ synthpopcan geo calibrate-linked \
   --report small-area-report.json
 ```
 
+When compatible person margins are available, add a second normalized control
+file:
+
+```bash
+synthpopcan geo calibrate-linked \
+  --households candidate-households-recoded.csv \
+  --persons candidate-persons.csv \
+  --controls household-controls.csv \
+  --person-controls person-age-sex-controls.csv \
+  --geo-dimension ada \
+  --geo-column ada \
+  --households-out synthetic-households.csv \
+  --persons-out synthetic-persons.csv \
+  --report small-area-report.json
+```
+
+Household controls are fitted first. The optional second stage uses iterative
+proportional updating over household indicators and linked-person category
+counts. It changes household weights, never individual person weights, so a
+selected household always carries all of its linked people into the assigned
+geography.
+
+`geo synthesize-from-package` accepts the same `--person-controls` option when
+generation and calibration should remain one command.
+
 The controls must be a normalized SynthPopCan control CSV. One dimension should
 name the target geography, such as `ct` or `ada`. The remaining dimensions must
 already exist in the candidate household CSV.
 
-Before fitting, SynthPopCan checks that the candidate households contain the
-non-geography control columns and categories. If the controls require
+Before fitting, SynthPopCan checks that candidate rows contain the
+non-geography control columns, categories, and supported cross-category cells.
+It also reports inconsistent margin totals, sparse target geographies, sparse
+candidate support, and person rows with missing or orphaned household links. If
+the household controls require
 `household_size_group`, for example, but the candidates only have exact
 `household_size`, the command stops with a specific fix instead of failing deep
 inside the IPF step.
@@ -192,8 +234,10 @@ size dimension is usually `household_size_group`, not exact `household_size`.
 The grouped column lets IPF fit the public `5 or more persons` category without
 throwing away the exact size of generated households.
 
-The JSON report includes a top-level convergence summary and a
-`largest_residuals` list. Start with those rows when reviewing fit quality:
+The JSON report includes input checks, a top-level convergence summary, and a
+`largest_residuals` list. With person controls it labels every margin as
+`household` or `person`, and reports both the fractional fit and the realized
+integer household selection. Start with those rows when reviewing fit quality:
 each residual names the geography, margin, category, target total, fitted total,
 and remaining difference after calibration. Non-converged geographies usually
 mean the controls conflict, categories were not mapped consistently, or the
@@ -242,6 +286,7 @@ summary = spc.calibrate_small_area_linked(
     households=Path("candidate-households-recoded.csv"),
     persons=Path("candidate-persons.csv"),
     controls=Path("candidate-households-controls-5500000.csv"),
+    person_controls=Path("person-age-sex-controls.csv"),  # optional
     geography_dimension="ada",
     geography_column="ada",
     households_out=Path("synthetic-households.csv"),
@@ -319,20 +364,19 @@ The outputs are spatially coherent synthetic populations suitable for aggregate
 analysis and microsimulation inputs. Understanding what the calibration does and
 does not guarantee is important before using them for research.
 
-**What is guaranteed.** The two calibrated margins — household size and tenure
-(owner/renter) — are reproduced exactly at every target geography by
-construction. IPF converges to near-zero error for both margins at every CT or
-ADA. Every geography in the output has the right household-size distribution and
-the right owner/renter split.
+**What is guaranteed.** Converged fractional household weights reproduce the
+supplied household margins to the requested tolerance. When person controls are
+provided, the joint refinement also reproduces those linked-person margins to
+the requested tolerance while preserving whole households. The report checks
+the final integerized household selection separately because integerization can
+reintroduce small residuals.
 
-**What is not calibrated.** All other attributes — person demographics (age,
-sex, income, immigrant status, visible minority status), dwelling type, shelter
-costs — come from the provincial joint distribution as learned by the tree
-model. The model does not know that large households in one CT skew younger
-than those in another. It assigns household types weighted to match each
-geography's hhsize/tenure profile, but the within-geography conditional
-distributions of all other variables are provincial averages, not
-geography-specific.
+**What is not calibrated.** Attributes absent from either control file still
+come from the broad-geography joint distribution learned by the model. Adding
+age and sex controls, for example, does not calibrate income, immigration
+status, visible-minority status, or shelter costs. Within-geography
+distributions for uncontrolled attributes remain model estimates, not observed
+small-area facts.
 
 **Practical guidance.**
 
@@ -364,15 +408,14 @@ calibration.
 
 ## Current Limits
 
-The current implementation is useful, but still a prototype for substantive
-small-area analysis:
-
-- it fits household-level controls only;
-- persons inherit the assigned household geography;
-- candidate-pool size affects the variety available inside each small area;
-- DA-level runs are expected to be sparser than ADA-level runs and may need
-  additional diagnostics beyond the current largest-residual summary.
-
-The next quality work belongs in `PLANS.md`: person-level validation and
-calibration, richer control mapping helpers, and performance guidance for
-province-scale runs.
+- Person controls adjust household selection; SynthPopCan does not detach or
+  independently reweight people inside a household.
+- Household and person controls must cover the same target geographies and
+  describe compatible population universes and reference periods.
+- Candidate-pool size limits the household combinations available inside each
+  small area. Sparse-support warnings should be treated as substantive review
+  findings, not cosmetic messages.
+- Integerization can leave small realized residuals even when the fractional
+  joint fit converges; both summaries belong with the output.
+- DA-level runs remain more disclosure-sensitive and structurally sparse than
+  CT- or ADA-level runs.

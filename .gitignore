@@ -17,6 +17,8 @@ build/
 
 # JavaScript dev tooling artifacts.
 node_modules/
+/playwright-report/
+/test-results/
 .npm/
 
 # Virtual environments and local environment files.

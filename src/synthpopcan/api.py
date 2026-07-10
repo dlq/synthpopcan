@@ -441,6 +441,7 @@ def calibrate_small_area_linked(
     households: str | Path,
     persons: str | Path,
     controls: str | Path,
+    person_controls: str | Path | None = None,
     geography_dimension: str,
     geography_column: str,
     households_out: str | Path,
@@ -462,9 +463,9 @@ def calibrate_small_area_linked(
     aggregate dissemination area (``ada``), and writes new household/person CSVs
     that preserve the household/person links.
 
-    The first implementation calibrates household-level controls. Person rows
-    inherit the geography of their assigned household. Use linked-output
-    validation afterward when person-level geography totals matter.
+    Household controls are always fitted first. When ``person_controls`` is
+    supplied, a joint refinement adjusts household weights against linked-person
+    category counts while keeping each household and all of its people together.
 
     Parameters
     ----------
@@ -477,6 +478,10 @@ def calibrate_small_area_linked(
     controls:
         Normalized control CSV with one dimension naming the target geography
         and one or more household dimensions available in ``households``.
+    person_controls:
+        Optional normalized control CSV with the same target geographies and
+        person dimensions available in ``persons``. These controls refine the
+        household weights; person rows are never detached from their household.
     geography_dimension:
         Name of the geography dimension in the control CSV, for example ``ct``
         or ``ada``.
@@ -534,6 +539,9 @@ def calibrate_small_area_linked(
         households_path=Path(households),
         persons_path=Path(persons),
         controls_path=Path(controls),
+        person_controls_path=(
+            Path(person_controls) if person_controls is not None else None
+        ),
         geography_dimension=geography_dimension,
         geography_column=geography_column,
         households_out=Path(households_out),

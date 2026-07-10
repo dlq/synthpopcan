@@ -24,14 +24,23 @@ artifact.
 
 1. Commit the release changes.
 
-1. Create or update the release tag.
+1. Create an annotated release tag from the verified release commit.
 
-1. Push `main` and the tag.
+1. Push `main`, confirm GitHub CI passes for the release commit, then push the
+   tag.
 
-1. Confirm GitHub CI passes.
+1. Create a GitHub Release from the tag using the matching `CHANGELOG.md` entry.
+   Confirm it is neither a draft nor a prerelease and is marked latest.
 
-1. Run the manual PyPI publishing workflow when the release should be published
-   to PyPI.
+1. Run the manual **Publish Python package** workflow from the release commit.
+   Confirm the workflow succeeds and PyPI reports the intended version.
+
+1. Install the published wheel in a clean environment and smoke test the version,
+   CLI entry point, guide commands, bundled demo generation, and model catalogue.
+
+1. Confirm Read the Docs `latest` points to the release commit and `stable`
+   points to the release tag. Check a cache-busted public page after both builds
+   succeed.
 
 ## Model Package Release
 
