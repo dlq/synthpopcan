@@ -33,23 +33,64 @@ test("SCN-WEB-001 runs demo IPF and exposes the weights artifact", async ({ page
   await expect(page.getByText("Preview: synthpopcan-ipf-weights.csv")).toBeVisible();
   await page.setViewportSize({ width: 320, height: 844 });
   await page.reload();
-  const layout = await page.evaluate(() => ({
-    viewportWidth: window.innerWidth,
-    documentClientWidth: document.documentElement.clientWidth,
-    documentScrollWidth: document.documentElement.scrollWidth,
-    bodyScrollWidth: document.body.scrollWidth,
-    overflowingElements: [...document.querySelectorAll("body *")]
-      .filter((element) => {
-        const bounds = element.getBoundingClientRect();
-        return bounds.left < -0.5 || bounds.right > window.innerWidth + 0.5;
-      })
-      .slice(0, 10)
-      .map((element) => {
-        const bounds = element.getBoundingClientRect();
-        const id = element.id ? `#${element.id}` : "";
-        return `${element.tagName.toLowerCase()}${id} (${bounds.left.toFixed(1)}..${bounds.right.toFixed(1)})`;
-      }),
-  }));
+  const layout = await page.evaluate(async () => {
+    const describe = (element) => {
+      const bounds = element.getBoundingClientRect();
+      const id = element.id ? `#${element.id}` : "";
+      const classes = [...element.classList]
+        .slice(0, 3)
+        .map((name) => `.${name}`)
+        .join("");
+      return `${element.tagName.toLowerCase()}${id}${classes} (${bounds.left.toFixed(1)}..${bounds.right.toFixed(1)}; client=${element.clientWidth}; scroll=${element.scrollWidth})`;
+    };
+    const measure = () => ({
+      documentScrollWidth: document.documentElement.scrollWidth,
+      bodyScrollWidth: document.body.scrollWidth,
+    });
+    const probe = async (css) => {
+      const style = document.createElement("style");
+      style.textContent = css;
+      document.head.append(style);
+      await new Promise((resolve) => requestAnimationFrame(resolve));
+      const widths = measure();
+      style.remove();
+      await new Promise((resolve) => requestAnimationFrame(resolve));
+      return widths;
+    };
+    const elements = [
+      document.documentElement,
+      document.body,
+      ...document.querySelectorAll("body *"),
+    ];
+
+    return {
+      viewportWidth: window.innerWidth,
+      visualViewportWidth: window.visualViewport?.width,
+      documentClientWidth: document.documentElement.clientWidth,
+      ...measure(),
+      root: describe(document.documentElement),
+      body: describe(document.body),
+      overflowingElements: elements
+        .filter((element) => {
+          const bounds = element.getBoundingClientRect();
+          return bounds.left < -0.5 || bounds.right > window.innerWidth + 0.5;
+        })
+        .slice(0, 10)
+        .map(describe),
+      scrollContainers: elements
+        .filter((element) => element.scrollWidth > element.clientWidth)
+        .slice(0, 10)
+        .map(describe),
+      probes: {
+        noHelpTooltip: await probe(".help-label::before { content: none !important; }"),
+        noGeneratedContent: await probe(
+          "*::before, *::after { content: none !important; }",
+        ),
+        noBoxShadows: await probe("* { box-shadow: none !important; }"),
+      },
+      afterProbes: measure(),
+    };
+  });
   expect(layout.documentScrollWidth, JSON.stringify(layout)).toBeLessThanOrEqual(
     layout.viewportWidth,
   );
