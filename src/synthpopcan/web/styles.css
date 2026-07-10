@@ -48,6 +48,11 @@ select {
   gap: 18px;
 }
 
+.brand-lockup,
+.brand-lockup > div {
+  min-width: 0;
+}
+
 .brand-logo {
   flex: 0 0 auto;
   width: clamp(96px, 14vw, 128px);
@@ -679,6 +684,7 @@ select:focus-visible {
 
   .topbar {
     align-items: start;
+    grid-template-columns: minmax(0, 1fr);
     padding-bottom: 22px;
   }
 
