@@ -679,16 +679,7 @@ select:focus-visible {
   }
 
   .help-label::before {
-    position: fixed;
-    bottom: 24px;
-    left: 50%;
-    width: min(320px, calc(100vw - 48px));
-    max-width: none;
-    transform: translate(-50%, 4px);
-  }
-
-  .help-label:hover::before {
-    transform: translate(-50%, 0);
+    width: min(240px, calc(100vw - 48px));
   }
 
   .topbar {
@@ -714,5 +705,9 @@ select:focus-visible {
   .brand-logo {
     width: 72px;
     height: 72px;
+  }
+
+  .topbar h1 {
+    font-size: 1.625rem;
   }
 }
