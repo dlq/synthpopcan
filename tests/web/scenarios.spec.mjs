@@ -33,9 +33,26 @@ test("SCN-WEB-001 runs demo IPF and exposes the weights artifact", async ({ page
   await expect(page.getByText("Preview: synthpopcan-ipf-weights.csv")).toBeVisible();
   await page.setViewportSize({ width: 320, height: 844 });
   await page.reload();
-  expect(
-    await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth),
-  ).toBe(false);
+  const layout = await page.evaluate(() => ({
+    viewportWidth: window.innerWidth,
+    documentClientWidth: document.documentElement.clientWidth,
+    documentScrollWidth: document.documentElement.scrollWidth,
+    bodyScrollWidth: document.body.scrollWidth,
+    overflowingElements: [...document.querySelectorAll("body *")]
+      .filter((element) => {
+        const bounds = element.getBoundingClientRect();
+        return bounds.left < -0.5 || bounds.right > window.innerWidth + 0.5;
+      })
+      .slice(0, 10)
+      .map((element) => {
+        const bounds = element.getBoundingClientRect();
+        const id = element.id ? `#${element.id}` : "";
+        return `${element.tagName.toLowerCase()}${id} (${bounds.left.toFixed(1)}..${bounds.right.toFixed(1)})`;
+      }),
+  }));
+  expect(layout.documentScrollWidth, JSON.stringify(layout)).toBeLessThanOrEqual(
+    layout.viewportWidth,
+  );
   expect(consoleErrors).toEqual([]);
 });
 
