@@ -25,20 +25,64 @@ export function searchWdsInventoryRows(rows, query, limit = 10) {
     ]
       .join(" ")
       .toLowerCase();
-    if (terms.every((term) => haystack.includes(term))) {
+    if (terms.every((term) => queryTermMatches(haystack, term))) {
+      const title = String(row.cubeTitleEn ?? "");
       matches.push({
         productId: String(row.productId ?? ""),
         cansimId: String(row.cansimId ?? ""),
-        title: String(row.cubeTitleEn ?? ""),
-        startDate: String(row.cubeStartDate ?? ""),
-        endDate: String(row.cubeEndDate ?? ""),
+        title,
+        startDate: formatInventoryDate(row.cubeStartDate),
+        endDate: formatInventoryDate(row.cubeEndDate),
+        suitability: populationSuitability(title),
+        score: populationSearchScore(title, terms),
       });
-      if (matches.length >= limit) {
-        break;
-      }
     }
   }
-  return matches;
+  return matches
+    .sort((left, right) => {
+      return right.score - left.score || right.endDate.localeCompare(left.endDate);
+    })
+    .slice(0, limit)
+    .map(({ score, ...match }) => match);
+}
+
+function queryTermMatches(haystack, term) {
+  if (term === "sex" || term === "gender") {
+    return haystack.includes("sex") || haystack.includes("gender");
+  }
+  return haystack.includes(term);
+}
+
+function populationSearchScore(title, terms) {
+  const normalized = title.toLowerCase();
+  let score = terms.reduce((total, term) => {
+    const variants = term === "sex" || term === "gender" ? ["sex", "gender"] : [term];
+    return total + (variants.some((variant) => normalized.includes(variant)) ? 4 : 0);
+  }, 0);
+  if (normalized.includes("population estimates")) score += 20;
+  if (normalized.includes("by age") && /\b(sex|gender)\b/.test(normalized)) score += 10;
+  if (populationSuitability(title) === "caution") score -= 30;
+  return score;
+}
+
+function populationSuitability(title) {
+  const normalized = title.toLowerCase();
+  const cautionTerms = [
+    "rate",
+    "survival",
+    "death",
+    "life lost",
+    "cancer",
+    "disease",
+    "hospital",
+  ];
+  if (cautionTerms.some((term) => normalized.includes(term))) return "caution";
+  if (normalized.includes("population estimates")) return "population-count";
+  return "review";
+}
+
+function formatInventoryDate(value) {
+  return String(value ?? "").slice(0, 10);
 }
 
 export async function fetchWdsMetadata(productId) {

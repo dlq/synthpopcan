@@ -1343,6 +1343,49 @@ def test_cli_synthesize_from_package(tmp_path: Path) -> None:
     assert report["assigned_households"] == 8
 
 
+def test_cli_synthesize_from_registered_model_id(tmp_path: Path) -> None:
+    controls = tmp_path / "controls.csv"
+    households_out = tmp_path / "households.csv"
+    persons_out = tmp_path / "persons.csv"
+    controls.write_text(
+        "margin,dimensions,tract,household_size_group,count\n"
+        'size,"tract,household_size_group",001,1,1\n'
+        'size,"tract,household_size_group",001,2,1\n'
+        'size,"tract,household_size_group",001,3,1\n'
+        'size,"tract,household_size_group",001,4,1\n'
+    )
+
+    exit_code = main(
+        [
+            "geo",
+            "synthesize-from-package",
+            "demo-linked-household-person",
+            "--households",
+            "20",
+            "--controls",
+            str(controls),
+            "--geo-dimension",
+            "tract",
+            "--geo-column",
+            "tract",
+            "--households-out",
+            str(households_out),
+            "--persons-out",
+            str(persons_out),
+            "--random-seed",
+            "13",
+            "--max-household-size",
+            "5",
+            "--household-size-group-column",
+            "household_size_group",
+        ]
+    )
+
+    assert exit_code == 0
+    assert households_out.exists()
+    assert persons_out.exists()
+
+
 # ---------------------------------------------------------------------------
 # small_area_synthesis.py gaps (from test_coverage_gaps2.py)
 # ---------------------------------------------------------------------------

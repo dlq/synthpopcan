@@ -244,13 +244,16 @@ controls. WDS ZIPs use a wide format with characteristic codes as rows; this
 command picks which columns become margin dimensions (`--dimensions`), which
 column holds the count values (`--count-column`), and optionally applies a
 category mapping to translate WDS labels into the values used in the seed
-(`--mapping`). Run `controls wds inspect` first to discover column names and
-review the labels before normalizing.
+(`--mapping`). A category-selection manifest exported by the local web app can
+also restrict the reference period and source categories (`--selection`) before
+duplicate-cell validation. Run `controls wds inspect` first to discover column
+names and review the labels before normalizing.
 
 ```bash
 synthpopcan controls from-wds table.zip \
   --dimensions Sex \
   --count-column VALUE \
+  --selection synthpopcan-wds-selection.json \
   --mapping categories.json \
   --out controls.csv
 ```
@@ -261,7 +264,25 @@ Options:
 - `--count-column TEXT`: WDS column that holds the count values.
 - `--margin-name TEXT`: name for the generated margin (used in the `margin` column of the output).
 - `--mapping PATH`: JSON file mapping raw WDS labels to seed column values.
+- `--selection PATH`: versioned JSON file selecting a reference period and
+  allowed source values for each dimension. The web app writes this file when
+  generating a refined WDS population slice.
 - `--out PATH`: path for the output controls CSV.
+
+The selection manifest records source labels before category mapping:
+
+```json
+{
+  "schema_version": "synthpopcan-wds-selection-v1",
+  "product_id": "17100005",
+  "reference_period": "2025",
+  "categories": {
+    "GEO": ["Yukon"],
+    "Gender": ["Men+", "Women+"],
+    "Age group": ["0 years", "1 year"]
+  }
+}
+```
 
 ### `controls wds inspect`
 

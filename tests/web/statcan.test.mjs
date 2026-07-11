@@ -32,6 +32,43 @@ test("searches WDS inventory rows by all query terms", () => {
       title: "Population by age and sex",
       startDate: "2021-01-01",
       endDate: "2021-01-01",
+      suitability: "review",
+    },
+  ]);
+});
+
+test("ranks population estimates above rate tables and treats sex as gender", () => {
+  const rows = [
+    {
+      productId: "13100022",
+      cansimId: "13-10-0022",
+      cubeTitleEn: "Age-standardized survival rate by sex, population aged 45 and over",
+      cubeEndDate: "2003-01-01T05:00:00Z",
+    },
+    {
+      productId: "17100005",
+      cansimId: "17-10-0005",
+      cubeTitleEn: "Population estimates on July 1, by age and gender",
+      cubeEndDate: "2025-01-01T05:00:00Z",
+    },
+  ];
+
+  assert.deepEqual(searchWdsInventoryRows(rows, "population age sex", 5), [
+    {
+      productId: "17100005",
+      cansimId: "17-10-0005",
+      title: "Population estimates on July 1, by age and gender",
+      startDate: "",
+      endDate: "2025-01-01",
+      suitability: "population-count",
+    },
+    {
+      productId: "13100022",
+      cansimId: "13-10-0022",
+      title: "Age-standardized survival rate by sex, population aged 45 and over",
+      startDate: "",
+      endDate: "2003-01-01",
+      suitability: "caution",
     },
   ]);
 });

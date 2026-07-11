@@ -10,7 +10,7 @@ synthetic population generation.
 
 This file says what belongs in each release phase. Completed release notes
 belong in `CHANGELOG.md`; research background and source synthesis belong in
-`NOTES.md`; full implementation task plans belong in `docs/superpowers/plans/`.
+`NOTES.md`; full implementation task plans belong in `plans/`.
 
 The core product scope remains:
 
@@ -72,8 +72,9 @@ Shipped baseline:
   streamed expansion, fit reports, validation against controls, and browser
   preview/download support.
 - StatCan WDS search, metadata inspection, ZIP fetch/normalization, WDS
-  explain helpers, starter mapping support, and local-helper web app flow for
-  generating IPF seed/control CSVs.
+  explain helpers, starter mapping support, reproducible category-selection
+  manifests, and a local-helper web app flow for refining non-overlapping WDS
+  population slices before generating IPF seed/control CSVs.
 - Microdata inspection and 2016 hierarchical adapter for deriving household and
   person training views from mixed household/person source files.
 - Tree/model workflow: train linked household/person models, audit models,
@@ -84,8 +85,8 @@ Shipped baseline:
   assets hosted on GitHub releases rather than bundled into the wheel.
 - Web app first pass: frontend-first ES modules, narrow local helper for WDS
   and model catalogue support, Biome formatting/linting, generated previews,
-  guarded expanded output, prepared model workflow, and basic validation
-  summaries.
+  guarded expanded output, prepared model workflow, basic validation summaries,
+  and copyable CLI follow-up commands for completed workflows.
 - Documentation site first pass: install guide, web app guide, IPF/control
   workflows, StatCan discovery, tree/model packaging workflows, validation,
   data/source notes, status page, API reference, and acknowledgments.
@@ -289,6 +290,9 @@ Candidate work:
   - `SCN-WEB-002`: a first-time user uses the local web app's prepared-model
     path, generates linked household/person rows from a safe package, reviews
     validation summaries, and downloads both CSV files.
+  - `SCN-WEB-003`: a researcher combines a linked model with normalized
+    small-area controls, reviews Python-backed scale estimates, and receives
+    exact CLI commands for the full synthesis run.
 
   Testing approach:
 
@@ -306,12 +310,13 @@ Candidate work:
     command transcript in the docs, so docs, fixtures, and integration tests do
     not drift.
   - Treat web-app E2E tests separately from CLI workflow tests: browser tests
-    should cover the two beginner paths and download artifacts, while CLI tests
-    should remain fast and deterministic.
+    should cover all three guided paths and their artifacts or CLI handoff,
+    while CLI tests should remain fast and deterministic.
 
-  **Met; `docs/scenarios.md` is the stable seven-scenario inventory. CLI
+  **Met; `docs/scenarios.md` is the stable eight-scenario inventory. CLI
   workflows carry pytest scenario markers, documentation tests enforce complete
-  ID references, and Playwright covers the browser IPF and prepared-model paths.**
+  ID references, and Playwright covers browser IPF, prepared-model, and
+  small-area preparation paths.**
 
 0.3.x exit criteria:
 
@@ -327,7 +332,8 @@ Candidate work:
 
 ### 0.4.x - Model Catalogue And Privacy Hardening
 
-Status: planned.
+Status: `0.4.0` release candidate implemented. Deeper model-design advice and
+additional disclosure-risk diagnostics remain possible `0.4.x` follow-ups.
 
 Purpose: make prepared model distribution repeatable, reviewable, and safer for
 public use.
@@ -353,13 +359,30 @@ Candidate work:
 - Keep public claims precise: a publishable model has passed SynthPopCan
   disclosure-risk checks and still requires appropriate human review.
 
+`0.4.0` release slice:
+
+- Added consistent catalogue metadata for geography, Census vintage, source,
+  privacy review status, asset release, compressed size, generation guidance,
+  and known limitations in both CLI and web surfaces.
+- Added automatic fetch and checksum verification for premade models selected
+  in the local web app.
+- Added safer WDS discovery and category refinement, reproducible selection
+  manifests, expanded-record defaults for approachable runs, and concrete CLI
+  follow-up commands.
+- Added a guided small-area preparation path. It uploads normalized controls,
+  calls the shared Python scale estimator, reports the recommended execution
+  surface, and builds exact `geo estimate-run` and
+  `geo synthesize-from-package` commands.
+- Kept actual small-area execution CLI-first. Durable jobs, progress,
+  cancellation, and artifact history remain `0.5.x` work.
+
 0.4.x exit criteria:
 
 - Published model assets have a consistent review, packaging, release, fetch,
   inspection, and documentation story.
 - The CLI and web app can show geography, census vintage, source, privacy
   review status, release version, model size, generation limits, and known
-  limitations for each prepared model.
+  limitations for each prepared model. **Met for `0.4.0`.**
 
 ### 0.5.x - Local Web Application Runtime
 
@@ -386,7 +409,7 @@ Architecture decision:
 
 Implementation plan:
 
-- `docs/superpowers/plans/2026-07-10-local-web-application-runtime.md`
+- `plans/2026-07-10-local-web-application-runtime.md`
 
 Candidate work:
 

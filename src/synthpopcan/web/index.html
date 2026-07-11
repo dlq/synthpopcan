@@ -34,7 +34,7 @@
             <h2>Choose a workflow</h2>
             <span>Browser local</span>
           </div>
-          <div class="workflow-list">
+          <div class="workflow-list primary-workflow-list">
             <button
               class="workflow-card selected"
               type="button"
@@ -55,6 +55,17 @@
               <span>
                 Load a prepared household/person model package and export
                 synthetic household and person rows.
+              </span>
+            </button>
+            <button
+              class="workflow-card"
+              type="button"
+              data-workflow-tab="small-area"
+            >
+              <strong>Prepare a small-area synthesis</strong>
+              <span>
+                Combine a linked model with geographic controls, estimate the
+                run size, and continue with an exact CLI command.
               </span>
             </button>
           </div>
@@ -79,125 +90,181 @@
             </p>
           </div>
 
-          <div class="setup-grid">
-            <section class="starter-panel" aria-label="Demo or template setup path">
-              <div class="path-label">Path 1</div>
+          <div class="workflow-list setup-tab-list">
+            <button
+              class="workflow-card selected"
+              type="button"
+              aria-label="Use a demo or make templates"
+              aria-controls="setup-demo-panel"
+              aria-pressed="true"
+              data-setup-path-tab="demo"
+            >
+              <strong>Use a demo or make templates</strong>
+              <span>
+                Load a tiny example immediately, or create blank CSVs to fill
+                yourself.
+              </span>
+            </button>
+            <button
+              class="workflow-card"
+              type="button"
+              aria-label="Generate from a StatCan table"
+              aria-controls="setup-statcan-panel"
+              aria-pressed="false"
+              data-setup-path-tab="statcan"
+            >
+              <strong>Generate from a StatCan table</strong>
+              <span>
+                Search by plain words, inspect a product ID, then generate
+                matching seed and control CSVs.
+              </span>
+            </button>
+          </div>
+
+          <section
+            id="setup-demo-panel"
+            class="starter-panel setup-path-panel active"
+            aria-label="Demo or template setup path"
+            data-setup-path-panel="demo"
+          >
+            <div class="starter-actions">
+              <button
+                id="use-demo-ipf"
+                class="secondary-action"
+                type="button"
+                title="Loads a tiny example seed CSV and control CSV so you can try IPF immediately."
+              >
+                Use demo age/sex files
+              </button>
+              <button
+                id="download-seed-template"
+                class="secondary-action"
+                type="button"
+                title="Creates a starter seed CSV with one row per example person or household category."
+              >
+                Download seed template
+              </button>
+              <button
+                id="download-controls-template"
+                class="secondary-action"
+                type="button"
+                title="Creates a starter control CSV with target totals for IPF to match."
+              >
+                Download controls template
+              </button>
+            </div>
+            <label class="wide-field">
+              <span
+                class="help-label"
+                data-help="Dimensions are the categories IPF matches, such as geography, age group, sex, or household size."
+              >Template dimensions</span>
+              <input id="starter-dimensions" value="age, sex">
+            </label>
+          </section>
+
+          <section
+            id="setup-statcan-panel"
+            class="starter-panel setup-path-panel"
+            aria-label="StatCan WDS setup path"
+            data-setup-path-panel="statcan"
+            hidden
+          >
+            <div class="recommended-source">
               <div>
-                <h3>Use a demo or make templates</h3>
-                <p>
-                  Load a tiny example immediately, or create blank CSVs to fill
-                  yourself.
-                </p>
+                <strong>Recommended starting table</strong>
+                <span>Population estimates on July 1, by age and gender.</span>
               </div>
-              <div class="starter-actions">
-                <button
-                  id="use-demo-ipf"
-                  class="secondary-action"
-                  type="button"
-                  title="Loads a tiny example seed CSV and control CSV so you can try IPF immediately."
-                >
-                  Use demo age/sex files
-                </button>
-                <button
-                  id="download-seed-template"
-                  class="secondary-action"
-                  type="button"
-                  title="Creates a starter seed CSV with one row per example person or household category."
-                >
-                  Download seed template
-                </button>
-                <button
-                  id="download-controls-template"
-                  class="secondary-action"
-                  type="button"
-                  title="Creates a starter control CSV with target totals for IPF to match."
-                >
-                  Download controls template
-                </button>
-              </div>
-              <label class="wide-field">
+              <button id="use-recommended-wds" class="secondary-action" type="button">
+                Use 17100005
+              </button>
+            </div>
+            <form id="wds-search-form" class="inline-form">
+              <label>
+                Search terms
+                <input id="wds-search-query" value="population estimates age gender">
+              </label>
+              <button class="secondary-action" type="submit">Search</button>
+            </form>
+            <div id="wds-search-result" class="result-box" aria-live="polite"></div>
+            <form id="wds-explain-form" class="inline-form">
+              <label>
                 <span
                   class="help-label"
-                  data-help="Dimensions are the categories IPF matches, such as geography, age group, sex, or household size."
-                >Template dimensions</span>
-                <input id="starter-dimensions" value="age, sex">
+                  data-help="A StatCan table identifier, also called a product ID. Search results can fill this for you."
+                >Product ID</span>
+                <input id="wds-product-id" placeholder="Example: 98100001">
               </label>
+              <button
+                class="secondary-action"
+                type="submit"
+                title="Reads StatCan metadata so you can see what dimensions the table contains."
+              >Inspect product</button>
+              <button
+                id="generate-from-product-id"
+                class="secondary-action"
+                type="button"
+                title="Loads the latest table snapshot so you can choose non-overlapping categories before generating IPF files."
+              >
+                Load categories
+              </button>
+            </form>
+            <div id="wds-metadata-result" class="result-box" aria-live="polite"></div>
+            <section
+              id="wds-refinement"
+              class="wds-refinement"
+              aria-label="Refine WDS table"
+              hidden
+            >
+              <div class="setup-heading">
+                <h4>Refine table</h4>
+                <p>Choose one coherent population slice before generating IPF files.</p>
+              </div>
+              <div id="wds-refinement-fields" class="form-grid"></div>
+              <div id="wds-selection-estimate" class="selection-estimate" aria-live="polite"></div>
+              <button id="apply-wds-selection" class="primary-action" type="button">
+                Generate selected IPF files
+              </button>
             </section>
-
-            <section class="starter-panel" aria-label="StatCan WDS setup path">
-              <div class="path-label">Path 2</div>
-              <div>
-                <h3>Generate from a StatCan table</h3>
-                <p>
-                  Search by plain words, inspect a product ID, then generate
-                  matching seed and control CSVs.
-                </p>
+            <details class="advanced-options">
+              <summary>Use a downloaded ZIP or advanced columns</summary>
+              <div class="advanced-options-body">
+                <div class="inline-form">
+                  <label>
+                    <span
+                      class="help-label"
+                      data-help="Use this only when you already have a downloaded StatCan WDS ZIP file."
+                    >Downloaded StatCan ZIP</span>
+                    <input id="wds-zip-file" type="file" accept=".zip,application/zip">
+                  </label>
+                  <button
+                    id="generate-from-downloaded-zip"
+                    class="secondary-action"
+                    type="button"
+                    title="Reads the selected ZIP locally so you can refine its categories before generating IPF files."
+                  >
+                    Load selected ZIP categories
+                  </button>
+                </div>
+                <div class="inline-form">
+                  <label>
+                    <span
+                      class="help-label"
+                      data-help="WDS means StatCan Web Data Service. WDS dimensions are the table columns to use as IPF categories."
+                    >WDS dimensions</span>
+                    <input id="wds-dimensions" placeholder="GEO, Age group, Sex">
+                  </label>
+                  <label>
+                    <span
+                      class="help-label"
+                      data-help="The numeric StatCan column containing the target values to match. Usually VALUE."
+                    >Count column</span>
+                    <input id="wds-count-column" value="VALUE">
+                  </label>
+                </div>
               </div>
-              <form id="wds-search-form" class="inline-form">
-                <label>
-                  Search terms
-                  <input id="wds-search-query" value="population age sex">
-                </label>
-                <button class="secondary-action" type="submit">Search</button>
-              </form>
-              <form id="wds-explain-form" class="inline-form">
-                <label>
-                  <span
-                    class="help-label"
-                    data-help="A StatCan table identifier, also called a product ID. Search results can fill this for you."
-                  >Product ID</span>
-                  <input id="wds-product-id" placeholder="Example: 98100001">
-                </label>
-                <button
-                  class="secondary-action"
-                  type="submit"
-                  title="Reads StatCan metadata so you can see what dimensions the table contains."
-                >Inspect product</button>
-                <button
-                  id="generate-from-product-id"
-                  class="secondary-action"
-                  type="button"
-                  title="Uses the local Python helper to fetch the StatCan table and fill the IPF CSV inputs."
-                >
-                  Generate from Product ID
-                </button>
-              </form>
-              <div class="inline-form">
-                <label>
-                  <span
-                    class="help-label"
-                    data-help="Use this only when you already have a downloaded StatCan WDS ZIP file."
-                  >Downloaded StatCan ZIP</span>
-                  <input id="wds-zip-file" type="file" accept=".zip,application/zip">
-                </label>
-                <button
-                  id="generate-from-downloaded-zip"
-                  class="secondary-action"
-                  type="button"
-                  title="Reads the selected ZIP locally and fills the IPF CSV inputs."
-                >
-                  Use selected ZIP
-                </button>
-              </div>
-              <div class="inline-form">
-                <label>
-                  <span
-                    class="help-label"
-                    data-help="WDS means StatCan Web Data Service. WDS dimensions are the table columns to use as IPF categories."
-                  >WDS dimensions</span>
-                  <input id="wds-dimensions" placeholder="GEO, Age group, Sex">
-                </label>
-                <label>
-                  <span
-                    class="help-label"
-                    data-help="The numeric StatCan column containing the target values to match. Usually VALUE."
-                  >Count column</span>
-                  <input id="wds-count-column" value="VALUE">
-                </label>
-              </div>
-              <div id="wds-result" class="result-box" aria-live="polite"></div>
-            </section>
-          </div>
+            </details>
+            <div id="wds-generated-result" class="result-box" aria-live="polite"></div>
+          </section>
         </section>
 
         <section class="workflow-card-section run-panel" aria-label="Run IPF">
@@ -214,14 +281,14 @@
                 class="help-label"
                 data-help="Seed rows are example records that contain the categories IPF can reweight."
               >Seed CSV</span>
-              <input id="ipf-seed-file" type="file" accept=".csv,text/csv" required>
+              <input id="ipf-seed-file" class="ipf-file-input" type="file" accept=".csv,text/csv" required>
             </label>
             <label>
               <span
                 class="help-label"
                 data-help="Control totals are the target margins IPF tries to match."
               >Normalized margin/control CSV</span>
-              <input id="ipf-controls-file" type="file" accept=".csv,text/csv" required>
+              <input id="ipf-controls-file" class="ipf-file-input" type="file" accept=".csv,text/csv" required>
             </label>
             <label>
               <span
@@ -233,12 +300,13 @@
             <label>
               <span
                 class="help-label"
-                data-help="Weights CSV is compact and recommended in the browser. Expanded rows CSV creates one row per synthetic record and can be very large."
+                data-help="Expanded records are easier to use as a population. Compact weights preserve the exact fitted values for weighted analysis."
               >Output</span>
-              <select id="ipf-output-kind">
-                <option value="weights">Weights CSV</option>
-                <option value="expanded">Expanded rows CSV</option>
+              <select id="ipf-output-kind" aria-describedby="ipf-output-hint">
+                <option value="expanded">Expanded synthetic records</option>
+                <option value="weights">Compact fitted weights</option>
               </select>
+              <small id="ipf-output-hint" class="field-hint"></small>
             </label>
             <label>
               <span
@@ -274,7 +342,7 @@
             <label>
               <span
                 class="help-label"
-                data-help="Premade models are served by the local backend. The demo is bundled; larger published models must be fetched with the CLI before browser use."
+                data-help="The demo is bundled. The local backend downloads and verifies larger published models when you first use them."
               >Premade model</span>
               <select id="premade-model">
                 <option value="">No premade model selected</option>
@@ -284,9 +352,20 @@
               id="load-premade-model"
               class="secondary-action"
               type="button"
+              disabled
             >
               Use premade model
             </button>
+          </div>
+          <div
+            id="model-download-status"
+            class="model-download-status"
+            role="status"
+            aria-live="polite"
+            hidden
+          >
+            <progress aria-label="Downloading premade model"></progress>
+            <span id="model-download-message">Downloading premade model...</span>
           </div>
           <div class="model-file-row">
             <label>
@@ -306,12 +385,15 @@
             </button>
           </div>
           <div id="model-inspect-result" class="result-box" aria-live="polite"></div>
+          <div id="model-ready-status" class="selection-estimate" role="status">
+            Choose and load a premade model, or inspect a JSON file, before generating.
+          </div>
           <form id="model-form" class="form-grid">
             <label>
               <span
                 class="help-label"
                 data-help="For a linked household/person package, this is the number of households. For a single model, this is the number of rows."
-              >Rows or households</span>
+              ><span id="model-row-label-text">Rows or households</span></span>
               <input id="model-rows" type="number" min="1" value="10" required>
             </label>
             <label>
@@ -327,10 +409,104 @@
                 data-help="Optional filters for model conditioning columns, written as name=value pairs such as geo=QC."
               >Conditions</span>
               <input id="model-conditions" placeholder="geo=QC, household_size=2">
+              <small id="model-conditions-hint" class="field-hint">
+                Available condition columns appear after the model is loaded.
+              </small>
             </label>
-            <button class="primary-action" type="submit">Generate rows</button>
+            <button id="generate-model" class="primary-action" type="submit" disabled>
+              Generate rows
+            </button>
           </form>
           <div id="model-result" class="result-box" aria-live="polite"></div>
+        </section>
+      </section>
+
+      <section class="workflow-panel" data-workflow-panel="small-area">
+        <div class="panel-heading">
+          <h2>Prepare a small-area synthesis</h2>
+          <span>Python-backed preflight</span>
+        </div>
+        <section class="model-setup" aria-label="Prepare a small-area synthesis">
+          <p class="panel-intro">
+            Choose a linked model and normalized geographic controls. The local
+            helper checks the planned scale; large output remains a CLI workflow.
+          </p>
+          <form id="small-area-form" class="form-grid">
+            <label>
+              <span
+                class="help-label"
+                data-help="A published linked household/person model. Downloadable models are fetched by the generated CLI commands when needed."
+              >Premade linked model</span>
+              <select id="small-area-premade-model">
+                <option value="">No premade model selected</option>
+              </select>
+            </label>
+            <label>
+              <span
+                class="help-label"
+                data-help="Use a local linked package JSON instead of a premade model ID."
+              >Or package JSON</span>
+              <input id="small-area-model-file" type="file" accept=".json,application/json">
+            </label>
+            <label>
+              <span
+                class="help-label"
+                data-help="Normalized household controls containing one target geography dimension and household-level margins."
+              >Household controls CSV</span>
+              <input id="small-area-controls-file" class="ipf-file-input" type="file" accept=".csv,text/csv" required>
+            </label>
+            <label>
+              <span
+                class="help-label"
+                data-help="Optional person-level controls used for joint linked calibration. They are included in the CLI command but not needed for the scale estimate."
+              >Person controls CSV</span>
+              <input id="small-area-person-controls-file" class="ipf-file-input" type="file" accept=".csv,text/csv">
+            </label>
+            <label>
+              <span
+                class="help-label"
+                data-help="The geography dimension in the controls, such as ct or ada."
+              >Geography dimension</span>
+              <input id="small-area-geo-dimension" value="ct" required>
+            </label>
+            <label>
+              <span
+                class="help-label"
+                data-help="The column written to generated household and person rows. Usually this matches the geography dimension."
+              >Output geography column</span>
+              <input id="small-area-geo-column" value="ct" required>
+            </label>
+            <label>
+              <span
+                class="help-label"
+                data-help="Number of candidate households generated from the model before calibration. This is not the final population count."
+              >Candidate households</span>
+              <input id="small-area-candidate-households" type="number" min="1" value="10000" required>
+            </label>
+            <label>
+              <span
+                class="help-label"
+                data-help="Optional candidate subset fitted for each target geography. Smaller pools make exploratory runs faster."
+              >Calibration pool size</span>
+              <input id="small-area-pool-size" type="number" min="1" placeholder="Use all candidates">
+            </label>
+            <label>
+              <span
+                class="help-label"
+                data-help="Used only to estimate person rows in the final linked output."
+              >Average persons per household</span>
+              <input id="small-area-average-persons" type="number" min="0" step="0.01" value="2.22">
+            </label>
+            <label>
+              <span
+                class="help-label"
+                data-help="Makes candidate generation reproducible."
+              >Random seed</span>
+              <input id="small-area-random-seed" type="number" value="13">
+            </label>
+            <button class="primary-action" type="submit">Estimate and prepare</button>
+          </form>
+          <div id="small-area-result" class="result-box" aria-live="polite"></div>
         </section>
       </section>
     </main>

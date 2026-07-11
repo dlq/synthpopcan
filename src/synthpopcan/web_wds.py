@@ -76,6 +76,20 @@ def generate_wds_seed_controls_from_zip_bytes(
         count_column=count_column,
     )
     seed_rows = _build_seed_rows(control_rows)
+    categories = {
+        dimension: list(
+            dict.fromkeys(row.get(dimension, "") for _, row in snapshot_rows)
+        )
+        for dimension in resolved_dimensions
+    }
+    unit_rows = [
+        {
+            **{dimension: row.get(dimension, "") for dimension in resolved_dimensions},
+            "unit": row.get("UOM", ""),
+        }
+        for _, row in snapshot_rows
+        if row.get(count_column, "") != ""
+    ]
     return {
         "csvMember": csv_member,
         "referencePeriod": reference_period,
@@ -83,6 +97,9 @@ def generate_wds_seed_controls_from_zip_bytes(
         "countColumn": count_column,
         "seedRows": len(seed_rows),
         "controlRows": len(control_rows),
+        "categories": categories,
+        "estimatedTotal": sum(float(row["count"]) for row in control_rows),
+        "unitRows": unit_rows,
         "seedCsv": _write_csv(seed_rows),
         "controlsCsv": _write_csv(control_rows),
     }

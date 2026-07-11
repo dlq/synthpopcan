@@ -21,9 +21,35 @@ from urllib.request import urlopen
 ProgressCallback = Callable[[int, int | None], None]
 
 _RELEASE_BASE_URL = "https://github.com/dlq/synthpopcan/releases/download/v0.2.1"
+_DEMO_CATALOGUE_METADATA = {
+    "census_vintage": "Not applicable",
+    "release_status": "publishable_candidate",
+    "release_version": "v0.4.0",
+    "privacy": "No raw rows or source identifiers.",
+    "privacy_review_status": "safe synthetic demo",
+    "generation_limits": "Small exploratory browser runs.",
+    "known_limitations": (
+        "Synthetic demonstration only; not representative of Canada."
+    ),
+}
+_PUMF_2016_CATALOGUE_METADATA = {
+    "census_vintage": "2016 Census",
+    "release_status": "publishable_candidate",
+    "release_version": "v0.2.1",
+    "privacy": "No raw rows or source identifiers.",
+    "privacy_review_status": "publishable candidate; human review still required",
+    "generation_limits": (
+        "Small exploratory browser runs; use the CLI for large outputs."
+    ),
+    "known_limitations": (
+        "Broad 2016 PUMF model; not calibrated to current or small-area controls. "
+        "Generated source codes require field metadata for interpretation."
+    ),
+}
 
 _MODEL_PACKAGES: dict[str, dict[str, Any]] = {
     "demo-linked-household-person": {
+        **_DEMO_CATALOGUE_METADATA,
         "filename": "demo-linked-household-person-package.json",
         "name": "Safe demo household/person package",
         "description": (
@@ -56,6 +82,7 @@ _MODEL_PACKAGES: dict[str, dict[str, Any]] = {
         },
         "safe_demo": False,
         "distribution": "download",
+        **_PUMF_2016_CATALOGUE_METADATA,
         "size_bytes": 1_009_496,
         "sha256": "94ff771884ead36b604d05c8e4043e36869da85c75aa1919f31adf21fd4aee97",
         "uncompressed_size_bytes": 64_234_759,
@@ -81,6 +108,7 @@ _MODEL_PACKAGES: dict[str, dict[str, Any]] = {
         },
         "safe_demo": False,
         "distribution": "download",
+        **_PUMF_2016_CATALOGUE_METADATA,
         "size_bytes": 1_770_789,
         "sha256": "1f03b9c5e72c5641f31159f0af3d4c3839e142445f17c81d3fd2f969c74a0628",
         "uncompressed_size_bytes": 122_079_409,
@@ -106,6 +134,7 @@ _MODEL_PACKAGES: dict[str, dict[str, Any]] = {
         },
         "safe_demo": False,
         "distribution": "download",
+        **_PUMF_2016_CATALOGUE_METADATA,
         "size_bytes": 3_005_146,
         "sha256": "7477a7161b8243aba5ef64c902a9db303290733edb5b2832210c1fd7075ff879",
         "uncompressed_size_bytes": 205_757_139,
@@ -131,6 +160,7 @@ _MODEL_PACKAGES: dict[str, dict[str, Any]] = {
         },
         "safe_demo": False,
         "distribution": "download",
+        **_PUMF_2016_CATALOGUE_METADATA,
         "size_bytes": 1_198_845,
         "sha256": "13b04e77c3aab726aaf1ef9164ec5ef1c2ed16d710f275f3b3dcfa09ca476f6a",
         "uncompressed_size_bytes": 75_781_376,
@@ -156,6 +186,7 @@ _MODEL_PACKAGES: dict[str, dict[str, Any]] = {
         },
         "safe_demo": False,
         "distribution": "download",
+        **_PUMF_2016_CATALOGUE_METADATA,
         "size_bytes": 1_008_748,
         "sha256": "da034db035a0ebc8d96cf012b3698fd6c14b648967389832446fe10c48b73ce8",
         "uncompressed_size_bytes": 63_448_287,
@@ -181,6 +212,7 @@ _MODEL_PACKAGES: dict[str, dict[str, Any]] = {
         },
         "safe_demo": False,
         "distribution": "download",
+        **_PUMF_2016_CATALOGUE_METADATA,
         "size_bytes": 1_478_757,
         "sha256": "157778bc2bd095d65b1fab91fdbcb0385ed5de76baad20abe82817211b0735c2",
         "uncompressed_size_bytes": 93_385_062,
@@ -206,6 +238,7 @@ _MODEL_PACKAGES: dict[str, dict[str, Any]] = {
         },
         "safe_demo": False,
         "distribution": "download",
+        **_PUMF_2016_CATALOGUE_METADATA,
         "size_bytes": 687_436,
         "sha256": "a92cbb27f0e149bd7b83da2055b43d3a4fa1e5bc1567a29208c335f10fba49c6",
         "uncompressed_size_bytes": 40_937_245,
@@ -231,6 +264,7 @@ _MODEL_PACKAGES: dict[str, dict[str, Any]] = {
         },
         "safe_demo": False,
         "distribution": "download",
+        **_PUMF_2016_CATALOGUE_METADATA,
         "size_bytes": 336_929,
         "sha256": "70ca5e7944ff135813d1aaff04f2f7c9a25f98bd3ecc27c069124aad784ffa6d",
         "uncompressed_size_bytes": 20_186_538,
@@ -256,6 +290,7 @@ _MODEL_PACKAGES: dict[str, dict[str, Any]] = {
         },
         "safe_demo": False,
         "distribution": "download",
+        **_PUMF_2016_CATALOGUE_METADATA,
         "size_bytes": 391_581,
         "sha256": "0ed93270044c97fbd2d6b8e6222192dc438e990f2c5f70dbeb1ed9ada51b7500",
         "uncompressed_size_bytes": 22_635_036,
@@ -281,6 +316,7 @@ _MODEL_PACKAGES: dict[str, dict[str, Any]] = {
         },
         "safe_demo": False,
         "distribution": "download",
+        **_PUMF_2016_CATALOGUE_METADATA,
         "size_bytes": 369_262,
         "sha256": "b600f19ffe7e257c4afbe618fb50d21a4ecadd2c498c14159c97f5179ee4d554",
         "uncompressed_size_bytes": 21_367_337,
@@ -306,6 +342,7 @@ _MODEL_PACKAGES: dict[str, dict[str, Any]] = {
         },
         "safe_demo": False,
         "distribution": "download",
+        **_PUMF_2016_CATALOGUE_METADATA,
         "size_bytes": 287_123,
         "sha256": "2b4430944d18d8161d22c2ce5dcfce0f6720aed4259197769971c62d3d320b70",
         "uncompressed_size_bytes": 17_458_623,
@@ -331,6 +368,7 @@ _MODEL_PACKAGES: dict[str, dict[str, Any]] = {
         },
         "safe_demo": False,
         "distribution": "download",
+        **_PUMF_2016_CATALOGUE_METADATA,
         "size_bytes": 244_276,
         "sha256": "f8212b336645225653b01f6976791efd7d58947bab4b95553978c62632686871",
         "uncompressed_size_bytes": 15_356_566,
@@ -356,6 +394,7 @@ _MODEL_PACKAGES: dict[str, dict[str, Any]] = {
         },
         "safe_demo": False,
         "distribution": "download",
+        **_PUMF_2016_CATALOGUE_METADATA,
         "size_bytes": 202_698,
         "sha256": "167b5bd5a0398d48ceb50f01ef715add4c7e4d61c62713348a00f01e436787f1",
         "uncompressed_size_bytes": 12_499_103,
@@ -381,6 +420,7 @@ _MODEL_PACKAGES: dict[str, dict[str, Any]] = {
         },
         "safe_demo": False,
         "distribution": "download",
+        **_PUMF_2016_CATALOGUE_METADATA,
         "size_bytes": 138_661,
         "sha256": "b552c09faca4ac1e51510c3464fd480ace6a50ed60eb77e739832acdff6393f7",
         "uncompressed_size_bytes": 8_537_569,
@@ -407,6 +447,7 @@ _MODEL_PACKAGES: dict[str, dict[str, Any]] = {
         },
         "safe_demo": False,
         "distribution": "download",
+        **_PUMF_2016_CATALOGUE_METADATA,
         "size_bytes": 4_486,
         "sha256": "60fedf9fedddc13848338b006a70efb04cef4f6aee300c4d2f3ffd6acf1f5bcb",
         "uncompressed_size_bytes": 65_948,
@@ -432,6 +473,7 @@ _MODEL_PACKAGES: dict[str, dict[str, Any]] = {
         },
         "safe_demo": False,
         "distribution": "download",
+        **_PUMF_2016_CATALOGUE_METADATA,
         "size_bytes": 8_286_186,
         "sha256": "2db0629d01ad91e050acfa956097ee48abb7ee07f2007a40df91786981127b04",
         "uncompressed_size_bytes": 531_314_980,
@@ -447,26 +489,35 @@ _MODEL_PACKAGES: dict[str, dict[str, Any]] = {
 def model_catalogue() -> list[dict[str, Any]]:
     """Return model packages known to SynthPopCan."""
 
-    return [
-        {
-            "id": model_id,
-            "name": str(metadata["name"]),
-            "description": str(metadata["description"]),
-            "kind": "linked_household_person",
-            "geography": str(metadata["geography"]),
-            "release_status": "publishable_candidate",
-            "provenance": str(metadata["provenance"]),
-            "privacy": "No raw rows or source identifiers.",
-            "conditions": list(metadata["conditions"]),  # type: ignore[arg-type]
-            "outputs": ["households.csv", "persons.csv"],
-            "default_generation": metadata["default_generation"],
-            "safe_demo": bool(metadata["safe_demo"]),
-            "distribution": str(metadata["distribution"]),
-            "installed": model_is_installed(model_id),
-            "size_bytes": metadata.get("size_bytes"),
-        }
-        for model_id, metadata in _MODEL_PACKAGES.items()
-    ]
+    return [model_catalogue_entry(model_id) for model_id in _MODEL_PACKAGES]
+
+
+def model_catalogue_entry(model_id: str) -> dict[str, Any]:
+    """Return public catalogue metadata for one registered model package."""
+
+    metadata = model_registry_entry(model_id)
+    return {
+        "id": model_id,
+        "name": str(metadata["name"]),
+        "description": str(metadata["description"]),
+        "kind": "linked_household_person",
+        "geography": str(metadata["geography"]),
+        "census_vintage": str(metadata["census_vintage"]),
+        "release_status": str(metadata["release_status"]),
+        "release_version": str(metadata["release_version"]),
+        "provenance": str(metadata["provenance"]),
+        "privacy": str(metadata["privacy"]),
+        "privacy_review_status": str(metadata["privacy_review_status"]),
+        "generation_limits": str(metadata["generation_limits"]),
+        "known_limitations": str(metadata["known_limitations"]),
+        "conditions": list(metadata["conditions"]),  # type: ignore[arg-type]
+        "outputs": ["households.csv", "persons.csv"],
+        "default_generation": metadata["default_generation"],
+        "safe_demo": bool(metadata["safe_demo"]),
+        "distribution": str(metadata["distribution"]),
+        "installed": model_is_installed(model_id),
+        "size_bytes": metadata.get("size_bytes"),
+    }
 
 
 def model_payload(model_id: str) -> dict[str, Any]:
@@ -483,6 +534,21 @@ def model_payload(model_id: str) -> dict[str, Any]:
     payload.setdefault("name", metadata["name"])
     payload.setdefault("description", metadata["description"])
     payload.setdefault("generation_defaults", metadata["default_generation"])
+    catalogue_entry = model_catalogue_entry(model_id)
+    payload.setdefault(
+        "catalogue_metadata",
+        {
+            key: catalogue_entry[key]
+            for key in (
+                "census_vintage",
+                "release_version",
+                "privacy_review_status",
+                "generation_limits",
+                "known_limitations",
+                "size_bytes",
+            )
+        },
+    )
     return payload
 
 

@@ -5,6 +5,7 @@
   "scripts": {
     "check:web": "biome check src/synthpopcan/web tests/web playwright.config.mjs",
     "format:web": "biome format --write src/synthpopcan/web tests/web",
+    "test:web": "node --test tests/web/*.test.mjs",
     "test:web:e2e": "playwright test"
   },
   "devDependencies": {

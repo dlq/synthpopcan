@@ -45,6 +45,11 @@ def test_model_catalogue_marks_large_models_downloadable(
     assert montreal["id"] == "montreal-cma-2016-all-fields"
     assert montreal["distribution"] == "download"
     assert montreal["installed"] is False
+    assert montreal["census_vintage"] == "2016 Census"
+    assert montreal["release_version"] == "v0.2.1"
+    assert "human review" in montreal["privacy_review_status"]
+    assert "small-area controls" in montreal["known_limitations"]
+    assert "CLI" in montreal["generation_limits"]
     assert "cache_path" not in montreal
 
 

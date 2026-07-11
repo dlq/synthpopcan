@@ -7,7 +7,8 @@ export function showWdsSearchResults(element, rows) {
     element.textContent = "No matching WDS tables found.";
     return;
   }
-  element.textContent = "Matching WDS tables. Select a result to fill Product ID.";
+  element.textContent =
+    "Results are ranked for population-count usefulness. Confirm the title, dimensions, and unit before generating files.";
   const list = document.createElement("div");
   list.className = "result-list";
   rows.forEach((row) => {
@@ -15,6 +16,7 @@ export function showWdsSearchResults(element, rows) {
     item.className = "result-item";
     item.type = "button";
     item.append(
+      suitabilityLabel(row.suitability),
       resultText(
         `${row.productId} · ${row.title}`,
         `${row.cansimId} · ${row.startDate} to ${row.endDate}`,
@@ -26,6 +28,18 @@ export function showWdsSearchResults(element, rows) {
     list.append(item);
   });
   element.append(list);
+}
+
+function suitabilityLabel(suitability) {
+  const label = document.createElement("span");
+  label.className = `result-suitability ${suitability ?? "review"}`;
+  label.textContent =
+    suitability === "population-count"
+      ? "Likely population count"
+      : suitability === "caution"
+        ? "Review measure and unit"
+        : "Inspect before use";
+  return label;
 }
 
 export function showWdsMetadata(element, summary) {
@@ -40,7 +54,7 @@ export function showWdsMetadata(element, summary) {
     resultItem("IPF note", summary.hint),
     resultItem(
       "Next",
-      "Use Generate from Product ID to fill the IPF inputs. Downloaded StatCan ZIP is only for tables you already have or for static deployments without the local helper.",
+      "Load categories, choose a non-overlapping population slice, then generate the IPF files. Downloaded StatCan ZIP is only for tables you already have or for static deployments without the local helper.",
     ),
   );
   element.append(list);
@@ -65,8 +79,14 @@ export function showModelSummary(element, summary, sourceLabel = null) {
   provenance.append(
     resultItem("Source", summary.source),
     resultItem("Training data", summary.trainingData),
+    resultItem("Census vintage", summary.censusVintage),
+    resultItem("Model asset release", summary.assetRelease),
+    resultItem("Model size", summary.modelSize),
     resultItem("Privacy", summary.privacyDetails),
+    resultItem("Privacy review status", summary.privacyReview),
     resultItem("Default generation", defaultGenerationText(summary)),
+    resultItem("Generation guidance", summary.generationLimits),
+    resultItem("Known limitations", summary.knownLimitations),
   );
   element.append(provenance);
   if (summary.warnings.length > 0) {

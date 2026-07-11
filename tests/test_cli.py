@@ -11,7 +11,6 @@ from click import ClickException
 
 from synthpopcan.cli import (
     _format_model_availability,
-    _format_model_catalogue_summary,
     main,
     resolve_data_root,
 )
@@ -101,6 +100,31 @@ def test_cli_models_list_marks_downloadable_models(
     quebec = models["quebec-2016-all-fields"]
     assert quebec["distribution"] == "download"
     assert quebec["installed"] is False
+
+
+def test_cli_models_list_table_stays_compact(capsys) -> None:
+    assert main(["models", "list"]) == 0
+
+    output = capsys.readouterr().out
+    assert "Package ID" in output
+    assert "Geography" in output
+    assert "Known limitations" not in output
+    assert len(output.splitlines()) < 100
+
+
+def test_cli_models_show_reports_detailed_metadata(capsys) -> None:
+    assert main(["models", "show", "demo-linked-household-person"]) == 0
+
+    output = capsys.readouterr().out
+    assert "Census vintage" in output
+    assert "Asset release" in output
+    assert "v0.4.0" in output
+    assert "Known limitations" in output
+
+
+def test_cli_models_show_rejects_unknown_id() -> None:
+    with pytest.raises(ClickException, match="unknown model package"):
+        main(["models", "show", "missing-model"])
 
 
 def test_cli_models_fetch_uses_model_cache(monkeypatch, tmp_path, capsys) -> None:
@@ -697,43 +721,6 @@ def test_format_model_availability_not_installed() -> None:
         {"distribution": "download", "installed": False}
     )
     assert "Download with" in result
-
-
-def test_format_model_catalogue_summary_minimal() -> None:
-    result = _format_model_catalogue_summary({"name": "My Model"})
-    assert "My Model" in result
-
-
-def test_format_model_catalogue_summary_with_size_bytes() -> None:
-    result = _format_model_catalogue_summary({"name": "Model", "size_bytes": 1048576})
-    assert "MB" in result
-
-
-def test_format_model_catalogue_summary_with_default_generation_hh_and_conditions() -> (
-    None
-):
-    result = _format_model_catalogue_summary(
-        {
-            "name": "Model",
-            "default_generation": {"households": 1000, "conditions": "age=young"},
-        }
-    )
-    assert "Default:" in result
-    assert "1000 households" in result
-    assert "age=young" in result
-
-
-def test_format_model_catalogue_summary_with_default_generation_households_only() -> (
-    None
-):
-    result = _format_model_catalogue_summary(
-        {
-            "name": "Model",
-            "default_generation": {"households": 500},
-        }
-    )
-    assert "Default:" in result
-    assert "500 households" in result
 
 
 def test_cli_validate_linked_output_oserror(tmp_path) -> None:

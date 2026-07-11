@@ -5,7 +5,7 @@ from __future__ import annotations
 import csv
 import json
 from dataclasses import dataclass
-from io import TextIOWrapper
+from io import StringIO, TextIOWrapper
 from pathlib import Path
 from typing import Any
 from zipfile import BadZipFile, ZipFile
@@ -18,16 +18,19 @@ __all__ = [
     "ControlCell",
     "ControlMargin",
     "ControlTable",
+    "WdsSelection",
     "build_wds_category_mapping_template",
     "census_profile_template",
     "inspect_census_profile_characteristics",
     "inspect_wds_zip",
+    "parse_control_table",
     "read_category_mapping",
     "read_census_profile_control_table",
     "read_census_profile_mapping",
     "read_control_margins",
     "read_control_table",
     "read_wds_control_table",
+    "read_wds_selection",
     "write_control_table",
 ]
 
@@ -37,6 +40,14 @@ class _MarginGroup:
     dimensions: tuple[str, ...]
     cells: list[ControlCell]
     seen_keys: set[tuple[str, ...]]
+
+
+@dataclass(frozen=True)
+class WdsSelection:
+    """Category filters for one reproducible WDS table snapshot."""
+
+    reference_period: str | None
+    categories: dict[str, tuple[str, ...]]
 
 
 @dataclass(frozen=True)
@@ -184,50 +195,57 @@ def read_control_table(path: Path) -> ControlTable:
         dimensions, or a target cell is duplicated.
     """
 
+    with path.open(newline="") as handle:
+        return _read_control_table(handle)
+
+
+def parse_control_table(text: str) -> ControlTable:
+    """Parse normalized controls CSV text into a :class:`ControlTable`."""
+
+    return _read_control_table(StringIO(text))
+
+
+def _read_control_table(handle: Any) -> ControlTable:
     grouped: dict[str, _MarginGroup] = {}
     used_dimensions: set[str] = set()
-    with path.open(newline="") as handle:
-        reader = csv.DictReader(handle)
-        fieldnames = reader.fieldnames or []
-        for row_number, row in enumerate(reader, start=2):
-            dimensions = _parse_dimensions(row.get("dimensions", ""))
-            if not dimensions:
-                raise ValueError(f"controls row {row_number} has no dimensions")
-            try:
-                count = float(row["count"])
-            except KeyError as exc:
-                raise ValueError("controls CSV requires a count column") from exc
-            except ValueError as exc:
-                raise ValueError(
-                    f"controls row {row_number} has invalid count"
-                ) from exc
+    reader = csv.DictReader(handle)
+    fieldnames = reader.fieldnames or []
+    for row_number, row in enumerate(reader, start=2):
+        dimensions = _parse_dimensions(row.get("dimensions", ""))
+        if not dimensions:
+            raise ValueError(f"controls row {row_number} has no dimensions")
+        try:
+            count = float(row["count"])
+        except KeyError as exc:
+            raise ValueError("controls CSV requires a count column") from exc
+        except ValueError as exc:
+            raise ValueError(f"controls row {row_number} has invalid count") from exc
 
-            margin_label = row.get("margin", "").strip()
-            margin_key = margin_label or "|".join(dimensions)
-            group = grouped.setdefault(margin_key, _MarginGroup(dimensions, [], set()))
-            if group.dimensions != dimensions:
-                raise ValueError(
-                    f"controls row {row_number} margin {margin_label!r} mixes "
-                    f"dimensions {group.dimensions!r} and {dimensions!r}"
-                )
-
-            key = tuple(row.get(dimension, "") for dimension in dimensions)
-            if key in group.seen_keys:
-                raise ValueError(
-                    f"controls row {row_number} duplicates target {key!r} "
-                    f"for dimensions {dimensions!r}"
-                )
-            group.seen_keys.add(key)
-            for dimension in dimensions:
-                used_dimensions.add(dimension)
-            group.cells.append(
-                ControlCell(
-                    categories={
-                        dimension: row.get(dimension, "") for dimension in dimensions
-                    },
-                    count=count,
-                )
+        margin_label = row.get("margin", "").strip()
+        margin_key = margin_label or "|".join(dimensions)
+        group = grouped.setdefault(margin_key, _MarginGroup(dimensions, [], set()))
+        if group.dimensions != dimensions:
+            raise ValueError(
+                f"controls row {row_number} margin {margin_label!r} mixes "
+                f"dimensions {group.dimensions!r} and {dimensions!r}"
             )
+
+        key = tuple(row.get(dimension, "") for dimension in dimensions)
+        if key in group.seen_keys:
+            raise ValueError(
+                f"controls row {row_number} duplicates target {key!r} "
+                f"for dimensions {dimensions!r}"
+            )
+        group.seen_keys.add(key)
+        used_dimensions.update(dimensions)
+        group.cells.append(
+            ControlCell(
+                categories={
+                    dimension: row.get(dimension, "") for dimension in dimensions
+                },
+                count=count,
+            )
+        )
 
     margins = tuple(
         ControlMargin(name, group.dimensions, tuple(group.cells))
@@ -258,6 +276,7 @@ def read_wds_control_table(
     count_column: str,
     margin_name: str,
     category_mapping: CategoryMapping | None = None,
+    selection: WdsSelection | None = None,
 ) -> ControlTable:
     """Read a Statistics Canada WDS ZIP as a normalized control table.
 
@@ -284,9 +303,22 @@ def read_wds_control_table(
         with archive.open(csv_name) as raw_handle:
             handle = TextIOWrapper(raw_handle, encoding="utf-8-sig", newline="")
             reader = csv.DictReader(handle)
+            selection_columns = set(selection.categories) if selection else set()
+            if selection and selection.reference_period is not None:
+                selection_columns.add("REF_DATE")
+            missing_selection_columns = selection_columns.difference(
+                reader.fieldnames or ()
+            )
+            if missing_selection_columns:
+                raise ValueError(
+                    "WDS selection refers to missing columns: "
+                    f"{', '.join(sorted(missing_selection_columns))}"
+                )
             cells: list[ControlCell] = []
             seen_keys: set[tuple[str, ...]] = set()
             for row_number, row in enumerate(reader, start=2):
+                if selection and not _wds_row_matches_selection(row, selection):
+                    continue
                 missing = [
                     column
                     for column in (*dimensions, count_column)
@@ -322,9 +354,51 @@ def read_wds_control_table(
                     )
                 )
 
+    if not cells:
+        raise ValueError("WDS selection matched no rows with numeric counts")
+
     return ControlTable(
         margins=(ControlMargin(margin_name, dimensions, tuple(cells)),),
         dimensions=dimensions,
+    )
+
+
+def read_wds_selection(path: Path) -> WdsSelection:
+    """Read a versioned WDS category-selection manifest."""
+
+    payload = json.loads(path.read_text())
+    if not isinstance(payload, dict):
+        raise ValueError("WDS selection must be a JSON object")
+    if payload.get("schema_version") != "synthpopcan-wds-selection-v1":
+        raise ValueError(
+            "WDS selection schema_version must be synthpopcan-wds-selection-v1"
+        )
+    reference_period = payload.get("reference_period")
+    if reference_period is not None and not isinstance(reference_period, str):
+        raise ValueError("WDS selection reference_period must be a string")
+    raw_categories = payload.get("categories")
+    if not isinstance(raw_categories, dict) or not raw_categories:
+        raise ValueError("WDS selection categories must be a non-empty object")
+    categories: dict[str, tuple[str, ...]] = {}
+    for column, raw_values in raw_categories.items():
+        if not isinstance(column, str) or not isinstance(raw_values, list):
+            raise ValueError("WDS selection categories must map columns to arrays")
+        values = tuple(value for value in raw_values if isinstance(value, str))
+        if len(values) != len(raw_values) or not values:
+            raise ValueError("WDS selection category arrays must contain strings")
+        categories[column] = values
+    return WdsSelection(reference_period=reference_period, categories=categories)
+
+
+def _wds_row_matches_selection(row: dict[str, str], selection: WdsSelection) -> bool:
+    if (
+        selection.reference_period is not None
+        and row.get("REF_DATE") != selection.reference_period
+    ):
+        return False
+    return all(
+        row.get(column) in allowed_values
+        for column, allowed_values in selection.categories.items()
     )
 
 

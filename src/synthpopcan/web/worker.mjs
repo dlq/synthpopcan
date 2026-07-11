@@ -47,7 +47,7 @@ function runIpfJob(job) {
   );
   if (job.outputKind === "expanded" && expandedRowCount > job.maxExpandedRows) {
     throw new Error(
-      `Expanded rows would create about ${formatNumber(expandedRowCount)} records. Use Weights CSV for browser runs, or run the CLI when you really need a full expanded file.`,
+      `Expanded output would create about ${formatNumber(expandedRowCount)} records, above the ${formatNumber(job.maxExpandedRows)}-record browser limit. No file was created. Choose Compact fitted weights, or run the CLI when you need the full expanded population.`,
     );
   }
   const outputRows =

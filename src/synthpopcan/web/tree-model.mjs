@@ -25,6 +25,7 @@ export function packageModels(packagePayload) {
 }
 
 export function summarizeModelPayload(payload) {
+  const catalogue = payload.catalogue_metadata ?? {};
   if (payload.schema_version === "synthpopcan-linked-tree-package-v1") {
     const { householdModel, personModel, householdSizeColumn } = packageModels(payload);
     return {
@@ -39,6 +40,12 @@ export function summarizeModelPayload(payload) {
         "training_data",
         "Training data not listed",
       ),
+      censusVintage: String(catalogue.census_vintage ?? "not listed"),
+      assetRelease: String(catalogue.release_version ?? "not listed"),
+      privacyReview: String(catalogue.privacy_review_status ?? "not listed"),
+      generationLimits: String(catalogue.generation_limits ?? "not listed"),
+      knownLimitations: String(catalogue.known_limitations ?? "not listed"),
+      modelSize: modelSizeText(catalogue.size_bytes),
       generationDefault: generationDefault(payload, householdModel),
       warnings: modelWarnings(payload),
       rowsLabel: "Households to generate",
@@ -65,6 +72,12 @@ export function summarizeModelPayload(payload) {
       "training_data",
       "Training data not listed",
     ),
+    censusVintage: String(catalogue.census_vintage ?? "not listed"),
+    assetRelease: String(catalogue.release_version ?? "not listed"),
+    privacyReview: String(catalogue.privacy_review_status ?? "not listed"),
+    generationLimits: String(catalogue.generation_limits ?? "not listed"),
+    knownLimitations: String(catalogue.known_limitations ?? "not listed"),
+    modelSize: modelSizeText(catalogue.size_bytes),
     generationDefault: generationDefault(payload, model),
     warnings: modelWarnings(model),
     rowsLabel: "Rows to generate",
@@ -78,6 +91,14 @@ export function summarizeModelPayload(payload) {
     ],
     conditions: model.spec?.conditioning_columns ?? [],
   };
+}
+
+function modelSizeText(value) {
+  const bytes = Number(value);
+  if (!Number.isFinite(bytes) || bytes <= 0) return "not listed";
+  return bytes < 1024 * 1024
+    ? `${Math.ceil(bytes / 1024)} KB compressed`
+    : `${(bytes / (1024 * 1024)).toFixed(1)} MB compressed`;
 }
 
 export function generateTreeRows(

@@ -77,6 +77,12 @@ contains before normalizing:
 synthpopcan controls wds inspect data/raw/statcan/wds/98100001-eng.zip
 ```
 
+General-purpose tables often mix national and provincial totals, aggregate and
+detailed gender categories, or several overlapping age classifications. Choose
+one coherent slice before treating `VALUE` as a population count. The local web
+app can create a reproducible `synthpopcan-wds-selection.json`; pass that file
+to `controls from-wds --selection` when continuing in the CLI.
+
 The Census Profile workflow is simpler — there is no search step, just choose
 the geography level and year:
 

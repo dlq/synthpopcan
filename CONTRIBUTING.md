@@ -20,12 +20,13 @@ npm ci
 Run the normal checks before opening a pull request:
 
 ```bash
-uv run ruff check src tests scripts
-uv run ruff format --check src tests scripts
-uv run pytest
-uv run sphinx-build -W -b html docs docs/_build/html
-npm run check:web
+./scripts/check.sh
 ```
+
+This runs Python linting, formatting, type checks, tests, a warning-clean docs
+build, web formatting/linting, JavaScript unit tests, and the Playwright browser
+scenarios. Install the Playwright browser once with `npx playwright install
+chromium` if it is not already available.
 
 ## Module Boundaries
 

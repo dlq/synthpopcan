@@ -4,6 +4,41 @@ All notable public changes to SynthPopCan are tracked here.
 
 ## Unreleased
 
+## 0.4.0 - 2026-07-10
+
+Model catalogue metadata, safer guided browser workflows, and small-area
+preparation with reproducible CLI handoff.
+
+- Added a third local web-app workflow for preparing linked small-area
+  synthesis. It uses the shared Python estimator to report geography, household,
+  person, output-row, and calibration-pool scale before producing exact
+  `geo estimate-run` and `geo synthesize-from-package` commands.
+- Made `geo synthesize-from-package` accept registered premade model IDs as well
+  as local linked-package JSON paths.
+- Added Census vintage, asset release, privacy-review status, compressed size,
+  generation guidance, and known limitations to prepared-model catalogue data,
+  CLI listings, and web inspection.
+- Let the local web app automatically download and verify published model
+  packages, with a visible download indicator and generation controls disabled
+  until a model is ready.
+- Added guided WDS category refinement, safer search ranking and warning labels,
+  a recommended population table, reproducible selection manifests, and
+  category-filtering CLI follow-ups.
+- Made expanded synthetic records the approachable IPF default, highlighted
+  prepared inputs, improved result explanations, and added commented CLI
+  continuations to completed browser workflows.
+- Added `SCN-WEB-003` and Python HTTP-adapter tests for successful and invalid
+  small-area preflight requests.
+- Made small-area CLI handoffs detect Census `household_size_group` controls and
+  add the required candidate-grouping options automatically.
+- Kept `models list` compact and added `models show MODEL_ID` for detailed
+  provenance, privacy, release, size, generation, and limitation metadata.
+- Split the browser entry point into scoped IPF/WDS, prepared-model, and
+  small-area controllers with independently tested command builders and shared
+  form and HTTP utilities.
+- Aligned local, CI, and release verification around Python type checks,
+  JavaScript unit tests, and Playwright scenarios.
+
 ## 0.3.2 - 2026-07-10
 
 Linked-person calibration, diagnostics, performance guidance, and end-to-end

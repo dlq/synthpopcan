@@ -55,11 +55,17 @@ def test_webapp_assets_include_index() -> None:
     assert root.is_dir()
     assert (root / "index.html").is_file()
     assert (root / "app.mjs").is_file()
+    assert (root / "cli-commands.mjs").is_file()
     assert (root / "csv.mjs").is_file()
+    assert (root / "form-utils.mjs").is_file()
+    assert (root / "http.mjs").is_file()
     assert (root / "ipf.mjs").is_file()
+    assert (root / "ipf-workflow.mjs").is_file()
+    assert (root / "model-workflow.mjs").is_file()
     assert (root / "preview.mjs").is_file()
     assert (root / "tree-model.mjs").is_file()
     assert (root / "starter-files.mjs").is_file()
+    assert (root / "small-area-workflow.mjs").is_file()
     assert (root / "statcan.mjs").is_file()
     assert (root / "wds-normalize.mjs").is_file()
     assert (root / "zip.mjs").is_file()
@@ -206,6 +212,34 @@ def test_webapp_reports_download_required_for_large_model(
         thread.join(timeout=2)
 
 
+def test_webapp_fetches_and_returns_model_package(monkeypatch) -> None:
+    fetched: list[str] = []
+    package = {
+        "schema_version": "synthpopcan-linked-tree-package-v1",
+        "name": "Downloaded test package",
+    }
+    monkeypatch.setattr("synthpopcan.webapp.fetch_model_package", fetched.append)
+    monkeypatch.setattr("synthpopcan.webapp.model_payload", lambda model_id: package)
+    server = build_webapp_server("127.0.0.1", 0)
+    thread = Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    try:
+        request = Request(
+            f"{webapp_url(server)}api/models/downloadable-test/fetch",
+            data=b"",
+            method="POST",
+        )
+        with urlopen(request, timeout=2) as response:
+            payload = json.loads(response.read().decode("utf-8"))
+
+        assert fetched == ["downloadable-test"]
+        assert payload == {"model": package}
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=2)
+
+
 def test_webapp_wds_seed_controls_api_uses_local_helper(monkeypatch) -> None:
     zip_bytes = b"fake-zip"
 
@@ -290,6 +324,74 @@ def test_webapp_wds_seed_controls_api_reports_bad_requests(monkeypatch) -> None:
         thread.join(timeout=2)
 
 
+def test_webapp_small_area_estimate_uses_shared_python_workflow() -> None:
+    server = build_webapp_server("127.0.0.1", 0)
+    thread = Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    try:
+        request = Request(
+            f"{webapp_url(server)}api/small-area/estimate",
+            data=json.dumps(
+                {
+                    "controlsCsv": (
+                        "margin,dimensions,tract,household_size,count\n"
+                        'size,"tract,household_size",001,1,12\n'
+                        'size,"tract,household_size",002,1,8\n'
+                    ),
+                    "geographyDimension": "tract",
+                    "candidateHouseholds": 100,
+                    "poolSize": 50,
+                    "averagePersonsPerHousehold": 2.0,
+                }
+            ).encode("utf-8"),
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        with urlopen(request, timeout=2) as response:
+            payload = json.loads(response.read().decode("utf-8"))
+
+        estimate = payload["estimate"]
+        assert estimate["target_geographies"] == 2
+        assert estimate["target_households"] == 20
+        assert estimate["estimated_persons"] == 40
+        assert estimate["calibration_pool_size"] == 50
+        assert estimate["recommended_surface"] == "web_app_ok"
+        assert payload["controlDimensions"] == ["tract", "household_size"]
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=2)
+
+
+def test_webapp_small_area_estimate_reports_invalid_controls() -> None:
+    server = build_webapp_server("127.0.0.1", 0)
+    thread = Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    try:
+        request = Request(
+            f"{webapp_url(server)}api/small-area/estimate",
+            data=json.dumps(
+                {
+                    "controlsCsv": "margin,dimensions,count\nsize,,10\n",
+                    "geographyDimension": "tract",
+                    "candidateHouseholds": 100,
+                }
+            ).encode("utf-8"),
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        with pytest.raises(HTTPError) as exc_info:
+            urlopen(request, timeout=2)
+
+        assert exc_info.value.code == 400
+        payload = json.loads(exc_info.value.read().decode("utf-8"))
+        assert "has no dimensions" in payload["error"]
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=2)
+
+
 def test_webapp_generates_wds_seed_controls_from_statcan_zip_shape() -> None:
     zip_bytes = build_wds_zip(
         {
@@ -316,6 +418,15 @@ def test_webapp_generates_wds_seed_controls_from_statcan_zip_shape() -> None:
     assert generated["dimensions"] == ["GEO", "Sex"]
     assert generated["seedRows"] == 2
     assert generated["controlRows"] == 2
+    assert generated["categories"] == {
+        "GEO": ["Canada"],
+        "Sex": ["Female", "Male"],
+    }
+    assert generated["estimatedTotal"] == 222
+    assert generated["unitRows"] == [
+        {"GEO": "Canada", "Sex": "Female", "unit": ""},
+        {"GEO": "Canada", "Sex": "Male", "unit": ""},
+    ]
     assert read_csv_text(str(generated["controlsCsv"])) == [
         {
             "margin": "wds",
@@ -480,6 +591,9 @@ def test_webapp_demo_model_catalogue_serves_safe_linked_package() -> None:
     assert model["release_status"] == "publishable_candidate"
     assert model["provenance"] == "Synthetic toy rows only; not Census microdata."
     assert model["privacy"] == "No raw rows or source identifiers."
+    assert model["census_vintage"] == "Not applicable"
+    assert model["release_version"] == "v0.4.0"
+    assert model["privacy_review_status"] == "safe synthetic demo"
     assert model["conditions"] == ["geo"]
     assert model["outputs"] == ["households.csv", "persons.csv"]
     assert model["default_generation"] == {
@@ -513,6 +627,9 @@ def test_webapp_demo_model_catalogue_serves_safe_linked_package() -> None:
         "households": 10,
         "conditions": "geo=Demo North",
     }
+    assert payload["catalogue_metadata"]["known_limitations"].startswith(  # type: ignore[index]
+        "Synthetic demonstration"
+    )
     assert set(payload["models"]) == {"household", "person"}  # type: ignore[arg-type]
 
 

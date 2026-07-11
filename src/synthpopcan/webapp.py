@@ -14,7 +14,9 @@ from pathlib import Path
 from typing import Any, Protocol
 from urllib.parse import urlparse
 
-from synthpopcan.models import model_catalogue, model_payload
+from synthpopcan.controls import parse_control_table
+from synthpopcan.models import fetch_model_package, model_catalogue, model_payload
+from synthpopcan.small_area_synthesis import estimate_small_area_run
 from synthpopcan.statcan import normalize_product_id
 from synthpopcan.web_wds import (
     fetch_wds_zip_bytes,
@@ -54,8 +56,15 @@ class _SynthPopCanWebHandler(SimpleHTTPRequestHandler):
         super().do_GET()
 
     def do_POST(self) -> None:  # noqa: N802
-        if urlparse(self.path).path == "/api/wds/seed-controls":
+        path = urlparse(self.path).path
+        if path == "/api/wds/seed-controls":
             self._handle_wds_seed_controls()
+            return
+        if path == "/api/small-area/estimate":
+            self._handle_small_area_estimate()
+            return
+        if path.startswith("/api/models/") and path.endswith("/fetch"):
+            self._handle_model_fetch(path.split("/")[-2])
             return
         self.send_error(HTTPStatus.NOT_FOUND)
 
@@ -66,6 +75,15 @@ class _SynthPopCanWebHandler(SimpleHTTPRequestHandler):
             self.send_error(HTTPStatus.NOT_FOUND, "Unknown model")
         except FileNotFoundError as exc:
             self._send_json({"error": str(exc)}, status=HTTPStatus.CONFLICT)
+
+    def _handle_model_fetch(self, model_id: str) -> None:
+        try:
+            fetch_model_package(model_id)
+            self._send_json({"model": model_payload(model_id)})
+        except KeyError:
+            self.send_error(HTTPStatus.NOT_FOUND, "Unknown model")
+        except (OSError, ValueError) as exc:
+            self._send_json({"error": str(exc)}, status=HTTPStatus.BAD_GATEWAY)
 
     def _handle_wds_seed_controls(self) -> None:
         try:
@@ -87,6 +105,33 @@ class _SynthPopCanWebHandler(SimpleHTTPRequestHandler):
         except Exception as exc:  # noqa: BLE001
             self._send_json({"error": str(exc)}, status=HTTPStatus.BAD_REQUEST)
 
+    def _handle_small_area_estimate(self) -> None:
+        try:
+            payload = self._read_json_body()
+            controls = parse_control_table(str(payload.get("controlsCsv", "")))
+            if not controls.margins:
+                raise ValueError("controls CSV has no control rows")
+            geography_dimension = str(payload.get("geographyDimension", "")).strip()
+            if not geography_dimension:
+                raise ValueError("geography dimension is required")
+            estimate = estimate_small_area_run(
+                controls,
+                geography_dimension=geography_dimension,
+                candidate_households=int(payload.get("candidateHouseholds", 0)),
+                pool_size=_optional_int(payload.get("poolSize")),
+                average_persons_per_household=float(
+                    payload.get("averagePersonsPerHousehold", 2.22)
+                ),
+            )
+            self._send_json(
+                {
+                    "estimate": estimate,
+                    "controlDimensions": list(controls.dimensions),
+                }
+            )
+        except (TypeError, ValueError) as exc:
+            self._send_json({"error": str(exc)}, status=HTTPStatus.BAD_REQUEST)
+
     def _read_json_body(self) -> dict[str, Any]:
         length = int(self.headers.get("Content-Length", "0"))
         if length <= 0:
@@ -102,6 +147,12 @@ class _SynthPopCanWebHandler(SimpleHTTPRequestHandler):
         self.send_header("Content-Length", str(len(body)))
         self.end_headers()
         self.wfile.write(body)
+
+
+def _optional_int(value: object) -> int | None:
+    if value in {None, ""}:
+        return None
+    return int(value)  # type: ignore[arg-type]
 
 
 def build_webapp_server(host: str, port: int) -> ThreadingHTTPServer:

@@ -16,7 +16,7 @@ Current codebase status, 2026-07-10:
 - The active roadmap is now `PLANS.md`; this file is the research and design
   notes companion.
 - The Python library, Click CLI, local web app, Sphinx docs, and fixture tests
-  are implemented and at v0.3.2.
+  are implemented and prepared for v0.4.0.
 - IPF from normalized controls, StatCan WDS source discovery/normalization,
   microdata adapters, linked household/person model generation, validation,
   prepared-model web generation, and small-area linked synthesis all have
@@ -28,6 +28,9 @@ Current codebase status, 2026-07-10:
 - Small-area fitting can optionally refine household weights against linked
   person controls while preserving whole-household assignment, with diagnostics
   that separate fractional fit from integerized residuals.
+- The local web app now guides IPF, prepared-model generation, and small-area
+  preflight. Large small-area execution remains CLI-first until the durable job
+  runtime planned for 0.5.x exists.
 - The older phase sketch near the end of this file should be read as research
   background, not the live implementation checklist.
 

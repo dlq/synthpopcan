@@ -58,6 +58,7 @@ from synthpopcan.controls import (
     read_control_margins,
     read_control_table,
     read_wds_control_table,
+    read_wds_selection,
     write_control_table,
 )
 from synthpopcan.localdata import inspect_local_data_layout
@@ -65,6 +66,7 @@ from synthpopcan.models import (
     fetch_model_package,
     model_cache_path,
     model_catalogue,
+    model_catalogue_entry,
     remove_cached_model,
 )
 from synthpopcan.sources import (
@@ -132,14 +134,44 @@ def list_models(output_format: str) -> None:
         return
     table = make_table(title="Model Packages")
     table.add_column("Package ID")
+    table.add_column("Geography")
+    table.add_column("Vintage")
+    table.add_column("Size")
     table.add_column("Availability")
-    table.add_column("Summary")
     for model in catalogue["models"]:
         table.add_row(
             str(model["id"]),
+            str(model["geography"]),
+            str(model["census_vintage"]),
+            _format_model_size(model),
             _format_model_availability(model),
-            _format_model_catalogue_summary(model),
         )
+    print_table(table)
+
+
+@models.command("show")
+@click.argument("model_id")
+@click.option(
+    "--format",
+    "output_format",
+    default="table",
+    type=click.Choice(["json", "table"]),
+    show_default=True,
+)
+def show_model(model_id: str, output_format: str) -> None:
+    """Show provenance, privacy, size, and generation details for one model."""
+    try:
+        model = model_catalogue_entry(model_id)
+    except KeyError as exc:
+        raise click.ClickException(f"unknown model package: {model_id}") from exc
+    if output_format == "json":
+        write_output(model, "json")
+        return
+    table = make_table(title=str(model["name"]))
+    table.add_column("Field")
+    table.add_column("Value")
+    for field, value in _model_detail_rows(model):
+        table.add_row(field, value)
     print_table(table)
 
 
@@ -366,25 +398,27 @@ def _format_model_availability(model: dict[str, Any]) -> str:
     return "Download with `synthpopcan models fetch`"
 
 
-def _format_model_catalogue_summary(model: dict[str, Any]) -> str:
-    parts = [
-        str(model.get("name", "")),
-        f"Geography: {model.get('geography', '')}",
-        f"Status: {model.get('release_status', '')}",
-    ]
+def _format_model_size(model: dict[str, Any]) -> str:
     size = model.get("size_bytes")
     if isinstance(size, int):
-        parts.append(f"Download: {size / (1024 * 1024):.1f} MB")
-    default_generation = model.get("default_generation")
-    if isinstance(default_generation, dict):
-        households = default_generation.get("households")
-        conditions = default_generation.get("conditions")
-        if households:
-            default = f"{households} households"
-            if conditions:
-                default = f"{default}; {conditions}"
-            parts.append(f"Default: {default}")
-    return "\n".join(part for part in parts if part)
+        return f"{size / (1024 * 1024):.1f} MB"
+    return "Bundled"
+
+
+def _model_detail_rows(model: dict[str, Any]) -> list[tuple[str, str]]:
+    return [
+        ("Package ID", str(model["id"])),
+        ("Geography", str(model["geography"])),
+        ("Census vintage", str(model["census_vintage"])),
+        ("Availability", _format_model_availability(model)),
+        ("Compressed size", _format_model_size(model)),
+        ("Release status", str(model["release_status"])),
+        ("Asset release", str(model["release_version"])),
+        ("Source", str(model["provenance"])),
+        ("Privacy", str(model["privacy_review_status"])),
+        ("Generation guidance", str(model["generation_limits"])),
+        ("Known limitations", str(model["known_limitations"])),
+    ]
 
 
 @cli.group()
@@ -801,6 +835,12 @@ def normalize_controls_from_csv(source: Path, out_path: Path) -> None:
     "--mapping", "mapping_path", type=_PATH, help="Optional category mapping JSON."
 )
 @click.option(
+    "--selection",
+    "selection_path",
+    type=_PATH,
+    help="Optional category-selection JSON exported by the web app.",
+)
+@click.option(
     "--out",
     "out_path",
     required=True,
@@ -813,6 +853,7 @@ def normalize_controls_from_wds(
     count_column: str,
     margin_name: str,
     mapping_path: Path | None,
+    selection_path: Path | None,
     out_path: Path,
 ) -> None:
     """Normalize a local StatCan WDS CSV ZIP."""
@@ -826,6 +867,9 @@ def normalize_controls_from_wds(
                 margin_name=margin_name,
                 category_mapping=read_category_mapping(mapping_path)
                 if mapping_path
+                else None,
+                selection=read_wds_selection(selection_path)
+                if selection_path
                 else None,
             )
         with console.status("Writing normalized controls CSV..."):

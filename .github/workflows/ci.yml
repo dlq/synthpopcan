@@ -30,6 +30,9 @@ jobs:
       - name: Check Python formatting
         run: uv run ruff format --check src tests scripts
 
+      - name: Check Python types
+        run: uv run pyright src
+
       - name: Run tests
         run: uv run pytest
 
@@ -98,6 +101,9 @@ jobs:
 
       - name: Check web assets
         run: npm run check:web
+
+      - name: Run web unit tests
+        run: npm run test:web
 
       - name: Install Chromium
         run: npx playwright install --with-deps chromium

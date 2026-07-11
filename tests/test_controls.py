@@ -13,6 +13,7 @@ from synthpopcan.controls import (
     census_profile_template,
     inspect_census_profile_characteristics,
     inspect_wds_zip,
+    parse_control_table,
     read_category_mapping,
     read_census_profile_control_table,
     read_census_profile_mapping,
@@ -42,6 +43,16 @@ def test_reads_normalized_controls_as_control_table(tmp_path: Path) -> None:
         ControlCell(categories={"age": "old"}, count=40.0),
     )
     assert table.to_ipf_margins() == read_control_margins(controls_path)
+
+
+def test_parses_normalized_controls_from_text() -> None:
+    table = parse_control_table(
+        "margin,dimensions,tract,household_size,count\n"
+        'size,"tract,household_size",001,1,12\n'
+    )
+
+    assert table.dimensions == ("tract", "household_size")
+    assert table.margins[0].cells[0].count == 12
 
 
 def test_control_margin_label_must_use_consistent_dimensions(tmp_path: Path) -> None:
@@ -152,6 +163,64 @@ def test_cli_normalizes_controls_from_wds_zip(tmp_path: Path) -> None:
         'population,"GEO,Age group,Sex",Canada,0 to 4 years,Female,100\n'
         'population,"GEO,Age group,Sex",Canada,0 to 4 years,Male,105\n'
         'population,"GEO,Age group,Sex",Canada,5 to 9 years,Female,95\n'
+    )
+
+
+def test_cli_filters_wds_controls_with_web_selection(tmp_path: Path) -> None:
+    from synthpopcan.cli import main
+
+    zip_path = tmp_path / "17100005-eng.zip"
+    selection_path = tmp_path / "synthpopcan-wds-selection.json"
+    output_path = tmp_path / "controls.csv"
+    with ZipFile(zip_path, "w") as archive:
+        archive.writestr(
+            "table.csv",
+            "REF_DATE,GEO,Gender,Age group,VALUE\n"
+            "2024,Yukon,Men+,0 years,10\n"
+            "2025,Canada,Men+,0 years,100\n"
+            "2025,Yukon,Total - gender,All ages,50\n"
+            "2025,Yukon,Men+,0 years,11\n"
+            "2025,Yukon,Women+,0 years,12\n"
+            "2025,Yukon,Men+,0 to 4 years,40\n",
+        )
+    selection_path.write_text(
+        json.dumps(
+            {
+                "schema_version": "synthpopcan-wds-selection-v1",
+                "product_id": "17100005",
+                "reference_period": "2025",
+                "categories": {
+                    "GEO": ["Yukon"],
+                    "Gender": ["Men+", "Women+"],
+                    "Age group": ["0 years"],
+                },
+            }
+        )
+    )
+
+    assert (
+        main(
+            [
+                "controls",
+                "from-wds",
+                str(zip_path),
+                "--dimensions",
+                "GEO,Gender,Age group",
+                "--count-column",
+                "VALUE",
+                "--selection",
+                str(selection_path),
+                "--out",
+                str(output_path),
+            ]
+        )
+        == 0
+    )
+
+    assert output_path.read_text() == (
+        "margin,dimensions,GEO,Gender,Age group,count\n"
+        'wds,"GEO,Gender,Age group",Yukon,Men+,0 years,11\n'
+        'wds,"GEO,Gender,Age group",Yukon,Women+,0 years,12\n'
     )
 
 

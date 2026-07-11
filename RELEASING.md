@@ -10,11 +10,7 @@ artifact.
 1. Run local verification:
 
    ```bash
-   uv run ruff check src tests scripts
-   uv run ruff format --check src tests scripts
-   uv run pytest
-   uv run sphinx-build -E -W -b html docs docs/_build/html
-   npm run check:web
+   ./scripts/check.sh
    uv build
    ```
 

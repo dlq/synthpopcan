@@ -910,7 +910,7 @@ def prepare_boundaries_command(
 
 
 @small_area.command("synthesize-from-package")
-@click.argument("package_path", type=_PATH, metavar="PACKAGE")
+@click.argument("package_path", metavar="PACKAGE")
 @click.option(
     "--households",
     "household_count",
@@ -982,7 +982,7 @@ def prepare_boundaries_command(
     ),
 )
 def synthesize_from_package_command(
-    package_path: Path,
+    package_path: str,
     household_count: int,
     controls_path: Path,
     person_controls_path: Path | None,
@@ -999,8 +999,8 @@ def synthesize_from_package_command(
 ) -> None:
     """Generate linked candidates from a package and calibrate to small-area controls.
 
-    PACKAGE is a local linked model package JSON produced by
-    ``geo tree package-linked-models``.
+    PACKAGE is a local linked model package JSON or a premade model ID from
+    ``synthpopcan models list``.
 
     \b
     Example:
@@ -1017,16 +1017,16 @@ def synthesize_from_package_command(
     import tempfile
 
     from synthpopcan.cli_tree import (
+        _read_package_path_or_id,
         package_models,
-        read_linked_model_package,
         validate_package_allows_generation,
     )
     from synthpopcan.tree import generate_linked_population_to_csv
 
     try:
-        package = read_linked_model_package(package_path)
+        package, _, _ = _read_package_path_or_id(package_path)
     except OSError as exc:
-        raise click_file_access_error(package_path, "read", exc) from exc
+        raise click_file_access_error(Path(package_path), "read", exc) from exc
     except ValueError as exc:
         raise click_value_error(exc) from exc
 

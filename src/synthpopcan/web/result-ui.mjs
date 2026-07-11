@@ -42,6 +42,39 @@ export function appendDownloads(element, downloads) {
   element.append(list);
 }
 
+export function appendCliFollowUp(element, commands) {
+  if (!commands.length) return;
+  const section = document.createElement("details");
+  section.className = "cli-follow-up";
+  const summary = document.createElement("summary");
+  summary.textContent = "Continue in the CLI";
+  const body = document.createElement("div");
+  body.className = "cli-follow-up-body";
+  const explanation = document.createElement("p");
+  explanation.className = "cli-follow-up-note";
+  explanation.textContent =
+    "Run these commands in a terminal to reproduce or continue this workflow with the same inputs and settings.";
+  const copyButton = document.createElement("button");
+  copyButton.className = "secondary-action cli-copy-action";
+  copyButton.type = "button";
+  copyButton.textContent = "Copy commands";
+  const commandText = commands.join("\n\n");
+  copyButton.addEventListener("click", async () => {
+    await navigator.clipboard.writeText(commandText);
+    copyButton.textContent = "Copied";
+    setTimeout(() => {
+      copyButton.textContent = "Copy commands";
+    }, 1500);
+  });
+  const pre = document.createElement("pre");
+  const code = document.createElement("code");
+  code.textContent = commandText;
+  pre.append(code);
+  body.append(explanation, copyButton, pre);
+  section.append(summary, body);
+  element.append(section);
+}
+
 export function resultItem(title, text) {
   const item = document.createElement("div");
   item.className = "result-item";
