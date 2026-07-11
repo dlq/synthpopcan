@@ -131,7 +131,7 @@ test("SCN-WEB-001 runs demo IPF and exposes expanded synthetic records", async (
   await expect(page.locator("#wds-generated-result")).toContainText(
     "# Rebuild normalized controls",
   );
-  await page.setViewportSize({ width: 320, height: 844 });
+  await page.setViewportSize({ width: 768, height: 900 });
   const refinementLayout = await readHorizontalLayout(page);
   expect(
     refinementLayout.documentScrollWidth,
@@ -171,7 +171,7 @@ test("SCN-WEB-001 runs demo IPF and exposes expanded synthetic records", async (
   await expect(page.locator("#ipf-result")).toContainText(
     "# Fit one compact IPF weight per seed row",
   );
-  await page.setViewportSize({ width: 320, height: 844 });
+  await page.setViewportSize({ width: 768, height: 900 });
   await page.reload();
   const layout = await readHorizontalLayout(page);
   expect(layout.documentScrollWidth, JSON.stringify(layout)).toBeLessThanOrEqual(
