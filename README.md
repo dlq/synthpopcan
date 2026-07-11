@@ -24,16 +24,20 @@ Near-term goals:
 Broader SynthEco-style enrichment with cohort, environmental, school, healthcare, and food-access layers is intentionally deferred until the base population synthesis workflow is stable.
 
 Detailed documentation is published at
-<https://synthpopcan.readthedocs.io/>. The source files live under `docs/`;
-start with `docs/index.rst` for task-based navigation to the web app, IPF from
-StatCan margin tables, generated-from-model workflows, the beginner Python API,
-and advanced microdata/model-training material.
+<https://synthpopcan.readthedocs.io/>. The source files live under
+[`docs/`](docs/); start with [`docs/index.rst`](docs/index.rst) for task-based
+navigation to the web app, IPF from StatCan margin tables,
+generated-from-model workflows, the beginner Python API, and advanced
+microdata/model-training material.
 
 Project planning and research notes are tracked separately:
 
-- `PLANS.md`: current roadmap, open work, sequencing, and design decisions.
-- `NOTES.md`: research synthesis from local materials and external literature.
-- `CHANGELOG.md`: public release notes and completed release highlights.
+- [`PLANS.md`](PLANS.md): current roadmap, open work, sequencing, and design
+  decisions.
+- [`NOTES.md`](NOTES.md): research synthesis from local materials and external
+  literature.
+- [`CHANGELOG.md`](CHANGELOG.md): public release notes and completed release
+  highlights.
 
 ## Quick Start
 
@@ -66,7 +70,7 @@ uv sync
 uv run synthpopcan --help
 ```
 
-For installation details, see `docs/installation.md`.
+For installation details, see [`docs/installation.md`](docs/installation.md).
 
 ## Where To Start
 
@@ -75,15 +79,15 @@ README:
 
 | Task | Documentation |
 | --- | --- |
-| Use the local browser app | `docs/web-app.md` |
-| Generate with IPF from margin/control tables | `docs/ipf.md`, `docs/controls.md`, `docs/statcan.md` |
-| Use the beginner Python API | `docs/library-getting-started.md` |
-| Work with local data layout and `data doctor` | `docs/data.md` |
-| Inspect source files safely | `docs/data.md`, `docs/statcan.md`, `docs/microdata.md` |
-| Work with census microdata adapters | `docs/microdata.md` |
-| Train, audit, package, or use tree models | `docs/tree.md` |
-| Validate generated outputs | `docs/validate.md` |
-| Check current plans and implementation notes | `PLANS.md`, `CHANGELOG.md` |
+| Use the local browser app | [`docs/web-app.md`](docs/web-app.md) |
+| Generate with IPF from margin/control tables | [`docs/ipf.md`](docs/ipf.md), [`docs/controls.md`](docs/controls.md), [`docs/statcan.md`](docs/statcan.md) |
+| Use the beginner Python API | [`docs/library-getting-started.md`](docs/library-getting-started.md) |
+| Work with local data layout and `data doctor` | [`docs/data.md`](docs/data.md) |
+| Inspect source files safely | [`docs/data.md`](docs/data.md), [`docs/statcan.md`](docs/statcan.md), [`docs/microdata.md`](docs/microdata.md) |
+| Work with census microdata adapters | [`docs/microdata.md`](docs/microdata.md) |
+| Train, audit, package, or use tree models | [`docs/tree.md`](docs/tree.md) |
+| Validate generated outputs | [`docs/validate.md`](docs/validate.md) |
+| Check current plans and implementation notes | [`PLANS.md`](PLANS.md), [`CHANGELOG.md`](CHANGELOG.md) |
 
 Build the documentation locally with:
 
@@ -135,5 +139,6 @@ and limitations. A model package being marked as a publishable candidate means
 it passed the project's current checks; it is not a claim of official approval,
 legal privacy certification, or fitness for every research use.
 
-Before publishing a new model package, review `docs/data.md`, `docs/tree.md`,
-`PLANS.md`, and `CONTRIBUTING.md`.
+Before publishing a new model package, review [`docs/data.md`](docs/data.md),
+[`docs/tree.md`](docs/tree.md), [`PLANS.md`](PLANS.md), and
+[`CONTRIBUTING.md`](CONTRIBUTING.md).
