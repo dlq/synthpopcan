@@ -66,6 +66,7 @@ export function buildSmallAreaCliCommands({
   poolSize,
   averagePersons,
   randomSeed,
+  subsampleSeed,
 }) {
   const commands = [];
   if (modelDistribution === "download") {
@@ -108,6 +109,7 @@ export function buildSmallAreaCliCommands({
     "--weights-out small-area-weights.csv",
     "--report small-area-report.json",
     `--random-seed ${randomSeed}`,
+    `--subsample-seed ${subsampleSeed}`,
   );
   if (poolSize !== null) synthesisOptions.push(`--pool-size ${poolSize}`);
   commands.push(

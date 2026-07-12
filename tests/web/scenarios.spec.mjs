@@ -330,6 +330,7 @@ test("SCN-WEB-003 prepares a small-area run and CLI handoff", async ({ page }) =
   });
   await page.locator("#small-area-candidate-households").fill("20000");
   await page.locator("#small-area-pool-size").fill("10000");
+  await page.locator("#small-area-subsample-seed").fill("7");
   await page.getByRole("button", { name: "Estimate and prepare" }).click();
 
   const result = page.locator("#small-area-result");
@@ -347,6 +348,8 @@ test("SCN-WEB-003 prepares a small-area run and CLI handoff", async ({ page }) =
   await expect(result).toContainText(
     "--household-size-group-column household_size_group",
   );
+  await expect(result).toContainText("--random-seed 13");
+  await expect(result).toContainText("--subsample-seed 7");
   await expect(result).toContainText("# Recheck output scale");
   expect(consoleErrors).toEqual([]);
 });

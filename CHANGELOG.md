@@ -4,12 +4,14 @@ All notable public changes to SynthPopCan are tracked here.
 
 ## Unreleased
 
-- Added `--subsample-seed` to `geo calibrate-linked` and a `subsample_seed`
-  argument to `calibrate_small_area_linked`, exposing the previously hard-coded
-  candidate-subsample seed. Runs stay reproducible by default (seed `42`), and
-  the effective seed is now recorded in the calibration report's `subsample`
-  block so `--pool-size` runs are traceable and their sensitivity can be
-  checked by varying the seed.
+- Added `--subsample-seed` to `geo calibrate-linked` and
+  `geo synthesize-from-package`, plus a `subsample_seed` argument to
+  `calibrate_small_area_linked`, exposing the previously hard-coded
+  candidate-subsample seed independently from candidate generation. Runs stay
+  reproducible by default (seed `42`), and the calibration report's `subsample`
+  block now records the effective seed plus input and selected row counts so
+  `--pool-size` runs are traceable and their sensitivity can be checked by
+  varying the seed.
 
 ## 0.4.0 - 2026-07-10
 

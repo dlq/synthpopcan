@@ -1216,6 +1216,8 @@ def calibrate_linked_household_csvs(
     if not households:
         raise ValueError(f"candidate household CSV has no data rows: {households_path}")
 
+    input_household_count = len(households)
+    input_person_count = len(persons)
     subsampled = pool_size is not None and pool_size < len(households)
     if subsampled:
         households, persons = _subsample_candidates(
@@ -1303,6 +1305,10 @@ def calibrate_linked_household_csvs(
         "applied": subsampled,
         "pool_size": pool_size,
         "subsample_seed": subsample_seed if subsampled else None,
+        "input_households": input_household_count,
+        "input_persons": input_person_count,
+        "selected_households": len(households),
+        "selected_persons": len(persons),
     }
     if report_out:
         report_out.parent.mkdir(parents=True, exist_ok=True)

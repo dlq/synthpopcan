@@ -128,6 +128,7 @@ function showEstimate(element, response, model) {
       poolSize: optionalNumberValue("#small-area-pool-size"),
       averagePersons: numberValue("#small-area-average-persons"),
       randomSeed: numberValue("#small-area-random-seed"),
+      subsampleSeed: numberValue("#small-area-subsample-seed"),
     }),
   );
 }

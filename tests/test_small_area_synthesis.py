@@ -1486,6 +1486,12 @@ def test_cli_synthesize_from_package(tmp_path: Path) -> None:
             str(persons_out),
             "--report",
             str(report_out),
+            "--random-seed",
+            "13",
+            "--pool-size",
+            "2",
+            "--subsample-seed",
+            "7",
         ]
     )
 
@@ -1496,6 +1502,15 @@ def test_cli_synthesize_from_package(tmp_path: Path) -> None:
     assert report["summary"]["total_geographies"] == 2
     assert report["summary"]["converged_count"] == 2
     assert report["assigned_households"] == 8
+    assert report["subsample"] == {
+        "applied": True,
+        "pool_size": 2,
+        "subsample_seed": 7,
+        "input_households": 4,
+        "input_persons": 4,
+        "selected_households": 2,
+        "selected_persons": 2,
+    }
 
 
 def test_cli_synthesize_from_registered_model_id(tmp_path: Path) -> None:
@@ -1735,6 +1750,10 @@ def test_calibrate_records_subsample_seed_and_is_reproducible(tmp_path) -> None:
         "applied": True,
         "pool_size": 4,
         "subsample_seed": 1,
+        "input_households": 12,
+        "input_persons": 12,
+        "selected_households": 4,
+        "selected_persons": 4,
     }
     # Same seed is byte-for-byte reproducible; a different seed draws a
     # different candidate subsample and so produces different output.
@@ -1768,6 +1787,10 @@ def test_calibrate_reports_no_subsample_when_pool_not_smaller(tmp_path) -> None:
         "applied": False,
         "pool_size": None,
         "subsample_seed": None,
+        "input_households": 2,
+        "input_persons": 2,
+        "selected_households": 2,
+        "selected_persons": 2,
     }
 
 

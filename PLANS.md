@@ -1,7 +1,7 @@
 # SynthPopCan Plan
 
 Status: release-phased roadmap\
-Last updated: 2026-07-10
+Last updated: 2026-07-12
 
 ## Goal
 
@@ -238,25 +238,6 @@ Candidate work:
   largest-residual rows, and suggested next steps, and per-cell residual
   messages were clarified.**
 
-- Make small-area non-convergence impossible to miss. Per-geography IPF reports
-  a converged/non-converged count in the calibration summary, but a target cell
-  whose supporting candidates were all driven to zero weight is silently left
-  unadjusted: the NumPy per-geography fitter reports non-convergence instead of
-  raising, unlike `fit_ipf`, which raises for the same unsupported cell. A run
-  that quietly leaves some tracts unsatisfiable therefore only shows up as a
-  lower converged count in a report a user may skim. Surface such geographies as
-  explicit errors or prominent warnings (with the offending margin and category)
-  so they are caught before the output is used.
-
-- Document and guard household-first versus joint calibration. Household-first
-  calibration fits households and lets person rows inherit geography, treating
-  person margins as validation-only; supplying a person-control file instead
-  triggers joint household/person refinement. Add guidance on when to reach for
-  each, and detect when household-only calibration yields person distributions
-  (for example age or sex) that drift materially from known person controls, so
-  the choice is explicit rather than an implicit property of which flags were
-  passed.
-
 - Prototype optional SciPy CSR or other sparse backends for high-cardinality or
   repeated IPF updates while keeping the current pure-Python indexed fitter as
   the default until dependency and browser implications are clear. **Met as a
@@ -269,16 +250,6 @@ Candidate work:
   common check and export paths: the StatCan adapter retains only identifiers,
   weights, and requested modelling columns; schema-inspection commands continue
   to load the complete column set intentionally.**
-
-- Bound peak memory of small-area realization. `_expand_realized_population`
-  currently materializes the entire assigned household and person output as
-  in-memory DataFrames before any CSV is written; the streaming only covers the
-  write step, and the candidate pool is also fully loaded. Measured cost is
-  roughly 0.58 GB of process RSS per million total output rows (≈7 GB for the
-  documented Quebec ADA run at ~12M rows, and beyond most machines at
-  Canada scale). Chunk the realization per target geography and append to the
-  output CSVs so peak memory scales with the largest single geography rather
-  than the whole run, and surface the expected footprint in `geo estimate-run`.
 
 - Add performance budgets and benchmark fixtures for province-scale generation
   and calibration. **Met; `geo estimate-run` gives researchers a preflight scale
@@ -361,8 +332,8 @@ Candidate work:
 
 ### 0.4.x - Model Catalogue And Privacy Hardening
 
-Status: `0.4.0` release candidate implemented. Deeper model-design advice and
-additional disclosure-risk diagnostics remain possible `0.4.x` follow-ups.
+Status: `0.4.0` released. Deeper model-design advice and additional
+disclosure-risk diagnostics remain possible `0.4.x` follow-ups.
 
 Purpose: make prepared model distribution repeatable, reviewable, and safer for
 public use.
@@ -457,6 +428,18 @@ Candidate work:
   model generation, small-area synthesis, validation, and artifact metadata.
   Keep Click, Rich, HTTP, and browser concerns outside this layer and extend the
   architecture tests to enforce the boundary.
+- Make small-area non-convergence impossible to miss. Per-geography IPF reports
+  a converged/non-converged count in the calibration summary, but a target cell
+  whose supporting candidates were all driven to zero weight is silently left
+  unadjusted: the NumPy per-geography fitter reports non-convergence instead of
+  raising, unlike `fit_ipf`, which raises for the same unsupported cell. Surface
+  such geographies as explicit errors or prominent warnings, including the
+  offending margin and category, before outputs are exposed as complete.
+- Document and guard household-first versus joint calibration. Household-first
+  calibration fits households and lets person rows inherit geography, treating
+  person margins as validation-only; supplying a person-control file instead
+  triggers joint household/person refinement. Explain when to use each mode and
+  detect material drift from known person controls so the choice is explicit.
 - Replace the standard-library static helper with a supported loopback HTTP
   application runtime that provides structured request validation, streaming
   uploads, job status, cancellation, server-sent progress events, and artifact
@@ -478,6 +461,12 @@ Candidate work:
   Browser memory must not scale with generated population size, and the UI must
   show preflight estimates for output rows, disk use, retained weights, and
   expected runtime before launching expensive work.
+- Bound peak memory of small-area realization. `_expand_realized_population`
+  currently materializes the entire assigned household and person output as
+  in-memory DataFrames before any CSV is written; measured cost is roughly
+  0.58 GB of process RSS per million output rows. Chunk realization by target
+  geography and append to output CSVs so peak memory scales with the largest
+  geography, and surface the expected footprint in `geo estimate-run`.
 - Organize the UI around durable runs rather than a single long form: start a
   workflow, inspect inputs, configure approachable defaults, review preflight
   checks, monitor progress, and inspect results. Keep advanced model training,
@@ -570,6 +559,116 @@ Documentation should keep distinguishing:
 - Preserve web checks: Biome formatting/linting, static asset tests, local API
   contract tests, job-lifecycle tests, and browser scenarios for the local app.
 
+#### Correctness Assurance Program
+
+Coverage, branch tests, schema checks, reproducibility, and successful command
+execution do not by themselves demonstrate that a generated population is
+mathematically, statistically, or structurally correct. Build a dedicated
+correctness suite around independent oracles, mathematical invariants,
+differential implementations, metamorphic properties, and versioned reference
+workflows. Production report builders must not be the sole validators of
+production output; correctness tests should re-read and aggregate artifacts
+independently wherever practical.
+
+Highest-priority numerical tests:
+
+- Add differential IPF tests that generate many small feasible tables, run both
+  `fit_ipf` and `fit_ipf_numpy`, and compare weights, fitted totals, residuals,
+  convergence state, and iteration count where the contracts are equivalent.
+  Test the intentional unsupported-cell behavior difference separately.
+- Assert IPF invariants for every converged result: weights are finite and
+  non-negative, every fitted control cell is within tolerance, margin totals
+  reconcile, scaling every control by a positive constant scales fitted weights
+  by the same constant, record ordering does not change aggregate results, and
+  category renaming does not change numerical results.
+- Add property tests for integerization: counts are non-negative integers, their
+  sum equals the rounded total weight, zero-weight records are never selected,
+  results are deterministic, cumulative systematic-sampling discrepancy stays
+  within its mathematical bound, and expanded records reproduce the returned
+  integer counts exactly.
+
+Small-area and linked-population correctness tests:
+
+- Independently re-read emitted household and person CSVs and aggregate them
+  without calling SynthPopCan report helpers. Compare the results with household
+  controls, optional person controls, report residuals, and assigned counts by
+  geography.
+- Verify geography isolation: no household or person leaks between target
+  geographies, every person references exactly one emitted household, household
+  member counts equal household-size values, identifiers are unique, and
+  inherited household attributes remain consistent on person rows.
+- Require single-worker and parallel calibration to produce equivalent
+  artifacts, and require in-memory, streaming, and CSV realization paths to
+  produce equivalent rows and summaries.
+- Exercise full-pool and subsampled calibration, independent generation and
+  subsample seeds, household-only and joint household/person modes, multiple
+  geographies, structural zeros, sparse support, incompatible controls, and
+  explicit non-convergence. Failed or non-converged runs must not expose partial
+  artifacts as successful output.
+- Reaggregate integerized output separately from fractional fitted weights and
+  verify that both sets of residuals reported to users are correct.
+
+Prepared-model correctness tests:
+
+- Train a frequency model from a weighted fixture with analytically known
+  conditional probabilities and assert that the serialized model contains the
+  exact expected probabilities.
+- Generate sufficiently large fixed-seed samples and require category
+  proportions to remain within predefined statistical acceptance bounds. Use
+  several fixed seeds or a seed ensemble rather than accepting one favorable
+  draw.
+- Compare serialized CART traversal, selected leaves, and class probabilities
+  with the original scikit-learn estimator across a matrix of conditioning
+  values.
+- Require model serialization round trips to preserve generated rows for a
+  fixed seed for both frequency and CART models.
+- Test mixed household sizes, multiple conditions, fallback groups, both model
+  families, and streamed generation while enforcing linked-record invariants.
+
+Reference and metamorphic workflows:
+
+- Add tiny public "known truth" fixtures with independently calculated expected
+  results for balanced 2x2 IPF, sparse but feasible IPF, incompatible controls,
+  household-only calibration, joint household/person calibration, and
+  two-geography linked realization.
+- Add one public, versioned StatCan-derived fixture whose transformations,
+  selected categories, reconciled totals, and expected outputs were calculated
+  independently. Use live StatCan tests to detect API/schema drift, not as the
+  numerical oracle.
+- Apply metamorphic checks such as record reordering, category renaming, target
+  scaling, equivalent duplicated records, and geography ordering wherever the
+  documented result should remain invariant.
+- Keep semantic golden outputs for stable reference workflows, but avoid brittle
+  byte snapshots for artifacts whose harmless formatting or dependency metadata
+  may change.
+
+Proposed organization:
+
+```text
+tests/correctness/test_ipf_properties.py
+tests/correctness/test_integerization_properties.py
+tests/correctness/test_tree_distributions.py
+tests/correctness/test_linked_invariants.py
+tests/correctness/test_small_area_reconciliation.py
+tests/correctness/test_reference_workflows.py
+```
+
+Use Hypothesis or an equivalent property-testing tool for generated feasible
+tables, record permutations, and weight vectors. Run deterministic invariants,
+differential tests, and tiny reference fixtures on every pull request. Run
+larger fixed-seed ensembles and public-data benchmarks nightly. Before a
+release, run the full reference workflow set and retain a machine-readable
+correctness report alongside the normal test and coverage results.
+
+Implementation order:
+
+1. Differential Python/NumPy IPF tests and converged-fit invariants.
+1. Independent small-area output reconciliation.
+1. Integerization properties and realized-output residual checks.
+1. Frequency and CART probability oracles plus distributional acceptance tests.
+1. Linked-generation invariants and execution-path equivalence.
+1. Versioned known-truth and public StatCan-derived reference workflows.
+
 ### Documentation And Notes
 
 - `README.md`: short project orientation, install command, quickest workflows,
@@ -580,6 +679,25 @@ Documentation should keep distinguishing:
   and decisions that are not immediate roadmap tasks.
 - `PLANS.md`: release-phase roadmap only; avoid turning this file back into an
   implementation log.
+
+Documentation follow-ups:
+
+- Add explicit CLI reference notes for the remaining model-cache utility
+  commands: `synthpopcan models path` and `synthpopcan models remove`.
+- Add short web-app walkthroughs for each guided path:
+  - IPF from a WDS-backed or demo margin-table workflow;
+  - prepared-model linked household/person generation;
+  - small-area preparation in the browser followed by CLI execution.
+- Add one or two narrative end-to-end documentation examples that start from a
+  humanities-style research question and carry the reader through source/model
+  choice, generation, validation, provenance notes, and optional small-area
+  mapping.
+- Add an advanced small-area library section to `docs/library.md`, covering
+  lower-level Python use, report inspection, and how a script can combine model
+  generation, calibration, validation, and map rendering.
+- Consider a beginner-friendly "checking what we made" notebook section that
+  points from beginner API outputs to validation reports without expanding the
+  beginner API into a full advanced-library reference.
 
 ### Public Release Operations
 

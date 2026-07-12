@@ -83,7 +83,7 @@ first and then person rows inside each household. The result panel shows:
 - whether each person row links to a known household;
 - whether each household's `household_size` matches its generated persons;
 - download links for `households.csv` and `persons.csv`;
-- short previews of both CSV files.
+- short previews of both CSV files;
 - copyable `tree generate` or `tree generate-from-package` follow-up commands.
 
 Model-generated previews preserve the package's raw source codes. For
@@ -115,7 +115,8 @@ the CLI and reports:
 - concrete planning guidance.
 
 `0.4.0` does not run the full calibration in the browser. The result ends with
-commented commands to fetch a selected published model, repeat `geo estimate-run`, and execute `geo synthesize-from-package`. This keeps
+commented commands to fetch a selected published model, repeat
+`geo estimate-run`, and execute `geo synthesize-from-package`. This keeps
 province-scale output out of browser memory while preserving the exact choices
 made in the form. When the controls use the Census Profile
 `household_size_group` dimension, the generated command automatically adds

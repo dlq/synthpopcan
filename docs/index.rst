@@ -75,7 +75,7 @@ beginner generation workflows.
 
 .. toctree::
    :maxdepth: 2
-   :caption: Beginner Workflows
+   :caption: Command Line
 
    web-app
    ipf
@@ -84,11 +84,6 @@ beginner generation workflows.
    tree-generate
    small-area
    validate
-
-.. toctree::
-   :maxdepth: 2
-   :caption: Advanced Workflows
-
    microdata
    tree
    data

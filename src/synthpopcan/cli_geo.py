@@ -684,25 +684,7 @@ def build_controls_command(
     Geographies missing either margin are automatically dropped (they would cause
     an IPF dimension mismatch in calibrate-linked).
 
-    \b
-    Example — Ontario ADAs, scaled to 5.5 M households (with candidate recoding):
-
-        synthpopcan geo build-controls \\
-            --profile 2016-census-profile-ada.csv \\
-            --geo-column ada \\
-            --geo-prefix 35 \\
-            --target 5500000 \\
-            --candidates synthetic-households-5.5m.csv
-
-    \b
-    Example — Quebec City CTs, controls only (for use with synthesize-from-package):
-
-        synthpopcan geo build-controls \\
-            --profile 98-401-X2016043_English_CSV_data.csv \\
-            --geo-column ct \\
-            --geo-prefix 421 \\
-            --target 338000 \\
-            --controls-out quebec-city-ct-controls.csv
+    See the small-area documentation for worked examples.
     """
     from synthpopcan.small_area_controls import (
         extract_controls_from_profile,
@@ -973,6 +955,16 @@ def prepare_boundaries_command(
     help="Maximum candidate households to use for calibration.",
 )
 @click.option(
+    "--subsample-seed",
+    type=int,
+    default=42,
+    show_default=True,
+    help=(
+        "Seed for the --pool-size candidate subsample. Keep this fixed when "
+        "varying --random-seed, or vary it independently to test sensitivity."
+    ),
+)
+@click.option(
     "--max-household-size",
     type=int,
     default=None,
@@ -1004,6 +996,7 @@ def synthesize_from_package_command(
     report_out: Path | None,
     random_seed: int | None,
     pool_size: int | None,
+    subsample_seed: int,
     max_household_size: int | None,
     household_size_group_column: str,
 ) -> None:
@@ -1012,17 +1005,7 @@ def synthesize_from_package_command(
     PACKAGE is a local linked model package JSON or a premade model ID from
     ``synthpopcan models list``.
 
-    \b
-    Example:
-
-        synthpopcan geo synthesize-from-package package.json \\
-          --households 50000 \\
-          --controls ada-controls.csv \\
-          --geo-dimension ada \\
-          --geo-column ada \\
-          --households-out small-area-households.csv \\
-          --persons-out small-area-persons.csv \\
-          --report calibration-report.json
+    See the small-area documentation for worked examples.
     """
     import tempfile
 
@@ -1094,7 +1077,7 @@ def synthesize_from_package_command(
                 weights_out=weights_out,
                 report_out=report_out,
                 pool_size=pool_size,
-                subsample_seed=42 if random_seed is None else random_seed,
+                subsample_seed=subsample_seed,
             )
         except OSError as exc:
             raise click_file_access_error(

@@ -11,15 +11,16 @@ It gives us a few functions for **common work**:
 
 - fit seed rows to control totals with IPF;
 - save weighted or expanded IPF output;
-- generate linked household/person rows from a prepared model package.
+- generate linked household/person rows from a prepared model package;
 - calibrate generated linked household/person candidates to small-area
-  household controls.
+  household controls;
+- render a browser map from calibrated small-area output.
 
 It does **not** expose training, auditing, packaging, source inspection, or release
 workflows at the top level. Those remain available in the command line and in
 the lower-level library modules described in [Advanced Library Use](library.md).
 
-## The Same Two Beginner Workflows
+## The Beginner Paths
 
 The beginner API mirrors the **two main web app paths**:
 
@@ -28,7 +29,7 @@ The beginner API mirrors the **two main web app paths**:
 1. **Generate from existing model:** read a reviewed model package, generate
    linked household/person rows, then write the generated CSV files.
 
-It also exposes one follow-on workflow:
+It also exposes one **follow-on workflow**:
 
 3. **Small-area linked synthesis:** take generated linked household/person
    candidate CSVs, calibrate household rows to small-area controls, and write
@@ -317,4 +318,6 @@ The beginner API exposes a small set of names:
 - {py:func}`~synthpopcan.api.read_model_package`
 - {py:func}`~synthpopcan.api.generate_from_model`
 - {py:func}`~synthpopcan.api.write_population`
+- {py:func}`~synthpopcan.api.calibrate_small_area_linked`
+- {py:func}`~synthpopcan.api.render_small_area_map`
 - {py:class}`~synthpopcan.api.LinkedPopulation`

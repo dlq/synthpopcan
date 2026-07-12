@@ -6,8 +6,9 @@ plain file paths, lists of row dictionaries, and a small number of workflow
 functions that map directly to the two main beginner tasks:
 
 * fit seed rows to margin/control totals with IPF;
-* generate linked household/person rows from a prepared model package.
-* calibrate generated linked rows to small-area household controls.
+* generate linked household/person rows from a prepared model package;
+* calibrate generated linked rows to small-area household controls;
+* render a browser map from calibrated small-area output.
 
 Most users should import the top-level package and call these functions from
 there::
@@ -60,6 +61,7 @@ __all__ = [
     "generate_from_model",
     "write_population",
     "calibrate_small_area_linked",
+    "render_small_area_map",
 ]
 
 

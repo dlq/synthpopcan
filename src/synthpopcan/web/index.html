@@ -500,9 +500,16 @@
             <label>
               <span
                 class="help-label"
-                data-help="Makes candidate generation reproducible."
-              >Random seed</span>
+                data-help="Makes candidate generation reproducible without changing which generated candidates are selected for calibration."
+              >Generation seed</span>
               <input id="small-area-random-seed" type="number" value="13">
+            </label>
+            <label>
+              <span
+                class="help-label"
+                data-help="Controls the calibration-pool subsample independently from candidate generation. Vary it to test sensitivity."
+              >Subsample seed</span>
+              <input id="small-area-subsample-seed" type="number" value="42">
             </label>
             <button class="primary-action" type="submit">Estimate and prepare</button>
           </form>

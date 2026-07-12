@@ -1,5 +1,17 @@
 # Small-Area Linked Synthesis
 
+Small-area linked synthesis is the workflow we use **after** we have generated
+linked household/person candidate rows and **before** we want to interpret those
+rows geographically. It assigns whole generated households to public census
+geographies while keeping their linked person rows attached.
+
+Use this page when the research question needs statements like "how many
+synthetic households of each type are assigned to each census tract, aggregate
+dissemination area, or dissemination area?" Do not use it as the first
+generation step. Start with {doc}`tree-generate` when we still need candidate
+households and people, and start with {doc}`controls` or {doc}`statcan` when we
+still need to prepare public control totals.
+
 Statistics Canada divides Canada into a nested hierarchy of geographic units.
 The ones relevant to this workflow are:
 
@@ -31,19 +43,21 @@ Small-area linked synthesis bridges **two sources that do not contain the same
 information**:
 
 - prepared linked household/person model packages can generate plausible
-  synthetic households and people, but they do not know census tract or ADA
+  synthetic households and people, but they do not know CT, ADA, or DA
   locations by themselves;
 - Census Profile tables contain public small-area totals, but they do not
   contain household/person microdata rows.
 
-The current workflow has four steps:
+The current workflow has six steps:
 
+1. **Prepare boundaries** once when we want to map the result.
 1. **Generate** candidate linked household/person rows from a model package.
 1. **Build controls** from the StatCan Census Profile (household size and tenure
    margins per target geography).
+1. **Estimate** the run size before launching a large calibration.
 1. **Calibrate** candidate households to household controls and, when supplied,
-   linked-person controls, assigning each realized household to a census tract
-   or ADA.
+   linked-person controls, assigning each realized household to a CT, ADA, or
+   DA.
 1. **Map** the output to a self-contained browser choropleth.
 
 Calibration remains **household-first**. Person rows inherit geography from
@@ -167,11 +181,12 @@ fit or too little household variety.
 
 When `--pool-size` is smaller than the candidate pool, calibration draws a random
 subsample of candidates. That draw is reproducible by default (seed `42`), and
-the effective seed is recorded in the calibration report's `subsample` block. To
-check how sensitive the aggregate results are to which candidates were drawn, run
-the calibration a few times with different `--subsample-seed` values and compare
-the reports. Without `--pool-size`, the full pool is used and the seed has no
-effect.
+the effective seed and input/selected row counts are recorded in the calibration
+report's `subsample` block. To check how sensitive the aggregate results are to
+which candidates were drawn, run the calibration a few times with different
+`--subsample-seed` values and compare the reports. Candidate generation remains
+controlled separately by `--random-seed`. Without `--pool-size`, the full pool is
+used and the subsample seed has no effect.
 
 Contributors can exercise the tracked calibration benchmark with:
 
@@ -281,6 +296,170 @@ Variables shown (person-level, when `--persons` is supplied): person count,
 % children (≤14), % seniors (≥65), % immigrants, % visible minority, median
 household income.
 
+## Command Reference
+
+### `geo prepare-boundaries`
+
+Downloads a Statistics Canada 2016 boundary ZIP for a geography level, extracts
+the shapefile, and writes a WGS-84 GeoJSON file for `geo map`.
+
+```bash
+synthpopcan geo prepare-boundaries \
+  --geo-level ada \
+  --out-dir data/boundaries
+```
+
+Important options:
+
+- `--geo-level`: boundary geography to prepare. Supported values include `ct`,
+  `ada`, `da`, `csd`, `cd`, and `pr`.
+- `--out-dir`: directory for the prepared GeoJSON file.
+- `--coord-precision`: coordinate precision for the written GeoJSON.
+
+Run this once per geography level and reuse the resulting file. The command
+needs an internet connection for the boundary download.
+
+### `geo build-controls`
+
+Builds household-size and tenure controls from a Census Profile bulk CSV.
+When `--candidates` is supplied, it also writes a candidate household file with
+a Census-compatible `household_size_group` column.
+
+```bash
+synthpopcan geo build-controls \
+  --profile 98-401-X2016044_English_CSV_data.csv \
+  --geo-column ada \
+  --geo-prefix 24 \
+  --target 3800000 \
+  --candidates candidate-households.csv
+```
+
+Important options:
+
+- `--profile`: Census Profile bulk CSV.
+- `--geo-column`: target geography type, such as `ada`, `ct`, `csd`, `cd`, or
+  `da`.
+- `--target`: total household count used to scale the controls.
+- `--geo-prefix`: optional prefix filter. Use province codes for ADAs and CMA
+  codes for CTs.
+- `--controls-out`: explicit controls CSV path.
+- `--candidates-out`: explicit recoded candidate CSV path when `--candidates`
+  is supplied.
+- `--hhsize-cap`: household-size grouping cap, usually `5` for Census Profile
+  controls.
+- `--household-size-group-column`: grouped-size column name, default
+  `household_size_group`.
+
+### `geo estimate-run`
+
+Estimates the size of a small-area run before calibration. Use it to decide
+whether a run belongs in the web app, command line, or Python API.
+
+```bash
+synthpopcan geo estimate-run \
+  --controls candidate-households-controls-5500000.csv \
+  --geo-dimension ada \
+  --candidate-households 50000 \
+  --pool-size 10000
+```
+
+Important options:
+
+- `--controls`: normalized controls CSV with one geography dimension.
+- `--geo-dimension`: geography dimension in the controls, such as `ct` or
+  `ada`.
+- `--candidate-households`: planned candidate household count.
+- `--pool-size`: optional calibration subsample size.
+- `--average-persons-per-household`: person-row estimate used for planning.
+- `--format summary|json`: readable summary or machine-readable estimate.
+
+### `geo calibrate-linked`
+
+Calibrates existing linked household/person candidate CSVs to household
+controls, and optionally to compatible linked-person controls.
+
+```bash
+synthpopcan geo calibrate-linked \
+  --households candidate-households-recoded.csv \
+  --persons candidate-persons.csv \
+  --controls household-controls.csv \
+  --person-controls person-age-sex-controls.csv \
+  --geo-dimension ada \
+  --geo-column ada \
+  --households-out synthetic-households.csv \
+  --persons-out synthetic-persons.csv \
+  --report small-area-report.json
+```
+
+Important options:
+
+- `--households` and `--persons`: linked candidate CSVs.
+- `--controls`: household controls with a target geography dimension.
+- `--person-controls`: optional person controls for joint household-weight
+  refinement.
+- `--geo-dimension`: geography dimension in the controls.
+- `--geo-column`: geography column written to the assigned outputs.
+- `--weights-out`: optional fitted household weights CSV. It can be large.
+- `--pool-size`: optional maximum number of candidate households used in each
+  fit.
+- `--subsample-seed`: reproducible seed for the `--pool-size` candidate
+  subsample.
+- `--format summary|json`: printed report format.
+
+### `geo synthesize-from-package`
+
+Generates linked candidates from a package and calibrates them in one command.
+Use this when we do not need to inspect or keep the intermediate candidate CSVs.
+
+```bash
+synthpopcan geo synthesize-from-package montreal-cma-2016-all-fields \
+  --households 100000 \
+  --controls ct-controls.csv \
+  --geo-dimension ct \
+  --geo-column ct \
+  --max-household-size 5 \
+  --households-out synthetic-households.csv \
+  --persons-out synthetic-persons.csv \
+  --report calibration-report.json
+```
+
+Important options:
+
+- `PACKAGE`: local linked model package JSON or model ID from `models list`.
+- `--households`: candidate household count generated before calibration.
+- `--controls`: household controls with a target geography dimension.
+- `--person-controls`: optional linked-person controls.
+- `--random-seed`: candidate generation seed.
+- `--pool-size`: optional maximum number of candidates used for calibration.
+- `--subsample-seed`: reproducible seed for the calibration subsample.
+- `--max-household-size`: group exact household sizes into a top-coded category,
+  usually `5` for Census Profile controls.
+- `--household-size-group-column`: grouped-size column used for calibration.
+
+### `geo map`
+
+Writes a self-contained HTML map from calibrated household/person outputs.
+
+```bash
+synthpopcan geo map \
+  --households synthetic-households.csv \
+  --persons synthetic-persons.csv \
+  --boundaries data/boundaries/2016-boundary-ct.geojson \
+  --geo-column ct \
+  --out synthetic-ct-map.html
+```
+
+Important options:
+
+- `--households`: assigned household CSV.
+- `--persons`: optional assigned person CSV for person-level map variables.
+- `--boundaries`: StatCan shapefile, directory containing a shapefile, or
+  prepared GeoJSON.
+- `--geo-column`: geography ID column in the household CSV.
+- `--geo-id-field`: boundary attribute matching the household geography ID.
+- `--out`: destination HTML file.
+- `--coord-precision`: output coordinate precision.
+
 ## Beginner API Shape
 
 The calibration step is also available from the beginner API:
@@ -303,6 +482,21 @@ summary = spc.calibrate_small_area_linked(
 )
 
 summary["assigned_households"], summary["assigned_persons"]
+```
+
+After calibration, the beginner API can also render the same kind of standalone
+map as `geo map`:
+
+```python
+spc.render_small_area_map(
+    households="synthetic-households.csv",
+    persons="synthetic-persons.csv",
+    boundaries="data/boundaries/2016-boundary-ada.geojson",
+    geography_column="ada",
+    geography_id_field="ADAUID",
+    out="synthetic-ada-map.html",
+    title="Synthetic ADA Population",
+)
 ```
 
 Use the API when a notebook needs to keep prose, file choices, and generated
