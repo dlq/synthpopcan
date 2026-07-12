@@ -165,6 +165,14 @@ same information in machine-readable form. For exploratory province-scale runs,
 start with `--pool-size 10000`; increase it only if validation reports show poor
 fit or too little household variety.
 
+When `--pool-size` is smaller than the candidate pool, calibration draws a random
+subsample of candidates. That draw is reproducible by default (seed `42`), and
+the effective seed is recorded in the calibration report's `subsample` block. To
+check how sensitive the aggregate results are to which candidates were drawn, run
+the calibration a few times with different `--subsample-seed` values and compare
+the reports. Without `--pool-size`, the full pool is used and the seed has no
+effect.
+
 Contributors can exercise the tracked calibration benchmark with:
 
 ```bash
