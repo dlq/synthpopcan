@@ -1,5 +1,12 @@
 # Local Web Application Runtime Implementation Plan
 
+Status: planned\
+Created: 2026-07-10\
+Last updated: 2026-07-12\
+Target: `0.5.0`–`0.5.2`\
+Next action: execute Stage 0, HTTP runtime and module-boundary skeleton\
+Roadmap: [PLANS.md](../PLANS.md) | [Plan index](README.md)
+
 > **For agentic workers:** Execute this plan one stage at a time. Keep each
 > patch reviewable, preserve existing CLI behavior while a workflow is being
 > migrated, and do not remove browser-side computation until parity tests and
