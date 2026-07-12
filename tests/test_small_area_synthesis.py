@@ -5,13 +5,17 @@ import json
 from dataclasses import replace
 from pathlib import Path
 
+import numpy as np
 import pytest
 
 from synthpopcan.cli import main
 from synthpopcan.controls import ControlCell, ControlMargin, ControlTable
 from synthpopcan.small_area_synthesis import (
+    _fit_joint_constraints,
+    _format_preflight_error,
     _ordered_fieldnames,
     _subsample_candidates,
+    _suggest_small_area_next_steps,
     _write_csv_rows,
     _write_realized_population_to_csv,
     _write_weights_csv,
@@ -216,6 +220,159 @@ def test_estimate_small_area_run_rejects_nonpositive_pool_size() -> None:
             candidate_households=5,
             pool_size=0,
         )
+
+
+@pytest.mark.parametrize(
+    ("candidate_households", "average_persons", "message"),
+    [
+        (0, 2.22, "candidate_households must be greater than zero"),
+        (5, -0.1, "average_persons_per_household cannot be negative"),
+    ],
+)
+def test_estimate_small_area_run_rejects_invalid_scale_inputs(
+    candidate_households: int,
+    average_persons: float,
+    message: str,
+) -> None:
+    controls = ControlTable(margins=(), dimensions=("tract",))
+
+    with pytest.raises(ValueError, match=message):
+        estimate_small_area_run(
+            controls,
+            geography_dimension="tract",
+            candidate_households=candidate_households,
+            average_persons_per_household=average_persons,
+        )
+
+
+def test_estimate_small_area_run_guides_large_full_pool_runs() -> None:
+    controls = ControlTable(
+        margins=(
+            ControlMargin(
+                name="size",
+                dimensions=("tract", "household_size"),
+                cells=(ControlCell({"tract": "G1", "household_size": "1"}, 1),),
+            ),
+        ),
+        dimensions=("tract", "household_size"),
+    )
+
+    estimate = estimate_small_area_run(
+        controls,
+        geography_dimension="tract",
+        candidate_households=20_000,
+    )
+
+    assert estimate["calibration_pool_size"] == 20_000
+    assert estimate["recommended_surface"] == "cli_or_python_api"
+    assert estimate["guidance"] == [
+        "Calibration will fit 20,000 candidate households for each target geography.",
+        "Start with --pool-size 10000 for exploratory runs; increase it only if "
+        "validation shows poor fit or too little household variety.",
+        "Keep the web app for small demos; use the CLI or Python API for large "
+        "linked CSV outputs.",
+    ]
+
+
+def test_joint_constraint_fit_validates_numerical_inputs() -> None:
+    row = np.ones((1, 1), dtype=np.float64)
+    target = np.ones(1, dtype=np.float64)
+    weight = np.ones(1, dtype=np.float64)
+
+    with pytest.raises(ValueError, match="max_iterations must be at least 1"):
+        _fit_joint_constraints(
+            row, target, initial_weights=weight, max_iterations=0, tolerance=0
+        )
+    with pytest.raises(ValueError, match="tolerance must be non-negative"):
+        _fit_joint_constraints(
+            row, target, initial_weights=weight, max_iterations=1, tolerance=-1
+        )
+    with pytest.raises(ValueError, match="contributions do not match households"):
+        _fit_joint_constraints(
+            np.ones((1, 2)),
+            target,
+            initial_weights=weight,
+            max_iterations=1,
+            tolerance=0,
+        )
+    with pytest.raises(ValueError, match="weights must be non-negative"):
+        _fit_joint_constraints(
+            row,
+            target,
+            initial_weights=np.asarray([-1.0]),
+            max_iterations=1,
+            tolerance=0,
+        )
+
+
+def test_joint_constraint_fit_applies_zero_targets_and_reports_nonconvergence() -> None:
+    weights, converged, iterations, error = _fit_joint_constraints(
+        np.asarray([[1.0, 0.0], [0.0, 1.0]]),
+        np.asarray([0.0, 1.0]),
+        initial_weights=np.ones(2),
+        max_iterations=1,
+        tolerance=0,
+    )
+
+    assert weights.tolist() == [0.0, 1.0]
+    assert (converged, iterations, error) == (True, 1, 0.0)
+
+    _, converged, iterations, error = _fit_joint_constraints(
+        np.asarray([[1.0, 1.0], [1.0, 0.0]]),
+        np.asarray([1.0, 1.0]),
+        initial_weights=np.ones(2),
+        max_iterations=1,
+        tolerance=0,
+    )
+
+    assert converged is False
+    assert iterations == 1
+    assert error > 0
+
+
+def test_joint_constraint_fit_rejects_support_removed_by_zero_target() -> None:
+    with pytest.raises(ValueError, match="no household support"):
+        _fit_joint_constraints(
+            np.asarray([[1.0], [1.0]]),
+            np.asarray([0.0, 1.0]),
+            initial_weights=np.ones(1),
+            max_iterations=1,
+            tolerance=0,
+        )
+
+
+@pytest.mark.parametrize(
+    ("report", "expected"),
+    [
+        ({"issues": []}, "small-area calibration inputs did not pass preflight checks"),
+        (
+            {"issues": ["invalid"]},
+            "small-area calibration inputs did not pass preflight checks",
+        ),
+        ({"issues": [{"message": "Mismatch"}]}, "Mismatch"),
+        (
+            {"issues": [{"message": "Mismatch", "tip": "Repair it."}]},
+            "Mismatch Repair it.",
+        ),
+    ],
+)
+def test_format_preflight_error_handles_report_shapes(
+    report: dict[str, object], expected: str
+) -> None:
+    assert _format_preflight_error(report) == expected
+
+
+def test_small_area_next_steps_include_realized_integerization_residuals() -> None:
+    steps = _suggest_small_area_next_steps(
+        non_converged=[],
+        largest_residuals=[],
+        realized_max_abs_error=0.5,
+    )
+
+    assert steps == [
+        "Review the realized margin summaries: integer household selection "
+        "introduced residuals after the fractional household/person fit."
+    ]
 
 
 def test_check_small_area_calibration_inputs_reports_missing_category() -> None:

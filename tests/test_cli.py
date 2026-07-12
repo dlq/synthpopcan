@@ -14,11 +14,34 @@ from synthpopcan.cli import (
     main,
     resolve_data_root,
 )
-from synthpopcan.cli_geo import _cap_column_inplace
+from synthpopcan.cli_geo import (
+    _cap_column_inplace,
+    _coerce_float,
+    _format_surface_recommendation,
+)
 
 
 def test_cli_smoke() -> None:
     assert main([]) == 0
+
+
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    [
+        ("web_app_ok", "web app, CLI, or Python API"),
+        ("cli_or_python_api", "CLI or Python API"),
+        ("future_surface", "future_surface"),
+    ],
+)
+def test_format_surface_recommendation(value: str, expected: str) -> None:
+    assert _format_surface_recommendation(value) == expected
+
+
+@pytest.mark.parametrize(
+    ("value", "expected"), [(object(), 0.0), ("bad", 0.0), ("2.5", 2.5)]
+)
+def test_coerce_float_handles_report_values(value: object, expected: float) -> None:
+    assert _coerce_float(value) == expected
 
 
 def test_resolve_data_root_defaults_to_data(monkeypatch) -> None:

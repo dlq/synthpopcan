@@ -7,6 +7,7 @@ from click.exceptions import ClickException
 
 from synthpopcan.controls import (
     ControlCell,
+    WdsSelection,
     _find_wds_csv_member,
     _values_are_numeric,
     build_wds_category_mapping_template,
@@ -20,6 +21,7 @@ from synthpopcan.controls import (
     read_control_margins,
     read_control_table,
     read_wds_control_table,
+    read_wds_selection,
 )
 from synthpopcan.tabular import format_csv_number
 
@@ -222,6 +224,75 @@ def test_cli_filters_wds_controls_with_web_selection(tmp_path: Path) -> None:
         'wds,"GEO,Gender,Age group",Yukon,Men+,0 years,11\n'
         'wds,"GEO,Gender,Age group",Yukon,Women+,0 years,12\n'
     )
+
+
+@pytest.mark.parametrize(
+    ("payload", "message"),
+    [
+        ([], "must be a JSON object"),
+        ({}, "schema_version"),
+        (
+            {
+                "schema_version": "synthpopcan-wds-selection-v1",
+                "reference_period": 2025,
+                "categories": {"GEO": ["Yukon"]},
+            },
+            "reference_period must be a string",
+        ),
+        (
+            {"schema_version": "synthpopcan-wds-selection-v1", "categories": {}},
+            "categories must be a non-empty object",
+        ),
+        (
+            {
+                "schema_version": "synthpopcan-wds-selection-v1",
+                "categories": {"GEO": "Yukon"},
+            },
+            "must map columns to arrays",
+        ),
+        (
+            {
+                "schema_version": "synthpopcan-wds-selection-v1",
+                "categories": {"GEO": ["Yukon", 1]},
+            },
+            "arrays must contain strings",
+        ),
+    ],
+)
+def test_wds_selection_manifest_rejects_invalid_shapes(
+    tmp_path: Path, payload: object, message: str
+) -> None:
+    path = tmp_path / "selection.json"
+    path.write_text(json.dumps(payload))
+
+    with pytest.raises(ValueError, match=message):
+        read_wds_selection(path)
+
+
+def test_wds_selection_rejects_missing_columns_and_empty_matches(
+    tmp_path: Path,
+) -> None:
+    zip_path = tmp_path / "wds.zip"
+    with ZipFile(zip_path, "w") as archive:
+        archive.writestr("table.csv", "REF_DATE,GEO,VALUE\n2025,Yukon,10\n")
+
+    with pytest.raises(ValueError, match="selection refers to missing columns"):
+        read_wds_control_table(
+            zip_path,
+            dimensions=("GEO",),
+            count_column="VALUE",
+            margin_name="wds",
+            selection=WdsSelection(None, {"Gender": ("Men+",)}),
+        )
+
+    with pytest.raises(ValueError, match="selection matched no rows"):
+        read_wds_control_table(
+            zip_path,
+            dimensions=("GEO",),
+            count_column="VALUE",
+            margin_name="wds",
+            selection=WdsSelection("2024", {"GEO": ("Yukon",)}),
+        )
 
 
 def test_cli_inspects_wds_zip_and_suggests_normalization_command(

@@ -121,6 +121,28 @@ def test_builds_and_runs_small_area_benchmark_fixture() -> None:
     assert result["fit_seconds"] >= 0
 
 
+@pytest.mark.parametrize(
+    ("candidate_households", "target_geographies", "target_households", "message"),
+    [
+        (9, 1, 2, "candidate_households must be at least 10"),
+        (10, 0, 2, "target_geographies must be at least 1"),
+        (10, 1, 1, "target_households_per_geography must be at least 2"),
+    ],
+)
+def test_small_area_benchmark_fixture_rejects_invalid_scale(
+    candidate_households: int,
+    target_geographies: int,
+    target_households: int,
+    message: str,
+) -> None:
+    with pytest.raises(ValueError, match=message):
+        build_small_area_benchmark_fixture(
+            candidate_households=candidate_households,
+            target_geographies=target_geographies,
+            target_households_per_geography=target_households,
+        )
+
+
 def test_province_scale_small_area_budget_is_explicit() -> None:
     budget = PROVINCE_SCALE_SMALL_AREA_BUDGET.to_dict()
 

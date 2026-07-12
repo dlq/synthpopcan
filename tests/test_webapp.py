@@ -240,6 +240,44 @@ def test_webapp_fetches_and_returns_model_package(monkeypatch) -> None:
         thread.join(timeout=2)
 
 
+@pytest.mark.parametrize(
+    ("failure", "status", "message"),
+    [
+        (KeyError("missing"), 404, "Unknown model"),
+        (OSError("network unavailable"), 502, "network unavailable"),
+        (ValueError("checksum mismatch"), 502, "checksum mismatch"),
+    ],
+)
+def test_webapp_model_fetch_reports_failures(
+    monkeypatch,
+    failure: Exception,
+    status: int,
+    message: str,
+) -> None:
+    def fail_fetch(model_id: str) -> None:
+        raise failure
+
+    monkeypatch.setattr("synthpopcan.webapp.fetch_model_package", fail_fetch)
+    server = build_webapp_server("127.0.0.1", 0)
+    thread = Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    try:
+        request = Request(
+            f"{webapp_url(server)}api/models/missing/fetch",
+            data=b"",
+            method="POST",
+        )
+        with pytest.raises(HTTPError) as exc_info:
+            urlopen(request, timeout=2)
+
+        assert exc_info.value.code == status
+        assert message in exc_info.value.read().decode("utf-8")
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=2)
+
+
 def test_webapp_wds_seed_controls_api_uses_local_helper(monkeypatch) -> None:
     zip_bytes = b"fake-zip"
 
@@ -386,6 +424,44 @@ def test_webapp_small_area_estimate_reports_invalid_controls() -> None:
         assert exc_info.value.code == 400
         payload = json.loads(exc_info.value.read().decode("utf-8"))
         assert "has no dimensions" in payload["error"]
+
+        no_rows = Request(
+            f"{webapp_url(server)}api/small-area/estimate",
+            data=json.dumps(
+                {
+                    "controlsCsv": "margin,dimensions,tract,count\n",
+                    "geographyDimension": "tract",
+                    "candidateHouseholds": 100,
+                }
+            ).encode("utf-8"),
+            method="POST",
+        )
+        with pytest.raises(HTTPError) as no_rows_info:
+            urlopen(no_rows, timeout=2)
+        assert no_rows_info.value.code == 400
+        assert json.loads(no_rows_info.value.read())["error"] == (
+            "controls CSV has no control rows"
+        )
+
+        no_geography = Request(
+            f"{webapp_url(server)}api/small-area/estimate",
+            data=json.dumps(
+                {
+                    "controlsCsv": (
+                        "margin,dimensions,tract,household_size,count\n"
+                        'size,"tract,household_size",001,1,12\n'
+                    ),
+                    "candidateHouseholds": 100,
+                }
+            ).encode("utf-8"),
+            method="POST",
+        )
+        with pytest.raises(HTTPError) as no_geography_info:
+            urlopen(no_geography, timeout=2)
+        assert no_geography_info.value.code == 400
+        assert json.loads(no_geography_info.value.read())["error"] == (
+            "geography dimension is required"
+        )
     finally:
         server.shutdown()
         server.server_close()
