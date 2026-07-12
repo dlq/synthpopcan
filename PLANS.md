@@ -270,6 +270,16 @@ Candidate work:
   weights, and requested modelling columns; schema-inspection commands continue
   to load the complete column set intentionally.**
 
+- Bound peak memory of small-area realization. `_expand_realized_population`
+  currently materializes the entire assigned household and person output as
+  in-memory DataFrames before any CSV is written; the streaming only covers the
+  write step, and the candidate pool is also fully loaded. Measured cost is
+  roughly 0.58 GB of process RSS per million total output rows (≈7 GB for the
+  documented Quebec ADA run at ~12M rows, and beyond most machines at
+  Canada scale). Chunk the realization per target geography and append to the
+  output CSVs so peak memory scales with the largest single geography rather
+  than the whole run, and surface the expected footprint in `geo estimate-run`.
+
 - Add performance budgets and benchmark fixtures for province-scale generation
   and calibration. **Met; `geo estimate-run` gives researchers a preflight scale
   estimate and web app vs CLI/API recommendation before calibration, backed by
@@ -374,6 +384,17 @@ Candidate work:
   - geography thresholding and model simplification constraints;
   - provenance metadata covering source description, columns, geography,
     parameters, random seed, package date, privacy audit, and warnings.
+- Make the disclosure-risk audit self-computing rather than self-declaring. The
+  current `audit_tree_model` treats `contains_raw_rows` /
+  `contains_source_identifiers` as errors, but it reads them from the model's
+  own privacy metadata, which the serializers hard-code to `False` — so those
+  checks can only ever fire on a hand-edited or foreign payload. The real
+  protection today is the leaf/group support and purity thresholds. The audit
+  should derive raw-row/identifier presence from the model contents, and it
+  should audit linked household and person models jointly (they are currently
+  audited independently) so rare cross-level combinations are visible. Revisit
+  the permissive default training `min_samples_leaf` (5) against the stricter
+  default audit `min_support` (50) at the same time.
 - Improve model-size and local-generation guidance for prepared packages.
 - Keep public claims precise: a publishable model has passed SynthPopCan
   disclosure-risk checks and still requires appropriate human review.

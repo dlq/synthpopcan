@@ -1171,6 +1171,7 @@ def calibrate_linked_household_csvs(
     max_iterations: int = 100,
     tolerance: float = 1e-6,
     pool_size: int | None = None,
+    subsample_seed: int = 42,
     n_workers: int | None = None,
 ) -> dict[str, Any]:
     """Calibrate linked household/person CSVs to geography controls.
@@ -1183,6 +1184,12 @@ def calibrate_linked_household_csvs(
         (ownership rates, household-size distributions) with near-identical
         accuracy to the full pool while cutting synthesis time by 10× or more.
         Use the full pool only when individual-household uniqueness matters.
+    subsample_seed:
+        Seed for the candidate subsample drawn when ``pool_size`` is smaller
+        than the pool.  Defaults to ``42`` so runs are reproducible by default;
+        vary it to assess how sensitive aggregate results are to which
+        candidates are drawn.  Ignored when no subsampling happens.  The
+        effective seed is recorded in the report's ``subsample`` block.
     n_workers:
         Number of threads for parallel geography fitting.  Defaults to
         ``min(os.cpu_count(), 8)`` when ``None``.
@@ -1209,12 +1216,14 @@ def calibrate_linked_household_csvs(
     if not households:
         raise ValueError(f"candidate household CSV has no data rows: {households_path}")
 
-    if pool_size is not None and pool_size < len(households):
+    subsampled = pool_size is not None and pool_size < len(households)
+    if subsampled:
         households, persons = _subsample_candidates(
             households,
             persons,
-            pool_size,
+            pool_size,  # type: ignore[arg-type]
             household_id_column=household_id_column,
+            seed=subsample_seed,
         )
 
     household_input_report = check_small_area_calibration_inputs(
@@ -1290,6 +1299,11 @@ def calibrate_linked_household_csvs(
         household_input_report=household_input_report,
         person_input_report=person_input_report,
     )
+    summary["subsample"] = {
+        "applied": subsampled,
+        "pool_size": pool_size,
+        "subsample_seed": subsample_seed if subsampled else None,
+    }
     if report_out:
         report_out.parent.mkdir(parents=True, exist_ok=True)
         report_out.write_text(json.dumps(summary, indent=2, sort_keys=True))

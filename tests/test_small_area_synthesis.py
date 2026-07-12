@@ -1691,6 +1691,86 @@ def test_calibrate_linked_household_csvs_subsamples_when_pool_size_smaller(
     assert summary["assigned_households"] == 2
 
 
+def test_calibrate_records_subsample_seed_and_is_reproducible(tmp_path) -> None:
+    households = tmp_path / "households.csv"
+    persons = tmp_path / "persons.csv"
+    controls = tmp_path / "controls.csv"
+    households.write_text(
+        "synthetic_household_id,household_size\n"
+        + "".join(f"h{i},1\n" for i in range(12))
+    )
+    persons.write_text(
+        "synthetic_person_id,synthetic_household_id\n"
+        + "".join(f"p{i},h{i}\n" for i in range(12))
+    )
+    controls.write_text(
+        "margin,dimensions,tract,household_size,count\n"
+        'size,"tract,household_size",4620001.00,1,4\n'
+    )
+
+    def run(seed: int, out: Path) -> dict:
+        return calibrate_linked_household_csvs(
+            households_path=households,
+            persons_path=persons,
+            controls_path=controls,
+            geography_dimension="tract",
+            geography_column="tract",
+            households_out=out,
+            persons_out=tmp_path / f"p-{out.name}",
+            pool_size=4,
+            subsample_seed=seed,
+            max_iterations=50,
+            tolerance=1e-9,
+        )
+
+    out_seed1 = tmp_path / "seed1.csv"
+    out_seed2 = tmp_path / "seed2.csv"
+    out_seed1_again = tmp_path / "seed1-again.csv"
+    summary = run(1, out_seed1)
+    run(2, out_seed2)
+    run(1, out_seed1_again)
+
+    # The effective subsample seed is recorded in the report provenance.
+    assert summary["subsample"] == {
+        "applied": True,
+        "pool_size": 4,
+        "subsample_seed": 1,
+    }
+    # Same seed is byte-for-byte reproducible; a different seed draws a
+    # different candidate subsample and so produces different output.
+    assert out_seed1.read_text() == out_seed1_again.read_text()
+    assert out_seed1.read_text() != out_seed2.read_text()
+
+
+def test_calibrate_reports_no_subsample_when_pool_not_smaller(tmp_path) -> None:
+    households = tmp_path / "households.csv"
+    persons = tmp_path / "persons.csv"
+    controls = tmp_path / "controls.csv"
+    households.write_text("synthetic_household_id,household_size\nh1,1\nh2,1\n")
+    persons.write_text("synthetic_person_id,synthetic_household_id\np1,h1\np2,h2\n")
+    controls.write_text(
+        "margin,dimensions,tract,household_size,count\n"
+        'size,"tract,household_size",4620001.00,1,2\n'
+    )
+
+    summary = calibrate_linked_household_csvs(
+        households_path=households,
+        persons_path=persons,
+        controls_path=controls,
+        geography_dimension="tract",
+        geography_column="tract",
+        households_out=tmp_path / "out-hh.csv",
+        persons_out=tmp_path / "out-p.csv",
+        max_iterations=50,
+        tolerance=1e-9,
+    )
+    assert summary["subsample"] == {
+        "applied": False,
+        "pool_size": None,
+        "subsample_seed": None,
+    }
+
+
 def test_subsample_candidates_returns_correct_pool_size() -> None:
     households = [
         {"synthetic_household_id": f"h{i}", "household_size": "1"} for i in range(10)

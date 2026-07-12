@@ -453,6 +453,7 @@ def calibrate_small_area_linked(
     max_iterations: int = 100,
     tolerance: float = 1e-6,
     pool_size: int | None = None,
+    subsample_seed: int = 42,
 ) -> dict[str, Any]:
     """Calibrate linked household/person candidates to small-area controls.
 
@@ -511,6 +512,11 @@ def calibrate_small_area_linked(
         reproduce aggregate statistics with near-identical accuracy to the
         full pool and run ~10× faster.  Pass ``None`` (default) to use the
         full pool, which is needed when individual-household uniqueness matters.
+    subsample_seed:
+        Seed for the candidate subsample when ``pool_size`` is set.  Defaults
+        to ``42`` for reproducible runs; vary it to check how sensitive the
+        aggregate results are to which candidates are drawn.  The effective
+        seed is recorded in the report's ``subsample`` block.
 
     Returns
     -------
@@ -553,6 +559,7 @@ def calibrate_small_area_linked(
         max_iterations=max_iterations,
         tolerance=tolerance,
         pool_size=pool_size,
+        subsample_seed=subsample_seed,
     )
 
 

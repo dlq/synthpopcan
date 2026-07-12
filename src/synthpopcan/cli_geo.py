@@ -289,6 +289,18 @@ def _format_surface_recommendation(recommendation: str) -> str:
     ),
 )
 @click.option(
+    "--subsample-seed",
+    "subsample_seed",
+    default=42,
+    type=int,
+    show_default=True,
+    help=(
+        "Seed for the --pool-size candidate subsample. Vary it to check how "
+        "sensitive results are to which candidates are drawn. Ignored without "
+        "--pool-size."
+    ),
+)
+@click.option(
     "--format",
     "output_format",
     default="summary",
@@ -313,6 +325,7 @@ def calibrate_linked_command(
     max_iterations: int,
     tolerance: float,
     pool_size: int | None,
+    subsample_seed: int,
     output_format: str,
 ) -> None:
     """Calibrate linked household/person candidates to geography controls."""
@@ -335,6 +348,7 @@ def calibrate_linked_command(
             max_iterations=max_iterations,
             tolerance=tolerance,
             pool_size=pool_size,
+            subsample_seed=subsample_seed,
         )
     except OSError as exc:
         filename = exc.filename or households_path
@@ -1080,6 +1094,7 @@ def synthesize_from_package_command(
                 weights_out=weights_out,
                 report_out=report_out,
                 pool_size=pool_size,
+                subsample_seed=42 if random_seed is None else random_seed,
             )
         except OSError as exc:
             raise click_file_access_error(
