@@ -18,11 +18,11 @@ import csv
 import json
 import os
 from collections import defaultdict
-from collections.abc import Sequence
+from collections.abc import Callable, Iterable, Sequence
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, TypeVar
 
 import numpy as np
 import pandas as pd
@@ -52,6 +52,38 @@ class GeographyHouseholdFit:
 
     weights_by_geography: dict[str, list[float]]
     reports: dict[str, dict[str, Any]]
+
+
+_FitItem = TypeVar("_FitItem")
+
+
+def _resolve_worker_count(n_workers: int | None) -> int:
+    """Clamp the geography-fit worker count to the CPU count and a ceiling of 8."""
+
+    return min(n_workers or (os.cpu_count() or 1), 8)
+
+
+def _collect_geography_fits(
+    fit_one: Callable[[_FitItem], tuple[str, list[float], dict[str, Any]]],
+    items: Iterable[_FitItem],
+    *,
+    worker_count: int,
+) -> GeographyHouseholdFit:
+    """Run ``fit_one`` for each item in a thread pool and collect the results.
+
+    Each geography's IPF is independent and numpy releases the GIL during
+    ``bincount`` and array arithmetic, so threading gives real concurrency
+    without data races: every fit allocates its own weights array and the
+    shared category index is read-only.
+    """
+
+    weights_by_geography: dict[str, list[float]] = {}
+    reports: dict[str, dict[str, Any]] = {}
+    with ThreadPoolExecutor(max_workers=worker_count) as executor:
+        for geography, weights, report in executor.map(fit_one, items):
+            weights_by_geography[geography] = weights
+            reports[geography] = report
+    return GeographyHouseholdFit(weights_by_geography, reports)
 
 
 @dataclass(frozen=True)
@@ -777,8 +809,6 @@ def fit_households_by_geography(
             _initial_weights(households, weight_field), dtype=np.float64
         )
 
-    _n_workers = min(n_workers or (os.cpu_count() or 1), 8)
-
     def _fit_geo(
         geo_ctrl_pair: tuple[str, ControlTable],
     ) -> tuple[str, list[float], dict[str, Any]]:
@@ -803,23 +833,10 @@ def fit_households_by_geography(
         )
         return geography, weights_list, report
 
-    weights_by_geography: dict[str, list[float]] = {}
-    reports: dict[str, dict[str, Any]] = {}
-
-    # ThreadPoolExecutor gives real concurrency here: numpy releases the GIL
-    # during bincount and array arithmetic, letting multiple geography fits
-    # overlap on separate CPU cores without any data races (each fit allocates
-    # its own weights array; enc.cat_ids is shared read-only).
-    with ThreadPoolExecutor(max_workers=_n_workers) as executor:
-        for geography, weights_list, report in executor.map(
-            _fit_geo, controls_for_geographies.items()
-        ):
-            weights_by_geography[geography] = weights_list
-            reports[geography] = report
-
-    return GeographyHouseholdFit(
-        weights_by_geography=weights_by_geography,
-        reports=reports,
+    return _collect_geography_fits(
+        _fit_geo,
+        controls_for_geographies.items(),
+        worker_count=_resolve_worker_count(n_workers),
     )
 
 
@@ -880,7 +897,6 @@ def fit_linked_by_geography(
         person_by_geography[first_geography],
         household_id_column=household_id_column,
     )
-    worker_count = min(n_workers or (os.cpu_count() or 1), 8)
 
     def _fit_geography(
         geography: str,
@@ -928,16 +944,11 @@ def fit_linked_by_geography(
         )
         return geography, weights.tolist(), report
 
-    weights_by_geography: dict[str, list[float]] = {}
-    reports: dict[str, dict[str, Any]] = {}
-    with ThreadPoolExecutor(max_workers=worker_count) as executor:
-        for geography, weights, report in executor.map(
-            _fit_geography,
-            sorted(household_by_geography),
-        ):
-            weights_by_geography[geography] = weights
-            reports[geography] = report
-    return GeographyHouseholdFit(weights_by_geography, reports)
+    return _collect_geography_fits(
+        _fit_geography,
+        sorted(household_by_geography),
+        worker_count=_resolve_worker_count(n_workers),
+    )
 
 
 def _constraint_specs(
