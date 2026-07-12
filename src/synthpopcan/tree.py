@@ -842,18 +842,13 @@ def generate_tree_rows(
     empty strings.
     """
 
-    if isinstance(model, FrequencyTreeModel):
-        return generate_frequency_rows(
+    return list(
+        iter_tree_rows(
             model,
             rows=rows,
             conditions=conditions,
             random_seed=random_seed,
         )
-    return generate_cart_rows(
-        model,
-        rows=rows,
-        conditions=conditions,
-        random_seed=random_seed,
     )
 
 
@@ -1067,25 +1062,6 @@ def _iter_linked_population_rows(
         yield household_index, household_row, person_rows
 
 
-def generate_person_rows_for_household(
-    person_model: TreeModel,
-    *,
-    rows: int,
-    conditions: dict[str, str],
-    rng: random.Random,
-    selection_cache: dict[tuple[tuple[str, str], ...], _FrequencySelection],
-) -> list[dict[str, str]]:
-    return list(
-        iter_person_rows_for_household(
-            person_model,
-            rows=rows,
-            conditions=conditions,
-            rng=rng,
-            selection_cache=selection_cache,
-        )
-    )
-
-
 def iter_person_rows_for_household(
     person_model: TreeModel,
     *,
@@ -1109,6 +1085,16 @@ def iter_person_rows_for_household(
     if selection is None:
         selection = prepare_frequency_selection(person_model, conditions)
         selection_cache[cache_key] = selection
+    yield from _emit_frequency_rows(selection, rows, rng)
+
+
+def _emit_frequency_rows(
+    selection: _FrequencySelection,
+    rows: int,
+    rng: random.Random,
+):
+    """Yield ``rows`` synthetic rows by sampling ``selection`` with ``rng``."""
+
     for index in range(1, rows + 1):
         group, outcome = choose_frequency_group_and_outcome(selection, rng)
         yield {
@@ -1340,13 +1326,7 @@ def iter_frequency_rows(
         raise ValueError("rows must be greater than zero")
     rng = random.Random(model.spec.random_seed if random_seed is None else random_seed)
     selection = prepare_frequency_selection(model, conditions or {})
-    for index in range(1, rows + 1):
-        group, outcome = choose_frequency_group_and_outcome(selection, rng)
-        yield {
-            "synthetic_id": str(index),
-            **group.conditions,
-            **outcome.values,
-        }
+    yield from _emit_frequency_rows(selection, rows, rng)
 
 
 def write_frequency_model(path: Path, model: FrequencyTreeModel) -> None:

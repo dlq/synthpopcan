@@ -74,9 +74,7 @@ def _resolve_id_field(geo_column: str, boundaries_path: Path) -> str:
     # Fallback: uppercase the column and append UID
     # e.g. "cma" → "CMAUID"
     guessed = col.upper() + "UID"
-    import click as _click
-
-    _click.echo(
+    click.echo(
         f"Warning: unknown geography '{geo_column}', guessing shapefile field "
         f"'{guessed}'. Pass --geo-id-field to override.",
         err=True,
@@ -903,8 +901,6 @@ def prepare_boundaries_command(
     except OSError as exc:
         raise click_file_access_error(geojson_path, "write", exc) from exc
 
-    from synthpopcan.console import print_wrote
-
     print_wrote(geojson_path)
     click.echo(f"\nPass this file to geo map with:\n  --boundaries {geojson_path}")
 
@@ -1101,23 +1097,3 @@ def synthesize_from_package_command(
     if report_out:
         print_wrote(report_out)
     click.echo(json.dumps(summary, sort_keys=True))
-
-
-def _cap_column_inplace(path: Path, column: str, cap: int) -> None:
-    """Rewrite *path* with integer values in *column* capped at *cap*."""
-    import csv as _csv
-
-    tmp = path.with_suffix(".tmp")
-    with path.open(newline="") as src, tmp.open("w", newline="") as dst:
-        reader = _csv.DictReader(src)
-        assert reader.fieldnames
-        writer = _csv.DictWriter(dst, fieldnames=reader.fieldnames)
-        writer.writeheader()
-        for row in reader:
-            try:
-                if int(row[column]) > cap:
-                    row[column] = str(cap)
-            except (ValueError, KeyError):
-                pass
-            writer.writerow(row)
-    tmp.replace(path)

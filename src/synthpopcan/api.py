@@ -376,11 +376,10 @@ def generate_from_model(
     package_payload = _model_package(package)
     if require_publishable:
         _validate_publishable_package(package_payload)
-    package_household_size_column = str(
-        household_size_column or package_payload.get("household_size_column", "")
+    package_household_size_column = (
+        str(household_size_column or package_payload.get("household_size_column", ""))
+        or "household_size"
     )
-    if not package_household_size_column:
-        package_household_size_column = "household_size"
     household_model, person_model = _package_models(package_payload)
     household_rows, person_rows = generate_linked_population(
         household_model,

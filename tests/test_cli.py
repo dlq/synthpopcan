@@ -15,7 +15,6 @@ from synthpopcan.cli import (
     resolve_data_root,
 )
 from synthpopcan.cli_geo import (
-    _cap_column_inplace,
     _coerce_float,
     _format_surface_recommendation,
 )
@@ -417,60 +416,6 @@ def test_synthesize_from_package_not_publishable_candidate_raises_click_exceptio
                 str(tmp_path / "persons.csv"),
             ]
         )
-
-
-# ---------------------------------------------------------------------------
-# cli_geo.py — _cap_column_inplace (lines 891-906)
-# ---------------------------------------------------------------------------
-
-
-def test_cap_column_inplace_caps_values_above_limit(tmp_path) -> None:
-    """Lines 900-902: integer values above cap are replaced with the cap."""
-    csv_path = tmp_path / "households.csv"
-    csv_path.write_text("household_id,household_size\n1,3\n2,5\n3,7\n4,10\n")
-
-    _cap_column_inplace(csv_path, "household_size", 5)
-
-    rows = list(csv.DictReader(csv_path.open()))
-    assert rows[0]["household_size"] == "3"
-    assert rows[1]["household_size"] == "5"
-    assert rows[2]["household_size"] == "5"
-    assert rows[3]["household_size"] == "5"
-
-
-def test_cap_column_inplace_leaves_values_at_or_below_cap_unchanged(tmp_path) -> None:
-    """Lines 900-902: values at or below the cap are not modified."""
-    csv_path = tmp_path / "households.csv"
-    csv_path.write_text("household_id,household_size\n1,1\n2,5\n")
-
-    _cap_column_inplace(csv_path, "household_size", 5)
-
-    rows = list(csv.DictReader(csv_path.open()))
-    assert rows[0]["household_size"] == "1"
-    assert rows[1]["household_size"] == "5"
-
-
-def test_cap_column_inplace_ignores_non_numeric_values(tmp_path) -> None:
-    """Lines 903-904: non-integer values in the column are left unchanged."""
-    csv_path = tmp_path / "households.csv"
-    csv_path.write_text("household_id,household_size\n1,N/A\n2,3\n")
-
-    _cap_column_inplace(csv_path, "household_size", 5)
-
-    rows = list(csv.DictReader(csv_path.open()))
-    assert rows[0]["household_size"] == "N/A"
-    assert rows[1]["household_size"] == "3"
-
-
-def test_cap_column_inplace_missing_column_leaves_rows_unchanged(tmp_path) -> None:
-    """Lines 903-904: KeyError when column is absent is silently swallowed."""
-    csv_path = tmp_path / "households.csv"
-    csv_path.write_text("household_id,other_col\n1,hello\n")
-
-    _cap_column_inplace(csv_path, "household_size", 5)
-
-    rows = list(csv.DictReader(csv_path.open()))
-    assert rows[0]["other_col"] == "hello"
 
 
 @pytest.mark.parametrize(

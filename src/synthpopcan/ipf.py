@@ -89,11 +89,7 @@ class IPFResult:
     def margin_totals(self, dimensions: tuple[str, ...]) -> dict[CategoryKey, float]:
         """Calculate weighted totals for one set of dimensions."""
 
-        totals: dict[CategoryKey, float] = {}
-        for record, weight in zip(self.records, self.weights, strict=True):
-            key = _category_key(record, dimensions)
-            totals[key] = totals.get(key, 0.0) + weight
-        return totals
+        return weighted_totals(self.records, self.weights, dimensions)
 
 
 @dataclass(frozen=True)

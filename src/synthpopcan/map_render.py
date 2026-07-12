@@ -7,6 +7,7 @@ __all__ = ["prepare_boundaries_geojson", "render_synthesis_map"]
 import csv
 import json
 import math
+import statistics
 from pathlib import Path
 from typing import Any
 
@@ -238,12 +239,7 @@ def _pct_of(counts: dict[str, int], key: str, total: int) -> float | None:
 
 
 def _median(values: list[float]) -> float | None:
-    if not values:
-        return None
-    s = sorted(values)
-    n = len(s)
-    mid = n // 2
-    return s[mid] if n % 2 else (s[mid - 1] + s[mid]) / 2
+    return statistics.median(values) if values else None
 
 
 def _compute_geo_stats(
@@ -579,19 +575,17 @@ def _variable_spec(
     label: str,
     values: list[float],
     fmt_js: str,
-    fmt_lo: str | None = None,
-    fmt_hi: str | None = None,
+    fmt_lo: str,
+    fmt_hi: str,
 ) -> dict[str, Any]:
-    lo = min(values) if values else 0.0
-    hi = max(values) if values else 100.0
     return {
         "field": field,
         "label": label,
-        "min": lo,
-        "max": hi,
+        "min": min(values) if values else 0.0,
+        "max": max(values) if values else 100.0,
         "fmt": fmt_js,
-        "fmtLo": fmt_lo or str(round(lo, 1)),
-        "fmtHi": fmt_hi or str(round(hi, 1)),
+        "fmtLo": fmt_lo,
+        "fmtHi": fmt_hi,
     }
 
 
@@ -678,12 +672,12 @@ def render_synthesis_map(
     variables: list[dict[str, Any]] = []
 
     # --- household variables ---
-    for field, label, fmt, _lo_fmt, _hi_fmt in [
-        ("n_households", "Households", _FMT_INT, None, None),
-        ("n_persons", "Persons", _FMT_INT, None, None),
-        ("avg_hh_size", "Avg Household Size", _FMT_F2, None, None),
-        ("median_hh_income", "Median HH Income", _FMT_DOLLAR, None, None),
-        ("median_shelter_cost", "Median Shelter Cost", _FMT_DOLLAR, None, None),
+    for field, label, fmt in [
+        ("n_households", "Households", _FMT_INT),
+        ("n_persons", "Persons", _FMT_INT),
+        ("avg_hh_size", "Avg Household Size", _FMT_F2),
+        ("median_hh_income", "Median HH Income", _FMT_DOLLAR),
+        ("median_shelter_cost", "Median Shelter Cost", _FMT_DOLLAR),
     ]:
         vals = _vals(field)
         if not vals:

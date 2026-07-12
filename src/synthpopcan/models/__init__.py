@@ -36,6 +36,7 @@ _PUMF_2016_CATALOGUE_METADATA = {
     "census_vintage": "2016 Census",
     "release_status": "publishable_candidate",
     "release_version": "v0.2.1",
+    "provenance": "Statistics Canada 2016 Census hierarchical PUMF.",
     "privacy": "No raw rows or source identifiers.",
     "privacy_review_status": "publishable candidate; human review still required",
     "generation_limits": (
@@ -45,6 +46,9 @@ _PUMF_2016_CATALOGUE_METADATA = {
         "Broad 2016 PUMF model; not calibrated to current or small-area controls. "
         "Generated source codes require field metadata for interpretation."
     ),
+    "safe_demo": False,
+    "distribution": "download",
+    "compression": "gzip",
 }
 
 _MODEL_PACKAGES: dict[str, dict[str, Any]] = {
@@ -74,14 +78,11 @@ _MODEL_PACKAGES: dict[str, dict[str, Any]] = {
             "the local 2016 hierarchical PUMF for CMA 462."
         ),
         "geography": "Montreal CMA (CMA 462)",
-        "provenance": "Statistics Canada 2016 Census hierarchical PUMF.",
         "conditions": ["PR", "household_size", "TENUR"],
         "default_generation": {
             "households": 1000,
             "conditions": "",
         },
-        "safe_demo": False,
-        "distribution": "download",
         **_PUMF_2016_CATALOGUE_METADATA,
         "size_bytes": 1_009_496,
         "sha256": "94ff771884ead36b604d05c8e4043e36869da85c75aa1919f31adf21fd4aee97",
@@ -89,7 +90,6 @@ _MODEL_PACKAGES: dict[str, dict[str, Any]] = {
         "uncompressed_sha256": (
             "ebad14c83bf2aef47e3ac6e0684c1994ea0fa8cd83df7eaeb78a76077174ef91"
         ),
-        "compression": "gzip",
         "url": f"{_RELEASE_BASE_URL}/montreal-cma-2016-all-fields-package.json.gz",
     },
     "quebec-2016-all-fields": {
@@ -100,14 +100,11 @@ _MODEL_PACKAGES: dict[str, dict[str, Any]] = {
             "the local 2016 hierarchical PUMF for Quebec (PR 24)."
         ),
         "geography": "Quebec (PR 24)",
-        "provenance": "Statistics Canada 2016 Census hierarchical PUMF.",
         "conditions": ["PR", "household_size", "TENUR"],
         "default_generation": {
             "households": 1000,
             "conditions": "",
         },
-        "safe_demo": False,
-        "distribution": "download",
         **_PUMF_2016_CATALOGUE_METADATA,
         "size_bytes": 1_770_789,
         "sha256": "1f03b9c5e72c5641f31159f0af3d4c3839e142445f17c81d3fd2f969c74a0628",
@@ -115,7 +112,6 @@ _MODEL_PACKAGES: dict[str, dict[str, Any]] = {
         "uncompressed_sha256": (
             "7fbfa64e29ae5539f382475c472cb1fe48b988161e0b3a10ecd81fcaa942a7d7"
         ),
-        "compression": "gzip",
         "url": f"{_RELEASE_BASE_URL}/quebec-2016-all-fields-package.json.gz",
     },
     "ontario-2016-all-fields": {
@@ -126,14 +122,11 @@ _MODEL_PACKAGES: dict[str, dict[str, Any]] = {
             "the local 2016 hierarchical PUMF for Ontario (PR 35)."
         ),
         "geography": "Ontario (PR 35)",
-        "provenance": "Statistics Canada 2016 Census hierarchical PUMF.",
         "conditions": ["PR", "household_size", "TENUR"],
         "default_generation": {
             "households": 1000,
             "conditions": "",
         },
-        "safe_demo": False,
-        "distribution": "download",
         **_PUMF_2016_CATALOGUE_METADATA,
         "size_bytes": 3_005_146,
         "sha256": "7477a7161b8243aba5ef64c902a9db303290733edb5b2832210c1fd7075ff879",
@@ -141,7 +134,6 @@ _MODEL_PACKAGES: dict[str, dict[str, Any]] = {
         "uncompressed_sha256": (
             "0967ba99c4179e3de1d8436a14e0b3082bd4a7353c68b9c59a4c32977711e7ed"
         ),
-        "compression": "gzip",
         "url": f"{_RELEASE_BASE_URL}/ontario-2016-all-fields-package.json.gz",
     },
     "bc-2016-all-fields": {
@@ -152,14 +144,11 @@ _MODEL_PACKAGES: dict[str, dict[str, Any]] = {
             "the local 2016 hierarchical PUMF for British Columbia (PR 59)."
         ),
         "geography": "British Columbia (PR 59)",
-        "provenance": "Statistics Canada 2016 Census hierarchical PUMF.",
         "conditions": ["PR", "household_size", "TENUR"],
         "default_generation": {
             "households": 1000,
             "conditions": "",
         },
-        "safe_demo": False,
-        "distribution": "download",
         **_PUMF_2016_CATALOGUE_METADATA,
         "size_bytes": 1_198_845,
         "sha256": "13b04e77c3aab726aaf1ef9164ec5ef1c2ed16d710f275f3b3dcfa09ca476f6a",
@@ -167,7 +156,6 @@ _MODEL_PACKAGES: dict[str, dict[str, Any]] = {
         "uncompressed_sha256": (
             "76e855c2d2bd6b62ef7e7073c4df5ea288fe0f8e060c5e36859c24047a56fb54"
         ),
-        "compression": "gzip",
         "url": f"{_RELEASE_BASE_URL}/bc-2016-all-fields-package.json.gz",
     },
     "alberta-2016-all-fields": {
@@ -178,14 +166,11 @@ _MODEL_PACKAGES: dict[str, dict[str, Any]] = {
             "the local 2016 hierarchical PUMF for Alberta (PR 48)."
         ),
         "geography": "Alberta (PR 48)",
-        "provenance": "Statistics Canada 2016 Census hierarchical PUMF.",
         "conditions": ["PR", "household_size", "TENUR"],
         "default_generation": {
             "households": 1000,
             "conditions": "",
         },
-        "safe_demo": False,
-        "distribution": "download",
         **_PUMF_2016_CATALOGUE_METADATA,
         "size_bytes": 1_008_748,
         "sha256": "da034db035a0ebc8d96cf012b3698fd6c14b648967389832446fe10c48b73ce8",
@@ -193,7 +178,6 @@ _MODEL_PACKAGES: dict[str, dict[str, Any]] = {
         "uncompressed_sha256": (
             "0f0f61fc0a3e188b1c64ea02acc3f05fbfdb0d993ffee3a901b5b51f7fe81814"
         ),
-        "compression": "gzip",
         "url": f"{_RELEASE_BASE_URL}/alberta-2016-all-fields-package.json.gz",
     },
     "toronto-cma-2016-all-fields": {
@@ -204,14 +188,11 @@ _MODEL_PACKAGES: dict[str, dict[str, Any]] = {
             "the local 2016 hierarchical PUMF for Toronto CMA (CMA 535)."
         ),
         "geography": "Toronto CMA (CMA 535)",
-        "provenance": "Statistics Canada 2016 Census hierarchical PUMF.",
         "conditions": ["CMA", "household_size", "TENUR"],
         "default_generation": {
             "households": 1000,
             "conditions": "",
         },
-        "safe_demo": False,
-        "distribution": "download",
         **_PUMF_2016_CATALOGUE_METADATA,
         "size_bytes": 1_478_757,
         "sha256": "157778bc2bd095d65b1fab91fdbcb0385ed5de76baad20abe82817211b0735c2",
@@ -219,7 +200,6 @@ _MODEL_PACKAGES: dict[str, dict[str, Any]] = {
         "uncompressed_sha256": (
             "dd0caf299c852ed526861b9bc6e6a2d654bf0bbe51809d76c9b5e30da0381ae0"
         ),
-        "compression": "gzip",
         "url": f"{_RELEASE_BASE_URL}/toronto-cma-2016-all-fields-package.json.gz",
     },
     "vancouver-cma-2016-all-fields": {
@@ -230,14 +210,11 @@ _MODEL_PACKAGES: dict[str, dict[str, Any]] = {
             "the local 2016 hierarchical PUMF for Vancouver CMA (CMA 933)."
         ),
         "geography": "Vancouver CMA (CMA 933)",
-        "provenance": "Statistics Canada 2016 Census hierarchical PUMF.",
         "conditions": ["CMA", "household_size", "TENUR"],
         "default_generation": {
             "households": 1000,
             "conditions": "",
         },
-        "safe_demo": False,
-        "distribution": "download",
         **_PUMF_2016_CATALOGUE_METADATA,
         "size_bytes": 687_436,
         "sha256": "a92cbb27f0e149bd7b83da2055b43d3a4fa1e5bc1567a29208c335f10fba49c6",
@@ -245,7 +222,6 @@ _MODEL_PACKAGES: dict[str, dict[str, Any]] = {
         "uncompressed_sha256": (
             "3e3565c2ba4dbfdab28bf907e256d48bb766971270dde09fde597afb57c210cf"
         ),
-        "compression": "gzip",
         "url": f"{_RELEASE_BASE_URL}/vancouver-cma-2016-all-fields-package.json.gz",
     },
     "manitoba-2016-all-fields": {
@@ -256,14 +232,11 @@ _MODEL_PACKAGES: dict[str, dict[str, Any]] = {
             "the local 2016 hierarchical PUMF for Manitoba (PR 46)."
         ),
         "geography": "Manitoba (PR 46)",
-        "provenance": "Statistics Canada 2016 Census hierarchical PUMF.",
         "conditions": ["PR", "household_size", "TENUR"],
         "default_generation": {
             "households": 1000,
             "conditions": "",
         },
-        "safe_demo": False,
-        "distribution": "download",
         **_PUMF_2016_CATALOGUE_METADATA,
         "size_bytes": 336_929,
         "sha256": "70ca5e7944ff135813d1aaff04f2f7c9a25f98bd3ecc27c069124aad784ffa6d",
@@ -271,7 +244,6 @@ _MODEL_PACKAGES: dict[str, dict[str, Any]] = {
         "uncompressed_sha256": (
             "82e8f03152568a3898c80de36705827f8a22101a1390a2b9f381df366a9088f4"
         ),
-        "compression": "gzip",
         "url": f"{_RELEASE_BASE_URL}/manitoba-2016-all-fields-package.json.gz",
     },
     "calgary-cma-2016-all-fields": {
@@ -282,14 +254,11 @@ _MODEL_PACKAGES: dict[str, dict[str, Any]] = {
             "the local 2016 hierarchical PUMF for Calgary CMA (CMA 825)."
         ),
         "geography": "Calgary CMA (CMA 825)",
-        "provenance": "Statistics Canada 2016 Census hierarchical PUMF.",
         "conditions": ["CMA", "household_size", "TENUR"],
         "default_generation": {
             "households": 1000,
             "conditions": "",
         },
-        "safe_demo": False,
-        "distribution": "download",
         **_PUMF_2016_CATALOGUE_METADATA,
         "size_bytes": 391_581,
         "sha256": "0ed93270044c97fbd2d6b8e6222192dc438e990f2c5f70dbeb1ed9ada51b7500",
@@ -297,7 +266,6 @@ _MODEL_PACKAGES: dict[str, dict[str, Any]] = {
         "uncompressed_sha256": (
             "d55fe22cfa66c5b78545b65e3275972ebc2f37e714f9a6b266040ec9a0a407a2"
         ),
-        "compression": "gzip",
         "url": f"{_RELEASE_BASE_URL}/calgary-cma-2016-all-fields-package.json.gz",
     },
     "edmonton-cma-2016-all-fields": {
@@ -308,14 +276,11 @@ _MODEL_PACKAGES: dict[str, dict[str, Any]] = {
             "the local 2016 hierarchical PUMF for Edmonton CMA (CMA 835)."
         ),
         "geography": "Edmonton CMA (CMA 835)",
-        "provenance": "Statistics Canada 2016 Census hierarchical PUMF.",
         "conditions": ["CMA", "household_size", "TENUR"],
         "default_generation": {
             "households": 1000,
             "conditions": "",
         },
-        "safe_demo": False,
-        "distribution": "download",
         **_PUMF_2016_CATALOGUE_METADATA,
         "size_bytes": 369_262,
         "sha256": "b600f19ffe7e257c4afbe618fb50d21a4ecadd2c498c14159c97f5179ee4d554",
@@ -323,7 +288,6 @@ _MODEL_PACKAGES: dict[str, dict[str, Any]] = {
         "uncompressed_sha256": (
             "c18b593c93fd02cc30ee07a956ace912b0072a8c14c6a538e94087592c27818a"
         ),
-        "compression": "gzip",
         "url": f"{_RELEASE_BASE_URL}/edmonton-cma-2016-all-fields-package.json.gz",
     },
     "saskatchewan-2016-all-fields": {
@@ -334,14 +298,11 @@ _MODEL_PACKAGES: dict[str, dict[str, Any]] = {
             "the local 2016 hierarchical PUMF for Saskatchewan (PR 47)."
         ),
         "geography": "Saskatchewan (PR 47)",
-        "provenance": "Statistics Canada 2016 Census hierarchical PUMF.",
         "conditions": ["PR", "household_size", "TENUR"],
         "default_generation": {
             "households": 1000,
             "conditions": "",
         },
-        "safe_demo": False,
-        "distribution": "download",
         **_PUMF_2016_CATALOGUE_METADATA,
         "size_bytes": 287_123,
         "sha256": "2b4430944d18d8161d22c2ce5dcfce0f6720aed4259197769971c62d3d320b70",
@@ -349,7 +310,6 @@ _MODEL_PACKAGES: dict[str, dict[str, Any]] = {
         "uncompressed_sha256": (
             "1bcb91caf412ba6c1b760fc51fb57ffcdc95608bdf20fb854237a4d5751f1a8f"
         ),
-        "compression": "gzip",
         "url": f"{_RELEASE_BASE_URL}/saskatchewan-2016-all-fields-package.json.gz",
     },
     "nova-scotia-2016-all-fields": {
@@ -360,14 +320,11 @@ _MODEL_PACKAGES: dict[str, dict[str, Any]] = {
             "the local 2016 hierarchical PUMF for Nova Scotia (PR 12)."
         ),
         "geography": "Nova Scotia (PR 12)",
-        "provenance": "Statistics Canada 2016 Census hierarchical PUMF.",
         "conditions": ["PR", "household_size", "TENUR"],
         "default_generation": {
             "households": 1000,
             "conditions": "",
         },
-        "safe_demo": False,
-        "distribution": "download",
         **_PUMF_2016_CATALOGUE_METADATA,
         "size_bytes": 244_276,
         "sha256": "f8212b336645225653b01f6976791efd7d58947bab4b95553978c62632686871",
@@ -375,7 +332,6 @@ _MODEL_PACKAGES: dict[str, dict[str, Any]] = {
         "uncompressed_sha256": (
             "70062e8d721d8ff29da0dbbfdbb455b9a9e519f9a69465898c571c6f799f06a4"
         ),
-        "compression": "gzip",
         "url": f"{_RELEASE_BASE_URL}/nova-scotia-2016-all-fields-package.json.gz",
     },
     "new-brunswick-2016-all-fields": {
@@ -386,14 +342,11 @@ _MODEL_PACKAGES: dict[str, dict[str, Any]] = {
             "the local 2016 hierarchical PUMF for New Brunswick (PR 13)."
         ),
         "geography": "New Brunswick (PR 13)",
-        "provenance": "Statistics Canada 2016 Census hierarchical PUMF.",
         "conditions": ["PR", "household_size", "TENUR"],
         "default_generation": {
             "households": 1000,
             "conditions": "",
         },
-        "safe_demo": False,
-        "distribution": "download",
         **_PUMF_2016_CATALOGUE_METADATA,
         "size_bytes": 202_698,
         "sha256": "167b5bd5a0398d48ceb50f01ef715add4c7e4d61c62713348a00f01e436787f1",
@@ -401,7 +354,6 @@ _MODEL_PACKAGES: dict[str, dict[str, Any]] = {
         "uncompressed_sha256": (
             "607a7a368746b755fb2e6b345a69219b6e655c3dd9f41aac670e6cbf1dd94876"
         ),
-        "compression": "gzip",
         "url": f"{_RELEASE_BASE_URL}/new-brunswick-2016-all-fields-package.json.gz",
     },
     "newfoundland-2016-all-fields": {
@@ -412,14 +364,11 @@ _MODEL_PACKAGES: dict[str, dict[str, Any]] = {
             "the local 2016 hierarchical PUMF for Newfoundland and Labrador (PR 10)."
         ),
         "geography": "Newfoundland and Labrador (PR 10)",
-        "provenance": "Statistics Canada 2016 Census hierarchical PUMF.",
         "conditions": ["PR", "household_size", "TENUR"],
         "default_generation": {
             "households": 1000,
             "conditions": "",
         },
-        "safe_demo": False,
-        "distribution": "download",
         **_PUMF_2016_CATALOGUE_METADATA,
         "size_bytes": 138_661,
         "sha256": "b552c09faca4ac1e51510c3464fd480ace6a50ed60eb77e739832acdff6393f7",
@@ -427,7 +376,6 @@ _MODEL_PACKAGES: dict[str, dict[str, Any]] = {
         "uncompressed_sha256": (
             "c107a61c85d2f12b3c4b95656229e191287d6af927c53a7f18ad33ba8e9fe7c7"
         ),
-        "compression": "gzip",
         "url": f"{_RELEASE_BASE_URL}/newfoundland-2016-all-fields-package.json.gz",
     },
     "pei-2016-minimal": {
@@ -439,14 +387,11 @@ _MODEL_PACKAGES: dict[str, dict[str, Any]] = {
             "Uses a minimal column profile due to small sample size."
         ),
         "geography": "Prince Edward Island (PR 11)",
-        "provenance": "Statistics Canada 2016 Census hierarchical PUMF.",
         "conditions": ["PR", "household_size", "TENUR"],
         "default_generation": {
             "households": 100,
             "conditions": "",
         },
-        "safe_demo": False,
-        "distribution": "download",
         **_PUMF_2016_CATALOGUE_METADATA,
         "size_bytes": 4_486,
         "sha256": "60fedf9fedddc13848338b006a70efb04cef4f6aee300c4d2f3ffd6acf1f5bcb",
@@ -454,7 +399,6 @@ _MODEL_PACKAGES: dict[str, dict[str, Any]] = {
         "uncompressed_sha256": (
             "b9733fb70d83020444e811b3597fbb4621164290aa4982255a940b702f31a4ff"
         ),
-        "compression": "gzip",
         "url": f"{_RELEASE_BASE_URL}/pei-2016-minimal-package.json.gz",
     },
     "canada-2016-all-fields": {
@@ -465,14 +409,11 @@ _MODEL_PACKAGES: dict[str, dict[str, Any]] = {
             "the local 2016 hierarchical PUMF for all Canada."
         ),
         "geography": "Canada",
-        "provenance": "Statistics Canada 2016 Census hierarchical PUMF.",
         "conditions": ["PR", "household_size", "TENUR"],
         "default_generation": {
             "households": 1000,
             "conditions": "",
         },
-        "safe_demo": False,
-        "distribution": "download",
         **_PUMF_2016_CATALOGUE_METADATA,
         "size_bytes": 8_286_186,
         "sha256": "2db0629d01ad91e050acfa956097ee48abb7ee07f2007a40df91786981127b04",
@@ -480,7 +421,6 @@ _MODEL_PACKAGES: dict[str, dict[str, Any]] = {
         "uncompressed_sha256": (
             "ce0bffe4945ccebd962010593d3b316dc7f6d7b7b5803271a54e3da94b7073ab"
         ),
-        "compression": "gzip",
         "url": f"{_RELEASE_BASE_URL}/canada-2016-all-fields-package.json.gz",
     },
 }
@@ -555,10 +495,7 @@ def model_payload(model_id: str) -> dict[str, Any]:
 def model_registry_entry(model_id: str) -> dict[str, Any]:
     """Return metadata for one registered model package."""
 
-    try:
-        return _MODEL_PACKAGES[model_id]
-    except KeyError as exc:
-        raise KeyError(model_id) from exc
+    return _MODEL_PACKAGES[model_id]
 
 
 def model_is_installed(model_id: str) -> bool:

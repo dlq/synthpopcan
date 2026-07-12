@@ -137,6 +137,18 @@ def build_control_suggestion_report(
     }
 
 
+def _suggestion_fields(item: dict[str, Any], column: str) -> dict[str, str]:
+    """Return the shared control-suggestion fields with string-coerced values."""
+
+    return {
+        "column": column,
+        "canonical": str(item["canonical"]),
+        "role": str(item["role"]),
+        "statcan_search": str(item["search"]),
+        "reason": str(item["reason"]),
+    }
+
+
 def _classify_controls(
     columns: Sequence[str], catalog: Iterable[dict[str, Any]]
 ) -> tuple[list[dict[str, str]], list[dict[str, str]]]:
@@ -144,13 +156,7 @@ def _classify_controls(
     enrichment: list[dict[str, str]] = []
     for item in catalog:
         match = _matching_column(columns, item["aliases"])  # type: ignore[arg-type]
-        suggestion = {
-            "column": match or str(item["canonical"]),
-            "canonical": str(item["canonical"]),
-            "role": str(item["role"]),
-            "statcan_search": str(item["search"]),
-            "reason": str(item["reason"]),
-        }
+        suggestion = _suggestion_fields(item, match or str(item["canonical"]))
         if match:
             suggestion["status"] = "usable_if_categories_match"
             usable.append(suggestion)
@@ -167,16 +173,9 @@ def _validation_only_controls(
 ) -> list[dict[str, str]]:
     controls: list[dict[str, str]] = []
     for item in catalog:
-        controls.append(
-            {
-                "column": str(item["canonical"]),
-                "canonical": str(item["canonical"]),
-                "role": str(item["role"]),
-                "statcan_search": str(item["search"]),
-                "reason": str(item["reason"]),
-                "status": f"validation_only_for_{selected_unit}_rows",
-            }
-        )
+        suggestion = _suggestion_fields(item, str(item["canonical"]))
+        suggestion["status"] = f"validation_only_for_{selected_unit}_rows"
+        controls.append(suggestion)
     return controls
 
 

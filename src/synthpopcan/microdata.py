@@ -630,6 +630,63 @@ def suggest_tree_column_blocks(sample: SeedSample) -> dict[str, Any]:
     }
 
 
+def _resolve_tree_column_block(
+    suggestion: dict[str, Any],
+    *,
+    block: str,
+    level: str,
+) -> tuple[tuple[str, ...], tuple[str, ...], list[str] | None]:
+    """Resolve one named (or ``"all"``) column block into target/conditioning columns.
+
+    Returns the target columns, the conditioning columns (with any that overlap
+    the targets removed), and the contributing block names when ``block`` is
+    ``"all"`` (otherwise ``None``).
+    """
+
+    if block == "all":
+        suggested_blocks = [
+            candidate
+            for candidate in suggestion["blocks"]
+            if candidate["level"] == level and candidate["target_columns"]
+        ]
+        if not suggested_blocks:
+            raise ValueError(f"no available {level} tree column blocks")
+        target_columns = unique_columns(
+            tuple(
+                column
+                for candidate in suggested_blocks
+                for column in require_suggested_tree_columns(
+                    candidate, "target_columns"
+                )
+            )
+        )
+        conditioning_columns = unique_columns(
+            tuple(
+                column
+                for candidate in suggested_blocks
+                for column in require_suggested_tree_columns(
+                    candidate, "conditioning_columns"
+                )
+            )
+        )
+        conditioning_columns = tuple(
+            column for column in conditioning_columns if column not in target_columns
+        )
+        block_names = [str(candidate["name"]) for candidate in suggested_blocks]
+        return target_columns, conditioning_columns, block_names
+
+    suggested_block = find_suggested_tree_column_block(
+        suggestion,
+        name=block,
+        level=level,
+    )
+    target_columns = require_suggested_tree_columns(suggested_block, "target_columns")
+    conditioning_columns = require_suggested_tree_columns(
+        suggested_block, "conditioning_columns"
+    )
+    return target_columns, conditioning_columns, None
+
+
 def resolve_tree_column_block_pair(
     sample: SeedSample,
     *,
@@ -650,98 +707,16 @@ def resolve_tree_column_block_pair(
     """
 
     suggestion = suggest_tree_column_blocks(sample)
-    if household_block == "all":
-        suggested_household_blocks = [
-            block
-            for block in suggestion["blocks"]
-            if block["level"] == "household" and block["target_columns"]
-        ]
-        if not suggested_household_blocks:
-            raise ValueError("no available household tree column blocks")
-        household_target_columns = unique_columns(
-            tuple(
-                column
-                for block in suggested_household_blocks
-                for column in require_suggested_tree_columns(block, "target_columns")
-            )
-        )
-        household_conditioning_columns = unique_columns(
-            tuple(
-                column
-                for block in suggested_household_blocks
-                for column in require_suggested_tree_columns(
-                    block, "conditioning_columns"
-                )
-            )
-        )
-        household_conditioning_columns = tuple(
-            column
-            for column in household_conditioning_columns
-            if column not in household_target_columns
-        )
-        household_block_names = [
-            str(block["name"]) for block in suggested_household_blocks
-        ]
-    else:
-        suggested_household_block = find_suggested_tree_column_block(
-            suggestion,
-            name=household_block,
-            level="household",
-        )
-        household_target_columns = require_suggested_tree_columns(
-            suggested_household_block,
-            "target_columns",
-        )
-        household_conditioning_columns = require_suggested_tree_columns(
-            suggested_household_block,
-            "conditioning_columns",
-        )
-        household_block_names = None
-    if person_block == "all":
-        suggested_person_blocks = [
-            block
-            for block in suggestion["blocks"]
-            if block["level"] == "person" and block["target_columns"]
-        ]
-        if not suggested_person_blocks:
-            raise ValueError("no available person tree column blocks")
-        person_target_columns = unique_columns(
-            tuple(
-                column
-                for block in suggested_person_blocks
-                for column in require_suggested_tree_columns(block, "target_columns")
-            )
-        )
-        person_conditioning_columns = unique_columns(
-            tuple(
-                column
-                for block in suggested_person_blocks
-                for column in require_suggested_tree_columns(
-                    block, "conditioning_columns"
-                )
-            )
-        )
-        person_conditioning_columns = tuple(
-            column
-            for column in person_conditioning_columns
-            if column not in person_target_columns
-        )
-        person_block_names = [str(block["name"]) for block in suggested_person_blocks]
-    else:
-        suggested_person_block = find_suggested_tree_column_block(
-            suggestion,
-            name=person_block,
-            level="person",
-        )
-        person_target_columns = require_suggested_tree_columns(
-            suggested_person_block,
-            "target_columns",
-        )
-        person_conditioning_columns = require_suggested_tree_columns(
-            suggested_person_block,
-            "conditioning_columns",
-        )
-        person_block_names = None
+    (
+        household_target_columns,
+        household_conditioning_columns,
+        household_block_names,
+    ) = _resolve_tree_column_block(suggestion, block=household_block, level="household")
+    (
+        person_target_columns,
+        person_conditioning_columns,
+        person_block_names,
+    ) = _resolve_tree_column_block(suggestion, block=person_block, level="person")
     column_source = {
         "mode": "profile",
         "profile": suggestion["profile"],
@@ -850,13 +825,11 @@ def build_tree_geography_feasibility_report(
                 min_support=min_support,
                 max_purity=max_purity,
             )
-            for geography in sorted(
-                {
-                    row.get(geography_column, "")
-                    for row in sample.records
-                    if row.get(geography_column, "")
-                }
-            )
+            for geography in {
+                row.get(geography_column, "")
+                for row in sample.records
+                if row.get(geography_column, "")
+            }
         ),
         key=lambda region: (-int(region["person_rows"]), str(region["geography"])),
     )

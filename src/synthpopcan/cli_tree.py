@@ -54,6 +54,7 @@ from rich.table import Table
 from synthpopcan.cli_output import (
     format_file_access_error,
     read_json_object,
+    split_columns,
     write_json_object,
     write_output,
 )
@@ -1190,14 +1191,10 @@ def package_linked_tree_models_command(
         "source_provenance": source_provenance_payload,
         "release_manifests": release_manifests,
         "model_summaries": {
-            "household": {
-                **model_manifest(household_model_payload, household_model),
-                "bytes": household_model.stat().st_size,
-            },
-            "person": {
-                **model_manifest(person_model_payload, person_model),
-                "bytes": person_model.stat().st_size,
-            },
+            "household": _model_manifest_with_bytes(
+                household_model_payload, household_model
+            ),
+            "person": _model_manifest_with_bytes(person_model_payload, person_model),
         },
         "models": {
             "household": household_model_payload.to_dict(),
@@ -1263,7 +1260,7 @@ def inspect_linked_tree_package_command(
 
 
 def parse_column_list(value: str, label: str) -> tuple[str, ...]:
-    columns = tuple(column.strip() for column in value.split(",") if column.strip())
+    columns = split_columns(value)
     if not columns:
         raise ValueError(f"at least one {label} value is required")
     return columns
@@ -1375,14 +1372,10 @@ def _build_linked_release_readiness_report(
             "max_purity": max_purity,
         },
         "models": {
-            "household": {
-                **model_manifest(household_model, household_model_path),
-                "bytes": household_model_path.stat().st_size,
-            },
-            "person": {
-                **model_manifest(person_model, person_model_path),
-                "bytes": person_model_path.stat().st_size,
-            },
+            "household": _model_manifest_with_bytes(
+                household_model, household_model_path
+            ),
+            "person": _model_manifest_with_bytes(person_model, person_model_path),
         },
         "audits": {
             "household": household_audit,
@@ -1531,9 +1524,12 @@ def _read_package_path_or_id(
     """Read a linked package from a local path or packaged model ID."""
 
     package_path = Path(package_path_or_id)
-    if package_path.exists():
-        return read_linked_model_package(package_path), str(package_path), package_path
-    if package_path.is_absolute() or len(package_path.parts) > 1 or package_path.suffix:
+    if (
+        package_path.exists()
+        or package_path.is_absolute()
+        or len(package_path.parts) > 1
+        or package_path.suffix
+    ):
         return read_linked_model_package(package_path), str(package_path), package_path
     try:
         package = model_payload(package_path_or_id)
@@ -2102,6 +2098,12 @@ def model_manifest(model, path: Path) -> dict[str, Any]:
         "target_columns": list(model.spec.target_columns),
         "conditioning_columns": list(model.spec.conditioning_columns),
     }
+
+
+def _model_manifest_with_bytes(model, path: Path) -> dict[str, Any]:
+    """Return :func:`model_manifest` augmented with the on-disk byte size."""
+
+    return {**model_manifest(model, path), "bytes": path.stat().st_size}
 
 
 def _effective_random_seed(model, random_seed: int | None) -> int:

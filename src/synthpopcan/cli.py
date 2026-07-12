@@ -35,6 +35,7 @@ from synthpopcan.cli_output import (
     print_wds_inspection_table,
     print_wds_metadata_explanation_table,
     read_csv_rows,
+    split_columns,
     write_json_object,
     write_output,
     write_report,
@@ -695,7 +696,7 @@ def resolve_data_root(data_root: Path | None) -> Path:
 def _parse_column_list(value: str, label: str) -> tuple[str, ...]:
     """Parse a required comma-separated column list for Click callbacks."""
 
-    columns = tuple(part.strip() for part in value.split(",") if part.strip())
+    columns = split_columns(value)
     if not columns:
         raise click.ClickException(f"at least one {label} value is required")
     return columns
@@ -704,7 +705,7 @@ def _parse_column_list(value: str, label: str) -> tuple[str, ...]:
 def _parse_optional_column_list(value: str) -> tuple[str, ...]:
     """Parse an optional comma-separated column list for Click callbacks."""
 
-    return tuple(part.strip() for part in value.split(",") if part.strip())
+    return split_columns(value)
 
 
 @data_group.command("inspect")

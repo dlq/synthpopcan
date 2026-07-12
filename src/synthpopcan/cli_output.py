@@ -4,11 +4,13 @@ from __future__ import annotations
 
 import csv
 import json
+import sys
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
 import click
+from rich.table import Table
 
 from synthpopcan.console import make_table, print_summary_table, print_table
 
@@ -34,6 +36,7 @@ __all__ = [
     "print_wds_metadata_explanation_table",
     "read_csv_rows",
     "read_json_object",
+    "split_columns",
     "write_json_object",
     "write_output",
     "write_report",
@@ -78,10 +81,16 @@ def read_csv_rows(path: Path) -> list[dict[str, str]]:
         return list(csv.DictReader(handle))
 
 
+def split_columns(value: str) -> tuple[str, ...]:
+    """Split a comma-separated column list, dropping blank entries."""
+
+    return tuple(part.strip() for part in value.split(",") if part.strip())
+
+
 def parse_columns(value: str) -> tuple[str, ...]:
     """Parse a required comma-separated column list, rejecting an empty result."""
 
-    columns = tuple(part.strip() for part in value.split(",") if part.strip())
+    columns = split_columns(value)
     if not columns:
         raise click.ClickException("at least one column is required")
     return columns
@@ -153,7 +162,7 @@ def _write_wds_search_tsv(rows: list[dict[str, str]]) -> None:
 
     fieldnames = ["product_id", "cansim_id", "start_date", "end_date", "title_en"]
     writer = csv.DictWriter(
-        _StdoutWriter(),
+        sys.stdout,
         fieldnames=fieldnames,
         delimiter="\t",
         lineterminator="\n",
@@ -384,19 +393,25 @@ def _first_model_design_move(model_design: dict[str, Any]) -> str:
     return strategy
 
 
-def print_ipf_report_table(report: dict[str, Any]) -> None:
-    """Render an IPF fit report with summary, issues, next steps, and margins."""
+def _margin_summary_table(
+    margin_summaries: Any,
+    *,
+    title: str,
+    actual_label: str,
+    actual_key: str,
+) -> Table:
+    """Build the per-margin summary table shared by fit and validation reports."""
 
-    table = make_table(title="IPF Fit Report")
+    table = make_table(title=title)
     table.add_column("Margin")
     table.add_column("Dimensions")
     table.add_column("Cells", justify="right")
     table.add_column("Target", justify="right")
-    table.add_column("Fitted", justify="right")
+    table.add_column(actual_label, justify="right")
     table.add_column("Max Error", justify="right")
     table.add_column("Max Rel. Error", justify="right")
 
-    for row in report.get("margin_summaries", []):
+    for row in margin_summaries:
         if not isinstance(row, dict):
             continue
         table.add_row(
@@ -404,10 +419,22 @@ def print_ipf_report_table(report: dict[str, Any]) -> None:
             ", ".join(str(value) for value in row.get("dimensions", [])),
             format_report_number(row.get("cells")),
             format_report_number(row.get("target_total")),
-            format_report_number(row.get("fitted_total")),
+            format_report_number(row.get(actual_key)),
             format_report_number(row.get("max_abs_error")),
             format_report_percent(row.get("max_relative_error")),
         )
+    return table
+
+
+def print_ipf_report_table(report: dict[str, Any]) -> None:
+    """Render an IPF fit report with summary, issues, next steps, and margins."""
+
+    table = _margin_summary_table(
+        report.get("margin_summaries", []),
+        title="IPF Fit Report",
+        actual_label="Fitted",
+        actual_key="fitted_total",
+    )
 
     print_summary_table(
         {
@@ -532,27 +559,12 @@ def _control_suggestion_note(row: dict[str, Any], default_next_step: str) -> str
 def print_validation_report_table(report: dict[str, Any]) -> None:
     """Render control-validation results for weighted or expanded populations."""
 
-    table = make_table(title="Control Validation")
-    table.add_column("Margin")
-    table.add_column("Dimensions")
-    table.add_column("Cells", justify="right")
-    table.add_column("Target", justify="right")
-    table.add_column("Actual", justify="right")
-    table.add_column("Max Error", justify="right")
-    table.add_column("Max Rel. Error", justify="right")
-
-    for row in report.get("margin_summaries", []):
-        if not isinstance(row, dict):
-            continue
-        table.add_row(
-            str(row.get("name", "")),
-            ", ".join(str(value) for value in row.get("dimensions", [])),
-            format_report_number(row.get("cells")),
-            format_report_number(row.get("target_total")),
-            format_report_number(row.get("actual_total")),
-            format_report_number(row.get("max_abs_error")),
-            format_report_percent(row.get("max_relative_error")),
-        )
+    table = _margin_summary_table(
+        report.get("margin_summaries", []),
+        title="Control Validation",
+        actual_label="Actual",
+        actual_key="actual_total",
+    )
 
     print_summary_table(
         {
@@ -741,9 +753,3 @@ def _format_date_range(start_date: str, end_date: str) -> str:
     if start and start == end:
         return start
     return f"{start} to {end}".strip()
-
-
-class _StdoutWriter:
-    def write(self, value: str) -> int:
-        print(value, end="")
-        return len(value)

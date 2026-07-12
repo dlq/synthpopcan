@@ -120,10 +120,4 @@ def format_field_label(value: str) -> str:
 def format_status(value: str) -> str:
     """Normalize machine-readable check statuses for terminal display."""
 
-    if value == "found":
-        return "Found"
-    if value == "missing":
-        return "Missing"
-    if value == "problem":
-        return "Problem"
     return format_field_label(value)

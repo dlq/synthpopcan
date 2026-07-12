@@ -6,6 +6,7 @@ __all__ = ["microdata"]
 
 import csv
 from pathlib import Path
+from typing import Any
 
 import click
 
@@ -16,11 +17,13 @@ from synthpopcan.cli_output import (
     print_seed_check_table,
     print_tree_column_suggestions_table,
     print_tree_geography_feasibility_table,
+    split_columns,
     write_output,
     write_report,
 )
 from synthpopcan.console import print_summary_table, print_wrote
 from synthpopcan.microdata import (
+    SeedSample,
     build_tree_geography_feasibility_report,
     check_statcan_2016_household_seed_columns,
     derive_statcan_2016_household_seed_sample,
@@ -32,6 +35,47 @@ from synthpopcan.microdata import (
 )
 
 _PATH = click.Path(path_type=Path)
+
+
+def _read_fixture_sample(
+    path: Path,
+    *,
+    level: str | None,
+    weight_column: str | None,
+    geo_columns: str,
+    id_columns: str,
+) -> SeedSample:
+    """Read a ``fixture-v1`` seed sample, requiring an explicit ``--level``."""
+
+    if level is None:
+        raise click.ClickException(
+            "When --input-format fixture-v1 is used, pass "
+            "--level household or --level person."
+        )
+    return read_fixture_seed_sample(
+        path,
+        level=level,  # type: ignore[arg-type]
+        weight_column=weight_column,
+        geography_columns=_parse_optional_columns(geo_columns),
+        id_columns=_parse_optional_columns(id_columns),
+    )
+
+
+def _write_export_summary(
+    summary: dict[str, Any],
+    output_format: str,
+    out_path: Path,
+    title: str,
+) -> None:
+    """Write an export summary report, noting the output file for table output."""
+
+    write_report(
+        summary,
+        output_format,
+        lambda payload: print_summary_table(payload, title=title),
+    )
+    if output_format != "json":
+        print_wrote(out_path)
 
 
 @click.group(name="microdata")
@@ -81,17 +125,12 @@ def inspect_microdata(
     """Inspect a census microdata seed sample without printing rows."""
     try:
         if source_format == "fixture-v1":
-            if level is None:
-                raise click.ClickException(
-                    "When --input-format fixture-v1 is used, pass "
-                    "--level household or --level person."
-                )
-            sample = read_fixture_seed_sample(
+            sample = _read_fixture_sample(
                 path,
-                level=level,  # type: ignore[arg-type]
+                level=level,
                 weight_column=weight_column,
-                geography_columns=_parse_optional_columns(geo_columns),
-                id_columns=_parse_optional_columns(id_columns),
+                geo_columns=geo_columns,
+                id_columns=id_columns,
             )
         else:
             sample = read_statcan_2016_hierarchical_seed_sample(path)
@@ -361,17 +400,12 @@ def export_microdata_seed(
     try:
         selected_columns = parse_columns(columns)
         if source_format == "fixture-v1":
-            if level is None:
-                raise click.ClickException(
-                    "When --input-format fixture-v1 is used, pass "
-                    "--level household or --level person."
-                )
-            sample = read_fixture_seed_sample(
+            sample = _read_fixture_sample(
                 path,
-                level=level,  # type: ignore[arg-type]
+                level=level,
                 weight_column=weight_column,
-                geography_columns=_parse_optional_columns(geo_columns),
-                id_columns=_parse_optional_columns(id_columns),
+                geo_columns=geo_columns,
+                id_columns=id_columns,
             )
         else:
             sample = read_statcan_2016_hierarchical_seed_sample(
@@ -389,14 +423,7 @@ def export_microdata_seed(
         raise click_file_access_error(exc.filename or path, "access", exc) from exc
     except ValueError as exc:
         raise click_value_error(exc) from exc
-    write_report(
-        summary,
-        output_format,
-        lambda payload: print_summary_table(payload, title="Seed Export Summary"),
-    )
-    if output_format == "json":
-        return
-    print_wrote(out_path)
+    _write_export_summary(summary, output_format, out_path, "Seed Export Summary")
 
 
 @microdata.command("export-training")
@@ -470,18 +497,11 @@ def export_microdata_training(
         raise click_file_access_error(exc.filename or path, "access", exc) from exc
     except ValueError as exc:
         raise click_value_error(exc) from exc
-    write_report(
-        summary,
-        output_format,
-        lambda payload: print_summary_table(payload, title="Training Export Summary"),
-    )
-    if output_format == "json":
-        return
-    print_wrote(out_path)
+    _write_export_summary(summary, output_format, out_path, "Training Export Summary")
 
 
 def _parse_optional_columns(value: str) -> tuple[str, ...]:
-    return tuple(part.strip() for part in value.split(",") if part.strip())
+    return split_columns(value)
 
 
 def write_rows(path: Path, rows: list[dict[str, str]]) -> None:

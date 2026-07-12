@@ -13,10 +13,8 @@ from synthpopcan.controls import ControlCell, ControlMargin, ControlTable
 from synthpopcan.small_area_synthesis import (
     _fit_joint_constraints,
     _format_preflight_error,
-    _ordered_fieldnames,
     _subsample_candidates,
     _suggest_small_area_next_steps,
-    _write_csv_rows,
     _write_realized_population_to_csv,
     _write_weights_csv,
     calibrate_linked_household_csvs,
@@ -1693,21 +1691,6 @@ def test_calibrate_linked_household_csvs_subsamples_when_pool_size_smaller(
     assert summary["assigned_households"] == 2
 
 
-def test_write_csv_rows_raises_when_rows_empty(tmp_path) -> None:
-    with pytest.raises(ValueError, match="no rows to write"):
-        _write_csv_rows(tmp_path / "out.csv", [])
-
-
-def test_write_csv_rows_writes_file_when_rows_nonempty(tmp_path) -> None:
-    out = tmp_path / "out.csv"
-    _write_csv_rows(out, [{"a": "1", "b": "2"}, {"a": "3", "b": "4"}])
-    assert out.exists()
-    lines = out.read_text().splitlines()
-    assert lines[0] == "a,b"
-    assert lines[1] == "1,2"
-    assert lines[2] == "3,4"
-
-
 def test_subsample_candidates_returns_correct_pool_size() -> None:
     households = [
         {"synthetic_household_id": f"h{i}", "household_size": "1"} for i in range(10)
@@ -1843,13 +1826,3 @@ def test_write_weights_csv_fallback_integerizes_without_precomputed(tmp_path) ->
         == "target_geography,source_candidate_household_id,weight,integer_weight"
     )
     assert len(lines) == 3
-
-
-def test_ordered_fieldnames_returns_unique_ordered_keys() -> None:
-    rows = [
-        {"a": "1", "b": "2"},
-        {"b": "3", "c": "4"},
-        {"a": "5", "d": "6"},
-    ]
-    result = _ordered_fieldnames(rows)
-    assert result == ["a", "b", "c", "d"]

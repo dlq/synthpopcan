@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import csv
 import json
+from collections.abc import Iterator
+from contextlib import contextmanager
 from dataclasses import dataclass
 from io import StringIO, TextIOWrapper
 from pathlib import Path
@@ -12,6 +14,25 @@ from zipfile import BadZipFile, ZipFile
 
 from synthpopcan.ipf import IPFMargin
 from synthpopcan.tabular import format_csv_number
+
+
+@contextmanager
+def _open_wds_reader(path: Path) -> Iterator[tuple[str, csv.DictReader]]:
+    """Open a WDS ZIP and yield ``(csv_member_name, DictReader)``.
+
+    Raises ``ValueError`` when the archive is not a valid ZIP.
+    """
+
+    try:
+        archive = ZipFile(path)
+    except BadZipFile as exc:
+        raise ValueError(f"{path} is not a valid WDS ZIP") from exc
+    with archive:
+        csv_name = _find_wds_csv_member(archive)
+        with archive.open(csv_name) as raw_handle:
+            handle = TextIOWrapper(raw_handle, encoding="utf-8-sig", newline="")
+            yield csv_name, csv.DictReader(handle)
+
 
 __all__ = [
     "CategoryMapping",
@@ -294,65 +315,55 @@ def read_wds_control_table(
 
     if not dimensions:
         raise ValueError("WDS controls require at least one dimension")
-    try:
-        archive = ZipFile(path)
-    except BadZipFile as exc:
-        raise ValueError(f"{path} is not a valid WDS ZIP") from exc
-    with archive:
-        csv_name = _find_wds_csv_member(archive)
-        with archive.open(csv_name) as raw_handle:
-            handle = TextIOWrapper(raw_handle, encoding="utf-8-sig", newline="")
-            reader = csv.DictReader(handle)
-            selection_columns = set(selection.categories) if selection else set()
-            if selection and selection.reference_period is not None:
-                selection_columns.add("REF_DATE")
-            missing_selection_columns = selection_columns.difference(
-                reader.fieldnames or ()
+    with _open_wds_reader(path) as (csv_name, reader):
+        selection_columns = set(selection.categories) if selection else set()
+        if selection and selection.reference_period is not None:
+            selection_columns.add("REF_DATE")
+        missing_selection_columns = selection_columns.difference(
+            reader.fieldnames or ()
+        )
+        if missing_selection_columns:
+            raise ValueError(
+                "WDS selection refers to missing columns: "
+                f"{', '.join(sorted(missing_selection_columns))}"
             )
-            if missing_selection_columns:
+        cells: list[ControlCell] = []
+        seen_keys: set[tuple[str, ...]] = set()
+        for row_number, row in enumerate(reader, start=2):
+            if selection and not _wds_row_matches_selection(row, selection):
+                continue
+            missing = [
+                column for column in (*dimensions, count_column) if column not in row
+            ]
+            if missing:
                 raise ValueError(
-                    "WDS selection refers to missing columns: "
-                    f"{', '.join(sorted(missing_selection_columns))}"
+                    f"WDS row {row_number} is missing columns: {', '.join(missing)}"
                 )
-            cells: list[ControlCell] = []
-            seen_keys: set[tuple[str, ...]] = set()
-            for row_number, row in enumerate(reader, start=2):
-                if selection and not _wds_row_matches_selection(row, selection):
-                    continue
-                missing = [
-                    column
-                    for column in (*dimensions, count_column)
-                    if column not in row
-                ]
-                if missing:
-                    raise ValueError(
-                        f"WDS row {row_number} is missing columns: {', '.join(missing)}"
-                    )
-                key = tuple(row[dimension] for dimension in dimensions)
-                if key in seen_keys:
-                    raise ValueError(
-                        f"WDS row {row_number} duplicates target {key!r} "
-                        f"for dimensions {dimensions!r}"
-                    )
-                seen_keys.add(key)
-                try:
-                    count = float(row[count_column])
-                except ValueError as exc:
-                    raise ValueError(f"WDS row {row_number} has invalid count") from exc
-                cells.append(
-                    ControlCell(
-                        categories={
-                            dimension: _map_category(
-                                dimension,
-                                row[dimension],
-                                category_mapping,
-                                row_number,
-                            )
-                            for dimension in dimensions
-                        },
-                        count=count,
-                    )
+            key = tuple(row[dimension] for dimension in dimensions)
+            if key in seen_keys:
+                raise ValueError(
+                    f"WDS row {row_number} duplicates target {key!r} "
+                    f"for dimensions {dimensions!r}"
                 )
+            seen_keys.add(key)
+            try:
+                count = float(row[count_column])
+            except ValueError as exc:
+                raise ValueError(f"WDS row {row_number} has invalid count") from exc
+            cells.append(
+                ControlCell(
+                    categories={
+                        dimension: _map_category(
+                            dimension,
+                            row[dimension],
+                            category_mapping,
+                            row_number,
+                        )
+                        for dimension in dimensions
+                    },
+                    count=count,
+                )
+            )
 
     if not cells:
         raise ValueError("WDS selection matched no rows with numeric counts")
@@ -412,27 +423,19 @@ def inspect_wds_zip(path: Path, *, sample_rows: int = 5) -> dict[str, Any]:
 
     if sample_rows < 1:
         raise ValueError("sample rows must be at least 1")
-    try:
-        archive = ZipFile(path)
-    except BadZipFile as exc:
-        raise ValueError(f"{path} is not a valid WDS ZIP") from exc
-    with archive:
-        csv_name = _find_wds_csv_member(archive)
-        with archive.open(csv_name) as raw_handle:
-            handle = TextIOWrapper(raw_handle, encoding="utf-8-sig", newline="")
-            reader = csv.DictReader(handle)
-            columns = list(reader.fieldnames or [])
-            rows: list[dict[str, str]] = []
-            numeric_probe_values = {column: [] for column in columns}
-            row_count = 0
-            for row in reader:
-                row_count += 1
-                if len(rows) < sample_rows:
-                    rows.append(row)
-                for column in columns:
-                    value = row.get(column, "")
-                    if value and len(numeric_probe_values[column]) < 25:
-                        numeric_probe_values[column].append(value)
+    with _open_wds_reader(path) as (csv_name, reader):
+        columns = list(reader.fieldnames or [])
+        rows: list[dict[str, str]] = []
+        numeric_probe_values = {column: [] for column in columns}
+        row_count = 0
+        for row in reader:
+            row_count += 1
+            if len(rows) < sample_rows:
+                rows.append(row)
+            for column in columns:
+                value = row.get(column, "")
+                if value and len(numeric_probe_values[column]) < 25:
+                    numeric_probe_values[column].append(value)
 
     value_columns = [column for column in columns if column.upper() == "VALUE"]
     count_candidates = value_columns or [
@@ -485,26 +488,16 @@ def build_wds_category_mapping_template(
     if preset not in {"blank", "canonical"}:
         raise ValueError("Unknown WDS mapping preset. Use one of: blank, canonical.")
     categories: dict[str, set[str]] = {dimension: set() for dimension in dimensions}
-    try:
-        archive = ZipFile(path)
-    except BadZipFile as exc:
-        raise ValueError(f"{path} is not a valid WDS ZIP") from exc
-    with archive:
-        csv_name = _find_wds_csv_member(archive)
-        with archive.open(csv_name) as raw_handle:
-            handle = TextIOWrapper(raw_handle, encoding="utf-8-sig", newline="")
-            reader = csv.DictReader(handle)
-            fieldnames = reader.fieldnames or []
-            missing = [
-                dimension for dimension in dimensions if dimension not in fieldnames
-            ]
-            if missing:
-                raise ValueError(f"WDS CSV is missing columns: {', '.join(missing)}")
-            for row in reader:
-                for dimension in dimensions:
-                    value = row.get(dimension, "")
-                    if value:
-                        categories[dimension].add(value)
+    with _open_wds_reader(path) as (csv_name, reader):
+        fieldnames = reader.fieldnames or []
+        missing = [dimension for dimension in dimensions if dimension not in fieldnames]
+        if missing:
+            raise ValueError(f"WDS CSV is missing columns: {', '.join(missing)}")
+        for row in reader:
+            for dimension in dimensions:
+                value = row.get(dimension, "")
+                if value:
+                    categories[dimension].add(value)
 
     return {
         dimension: {

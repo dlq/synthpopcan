@@ -215,13 +215,7 @@ class WDSTableSearchResult:
     def as_dict(self) -> dict[str, str]:
         """Return a JSON-serializable representation for CLI output."""
 
-        return {
-            "product_id": self.product_id,
-            "cansim_id": self.cansim_id,
-            "title_en": self.title_en,
-            "start_date": self.start_date,
-            "end_date": self.end_date,
-        }
+        return asdict(self)
 
 
 _CENSUS_PROFILE_2016_DOWNLOADS: dict[str, CensusProfileDownload] = {
@@ -456,6 +450,17 @@ def normalize_dimension_name(value: str) -> str:
     return value.strip().lower()
 
 
+def _iter_wds_dimensions(metadata: dict[str, Any]):
+    """Yield each dict dimension entry from WDS metadata, tolerating shape drift."""
+
+    dimensions = metadata.get("dimension") or metadata.get("dimensions", [])
+    if not isinstance(dimensions, list):
+        return
+    for dimension in dimensions:
+        if isinstance(dimension, dict):
+            yield dimension
+
+
 def extract_wds_dimension_names(metadata: dict[str, Any]) -> list[str]:
     """Extract English dimension names from WDS metadata.
 
@@ -464,18 +469,9 @@ def extract_wds_dimension_names(metadata: dict[str, Any]) -> list[str]:
     """
 
     names: list[str] = []
-    dimensions = metadata.get("dimension") or metadata.get("dimensions", [])
-    if not isinstance(dimensions, list):
-        return names
-    for dimension in dimensions:
-        if not isinstance(dimension, dict):
-            continue
-        name = (
-            dimension.get("dimensionNameEn")
-            or dimension.get("dimensionName")
-            or dimension.get("name")
-        )
-        if isinstance(name, str) and name:
+    for dimension in _iter_wds_dimensions(metadata):
+        name = extract_wds_dimension_name(dimension)
+        if name:
             names.append(name)
     return names
 
@@ -492,12 +488,7 @@ def extract_wds_dimension_previews(
     """
 
     previews: list[dict[str, Any]] = []
-    dimensions = metadata.get("dimension") or metadata.get("dimensions", [])
-    if not isinstance(dimensions, list):
-        return previews
-    for dimension in dimensions:
-        if not isinstance(dimension, dict):
-            continue
+    for dimension in _iter_wds_dimensions(metadata):
         name = extract_wds_dimension_name(dimension)
         if not name:
             continue

@@ -46,6 +46,12 @@ HouseholdRow = dict[str, str]
 PersonRow = dict[str, str]
 
 
+def _record_matches(record: dict[str, str], pairs: Iterable[tuple[str, str]]) -> bool:
+    """Return whether *record* equals every ``(dimension, category)`` in *pairs*."""
+
+    return all(record.get(dimension, "") == category for dimension, category in pairs)
+
+
 @dataclass(frozen=True)
 class GeographyHouseholdFit:
     """Fitted candidate-household weights and reports for each target geography."""
@@ -123,13 +129,9 @@ class _LinkedCalibrationIndex:
                 rows.append(
                     np.fromiter(
                         (
-                            all(
-                                household.get(dimension, "") == category
-                                for dimension, category in zip(
-                                    spec.dimensions,
-                                    spec.categories,
-                                    strict=True,
-                                )
+                            _record_matches(
+                                household,
+                                zip(spec.dimensions, spec.categories, strict=True),
                             )
                             for household in households
                         ),
@@ -140,13 +142,9 @@ class _LinkedCalibrationIndex:
                 continue
             contribution = np.zeros(len(households), dtype=np.float64)
             for person in persons:
-                if not all(
-                    person.get(dimension, "") == category
-                    for dimension, category in zip(
-                        spec.dimensions,
-                        spec.categories,
-                        strict=True,
-                    )
+                if not _record_matches(
+                    person,
+                    zip(spec.dimensions, spec.categories, strict=True),
                 ):
                     continue
                 household_index = household_indexes.get(
@@ -504,13 +502,7 @@ def _structural_zero_issues(
             )
             if any(item in missing_categories for item in categories):
                 continue
-            if any(
-                all(
-                    candidate.get(dimension, "") == category
-                    for dimension, category in categories
-                )
-                for candidate in candidates
-            ):
+            if any(_record_matches(candidate, categories) for candidate in candidates):
                 continue
             key = (margin.name, dimensions, categories)
             geography = cell.categories.get(geography_dimension, "")
@@ -593,11 +585,7 @@ def _sparse_support_warnings(
                 continue
             seen_cells.add(cell_key)
             support = sum(
-                all(
-                    candidate.get(dimension, "") == category
-                    for dimension, category in categories
-                )
-                for candidate in candidates
+                _record_matches(candidate, categories) for candidate in candidates
             )
             if support < 2:
                 sparse_cells.append(
@@ -1336,17 +1324,6 @@ def _read_csv_rows(path: Path) -> list[dict[str, str]]:
         return [dict(row) for row in csv.DictReader(handle)]
 
 
-def _write_csv_rows(path: Path, rows: Sequence[dict[str, str]]) -> None:
-    if not rows:
-        raise ValueError(f"no rows to write to {path}")
-    path.parent.mkdir(parents=True, exist_ok=True)
-    fieldnames = _ordered_fieldnames(rows)
-    with path.open("w", newline="") as handle:
-        writer = csv.DictWriter(handle, fieldnames=fieldnames)
-        writer.writeheader()
-        writer.writerows(rows)
-
-
 def _subsample_candidates(
     households: list[HouseholdRow],
     persons: list[PersonRow],
@@ -1732,12 +1709,3 @@ def _suggest_small_area_next_steps(
             "introduced residuals after the fractional household/person fit."
         )
     return steps
-
-
-def _ordered_fieldnames(rows: Sequence[dict[str, str]]) -> list[str]:
-    fieldnames: list[str] = []
-    for row in rows:
-        for fieldname in row:
-            if fieldname not in fieldnames:
-                fieldnames.append(fieldname)
-    return fieldnames
