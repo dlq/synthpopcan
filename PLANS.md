@@ -238,6 +238,25 @@ Candidate work:
   largest-residual rows, and suggested next steps, and per-cell residual
   messages were clarified.**
 
+- Make small-area non-convergence impossible to miss. Per-geography IPF reports
+  a converged/non-converged count in the calibration summary, but a target cell
+  whose supporting candidates were all driven to zero weight is silently left
+  unadjusted: the NumPy per-geography fitter reports non-convergence instead of
+  raising, unlike `fit_ipf`, which raises for the same unsupported cell. A run
+  that quietly leaves some tracts unsatisfiable therefore only shows up as a
+  lower converged count in a report a user may skim. Surface such geographies as
+  explicit errors or prominent warnings (with the offending margin and category)
+  so they are caught before the output is used.
+
+- Document and guard household-first versus joint calibration. Household-first
+  calibration fits households and lets person rows inherit geography, treating
+  person margins as validation-only; supplying a person-control file instead
+  triggers joint household/person refinement. Add guidance on when to reach for
+  each, and detect when household-only calibration yields person distributions
+  (for example age or sex) that drift materially from known person controls, so
+  the choice is explicit rather than an implicit property of which flags were
+  passed.
+
 - Prototype optional SciPy CSR or other sparse backends for high-cardinality or
   repeated IPF updates while keeping the current pure-Python indexed fitter as
   the default until dependency and browser implications are clear. **Met as a
