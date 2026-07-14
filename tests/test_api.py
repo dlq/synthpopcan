@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import csv
+import inspect
 import json
 from pathlib import Path
 from unittest.mock import patch
@@ -13,6 +14,61 @@ from synthpopcan.controls import ControlCell, ControlMargin, ControlTable
 from synthpopcan.ipf import IPFResult
 from synthpopcan.models import model_payload
 from synthpopcan.tree import read_tree_training_sample, train_cart_model
+
+STABLE_API_NAMES = (
+    "ControlTable",
+    "IPFResult",
+    "LinkedPopulation",
+    "LinkedPopulationFiles",
+    "PopulationRows",
+    "SmallAreaResult",
+    "calibrate_small_area",
+    "expand_population",
+    "fit_ipf",
+    "generate_from_model",
+    "read_controls",
+    "read_model_package",
+    "read_seed",
+    "render_small_area_map",
+    "write_linked_population",
+    "write_population",
+    "write_weights",
+)
+
+
+def test_stable_api_contract_is_explicit() -> None:
+    assert tuple(api.__all__) == STABLE_API_NAMES
+    assert tuple(spc.__all__) == (
+        *STABLE_API_NAMES[:6],
+        "__version__",
+        *STABLE_API_NAMES[6:],
+    )
+    expected_parameters = {
+        "fit_ipf": ("seed", "controls", "weight_field", "max_iterations", "tolerance"),
+        "generate_from_model": (
+            "package",
+            "households",
+            "conditions",
+            "random_seed",
+            "household_size_column",
+            "require_publishable",
+        ),
+        "calibrate_small_area": (
+            "population",
+            "controls",
+            "geography_dimension",
+            "output_dir",
+            "person_controls",
+            "geography_column",
+            "max_iterations",
+            "tolerance",
+            "pool_size",
+            "subsample_seed",
+            "include_weights",
+        ),
+    }
+    for name, parameters in expected_parameters.items():
+        assert tuple(inspect.signature(getattr(spc, name)).parameters) == parameters
 
 
 def test_top_level_api_runs_path_based_ipf_workflow(tmp_path: Path) -> None:
@@ -42,8 +98,8 @@ def test_top_level_api_runs_path_based_ipf_workflow(tmp_path: Path) -> None:
     )
     fit = spc.fit_ipf(seed_path, controls_path)
     expanded = spc.expand_population(fit)
-    spc.write_weights(fit, weights_path)
-    spc.write_population(expanded, expanded_path)
+    assert spc.write_weights(fit, weights_path) == weights_path
+    assert spc.write_population(expanded, expanded_path) == expanded_path
 
     assert fit.converged is True
     assert [row["weight"] for row in read_csv(weights_path)] == [
@@ -69,9 +125,12 @@ def test_top_level_api_generates_from_linked_model_package(tmp_path: Path) -> No
         conditions={"geo": "Demo North"},
         random_seed=11,
     )
-    spc.write_population(population, output_dir)
+    files = spc.write_linked_population(population, output_dir)
 
     assert isinstance(population, spc.LinkedPopulation)
+    assert isinstance(files, spc.LinkedPopulationFiles)
+    assert files.households == output_dir / "households.csv"
+    assert files.persons == output_dir / "persons.csv"
     assert len(population.households) == 3
     assert len(population.persons) >= 3
     assert (output_dir / "households.csv").is_file()
@@ -98,11 +157,9 @@ def test_top_level_api_accepts_in_memory_ipf_inputs() -> None:
     )
 
     fit = spc.fit_ipf(seed, controls)
-    fit_from_margins = spc.fit_ipf(seed, controls.to_ipf_margins())
 
     assert fit.converged is True
     assert fit.margin_totals(("age",)) == {("young",): 5, ("old",): 7}
-    assert fit_from_margins.margin_totals(("age",)) == fit.margin_totals(("age",))
 
 
 def test_top_level_api_writes_custom_weight_column(tmp_path: Path) -> None:
@@ -113,9 +170,9 @@ def test_top_level_api_writes_custom_weight_column(tmp_path: Path) -> None:
         iterations=1,
         max_abs_error=0,
     )
-    output_path = tmp_path / "weights.csv"
+    output_path = tmp_path / "nested" / "weights.csv"
 
-    spc.write_weights(result, output_path)
+    assert spc.write_weights(result, output_path) == output_path
     spc.write_weights(result, tmp_path / "custom.csv", weight_column="synthetic_weight")
 
     assert read_csv(output_path) == [
@@ -141,6 +198,19 @@ def test_top_level_api_reports_empty_outputs_and_invalid_packages(
         spc.write_weights(empty_result, tmp_path / "weights.csv")
     with pytest.raises(ValueError, match="empty rows"):
         spc.write_population([], tmp_path / "population.csv")
+    with pytest.raises(TypeError, match="write_linked_population"):
+        spc.write_population(  # type: ignore[arg-type]
+            spc.LinkedPopulation(
+                households=[{"synthetic_household_id": "h1"}],
+                persons=[
+                    {
+                        "synthetic_household_id": "h1",
+                        "synthetic_person_id": "p1",
+                    }
+                ],
+            ),
+            tmp_path / "wrong-output.csv",
+        )
 
     invalid_json_path = tmp_path / "invalid.json"
     invalid_json_path.write_text("{")
@@ -267,26 +337,17 @@ def test_top_level_api_generates_from_cart_model_package(tmp_path: Path) -> None
     assert {row["geo"] for row in population.households} == {"QC"}
 
 
-def test_top_level_api_calibrates_linked_small_area_csvs(tmp_path: Path) -> None:
-    households_path = tmp_path / "households.csv"
-    persons_path = tmp_path / "persons.csv"
+def test_top_level_api_composes_generation_with_small_area_calibration(
+    tmp_path: Path,
+) -> None:
     controls_path = tmp_path / "controls.csv"
     person_controls_path = tmp_path / "person-controls.csv"
-    households_out = tmp_path / "small-area-households.csv"
-    persons_out = tmp_path / "small-area-persons.csv"
-    report_out = tmp_path / "small-area-report.json"
-    write_csv(
-        households_path,
-        ["synthetic_household_id", "TENUR"],
-        [
+    population = spc.LinkedPopulation(
+        households=[
             {"synthetic_household_id": "h1", "TENUR": "1"},
             {"synthetic_household_id": "h2", "TENUR": "2"},
         ],
-    )
-    write_csv(
-        persons_path,
-        ["synthetic_person_id", "synthetic_household_id", "age_group"],
-        [
+        persons=[
             {
                 "synthetic_person_id": "p1",
                 "synthetic_household_id": "h1",
@@ -333,24 +394,36 @@ def test_top_level_api_calibrates_linked_small_area_csvs(tmp_path: Path) -> None
         ],
     )
 
-    summary = spc.calibrate_small_area_linked(
-        households=households_path,
-        persons=persons_path,
-        controls=controls_path,
-        person_controls=person_controls_path,
+    result = spc.calibrate_small_area(
+        population,
+        spc.read_controls(controls_path),
+        person_controls=spc.read_controls(person_controls_path),
         geography_dimension="ct",
-        geography_column="ct",
-        households_out=households_out,
-        persons_out=persons_out,
-        report_out=report_out,
+        output_dir=tmp_path / "small-area",
+        include_weights=True,
     )
 
-    assert summary["assigned_households"] == 3
-    assert summary["assigned_persons"] == 3
-    assert summary["calibration_mode"] == "household_and_person"
-    assert {row["ct"] for row in read_csv(households_out)} == {"4620001"}
-    assert {row["ct"] for row in read_csv(persons_out)} == {"4620001"}
-    assert report_out.is_file()
+    assert isinstance(result, spc.SmallAreaResult)
+    assert result.assigned_households == 3
+    assert result.assigned_persons == 3
+    assert result.total_geographies == 1
+    assert result.converged is True
+    assert result.max_abs_error == 0
+    assert result.calibration_mode == "household_and_person"
+    assert result.weights_path is not None and result.weights_path.is_file()
+    assert result.report_path.is_file()
+    assert {row["ct"] for row in read_csv(result.population.households)} == {"4620001"}
+    assert {row["ct"] for row in read_csv(result.population.persons)} == {"4620001"}
+
+    candidate_files = spc.write_linked_population(population, tmp_path / "candidates")
+    file_result = spc.calibrate_small_area(
+        candidate_files,
+        controls_path,
+        geography_dimension="ct",
+        output_dir=tmp_path / "small-area-from-files",
+    )
+    assert file_result.assigned_households == 3
+    assert file_result.population.households.is_file()
 
 
 def write_csv(path: Path, fieldnames: list[str], rows: list[dict[str, str]]) -> None:
@@ -372,6 +445,22 @@ def read_csv(path: Path) -> list[dict[str, str]]:
 
 def test_render_small_area_map_delegates_to_render_synthesis_map(tmp_path) -> None:
     calls: list[dict] = []
+    files = spc.LinkedPopulationFiles(
+        households=tmp_path / "hh.csv",
+        persons=tmp_path / "people.csv",
+    )
+    small_area = spc.SmallAreaResult(
+        population=files,
+        report_path=tmp_path / "report.json",
+        weights_path=None,
+        assigned_households=2,
+        assigned_persons=3,
+        total_geographies=1,
+        converged=True,
+        max_abs_error=0,
+        calibration_mode="household_only",
+        details={},
+    )
 
     def _fake_render(**kwargs):
         calls.append(kwargs)
@@ -379,7 +468,7 @@ def test_render_small_area_map_delegates_to_render_synthesis_map(tmp_path) -> No
 
     with patch("synthpopcan.map_render.render_synthesis_map", _fake_render):
         result = api.render_small_area_map(
-            households=str(tmp_path / "hh.csv"),
+            households=small_area,
             boundaries=str(tmp_path / "bounds.shp"),
             geography_column="ct",
             geography_id_field="CTUID",
@@ -387,6 +476,8 @@ def test_render_small_area_map_delegates_to_render_synthesis_map(tmp_path) -> No
         )
 
     assert len(calls) == 1
+    assert calls[0]["households_path"] == files.households
+    assert calls[0]["persons_path"] == files.persons
     assert calls[0]["geography_column"] == "ct"
     assert calls[0]["geography_id_field"] == "CTUID"
     assert result == tmp_path / "out.html"

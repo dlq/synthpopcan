@@ -1,7 +1,7 @@
 # SynthPopCan Plan
 
 Status: release-phased roadmap\
-Last updated: 2026-07-12\
+Last updated: 2026-07-14\
 Current release: `0.4.0`
 
 ## Current Focus
@@ -10,7 +10,7 @@ Start here. Open a linked implementation plan only when working on that area.
 
 | Horizon | Focus | Detail |
 | --- | --- | --- |
-| Next patch | Prepare `0.4.1` from the current seed-control, provenance, documentation, and planning improvements. | [CHANGELOG.md](CHANGELOG.md) |
+| Next patch | Prepare `0.4.1` from the current seed-control, provenance, public-API, documentation, and planning improvements. | [CHANGELOG.md](CHANGELOG.md) |
 | Correctness | Add Python/NumPy IPF differential tests, independent small-area reconciliation, then integerization properties. | [Correctness plan](plans/2026-07-12-correctness-assurance.md) |
 | Next minor | Build the durable backend IPF workbench for `0.5.0`. | [Local runtime plan](plans/2026-07-10-local-web-application-runtime.md) |
 | Later `0.5.x` | Move prepared-model generation and small-area synthesis into the same durable run model. | [Plan index](plans/README.md) |
@@ -43,8 +43,8 @@ background in [NOTES.md](NOTES.md), and detailed tasks in [`plans/`](plans/).
 ## Current Product State
 
 `0.4.0` is the latest tagged and published release. The development tree adds
-independent candidate-subsample seeds, subsample provenance, expanded small-area
-documentation, and planning cleanup.
+independent candidate-subsample seeds, subsample provenance, a smaller and typed
+beginner Python API, expanded small-area documentation, and planning cleanup.
 
 Implemented capabilities include:
 
@@ -86,6 +86,8 @@ Status: active follow-up line.
 
 - independent `--random-seed` and `--subsample-seed` controls;
 - report provenance for input and selected household/person counts;
+- composable beginner API results and separate flat and linked output writers;
+- an explicit stable top-level API contract and inline typing marker;
 - clearer small-area CLI, API, notebook, and web-app documentation;
 - correctness roadmap and planning rationalization.
 

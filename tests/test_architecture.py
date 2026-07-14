@@ -53,6 +53,10 @@ def test_top_level_package_only_reexports_beginner_api() -> None:
     assert forbidden == []
 
 
+def test_package_declares_inline_typing_support() -> None:
+    assert (PACKAGE_ROOT / "py.typed").is_file()
+
+
 def test_beginner_api_does_not_depend_on_cli_or_web_adapters() -> None:
     imports = module_imports(PACKAGE_ROOT / "api.py")
 

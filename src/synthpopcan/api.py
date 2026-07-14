@@ -3,7 +3,7 @@
 This module is the small, stable Python surface intended for people who want to
 use SynthPopCan without learning the internal command modules first. It favours
 plain file paths, lists of row dictionaries, and a small number of workflow
-functions that map directly to the two main beginner tasks:
+functions that map directly to common beginner work:
 
 * fit seed rows to margin/control totals with IPF;
 * generate linked household/person rows from a prepared model package;
@@ -21,7 +21,7 @@ there::
 
     package = spc.read_model_package("model-package.json")
     population = spc.generate_from_model(package, households=100)
-    spc.write_population(population, "synthetic-population/")
+    spc.write_linked_population(population, "synthetic-population/")
 """
 
 from __future__ import annotations
@@ -31,10 +31,11 @@ import json
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
+from tempfile import TemporaryDirectory
 from typing import Any
 
-from synthpopcan.controls import ControlTable, read_control_table
-from synthpopcan.ipf import IPFMargin, IPFResult, Record, expand_records
+from synthpopcan.controls import ControlTable, read_control_table, write_control_table
+from synthpopcan.ipf import IPFMargin, IPFResult, expand_records
 from synthpopcan.ipf import fit_ipf as fit_ipf_records
 from synthpopcan.small_area_synthesis import calibrate_linked_household_csvs
 from synthpopcan.tabular import format_csv_number
@@ -44,24 +45,29 @@ from synthpopcan.tree import (
     generate_linked_population,
 )
 
-SeedInput = str | Path | Sequence[Record]
-ControlInput = str | Path | ControlTable | Sequence[IPFMargin]
-ModelPackageInput = str | Path | Mapping[str, object]
+_SeedInput = str | Path | Sequence[Mapping[str, object]]
+_ControlInput = str | Path | ControlTable
+_ModelPackageInput = str | Path | Mapping[str, object]
 PopulationRows = list[dict[str, str]]
 
 __all__ = [
+    "ControlTable",
+    "IPFResult",
     "LinkedPopulation",
+    "LinkedPopulationFiles",
     "PopulationRows",
-    "read_seed",
-    "read_controls",
-    "fit_ipf",
+    "SmallAreaResult",
+    "calibrate_small_area",
     "expand_population",
-    "write_weights",
-    "read_model_package",
+    "fit_ipf",
     "generate_from_model",
-    "write_population",
-    "calibrate_small_area_linked",
+    "read_controls",
+    "read_model_package",
+    "read_seed",
     "render_small_area_map",
+    "write_linked_population",
+    "write_population",
+    "write_weights",
 ]
 
 
@@ -86,12 +92,46 @@ class LinkedPopulation:
 
     Notes
     -----
-    Pass a ``LinkedPopulation`` to :func:`write_population` to write a directory
-    containing ``households.csv`` and ``persons.csv``.
+    Pass a ``LinkedPopulation`` to :func:`write_linked_population` to write a
+    directory containing ``households.csv`` and ``persons.csv``.
     """
 
     households: PopulationRows
     persons: PopulationRows
+
+
+@dataclass(frozen=True)
+class LinkedPopulationFiles:
+    """Paths to linked household and person population CSVs.
+
+    ``write_linked_population`` returns this object. Pass it to
+    :func:`calibrate_small_area` or :func:`render_small_area_map` to continue a
+    workflow without manually reconnecting the two filenames.
+    """
+
+    households: Path
+    persons: Path
+
+
+@dataclass(frozen=True)
+class SmallAreaResult:
+    """Artifacts and headline diagnostics from small-area calibration.
+
+    The paired population paths can be passed directly to
+    :func:`render_small_area_map`. ``details`` retains the complete report for
+    research inspection and machine-readable downstream use.
+    """
+
+    population: LinkedPopulationFiles
+    report_path: Path
+    weights_path: Path | None
+    assigned_households: int
+    assigned_persons: int
+    total_geographies: int
+    converged: bool
+    max_abs_error: float
+    calibration_mode: str
+    details: Mapping[str, Any]
 
 
 def read_seed(path: str | Path) -> PopulationRows:
@@ -149,8 +189,8 @@ def read_controls(path: str | Path) -> ControlTable:
 
 
 def fit_ipf(
-    seed: SeedInput,
-    controls: ControlInput,
+    seed: str | Path | Sequence[Mapping[str, object]],
+    controls: str | Path | ControlTable,
     *,
     weight_field: str | None = None,
     max_iterations: int = 100,
@@ -169,9 +209,8 @@ def fit_ipf(
         Either a path to a seed CSV or an in-memory sequence of row mappings.
         Each row should include the dimensions named in the controls.
     controls:
-        A path to a normalized control CSV, a
-        :class:`synthpopcan.controls.ControlTable`, or a sequence of lower-level
-        :class:`synthpopcan.ipf.IPFMargin` objects.
+        A path to a normalized control CSV or a
+        :class:`synthpopcan.controls.ControlTable`.
     weight_field:
         Optional seed column containing starting weights. If omitted, every seed
         row starts with weight ``1``.
@@ -247,7 +286,7 @@ def write_weights(
     path: str | Path,
     *,
     weight_column: str | None = None,
-) -> None:
+) -> Path:
     """Write fitted seed records with a fitted-weight column.
 
     This is the recommended way to save IPF output for most workflows. It keeps
@@ -269,6 +308,11 @@ def write_weights(
     ------
     ValueError
         Raised when the IPF result has no records to write.
+
+    Returns
+    -------
+    pathlib.Path
+        The written CSV path.
     """
 
     if not result.records:
@@ -276,11 +320,14 @@ def write_weights(
     rows = [_string_row(record) for record in result.records]
     output_weight_column = weight_column or _default_weight_column(rows)
     fieldnames = [*rows[0], output_weight_column]
-    with Path(path).open("w", newline="") as handle:
+    output_path = Path(path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    with output_path.open("w", newline="") as handle:
         writer = csv.DictWriter(handle, fieldnames=fieldnames)
         writer.writeheader()
         for row, weight in zip(rows, result.weights, strict=True):
             writer.writerow({**row, output_weight_column: format_csv_number(weight)})
+    return output_path
 
 
 def read_model_package(path: str | Path) -> dict[str, Any]:
@@ -319,7 +366,7 @@ def read_model_package(path: str | Path) -> dict[str, Any]:
 
 
 def generate_from_model(
-    package: ModelPackageInput,
+    package: str | Path | Mapping[str, object],
     *,
     households: int,
     conditions: Mapping[str, str] | None = None,
@@ -395,31 +442,28 @@ def generate_from_model(
 
 
 def write_population(
-    population: LinkedPopulation | PopulationRows,
+    population: PopulationRows,
     path: str | Path,
-) -> None:
-    """Write generated population rows to CSV.
-
-    The output shape depends on the kind of population passed in:
-
-    * a :class:`LinkedPopulation` is written to a directory containing
-      ``households.csv`` and ``persons.csv``;
-    * a flat list of row dictionaries is written to a single CSV file.
+) -> Path:
+    """Write flat generated population rows to one CSV file.
 
     Parameters
     ----------
     population:
-        Either a linked household/person population from
-        :func:`generate_from_model`, or a flat list of row dictionaries such as
-        the result from :func:`expand_population`.
+        A flat list of row dictionaries such as the result from
+        :func:`expand_population`.
     path:
-        Destination directory for linked output, or destination CSV path for
-        flat output.
+        Destination CSV path.
 
     Raises
     ------
     ValueError
         Raised when there are no rows to write.
+
+    Returns
+    -------
+    pathlib.Path
+        The written CSV path.
 
     Examples
     --------
@@ -428,146 +472,160 @@ def write_population(
     >>> write_population(rows, "expanded.csv")
     """
 
-    output_path = Path(path)
     if isinstance(population, LinkedPopulation):
-        output_path.mkdir(parents=True, exist_ok=True)
-        _write_rows(output_path / "households.csv", population.households)
-        _write_rows(output_path / "persons.csv", population.persons)
-        return
+        raise TypeError(
+            "write_population writes one flat CSV; use write_linked_population "
+            "for linked household/person rows"
+        )
+    output_path = Path(path)
     _write_rows(output_path, population)
+    return output_path
 
 
-def calibrate_small_area_linked(
+def write_linked_population(
+    population: LinkedPopulation,
+    directory: str | Path,
+) -> LinkedPopulationFiles:
+    """Write linked household and person rows to a directory.
+
+    Returns paired paths that can be passed directly to
+    :func:`calibrate_small_area` or :func:`render_small_area_map`.
+    """
+
+    if not population.households:
+        raise ValueError("cannot write a linked population without households")
+    if not population.persons:
+        raise ValueError("cannot write a linked population without persons")
+    output_directory = Path(directory)
+    output_directory.mkdir(parents=True, exist_ok=True)
+    files = LinkedPopulationFiles(
+        households=output_directory / "households.csv",
+        persons=output_directory / "persons.csv",
+    )
+    _write_rows(files.households, population.households)
+    _write_rows(files.persons, population.persons)
+    return files
+
+
+def calibrate_small_area(
+    population: LinkedPopulation | LinkedPopulationFiles | str | Path,
+    controls: str | Path | ControlTable,
     *,
-    households: str | Path,
-    persons: str | Path,
-    controls: str | Path,
-    person_controls: str | Path | None = None,
     geography_dimension: str,
-    geography_column: str,
-    households_out: str | Path,
-    persons_out: str | Path,
-    report_out: str | Path | None = None,
-    weights_out: str | Path | None = None,
-    household_id_column: str = "synthetic_household_id",
-    person_id_column: str = "synthetic_person_id",
-    weight_field: str | None = None,
+    output_dir: str | Path,
+    person_controls: str | Path | ControlTable | None = None,
+    geography_column: str | None = None,
     max_iterations: int = 100,
     tolerance: float = 1e-6,
     pool_size: int | None = None,
     subsample_seed: int = 42,
-) -> dict[str, Any]:
-    """Calibrate linked household/person candidates to small-area controls.
+    include_weights: bool = False,
+) -> SmallAreaResult:
+    """Calibrate a linked population to small-area controls.
 
-    This is the beginner-friendly Python entry point for the small-area
-    workflow. It takes linked household and person candidate CSVs, assigns
-    household rows to a target geography such as census tract (``ct``) or
-    aggregate dissemination area (``ada``), and writes new household/person CSVs
-    that preserve the household/person links.
-
-    Household controls are always fitted first. When ``person_controls`` is
-    supplied, a joint refinement adjusts household weights against linked-person
-    category counts while keeping each household and all of its people together.
+    This is the composable beginner entry point. ``population`` may be the
+    in-memory result of :func:`generate_from_model`, the paired paths returned by
+    :func:`write_linked_population`, or a directory containing ``households.csv``
+    and ``persons.csv``. Outputs use predictable names inside ``output_dir`` and
+    the returned result can be passed directly to :func:`render_small_area_map`.
 
     Parameters
     ----------
-    households:
-        Candidate household CSV, usually generated from a prepared linked model
-        package.
-    persons:
-        Candidate person CSV linked to ``households`` by the household ID
-        column.
+    population:
+        Linked household/person rows or their paired CSV files.
     controls:
-        Normalized control CSV with one dimension naming the target geography
-        and one or more household dimensions available in ``households``.
-    person_controls:
-        Optional normalized control CSV with the same target geographies and
-        person dimensions available in ``persons``. These controls refine the
-        household weights; person rows are never detached from their household.
+        Normalized household controls as a path or :class:`ControlTable`.
     geography_dimension:
-        Name of the geography dimension in the control CSV, for example ``ct``
-        or ``ada``.
+        Geography dimension in the controls, such as ``ct`` or ``ada``.
+    output_dir:
+        Directory for ``households.csv``, ``persons.csv``, and ``report.json``.
+    person_controls:
+        Optional linked-person controls as a path or :class:`ControlTable`.
     geography_column:
-        Output column name to write on assigned household and person rows.
-    households_out:
-        Destination CSV for assigned household rows.
-    persons_out:
-        Destination CSV for assigned person rows.
-    report_out:
-        Optional JSON report path containing convergence and assigned-row
-        counts by geography.
-    weights_out:
-        Optional CSV path for fitted household weights. This can be very large
-        for many small areas, so it is usually omitted.
-    household_id_column:
-        Household ID column shared by the candidate household and person CSVs.
-    person_id_column:
-        Person ID column in the candidate person CSV.
-    weight_field:
-        Optional candidate-household starting weight column.
-    max_iterations:
-        Maximum IPF iterations for each geography-specific household fit.
-    tolerance:
-        Convergence tolerance for each geography-specific household fit.
-    pool_size:
-        Maximum candidate households to use.  Values of 5 000–10 000
-        reproduce aggregate statistics with near-identical accuracy to the
-        full pool and run ~10× faster.  Pass ``None`` (default) to use the
-        full pool, which is needed when individual-household uniqueness matters.
-    subsample_seed:
-        Seed for the candidate subsample when ``pool_size`` is set.  Defaults
-        to ``42`` for reproducible runs; vary it to check how sensitive the
-        aggregate results are to which candidates are drawn.  The effective
-        seed is recorded in the report's ``subsample`` block.
+        Output geography column. Defaults to ``geography_dimension``.
+    max_iterations, tolerance:
+        IPF convergence settings for each geography.
+    pool_size, subsample_seed:
+        Optional reproducible candidate-pool subsampling settings.
+    include_weights:
+        Also write the usually large ``weights.csv`` diagnostic artifact.
 
     Returns
     -------
-    dict[str, Any]
-        A summary report with total assigned household/person counts,
-        geography counts, and per-geography fit diagnostics.
-
-    Examples
-    --------
-    >>> summary = calibrate_small_area_linked(
-    ...     households="candidate-households.csv",
-    ...     persons="candidate-persons.csv",
-    ...     controls="ct-tenure-controls.csv",
-    ...     geography_dimension="ct",
-    ...     geography_column="ct",
-    ...     households_out="synthetic-households.csv",
-    ...     persons_out="synthetic-persons.csv",
-    ...     report_out="small-area-report.json",
-    ... )
-    >>> summary["assigned_households"] > 0
-    True
+    SmallAreaResult
+        Typed headline diagnostics and paths to all written artifacts.
     """
 
-    return calibrate_linked_household_csvs(
-        households_path=Path(households),
-        persons_path=Path(persons),
-        controls_path=Path(controls),
-        person_controls_path=(
-            Path(person_controls) if person_controls is not None else None
-        ),
-        geography_dimension=geography_dimension,
-        geography_column=geography_column,
-        households_out=Path(households_out),
-        persons_out=Path(persons_out),
-        weights_out=Path(weights_out) if weights_out is not None else None,
-        report_out=Path(report_out) if report_out is not None else None,
-        household_id_column=household_id_column,
-        person_id_column=person_id_column,
-        weight_field=weight_field,
-        max_iterations=max_iterations,
-        tolerance=tolerance,
-        pool_size=pool_size,
-        subsample_seed=subsample_seed,
+    destination = Path(output_dir)
+    destination.mkdir(parents=True, exist_ok=True)
+    output_population = LinkedPopulationFiles(
+        households=destination / "households.csv",
+        persons=destination / "persons.csv",
+    )
+    report_path = destination / "report.json"
+    weights_path = destination / "weights.csv" if include_weights else None
+
+    with TemporaryDirectory(prefix="synthpopcan-small-area-") as temporary:
+        temporary_path = Path(temporary)
+        if isinstance(population, LinkedPopulation):
+            candidate_files = write_linked_population(
+                population,
+                temporary_path / "population",
+            )
+        else:
+            candidate_files = _linked_population_files(population)
+        _validate_linked_population_files(candidate_files)
+
+        controls_path = _control_table_path(
+            controls,
+            temporary_path / "controls.csv",
+        )
+        person_controls_path = (
+            _control_table_path(
+                person_controls,
+                temporary_path / "person-controls.csv",
+            )
+            if person_controls is not None
+            else None
+        )
+        details = calibrate_linked_household_csvs(
+            households_path=candidate_files.households,
+            persons_path=candidate_files.persons,
+            controls_path=controls_path,
+            person_controls_path=person_controls_path,
+            geography_dimension=geography_dimension,
+            geography_column=geography_column or geography_dimension,
+            households_out=output_population.households,
+            persons_out=output_population.persons,
+            report_out=report_path,
+            weights_out=weights_path,
+            max_iterations=max_iterations,
+            tolerance=tolerance,
+            pool_size=pool_size,
+            subsample_seed=subsample_seed,
+        )
+
+    summary = details.get("summary")
+    if not isinstance(summary, Mapping):
+        raise RuntimeError("small-area calibration returned an invalid summary")
+    non_converged = int(summary.get("non_converged_count", 0))
+    return SmallAreaResult(
+        population=output_population,
+        report_path=report_path,
+        weights_path=weights_path,
+        assigned_households=int(details["assigned_households"]),
+        assigned_persons=int(details["assigned_persons"]),
+        total_geographies=int(summary["total_geographies"]),
+        converged=non_converged == 0,
+        max_abs_error=float(summary["max_abs_error"]),
+        calibration_mode=str(details["calibration_mode"]),
+        details=details,
     )
 
 
 def render_small_area_map(
     *,
-    households: str | Path,
+    households: str | Path | LinkedPopulationFiles | SmallAreaResult,
     persons: str | Path | None = None,
     boundaries: str | Path,
     geography_column: str,
@@ -585,7 +643,11 @@ def render_small_area_map(
     Parameters
     ----------
     households:
-        Synthesis household CSV (output of :func:`calibrate_small_area_linked`).
+        A :class:`SmallAreaResult`, paired :class:`LinkedPopulationFiles`, or a
+        synthesis household CSV. Passing a result or paired paths automatically
+        supplies the person CSV too.
+    persons:
+        Optional synthesis person CSV when ``households`` is a household path.
     boundaries:
         StatCan boundary shapefile (.shp) for the target geography level.
         For census tracts use ``lct_000b16a_e.shp``; for ADAs use
@@ -623,9 +685,29 @@ def render_small_area_map(
     """
     from synthpopcan.map_render import render_synthesis_map
 
+    if isinstance(households, SmallAreaResult):
+        if persons is not None:
+            raise ValueError(
+                "persons must be omitted when households contains paired files"
+            )
+        household_path = households.population.households
+        person_path = households.population.persons
+    elif isinstance(households, LinkedPopulationFiles):
+        if persons is not None:
+            raise ValueError(
+                "persons must be omitted when households contains paired files"
+            )
+        household_path = households.households
+        person_path = households.persons
+    elif isinstance(households, str | Path):
+        household_path = Path(households)
+        person_path = Path(persons) if persons is not None else None
+    else:  # pragma: no cover - guarded by the public type annotation
+        raise TypeError("households must be a result, paired files, or a CSV path")
+
     return render_synthesis_map(
-        households_path=Path(households),
-        persons_path=Path(persons) if persons is not None else None,
+        households_path=household_path,
+        persons_path=person_path,
         boundaries_path=Path(boundaries),
         geography_column=geography_column,
         geography_id_field=geography_id_field,
@@ -635,21 +717,51 @@ def render_small_area_map(
     )
 
 
-def _seed_records(seed: SeedInput) -> Sequence[Record]:
+def _seed_records(seed: _SeedInput) -> Sequence[Mapping[str, object]]:
     if isinstance(seed, str | Path):
         return read_seed(seed)
     return list(seed)
 
 
-def _control_margins(controls: ControlInput) -> list[IPFMargin]:
+def _control_margins(controls: _ControlInput) -> list[IPFMargin]:
     if isinstance(controls, str | Path):
         return read_controls(controls).to_ipf_margins()
-    if isinstance(controls, ControlTable):
-        return controls.to_ipf_margins()
-    return list(controls)
+    return controls.to_ipf_margins()
 
 
-def _model_package(package: ModelPackageInput) -> dict[str, Any]:
+def _linked_population_files(
+    population: LinkedPopulationFiles | str | Path,
+) -> LinkedPopulationFiles:
+    if isinstance(population, LinkedPopulationFiles):
+        return population
+    directory = Path(population)
+    return LinkedPopulationFiles(
+        households=directory / "households.csv",
+        persons=directory / "persons.csv",
+    )
+
+
+def _validate_linked_population_files(files: LinkedPopulationFiles) -> None:
+    for label, path in (
+        ("household", files.households),
+        ("person", files.persons),
+    ):
+        if not path.is_file():
+            raise FileNotFoundError(f"linked population {label} CSV not found: {path}")
+
+
+def _control_table_path(
+    controls: str | Path | ControlTable,
+    output_path: Path,
+) -> Path:
+    if isinstance(controls, str | Path):
+        return Path(controls)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    write_control_table(output_path, controls)
+    return output_path
+
+
+def _model_package(package: _ModelPackageInput) -> dict[str, Any]:
     if isinstance(package, str | Path):
         return read_model_package(package)
     return dict(package)

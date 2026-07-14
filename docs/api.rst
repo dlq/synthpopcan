@@ -18,6 +18,15 @@ extensions. CLI callbacks, formatting helpers, web-app internals, benchmark
 helpers, and other implementation details are left out even when they are
 public-by-name in the source tree.
 
+Stability
+---------
+
+Names exported directly from :mod:`synthpopcan` are the stable beginner API and
+carry the package's compatibility promise. The curated lower-level names on this
+page are supported advanced APIs, but may still evolve before version 1.0. Other
+module attributes and ``__all__`` declarations are implementation details unless
+they are listed here.
+
 Package
 -------
 

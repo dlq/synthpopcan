@@ -228,12 +228,16 @@ len(population.households), len(population.persons)
 Write linked output to a directory:
 
 ```python
-spc.write_population(population, "synthetic-linked-population")
+population_files = spc.write_linked_population(
+    population,
+    "synthetic-linked-population",
+)
 ```
 
 That directory will contain `households.csv` and `persons.csv`. Keep the model
 package, generated files, notebook, and validation notes together so another
-reader can understand both the result and the choices that produced it.
+reader can understand both the result and the choices that produced it. The
+returned `LinkedPopulationFiles` keeps the two paths together for later steps.
 
 ## Assign Generated Rows To Small Areas
 
@@ -243,25 +247,22 @@ controls must include one geography dimension, such as `ct` for census tract or
 present in the candidate household CSV.
 
 ```python
-summary = spc.calibrate_small_area_linked(
-    households="candidate-households.csv",
-    persons="candidate-persons.csv",
-    controls="ct-tenure-controls.csv",
+result = spc.calibrate_small_area(
+    population,
+    "ct-tenure-controls.csv",
     person_controls="ct-age-sex-controls.csv",  # optional
     geography_dimension="ct",
-    geography_column="ct",
-    households_out="synthetic-households.csv",
-    persons_out="synthetic-persons.csv",
-    report_out="small-area-report.json",
+    output_dir="synthetic-ct-population",
 )
 
-summary["assigned_households"], summary["assigned_persons"]
+result.assigned_households, result.assigned_persons, result.converged
 ```
 
 Household controls are fitted first. If compatible person controls are supplied,
 SynthPopCan refines the household weights against linked-person category counts
 without splitting households. Keep both fractional and integerized residual
-summaries with the output.
+summaries with the output. `result.population` contains the paired output paths,
+and `result.details` retains the complete machine-readable report.
 
 ## Reproducible Generation
 
@@ -317,7 +318,12 @@ The beginner API exposes a small set of names:
 - {py:func}`~synthpopcan.api.write_weights`
 - {py:func}`~synthpopcan.api.read_model_package`
 - {py:func}`~synthpopcan.api.generate_from_model`
+- {py:func}`~synthpopcan.api.write_linked_population`
 - {py:func}`~synthpopcan.api.write_population`
-- {py:func}`~synthpopcan.api.calibrate_small_area_linked`
+- {py:func}`~synthpopcan.api.calibrate_small_area`
 - {py:func}`~synthpopcan.api.render_small_area_map`
+- {py:class}`~synthpopcan.controls.ControlTable`
+- {py:class}`~synthpopcan.ipf.IPFResult`
 - {py:class}`~synthpopcan.api.LinkedPopulation`
+- {py:class}`~synthpopcan.api.LinkedPopulationFiles`
+- {py:class}`~synthpopcan.api.SmallAreaResult`

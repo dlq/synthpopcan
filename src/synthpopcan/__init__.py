@@ -6,8 +6,13 @@ notebooks and short scripts. Import from modules such as ``synthpopcan.ipf`` or
 """
 
 from synthpopcan.api import (
+    ControlTable,
+    IPFResult,
     LinkedPopulation,
-    calibrate_small_area_linked,
+    LinkedPopulationFiles,
+    PopulationRows,
+    SmallAreaResult,
+    calibrate_small_area,
     expand_population,
     fit_ipf,
     generate_from_model,
@@ -15,14 +20,20 @@ from synthpopcan.api import (
     read_model_package,
     read_seed,
     render_small_area_map,
+    write_linked_population,
     write_population,
     write_weights,
 )
 
 __all__ = [
+    "ControlTable",
+    "IPFResult",
     "LinkedPopulation",
+    "LinkedPopulationFiles",
+    "PopulationRows",
+    "SmallAreaResult",
     "__version__",
-    "calibrate_small_area_linked",
+    "calibrate_small_area",
     "expand_population",
     "fit_ipf",
     "generate_from_model",
@@ -30,6 +41,7 @@ __all__ = [
     "read_model_package",
     "read_seed",
     "render_small_area_map",
+    "write_linked_population",
     "write_population",
     "write_weights",
 ]

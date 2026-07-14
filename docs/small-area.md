@@ -469,19 +469,19 @@ from pathlib import Path
 
 import synthpopcan as spc
 
-summary = spc.calibrate_small_area_linked(
+population = spc.LinkedPopulationFiles(
     households=Path("candidate-households-recoded.csv"),
     persons=Path("candidate-persons.csv"),
-    controls=Path("candidate-households-controls-5500000.csv"),
+)
+result = spc.calibrate_small_area(
+    population,
+    Path("candidate-households-controls-5500000.csv"),
     person_controls=Path("person-age-sex-controls.csv"),  # optional
     geography_dimension="ada",
-    geography_column="ada",
-    households_out=Path("synthetic-households.csv"),
-    persons_out=Path("synthetic-persons.csv"),
-    report_out=Path("small-area-report.json"),
+    output_dir=Path("synthetic-ada-population"),
 )
 
-summary["assigned_households"], summary["assigned_persons"]
+result.assigned_households, result.assigned_persons, result.converged
 ```
 
 After calibration, the beginner API can also render the same kind of standalone
@@ -489,8 +489,7 @@ map as `geo map`:
 
 ```python
 spc.render_small_area_map(
-    households="synthetic-households.csv",
-    persons="synthetic-persons.csv",
+    households=result,
     boundaries="data/boundaries/2016-boundary-ada.geojson",
     geography_column="ada",
     geography_id_field="ADAUID",

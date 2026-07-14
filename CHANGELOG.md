@@ -5,13 +5,27 @@ All notable public changes to SynthPopCan are tracked here.
 ## Unreleased
 
 - Added `--subsample-seed` to `geo calibrate-linked` and
-  `geo synthesize-from-package`, plus a `subsample_seed` argument to
-  `calibrate_small_area_linked`, exposing the previously hard-coded
+  `geo synthesize-from-package`, exposing the previously hard-coded
   candidate-subsample seed independently from candidate generation. Runs stay
   reproducible by default (seed `42`), and the calibration report's `subsample`
   block now records the effective seed plus input and selected row counts so
   `--pool-size` runs are traceable and their sensitivity can be checked by
   varying the seed.
+- Simplified the stable beginner Python API around composable workflow results:
+  `calibrate_small_area` now accepts generated linked rows, paired CSV paths, or
+  a linked-output directory and returns a typed `SmallAreaResult` with artifact
+  paths and headline diagnostics.
+- Split population writing into `write_population` for one flat CSV and
+  `write_linked_population` for paired household/person files. Writers now
+  create parent directories and return the paths they wrote.
+- Added typed `LinkedPopulationFiles`, `SmallAreaResult`, `PopulationRows`,
+  `ControlTable`, and `IPFResult` exports, an explicit stable-API contract test,
+  and a `py.typed` marker for downstream type checkers.
+- Narrowed beginner `fit_ipf` controls to normalized control CSV paths or
+  `ControlTable` values. Advanced callers that already construct raw
+  `IPFMargin` sequences can continue to use `synthpopcan.ipf.fit_ipf`.
+- Updated the API reference, library tutorial, downloadable notebook, and
+  small-area guide for the simplified workflow and typed results.
 
 ## 0.4.0 - 2026-07-10
 
