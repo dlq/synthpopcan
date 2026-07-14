@@ -4,6 +4,12 @@ All notable public changes to SynthPopCan are tracked here.
 
 ## Unreleased
 
+## 0.5.0 - 2026-07-14
+
+Simplified and consolidated the public CLI, Python API, and linked-population
+artifact contract. This release intentionally removes superseded pre-1.0
+interfaces rather than retaining compatibility aliases.
+
 - Consolidated model work under `models` (`models generate` for reviewed linked
   packages and `models build ...` for training, audit, and packaging), shortened
   small-area commands to `geo controls|estimate|calibrate|synthesize|boundaries`,

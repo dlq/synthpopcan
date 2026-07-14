@@ -73,15 +73,14 @@ jobs:
       - name: Verify model catalogue
         run: |
           .smoke-venv/bin/synthpopcan models list
-          .smoke-venv/bin/synthpopcan tree list-packages
+          .smoke-venv/bin/synthpopcan models show demo-linked-household-person
 
       - name: Verify bundled demo generation
         run: |
-          .smoke-venv/bin/synthpopcan tree generate-from-package \
+          .smoke-venv/bin/synthpopcan models generate \
             demo-linked-household-person \
             --households 10 \
-            --households-out /tmp/smoke-households.csv \
-            --persons-out /tmp/smoke-persons.csv
+            --out /tmp/smoke-population
 
   web:
     name: Web assets

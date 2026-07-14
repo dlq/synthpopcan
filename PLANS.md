@@ -2,7 +2,7 @@
 
 Status: release-phased roadmap\
 Last updated: 2026-07-14\
-Current release: `0.4.0`
+Current release: `0.5.0`
 
 ## Current Focus
 
@@ -10,10 +10,10 @@ Start here. Open a linked implementation plan only when working on that area.
 
 | Horizon | Focus | Detail |
 | --- | --- | --- |
-| Next patch | Prepare `0.4.1` from the current seed-control, provenance, public-API, documentation, and planning improvements. | [CHANGELOG.md](CHANGELOG.md) |
+| Next patch | Stabilize the new CLI, API, and linked-artifact contracts in `0.5.1`. | [CHANGELOG.md](CHANGELOG.md) |
 | Correctness | Add Python/NumPy IPF differential tests, independent small-area reconciliation, then integerization properties. | [Correctness plan](plans/2026-07-12-correctness-assurance.md) |
-| Next minor | Build the durable backend IPF workbench for `0.5.0`. | [Local runtime plan](plans/2026-07-10-local-web-application-runtime.md) |
-| Later `0.5.x` | Move prepared-model generation and small-area synthesis into the same durable run model. | [Plan index](plans/README.md) |
+| Next minor | Build the durable backend IPF workbench for `0.6.0`. | [Local runtime plan](plans/2026-07-10-local-web-application-runtime.md) |
+| Later `0.6.x` | Move prepared-model generation and small-area synthesis into the same durable run model. | [Plan index](plans/README.md) |
 
 ## Goal And Principles
 
@@ -42,11 +42,11 @@ background in [NOTES.md](NOTES.md), and detailed tasks in [`plans/`](plans/).
 
 ## Current Product State
 
-`0.4.0` is the latest tagged and published release. The development tree adds
-independent candidate-subsample seeds, subsample provenance, a smaller and typed
-beginner Python API, a consolidated CLI organized around `models`, `geo`, and
-`validate`, linked-population artifact directories, expanded small-area
-documentation, and planning cleanup.
+`0.5.0` consolidates the CLI around `models`, `geo`, and `validate`, establishes
+linked-population artifact directories as the workflow contract, and provides a
+smaller typed beginner Python API. It also adds independent candidate-subsample
+seeds, stronger provenance, expanded small-area documentation, and planning
+cleanup.
 
 Implemented capabilities include:
 
@@ -75,16 +75,17 @@ incremental artifact streaming are not implemented.
 | `0.2.x` | Linked small-area MVP, Census Profile controls, NumPy/threaded calibration, maps, and catalogue expansion. |
 | `0.3.x` | Joint person calibration, diagnostics, grouped household size, performance/memory work, validation, and stable scenarios. |
 | `0.4.0` | Model metadata/downloads, privacy presentation, safer WDS refinement, browser small-area preparation, and CLI handoff. |
+| `0.5.0` | Consolidated CLI and Python API, linked-population directory contracts, stronger typing and provenance, and documentation cleanup. |
 
 The original public baseline is achieved: users can install SynthPopCan, prepare
 StatCan inputs, generate and validate IPF or linked-model output, inspect
 provenance, and reproduce work through the CLI.
 
-## 0.4.x: Catalogue And Correctness Hardening
+## 0.5.x: Interface Stabilization And Correctness Hardening
 
 Status: active follow-up line.
 
-### 0.4.1 candidate
+### 0.5.0 release
 
 - independent `--random-seed` and `--subsample-seed` controls;
 - report provenance for input and selected household/person counts;
@@ -94,8 +95,9 @@ Status: active follow-up line.
 - a coherent CLI command tree with one linked-population directory contract;
 - correctness roadmap and planning rationalization.
 
-Before tagging, run the release gate, installed-wheel and model-fetch smoke
-tests, public docs build, and the correctness checks available at that point.
+For follow-up patches, run the release gate, installed-wheel and model-fetch
+smoke tests, public docs build, and the correctness checks available at that
+point.
 
 ### Remaining work
 
@@ -112,7 +114,7 @@ tests, public docs build, and the correctness checks available at that point.
   statistical, linked-integrity, and reconciliation work in the
   [correctness plan](plans/2026-07-12-correctness-assurance.md).
 
-## 0.5.x: Local Web Application Runtime
+## 0.6.x: Local Web Application Runtime
 
 Status: planned. See the
 [staged implementation plan](plans/2026-07-10-local-web-application-runtime.md).
@@ -131,9 +133,9 @@ Architecture decisions:
 
 | Release | Outcome |
 | --- | --- |
-| `0.5.0` | FastAPI/Uvicorn runtime, controlled workspace, durable runs, backend IPF, Runs workbench, and removal of browser IPF. |
-| `0.5.1` | Backend prepared-model generation, incremental artifacts, scale/disk preflight, and removal of browser tree generation. |
-| `0.5.2` | Guided small-area jobs, validation/maps, prominent non-convergence, calibration-mode guidance, chunked realization, and cleanup. |
+| `0.6.0` | FastAPI/Uvicorn runtime, controlled workspace, durable runs, backend IPF, Runs workbench, and removal of browser IPF. |
+| `0.6.1` | Backend prepared-model generation, incremental artifacts, scale/disk preflight, and removal of browser tree generation. |
+| `0.6.2` | Guided small-area jobs, validation/maps, prominent non-convergence, calibration-mode guidance, chunked realization, and cleanup. |
 
 Completion criteria:
 
@@ -147,7 +149,7 @@ Completion criteria:
 - Local security, lifecycle, interruption, failure, and download scenarios have
   deterministic automated coverage.
 
-## 0.6.x And Later
+## 0.7.x And Later
 
 Deferred until synthesis and the local runtime are stable: environmental and
 public-service enrichment, reviewed fine-area placement, scenario simulation,

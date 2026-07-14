@@ -2,8 +2,8 @@
 
 Status: planned\
 Created: 2026-07-10\
-Last updated: 2026-07-12\
-Target: `0.5.0`–`0.5.2`\
+Last updated: 2026-07-14\
+Target: `0.6.0`–`0.6.2`\
 Next action: execute Stage 0, HTTP runtime and module-boundary skeleton\
 Roadmap: [PLANS.md](../PLANS.md) | [Plan index](README.md)
 
@@ -34,7 +34,7 @@ ______________________________________________________________________
 
 ## Product And Architecture Decisions
 
-These decisions are settled for the 0.5.x implementation:
+These decisions are settled for the 0.6.x implementation:
 
 1. The web app is local software started by `synthpopcan serve`. It is not a
    static-site deployment target and is not intended to be hosted publicly.
@@ -243,7 +243,7 @@ GET  /api/runs/{run_id}/artifacts/{artifact_id}
 
 ### Local Security
 
-- Bind to loopback only. Non-loopback hosts are rejected in 0.5.x rather than
+- Bind to loopback only. Non-loopback hosts are rejected in 0.6.x rather than
   described as a supported deployment mode.
 - Generate a new session secret when the server starts. Set it in a
   `SameSite=Strict`, `HttpOnly` cookie from the app bootstrap response and
@@ -638,11 +638,11 @@ depends on static hosting or browser-side synthesis.
 
 ## Suggested Release Slices
 
-- **0.5.0:** FastAPI/Uvicorn runtime, durable runs, backend IPF, Runs workbench,
+- **0.6.0:** FastAPI/Uvicorn runtime, durable runs, backend IPF, Runs workbench,
   and removal of browser IPF.
-- **0.5.1:** Backend prepared-model generation, chunked artifacts, scale
+- **0.6.1:** Backend prepared-model generation, chunked artifacts, scale
   preflight, and removal of browser tree generation.
-- **0.5.2:** Guided small-area synthesis, validation/map results, selected
+- **0.6.2:** Guided small-area synthesis, validation/map results, selected
   utility workflows, cleanup, and final documentation parity.
 
 Do not make the release split a reason to leave two synthesis implementations
