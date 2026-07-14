@@ -70,7 +70,7 @@ them — this confirms the optimizer converged and the weights reproduce the
 target totals within tolerance:
 
 ```bash
-synthpopcan validate controls \
+synthpopcan validate ipf \
   --population weights.csv \
   --controls controls.csv \
   --kind weights
@@ -86,7 +86,7 @@ After expanding weights to integer rows, validate the expanded population — th
 checks that the row counts match the target totals after rounding:
 
 ```bash
-synthpopcan validate controls \
+synthpopcan validate ipf \
   --population synthetic.csv \
   --controls controls.csv \
   --kind expanded
@@ -99,9 +99,7 @@ After linked household/person generation, validate the linkage structure — thi
 is a mechanical check, not a distributional one:
 
 ```bash
-synthpopcan validate linked-output \
-  --households synthetic-households.csv \
-  --persons synthetic-persons.csv
+synthpopcan validate linked synthetic-population/
 ```
 
 The report flags orphaned persons (person rows referencing a household that does
@@ -109,11 +107,11 @@ not exist in the households file) and household size mismatches (the size column
 on the household row disagrees with how many person rows reference it). Both are
 structural errors that would produce wrong counts in any downstream aggregation.
 
-For flat (non-linked) tree output, use `validate tree-output` instead to compare
+For flat (non-linked) tree output, use `validate model` instead to compare
 generated marginal distributions against a training sample:
 
 ```bash
-synthpopcan validate tree-output \
+synthpopcan validate model \
   --generated synthetic-persons.csv \
   --training person-training.csv \
   --target-columns AGEGRP,SEX
@@ -121,7 +119,7 @@ synthpopcan validate tree-output \
 
 ## Subcommands
 
-### `validate controls`
+### `validate ipf`
 
 Compares a fitted or expanded population file against the normalized control
 table that was used to produce it. For each margin in the controls file, it
@@ -136,12 +134,12 @@ expansion can amplify small rounding differences that are invisible in the
 weight-stage report.
 
 ```bash
-synthpopcan validate controls \
+synthpopcan validate ipf \
   --population weights.csv \
   --controls controls.csv \
   --kind weights
 
-synthpopcan validate controls \
+synthpopcan validate ipf \
   --population synthetic.csv \
   --controls controls.csv \
   --kind expanded \
@@ -155,7 +153,7 @@ Options:
 - `--controls PATH`: normalized control CSV — the same file passed to `ipf fit`.
 - `--kind weights|expanded`: tells the command how to interpret the population
   file. `weights` reads a weight column; `expanded` counts rows.
-- `--weight-field NAME`: the weight column name when using `--kind weights`.
+- `--weight-column NAME`: the weight column name when using `--kind weights`.
   Defaults to the standard output column name from `ipf fit`.
 - `--tolerance FLOAT`: maximum allowed absolute difference before a margin is
   flagged as failing. Defaults are appropriate for most runs; tighten for
@@ -163,10 +161,10 @@ Options:
 - `--format table|json`: `table` for human review; `json` for logging or
   feeding into another script.
 
-### `validate linked-output`
+### `validate linked`
 
 Checks the structural integrity of linked household and person output — the two
-files that `tree generate-linked` or `small-area` produces together. It does
+files that `models build generate-linked` or `small-area` produces together. It does
 not check distributional fit against controls; it checks that the two files are
 internally consistent.
 
@@ -183,13 +181,9 @@ households to persons on these IDs would produce wrong counts or silently drop
 rows.
 
 ```bash
-synthpopcan validate linked-output \
-  --households synthetic-households.csv \
-  --persons synthetic-persons.csv
+synthpopcan validate linked synthetic-population/
 
-synthpopcan validate linked-output \
-  --households synthetic-households.csv \
-  --persons synthetic-persons.csv \
+synthpopcan validate linked synthetic-population/ \
   --household-id-column HHID \
   --person-household-id-column HHID \
   --household-size-column HHSIZE \
@@ -198,36 +192,35 @@ synthpopcan validate linked-output \
 
 Options:
 
-- `--households PATH`: the generated households CSV.
-- `--persons PATH`: the generated persons CSV.
+- `POPULATION`: directory containing `households.csv` and `persons.csv`.
 - `--household-id-column NAME`: the household identifier column in the
-  households file. Defaults to the standard name from `tree generate-linked`.
+  households file. Defaults to the standard name from `models build generate-linked`.
 - `--person-household-id-column NAME`: the column in the persons file that
   references the household identifier.
 - `--household-size-column NAME`: the column in the households file that records
   how many persons belong to each household.
 - `--format table|json`: output format.
 
-### `validate tree-output`
+### `validate model`
 
 Checks flat (non-linked) tree-generated output by comparing the marginal
 distributions of selected columns in the generated file against the same columns
-in a training sample. Use this after `tree generate` when we have not used
-linked generation and therefore cannot use `validate linked-output`.
+in a training sample. Use this after `models build generate` when we have not used
+linked generation and therefore cannot use `validate linked`.
 
 The comparison is column-by-column: for each column named in `--target-columns`,
 it computes the category distribution in the generated rows and in the training
 sample and reports the difference. This tells us whether the tree model is
 reproducing the rough shape of the training distribution, but it does not
-validate against public control totals — for that, use `validate controls`.
+validate against public control totals — for that, use `validate ipf`.
 
 ```bash
-synthpopcan validate tree-output \
+synthpopcan validate model \
   --generated synthetic-persons.csv \
   --training person-training.csv \
   --target-columns AGEGRP,SEX
 
-synthpopcan validate tree-output \
+synthpopcan validate model \
   --generated synthetic-persons.csv \
   --training person-training.csv \
   --target-columns AGEGRP,SEX \
@@ -249,7 +242,7 @@ Options:
 have converged, or the wrong weight column may have been used.
 
 **Validation fails after expansion:** confirm `ipf expand` used the intended
-`--weight-field`.
+`--weight-column`.
 
 **Linked validation fails:** check generated household IDs, person household
 IDs, and household size fields.

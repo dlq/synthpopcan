@@ -174,7 +174,7 @@ before fitting.
 If we have an existing normalized file and want to check its structure:
 
 ```bash
-synthpopcan controls validate controls.csv
+synthpopcan controls check controls.csv
 ```
 
 If the source is a raw long CSV (already has one row per category combination
@@ -212,7 +212,7 @@ matches controls — without refitting — is documented in {doc}`validate`.
 
 ## Subcommands
 
-### `controls validate`
+### `controls check`
 
 Checks the structure of a normalized controls CSV. Confirms that the required
 columns (`margin`, `dimensions`, `count`) are present, that every dimension
@@ -222,7 +222,7 @@ file itself — it does not check whether the controls are compatible with a
 specific seed. Use `ipf check-inputs` for that.
 
 ```bash
-synthpopcan controls validate controls.csv
+synthpopcan controls check controls.csv
 ```
 
 ### `controls from-csv`
@@ -345,7 +345,7 @@ Normalizes a Census Profile CSV into SynthPopCan's control format using a
 reviewed mapping file. The mapping identifies which characteristic rows to
 extract and how to label their categories in the output. Produce the mapping
 with `census-profile template` or write it by hand using `census-profile inspect` to locate the right rows. The resulting controls CSV can be passed
-directly to `controls validate` and `ipf check-inputs`.
+directly to `controls check` and `ipf check-inputs`.
 
 ```bash
 synthpopcan controls from-census-profile profile.csv \

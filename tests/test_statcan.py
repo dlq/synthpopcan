@@ -7,7 +7,6 @@ from click.exceptions import ClickException
 
 from synthpopcan.cli import (
     main,
-    run_statcan_census_profile_fetch,
     search_wds_tables_for_cli,
 )
 from synthpopcan.cli import (
@@ -101,8 +100,6 @@ def test_cli_fetches_2016_census_profile_by_registry_key(
                 "statcan",
                 "census-profile",
                 "fetch",
-                "--year",
-                "2016",
                 "--geo-level",
                 "pt",
                 "--out-dir",
@@ -136,8 +133,6 @@ def test_fetch_2016_census_profile_extracts_zip_payload(
                 "statcan",
                 "census-profile",
                 "fetch",
-                "--year",
-                "2016",
                 "--geo-level",
                 "ada",
                 "--out-dir",
@@ -158,8 +153,6 @@ def test_cli_fetch_census_profile_rejects_unknown_geo_level(tmp_path: Path) -> N
                 "statcan",
                 "census-profile",
                 "fetch",
-                "--year",
-                "2016",
                 "--geo-level",
                 "unknown",
                 "--out-dir",
@@ -370,12 +363,10 @@ def test_cli_wds_search_helper_uses_statcan_results(monkeypatch) -> None:
     ]
 
 
-def test_cli_parse_columns_and_census_profile_year_guard() -> None:
+def test_cli_parse_columns() -> None:
     assert parse_cli_columns(" age , sex ") == ("age", "sex")
     with pytest.raises(Exception, match="at least one column"):
         parse_cli_columns(" , ")
-    with pytest.raises(ClickException, match="Only the 2016 Census Profile"):
-        run_statcan_census_profile_fetch.callback("2021", "pt", Path("out"))
 
 
 def test_cli_wds_explain_wraps_bad_metadata(monkeypatch) -> None:

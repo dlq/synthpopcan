@@ -13,7 +13,7 @@ export function buildIpfCliCommands({
     `--tolerance ${tolerance}`,
     "--report synthpopcan-ipf-report.json",
   ];
-  if (weightField) fitOptions.push(`--weight-field ${shellQuote(weightField)}`);
+  if (weightField) fitOptions.push(`--weight-column ${shellQuote(weightField)}`);
   return [
     `# Confirm that the seed rows cover every control category.\nsynthpopcan ipf check-inputs ${common}`,
     `# Fit one compact IPF weight per seed row and save a convergence report.\nsynthpopcan ipf fit ${fitOptions.join(" ")}`,
@@ -30,21 +30,19 @@ export function buildModelCliCommands(
   );
   if (payload.schema_version === "synthpopcan-linked-tree-package-v1") {
     return [
-      `# Review the linked model package before generating households and people.\nsynthpopcan tree inspect-package ${shellQuote(reference)}`,
+      `# Review the linked model package before generating households and people.\nsynthpopcan models build inspect ${shellQuote(reference)}`,
       [
-        `# Generate linked household and person CSVs with the same browser settings.\nsynthpopcan tree generate-from-package ${shellQuote(reference)}`,
+        `# Generate a linked population directory with the same browser settings.\nsynthpopcan models generate ${shellQuote(reference)}`,
         `--households ${rows}`,
         ...conditionOptions,
-        "--households-out synthpopcan-households.csv",
-        "--persons-out synthpopcan-persons.csv",
-        "--manifest-out synthpopcan-generation-manifest.json",
+        "--out synthpopcan-population",
         `--random-seed ${randomSeed}`,
       ].join(" "),
     ];
   }
   return [
     [
-      `# Generate synthetic rows from this model with the same browser settings.\nsynthpopcan tree generate ${shellQuote(reference)}`,
+      `# Generate synthetic rows from this model with the same browser settings.\nsynthpopcan models build generate ${shellQuote(reference)}`,
       `--rows ${rows}`,
       ...conditionOptions,
       "--out synthpopcan-tree-rows.csv",
@@ -82,11 +80,11 @@ export function buildSmallAreaCliCommands({
   ];
   if (poolSize !== null) estimateOptions.push(`--pool-size ${poolSize}`);
   commands.push(
-    `# Recheck output scale before starting the full run.\nsynthpopcan geo estimate-run ${estimateOptions.join(" ")}`,
+    `# Recheck output scale before starting the full run.\nsynthpopcan geo estimate ${estimateOptions.join(" ")}`,
   );
 
   const synthesisOptions = [
-    `synthpopcan geo synthesize-from-package ${shellQuote(modelReference)}`,
+    `synthpopcan geo synthesize ${shellQuote(modelReference)}`,
     `--households ${candidateHouseholds}`,
     `--controls ${shellQuote(controlsName)}`,
   ];
@@ -104,10 +102,8 @@ export function buildSmallAreaCliCommands({
     );
   }
   synthesisOptions.push(
-    "--households-out small-area-households.csv",
-    "--persons-out small-area-persons.csv",
-    "--weights-out small-area-weights.csv",
-    "--report small-area-report.json",
+    "--out small-area-population",
+    "--include-weights",
     `--random-seed ${randomSeed}`,
     `--subsample-seed ${subsampleSeed}`,
   );

@@ -543,8 +543,6 @@ def test_cli_exports_training_csv_from_statcan_2016_hierarchical(
                 "microdata",
                 "export-training",
                 str(source),
-                "--input-format",
-                "statcan-2016-hierarchical",
                 "--level",
                 "person",
                 "--target-columns",
@@ -588,8 +586,6 @@ def test_cli_exports_training_csv_as_table_and_wraps_bad_columns(
                 "microdata",
                 "export-training",
                 str(source),
-                "--input-format",
-                "statcan-2016-hierarchical",
                 "--level",
                 "person",
                 "--target-columns",
@@ -610,8 +606,6 @@ def test_cli_exports_training_csv_as_table_and_wraps_bad_columns(
                 "microdata",
                 "export-training",
                 str(source),
-                "--input-format",
-                "statcan-2016-hierarchical",
                 "--level",
                 "person",
                 "--target-columns",
@@ -630,8 +624,6 @@ def test_cli_exports_training_csv_as_table_and_wraps_bad_columns(
                 "microdata",
                 "export-training",
                 str(bad_source),
-                "--input-format",
-                "statcan-2016-hierarchical",
                 "--level",
                 "person",
                 "--target-columns",
@@ -749,10 +741,6 @@ def test_cli_checks_household_seed_columns_as_json(tmp_path, capsys) -> None:
                 "microdata",
                 "check-seed",
                 str(source),
-                "--input-format",
-                "statcan-2016-hierarchical",
-                "--level",
-                "household",
                 "--columns",
                 "TENUR,ROOMS",
                 "--format",
@@ -785,10 +773,6 @@ def test_cli_checks_household_seed_columns_as_readable_table(tmp_path, capsys) -
                 "microdata",
                 "check-seed",
                 str(source),
-                "--input-format",
-                "statcan-2016-hierarchical",
-                "--level",
-                "household",
                 "--columns",
                 "TENUR,ROOMS",
             ]
@@ -815,10 +799,6 @@ def test_cli_check_seed_wraps_bad_hierarchical_source(tmp_path) -> None:
                 "microdata",
                 "check-seed",
                 str(source),
-                "--input-format",
-                "statcan-2016-hierarchical",
-                "--level",
-                "household",
                 "--columns",
                 "TENUR",
             ]
@@ -1036,10 +1016,8 @@ def test_cli_reports_tree_geography_feasibility_as_json(tmp_path, capsys) -> Non
         main(
             [
                 "microdata",
-                "tree-geography-feasibility",
+                "feasibility",
                 str(source),
-                "--input-format",
-                "statcan-2016-hierarchical",
                 "--geo-column",
                 "PR",
                 "--likely-person-rows",
@@ -1080,10 +1058,8 @@ def test_cli_reports_tree_geography_feasibility_as_table_and_wraps_errors(
         main(
             [
                 "microdata",
-                "tree-geography-feasibility",
+                "feasibility",
                 str(source),
-                "--input-format",
-                "statcan-2016-hierarchical",
                 "--geo-column",
                 "PR",
                 "--min-support",
@@ -1100,10 +1076,8 @@ def test_cli_reports_tree_geography_feasibility_as_table_and_wraps_errors(
         main(
             [
                 "microdata",
-                "tree-geography-feasibility",
+                "feasibility",
                 str(source),
-                "--input-format",
-                "statcan-2016-hierarchical",
                 "--geo-column",
                 "MISSING",
             ]
@@ -1123,8 +1097,6 @@ def test_cli_suggests_tree_columns_as_json(tmp_path, capsys) -> None:
                 "microdata",
                 "suggest-tree-columns",
                 str(source),
-                "--input-format",
-                "statcan-2016-hierarchical",
                 "--format",
                 "json",
             ]
@@ -1156,8 +1128,6 @@ def test_cli_suggests_tree_columns_as_table_and_wraps_errors(tmp_path, capsys) -
                 "microdata",
                 "suggest-tree-columns",
                 str(source),
-                "--input-format",
-                "statcan-2016-hierarchical",
             ]
         )
         == 0
@@ -1172,8 +1142,6 @@ def test_cli_suggests_tree_columns_as_table_and_wraps_errors(tmp_path, capsys) -
                 "microdata",
                 "suggest-tree-columns",
                 str(bad_source),
-                "--input-format",
-                "statcan-2016-hierarchical",
             ]
         )
 

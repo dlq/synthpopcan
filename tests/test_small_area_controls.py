@@ -381,20 +381,31 @@ def test_write_recoded_candidates_creates_parent_dir(tmp_path: Path) -> None:
 # ---------------------------------------------------------------------------
 
 
+def _write_candidate_population(tmp_path: Path, name: str, household_rows: str) -> Path:
+    population = tmp_path / name
+    population.mkdir()
+    (population / "households.csv").write_text(
+        "synthetic_household_id,household_size\n" + household_rows
+    )
+    (population / "persons.csv").write_text(
+        "synthetic_person_id,synthetic_household_id\n"
+    )
+    return population
+
+
 def test_cli_build_controls_writes_outputs(tmp_path: Path) -> None:
     profile = tmp_path / "profile.csv"
     _minimal_profile(profile)
 
-    candidates = tmp_path / "households.csv"
-    candidates.write_text("synthetic_household_id,household_size\nh1,3\nh2,6\n")
+    candidates = _write_candidate_population(tmp_path, "population", "h1,3\nh2,6\n")
 
     controls_out = tmp_path / "controls.csv"
-    candidates_out = tmp_path / "recoded.csv"
+    candidates_out = tmp_path / "recoded"
 
     exit_code = main(
         [
             "geo",
-            "build-controls",
+            "controls",
             "--profile",
             str(profile),
             "--geo-column",
@@ -421,7 +432,7 @@ def test_cli_build_controls_writes_outputs(tmp_path: Path) -> None:
     assert "ada tenure" in margins
 
     # Recoded candidates should keep exact size and add a Census-style group.
-    recoded_rows = list(csv.DictReader(candidates_out.open()))
+    recoded_rows = list(csv.DictReader((candidates_out / "households.csv").open()))
     assert recoded_rows[1]["household_size"] == "6"
     assert recoded_rows[1]["household_size_group"] == "5"
 
@@ -430,13 +441,12 @@ def test_cli_build_controls_default_output_paths(tmp_path: Path) -> None:
     profile = tmp_path / "profile.csv"
     _minimal_profile(profile)
 
-    candidates = tmp_path / "households.csv"
-    candidates.write_text("synthetic_household_id,household_size\nh1,2\n")
+    candidates = _write_candidate_population(tmp_path, "population", "h1,2\n")
 
     exit_code = main(
         [
             "geo",
-            "build-controls",
+            "controls",
             "--profile",
             str(profile),
             "--geo-column",
@@ -449,24 +459,23 @@ def test_cli_build_controls_default_output_paths(tmp_path: Path) -> None:
     )
 
     assert exit_code == 0
-    assert (tmp_path / "households-controls-900.csv").exists()
-    assert (tmp_path / "households-recoded.csv").exists()
+    assert (tmp_path / "population-controls-900.csv").exists()
+    assert (tmp_path / "population-recoded" / "households.csv").exists()
 
 
 def test_cli_build_controls_geo_prefix_filter(tmp_path: Path) -> None:
     profile = tmp_path / "profile.csv"
     _minimal_profile(profile)
 
-    candidates = tmp_path / "households.csv"
-    candidates.write_text("synthetic_household_id,household_size\nh1,1\n")
+    candidates = _write_candidate_population(tmp_path, "population", "h1,1\n")
 
     controls_out = tmp_path / "controls.csv"
-    candidates_out = tmp_path / "recoded.csv"
+    candidates_out = tmp_path / "recoded"
 
     exit_code = main(
         [
             "geo",
-            "build-controls",
+            "controls",
             "--profile",
             str(profile),
             "--geo-column",
@@ -544,13 +553,12 @@ def test_cli_build_controls_reports_dropped_geos(
 ) -> None:
     profile = tmp_path / "profile.csv"
     _profile_with_dropped_geo(profile)
-    candidates = tmp_path / "c.csv"
-    candidates.write_text("synthetic_household_id,household_size\nh1,2\n")
+    candidates = _write_candidate_population(tmp_path, "candidates", "h1,2\n")
 
     exit_code = main(
         [
             "geo",
-            "build-controls",
+            "controls",
             "--profile",
             str(profile),
             "--geo-column",
@@ -573,8 +581,7 @@ def test_cli_build_controls_oserror_on_profile(tmp_path: Path) -> None:
 
     profile = tmp_path / "profile.csv"
     profile.touch()
-    candidates = tmp_path / "c.csv"
-    candidates.write_text("synthetic_household_id,household_size\nh1,2\n")
+    candidates = _write_candidate_population(tmp_path, "candidates", "h1,2\n")
 
     with patch(
         "synthpopcan.small_area_controls.extract_controls_from_profile",
@@ -584,7 +591,7 @@ def test_cli_build_controls_oserror_on_profile(tmp_path: Path) -> None:
             main(
                 [
                     "geo",
-                    "build-controls",
+                    "controls",
                     "--profile",
                     str(profile),
                     "--geo-column",
@@ -604,8 +611,7 @@ def test_cli_build_controls_value_error_on_profile(tmp_path: Path) -> None:
 
     profile = tmp_path / "profile.csv"
     profile.touch()
-    candidates = tmp_path / "c.csv"
-    candidates.write_text("synthetic_household_id,household_size\nh1,2\n")
+    candidates = _write_candidate_population(tmp_path, "candidates", "h1,2\n")
 
     with patch(
         "synthpopcan.small_area_controls.extract_controls_from_profile",
@@ -615,7 +621,7 @@ def test_cli_build_controls_value_error_on_profile(tmp_path: Path) -> None:
             main(
                 [
                     "geo",
-                    "build-controls",
+                    "controls",
                     "--profile",
                     str(profile),
                     "--geo-column",
@@ -635,8 +641,7 @@ def test_cli_build_controls_oserror_on_write_controls(tmp_path: Path) -> None:
 
     profile = tmp_path / "profile.csv"
     _minimal_profile(profile)
-    candidates = tmp_path / "c.csv"
-    candidates.write_text("synthetic_household_id,household_size\nh1,2\n")
+    candidates = _write_candidate_population(tmp_path, "candidates", "h1,2\n")
 
     with patch(
         "synthpopcan.small_area_controls.write_controls_csv",
@@ -646,7 +651,7 @@ def test_cli_build_controls_oserror_on_write_controls(tmp_path: Path) -> None:
             main(
                 [
                     "geo",
-                    "build-controls",
+                    "controls",
                     "--profile",
                     str(profile),
                     "--geo-column",
@@ -666,8 +671,7 @@ def test_cli_build_controls_oserror_on_write_candidates(tmp_path: Path) -> None:
 
     profile = tmp_path / "profile.csv"
     _minimal_profile(profile)
-    candidates = tmp_path / "c.csv"
-    candidates.write_text("synthetic_household_id,household_size\nh1,2\n")
+    candidates = _write_candidate_population(tmp_path, "candidates", "h1,2\n")
 
     with patch(
         "synthpopcan.small_area_controls.write_recoded_candidates",
@@ -677,7 +681,7 @@ def test_cli_build_controls_oserror_on_write_candidates(tmp_path: Path) -> None:
             main(
                 [
                     "geo",
-                    "build-controls",
+                    "controls",
                     "--profile",
                     str(profile),
                     "--geo-column",

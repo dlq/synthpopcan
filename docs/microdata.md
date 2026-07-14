@@ -87,8 +87,6 @@ household-level export would silently discard that variation.
 ```bash
 synthpopcan microdata check-seed \
   tests/fixtures/workflows/linked_tree/hierarchical.csv \
-  --input-format statcan-2016-hierarchical \
-  --level household \
   --columns TENUR
 ```
 
@@ -110,8 +108,7 @@ provincial level may be too detailed for a small geography.
 
 ```bash
 synthpopcan microdata suggest-tree-columns \
-  tests/fixtures/workflows/linked_tree/hierarchical.csv \
-  --input-format statcan-2016-hierarchical
+  tests/fixtures/workflows/linked_tree/hierarchical.csv
 ```
 
 Export a training view only after deciding which fields belong in the model.
@@ -121,7 +118,6 @@ it conditions generation on.
 ```bash
 synthpopcan microdata export-training \
   tests/fixtures/workflows/linked_tree/hierarchical.csv \
-  --input-format statcan-2016-hierarchical \
   --level person \
   --target-columns AGEGRP,SEX \
   --conditioning-columns TENUR,household_size \
@@ -161,8 +157,6 @@ from a `statcan-2016-hierarchical` file.
 
 ```bash
 synthpopcan microdata check-seed hierarchical.csv \
-  --input-format statcan-2016-hierarchical \
-  --level household \
   --columns TENUR
 ```
 
@@ -206,8 +200,7 @@ the same adapter assumptions as the StatCan hierarchical source.
 Suggests broad household and person column blocks for tree modelling.
 
 ```bash
-synthpopcan microdata suggest-tree-columns hierarchical.csv \
-  --input-format statcan-2016-hierarchical
+synthpopcan microdata suggest-tree-columns hierarchical.csv
 ```
 
 Treat this as a starting point, not as an automatic model design. A suggested
@@ -215,19 +208,19 @@ block can still be too detailed for a small geography or unsuitable for a
 particular humanities question. See {doc}`tree` for the longer discussion of
 support, purity, forests, and bad models.
 
-For broad linked tree models, `tree train-linked` also accepts
+For broad linked tree models, `models build train-linked` also accepts
 `--household-block all` and `--person-block all`. These combine the source
 adapter's currently supported household or person blocks. They do not mean
 "every raw column": identifier, weight, replicate-weight, geography, and
 person-varying columns are excluded from the household side unless a supported
 source adapter derives a household-level version.
 
-### `microdata tree-geography-feasibility`
+### `microdata feasibility`
 
 Reports how many person and household rows each geography value has, and flags
 which geographies are likely viable, borderline, or too sparse for the chosen
 column blocks at publishable quality thresholds. Use this before committing to
-a geography in `tree train-linked` — a geography with too few rows will produce
+a geography in `models build train-linked` — a geography with too few rows will produce
 a model with low support and high purity that fails the audit step.
 
 The output groups geographies into likely viable, borderline (may need a
@@ -237,8 +230,7 @@ geography is not automatically excluded; it may still work with a reduced
 target profile or a broader category scheme.
 
 ```bash
-synthpopcan microdata tree-geography-feasibility hierarchical.csv \
-  --input-format statcan-2016-hierarchical \
+synthpopcan microdata feasibility hierarchical.csv \
   --geo-column PR \
   --household-block household_core \
   --person-block person_demographics
@@ -259,7 +251,6 @@ Exports selected microdata columns as tree-training rows.
 
 ```bash
 synthpopcan microdata export-training hierarchical.csv \
-  --input-format statcan-2016-hierarchical \
   --level household \
   --target-columns household_size,TENUR \
   --conditioning-columns PR \
@@ -286,7 +277,7 @@ a household-level summary explicitly, or stay with person-level seed rows.
 columns used by the controls. IPF cannot fit a control dimension that is absent
 from the seed CSV.
 
-**Tree training looks sparse:** run `microdata tree-geography-feasibility`,
+**Tree training looks sparse:** run `microdata feasibility`,
 reduce the target profile, combine categories, or train for a larger geography.
 The tree page discusses why low support and high purity are warning signs.
 

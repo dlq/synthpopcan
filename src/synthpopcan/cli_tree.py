@@ -28,7 +28,8 @@ __all__ = [
     "release_blocking_issues",
     "release_manifest_matches_model_paths",
     "train_tree_sample",
-    "tree",
+    "generate_model_population",
+    "model_build",
     "tree_model_from_payload",
     "tree_training_sample_from_export",
     "validate_linked_model_package_inputs",
@@ -69,7 +70,7 @@ from synthpopcan.microdata import (
     reduced_person_targets,
     resolve_tree_column_block_pair,
 )
-from synthpopcan.models import model_catalogue, model_payload
+from synthpopcan.models import model_payload
 from synthpopcan.tree import (
     CartTreeModel,
     FrequencyTreeModel,
@@ -89,12 +90,12 @@ from synthpopcan.tree import (
 _PATH = click.Path(path_type=Path)
 
 
-@click.group()
-def tree() -> None:
-    """Tree-based synthetic population generator."""
+@click.group("build")
+def model_build() -> None:
+    """Train, audit, and package model artifacts."""
 
 
-@tree.command("train")
+@model_build.command("train")
 @click.argument("source", type=_PATH)
 @click.option(
     "--method",
@@ -202,20 +203,8 @@ def train_tree_generator(
     print_wrote(out_path)
 
 
-@tree.command("train-linked")
+@model_build.command("train-linked")
 @click.argument("source", type=_PATH)
-@click.option(
-    "--input-format",
-    default="statcan-2016-hierarchical",
-    type=click.Choice(["statcan-2016-hierarchical"]),
-    show_default=True,
-    help="Input microdata layout.",
-)
-@click.option(
-    "--suggested-blocks",
-    is_flag=True,
-    help="Train from named microdata suggestion-profile blocks.",
-)
 @click.option(
     "--household-block",
     default="household_core",
@@ -294,8 +283,6 @@ def train_tree_generator(
 @click.option("--max-depth", default=None, type=int, help="Optional CART max depth.")
 def train_linked_tree_generator(
     source: Path,
-    input_format: str,
-    suggested_blocks: bool,
     household_block: str,
     person_block: str,
     geo_column: str | None,
@@ -311,13 +298,6 @@ def train_linked_tree_generator(
     max_depth: int | None,
 ) -> None:
     """Train linked household and person models from mixed microdata."""
-    if input_format != "statcan-2016-hierarchical":  # pragma: no cover
-        raise click.ClickException(f"unsupported input format: {input_format}")
-    if not suggested_blocks:
-        raise click.ClickException(
-            "train-linked currently requires --suggested-blocks. "
-            "Use 'microdata suggest-tree-columns' to inspect available blocks."
-        )
     try:
         progress_console = Console(stderr=True)
         with Progress(
@@ -406,7 +386,7 @@ def train_linked_tree_generator(
                 manifest_out,
                 {
                     "schema_version": "synthpopcan-linked-tree-training-v1",
-                    "command": "tree train-linked",
+                    "command": "models build train-linked",
                     "source": {
                         "path": str(source),
                         "source_format": sample.source_format,
@@ -450,7 +430,7 @@ def train_linked_tree_generator(
     print_wrote(manifest_out)
 
 
-@tree.command("generate")
+@model_build.command("generate")
 @click.argument("model_path", type=_PATH)
 @click.option("--rows", required=True, type=int, help="Number of rows to generate.")
 @click.option(
@@ -493,7 +473,7 @@ def generate_tree_population(
                 manifest_out,
                 {
                     "schema_version": "synthpopcan-tree-generation-manifest-v1",
-                    "command": "tree generate",
+                    "command": "models build generate",
                     "outputs": {"rows": str(out_path)},
                     "rows": rows,
                     "conditions": conditions,
@@ -520,7 +500,7 @@ def generate_tree_population(
         print_wrote(manifest_out)
 
 
-@tree.command("generate-linked")
+@model_build.command("generate-linked")
 @click.option(
     "--household-model", required=True, type=_PATH, help="Household model JSON."
 )
@@ -595,7 +575,7 @@ def generate_linked_tree_population(
                 manifest_out,
                 {
                     "schema_version": "synthpopcan-tree-generation-manifest-v1",
-                    "command": "tree generate-linked",
+                    "command": "models build generate-linked",
                     "outputs": {
                         "households": str(households_out),
                         "persons": str(persons_out),
@@ -633,34 +613,8 @@ def generate_linked_tree_population(
         print_wrote(manifest_out)
 
 
-@tree.command("list-packages")
-@click.option(
-    "--format",
-    "output_format",
-    default="table",
-    type=click.Choice(["json", "table"]),
-    show_default=True,
-)
-def list_tree_model_packages(output_format: str) -> None:
-    """List packaged linked models."""
-    catalogue = {"models": model_catalogue()}
-    if output_format == "json":
-        write_output(catalogue, "json")
-        return
-    table = make_table(title="Model Packages")
-    table.add_column("Package ID")
-    table.add_column("Summary")
-    for model in catalogue["models"]:
-        default_generation = _object_or_empty(model.get("default_generation"))
-        table.add_row(
-            str(model.get("id", "")),
-            _format_package_catalogue_summary(model, default_generation),
-        )
-    print_table(table)
-
-
-@tree.command("generate-from-package")
-@click.argument("package_path", metavar="PACKAGE")
+@click.command("generate")
+@click.argument("package_path", metavar="MODEL")
 @click.option(
     "--households",
     required=True,
@@ -674,40 +628,31 @@ def list_tree_model_packages(output_format: str) -> None:
     help="Condition household generation with COLUMN=VALUE. Repeat as needed.",
 )
 @click.option(
-    "--households-out",
+    "--out",
+    "output_dir",
     required=True,
     type=_PATH,
-    help="Output household CSV.",
-)
-@click.option(
-    "--persons-out",
-    required=True,
-    type=_PATH,
-    help="Output person CSV.",
+    help="Output directory.",
 )
 @click.option(
     "--household-size-column",
     default=None,
     help="Override package household-size linkage column.",
 )
-@click.option(
-    "--manifest-out",
-    type=_PATH,
-    default=None,
-    help="Optional output JSON manifest with package and seed provenance.",
-)
 @click.option("--random-seed", default=None, type=int, help="Optional generation seed.")
-def generate_linked_tree_population_from_package(
+def generate_model_population(
     package_path: str,
     households: int,
     condition_values: tuple[str, ...],
-    households_out: Path,
-    persons_out: Path,
+    output_dir: Path,
     household_size_column: str | None,
-    manifest_out: Path | None,
     random_seed: int | None,
 ) -> None:
-    """Generate linked household/person CSVs from a package path or bundled ID."""
+    """Generate a linked population directory from a model path or catalogue ID."""
+    output_dir.mkdir(parents=True, exist_ok=True)
+    households_out = output_dir / "households.csv"
+    persons_out = output_dir / "persons.csv"
+    manifest_out = output_dir / "manifest.json"
     package_source_path: Path | None = None
     try:
         package, package_label, package_source_path = _read_package_path_or_id(
@@ -762,29 +707,29 @@ def generate_linked_tree_population_from_package(
                     progress_callback=update_progress,
                 )
             )
-        if manifest_out:
-            write_tree_generation_manifest(
-                manifest_out,
-                {
-                    "schema_version": "synthpopcan-tree-generation-manifest-v1",
-                    "command": "tree generate-from-package",
-                    "outputs": {
-                        "households": str(households_out),
-                        "persons": str(persons_out),
-                    },
-                    "households": households,
-                    "generated_households": generated_household_count,
-                    "generated_persons": generated_person_count,
-                    "household_conditions": household_conditions,
-                    "household_size_column": effective_household_size_column,
-                    "random_seed": random_seed,
-                    "effective_random_seed": _effective_random_seed(
-                        household_model_payload,
-                        random_seed,
-                    ),
-                    "package": package_inspection,
+        write_tree_generation_manifest(
+            manifest_out,
+            {
+                "schema_version": "synthpopcan-tree-generation-manifest-v1",
+                "command": "models generate",
+                "outputs": {
+                    "directory": str(output_dir),
+                    "households": str(households_out),
+                    "persons": str(persons_out),
                 },
-            )
+                "households": households,
+                "generated_households": generated_household_count,
+                "generated_persons": generated_person_count,
+                "household_conditions": household_conditions,
+                "household_size_column": effective_household_size_column,
+                "random_seed": random_seed,
+                "effective_random_seed": _effective_random_seed(
+                    household_model_payload,
+                    random_seed,
+                ),
+                "package": package_inspection,
+            },
+        )
     except OSError as exc:
         raise click.ClickException(
             _format_tree_file_error(
@@ -797,11 +742,11 @@ def generate_linked_tree_population_from_package(
         raise click.ClickException(_format_tree_value_error(exc)) from exc
     print_wrote(households_out)
     print_wrote(persons_out)
-    if manifest_out:
-        print_wrote(manifest_out)
+    print_wrote(manifest_out)
+    click.echo(output_dir)
 
 
-@tree.command("audit-model")
+@model_build.command("audit")
 @click.argument("model_path", type=_PATH)
 @click.option(
     "--min-support",
@@ -847,7 +792,7 @@ def audit_tree_model_command(
     write_output(report, output_format, title="Tree Model Audit")
 
 
-@tree.command("package-model")
+@model_build.command("package")
 @click.argument("model_path", type=_PATH)
 @click.option(
     "--out",
@@ -892,7 +837,7 @@ def package_tree_model_command(
         raise click.ClickException(_format_tree_value_error(exc)) from exc
     if audit["issues"]:
         raise click.ClickException(
-            "Model audit did not pass without warnings; inspect audit-model "
+            "Model audit did not pass without warnings; inspect models build audit "
             "output before packaging."
         )
     package = {
@@ -909,7 +854,7 @@ def package_tree_model_command(
     print_wrote(out_path)
 
 
-@tree.command("prepare-model-release")
+@model_build.command("prepare-release")
 @click.argument("model_path", type=_PATH)
 @click.option("--out", "out_path", required=True, type=_PATH)
 @click.option(
@@ -951,8 +896,8 @@ def prepare_tree_model_release_command(
     blocking_issues = release_blocking_issues(audit)
     if blocking_issues:
         raise click.ClickException(
-            "Model release audit has blocking issues; inspect audit-model output "
-            "before preparing a publishable candidate."
+            "Model release audit has blocking issues; inspect models build "
+            "audit output before preparing a publishable candidate."
         )
 
     candidate = replace(model, release_class="publishable_candidate")
@@ -963,7 +908,7 @@ def prepare_tree_model_release_command(
                 manifest_out,
                 {
                     "schema_version": "synthpopcan-tree-release-manifest-v1",
-                    "command": "tree prepare-model-release",
+                    "command": "models build prepare-release",
                     "source_model": str(model_path),
                     "output_model": str(out_path),
                     "release_class": "publishable_candidate",
@@ -984,7 +929,7 @@ def prepare_tree_model_release_command(
         print_wrote(manifest_out)
 
 
-@tree.command("release-readiness")
+@model_build.command("check-release")
 @click.option(
     "--household-model", required=True, type=_PATH, help="Household model JSON."
 )
@@ -1061,7 +1006,7 @@ def linked_tree_release_readiness_command(
     write_output(report, output_format, title="Linked Model Release Readiness")
 
 
-@tree.command("package-linked-models")
+@model_build.command("package-linked")
 @click.option(
     "--household-model", required=True, type=_PATH, help="Household model JSON."
 )
@@ -1082,13 +1027,13 @@ def linked_tree_release_readiness_command(
     "--household-release-manifest",
     type=_PATH,
     default=None,
-    help="Optional household model release manifest from prepare-model-release.",
+    help="Optional household model release manifest from models build prepare-release.",
 )
 @click.option(
     "--person-release-manifest",
     type=_PATH,
     default=None,
-    help="Optional person model release manifest from prepare-model-release.",
+    help="Optional person model release manifest from models build prepare-release.",
 )
 @click.option(
     "--review-note",
@@ -1121,7 +1066,7 @@ def package_linked_tree_models_command(
     if training_manifest is None:
         raise click.ClickException(
             "Packaging linked models requires --training-manifest. Use the "
-            "manifest written by `tree train-linked --manifest-out` so the "
+            "manifest written by `models build train-linked --manifest-out` so the "
             "package carries source, geography, target-profile, and model "
             "provenance."
         )
@@ -1175,7 +1120,7 @@ def package_linked_tree_models_command(
     if household_audit["issues"] or person_audit["issues"]:
         raise click.ClickException(
             "Linked model audit did not pass without warnings; inspect "
-            "audit-model output for both household and person models before "
+            "models build audit output for both household and person models before "
             "packaging."
         )
     package = {
@@ -1222,7 +1167,7 @@ def package_linked_tree_models_command(
     print_wrote(out_path)
 
 
-@tree.command("inspect-package")
+@click.command("inspect")
 @click.argument("package_path", metavar="PACKAGE")
 @click.option(
     "--format",
@@ -1303,16 +1248,16 @@ def _format_tree_value_error(exc: ValueError) -> str:
     schema_messages = {
         "unsupported linked model package schema": (
             "This file is not a supported linked household/person model package. "
-            "Choose a package created by `tree package-linked-models` or use the "
+            "Choose a package created by `models build package-linked` or use the "
             "web app's premade model chooser."
         ),
         "unsupported linked tree training manifest schema": (
             "This file is not a supported linked training manifest. Use the "
-            "manifest written by `tree train-linked --manifest-out`."
+            "manifest written by `models build train-linked --manifest-out`."
         ),
         "unsupported tree release manifest schema": (
             "This file is not a supported tree release manifest. Use the manifest "
-            "written by `tree prepare-model-release --manifest-out`."
+            "written by `models build prepare-release --manifest-out`."
         ),
         "unsupported source provenance schema": (
             "This file is not a supported source provenance file. Use a reviewed "
@@ -1362,7 +1307,7 @@ def _build_linked_release_readiness_report(
     readiness = classify_linked_release_readiness(household_audit, person_audit)
     return {
         "schema_version": "synthpopcan-linked-tree-readiness-v1",
-        "command": "tree release-readiness",
+        "command": "models build check-release",
         "package_type": "linked_household_person",
         "readiness": readiness,
         "package_allowed": readiness == "likely_publishable",
@@ -1422,7 +1367,7 @@ def validate_linked_training_manifest_model_paths(
     if not isinstance(models, dict):
         raise ValueError(
             "training manifest must include models.household.path and "
-            "models.person.path; rerun `tree train-linked --manifest-out` or "
+            "models.person.path; rerun `models build train-linked --manifest-out` or "
             "use a reviewed manifest with model provenance"
         )
     expected = {
@@ -1446,7 +1391,7 @@ def validate_linked_training_manifest_model_paths(
         if release_manifest is None:
             raise ValueError(
                 f"training manifest {level} model path does not match --{level}-model; "
-                f"pass --{level}-release-manifest from `tree prepare-model-release` "
+                f"pass --{level}-release-manifest from `models build prepare-release` "
                 "when packaging reviewed release copies"
             )
         else:
@@ -1536,7 +1481,7 @@ def _read_package_path_or_id(
     except KeyError as exc:
         raise ValueError(
             f"linked package not found: {package_path_or_id}. Use a package JSON path "
-            "or a packaged model ID from `synthpopcan tree list-packages`."
+            "or a model ID from `synthpopcan models list`."
         ) from exc
     except FileNotFoundError as exc:
         raise ValueError(str(exc)) from exc
@@ -1943,7 +1888,7 @@ def classify_linked_release_readiness(
 
 def linked_release_next_steps(readiness: str) -> list[str]:
     if readiness == "likely_publishable":
-        return ["Package the reviewed models with `tree package-linked-models`."]
+        return ["Package the reviewed models with `models build package-linked`."]
     if readiness == "needs_changes":
         return [
             "Review audit issues, then prune, coarsen, aggregate, or retrain before "
@@ -1952,7 +1897,7 @@ def linked_release_next_steps(readiness: str) -> list[str]:
     return [
         (
             "Prepare reviewed publishable-candidate copies with "
-            "`tree prepare-model-release`, then rerun this readiness report."
+            "`models build prepare-release`, then rerun this readiness report."
         )
     ]
 

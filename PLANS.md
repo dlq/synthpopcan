@@ -44,7 +44,9 @@ background in [NOTES.md](NOTES.md), and detailed tasks in [`plans/`](plans/).
 
 `0.4.0` is the latest tagged and published release. The development tree adds
 independent candidate-subsample seeds, subsample provenance, a smaller and typed
-beginner Python API, expanded small-area documentation, and planning cleanup.
+beginner Python API, a consolidated CLI organized around `models`, `geo`, and
+`validate`, linked-population artifact directories, expanded small-area
+documentation, and planning cleanup.
 
 Implemented capabilities include:
 
@@ -56,7 +58,7 @@ Implemented capabilities include:
   validation;
 - a 17-entry prepared-model registry covering Canada, all provinces, five major
   CMAs, and a demo; territories and broader CMA coverage remain open;
-- `geo calibrate-linked`, `geo synthesize-from-package`, joint person controls,
+- `geo calibrate`, `geo synthesize`, joint person controls,
   scale estimation, residual reports, linked realization, and maps;
 - a packaged local web app for guided IPF, prepared models, WDS preparation,
   small-area preflight, downloads, and exact CLI handoff.
@@ -89,6 +91,7 @@ Status: active follow-up line.
 - composable beginner API results and separate flat and linked output writers;
 - an explicit stable top-level API contract and inline typing marker;
 - clearer small-area CLI, API, notebook, and web-app documentation;
+- a coherent CLI command tree with one linked-population directory contract;
 - correctness roadmap and planning rationalization.
 
 Before tagging, run the release gate, installed-wheel and model-fetch smoke
@@ -156,7 +159,7 @@ and richer reproducible public-source mappings.
 | --- | --- |
 | Data | Track code, docs, public-safe metadata, and tiny fixtures; ignore raw/restricted data, large caches, real generated populations, and unpublished private-data models. |
 | Testing | Prefer correctness evidence over defensive-branch coverage; keep default tests public and deterministic, with live StatCan/full-data checks opt-in. |
-| Documentation | Document `models path` and `models remove`; keep workflow examples synchronized; add contributor internals only when useful. |
+| Documentation | Document `models remove`; keep workflow examples synchronized with tested CLI help; add contributor internals only when useful. |
 | Releases | Align tags, PyPI, Read the Docs, release notes, checksums, model provenance, installed-wheel smoke tests, and model-fetch checks. |
 
 ## Open Decisions

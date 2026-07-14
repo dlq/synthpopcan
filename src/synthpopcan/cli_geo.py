@@ -22,7 +22,7 @@ _BOUNDARIES_HELP = (
     "or the directory containing the shapefile. "
     "For CTs: lct_000b16a_e.shp; for ADAs: lada000b16a_e.shp. "
     "Shapefiles are reprojected automatically. "
-    "Use 'geo prepare-boundaries' to produce a local GeoJSON once."
+    "Use 'geo boundaries' to produce a local GeoJSON once."
 )
 
 # Known StatCan geography column → (shapefile name fragment, attribute field)
@@ -85,13 +85,19 @@ def _resolve_id_field(geo_column: str, boundaries_path: Path) -> str:
 _PATH = click.Path(path_type=Path)
 
 
+def _linked_population_paths(directory: Path) -> tuple[Path, Path]:
+    """Return the conventional household and person paths in an artifact directory."""
+
+    return directory / "households.csv", directory / "persons.csv"
+
+
 @click.group("geo")
 # Keep the Python object named for the field term while exposing a shorter CLI group.
 def small_area() -> None:
     """Assign and calibrate linked households to target geographies."""
 
 
-@small_area.command("estimate-run")
+@small_area.command("estimate")
 @click.option(
     "--controls",
     "controls_path",
@@ -114,7 +120,7 @@ def small_area() -> None:
     "--pool-size",
     type=int,
     default=None,
-    help="Optional --pool-size value planned for calibrate-linked.",
+    help="Optional --pool-size value planned for geo calibrate or geo synthesize.",
 )
 @click.option(
     "--average-persons-per-household",
@@ -131,7 +137,7 @@ def small_area() -> None:
     show_default=True,
     help="Print a short summary or the full machine-readable estimate.",
 )
-def estimate_run_command(
+def estimate_command(
     controls_path: Path,
     geo_dimension: str,
     candidate_households: int,
@@ -185,21 +191,8 @@ def _format_surface_recommendation(recommendation: str) -> str:
     return recommendation
 
 
-@small_area.command("calibrate-linked")
-@click.option(
-    "--households",
-    "households_path",
-    required=True,
-    type=_PATH,
-    help="Candidate household CSV generated from a linked model package.",
-)
-@click.option(
-    "--persons",
-    "persons_path",
-    required=True,
-    type=_PATH,
-    help="Candidate person CSV linked to the household CSV.",
-)
+@small_area.command("calibrate")
+@click.argument("population_dir", metavar="POPULATION", type=_PATH)
 @click.option(
     "--controls",
     "controls_path",
@@ -223,45 +216,21 @@ def _format_surface_recommendation(recommendation: str) -> str:
 )
 @click.option(
     "--geo-column",
-    required=True,
-    help="Column name to write on assigned household and person rows.",
+    default=None,
+    help="Output geography column. Defaults to --geo-dimension.",
 )
 @click.option(
-    "--households-out",
-    required=True,
-    type=_PATH,
-    help="Destination CSV for assigned household rows.",
-)
-@click.option(
-    "--persons-out",
+    "--out",
+    "output_dir",
     required=True,
     type=_PATH,
-    help="Destination CSV for assigned person rows.",
+    help="Output directory for linked rows and the calibration report.",
 )
 @click.option(
-    "--weights-out",
-    type=_PATH,
-    help="Optional fitted household weights CSV; may be large.",
+    "--include-weights",
+    is_flag=True,
+    help="Also write the potentially large fitted weights CSV.",
 )
-@click.option(
-    "--report",
-    "report_out",
-    type=_PATH,
-    help="Optional JSON report with convergence and geography summaries.",
-)
-@click.option(
-    "--household-id-column",
-    default="synthetic_household_id",
-    show_default=True,
-    help="Household ID column shared by household and person CSVs.",
-)
-@click.option(
-    "--person-id-column",
-    default="synthetic_person_id",
-    show_default=True,
-    help="Person ID column in the candidate person CSV.",
-)
-@click.option("--weight-field", help="Optional candidate-household starting weight.")
 @click.option(
     "--max-iterations",
     default=100,
@@ -308,20 +277,14 @@ def _format_surface_recommendation(recommendation: str) -> str:
     show_default=True,
     help="Print a short summary or the full machine-readable report.",
 )
-def calibrate_linked_command(
-    households_path: Path,
-    persons_path: Path,
+def calibrate_command(
+    population_dir: Path,
     controls_path: Path,
     person_controls_path: Path | None,
     geo_dimension: str,
-    geo_column: str,
-    households_out: Path,
-    persons_out: Path,
-    weights_out: Path | None,
-    report_out: Path | None,
-    household_id_column: str,
-    person_id_column: str,
-    weight_field: str | None,
+    geo_column: str | None,
+    output_dir: Path,
+    include_weights: bool,
     max_iterations: int,
     tolerance: float,
     pool_size: int | None,
@@ -330,6 +293,13 @@ def calibrate_linked_command(
 ) -> None:
     """Calibrate linked household/person candidates to geography controls."""
 
+    households_path, persons_path = _linked_population_paths(population_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    households_out, persons_out = _linked_population_paths(output_dir)
+    report_out = output_dir / "report.json"
+    weights_out = output_dir / "weights.csv" if include_weights else None
+    output_geo_column = geo_column or geo_dimension
+
     try:
         summary = calibrate_linked_household_csvs(
             households_path=households_path,
@@ -337,14 +307,11 @@ def calibrate_linked_command(
             controls_path=controls_path,
             person_controls_path=person_controls_path,
             geography_dimension=geo_dimension,
-            geography_column=geo_column,
+            geography_column=output_geo_column,
             households_out=households_out,
             persons_out=persons_out,
             weights_out=weights_out,
             report_out=report_out,
-            household_id_column=household_id_column,
-            person_id_column=person_id_column,
-            weight_field=weight_field,
             max_iterations=max_iterations,
             tolerance=tolerance,
             pool_size=pool_size,
@@ -358,10 +325,9 @@ def calibrate_linked_command(
 
     print_wrote(households_out)
     print_wrote(persons_out)
-    if weights_out:
+    if weights_out is not None:
         print_wrote(weights_out)
-    if report_out:
-        print_wrote(report_out)
+    print_wrote(report_out)
     if output_format == "json":
         click.echo(json.dumps(summary, sort_keys=True))
         return
@@ -370,7 +336,7 @@ def calibrate_linked_command(
     geo_n = len(summary["geographies"])
     click.echo(
         f"Assigned {hh_n:,} households and {p_n:,} persons "
-        f"across {geo_n:,} {geo_column} geographies."
+        f"across {geo_n:,} {output_geo_column} geographies."
     )
     _print_calibrate_linked_diagnostics(summary)
 
@@ -437,20 +403,14 @@ def _coerce_float(value: object) -> float:
 
 
 @small_area.command("map")
-@click.option(
-    "--households",
-    "households_path",
-    required=True,
-    type=_PATH,
-    help="Synthesis household CSV (output of calibrate-linked).",
-)
+@click.argument("population_path", metavar="POPULATION", type=_PATH)
 @click.option(
     "--persons",
     "persons_path",
     default=None,
     type=_PATH,
     help=(
-        "Synthesis person CSV (output of calibrate-linked). "
+        "Optional person CSV when POPULATION is a household CSV. "
         "Adds person-level variables: persons, % children, % seniors, "
         "% immigrants, % visible minority, median household income."
     ),
@@ -499,7 +459,7 @@ def _coerce_float(value: object) -> float:
     help="Decimal places kept in WGS-84 coordinates (5 ≈ 1 m; 3 halves file size).",
 )
 def map_command(
-    households_path: Path,
+    population_path: Path,
     persons_path: Path | None,
     boundaries_path: Path,
     geo_column: str,
@@ -524,12 +484,21 @@ def map_command(
     """
     from synthpopcan.map_render import render_synthesis_map
 
-    # Resolve optional args
+    if population_path.is_dir():
+        households_path, inferred_persons = _linked_population_paths(population_path)
+        if persons_path is None:
+            persons_path = inferred_persons
+    else:
+        households_path = population_path
+
     boundaries_path = _resolve_boundaries(boundaries_path, geo_column)
     if geo_id_field is None:
         geo_id_field = _resolve_id_field(geo_column, boundaries_path)
     if out_path is None:
-        out_path = households_path.parent / (households_path.stem + "-map.html")
+        if population_path.is_dir():
+            out_path = population_path / "map.html"
+        else:
+            out_path = households_path.parent / (households_path.stem + "-map.html")
     if title is None:
         title = out_path.stem.replace("-", " ").replace("_", " ").title()
 
@@ -557,15 +526,18 @@ def map_command(
         raise click_value_error(exc) from exc
 
     print_wrote(out_path)
-    click.echo(f"Open {out_path} in a browser to explore the synthesis results.")
+    click.echo(
+        f"Open {out_path} in a browser to explore the synthesis results.", err=True
+    )
+    click.echo(out_path)
 
 
 # ---------------------------------------------------------------------------
-# build-controls command
+# controls command
 # ---------------------------------------------------------------------------
 
 
-@small_area.command("build-controls")
+@small_area.command("controls")
 @click.option(
     "--profile",
     "profile_path",
@@ -597,9 +569,9 @@ def map_command(
     default=None,
     type=_PATH,
     help=(
-        "Synthesis household CSV to recode for use as calibrate-linked candidates. "
+        "Linked population directory to recode for calibration. "
         "household_size values above 5 are capped at 5 to match Census categories. "
-        "Omit when using synthesize-from-package, which handles recoding itself."
+        "Omit when using geo synthesize, which handles recoding itself."
     ),
 )
 @click.option(
@@ -638,8 +610,8 @@ def map_command(
     default=None,
     type=_PATH,
     help=(
-        "Destination path for the recoded candidates CSV. "
-        "Defaults to <candidates-stem>-recoded.csv beside the candidates file."
+        "Destination directory for the recoded linked population. "
+        "Defaults to <candidates-name>-recoded beside the candidates directory."
     ),
 )
 @click.option(
@@ -659,7 +631,7 @@ def map_command(
         "exact household sizes."
     ),
 )
-def build_controls_command(
+def controls_command(
     profile_path: Path,
     geo_column: str,
     target_total: int,
@@ -675,14 +647,14 @@ def build_controls_command(
 
     Reads household-size (members 52–56) and tenure (members 1618–1619) margins
     from a 2247-variable Census Profile, scales them to the target household count,
-    and writes a long-format controls CSV ready for ``calibrate-linked`` or
-    ``synthesize-from-package``.  Household-size controls use
+    and writes a long-format controls CSV ready for ``calibrate`` or
+    ``synthesize``. Household-size controls use
     household_size_group by default because Census Profile combines 5-or-more
     person households into one category.  When --candidates is supplied, also
     writes that grouped column while preserving exact household_size.
 
     Geographies missing either margin are automatically dropped (they would cause
-    an IPF dimension mismatch in calibrate-linked).
+    an IPF dimension mismatch in calibration).
 
     See the small-area documentation for worked examples.
     """
@@ -696,14 +668,13 @@ def build_controls_command(
     # Default output paths
     if controls_out is None:
         if candidates_path is not None:
-            controls_out = (
-                candidates_path.parent
-                / f"{candidates_path.stem}-controls-{target_total}.csv"
+            controls_out = candidates_path.parent / (
+                f"{candidates_path.name}-controls-{target_total}.csv"
             )
         else:
             controls_out = Path(f"{geo_column}-controls-{target_total}.csv")
     if candidates_out is None and candidates_path is not None:
-        candidates_out = candidates_path.parent / f"{candidates_path.stem}-recoded.csv"
+        candidates_out = candidates_path.parent / f"{candidates_path.name}-recoded"
 
     click.echo(f"Reading profile: {profile_path}")
     try:
@@ -754,58 +725,61 @@ def build_controls_command(
     print_wrote(controls_out)
 
     if candidates_path is not None:
+        import shutil
+
+        candidate_households, candidate_persons = _linked_population_paths(
+            candidates_path
+        )
         click.echo(
             f"Recoding candidates ({household_size_group_column} grouped at "
             f"{hhsize_cap}+): "
             f"{candidates_path}"
         )
         assert candidates_out is not None
+        candidates_out.mkdir(parents=True, exist_ok=True)
+        output_households, output_persons = _linked_population_paths(candidates_out)
         try:
             n_rows = write_recoded_candidates(
-                candidates_path,
-                candidates_out,
+                candidate_households,
+                output_households,
                 group_col=household_size_group_column,
                 cap=hhsize_cap,
             )
+            shutil.copyfile(candidate_persons, output_persons)
         except OSError as exc:
             raise click_file_access_error(candidates_path, "recode", exc) from exc
         click.echo(f"  {n_rows:,} rows written")
-        print_wrote(candidates_out)
+        print_wrote(output_households)
+        print_wrote(output_persons)
         click.echo("\nNext step:")
         click.echo(
-            f"  synthpopcan geo calibrate-linked \\\n"
-            f"    --households {candidates_out} \\\n"
-            f"    --persons <persons-csv> \\\n"
+            f"  synthpopcan geo calibrate {candidates_out} \\\n"
             f"    --controls {controls_out} \\\n"
             f"    --geo-dimension {geo_column} \\\n"
-            f"    --geo-column {geo_column} \\\n"
             f"    --pool-size 10000 \\\n"
-            f"    --households-out <output-households.csv> \\\n"
-            f"    --persons-out <output-persons.csv>"
+            f"    --out calibrated-population/"
         )
     else:
         click.echo("\nNext step:")
         click.echo(
-            f"  synthpopcan geo synthesize-from-package <package.json> \\\n"
+            f"  synthpopcan geo synthesize MODEL \\\n"
             f"    --households {target_total} \\\n"
             f"    --controls {controls_out} \\\n"
             f"    --geo-dimension {geo_column} \\\n"
-            f"    --geo-column {geo_column} \\\n"
             f"    --max-household-size 5 \\\n"
             f"    --household-size-group-column {household_size_group_column} \\\n"
-            f"    --households-out <output-households.csv> \\\n"
-            f"    --persons-out <output-persons.csv>"
+            f"    --out calibrated-population/"
         )
 
 
 # ---------------------------------------------------------------------------
-# prepare-boundaries command
+# boundaries command
 # ---------------------------------------------------------------------------
 
 _KNOWN_GEO_LEVELS = ("ct", "ada", "da", "csd", "cd", "pr")
 
 
-@small_area.command("prepare-boundaries")
+@small_area.command("boundaries")
 @click.option(
     "--geo-level",
     required=True,
@@ -831,7 +805,7 @@ _KNOWN_GEO_LEVELS = ("ct", "ada", "da", "csd", "cd", "pr")
     default=None,
     help="Override the StatCan download URL (useful for cached mirrors).",
 )
-def prepare_boundaries_command(
+def boundaries_command(
     geo_level: str,
     out_dir: Path,
     coord_precision: int,
@@ -857,7 +831,7 @@ def prepare_boundaries_command(
     \b
     Example:
 
-        synthpopcan geo prepare-boundaries --geo-level ct --out-dir data/boundaries/
+        synthpopcan geo boundaries --geo-level ct --out-dir data/boundaries/
 
     The 2016 boundary ZIPs are sourced from Statistics Canada's geography
     program.  An internet connection is required.
@@ -871,7 +845,7 @@ def prepare_boundaries_command(
 
     entry: BoundaryDownload = _BOUNDARY_2016_DOWNLOADS[geo_level.lower()]
 
-    click.echo(f"Downloading {entry.description} boundary file…")
+    click.echo(f"Downloading {entry.description} boundary file…", err=True)
     try:
         shp_path = fetch_boundary_zip(geo_level, out_dir, url=url)
     except OSError as exc:
@@ -879,8 +853,8 @@ def prepare_boundaries_command(
     except ValueError as exc:
         raise click_value_error(exc) from exc
 
-    click.echo(f"  Shapefile: {shp_path}")
-    click.echo("Converting to WGS-84 GeoJSON…")
+    click.echo(f"  Shapefile: {shp_path}", err=True)
+    click.echo("Converting to WGS-84 GeoJSON…", err=True)
 
     geojson_path = out_dir / f"2016-boundary-{geo_level.lower()}.geojson"
     try:
@@ -898,11 +872,15 @@ def prepare_boundaries_command(
         raise click_file_access_error(geojson_path, "write", exc) from exc
 
     print_wrote(geojson_path)
-    click.echo(f"\nPass this file to geo map with:\n  --boundaries {geojson_path}")
+    click.echo(
+        f"\nPass this file to geo map with:\n  --boundaries {geojson_path}",
+        err=True,
+    )
+    click.echo(geojson_path)
 
 
-@small_area.command("synthesize-from-package")
-@click.argument("package_path", metavar="PACKAGE")
+@small_area.command("synthesize")
+@click.argument("package_path", metavar="MODEL")
 @click.option(
     "--households",
     "household_count",
@@ -930,17 +908,20 @@ def prepare_boundaries_command(
 )
 @click.option(
     "--geo-column",
-    required=True,
-    help="Column name to write in output rows.",
+    default=None,
+    help="Output geography column. Defaults to --geo-dimension.",
 )
-@click.option("--households-out", required=True, type=_PATH)
-@click.option("--persons-out", required=True, type=_PATH)
-@click.option("--weights-out", type=_PATH, help="Optional weights CSV path.")
 @click.option(
-    "--report",
-    "report_out",
+    "--out",
+    "output_dir",
+    required=True,
     type=_PATH,
-    help="Optional calibration report JSON path.",
+    help="Output directory for linked rows and the calibration report.",
+)
+@click.option(
+    "--include-weights",
+    is_flag=True,
+    help="Also write the potentially large fitted weights CSV.",
 )
 @click.option(
     "--random-seed",
@@ -983,26 +964,33 @@ def prepare_boundaries_command(
         "Use household_size only for old controls that expect destructive capping."
     ),
 )
-def synthesize_from_package_command(
+@click.option(
+    "--format",
+    "output_format",
+    default="summary",
+    type=click.Choice(["summary", "json"]),
+    show_default=True,
+    help="Print a short summary or the full machine-readable report.",
+)
+def synthesize_command(
     package_path: str,
     household_count: int,
     controls_path: Path,
     person_controls_path: Path | None,
     geo_dimension: str,
-    geo_column: str,
-    households_out: Path,
-    persons_out: Path,
-    weights_out: Path | None,
-    report_out: Path | None,
+    geo_column: str | None,
+    output_dir: Path,
+    include_weights: bool,
     random_seed: int | None,
     pool_size: int | None,
     subsample_seed: int,
     max_household_size: int | None,
     household_size_group_column: str,
+    output_format: str,
 ) -> None:
     """Generate linked candidates from a package and calibrate to small-area controls.
 
-    PACKAGE is a local linked model package JSON or a premade model ID from
+    MODEL is a local linked model package JSON or a premade model ID from
     ``synthpopcan models list``.
 
     See the small-area documentation for worked examples.
@@ -1015,6 +1003,12 @@ def synthesize_from_package_command(
         validate_package_allows_generation,
     )
     from synthpopcan.tree import generate_linked_population_to_csv
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+    households_out, persons_out = _linked_population_paths(output_dir)
+    report_out = output_dir / "report.json"
+    weights_out = output_dir / "weights.csv" if include_weights else None
+    output_geo_column = geo_column or geo_dimension
 
     try:
         package, _, _ = _read_package_path_or_id(package_path)
@@ -1071,7 +1065,7 @@ def synthesize_from_package_command(
                 controls_path=controls_path,
                 person_controls_path=person_controls_path,
                 geography_dimension=geo_dimension,
-                geography_column=geo_column,
+                geography_column=output_geo_column,
                 households_out=households_out,
                 persons_out=persons_out,
                 weights_out=weights_out,
@@ -1090,8 +1084,17 @@ def synthesize_from_package_command(
 
     print_wrote(households_out)
     print_wrote(persons_out)
-    if weights_out:
+    if weights_out is not None:
         print_wrote(weights_out)
-    if report_out:
-        print_wrote(report_out)
-    click.echo(json.dumps(summary, sort_keys=True))
+    print_wrote(report_out)
+    if output_format == "json":
+        click.echo(json.dumps(summary, sort_keys=True))
+        return
+    hh_n = summary["assigned_households"]
+    p_n = summary["assigned_persons"]
+    geo_n = len(summary["geographies"])
+    click.echo(
+        f"Generated and assigned {hh_n:,} households and {p_n:,} persons "
+        f"across {geo_n:,} {output_geo_column} geographies."
+    )
+    _print_calibrate_linked_diagnostics(summary)

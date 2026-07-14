@@ -83,12 +83,11 @@ one coherent slice before treating `VALUE` as a population count. The local web
 app can create a reproducible `synthpopcan-wds-selection.json`; pass that file
 to `controls from-wds --selection` when continuing in the CLI.
 
-The Census Profile workflow is simpler — there is no search step, just choose
-the geography level and year:
+The Census Profile workflow is simpler: there is no search step, just choose
+the geography level. The command currently fetches the 2016 profile.
 
 ```bash
 synthpopcan statcan census-profile fetch \
-  --year 2016 \
   --geo-level ct \
   --out-dir data/raw/statcan/census-profile/2016
 ```
@@ -189,7 +188,6 @@ writing a mapping template.
 
 ```bash
 synthpopcan statcan census-profile fetch \
-  --year 2016 \
   --geo-level ct \
   --out-dir data/raw/statcan/census-profile/2016
 ```

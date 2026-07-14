@@ -123,7 +123,7 @@ def _suggest_ipf_controls(
     "--out", "out_path", required=True, type=_PATH, help="Output weighted CSV."
 )
 @click.option(
-    "--weight-field",
+    "--weight-column",
     default=None,
     help="Optional seed CSV column containing initial weights.",
 )
@@ -139,7 +139,7 @@ def _fit_ipf_command(
     seed_path: Path,
     controls_path: Path,
     out_path: Path,
-    weight_field: str | None,
+    weight_column: str | None,
     max_iterations: int,
     tolerance: float,
     allow_nonconverged: bool,
@@ -152,7 +152,7 @@ def _fit_ipf_command(
         result = fit_ipf(
             seed_rows,
             control_table.to_ipf_margins(),
-            weight_field=weight_field,
+            weight_field=weight_column,
             max_iterations=max_iterations,
             tolerance=tolerance,
         )
@@ -189,15 +189,15 @@ def _fit_ipf_command(
     "--out", "out_path", required=True, type=_PATH, help="Output synthetic CSV."
 )
 @click.option(
-    "--weight-field",
+    "--weight-column",
     default="weight",
     show_default=True,
     help="Column containing fitted weights.",
 )
-def _expand_ipf(weights_path: Path, out_path: Path, weight_field: str) -> None:
+def _expand_ipf(weights_path: Path, out_path: Path, weight_column: str) -> None:
     """Expand fitted weights into full synthetic rows."""
     try:
-        seed_rows, weights = _read_weighted_seed(weights_path, weight_field)
+        seed_rows, weights = _read_weighted_seed(weights_path, weight_column)
         _write_expanded_seed(out_path, seed_rows, weights)
     except OSError as exc:
         raise click_file_access_error(

@@ -621,9 +621,9 @@ def render_synthesis_map(
     Parameters
     ----------
     households_path:
-        Synthesis household CSV (output of ``calibrate-linked``).
+        Synthesis household CSV (output of ``geo calibrate``).
     persons_path:
-        Synthesis person CSV (output of ``calibrate-linked``). When provided,
+        Synthesis person CSV (output of ``geo calibrate``). When provided,
         adds person-level variables: persons, % children, % seniors,
         % immigrants, % visible minority, median household income.
     boundaries_path:

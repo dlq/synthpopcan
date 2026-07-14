@@ -45,7 +45,7 @@ Model packages are still derived research artifacts. Before publishing one:
 - check that it contains no raw rows, source identifiers, or private paths;
 - confirm the source citation and redistribution note are clear;
 - run the relevant tree-model audit and release workflow;
-- inspect package metadata with `synthpopcan tree inspect-package`;
+- inspect package metadata with `synthpopcan models build inspect`;
 - verify large package files are outside the installed package and listed in
   the model registry with a checksum.
 

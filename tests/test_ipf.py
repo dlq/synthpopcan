@@ -1088,7 +1088,7 @@ def test_cli_expands_fitted_weight_when_seed_has_initial_weight(tmp_path: Path) 
                 str(controls_path),
                 "--out",
                 str(weights_path),
-                "--weight-field",
+                "--weight-column",
                 "weight",
             ]
         )

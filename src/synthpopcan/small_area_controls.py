@@ -176,7 +176,7 @@ def write_controls_csv(
     *,
     household_size_column: str = "household_size",
 ) -> None:
-    """Write a long-format controls CSV consumable by ``calibrate-linked``."""
+    """Write a long-format controls CSV consumable by ``geo calibrate``."""
     geo_col = geography_column
     fieldnames = [
         "margin",

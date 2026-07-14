@@ -713,8 +713,8 @@ def _missing_candidate_column_issue(
     if candidate_unit == "household" and dimension == "household_size_group":
         tip = (
             "For Census Profile household-size controls, run "
-            "`synthpopcan geo synthesize-from-package ... --max-household-size 5`, "
-            "or run `geo build-controls` with candidate recoding so "
+            "`synthpopcan geo synthesize ... --max-household-size 5`, "
+            "or run `geo controls` with candidate recoding so "
             "household_size_group is added."
         )
     else:

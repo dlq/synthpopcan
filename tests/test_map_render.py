@@ -926,7 +926,6 @@ def test_cli_map_command_creates_html(tmp_path: Path) -> None:
         [
             "geo",
             "map",
-            "--households",
             str(hh),
             "--boundaries",
             str(shp_path),
@@ -960,7 +959,6 @@ def test_cli_map_command_default_out_and_title(tmp_path: Path) -> None:
         [
             "geo",
             "map",
-            "--households",
             str(hh),
             "--boundaries",
             str(shp_path),
@@ -1180,7 +1178,6 @@ def test_cli_map_command_import_error(tmp_path: Path) -> None:
                 [
                     "geo",
                     "map",
-                    "--households",
                     str(hh),
                     "--boundaries",
                     str(shp_path),
@@ -1217,7 +1214,6 @@ def test_cli_map_command_oserror(tmp_path: Path) -> None:
                 [
                     "geo",
                     "map",
-                    "--households",
                     str(hh),
                     "--boundaries",
                     str(shp_path),
@@ -1254,7 +1250,6 @@ def test_cli_map_command_value_error(tmp_path: Path) -> None:
                 [
                     "geo",
                     "map",
-                    "--households",
                     str(hh),
                     "--boundaries",
                     str(shp_path),
@@ -1421,7 +1416,7 @@ def test_render_synthesis_map_with_geojson_boundaries(tmp_path: Path) -> None:
 
 
 # ---------------------------------------------------------------------------
-# geo prepare-boundaries CLI
+# geo boundaries CLI
 # ---------------------------------------------------------------------------
 
 
@@ -1445,7 +1440,7 @@ def test_cli_prepare_boundaries_success(tmp_path: Path) -> None:
         exit_code = cli_main(
             [
                 "geo",
-                "prepare-boundaries",
+                "boundaries",
                 "--geo-level",
                 "ct",
                 "--out-dir",
@@ -1473,7 +1468,7 @@ def test_cli_prepare_boundaries_download_oserror(tmp_path: Path) -> None:
             cli_main(
                 [
                     "geo",
-                    "prepare-boundaries",
+                    "boundaries",
                     "--geo-level",
                     "ada",
                     "--out-dir",
@@ -1503,7 +1498,7 @@ def test_cli_prepare_boundaries_convert_import_error(tmp_path: Path) -> None:
             cli_main(
                 [
                     "geo",
-                    "prepare-boundaries",
+                    "boundaries",
                     "--geo-level",
                     "ct",
                     "--out-dir",
@@ -1533,7 +1528,7 @@ def test_cli_prepare_boundaries_convert_oserror(tmp_path: Path) -> None:
             cli_main(
                 [
                     "geo",
-                    "prepare-boundaries",
+                    "boundaries",
                     "--geo-level",
                     "ct",
                     "--out-dir",
@@ -1557,7 +1552,7 @@ def test_cli_prepare_boundaries_download_value_error(tmp_path: Path) -> None:
             cli_main(
                 [
                     "geo",
-                    "prepare-boundaries",
+                    "boundaries",
                     "--geo-level",
                     "ct",
                     "--out-dir",

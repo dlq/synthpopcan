@@ -251,10 +251,10 @@ test("SCN-WEB-002 inspects and generates from a linked model package", async ({
     page.getByRole("link", { name: "Download synthpopcan-persons.csv" }),
   ).toBeVisible();
   await expect(page.locator("#model-result")).toContainText(
-    "synthpopcan tree generate-from-package",
+    "synthpopcan models generate",
   );
   await expect(page.locator("#model-result")).toContainText(
-    "# Generate linked household and person CSVs",
+    "# Generate a linked population directory",
   );
   expect(consoleErrors).toEqual([]);
 });
@@ -342,8 +342,8 @@ test("SCN-WEB-003 prepares a small-area run and CLI handoff", async ({ page }) =
   await expect(result).toContainText(
     "synthpopcan models fetch 'montreal-cma-2016-all-fields'",
   );
-  await expect(result).toContainText("synthpopcan geo estimate-run");
-  await expect(result).toContainText("synthpopcan geo synthesize-from-package");
+  await expect(result).toContainText("synthpopcan geo estimate");
+  await expect(result).toContainText("synthpopcan geo synthesize");
   await expect(result).toContainText("--max-household-size 5");
   await expect(result).toContainText(
     "--household-size-group-column household_size_group",

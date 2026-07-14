@@ -293,7 +293,7 @@ Fit weights and write a JSON report:
 synthpopcan ipf fit \
   --seed seed.csv \
   --controls tests/fixtures/workflows/microdata_ipf/controls.csv \
-  --weight-field WEIGHT \
+  --weight-column WEIGHT \
   --out weights.csv \
   --report fit-report.json
 ```
@@ -307,7 +307,7 @@ synthpopcan ipf report fit-report.json
 Validate the fitted weights:
 
 ```bash
-synthpopcan validate controls \
+synthpopcan validate ipf \
   --population weights.csv \
   --controls tests/fixtures/workflows/microdata_ipf/controls.csv \
   --kind weights
@@ -343,7 +343,7 @@ Fits seed rows to controls and writes compact fitted weights.
 synthpopcan ipf fit \
   --seed seed.csv \
   --controls controls.csv \
-  --weight-field WEIGHT \
+  --weight-column WEIGHT \
   --out weights.csv \
   --report fit-report.json
 ```
@@ -353,7 +353,7 @@ Options:
 - `--seed PATH`: seed records CSV.
 - `--controls PATH`: normalized long control CSV.
 - `--out PATH`: fitted weights CSV.
-- `--weight-field NAME`: optional initial weight column in the seed.
+- `--weight-column NAME`: optional initial weight column in the seed.
 - `--max-iterations INTEGER`: maximum fitting iterations.
 - `--tolerance FLOAT`: convergence tolerance.
 - `--allow-nonconverged`: write weights even if the fit does not converge.
@@ -385,10 +385,10 @@ Options:
 
 - `--weights PATH`: fitted weights CSV.
 - `--out PATH`: expanded output CSV.
-- `--weight-field NAME`: fitted weight column, default `weight`.
+- `--weight-column NAME`: fitted weight column, default `weight`.
 
 If `ipf fit` wrote a `fitted_weight` column because the seed already had a
-`weight` column, pass `--weight-field fitted_weight`.
+`weight` column, pass `--weight-column fitted_weight`.
 
 ### `ipf suggest-controls`
 
@@ -396,7 +396,7 @@ Suggests possible calibration-control directions from generated rows.
 
 ```bash
 synthpopcan ipf suggest-controls \
-  --seed candidate-households.csv \
+  --seed candidates/households.csv \
   --unit household
 ```
 
@@ -416,13 +416,12 @@ Generate candidate households and people from a reviewed linked-model package:
 
 ```bash
 synthpopcan models list
-synthpopcan tree generate-from-package demo-linked-household-person \
+synthpopcan models generate demo-linked-household-person \
   --households 100 \
-  --households-out candidate-households.csv \
-  --persons-out candidate-persons.csv
+  --out candidates/
 ```
 
-`generate-from-package` accepts either a local package JSON path or a model ID
+`models generate` accepts either a local package JSON path or a model ID
 from `models list`. Larger published model IDs must be fetched first with
 `synthpopcan models fetch MODEL_ID`.
 
@@ -430,7 +429,7 @@ Then check whether the candidate household rows can satisfy the controls:
 
 ```bash
 synthpopcan ipf check-inputs \
-  --seed candidate-households.csv \
+  --seed candidates/households.csv \
   --controls household-controls.csv
 ```
 
@@ -438,7 +437,7 @@ Fit and expand the calibrated household rows:
 
 ```bash
 synthpopcan ipf fit \
-  --seed candidate-households.csv \
+  --seed candidates/households.csv \
   --controls household-controls.csv \
   --out calibrated-household-weights.csv \
   --report fit-report.json
@@ -452,7 +451,7 @@ IPF cannot create missing variables. If the controls use `tenure`, the seed or
 candidate population must already contain a compatible `tenure` column. If the
 controls use household age-sex composition, a household-only candidate file is
 not enough; generate or join linked person rows first, then use
-`geo calibrate-linked --person-controls` or keep those margins as validation-only
+`geo calibrate --person-controls` or keep those margins as validation-only
 checks.
 
 ## Troubleshooting

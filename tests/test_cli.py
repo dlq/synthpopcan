@@ -11,6 +11,7 @@ from click import ClickException
 
 from synthpopcan.cli import (
     _format_model_availability,
+    cli,
     main,
     resolve_data_root,
 )
@@ -20,8 +21,33 @@ from synthpopcan.cli_geo import (
 )
 
 
-def test_cli_smoke() -> None:
+def test_cli_smoke(capsys) -> None:
     assert main([]) == 0
+    assert "Choose a Workflow" in capsys.readouterr().out
+
+
+def test_cli_command_tree_is_coherent() -> None:
+    assert "tree" not in cli.commands
+    assert set(cli.commands) == {
+        "controls",
+        "data",
+        "geo",
+        "guide",
+        "ipf",
+        "microdata",
+        "models",
+        "serve",
+        "statcan",
+        "validate",
+    }
+    assert set(cli.commands["models"].commands) == {
+        "build",
+        "fetch",
+        "generate",
+        "list",
+        "remove",
+        "show",
+    }
 
 
 @pytest.mark.parametrize(
@@ -59,7 +85,7 @@ def test_controls_validate_accepts_long_control_csv(tmp_path) -> None:
         "sex,sex,,M,50\n"
     )
 
-    assert main(["controls", "validate", str(controls_path)]) == 0
+    assert main(["controls", "check", str(controls_path)]) == 0
 
 
 def test_guide_command_shows_web_app_workflow_choices(capsys) -> None:
@@ -99,9 +125,9 @@ def test_guide_model_matches_beginner_web_flow(capsys) -> None:
     assert "Inspect selected model" in output
     assert "Generate rows" in output
     assert "synthpopcan models fetch" in output
-    assert "synthpopcan tree inspect-package" in output
-    assert "synthpopcan tree generate-from-package" in output
-    assert "synthpopcan validate linked-output" in output
+    assert "synthpopcan models show" in output
+    assert "synthpopcan models generate" in output
+    assert "synthpopcan validate linked" in output
 
 
 def test_cli_models_list_marks_downloadable_models(
@@ -167,32 +193,23 @@ def test_cli_models_fetch_uses_model_cache(monkeypatch, tmp_path, capsys) -> Non
     output = capsys.readouterr()
     assert fetched_paths == [tmp_path / "montreal-cma-2016-all-fields.json"]
     assert "Model package ready" in output.err
+    assert output.out.strip() == str(fetched_paths[0])
 
 
-def test_cli_models_path_uses_cache_location(monkeypatch, tmp_path, capsys) -> None:
-    monkeypatch.setenv("SYNTHPOPCAN_MODEL_CACHE", str(tmp_path))
-
-    assert main(["models", "path", "quebec-2016-all-fields"]) == 0
-
-    assert capsys.readouterr().out.strip() == str(
-        tmp_path / "quebec-2016-all-fields-package.json"
-    )
-
-
-def test_tree_commands_are_visible_in_help(capsys) -> None:
-    assert main(["tree", "--help"]) == 0
+def test_model_build_commands_are_visible_in_help(capsys) -> None:
+    assert main(["models", "build", "--help"]) == 0
 
     output = capsys.readouterr().out
-    assert "Tree-based synthetic population generator" in output
+    assert "Train, audit, and package model artifacts" in output
     assert "train" in output
     assert "train-linked" in output
     assert "generate" in output
-    assert "prepare-model-release" in output
-    assert "package-linked-models" in output
+    assert "prepare-release" in output
+    assert "package-linked" in output
 
 
 def test_tree_train_help_shows_core_options(capsys) -> None:
-    assert main(["tree", "train", "--help"]) == 0
+    assert main(["models", "build", "train", "--help"]) == 0
 
     output = capsys.readouterr().out
     assert "--target-columns" in output
@@ -201,7 +218,7 @@ def test_tree_train_help_shows_core_options(capsys) -> None:
 
 
 def test_tree_generate_help_shows_core_options(capsys) -> None:
-    assert main(["tree", "generate", "--help"]) == 0
+    assert main(["models", "build", "generate", "--help"]) == 0
 
     output = capsys.readouterr().out
     assert "--rows" in output
@@ -274,7 +291,7 @@ def test_extract_controls_no_candidates_uses_geo_column_default_name(
     result = main(
         [
             "geo",
-            "build-controls",
+            "controls",
             "--profile",
             str(profile),
             "--geo-column",
@@ -300,7 +317,7 @@ def test_extract_controls_no_candidates_prints_synthesize_from_package_next_step
     main(
         [
             "geo",
-            "build-controls",
+            "controls",
             "--profile",
             str(profile),
             "--geo-column",
@@ -311,7 +328,7 @@ def test_extract_controls_no_candidates_prints_synthesize_from_package_next_step
     )
 
     output = capsys.readouterr().out
-    assert "synthesize-from-package" in output
+    assert "geo synthesize" in output
 
 
 # ---------------------------------------------------------------------------
@@ -329,7 +346,7 @@ def test_synthesize_from_package_missing_file_raises_click_exception(
         main(
             [
                 "geo",
-                "synthesize-from-package",
+                "synthesize",
                 str(missing),
                 "--households",
                 "10",
@@ -358,7 +375,7 @@ def test_synthesize_from_package_invalid_json_raises_click_exception(
         main(
             [
                 "geo",
-                "synthesize-from-package",
+                "synthesize",
                 str(bad_package),
                 "--households",
                 "10",
@@ -400,7 +417,7 @@ def test_synthesize_from_package_not_publishable_candidate_raises_click_exceptio
         main(
             [
                 "geo",
-                "synthesize-from-package",
+                "synthesize",
                 str(package),
                 "--households",
                 "10",
@@ -643,12 +660,6 @@ def test_cli_models_fetch_value_error_raises_click_exception(monkeypatch) -> Non
     assert "bad" in exc_info.value.format_message()
 
 
-def test_cli_models_path_unknown_id_raises_click_exception() -> None:
-    with pytest.raises(click.ClickException) as exc_info:
-        main(["models", "path", "nonexistent-id"])
-    assert "unknown model package" in exc_info.value.format_message()
-
-
 def test_cli_models_remove_not_cached_prints_no_cached() -> None:
     with patch("synthpopcan.cli.remove_cached_model", return_value=False):
         with patch("synthpopcan.cli.print_success") as mock_print:
@@ -699,11 +710,8 @@ def test_cli_validate_linked_output_oserror(tmp_path) -> None:
             main(
                 [
                     "validate",
-                    "linked-output",
-                    "--households",
-                    str(tmp_path / "h.csv"),
-                    "--persons",
-                    str(tmp_path / "p.csv"),
+                    "linked",
+                    str(tmp_path),
                 ]
             )
 
@@ -717,7 +725,7 @@ def test_cli_validate_tree_output_oserror(tmp_path) -> None:
             main(
                 [
                     "validate",
-                    "tree-output",
+                    "model",
                     "--generated",
                     str(tmp_path / "gen.csv"),
                     "--training",
@@ -741,7 +749,7 @@ def test_cli_validate_tree_output_value_error(tmp_path) -> None:
             main(
                 [
                     "validate",
-                    "tree-output",
+                    "model",
                     "--generated",
                     str(gen),
                     "--training",
@@ -768,13 +776,13 @@ def test_cli_data_sample_oserror(tmp_path) -> None:
 def test_cli_controls_validate_oserror(tmp_path) -> None:
     with patch("synthpopcan.cli.read_control_margins", side_effect=OSError("boom")):
         with pytest.raises(click.ClickException):
-            main(["controls", "validate", str(tmp_path / "controls.csv")])
+            main(["controls", "check", str(tmp_path / "controls.csv")])
 
 
 def test_cli_controls_validate_value_error(tmp_path) -> None:
     with patch("synthpopcan.cli.read_control_margins", side_effect=ValueError("bad")):
         with pytest.raises(click.ClickException) as exc_info:
-            main(["controls", "validate", str(tmp_path / "controls.csv")])
+            main(["controls", "check", str(tmp_path / "controls.csv")])
         assert "bad" in exc_info.value.format_message()
 
 
@@ -960,8 +968,6 @@ def test_cli_statcan_census_profile_fetch_oserror(tmp_path) -> None:
                     "statcan",
                     "census-profile",
                     "fetch",
-                    "--year",
-                    "2016",
                     "--geo-level",
                     "CT",
                     "--out-dir",
@@ -980,8 +986,6 @@ def test_cli_statcan_census_profile_fetch_value_error(tmp_path) -> None:
                     "statcan",
                     "census-profile",
                     "fetch",
-                    "--year",
-                    "2016",
                     "--geo-level",
                     "CT",
                     "--out-dir",
@@ -1112,7 +1116,7 @@ def test_doc_example_installation_quick_getting_started(tmp_path) -> None:
                 str(seed),
                 "--controls",
                 str(controls),
-                "--weight-field",
+                "--weight-column",
                 "WEIGHT",
                 "--out",
                 str(weights),
@@ -1131,7 +1135,7 @@ def test_doc_example_installation_quick_getting_started(tmp_path) -> None:
         main(
             [
                 "validate",
-                "controls",
+                "ipf",
                 "--population",
                 str(weights),
                 "--controls",

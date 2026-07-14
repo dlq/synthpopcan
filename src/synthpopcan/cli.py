@@ -41,7 +41,11 @@ from synthpopcan.cli_output import (
     write_report,
     write_wds_search_results,
 )
-from synthpopcan.cli_tree import tree
+from synthpopcan.cli_tree import (
+    generate_model_population,
+    inspect_linked_tree_package_command,
+    model_build,
+)
 from synthpopcan.console import (
     make_table,
     print_checks_table,
@@ -65,7 +69,6 @@ from synthpopcan.controls import (
 from synthpopcan.localdata import inspect_local_data_layout
 from synthpopcan.models import (
     fetch_model_package,
-    model_cache_path,
     model_catalogue,
     model_catalogue_entry,
     remove_cached_model,
@@ -104,19 +107,26 @@ def main(argv: list[str] | None = None) -> int:
     no_args_is_help=False,
 )
 @click.version_option(__version__, prog_name="synthpopcan")
-def cli() -> None:
+@click.pass_context
+def cli(ctx: click.Context) -> None:
     """Canadian synthetic population tooling."""
+    if ctx.invoked_subcommand is None:
+        _print_workflow_choice_guide()
 
 
 cli.add_command(microdata)
 cli.add_command(ipf)
-cli.add_command(tree)
 cli.add_command(small_area)
 
 
 @cli.group()
 def models() -> None:
-    """List, fetch, and manage downloadable model packages."""
+    """Discover, fetch, generate from, and build model packages."""
+
+
+models.add_command(generate_model_population)
+models.add_command(model_build)
+model_build.add_command(inspect_linked_tree_package_command, "inspect")
 
 
 @models.command("list")
@@ -206,16 +216,6 @@ def fetch_model(model_id: str) -> None:
     except ValueError as exc:
         raise click_value_error(exc) from exc
     print_success(f"Model package ready: {path}")
-
-
-@models.command("path")
-@click.argument("model_id")
-def print_model_path(model_id: str) -> None:
-    """Print where a downloadable model package is stored."""
-    try:
-        path = model_cache_path(model_id)
-    except KeyError as exc:
-        raise click.ClickException(f"unknown model package: {model_id}") from exc
     click.echo(path)
 
 
@@ -251,6 +251,12 @@ def guide_ipf() -> None:
 def guide_model() -> None:
     """Show the generate from existing model path."""
     _print_model_workflow_guide()
+
+
+@guide.command("small-area")
+def guide_small_area() -> None:
+    """Show the linked small-area synthesis path."""
+    _print_small_area_workflow_guide()
 
 
 @cli.command("serve")
@@ -301,6 +307,14 @@ def _print_workflow_choice_guide() -> None:
         ),
         "synthpopcan guide model",
     )
+    table.add_row(
+        "Linked small-area synthesis",
+        (
+            "You have geography controls and want linked household/person rows "
+            "assigned to target areas."
+        ),
+        "synthpopcan guide small-area",
+    )
     print_table(table)
 
 
@@ -347,7 +361,7 @@ def _print_ipf_workflow_guide() -> None:
         "Preview or validate",
         (
             "synthpopcan ipf report fit-report.json\n"
-            "synthpopcan validate controls --population weights.csv "
+            "synthpopcan validate ipf --population weights.csv "
             "--controls controls.csv --kind weights"
         ),
     )
@@ -369,24 +383,53 @@ def _print_model_workflow_guide() -> None:
         "Inspect selected model",
         "synthpopcan models list\n"
         "synthpopcan models fetch montreal-cma-2016-all-fields\n"
-        "synthpopcan tree inspect-package demo-linked-household-person",
+        "synthpopcan models show montreal-cma-2016-all-fields",
     )
     table.add_row(
         "3",
         "Generate rows",
         (
-            "synthpopcan tree generate-from-package demo-linked-household-person "
-            "--households 100 --households-out households.csv "
-            "--persons-out persons.csv"
+            "synthpopcan models generate montreal-cma-2016-all-fields "
+            "--households 100 --out population/"
         ),
     )
     table.add_row(
         "4",
         "Preview or validate",
-        (
-            "synthpopcan validate linked-output --households households.csv "
-            "--persons persons.csv"
-        ),
+        ("synthpopcan validate linked population/"),
+    )
+    print_table(table)
+
+
+def _print_small_area_workflow_guide() -> None:
+    table = make_table(title="Linked Small-Area Synthesis")
+    table.add_column("Step", justify="right", no_wrap=True)
+    table.add_column("Task", no_wrap=True)
+    table.add_column("Command or Next Step")
+    table.add_row(
+        "1",
+        "Prepare controls",
+        "synthpopcan geo controls --profile PROFILE.csv --geo-column ct "
+        "--target 10000 --controls-out controls.csv",
+    )
+    table.add_row(
+        "2",
+        "Estimate scale",
+        "synthpopcan geo estimate --controls controls.csv --geo-dimension ct "
+        "--candidate-households 10000",
+    )
+    table.add_row(
+        "3",
+        "Generate and calibrate",
+        "synthpopcan geo synthesize MODEL --households 10000 "
+        "--controls controls.csv --geo-dimension ct --out small-area/",
+    )
+    table.add_row(
+        "4",
+        "Validate and map",
+        "synthpopcan validate linked small-area/\n"
+        "synthpopcan geo map small-area/ --boundaries boundaries.geojson "
+        "--geo-column ct",
     )
     print_table(table)
 
@@ -424,10 +467,10 @@ def _model_detail_rows(model: dict[str, Any]) -> list[tuple[str, str]]:
 
 @cli.group()
 def validate() -> None:
-    """Validate generated artifacts against controls."""
+    """Validate IPF, linked-population, and model outputs."""
 
 
-@validate.command("controls")
+@validate.command("ipf")
 @click.option(
     "--population",
     "population_path",
@@ -450,7 +493,7 @@ def validate() -> None:
     help="Population artifact type.",
 )
 @click.option(
-    "--weight-field",
+    "--weight-column",
     default="weight",
     show_default=True,
     help="Weight column for --kind weights.",
@@ -463,11 +506,11 @@ def validate() -> None:
     type=click.Choice(["json", "table"]),
     show_default=True,
 )
-def validate_controls_output(
+def validate_ipf_output_command(
     population_path: Path,
     controls_path: Path,
     artifact_kind: str,
-    weight_field: str,
+    weight_column: str,
     tolerance: float,
     output_format: str,
 ) -> None:
@@ -477,7 +520,7 @@ def validate_controls_output(
         rows, weights = read_population_artifact(
             population_path,
             artifact_kind,
-            weight_field,
+            weight_column,
         )
         report = build_control_validation_report(
             control_table,
@@ -502,21 +545,8 @@ def validate_controls_output(
         )
 
 
-@validate.command("linked-output")
-@click.option(
-    "--households",
-    "households_path",
-    required=True,
-    type=_PATH,
-    help="Generated household CSV.",
-)
-@click.option(
-    "--persons",
-    "persons_path",
-    required=True,
-    type=_PATH,
-    help="Generated person CSV.",
-)
+@validate.command("linked")
+@click.argument("population_dir", metavar="POPULATION", type=_PATH)
 @click.option(
     "--household-id-column",
     default="synthetic_household_id",
@@ -542,15 +572,16 @@ def validate_controls_output(
     type=click.Choice(["json", "table"]),
     show_default=True,
 )
-def validate_linked_output(
-    households_path: Path,
-    persons_path: Path,
+def validate_linked_command(
+    population_dir: Path,
     household_id_column: str,
     person_household_id_column: str,
     household_size_column: str,
     output_format: str,
 ) -> None:
     """Validate person rows are linked to generated households."""
+    households_path = population_dir / "households.csv"
+    persons_path = population_dir / "persons.csv"
     try:
         report = validate_linked_population(
             households=read_csv_rows(households_path),
@@ -574,7 +605,7 @@ def validate_linked_output(
         )
 
 
-@validate.command("tree-output")
+@validate.command("model")
 @click.option(
     "--generated",
     "generated_path",
@@ -600,7 +631,7 @@ def validate_linked_output(
     help="Optional comma-separated conditioning columns to compare.",
 )
 @click.option(
-    "--weight-field",
+    "--weight-column",
     default=None,
     help="Optional training row weight column.",
 )
@@ -612,12 +643,12 @@ def validate_linked_output(
     type=click.Choice(["json", "table"]),
     show_default=True,
 )
-def validate_tree_output(
+def validate_model_command(
     generated_path: Path,
     training_path: Path,
     target_columns: str,
     conditioning_columns: str,
-    weight_field: str | None,
+    weight_column: str | None,
     tolerance: float,
     output_format: str,
 ) -> None:
@@ -628,7 +659,7 @@ def validate_tree_output(
             generated_rows=read_csv_rows(generated_path),
             target_columns=_parse_column_list(target_columns, "target columns"),
             conditioning_columns=_parse_optional_column_list(conditioning_columns),
-            weight_field=weight_field,
+            weight_field=weight_column,
             tolerance=tolerance,
         )
     except OSError as exc:
@@ -785,9 +816,9 @@ def wds_controls() -> None:
     """Inspect local StatCan WDS ZIPs before normalization."""
 
 
-@controls.command("validate")
+@controls.command("check")
 @click.argument("path", type=_PATH)
-def validate_controls(path: Path) -> None:
+def check_controls_command(path: Path) -> None:
     """Validate a normalized long control CSV."""
     try:
         read_control_margins(path)
@@ -795,6 +826,7 @@ def validate_controls(path: Path) -> None:
         raise click_file_access_error(path, "read", exc) from exc
     except ValueError as exc:
         raise click_value_error(exc) from exc
+    print_success(f"Controls are valid: {path}")
 
 
 @controls.command("from-csv")
@@ -1120,6 +1152,7 @@ def run_statcan_wds_fetch(product_id: str, out_dir: Path, lang: str) -> None:
         raise click_file_access_error(out_dir, "write to", exc) from exc
     except ValueError as exc:
         raise click_value_error(exc) from exc
+    click.echo(zip_path)
 
 
 @wds.command("search")
@@ -1192,21 +1225,18 @@ def census_profile() -> None:
 
 
 @census_profile.command("fetch")
-@click.option("--year", required=True, type=click.Choice(["2016"]))
 @click.option("--geo-level", required=True)
 @click.option("--out-dir", required=True, type=_PATH)
-def run_statcan_census_profile_fetch(year: str, geo_level: str, out_dir: Path) -> None:
+def run_statcan_census_profile_fetch(geo_level: str, out_dir: Path) -> None:
     """Download a known Census Profile bulk CSV."""
-    if year != "2016":
-        raise click.ClickException(
-            "Only the 2016 Census Profile registry is currently supported."
-        )
     try:
-        print_wrote(fetch_census_profile_2016(geo_level, out_dir))
+        path = fetch_census_profile_2016(geo_level, out_dir)
     except ValueError as exc:
         raise click_value_error(exc) from exc
     except OSError as exc:
         raise click_file_access_error(out_dir, "write to", exc) from exc
+    print_wrote(path)
+    click.echo(path)
 
 
 def search_wds_tables_for_cli(query: str, limit: int) -> list[dict[str, str]]:

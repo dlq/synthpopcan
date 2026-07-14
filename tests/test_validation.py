@@ -90,7 +90,7 @@ def test_cli_validates_weight_output_as_json(tmp_path: Path, capsys) -> None:
         main(
             [
                 "validate",
-                "controls",
+                "ipf",
                 "--population",
                 str(weights_path),
                 "--controls",
@@ -131,7 +131,7 @@ def test_cli_validation_fails_over_tolerance(tmp_path: Path) -> None:
         main(
             [
                 "validate",
-                "controls",
+                "ipf",
                 "--population",
                 str(weights_path),
                 "--controls",
@@ -154,7 +154,7 @@ def test_cli_validation_wraps_bad_population_artifacts(tmp_path: Path) -> None:
         main(
             [
                 "validate",
-                "controls",
+                "ipf",
                 "--population",
                 str(weights_path),
                 "--controls",
@@ -180,7 +180,7 @@ def test_cli_validation_reports_missing_input_files(tmp_path: Path) -> None:
         main(
             [
                 "validate",
-                "controls",
+                "ipf",
                 "--population",
                 str(population_path),
                 "--controls",
@@ -217,7 +217,7 @@ def test_cli_validates_expanded_output(tmp_path: Path, capsys) -> None:
         main(
             [
                 "validate",
-                "controls",
+                "ipf",
                 "--population",
                 str(population_path),
                 "--controls",
@@ -263,11 +263,8 @@ def test_cli_validates_linked_output_and_reports_failures(
         main(
             [
                 "validate",
-                "linked-output",
-                "--households",
-                str(households_path),
-                "--persons",
-                str(persons_path),
+                "linked",
+                str(tmp_path),
                 "--format",
                 "json",
             ]
@@ -286,11 +283,8 @@ def test_cli_validates_linked_output_and_reports_failures(
         main(
             [
                 "validate",
-                "linked-output",
-                "--households",
-                str(households_path),
-                "--persons",
-                str(persons_path),
+                "linked",
+                str(tmp_path),
             ]
         )
 
@@ -315,11 +309,8 @@ def test_cli_linked_output_wraps_validation_value_errors(tmp_path: Path) -> None
         main(
             [
                 "validate",
-                "linked-output",
-                "--households",
-                str(households_path),
-                "--persons",
-                str(persons_path),
+                "linked",
+                str(tmp_path),
             ]
         )
 
@@ -453,14 +444,14 @@ def test_cli_validates_tree_output_as_json(tmp_path: Path, capsys) -> None:
         main(
             [
                 "validate",
-                "tree-output",
+                "model",
                 "--generated",
                 str(generated_path),
                 "--training",
                 str(training_path),
                 "--target-columns",
                 "AGEGRP,SEX",
-                "--weight-field",
+                "--weight-column",
                 "WEIGHT",
                 "--tolerance",
                 "0",
@@ -492,7 +483,7 @@ def test_cli_validates_tree_output_as_table_and_reports_failures(
         main(
             [
                 "validate",
-                "tree-output",
+                "model",
                 "--generated",
                 str(generated_path),
                 "--training",
@@ -510,7 +501,7 @@ def test_cli_validates_tree_output_as_table_and_reports_failures(
         main(
             [
                 "validate",
-                "tree-output",
+                "model",
                 "--generated",
                 str(generated_path),
                 "--training",
@@ -533,7 +524,7 @@ def test_cli_tree_output_wraps_bad_target_column_input(tmp_path: Path) -> None:
         main(
             [
                 "validate",
-                "tree-output",
+                "model",
                 "--generated",
                 str(generated_path),
                 "--training",
@@ -558,14 +549,14 @@ def test_cli_tree_output_wraps_report_validation_errors(tmp_path: Path) -> None:
         main(
             [
                 "validate",
-                "tree-output",
+                "model",
                 "--generated",
                 str(generated_path),
                 "--training",
                 str(training_path),
                 "--target-columns",
                 "AGEGRP",
-                "--weight-field",
+                "--weight-column",
                 "WEIGHT",
             ]
         )
@@ -593,11 +584,8 @@ def test_cli_linked_output_wraps_validation_errors(
         cli.main(
             [
                 "validate",
-                "linked-output",
-                "--households",
-                str(households_path),
-                "--persons",
-                str(persons_path),
+                "linked",
+                str(tmp_path),
                 "--household-id-column",
                 "household_id",
                 "--person-household-id-column",

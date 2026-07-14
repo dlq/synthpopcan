@@ -85,8 +85,8 @@ starting a potentially large synthesis.
 
 Acceptance evidence: target geography and output-row estimates, an explicit
 web-versus-CLI recommendation, planning guidance, and commented commands that
-fetch the model when necessary, repeat `geo estimate-run`, and execute
-`geo synthesize-from-package` with the selected files and settings.
+fetch the model when necessary, repeat `geo estimate`, and execute
+`geo synthesize` with the selected files and settings.
 
 ## Test Ownership
 

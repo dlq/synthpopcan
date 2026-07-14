@@ -146,8 +146,8 @@ def test_check_small_area_calibration_inputs_reports_missing_group_column() -> N
             ),
             "tip": (
                 "For Census Profile household-size controls, run "
-                "`synthpopcan geo synthesize-from-package ... "
-                "--max-household-size 5`, or run `geo build-controls` with "
+                "`synthpopcan geo synthesize ... "
+                "--max-household-size 5`, or run `geo controls` with "
                 "candidate recoding so household_size_group is added."
             ),
         }
@@ -863,7 +863,6 @@ def test_calibrate_linked_csvs_applies_optional_person_controls(tmp_path: Path) 
     person_controls = tmp_path / "person-controls.csv"
     out_households = tmp_path / "small-area-households.csv"
     out_persons = tmp_path / "small-area-persons.csv"
-
     households.write_text("synthetic_household_id,household_size\nh1,1\nh2,2\nh3,2\n")
     persons.write_text(
         "synthetic_person_id,synthetic_household_id,AGEGRP\n"
@@ -1015,8 +1014,6 @@ def test_cli_calibrates_linked_households_to_small_area_controls(
     persons = tmp_path / "persons.csv"
     controls = tmp_path / "controls.csv"
     person_controls = tmp_path / "person-controls.csv"
-    out_households = tmp_path / "small-area-households.csv"
-    out_persons = tmp_path / "small-area-persons.csv"
 
     households.write_text(
         "synthetic_household_id,household_size,TENUR\nh1,1,owner\nh2,2,renter\n"
@@ -1041,11 +1038,8 @@ def test_cli_calibrates_linked_households_to_small_area_controls(
     exit_code = main(
         [
             "geo",
-            "calibrate-linked",
-            "--households",
-            str(households),
-            "--persons",
-            str(persons),
+            "calibrate",
+            str(tmp_path),
             "--controls",
             str(controls),
             "--person-controls",
@@ -1054,16 +1048,14 @@ def test_cli_calibrates_linked_households_to_small_area_controls(
             "tract",
             "--geo-column",
             "tract",
-            "--households-out",
-            str(out_households),
-            "--persons-out",
-            str(out_persons),
+            "--out",
+            str(tmp_path / "calibrated"),
         ]
     )
 
     assert exit_code == 0
-    assert out_households.exists()
-    assert out_persons.exists()
+    assert (tmp_path / "calibrated" / "households.csv").exists()
+    assert (tmp_path / "calibrated" / "persons.csv").exists()
 
 
 def _minimal_calibrate_files(tmp_path: Path) -> dict[str, Path]:
@@ -1087,44 +1079,33 @@ def _minimal_calibrate_files(tmp_path: Path) -> dict[str, Path]:
         "households": households,
         "persons": persons,
         "controls": controls,
-        "households_out": tmp_path / "hh-out.csv",
-        "persons_out": tmp_path / "p-out.csv",
+        "output": tmp_path / "calibrated",
     }
 
 
 def test_cli_calibrate_linked_weights_out_and_report_out(tmp_path: Path) -> None:
     f = _minimal_calibrate_files(tmp_path)
-    weights = tmp_path / "weights.csv"
-    report = tmp_path / "report.json"
 
     exit_code = main(
         [
             "geo",
-            "calibrate-linked",
-            "--households",
-            str(f["households"]),
-            "--persons",
-            str(f["persons"]),
+            "calibrate",
+            str(tmp_path),
             "--controls",
             str(f["controls"]),
             "--geo-dimension",
             "tract",
             "--geo-column",
             "tract",
-            "--households-out",
-            str(f["households_out"]),
-            "--persons-out",
-            str(f["persons_out"]),
-            "--weights-out",
-            str(weights),
-            "--report",
-            str(report),
+            "--out",
+            str(f["output"]),
+            "--include-weights",
         ]
     )
 
     assert exit_code == 0
-    assert weights.exists()
-    assert report.exists()
+    assert (f["output"] / "weights.csv").exists()
+    assert (f["output"] / "report.json").exists()
 
 
 def test_cli_calibrate_linked_format_json(
@@ -1137,21 +1118,16 @@ def test_cli_calibrate_linked_format_json(
     exit_code = main(
         [
             "geo",
-            "calibrate-linked",
-            "--households",
-            str(f["households"]),
-            "--persons",
-            str(f["persons"]),
+            "calibrate",
+            str(tmp_path),
             "--controls",
             str(f["controls"]),
             "--geo-dimension",
             "tract",
             "--geo-column",
             "tract",
-            "--households-out",
-            str(f["households_out"]),
-            "--persons-out",
-            str(f["persons_out"]),
+            "--out",
+            str(f["output"]),
             "--format",
             "json",
         ]
@@ -1196,21 +1172,16 @@ def test_cli_calibrate_linked_summary_mentions_largest_residual(
         exit_code = main(
             [
                 "geo",
-                "calibrate-linked",
-                "--households",
-                str(f["households"]),
-                "--persons",
-                str(f["persons"]),
+                "calibrate",
+                str(tmp_path),
                 "--controls",
                 str(f["controls"]),
                 "--geo-dimension",
                 "tract",
                 "--geo-column",
                 "tract",
-                "--households-out",
-                str(f["households_out"]),
-                "--persons-out",
-                str(f["persons_out"]),
+                "--out",
+                str(f["output"]),
             ]
         )
 
@@ -1238,7 +1209,7 @@ def test_cli_estimate_run_prints_small_area_performance_guidance(
     exit_code = main(
         [
             "geo",
-            "estimate-run",
+            "estimate",
             "--controls",
             str(controls),
             "--geo-dimension",
@@ -1268,7 +1239,7 @@ def test_cli_estimate_run_prints_json(tmp_path: Path, capsys) -> None:
     exit_code = main(
         [
             "geo",
-            "estimate-run",
+            "estimate",
             "--controls",
             str(controls),
             "--geo-dimension",
@@ -1301,21 +1272,16 @@ def test_cli_calibrate_linked_oserror(tmp_path: Path) -> None:
             main(
                 [
                     "geo",
-                    "calibrate-linked",
-                    "--households",
-                    str(f["households"]),
-                    "--persons",
-                    str(f["persons"]),
+                    "calibrate",
+                    str(tmp_path),
                     "--controls",
                     str(f["controls"]),
                     "--geo-dimension",
                     "tract",
                     "--geo-column",
                     "tract",
-                    "--households-out",
-                    str(f["households_out"]),
-                    "--persons-out",
-                    str(f["persons_out"]),
+                    "--out",
+                    str(f["output"]),
                 ]
             )
 
@@ -1335,21 +1301,16 @@ def test_cli_calibrate_linked_value_error(tmp_path: Path) -> None:
             main(
                 [
                     "geo",
-                    "calibrate-linked",
-                    "--households",
-                    str(f["households"]),
-                    "--persons",
-                    str(f["persons"]),
+                    "calibrate",
+                    str(tmp_path),
                     "--controls",
                     str(f["controls"]),
                     "--geo-dimension",
                     "tract",
                     "--geo-column",
                     "tract",
-                    "--households-out",
-                    str(f["households_out"]),
-                    "--persons-out",
-                    str(f["persons_out"]),
+                    "--out",
+                    str(f["output"]),
                 ]
             )
 
@@ -1430,8 +1391,9 @@ def _write_minimal_linked_package(tmp_path: Path) -> Path:
     package_path = tmp_path / "package.json"
     exit_code = main(
         [
-            "tree",
-            "package-linked-models",
+            "models",
+            "build",
+            "package-linked",
             "--household-model",
             str(hh_path),
             "--person-model",
@@ -1450,16 +1412,14 @@ def _write_minimal_linked_package(tmp_path: Path) -> Path:
             "1",
         ]
     )
-    assert exit_code == 0, "package-linked-models failed"
+    assert exit_code == 0, "models build package-linked failed"
     return package_path
 
 
 def test_cli_synthesize_from_package(tmp_path: Path) -> None:
     package_path = _write_minimal_linked_package(tmp_path)
     controls = tmp_path / "controls.csv"
-    households_out = tmp_path / "households.csv"
-    persons_out = tmp_path / "persons.csv"
-    report_out = tmp_path / "report.json"
+    output = tmp_path / "small-area"
 
     controls.write_text(
         "margin,dimensions,tract,household_size,count\n"
@@ -1470,7 +1430,7 @@ def test_cli_synthesize_from_package(tmp_path: Path) -> None:
     exit_code = main(
         [
             "geo",
-            "synthesize-from-package",
+            "synthesize",
             str(package_path),
             "--households",
             "4",
@@ -1480,12 +1440,8 @@ def test_cli_synthesize_from_package(tmp_path: Path) -> None:
             "tract",
             "--geo-column",
             "tract",
-            "--households-out",
-            str(households_out),
-            "--persons-out",
-            str(persons_out),
-            "--report",
-            str(report_out),
+            "--out",
+            str(output),
             "--random-seed",
             "13",
             "--pool-size",
@@ -1496,9 +1452,9 @@ def test_cli_synthesize_from_package(tmp_path: Path) -> None:
     )
 
     assert exit_code == 0
-    assert households_out.exists()
-    assert persons_out.exists()
-    report = json.loads(report_out.read_text())
+    assert (output / "households.csv").exists()
+    assert (output / "persons.csv").exists()
+    report = json.loads((output / "report.json").read_text())
     assert report["summary"]["total_geographies"] == 2
     assert report["summary"]["converged_count"] == 2
     assert report["assigned_households"] == 8
@@ -1515,8 +1471,7 @@ def test_cli_synthesize_from_package(tmp_path: Path) -> None:
 
 def test_cli_synthesize_from_registered_model_id(tmp_path: Path) -> None:
     controls = tmp_path / "controls.csv"
-    households_out = tmp_path / "households.csv"
-    persons_out = tmp_path / "persons.csv"
+    output = tmp_path / "small-area"
     controls.write_text(
         "margin,dimensions,tract,household_size_group,count\n"
         'size,"tract,household_size_group",001,1,1\n'
@@ -1528,7 +1483,7 @@ def test_cli_synthesize_from_registered_model_id(tmp_path: Path) -> None:
     exit_code = main(
         [
             "geo",
-            "synthesize-from-package",
+            "synthesize",
             "demo-linked-household-person",
             "--households",
             "20",
@@ -1538,10 +1493,8 @@ def test_cli_synthesize_from_registered_model_id(tmp_path: Path) -> None:
             "tract",
             "--geo-column",
             "tract",
-            "--households-out",
-            str(households_out),
-            "--persons-out",
-            str(persons_out),
+            "--out",
+            str(output),
             "--random-seed",
             "13",
             "--max-household-size",
@@ -1552,8 +1505,8 @@ def test_cli_synthesize_from_registered_model_id(tmp_path: Path) -> None:
     )
 
     assert exit_code == 0
-    assert households_out.exists()
-    assert persons_out.exists()
+    assert (output / "households.csv").exists()
+    assert (output / "persons.csv").exists()
 
 
 # ---------------------------------------------------------------------------

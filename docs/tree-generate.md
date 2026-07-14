@@ -35,7 +35,7 @@ the population universe it covers. If the research requires a different census
 year, a different province or city, or different category boundaries, a
 pre-trained package may not be appropriate — and training a custom model from
 suitable microdata is the right path instead. Inspect any package we plan to
-use with `tree inspect-package` and check the source provenance and review notes
+use with `models build inspect` and check the source provenance and review notes
 before generating output we intend to publish or share.
 
 ## Getting Started
@@ -43,7 +43,7 @@ before generating output we intend to publish or share.
 List the packages SynthPopCan knows about:
 
 ```bash
-synthpopcan tree list-packages
+synthpopcan models list
 ```
 
 Download a package into the local model cache:
@@ -62,26 +62,22 @@ Inspect a package before generating — confirms what geography, columns, and
 conditioning structure it contains:
 
 ```bash
-synthpopcan tree inspect-package montreal-cma-2016-all-fields
+synthpopcan models build inspect montreal-cma-2016-all-fields
 ```
 
 Generate linked households and persons:
 
 ```bash
-synthpopcan tree generate-from-package montreal-cma-2016-all-fields \
+synthpopcan models generate montreal-cma-2016-all-fields \
   --households 100000 \
-  --households-out synthetic-households.csv \
-  --persons-out synthetic-persons.csv \
-  --manifest-out generation-manifest.json \
+  --out synthetic-population/ \
   --random-seed 42
 ```
 
 Validate the linked output before using it:
 
 ```bash
-synthpopcan validate linked-output \
-  --households synthetic-households.csv \
-  --persons synthetic-persons.csv
+synthpopcan validate linked synthetic-population/
 ```
 
 If we want to assign the generated households to census tracts or aggregate
@@ -89,15 +85,14 @@ dissemination areas, continue with {doc}`small-area`.
 
 ## Subcommands
 
-### `tree list-packages` / `models list`
+### `models list` and `models show`
 
 Lists model packages known to SynthPopCan. The tiny demo package is bundled
 with the tool. Published packages (such as provincial or CMA models) appear as
-downloadable until fetched into the local cache. Both commands show the same
-list; `models list` is the shorter alias.
+downloadable until fetched into the local cache. `models list` is compact;
+`models show MODEL_ID` expands the metadata for one package.
 
 ```bash
-synthpopcan tree list-packages
 synthpopcan models list
 synthpopcan models list --format json
 synthpopcan models show montreal-cma-2016-all-fields
@@ -120,33 +115,31 @@ synthpopcan models fetch montreal-cma-2016-all-fields
 synthpopcan models fetch canada-2016-all-fields
 ```
 
-### `tree inspect-package`
+### `models build inspect`
 
 Prints a summary of a package — its geography, training period, column
 inventory, and embedded audit results — without dumping the full model payload.
 Use this to confirm a package is suitable for the intended use before generating.
 
 ```bash
-synthpopcan tree inspect-package montreal-cma-2016-all-fields
-synthpopcan tree inspect-package linked-model-package.json
-synthpopcan tree inspect-package linked-model-package.json --format json
+synthpopcan models build inspect montreal-cma-2016-all-fields
+synthpopcan models build inspect linked-model-package.json
+synthpopcan models build inspect linked-model-package.json --format json
 ```
 
 The first argument can be a package ID from `models list` or a path to a local
 package JSON file.
 
-### `tree generate-from-package`
+### `models generate`
 
 Generates linked household and person CSVs from a reviewed package. Streams
 output as it generates, so large runs do not need to fit in memory before
 writing.
 
 ```bash
-synthpopcan tree generate-from-package montreal-cma-2016-all-fields \
+synthpopcan models generate montreal-cma-2016-all-fields \
   --households 1000 \
-  --households-out synthetic-households.csv \
-  --persons-out synthetic-persons.csv \
-  --manifest-out generation-manifest.json \
+  --out synthetic-population/ \
   --random-seed 42
 ```
 
@@ -155,24 +148,22 @@ Options:
 - `--households INTEGER`: number of households to generate.
 - `--condition COL=VAL`: restrict generation to a specific condition value
   (e.g. `PR=24` for Quebec). Can be repeated.
-- `--households-out PATH`: output household CSV.
-- `--persons-out PATH`: output person CSV.
-- `--manifest-out PATH`: generation manifest recording the requested and actual
-  counts, random seed, and package identity.
+- `--out DIRECTORY`: writes `households.csv`, `persons.csv`, and `manifest.json`
+  together as one linked-population artifact.
 - `--random-seed INTEGER`: seed for reproducibility.
 
 The household count is controlled directly. The person count is derived from
 the model's household-size distribution and will not match a separate population
 target exactly.
 
-### `tree generate-linked`
+### `models build generate-linked`
 
 Generates linked rows from two separate model JSON files rather than a packaged
 artifact. Use this when working with local model files that have not yet been
 packaged.
 
 ```bash
-synthpopcan tree generate-linked \
+synthpopcan models build generate-linked \
   --household-model household-model.json \
   --person-model person-model.json \
   --households 1000 \
@@ -182,13 +173,13 @@ synthpopcan tree generate-linked \
   --random-seed 42
 ```
 
-### `tree generate`
+### `models build generate`
 
 Generates flat rows from a single model file. Use this for non-linked
 (flat person or household) models rather than the household/person pair.
 
 ```bash
-synthpopcan tree generate person-model.json \
+synthpopcan models build generate person-model.json \
   --rows 1000 \
   --condition PR=24 \
   --out synthetic-persons.csv \

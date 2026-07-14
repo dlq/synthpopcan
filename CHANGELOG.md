@@ -4,8 +4,18 @@ All notable public changes to SynthPopCan are tracked here.
 
 ## Unreleased
 
-- Added `--subsample-seed` to `geo calibrate-linked` and
-  `geo synthesize-from-package`, exposing the previously hard-coded
+- Consolidated model work under `models` (`models generate` for reviewed linked
+  packages and `models build ...` for training, audit, and packaging), shortened
+  small-area commands to `geo controls|estimate|calibrate|synthesize|boundaries`,
+  and removed redundant single-choice flags. Linked workflows now exchange one
+  directory containing `households.csv`, `persons.csv`, and a manifest or report.
+- Renamed validation commands to `validate ipf`, `validate linked`, and
+  `validate model`; standardized CLI starting-weight options on
+  `--weight-column`; made human summaries the default where raw JSON was
+  previously printed without an explicit format choice; and made fetched asset
+  paths available on stdout for composition.
+- Added `--subsample-seed` to `geo calibrate` and
+  `geo synthesize`, exposing the previously hard-coded
   candidate-subsample seed independently from candidate generation. Runs stay
   reproducible by default (seed `42`), and the calibration report's `subsample`
   block now records the effective seed plus input and selected row counts so
@@ -13,7 +23,7 @@ All notable public changes to SynthPopCan are tracked here.
   varying the seed.
 - Simplified the stable beginner Python API around composable workflow results:
   `calibrate_small_area` now accepts generated linked rows, paired CSV paths, or
-  a linked-output directory and returns a typed `SmallAreaResult` with artifact
+  a linked-population directory and returns a typed `SmallAreaResult` with artifact
   paths and headline diagnostics.
 - Split population writing into `write_population` for one flat CSV and
   `write_linked_population` for paired household/person files. Writers now

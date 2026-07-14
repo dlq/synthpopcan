@@ -65,7 +65,7 @@ def test_microdata_seed_to_validated_ipf_weights_workflow(
                 str(seed_path),
                 "--controls",
                 str(controls_path),
-                "--weight-field",
+                "--weight-column",
                 "WEIGHT",
                 "--out",
                 str(weights_path),
@@ -80,7 +80,7 @@ def test_microdata_seed_to_validated_ipf_weights_workflow(
         main(
             [
                 "validate",
-                "controls",
+                "ipf",
                 "--population",
                 str(weights_path),
                 "--controls",
@@ -153,7 +153,7 @@ def test_tracked_microdata_ipf_tutorial_fixture_workflow(
                 str(seed_path),
                 "--controls",
                 str(controls_path),
-                "--weight-field",
+                "--weight-column",
                 "WEIGHT",
                 "--out",
                 str(weights_path),
@@ -169,7 +169,7 @@ def test_tracked_microdata_ipf_tutorial_fixture_workflow(
         main(
             [
                 "validate",
-                "controls",
+                "ipf",
                 "--population",
                 str(weights_path),
                 "--controls",
@@ -295,7 +295,7 @@ def test_tracked_wds_ipf_mapping_tutorial_fixture_workflow(
         main(
             [
                 "validate",
-                "controls",
+                "ipf",
                 "--population",
                 str(weights_path),
                 "--controls",
@@ -331,8 +331,6 @@ def test_tracked_microdata_tree_tutorial_fixture_workflow(
                 "microdata",
                 "export-training",
                 str(microdata_path),
-                "--input-format",
-                "statcan-2016-hierarchical",
                 "--level",
                 "person",
                 "--target-columns",
@@ -357,7 +355,8 @@ def test_tracked_microdata_tree_tutorial_fixture_workflow(
     assert (
         main(
             [
-                "tree",
+                "models",
+                "build",
                 "train",
                 str(training_path),
                 "--level",
@@ -385,7 +384,8 @@ def test_tracked_microdata_tree_tutorial_fixture_workflow(
     assert (
         main(
             [
-                "tree",
+                "models",
+                "build",
                 "generate",
                 str(model_path),
                 "--rows",
@@ -423,7 +423,7 @@ def test_tracked_microdata_tree_tutorial_fixture_workflow(
         main(
             [
                 "validate",
-                "tree-output",
+                "model",
                 "--generated",
                 str(generated_path),
                 "--training",
@@ -432,7 +432,7 @@ def test_tracked_microdata_tree_tutorial_fixture_workflow(
                 "AGEGRP,SEX",
                 "--conditioning-columns",
                 "TENUR,household_size",
-                "--weight-field",
+                "--weight-column",
                 "WEIGHT",
                 "--tolerance",
                 "0.5",
@@ -456,15 +456,16 @@ def test_tracked_model_output_to_ipf_tutorial_fixture_workflow(
     assert workflow_doc.exists()
     workflow_text = workflow_doc.read_text()
     assert "IPF cannot create missing variables" in workflow_text
-    assert "tree generate-from-package" in workflow_text
+    assert "models generate" in workflow_text
     assert "ipf check-inputs" in workflow_text
 
     household_model_path, person_model_path = _write_publishable_linked_models(tmp_path)
     training_manifest_path = tmp_path / "linked-training-manifest.json"
     source_provenance_path = tmp_path / "source-provenance.json"
     package_path = tmp_path / "linked-model-package.json"
-    households_path = tmp_path / "candidate-households.csv"
-    persons_path = tmp_path / "candidate-persons.csv"
+    candidates = tmp_path / "candidates"
+    candidates.mkdir()
+    households_path = candidates / "households.csv"
     controls_path = tmp_path / "household-controls.csv"
     weights_path = tmp_path / "calibrated-household-weights.csv"
     expanded_path = tmp_path / "calibrated-households.csv"
@@ -481,8 +482,9 @@ def test_tracked_model_output_to_ipf_tutorial_fixture_workflow(
     assert (
         main(
             [
-                "tree",
-                "package-linked-models",
+                "models",
+                "build",
+                "package-linked",
                 "--household-model",
                 str(household_model_path),
                 "--person-model",
@@ -508,17 +510,15 @@ def test_tracked_model_output_to_ipf_tutorial_fixture_workflow(
     assert (
         main(
             [
-                "tree",
-                "generate-from-package",
+                "models",
+                "generate",
                 str(package_path),
                 "--households",
                 "3",
                 "--condition",
                 "geo=QC",
-                "--households-out",
-                str(households_path),
-                "--persons-out",
-                str(persons_path),
+                "--out",
+                str(candidates),
                 "--random-seed",
                 "11",
             ]
@@ -531,11 +531,8 @@ def test_tracked_model_output_to_ipf_tutorial_fixture_workflow(
         main(
             [
                 "validate",
-                "linked-output",
-                "--households",
-                str(households_path),
-                "--persons",
-                str(persons_path),
+                "linked",
+                str(candidates),
                 "--format",
                 "json",
             ]
@@ -603,7 +600,7 @@ def test_tracked_model_output_to_ipf_tutorial_fixture_workflow(
         main(
             [
                 "validate",
-                "controls",
+                "ipf",
                 "--population",
                 str(expanded_path),
                 "--controls",
@@ -628,13 +625,16 @@ def test_linked_candidates_to_small_area_artifacts_workflow(
     tmp_path: Path,
     capsys,
 ) -> None:
-    households_path = tmp_path / "candidate-households.csv"
-    persons_path = tmp_path / "candidate-persons.csv"
+    candidates = tmp_path / "candidates"
+    candidates.mkdir()
+    households_path = candidates / "households.csv"
+    persons_path = candidates / "persons.csv"
     household_controls_path = tmp_path / "household-controls.csv"
     person_controls_path = tmp_path / "person-controls.csv"
-    households_out = tmp_path / "assigned-households.csv"
-    persons_out = tmp_path / "assigned-persons.csv"
-    report_out = tmp_path / "calibration-report.json"
+    output = tmp_path / "assigned"
+    households_out = output / "households.csv"
+    persons_out = output / "persons.csv"
+    report_out = output / "report.json"
 
     households_path.write_text(
         "synthetic_household_id,household_size\nh1,1\nh2,2\nh3,2\n"
@@ -662,11 +662,8 @@ def test_linked_candidates_to_small_area_artifacts_workflow(
         main(
             [
                 "geo",
-                "calibrate-linked",
-                "--households",
-                str(households_path),
-                "--persons",
-                str(persons_path),
+                "calibrate",
+                str(candidates),
                 "--controls",
                 str(household_controls_path),
                 "--person-controls",
@@ -675,12 +672,8 @@ def test_linked_candidates_to_small_area_artifacts_workflow(
                 "tract",
                 "--geo-column",
                 "tract",
-                "--households-out",
-                str(households_out),
-                "--persons-out",
-                str(persons_out),
-                "--report",
-                str(report_out),
+                "--out",
+                str(output),
                 "--format",
                 "json",
             ]

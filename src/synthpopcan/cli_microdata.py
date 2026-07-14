@@ -144,19 +144,6 @@ def inspect_microdata(
 @microdata.command("check-seed")
 @click.argument("path", type=_PATH)
 @click.option(
-    "--input-format",
-    "source_format",
-    required=True,
-    type=click.Choice(["statcan-2016-hierarchical"]),
-    help="Input microdata adapter format.",
-)
-@click.option(
-    "--level",
-    required=True,
-    type=click.Choice(["household"]),
-    help="Seed sample level to check.",
-)
-@click.option(
     "--columns",
     required=True,
     help="Comma-separated columns to include as seed attributes.",
@@ -171,8 +158,6 @@ def inspect_microdata(
 )
 def check_microdata_seed(
     path: Path,
-    source_format: str,
-    level: str,
     columns: str,
     output_format: str,
 ) -> None:
@@ -198,13 +183,6 @@ def check_microdata_seed(
 @microdata.command("suggest-tree-columns")
 @click.argument("path", type=_PATH)
 @click.option(
-    "--input-format",
-    "source_format",
-    required=True,
-    type=click.Choice(["statcan-2016-hierarchical"]),
-    help="Input microdata adapter format.",
-)
-@click.option(
     "--format",
     "output_format",
     default="table",
@@ -214,7 +192,6 @@ def check_microdata_seed(
 )
 def suggest_microdata_tree_columns(
     path: Path,
-    source_format: str,
     output_format: str,
 ) -> None:
     """Suggest broad tree-model column blocks from known microdata columns."""
@@ -229,15 +206,8 @@ def suggest_microdata_tree_columns(
     write_report(report, output_format, print_tree_column_suggestions_table)
 
 
-@microdata.command("tree-geography-feasibility")
+@microdata.command("feasibility")
 @click.argument("path", type=_PATH)
-@click.option(
-    "--input-format",
-    "source_format",
-    required=True,
-    type=click.Choice(["statcan-2016-hierarchical"]),
-    help="Input microdata adapter format.",
-)
 @click.option(
     "--geo-column",
     default="PR",
@@ -308,7 +278,6 @@ def suggest_microdata_tree_columns(
 )
 def tree_geography_feasibility(
     path: Path,
-    source_format: str,
     geo_column: str,
     household_block: str,
     person_block: str,
@@ -429,13 +398,6 @@ def export_microdata_seed(
 @microdata.command("export-training")
 @click.argument("path", type=_PATH)
 @click.option(
-    "--input-format",
-    "source_format",
-    required=True,
-    type=click.Choice(["statcan-2016-hierarchical"]),
-    help="Input microdata adapter format.",
-)
-@click.option(
     "--level",
     required=True,
     type=click.Choice(["household", "person"]),
@@ -468,7 +430,6 @@ def export_microdata_seed(
 )
 def export_microdata_training(
     path: Path,
-    source_format: str,
     level: str,
     target_columns: str,
     conditioning_columns: str,

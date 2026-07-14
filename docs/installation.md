@@ -159,13 +159,13 @@ synthpopcan ipf check-inputs \
 synthpopcan ipf fit \
   --seed seed.csv \
   --controls tests/fixtures/workflows/microdata_ipf/controls.csv \
-  --weight-field WEIGHT \
+  --weight-column WEIGHT \
   --out weights.csv \
   --report fit-report.json
 
 synthpopcan ipf report fit-report.json
 
-synthpopcan validate controls \
+synthpopcan validate ipf \
   --population weights.csv \
   --controls tests/fixtures/workflows/microdata_ipf/controls.csv \
   --kind weights

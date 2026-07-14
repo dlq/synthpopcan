@@ -17,7 +17,7 @@ test("quotes shell values and builds reproducible IPF commands", () => {
     maxIterations: 50,
     tolerance: 0.0001,
   });
-  assert.match(commands[1], /--weight-field 'start weight'/);
+  assert.match(commands[1], /--weight-column 'start weight'/);
   assert.match(commands[1], /--max-iterations 50/);
 });
 
@@ -31,9 +31,10 @@ test("builds linked model generation commands", () => {
       conditions: { geo: "QC" },
     },
   );
-  assert.match(commands[0], /inspect-package 'demo-model'/);
+  assert.match(commands[0], /models build inspect 'demo-model'/);
   assert.match(commands[1], /--condition 'geo=QC'/);
   assert.match(commands[1], /--households 12/);
+  assert.match(commands[1], /--out synthpopcan-population/);
 });
 
 test("adds Census household-size grouping to small-area commands", () => {
@@ -56,4 +57,6 @@ test("adds Census household-size grouping to small-area commands", () => {
   assert.match(commands[2], /--household-size-group-column household_size_group/);
   assert.match(commands[2], /--random-seed 13/);
   assert.match(commands[2], /--subsample-seed 42/);
+  assert.match(commands[2], /geo synthesize/);
+  assert.match(commands[2], /--out small-area-population/);
 });

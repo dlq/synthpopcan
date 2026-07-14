@@ -124,7 +124,7 @@ usable.
 
 ### Reading Support and Purity
 
-`tree audit-model` reports support and purity because they are practical warning
+`models build audit` reports support and purity because they are practical warning
 signals.
 
 Support is the number or weighted count of training rows behind a group or leaf.
@@ -183,7 +183,7 @@ Watch for these patterns:
 - **Training data treated as neutral.** The model learns from the training
   sample. If the source data has exclusions, survey design effects, coding
   choices, or historical bias, those choices shape the generated rows.
-- **Release checks treated as ethics review.** `tree audit-model` can flag
+- **Release checks treated as ethics review.** `models build audit` can flag
   support, purity, raw-row metadata, and source identifiers. It cannot decide
   whether a generated population should be used for a sensitive interpretive
   claim.
@@ -259,7 +259,7 @@ Practical release rules:
 - use model cards or release manifests to state intended use, out-of-scope use,
   source description, parameters, validation results, limitations, and caveats;
 - do not claim anonymity or legal privacy safety merely because
-  `prepare-model-release` succeeded.
+  `models build prepare-release` succeeded.
 
 Good tree modelling is usually iterative. Start with fewer columns, inspect the
 training view, generate a small sample, validate distributions and linkage, then
@@ -301,20 +301,17 @@ geography's row count:
 
 ```bash
 synthpopcan microdata suggest-tree-columns \
-  tests/fixtures/workflows/linked_tree/hierarchical.csv \
-  --input-format statcan-2016-hierarchical
+  tests/fixtures/workflows/linked_tree/hierarchical.csv
 ```
 
-Train the linked household and person models. `--suggested-blocks` uses the
-adapter's default suggestion blocks (`household_core` and `person_demographics`).
+Train the linked household and person models. The command uses the adapter's
+default suggestion blocks (`household_core` and `person_demographics`).
 For a broader model with all supported blocks, use `--household-block all --person-block all`; those still exclude identifiers, weights, and columns that
 vary within a household on the person side:
 
 ```bash
-synthpopcan tree train-linked \
+synthpopcan models build train-linked \
   tests/fixtures/workflows/linked_tree/hierarchical.csv \
-  --input-format statcan-2016-hierarchical \
-  --suggested-blocks \
   --household-model-out household-model.json \
   --person-model-out person-model.json \
   --manifest-out linked-training.manifest.json \
@@ -326,13 +323,14 @@ households) is enough to check that the linkage structure is correct and the
 output looks plausible:
 
 ```bash
-synthpopcan tree generate-linked \
+mkdir -p synthetic-population
+synthpopcan models build generate-linked \
   --household-model household-model.json \
   --person-model person-model.json \
   --households 100 \
-  --households-out synthetic-households.csv \
-  --persons-out synthetic-persons.csv \
-  --manifest-out synthetic-linked.manifest.json \
+  --households-out synthetic-population/households.csv \
+  --persons-out synthetic-population/persons.csv \
+  --manifest-out synthetic-population/manifest.json \
   --random-seed 13
 ```
 
@@ -341,9 +339,7 @@ that household sizes match the generated person counts, and that no structural
 errors exist before treating the output as usable:
 
 ```bash
-synthpopcan validate linked-output \
-  --households synthetic-households.csv \
-  --persons synthetic-persons.csv
+synthpopcan validate linked synthetic-population/
 ```
 
 Audit both models before considering release or reuse. The audit checks every
@@ -353,11 +349,11 @@ A model that passes the audit at these thresholds is a candidate for release
 preparation; one that does not should be treated as a private working artifact:
 
 ```bash
-synthpopcan tree audit-model household-model.json \
+synthpopcan models build audit household-model.json \
   --min-support 50 \
   --max-purity 0.95
 
-synthpopcan tree audit-model person-model.json \
+synthpopcan models build audit person-model.json \
   --min-support 50 \
   --max-purity 0.95
 ```
@@ -368,12 +364,12 @@ larger geography, or accept that this model stays private.
 
 ## Subcommands
 
-### `tree train`
+### `models build train`
 
 Trains one flat model from a CSV training sample.
 
 ```bash
-synthpopcan tree train person-training.csv \
+synthpopcan models build train person-training.csv \
   --level person \
   --target-columns AGEGRP,SEX \
   --conditioning-columns TENUR,household_size \
@@ -389,13 +385,12 @@ between conditioning columns and generated target outcomes. Use `cart` when exac
 conditioning groups are too sparse and a decision tree can pool similar cases.
 Neither method removes the need for validation.
 
-### `tree train-linked`
+### `models build train-linked`
 
 Trains household and person models from mixed hierarchical microdata.
 
 ```bash
-synthpopcan tree train-linked hierarchical.csv \
-  --suggested-blocks \
+synthpopcan models build train-linked hierarchical.csv \
   --geo-column PR \
   --geo-value 24 \
   --target-profile reduced \
@@ -413,28 +408,28 @@ Bad linked models often come from mixing levels. For example, a person-level
 attribute should not be used as if it were constant for the household unless the
 training export has explicitly derived a household-level summary.
 
-### `tree generate`
+### `models build generate`
 
 Generates flat rows from a single model file. Use this for non-linked (flat
 person or household) models. For generating from a reviewed package, see
 {doc}`tree-generate`.
 
 ```bash
-synthpopcan tree generate person-model.json \
+synthpopcan models build generate person-model.json \
   --rows 100 \
   --condition PR=24 \
   --out synthetic-persons.csv \
   --manifest-out synthetic-persons.manifest.json
 ```
 
-### `tree generate-linked`
+### `models build generate-linked`
 
 Generates households and persons from two separate model JSON files rather than
 a packaged artifact. Use this when working with local model files that have not
 yet been packaged. For generating from a reviewed package, see {doc}`tree-generate`.
 
 ```bash
-synthpopcan tree generate-linked \
+synthpopcan models build generate-linked \
   --household-model household-model.json \
   --person-model person-model.json \
   --households 1000 \
@@ -443,12 +438,12 @@ synthpopcan tree generate-linked \
   --persons-out synthetic-persons.csv
 ```
 
-### `tree audit-model`
+### `models build audit`
 
 Audits a model artifact for release-oriented risk checks.
 
 ```bash
-synthpopcan tree audit-model household-model.json \
+synthpopcan models build audit household-model.json \
   --min-support 50 \
   --max-purity 0.95
 ```
@@ -462,35 +457,36 @@ The audit also checks whether model metadata says raw rows or source identifiers
 may be present. A model with those flags should not be treated as a release
 candidate.
 
-### `tree package-model`
+### `models build package`
 
-Packages a single flat tree model only after `audit-model` passes without
+Packages a single flat tree model only after `models build audit` passes without
 warnings.
 
 ```bash
-synthpopcan tree package-model household-model.json \
+synthpopcan models build package household-model.json \
   --out household-model-package.json \
   --min-support 50 \
   --max-purity 0.95
 ```
 
-This command is intentionally stricter than `audit-model`: an audit report can
-be useful even when it contains warnings, but `package-model` refuses to write a
+This command is intentionally stricter than `models build audit`: an audit report can
+be useful even when it contains warnings, but `models build package` refuses to write a
 package until the audit is clean. For linked household/person work, use
-`prepare-model-release`, `release-readiness`, and `package-linked-models`
+`models build prepare-release`, `models build check-release`, and
+`models build package-linked`
 instead.
 
-### `tree prepare-model-release`
+### `models build prepare-release`
 
 Applies release checks to a private working model and writes a
-publishable-candidate copy. The checks are the same as `audit-model` — support,
-purity, raw-row metadata — but the command refuses to write output if any check
+publishable-candidate copy. The checks are the same as `models build audit`: support,
+purity, and raw-row metadata, but the command refuses to write output if any check
 fails. The `--review-note` is embedded in the artifact and should describe what
 was reviewed and by whom. Run this separately for the household and person models
-before `release-readiness` or `package-linked-models`.
+before `models build check-release` or `models build package-linked`.
 
 ```bash
-synthpopcan tree prepare-model-release household-model.json \
+synthpopcan models build prepare-release household-model.json \
   --out household-model-publishable.json \
   --manifest-out household-model-release.manifest.json \
   --min-support 50 \
@@ -498,18 +494,18 @@ synthpopcan tree prepare-model-release household-model.json \
   --review-note "Reviewed for minimum support, purity, and raw-row metadata."
 ```
 
-### `tree release-readiness`
+### `models build check-release`
 
 Checks whether a pair of publishable-candidate models and their training
 manifest are jointly ready for linked packaging. Reports support and purity
 across both models, checks that the household-size column is present and
-consistent, and confirms both models have been through `prepare-model-release`.
-Run this before `package-linked-models` — the packaging step applies the same
-checks and will also refuse on failure, but `release-readiness` gives a readable
+consistent, and confirms both models have been through `models build prepare-release`.
+Run this before `models build package-linked`; the packaging step applies the same
+checks and will also refuse on failure, but `models build check-release` gives a readable
 summary report without committing to writing the package.
 
 ```bash
-synthpopcan tree release-readiness \
+synthpopcan models build check-release \
   --household-model household-model-publishable.json \
   --person-model person-model-publishable.json \
   --training-manifest linked-training.manifest.json \
@@ -518,12 +514,12 @@ synthpopcan tree release-readiness \
   --max-purity 0.95
 ```
 
-### `tree package-linked-models`
+### `models build package-linked`
 
 Bundles reviewed household and person models with their training manifest,
 source provenance, release manifests, and review notes into a single
 distributable package file. The package is the artifact that
-`tree generate-from-package` consumes; it embeds enough metadata for downstream
+`models generate` consumes; it embeds enough metadata for downstream
 readers to understand what source data was used, what audit thresholds were
 applied, and what the reviewer attested.
 
@@ -534,7 +530,7 @@ is the public face of a workflow that used restricted data, and provenance is
 part of the research record.
 
 ```bash
-synthpopcan tree package-linked-models \
+synthpopcan models build package-linked \
   --household-model household-model-publishable.json \
   --person-model person-model-publishable.json \
   --training-manifest linked-training.manifest.json \
@@ -547,32 +543,31 @@ synthpopcan tree package-linked-models \
   --out linked-model-package.json
 ```
 
-### `tree list-packages`
+### `models list`
 
 Lists model packages known to SynthPopCan. The tiny demo package is bundled.
 Large published packages are listed as downloadable until fetched into the local
 model cache.
 
 ```bash
-synthpopcan tree list-packages
-synthpopcan tree list-packages --format json
+synthpopcan models list
+synthpopcan models list --format json
 synthpopcan models list
 synthpopcan models fetch montreal-cma-2016-all-fields
 ```
 
-Use the package `ID` with `tree inspect-package` or
-`tree generate-from-package`.
+Use the package `ID` with `models build inspect` or
+`models generate`.
 
-### `tree generate-from-package`
+### `models generate`
 
 Generates linked rows directly from a reviewed package.
 
 ```bash
-synthpopcan tree generate-from-package linked-model-package.json \
+synthpopcan models generate linked-model-package.json \
   --households 1000 \
   --condition PR=24 \
-  --households-out synthetic-households.csv \
-  --persons-out synthetic-persons.csv
+  --out synthetic-population/
 ```
 
 The first argument can be either a local package JSON path or a model ID from
@@ -613,9 +608,8 @@ mkdir -p data/private/benchmarks/tree-release-2016-cma462-all-fields
 Train the broad linked household/person model:
 
 ```bash
-synthpopcan tree train-linked \
+synthpopcan models build train-linked \
   "data/raw/statcan/2016-census/PUMF Census 2016/pumf-98M0002-E-2016-hierarchical/pumf-98M0002-E-2016-hierarchical_F1.csv" \
-  --suggested-blocks \
   --household-block all \
   --person-block all \
   --geo-column CMA \
@@ -630,7 +624,7 @@ synthpopcan tree train-linked \
 Check whether the private working models are eligible for release preparation:
 
 ```bash
-synthpopcan tree release-readiness \
+synthpopcan models build check-release \
   --household-model data/private/benchmarks/tree-release-2016-cma462-all-fields/household-model.json \
   --person-model data/private/benchmarks/tree-release-2016-cma462-all-fields/person-model.json \
   --training-manifest data/private/benchmarks/tree-release-2016-cma462-all-fields/linked-training-manifest.json \
@@ -642,7 +636,7 @@ synthpopcan tree release-readiness \
 Prepare reviewed publishable-candidate copies:
 
 ```bash
-synthpopcan tree prepare-model-release \
+synthpopcan models build prepare-release \
   data/private/benchmarks/tree-release-2016-cma462-all-fields/household-model.json \
   --out data/private/benchmarks/tree-release-2016-cma462-all-fields/household-model-publishable.json \
   --manifest-out data/private/benchmarks/tree-release-2016-cma462-all-fields/household-release-manifest.json \
@@ -650,7 +644,7 @@ synthpopcan tree prepare-model-release \
   --max-purity 0.95 \
   --review-note "Montreal CMA 462 all-household and all-person-block household model reviewed with SynthPopCan release checks."
 
-synthpopcan tree prepare-model-release \
+synthpopcan models build prepare-release \
   data/private/benchmarks/tree-release-2016-cma462-all-fields/person-model.json \
   --out data/private/benchmarks/tree-release-2016-cma462-all-fields/person-model-publishable.json \
   --manifest-out data/private/benchmarks/tree-release-2016-cma462-all-fields/person-release-manifest.json \
@@ -677,7 +671,7 @@ should match the source access terms and citation used by the project:
 Package the linked model:
 
 ```bash
-synthpopcan tree package-linked-models \
+synthpopcan models build package-linked \
   --household-model data/private/benchmarks/tree-release-2016-cma462-all-fields/household-model-publishable.json \
   --person-model data/private/benchmarks/tree-release-2016-cma462-all-fields/person-model-publishable.json \
   --training-manifest data/private/benchmarks/tree-release-2016-cma462-all-fields/linked-training-manifest.json \
@@ -696,13 +690,11 @@ Generate the linked synthetic population:
 ```bash
 synthpopcan models list
 synthpopcan models fetch montreal-cma-2016-all-fields
-synthpopcan tree inspect-package montreal-cma-2016-all-fields
-synthpopcan tree generate-from-package \
+synthpopcan models build inspect montreal-cma-2016-all-fields
+synthpopcan models generate \
   montreal-cma-2016-all-fields \
   --households 1830000 \
-  --households-out data/private/benchmarks/tree-release-2016-cma462-all-fields/synthetic-households.csv \
-  --persons-out data/private/benchmarks/tree-release-2016-cma462-all-fields/synthetic-persons.csv \
-  --manifest-out data/private/benchmarks/tree-release-2016-cma462-all-fields/synthetic-linked-manifest.json \
+  --out data/private/benchmarks/tree-release-2016-cma462-all-fields/population/ \
   --random-seed 7
 ```
 
@@ -734,14 +726,14 @@ See [Advanced Library Use](library.md#maintainer-package-workflow-script) for
 the script and notes about what belongs in the public repo versus release
 assets.
 
-### `tree inspect-package`
+### `models build inspect`
 
 Prints a package summary without dumping embedded model payloads.
 
 ```bash
-synthpopcan tree inspect-package linked-model-package.json
-synthpopcan tree inspect-package linked-model-package.json --format json
-synthpopcan tree inspect-package montreal-cma-2016-all-fields
+synthpopcan models build inspect linked-model-package.json
+synthpopcan models build inspect linked-model-package.json --format json
+synthpopcan models build inspect montreal-cma-2016-all-fields
 ```
 
 The argument can be a local package JSON path or a packaged model ID from
