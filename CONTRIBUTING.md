@@ -25,8 +25,13 @@ Run the normal checks before opening a pull request:
 
 This runs Python linting, formatting, type checks, tests, a warning-clean docs
 build, web formatting/linting, JavaScript unit tests, and the Playwright browser
-scenarios. Install the Playwright browser once with `npx playwright install
-chromium` if it is not already available.
+scenarios. Install the Playwright browser once with `npx playwright install chromium` if it is not already available.
+
+Changes to numerical kernels, model generation, linked records, small-area
+artifacts, or validation must update the relevant claim and evidence in
+[`CORRECTNESS.md`](CORRECTNESS.md). A regression test should demonstrate the
+failure before or alongside its fix and should use an independent oracle or
+invariant where practical.
 
 ## Module Boundaries
 

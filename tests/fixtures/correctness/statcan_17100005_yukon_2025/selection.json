@@ -1,0 +1,10 @@
+{
+  "schema_version": "synthpopcan-wds-selection-v1",
+  "product_id": "17100005",
+  "reference_period": "2025",
+  "categories": {
+    "GEO": ["Yukon"],
+    "Gender": ["Men+", "Women+"],
+    "Age group": ["0 years"]
+  }
+}

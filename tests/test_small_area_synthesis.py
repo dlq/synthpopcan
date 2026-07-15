@@ -731,6 +731,48 @@ def test_linked_person_preflight_rejects_orphan_person_rows() -> None:
     assert report["issues"][0]["orphan_persons"] == 1
 
 
+def test_linked_person_preflight_rejects_duplicate_identifiers() -> None:
+    households = [
+        {"synthetic_household_id": "h1", "household_size": "1"},
+        {"synthetic_household_id": "h1", "household_size": "1"},
+    ]
+    persons = [
+        {
+            "synthetic_person_id": "p1",
+            "synthetic_household_id": "h1",
+            "AGEGRP": "adult",
+        },
+        {
+            "synthetic_person_id": "p1",
+            "synthetic_household_id": "h1",
+            "AGEGRP": "adult",
+        },
+    ]
+    controls = ControlTable(
+        margins=(
+            ControlMargin(
+                name="age",
+                dimensions=("tract", "AGEGRP"),
+                cells=(ControlCell({"tract": "G1", "AGEGRP": "adult"}, 2),),
+            ),
+        ),
+        dimensions=("tract", "AGEGRP"),
+    )
+
+    report = check_linked_person_calibration_inputs(
+        households,
+        persons,
+        controls,
+        geography_dimension="tract",
+    )
+
+    assert report["passed"] is False
+    assert {issue["kind"] for issue in report["issues"]} >= {
+        "duplicate_household_identifier",
+        "duplicate_person_identifier",
+    }
+
+
 def test_fit_households_by_geography_rejects_missing_weight_field() -> None:
     households = [
         {"synthetic_household_id": "h1", "household_size": "1"},
@@ -1004,6 +1046,8 @@ def test_calibration_report_highlights_largest_residuals(tmp_path: Path) -> None
         "For non-converged geographies, check whether controls conflict, "
         "categories were mapped consistently, or the candidate pool lacks "
         "enough matching households.",
+        "Review the realized margin summaries: integer household selection "
+        "introduced residuals after the fractional household/person fit.",
     ]
 
 

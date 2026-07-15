@@ -94,3 +94,22 @@ def test_documented_scenarios_have_automated_test_references() -> None:
 
     assert len(scenario_ids) == len(set(scenario_ids))
     assert set(scenario_ids) == referenced_ids
+
+
+def test_correctness_assurance_is_public_and_names_each_evidence_family() -> None:
+    correctness_text = Path("CORRECTNESS.md").read_text()
+    readme_text = Path("README.md").read_text()
+    docs_index_text = Path("docs/index.rst").read_text()
+
+    assert "CORRECTNESS.md" in readme_text
+    assert "correctness.yml/badge.svg" in readme_text
+    assert re.search(r"^\s+correctness$", docs_index_text, re.MULTILINE)
+    for evidence_path in (
+        "tests/test_ipf_correctness.py",
+        "tests/test_model_correctness.py",
+        "tests/test_small_area_correctness.py",
+        "tests/test_reference_correctness.py",
+        "tests/web/ipf.test.mjs",
+        "scripts/check-wheel.sh",
+    ):
+        assert evidence_path in correctness_text

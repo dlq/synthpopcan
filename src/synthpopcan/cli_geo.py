@@ -675,6 +675,14 @@ def controls_command(
             controls_out = Path(f"{geo_column}-controls-{target_total}.csv")
     if candidates_out is None and candidates_path is not None:
         candidates_out = candidates_path.parent / f"{candidates_path.name}-recoded"
+    if (
+        candidates_path is not None
+        and candidates_out is not None
+        and candidates_path.resolve() == candidates_out.resolve()
+    ):
+        raise click_value_error(
+            ValueError("--candidates-out must differ from --candidates")
+        )
 
     click.echo(f"Reading profile: {profile_path}")
     try:

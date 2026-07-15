@@ -16,7 +16,20 @@ jobs:
       - uses: actions/setup-python@v6.3.0
         with:
           python-version: "3.12"
+      - run: uv sync --group dev
+      - name: Run extended correctness suite
+        run: >-
+          sh scripts/check-correctness.sh
+          --junitxml=release-correctness-report.xml
+      - name: Retain release correctness report
+        if: always()
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: release-correctness-report-${{ github.sha }}
+          path: release-correctness-report.xml
       - run: uv build
+      - name: Smoke-test installed wheel
+        run: sh scripts/check-wheel.sh
       - uses: actions/upload-artifact@v7.0.1
         with:
           name: python-package-distributions

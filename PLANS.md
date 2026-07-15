@@ -1,7 +1,7 @@
 # SynthPopCan Plan
 
 Status: release-phased roadmap\
-Last updated: 2026-07-14\
+Last updated: 2026-07-15\
 Current release: `0.5.0`
 
 ## Current Focus
@@ -10,8 +10,8 @@ Start here. Open a linked implementation plan only when working on that area.
 
 | Horizon | Focus | Detail |
 | --- | --- | --- |
-| Next patch | Resolve the audited correctness, data-loss, privacy, and artifact-contract blockers in `0.5.1`. | [Correctness plan](plans/2026-07-12-correctness-assurance.md) |
-| Correctness | Add Python/NumPy IPF differential tests, independent small-area reconciliation, then integerization properties. | [Correctness plan](plans/2026-07-12-correctness-assurance.md) |
+| Next patch | Make `0.5.1` the current-architecture correctness-assurance release: complete the six correctness workstreams and resolve the audited P1 data-integrity blockers. | [Correctness plan](plans/2026-07-12-correctness-assurance.md) |
+| Correctness | Core suite and public assurance statement implemented; finish the remaining `0.5.1` P1 audit fixes and broaden durable release evidence. | [Correctness plan](plans/2026-07-12-correctness-assurance.md) |
 | Next minor | Build the durable backend IPF workbench for `0.6.0`. | [Local runtime plan](plans/2026-07-10-local-web-application-runtime.md) |
 | Later `0.6.x` | Move prepared-model generation and small-area synthesis into the same durable run model. | [Plan index](plans/README.md) |
 
@@ -106,48 +106,57 @@ gaps not exercised by the green release gate. Fix the P1 items before treating
 the browser or small-area workflows as correctness-hardened. Keep each
 regression as a focused automated test after the implementation is repaired.
 
+`0.5.1` is also the correctness-assurance release for every algorithm and
+artifact path present in the current architecture. Complete all six workstreams
+in the [correctness plan](plans/2026-07-12-correctness-assurance.md), run their
+deterministic checks on every pull request, and run the larger reference and
+distribution tiers before release. Do not defer a current-code correctness
+check merely because the affected workflow will later move behind the `0.6.x`
+runtime. Tests for genuinely new `0.6.x` behavior remain acceptance gates for
+the release that introduces that behavior.
+
 #### Correctness, data integrity, and privacy
 
-- [ ] **P1 — Prevent in-place candidate data loss.** Reject
+- [x] **P1 — Prevent in-place candidate data loss.** Reject
   `--candidates-out` paths that alias `--candidates`, or recode atomically
   through a distinct temporary file before replacement.
-- [ ] **P1 — Give scalar and NumPy IPF identical sparse-control semantics.** Do
+- [x] **P1 — Give scalar and NumPy IPF identical sparse-control semantics.** Do
   not turn represented but omitted target cells into explicit zero targets;
   add sparse-margin differential tests.
-- [ ] **P1 — Validate every reused NumPy IPF index against ordered margin
+- [x] **P1 — Validate every reused NumPy IPF index against ordered margin
   dimensions and categories.** Do not reuse the first geography's encoding for
   an incompatible later geography, and independently reconcile reported
   residuals.
-- [ ] **P1 — Replace browser largest-remainder expansion with the Python
+- [x] **P1 — Replace browser largest-remainder expansion with the Python
   systematic integerizer.** Cover highly fractional weights, row-order bias,
   aggregate preservation, and Python/browser parity.
-- [ ] **P1 — Enforce finite, non-negative numeric invariants at every boundary.**
+- [x] **P1 — Enforce finite, non-negative numeric invariants at every boundary.**
   Reject Python control counts and weights containing `NaN` or infinity,
   browser negative control targets, and negative/non-finite frequency-model
   weights; ensure fit and validation can never swallow a non-finite residual as
   zero error.
-- [ ] **P1 — Detect category collisions after WDS mapping.** When distinct
+- [x] **P1 — Detect category collisions after WDS mapping.** When distinct
   source labels map to one canonical category, aggregate them deliberately or
   reject the mapping instead of silently keeping the last count.
-- [ ] **P1 — Enforce linked-person integrity whenever person rows are present.**
+- [x] **P1 — Enforce linked-person integrity whenever person rows are present.**
   Reject orphan people and duplicate household/person identifiers before merge
   realization so joins cannot silently drop or multiply people.
-- [ ] **P1 — Reserve generated identifier columns.** Prevent seed or model
+- [x] **P1 — Reserve generated identifier columns.** Prevent seed or model
   fields from overwriting `synthetic_id`, `synthetic_household_id`, or
   `synthetic_person_id`, and make linked validation check identifier uniqueness.
 - [ ] **P1 — Base disclosure support on contributing source-row counts.** Do
   not let survey-weight totals satisfy frequency-model or geography minimum
   support thresholds; keep weighted totals as separate statistical metadata.
-- [ ] **P1 — Preserve complete seed profiles in browser compact-weight output.**
+- [x] **P1 — Preserve complete seed profiles in browser compact-weight output.**
   Retain all seed dimensions and add a collision-safe fitted-weight column so
   the artifact is self-contained for analysis, validation, and expansion.
-- [ ] **P2 — Preserve the exact requested total when scaling controls.** Use a
+- [x] **P2 — Preserve the exact requested total when scaling controls.** Use a
   globally reconciled integer allocation rather than independent rounding by
   geography/category.
-- [ ] **P2 — Require every declared normalized-control dimension to exist in
+- [x] **P2 — Require every declared normalized-control dimension to exist in
   the CSV header.** Do not silently create an empty-string category or an empty
   `ControlTable.dimensions` result.
-- [ ] **P2 — Apply the same model-package schema validation to mappings and
+- [x] **P2 — Apply the same model-package schema validation to mappings and
   files.** Reject unsupported schema versions before generation regardless of
   how the package entered the API.
 - [ ] **P2 — Make browser and CLI prepared-model reproduction claims exact.**
@@ -216,9 +225,23 @@ regression as a focused automated test after the implementation is repaired.
 - Audit linked models jointly for rare cross-level combinations and reconcile
   training/audit support thresholds with category-coarsening guidance.
 - Keep automated disclosure checks explicitly subordinate to human review.
-- Implement the independent-oracle, invariant, differential, metamorphic,
-  statistical, linked-integrity, and reconciliation work in the
-  [correctness plan](plans/2026-07-12-correctness-assurance.md).
+- Add a machine-readable assurance manifest to every generated run, containing
+  version, input checksums, seeds, algorithm settings, convergence, requested
+  and realized residuals, structural-zero findings, and linkage findings.
+- Add Hypothesis-based shrinking for generated numerical cases, frozen
+  cross-version output fixtures, and mutation testing for the numerical and
+  reconciliation kernels.
+- Expand independent public reference workflows beyond the initial Yukon WDS
+  fixture, including multi-dimensional controls and a linked household/person
+  example reviewed separately from the implementation.
+- Add macOS and Windows compatibility evidence for supported workflows, while
+  retaining Linux/Python 3.11 and 3.12 as required pull-request checks.
+- Permanently attach correctness reports, checksums, dependency provenance, and
+  build attestations to GitHub Releases instead of relying only on expiring
+  Actions artifacts.
+- Seek an external methods/code review of the algorithms, fixtures, tolerances,
+  assurance claims, and stated limitations; record review scope and responses
+  in a durable public artifact.
 
 ## 0.6.x: Local Web Application Runtime
 

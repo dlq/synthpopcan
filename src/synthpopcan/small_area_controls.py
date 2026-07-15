@@ -142,31 +142,59 @@ def scale_and_validate_controls(
     hhsize_grand = sum(sum(d["hhsize"].values()) for d in complete.values())
     if hhsize_grand == 0:
         raise ValueError("No household-size totals found in profile data.")
-    scale = target_total / hhsize_grand
+    if target_total < 0:
+        raise ValueError("target total must be non-negative")
+
+    household_keys = [
+        (geo, category)
+        for geo in sorted(complete)
+        for category in sorted(complete[geo]["hhsize"])
+    ]
+    household_allocations = _allocate_integer_counts(
+        [complete[geo]["hhsize"][category] for geo, category in household_keys],
+        target_total,
+    )
+    allocated_households = dict(zip(household_keys, household_allocations, strict=True))
 
     scaled: dict[str, dict[str, dict[str, int]]] = {}
     for geo in sorted(complete):
         hhsize_cats = complete[geo]["hhsize"]
         hhsize_scaled = {
-            cat: round(count * scale) for cat, count in hhsize_cats.items()
+            category: allocated_households[(geo, category)]
+            for category in sorted(hhsize_cats)
         }
         hhsize_total = sum(hhsize_scaled.values())
 
         tenure_cats = complete[geo]["tenure"]
-        tenure_raw_total = sum(tenure_cats.values())
-        tenure_scale = hhsize_total / tenure_raw_total
-        tenure_scaled = {
-            cat: round(count * tenure_scale) for cat, count in tenure_cats.items()
-        }
-        # Fix integer rounding drift so both margins sum identically
-        diff = hhsize_total - sum(tenure_scaled.values())
-        if diff != 0:
-            largest = max(tenure_scaled, key=lambda c: tenure_scaled[c])
-            tenure_scaled[largest] += diff
+        tenure_keys = sorted(tenure_cats)
+        tenure_allocations = _allocate_integer_counts(
+            [tenure_cats[category] for category in tenure_keys], hhsize_total
+        )
+        tenure_scaled = dict(zip(tenure_keys, tenure_allocations, strict=True))
 
         scaled[geo] = {"hhsize": hhsize_scaled, "tenure": tenure_scaled}
 
     return scaled, dropped
+
+
+def _allocate_integer_counts(values: list[float], target_total: int) -> list[int]:
+    """Allocate an exact integer total proportionally with deterministic ties."""
+
+    if not values:
+        return []
+    source_total = sum(values)
+    if source_total <= 0:
+        raise ValueError("control values must have a positive total")
+    exact = [value * target_total / source_total for value in values]
+    allocated = [int(value) for value in exact]
+    remaining = target_total - sum(allocated)
+    order = sorted(
+        range(len(values)),
+        key=lambda index: (-(exact[index] - allocated[index]), index),
+    )
+    for index in order[:remaining]:
+        allocated[index] += 1
+    return allocated
 
 
 def write_controls_csv(

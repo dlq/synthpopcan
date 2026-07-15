@@ -1,0 +1,52 @@
+name: Extended correctness
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 7 * * 0"
+
+permissions:
+  contents: read
+
+jobs:
+  correctness:
+    name: Extended numerical and artifact oracles
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.0
+      - uses: astral-sh/setup-uv@v8.3.2
+      - uses: actions/setup-python@v6.3.0
+        with:
+          python-version: "3.12"
+      - run: uv sync --group dev
+      - name: Run extended correctness suite
+        run: sh scripts/check-correctness.sh --junitxml=correctness-report.xml
+      - name: Retain extended correctness report
+        if: always()
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: extended-correctness-report-${{ github.sha }}
+          path: correctness-report.xml
+
+  statcan-drift:
+    name: Live Statistics Canada interface drift
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.0
+      - uses: astral-sh/setup-uv@v8.3.2
+      - uses: actions/setup-python@v6.3.0
+        with:
+          python-version: "3.12"
+      - run: uv sync --group dev
+      - name: Check the live WDS interface
+        env:
+          SYNTHPOPCAN_LIVE_STATCAN: "1"
+        run: >-
+          uv run pytest tests/test_statcan_live.py
+          --junitxml=statcan-drift-report.xml
+      - name: Retain StatCan drift report
+        if: always()
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: statcan-drift-report-${{ github.sha }}
+          path: statcan-drift-report.xml

@@ -9,7 +9,7 @@ export function readControlTable(rows) {
       throw new Error(`controls row ${rowNumber} has no dimensions`);
     }
     const count = Number(row.count);
-    if (!Number.isFinite(count)) {
+    if (!Number.isFinite(count) || count < 0) {
       throw new Error(`controls row ${rowNumber} has invalid count`);
     }
     const marginName = String(row.margin ?? "").trim() || marginDimensions.join("|");
@@ -90,13 +90,34 @@ export function fitIpf(
 }
 
 export function weightsToRows(records, weights, idField = "id") {
+  const existingColumns = new Set(records.flatMap((record) => Object.keys(record)));
+  let weightColumn = "weight";
+  let suffix = 1;
+  while (existingColumns.has(weightColumn)) {
+    weightColumn = suffix === 1 ? "fitted_weight" : `fitted_weight_${suffix}`;
+    suffix += 1;
+  }
   return records.map((record, index) => ({
-    seed_id: String(record[idField] ?? index + 1),
-    weight: formatNumber(weights[index]),
+    ...record,
+    ...(idField in record ? {} : { seed_id: String(index + 1) }),
+    [weightColumn]: formatNumber(weights[index]),
   }));
 }
 
 export function expandRecords(records, weights, idField = "id") {
+  const reserved = new Set(["synthetic_id", "seed_id"]);
+  const conflicting = Array.from(
+    new Set(
+      records.flatMap((record) =>
+        Object.keys(record).filter((key) => reserved.has(key) && key !== idField),
+      ),
+    ),
+  ).sort();
+  if (conflicting.length > 0) {
+    throw new Error(
+      `seed records use reserved generated columns: ${conflicting.join(", ")}`,
+    );
+  }
   const counts = integerizeWeights(weights);
   const expanded = [];
   let syntheticId = 1;
@@ -118,27 +139,42 @@ export function expandRecords(records, weights, idField = "id") {
 }
 
 export function integerizeWeights(weights) {
-  const floors = weights.map((weight) => {
+  weights.forEach((weight) => {
+    if (!Number.isFinite(weight)) {
+      throw new Error("weights must be finite");
+    }
     if (weight < 0) {
       throw new Error("weights must be non-negative");
     }
-    return Math.trunc(weight);
   });
-  const targetTotal = Math.round(weights.reduce((total, weight) => total + weight, 0));
-  const remaining = targetTotal - floors.reduce((total, value) => total + value, 0);
-  if (remaining < 0) {
+  const total = weights.reduce((sum, weight) => sum + weight, 0);
+  const targetTotal = roundHalfToEven(total);
+  if (targetTotal < 0) {
     throw new Error("integerized total cannot be negative");
   }
-  const remainders = weights
-    .map((weight, index) => ({ index, remainder: weight - Math.trunc(weight) }))
-    .sort(
-      (left, right) => right.remainder - left.remainder || left.index - right.index,
-    );
-  const counts = [...floors];
-  remainders.slice(0, remaining).forEach(({ index }) => {
-    counts[index] += 1;
-  });
+  const counts = weights.map(() => 0);
+  if (targetTotal === 0) return counts;
+
+  const step = total / targetTotal;
+  let recordIndex = 0;
+  let cumulative = weights[0];
+  for (let draw = 0; draw < targetTotal; draw += 1) {
+    const point = (draw + 0.5) * step;
+    while (recordIndex < weights.length - 1 && point >= cumulative - 1e-10) {
+      recordIndex += 1;
+      cumulative += weights[recordIndex];
+    }
+    counts[recordIndex] += 1;
+  }
   return counts;
+}
+
+function roundHalfToEven(value) {
+  const floor = Math.floor(value);
+  const fraction = value - floor;
+  if (fraction < 0.5) return floor;
+  if (fraction > 0.5) return floor + 1;
+  return floor % 2 === 0 ? floor : floor + 1;
 }
 
 function parseDimensions(value) {

@@ -229,6 +229,13 @@ def test_top_level_api_reports_empty_outputs_and_invalid_packages(
 
 
 def test_top_level_api_rejects_unpublishable_and_malformed_packages() -> None:
+    with pytest.raises(ValueError, match="unsupported linked model package schema"):
+        spc.generate_from_model(
+            {"schema_version": "old"},
+            households=1,
+            require_publishable=False,
+        )
+
     package = model_payload("demo-linked-household-person")
     package["privacy"] = {"publishable_candidate": False}
 

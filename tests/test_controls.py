@@ -26,6 +26,12 @@ from synthpopcan.controls import (
 from synthpopcan.tabular import format_csv_number
 
 
+@pytest.mark.parametrize("invalid", [float("nan"), float("inf"), -1.0])
+def test_control_cells_reject_invalid_counts(invalid: float) -> None:
+    with pytest.raises(ValueError, match="control count"):
+        ControlCell(categories={"age": "young"}, count=invalid)
+
+
 def test_reads_normalized_controls_as_control_table(tmp_path: Path) -> None:
     controls_path = tmp_path / "controls.csv"
     controls_path.write_text(
@@ -55,6 +61,11 @@ def test_parses_normalized_controls_from_text() -> None:
 
     assert table.dimensions == ("tract", "household_size")
     assert table.margins[0].cells[0].count == 12
+
+
+def test_normalized_controls_require_declared_dimensions_in_header() -> None:
+    with pytest.raises(ValueError, match="dimensions missing from the CSV header"):
+        parse_control_table('margin,dimensions,age,count\njoint,"age,sex",adult,10\n')
 
 
 def test_control_margin_label_must_use_consistent_dimensions(tmp_path: Path) -> None:
@@ -609,6 +620,29 @@ def test_cli_applies_category_mapping_to_wds_controls(tmp_path: Path) -> None:
         'population,"Age group,Sex",age_000_004,female,100\n'
         'population,"Age group,Sex",age_000_004,male,105\n'
     )
+
+
+def test_wds_mapping_rejects_colliding_canonical_categories(tmp_path: Path) -> None:
+    zip_path = tmp_path / "wds.zip"
+    with ZipFile(zip_path, "w") as archive:
+        archive.writestr(
+            "table.csv",
+            "Age group,VALUE\n0 through 4,100\n0 to 4 years,105\n",
+        )
+
+    with pytest.raises(ValueError, match="duplicates target.*after category mapping"):
+        read_wds_control_table(
+            zip_path,
+            dimensions=("Age group",),
+            count_column="VALUE",
+            margin_name="age",
+            category_mapping={
+                "Age group": {
+                    "0 through 4": "age_000_004",
+                    "0 to 4 years": "age_000_004",
+                }
+            },
+        )
 
 
 def test_cli_fails_on_unmapped_wds_category(tmp_path: Path) -> None:

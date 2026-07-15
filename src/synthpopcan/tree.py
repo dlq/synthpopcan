@@ -6,7 +6,7 @@ import csv
 import json
 import random
 from bisect import bisect_left
-from collections import defaultdict
+from collections import Counter, defaultdict
 from collections.abc import Callable, Iterator, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -1121,6 +1121,7 @@ def validate_linked_population(
     *,
     household_id_column: str = "synthetic_household_id",
     person_household_id_column: str = "synthetic_household_id",
+    person_id_column: str = "synthetic_person_id",
     household_size_column: str = "household_size",
 ) -> dict[str, Any]:
     """Validate household-person links and household-size consistency.
@@ -1130,9 +1131,11 @@ def validate_linked_population(
     """
 
     household_counts: dict[str, int] = defaultdict(int)
-    household_ids = {
+    household_id_counts = Counter(
         household.get(household_id_column, "") for household in households
-    } - {""}
+    )
+    person_id_counts = Counter(person.get(person_id_column, "") for person in persons)
+    household_ids = set(household_id_counts) - {""}
     unknown_person_households = 0
     for person in persons:
         household_id = person.get(person_household_id_column, "")
@@ -1142,6 +1145,56 @@ def validate_linked_population(
         household_counts[household_id] += 1
 
     issues: list[dict[str, Any]] = []
+    missing_household_ids = household_id_counts.get("", 0)
+    duplicate_household_ids = sorted(
+        identifier
+        for identifier, count in household_id_counts.items()
+        if identifier and count > 1
+    )
+    missing_person_ids = person_id_counts.get("", 0)
+    duplicate_person_ids = sorted(
+        identifier
+        for identifier, count in person_id_counts.items()
+        if identifier and count > 1
+    )
+    if missing_household_ids:
+        issues.append(
+            {
+                "severity": "error",
+                "kind": "missing_household_identifier",
+                "households": missing_household_ids,
+                "message": (
+                    f"{missing_household_ids} household rows have no identifier."
+                ),
+            }
+        )
+    if duplicate_household_ids:
+        issues.append(
+            {
+                "severity": "error",
+                "kind": "duplicate_household_identifier",
+                "identifiers": duplicate_household_ids,
+                "message": "household identifiers must be unique.",
+            }
+        )
+    if missing_person_ids:
+        issues.append(
+            {
+                "severity": "error",
+                "kind": "missing_person_identifier",
+                "persons": missing_person_ids,
+                "message": f"{missing_person_ids} person rows have no identifier.",
+            }
+        )
+    if duplicate_person_ids:
+        issues.append(
+            {
+                "severity": "error",
+                "kind": "duplicate_person_identifier",
+                "identifiers": duplicate_person_ids,
+                "message": "person identifiers must be unique.",
+            }
+        )
     for household in households:
         household_id = household.get(household_id_column, "")
         try:
@@ -1436,6 +1489,20 @@ def validate_tree_roles(
     if not conditioning_columns:
         raise ValueError("at least one conditioning column is required")
 
+    reserved = {
+        "synthetic_id",
+        "synthetic_household_id",
+        "synthetic_person_id",
+    }
+    reserved_roles = sorted(
+        reserved.intersection((*target_columns, *conditioning_columns))
+    )
+    if reserved_roles:
+        raise ValueError(
+            "tree model columns use reserved generated identifiers: "
+            + ", ".join(reserved_roles)
+        )
+
     overlap = sorted(set(target_columns) & set(conditioning_columns))
     if overlap:
         raise ValueError(
@@ -1484,13 +1551,18 @@ def read_record_weight(
     if weight_column is None:
         return 1.0
     try:
-        return float(record[weight_column])
+        weight = float(record[weight_column])
     except KeyError as exc:
         raise ValueError(
             f"row {row_number} is missing weight column {weight_column!r}"
         ) from exc
     except ValueError as exc:
         raise ValueError(f"row {row_number} has invalid weight") from exc
+    if not np.isfinite(weight):
+        raise ValueError(f"row {row_number} has non-finite weight")
+    if weight < 0:
+        raise ValueError(f"row {row_number} has negative weight")
+    return weight
 
 
 def frequency_outcomes(

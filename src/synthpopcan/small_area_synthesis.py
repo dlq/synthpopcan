@@ -17,7 +17,7 @@ __all__ = [
 import csv
 import json
 import os
-from collections import defaultdict
+from collections import Counter, defaultdict
 from collections.abc import Callable, Iterable, Sequence
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
@@ -38,6 +38,7 @@ from synthpopcan.ipf import (
     IPFResult,
     NumpyIPFIndex,
     _initial_weights,
+    calculate_max_abs_error,
     integerize_weights,
 )
 from synthpopcan.tabular import format_csv_number
@@ -275,6 +276,7 @@ def check_linked_person_calibration_inputs(
     *,
     geography_dimension: str,
     household_id_column: str = "synthetic_household_id",
+    person_id_column: str = "synthetic_person_id",
 ) -> dict[str, Any]:
     """Check person controls and household linkage before linked calibration."""
     report = _check_calibration_inputs(
@@ -283,11 +285,21 @@ def check_linked_person_calibration_inputs(
         geography_dimension=geography_dimension,
         candidate_unit="person",
     )
-    household_ids = {
-        household[household_id_column]
-        for household in households
-        if household.get(household_id_column)
-    }
+    household_id_counts = Counter(
+        household.get(household_id_column, "") for household in households
+    )
+    household_ids = set(household_id_counts) - {""}
+    duplicate_household_ids = sorted(
+        identifier
+        for identifier, count in household_id_counts.items()
+        if identifier and count > 1
+    )
+    person_id_counts = Counter(person.get(person_id_column, "") for person in persons)
+    duplicate_person_ids = sorted(
+        identifier
+        for identifier, count in person_id_counts.items()
+        if identifier and count > 1
+    )
     missing_link_count = sum(not person.get(household_id_column) for person in persons)
     orphan_count = sum(
         bool(person.get(household_id_column))
@@ -295,6 +307,30 @@ def check_linked_person_calibration_inputs(
         for person in persons
     )
     link_issues: list[dict[str, Any]] = []
+    if duplicate_household_ids:
+        link_issues.append(
+            {
+                "severity": "error",
+                "kind": "duplicate_household_identifier",
+                "identifiers": duplicate_household_ids,
+                "message": "Candidate household identifiers must be unique.",
+                "tip": (
+                    "Regenerate or deduplicate linked candidates before calibration."
+                ),
+            }
+        )
+    if duplicate_person_ids:
+        link_issues.append(
+            {
+                "severity": "error",
+                "kind": "duplicate_person_identifier",
+                "identifiers": duplicate_person_ids,
+                "message": "Candidate person identifiers must be unique.",
+                "tip": (
+                    "Regenerate or deduplicate linked candidates before calibration."
+                ),
+            }
+        )
     if missing_link_count:
         link_issues.append(
             {
@@ -1243,6 +1279,7 @@ def calibrate_linked_household_csvs(
             person_controls,
             geography_dimension=geography_dimension,
             household_id_column=household_id_column,
+            person_id_column=person_id_column,
         )
         if not person_input_report["passed"]:
             raise ValueError(_format_preflight_error(person_input_report))
@@ -1279,6 +1316,15 @@ def calibrate_linked_household_csvs(
         household_id_column=household_id_column,
         person_id_column=person_id_column,
     )
+    if person_controls is None:
+        _attach_household_realization_reports(
+            fit,
+            households=households,
+            controls=controls,
+            geography_dimension=geography_dimension,
+            integer_weights_by_geography=realization["integer_weights"],
+            tolerance=tolerance,
+        )
 
     if weights_out:
         _write_weights_csv(
@@ -1314,6 +1360,37 @@ def calibrate_linked_household_csvs(
         report_out.parent.mkdir(parents=True, exist_ok=True)
         report_out.write_text(json.dumps(summary, indent=2, sort_keys=True))
     return summary
+
+
+def _attach_household_realization_reports(
+    fit: GeographyHouseholdFit,
+    *,
+    households: Sequence[HouseholdRow],
+    controls: ControlTable,
+    geography_dimension: str,
+    integer_weights_by_geography: dict[str, list[int]],
+    tolerance: float,
+) -> None:
+    """Add independently recalculated integer-output residuals to fit reports."""
+
+    controls_for_geographies = controls_by_geography(
+        controls, geography_dimension=geography_dimension
+    )
+    for geography, integer_weights in integer_weights_by_geography.items():
+        geo_controls = controls_for_geographies[geography]
+        margins = geo_controls.to_ipf_margins()
+        realized_weights = [float(weight) for weight in integer_weights]
+        max_abs_error = calculate_max_abs_error(households, realized_weights, margins)
+        realized_result = IPFResult(
+            households,
+            realized_weights,
+            max_abs_error <= tolerance,
+            0,
+            max_abs_error,
+        )
+        fit.reports[geography]["realized"] = build_ipf_fit_report(
+            geo_controls, realized_result
+        )
 
 
 def _format_preflight_error(report: dict[str, Any]) -> str:

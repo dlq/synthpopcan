@@ -1,10 +1,10 @@
 # Correctness Assurance Implementation Plan
 
-Status: planned\
+Status: active\
 Created: 2026-07-12\
-Last updated: 2026-07-12\
-Target: `0.4.x` onward\
-Next action: add Python/NumPy IPF differential tests and converged-fit invariants\
+Last updated: 2026-07-15\
+Target: `0.5.1` current-architecture correctness gate\
+Next action: complete the remaining `0.5.1` P1 audit fixes and broaden durable release evidence\
 Roadmap: [PLANS.md](../PLANS.md) | [Plan index](README.md)
 
 ## Purpose
@@ -49,7 +49,79 @@ It does not replace:
 - opt-in live tests for external API drift;
 - privacy and disclosure-risk review.
 
+## Release Allocation
+
+`0.5.1` owns all six workstreams in this plan for code and artifact paths that
+exist today. Its release gate includes:
+
+- independent or differential evidence for the current numerical kernels;
+- generated invariant and metamorphic tests for IPF and integerization;
+- probability oracles and fixed-seed semantic round trips for current frequency
+  and CART models;
+- linked-record integrity across current in-memory and CSV paths;
+- independent reconciliation of current small-area CSV and report artifacts;
+- tiny known-truth workflows, one public versioned StatCan-derived fixture, and
+  installed-wheel correctness smoke tests;
+- deterministic pull-request checks plus the larger scheduled and pre-release
+  tiers defined below.
+
+Later releases must add regression evidence for behavior introduced by their
+own architecture. The `0.6.x` runtime therefore retains acceptance checks for
+durable job cancellation and recovery, new CLI/HTTP service parity, incremental
+artifact writing, and chunk-size independence. Those checks cannot run against
+`0.5.1` because those execution paths do not exist yet; they do not justify
+deferring checks of the current algorithms or artifacts.
+
+### `0.5.1` correctness dashboard
+
+| Workstream | State | Remaining release work |
+| --- | --- | --- |
+| 1. IPF numerical correctness | Core complete | Consolidate known-truth fixtures under Workstream 6. |
+| 2. Integerization correctness | Core complete | Generated Python properties, finite-weight checks, realized residuals, and Python/browser parity are implemented. Retain regression coverage as output paths evolve. |
+| 3. Prepared-model correctness | Core complete | Analytical frequency probabilities, multi-seed thresholds, CART leaf/probability comparison, invalid weights, and semantic round trips are implemented. |
+| 4. Linked-population invariants | Core complete | Both model families now have deterministic identifier, relationship, inherited-condition, privacy-column, validation, and in-memory/CSV equivalence checks. |
+| 5. Small-area reconciliation | Core complete | Household-only, joint, multi-geography, subsampled, non-converged, serial/parallel, geography-isolation, and realized-residual oracles are implemented; structural-zero preflight remains covered as a blocking input case. |
+| 6. Reference workflows | Core complete | Tracked microdata/WDS tutorial fixtures, tiny known-truth workflows, a pinned and independently documented public StatCan WDS fixture, isolated installed-wheel proof, and retained JUnit reports are implemented. |
+
+## Public Assurance And Evidence Publication
+
+Status: first public assurance layer implemented for `0.5.1`.
+
+Completed:
+
+- [x] Publish a bounded claims-to-evidence matrix in `CORRECTNESS.md`, with
+  direct links to tests and fixtures and a limitation beside every claim.
+- [x] Link correctness evidence from the README and rendered documentation and
+  expose the scheduled workflow status through a public badge.
+- [x] Test the normal Python gate on Python 3.11 and 3.12 and retain
+  commit-specific JUnit reports for both versions.
+- [x] Run larger generated-case/model ensembles weekly and before package
+  publishing, with a separate scheduled live StatCan interface-drift check.
+- [x] Require an isolated installed-wheel correctness smoke test before trusted
+  publishing and document scoped release-note language.
+
+Planned evidence improvements:
+
+- [ ] Emit a machine-readable per-run assurance manifest with the SynthPopCan
+  version, input checksums, seeds, settings, convergence, requested/fitted/
+  realized residuals, unsupported cells, and linked-integrity findings.
+- [ ] Add Hypothesis-generated cases with failure shrinking and mutation
+  testing to measure whether the suite detects deliberately introduced kernel
+  and report defects.
+- [ ] Add frozen cross-version semantic fixtures and more independently
+  reviewed public reference workflows, including multi-dimensional and linked
+  household/person cases.
+- [ ] Add macOS and Windows compatibility jobs for supported workflows.
+- [ ] Attach permanent correctness reports, checksums, dependency provenance,
+  and build attestations to each GitHub Release rather than relying on expiring
+  Actions artifacts.
+- [ ] Commission or invite an external methods/code review and publish its
+  scope, findings, limitations, and project responses.
+
 ## Workstream 1: IPF Numerical Correctness
+
+Status: core differential and metamorphic suite implemented for `0.5.1`;
+known-truth consolidation remains under Workstream 6.
 
 Add differential tests that generate many small feasible tables, run both
 `fit_ipf` and `fit_ipf_numpy`, and compare:
@@ -88,6 +160,10 @@ Include independently solved fixtures for:
 
 ## Workstream 2: Integerization Correctness
 
+Status: core complete for current `0.5.1` paths; deterministic generated Python
+properties, finite-weight rejection, realized residual checks, and browser
+parity fixtures are implemented.
+
 Use generated non-negative weight vectors to assert:
 
 - every returned count is a non-negative integer;
@@ -105,6 +181,8 @@ that reports present both sets of residuals correctly and do not describe a
 fractionally converged fit as an exact realized match.
 
 ## Workstream 3: Prepared-Model Correctness
+
+Status: core complete for current `0.5.1` frequency and CART paths.
 
 ### Frequency models
 
@@ -138,6 +216,10 @@ avoid brittle byte snapshots for harmless formatting or dependency metadata.
 
 ## Workstream 4: Linked-Population Invariants
 
+Status: core complete for current `0.5.1` in-memory and CSV generation across
+both model families. Add incremental and chunk-size equivalence when those
+paths are introduced in `0.6.x`.
+
 Exercise mixed household sizes, multiple conditions, fallback groups, both model
 families, and streamed generation. Assert:
 
@@ -154,6 +236,13 @@ Test invalid sizes, orphaned people, duplicate identifiers, unknown households,
 missing conditioning values, and incompatible household/person model packages.
 
 ## Workstream 5: Small-Area Reconciliation
+
+Status: core complete for current `0.5.1` paths; independent household-only,
+joint, multi-geography, subsampled, non-converged, serial/parallel,
+geography-isolation, and realized-residual checks are implemented, with
+structural zeros blocked during preflight. Add durable-job and
+incremental-writing failure semantics when those paths are introduced in
+`0.6.x`.
 
 Independently read emitted household and person CSVs and aggregate them without
 calling SynthPopCan report helpers. Compare the resulting totals with:
@@ -192,6 +281,8 @@ rows and summaries. Failed or non-converged runs must not expose partial files a
 successful output.
 
 ## Workstream 6: Reference Workflows
+
+Status: core complete for the `0.5.1` pre-release gate.
 
 Track tiny public "known truth" fixtures with independently calculated expected
 results for:

@@ -1,6 +1,7 @@
 # SynthPopCan
 
 [![CI](https://github.com/dlq/synthpopcan/actions/workflows/ci.yml/badge.svg)](https://github.com/dlq/synthpopcan/actions/workflows/ci.yml)
+[![Extended correctness](https://github.com/dlq/synthpopcan/actions/workflows/correctness.yml/badge.svg)](https://github.com/dlq/synthpopcan/actions/workflows/correctness.yml)
 [![Documentation Status](https://readthedocs.org/projects/synthpopcan/badge/?version=latest)](https://synthpopcan.readthedocs.io/en/latest/)
 [![PyPI](https://img.shields.io/pypi/v/synthpopcan.svg)](https://pypi.org/project/synthpopcan/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
@@ -38,6 +39,8 @@ Project planning and research notes are tracked separately:
   literature.
 - [`CHANGELOG.md`](CHANGELOG.md): public release notes and completed release
   highlights.
+- [`CORRECTNESS.md`](CORRECTNESS.md): tested correctness claims, evidence,
+  limitations, and reproducibility commands.
 
 ## Quick Start
 
@@ -87,6 +90,7 @@ README:
 | Work with census microdata adapters | [`docs/microdata.md`](docs/microdata.md) |
 | Train, audit, package, or use tree models | [`docs/tree.md`](docs/tree.md) |
 | Validate generated outputs | [`docs/validate.md`](docs/validate.md) |
+| Understand correctness evidence and limitations | [`CORRECTNESS.md`](CORRECTNESS.md) |
 | Check current plans and implementation notes | [`PLANS.md`](PLANS.md), [`CHANGELOG.md`](CHANGELOG.md) |
 
 Build the documentation locally with:

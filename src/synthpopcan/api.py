@@ -360,8 +360,7 @@ def read_model_package(path: str | Path) -> dict[str, Any]:
         raise ValueError(f"{path} is not valid JSON") from exc
     if not isinstance(payload, dict):
         raise ValueError("model package must be a JSON object")
-    if payload.get("schema_version") != "synthpopcan-linked-tree-package-v1":
-        raise ValueError("unsupported linked model package schema")
+    _validate_model_package_schema(payload)
     return payload
 
 
@@ -764,7 +763,14 @@ def _control_table_path(
 def _model_package(package: _ModelPackageInput) -> dict[str, Any]:
     if isinstance(package, str | Path):
         return read_model_package(package)
-    return dict(package)
+    payload = dict(package)
+    _validate_model_package_schema(payload)
+    return payload
+
+
+def _validate_model_package_schema(package: Mapping[str, object]) -> None:
+    if package.get("schema_version") != "synthpopcan-linked-tree-package-v1":
+        raise ValueError("unsupported linked model package schema")
 
 
 def _validate_publishable_package(package: Mapping[str, object]) -> None:

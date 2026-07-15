@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import csv
 import json
+import math
 from collections.abc import Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass
@@ -86,6 +87,12 @@ class ControlCell:
 
     categories: dict[str, str]
     count: float
+
+    def __post_init__(self) -> None:
+        if not math.isfinite(self.count):
+            raise ValueError("control count must be finite")
+        if self.count < 0:
+            raise ValueError("control count must be non-negative")
 
 
 @dataclass(frozen=True)
@@ -235,6 +242,14 @@ def _read_control_table(handle: Any) -> ControlTable:
         dimensions = _parse_dimensions(row.get("dimensions", ""))
         if not dimensions:
             raise ValueError(f"controls row {row_number} has no dimensions")
+        missing_dimensions = [
+            dimension for dimension in dimensions if dimension not in fieldnames
+        ]
+        if missing_dimensions:
+            raise ValueError(
+                f"controls row {row_number} declares dimensions missing from "
+                f"the CSV header: {', '.join(missing_dimensions)}"
+            )
         try:
             count = float(row["count"])
         except KeyError as exc:
@@ -339,11 +354,20 @@ def read_wds_control_table(
                 raise ValueError(
                     f"WDS row {row_number} is missing columns: {', '.join(missing)}"
                 )
-            key = tuple(row[dimension] for dimension in dimensions)
+            categories = {
+                dimension: _map_category(
+                    dimension,
+                    row[dimension],
+                    category_mapping,
+                    row_number,
+                )
+                for dimension in dimensions
+            }
+            key = tuple(categories[dimension] for dimension in dimensions)
             if key in seen_keys:
                 raise ValueError(
                     f"WDS row {row_number} duplicates target {key!r} "
-                    f"for dimensions {dimensions!r}"
+                    f"for dimensions {dimensions!r} after category mapping"
                 )
             seen_keys.add(key)
             try:
@@ -352,15 +376,7 @@ def read_wds_control_table(
                 raise ValueError(f"WDS row {row_number} has invalid count") from exc
             cells.append(
                 ControlCell(
-                    categories={
-                        dimension: _map_category(
-                            dimension,
-                            row[dimension],
-                            category_mapping,
-                            row_number,
-                        )
-                        for dimension in dimensions
-                    },
+                    categories=categories,
                     count=count,
                 )
             )

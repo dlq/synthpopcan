@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any
@@ -51,6 +52,8 @@ class IPFMargin:
                 raise ValueError(
                     f"target key {key!r} does not match dimensions {self.dimensions!r}"
                 )
+            if not math.isfinite(value):
+                raise ValueError(f"target {key!r} must be finite")
             if value < 0:
                 raise ValueError(f"target {key!r} must be non-negative")
 
@@ -121,6 +124,16 @@ def expand_records(
         missing, the one-based record index is used.
     """
 
+    reserved = {"synthetic_id", "seed_id"}
+    conflicting = sorted(
+        reserved.intersection(str(key) for record in records for key in record)
+        - {id_field}
+    )
+    if conflicting:
+        raise ValueError(
+            "seed records use reserved generated columns: " + ", ".join(conflicting)
+        )
+
     counts = integerize_weights(weights)
     expanded: list[dict[str, str]] = []
     synthetic_id = 1
@@ -164,10 +177,11 @@ def integerize_weights(weights: Sequence[float]) -> list[int]:
         If any weight is negative.
     """
 
-    if any(weight < 0 for weight in weights):
-        raise ValueError("weights must be non-negative")
-
     arr = np.asarray(weights, dtype=np.float64)
+    if not np.all(np.isfinite(arr)):
+        raise ValueError("weights must be finite")
+    if np.any(arr < 0):
+        raise ValueError("weights must be non-negative")
     total = float(arr.sum())
     n = round(total)
     if n < 0:
@@ -229,7 +243,7 @@ def fit_ipf(
         raise ValueError("IPF requires at least one margin")
     if max_iterations < 1:
         raise ValueError("max_iterations must be at least 1")
-    if tolerance < 0:
+    if not math.isfinite(tolerance) or tolerance < 0:
         raise ValueError("tolerance must be non-negative")
 
     weights = _initial_weights(records, weight_field)
@@ -335,6 +349,10 @@ class NumpyIPFIndex:
         array can be shared across many fits.
         """
 
+        if max_iterations < 1:
+            raise ValueError("max_iterations must be at least 1")
+        if not math.isfinite(tolerance) or tolerance < 0:
+            raise ValueError("tolerance must be non-negative")
         if len(margins) != len(self.encodings):
             raise ValueError(
                 f"margins count {len(margins)} does not match index encodings "
@@ -347,22 +365,33 @@ class NumpyIPFIndex:
                 raise ValueError(
                     f"initial weights do not match {len(self.records)} records"
                 )
+            if not np.all(np.isfinite(starting)):
+                raise ValueError("seed weights must be finite")
             if np.any(starting < 0):
                 raise ValueError("seed weights must be non-negative")
 
         t_arrays: list[np.ndarray] = []
+        target_masks: list[np.ndarray] = []
         for enc, margin in zip(self.encodings, margins, strict=True):
+            if margin.dimensions != enc.dimensions:
+                raise ValueError(
+                    f"margin dimensions {margin.dimensions!r} do not match index "
+                    f"encoding {enc.dimensions!r}"
+                )
             t = np.zeros(enc.n_cats, dtype=np.float64)
+            targeted = np.zeros(enc.n_cats, dtype=np.bool_)
             for key, val in margin.targets.items():
                 cid = enc.key_to_id.get(key)
                 if cid is not None:
                     t[cid] = float(val)
+                    targeted[cid] = True
                 elif float(val) > 0:
                     raise ValueError(
                         f"margin {margin.dimensions!r} target {key!r} "
                         "has no seed records"
                     )
             t_arrays.append(t)
+            target_masks.append(targeted)
 
         if starting is None:
             weights = np.ones(len(self.records), dtype=np.float64)
@@ -371,7 +400,9 @@ class NumpyIPFIndex:
 
         max_abs_error = float("inf")
         for iteration in range(1, max_iterations + 1):
-            for enc, t in zip(self.encodings, t_arrays, strict=True):
+            for enc, t, targeted in zip(
+                self.encodings, t_arrays, target_masks, strict=True
+            ):
                 current = np.bincount(
                     enc.cat_ids, weights=weights, minlength=enc.n_cats
                 )
@@ -381,22 +412,31 @@ class NumpyIPFIndex:
                 # raising. This is intentional: per-geography fits run in a
                 # thread pool, and one degenerate geography should produce a
                 # non-converged report rather than abort the whole run.
-                safe = np.where(current > 0, current, 1.0)
-                ratio = np.where(current > 0, t / safe, 1.0)
+                adjustable = targeted & (current > 0)
+                ratio = np.ones(enc.n_cats, dtype=np.float64)
+                ratio[adjustable] = t[adjustable] / current[adjustable]
                 weights *= ratio[enc.cat_ids]
 
             max_abs_error = max(
-                float(
-                    np.max(
-                        np.abs(
-                            np.bincount(
-                                enc.cat_ids, weights=weights, minlength=enc.n_cats
+                (
+                    float(
+                        np.max(
+                            np.abs(
+                                np.bincount(
+                                    enc.cat_ids,
+                                    weights=weights,
+                                    minlength=enc.n_cats,
+                                )[targeted]
+                                - t[targeted]
                             )
-                            - t
                         )
                     )
+                    if np.any(targeted)
+                    else 0.0
                 )
-                for enc, t in zip(self.encodings, t_arrays, strict=True)
+                for enc, t, targeted in zip(
+                    self.encodings, t_arrays, target_masks, strict=True
+                )
             )
             if max_abs_error <= tolerance:
                 return weights, True, iteration, max_abs_error
@@ -468,6 +508,8 @@ def _initial_weights(
             weight = float(record[weight_field])
         except KeyError as exc:
             raise ValueError(f"weight field {weight_field!r} is missing") from exc
+        if not math.isfinite(weight):
+            raise ValueError("seed weights must be finite")
         if weight < 0:
             raise ValueError("seed weights must be non-negative")
         weights.append(weight)
@@ -526,6 +568,10 @@ def weighted_totals(
 
     totals: dict[CategoryKey, float] = {}
     for record, weight in zip(records, weights, strict=True):
+        if not math.isfinite(weight):
+            raise ValueError("weights must be finite")
+        if weight < 0:
+            raise ValueError("weights must be non-negative")
         key = _category_key(record, dimensions)
         totals[key] = totals.get(key, 0.0) + weight
     return totals

@@ -11,7 +11,9 @@ artifact.
 
    ```bash
    ./scripts/check.sh
+   sh scripts/check-correctness.sh
    uv build
+   sh scripts/check-wheel.sh
    ```
 
 1. Update `CHANGELOG.md`.
@@ -27,6 +29,16 @@ artifact.
 
 1. Create a GitHub Release from the tag using the matching `CHANGELOG.md` entry.
    Confirm it is neither a draft nor a prerelease and is marked latest.
+   Identify the tested commit and summarize the correctness evidence using
+   language scoped to [`CORRECTNESS.md`](CORRECTNESS.md), for example:
+
+   > This release passed SynthPopCan's correctness-assurance suite, including
+   > mathematical invariants, independent implementation comparisons,
+   > deterministic reproduction checks, cross-language parity tests, a public
+   > Statistics Canada reference fixture, and an isolated installed-wheel test.
+
+   Do not describe this as proof of statistical fitness, source-data accuracy,
+   privacy certification, or correctness for every possible input.
 
 1. Run the manual **Publish Python package** workflow from the release commit.
    Confirm the workflow succeeds and PyPI reports the intended version.

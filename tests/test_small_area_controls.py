@@ -6,6 +6,7 @@ import csv
 from pathlib import Path
 
 import pytest
+from click.exceptions import ClickException
 
 from synthpopcan.cli import main
 from synthpopcan.small_area_controls import (
@@ -463,6 +464,35 @@ def test_cli_build_controls_default_output_paths(tmp_path: Path) -> None:
     assert (tmp_path / "population-recoded" / "households.csv").exists()
 
 
+def test_cli_build_controls_rejects_in_place_candidate_recode(tmp_path: Path) -> None:
+    profile = tmp_path / "profile.csv"
+    _minimal_profile(profile)
+    candidates = _write_candidate_population(tmp_path, "population", "h1,2\n")
+    original_households = (candidates / "households.csv").read_bytes()
+    original_persons = (candidates / "persons.csv").read_bytes()
+
+    with pytest.raises(ClickException, match="must differ from --candidates"):
+        main(
+            [
+                "geo",
+                "controls",
+                "--profile",
+                str(profile),
+                "--geo-column",
+                "ada",
+                "--target",
+                "900",
+                "--candidates",
+                str(candidates),
+                "--candidates-out",
+                str(candidates),
+            ]
+        )
+
+    assert (candidates / "households.csv").read_bytes() == original_households
+    assert (candidates / "persons.csv").read_bytes() == original_persons
+
+
 def test_cli_build_controls_geo_prefix_filter(tmp_path: Path) -> None:
     profile = tmp_path / "profile.csv"
     _minimal_profile(profile)
@@ -517,6 +547,23 @@ def test_scale_and_validate_corrects_rounding_drift() -> None:
     tenure_sum = sum(scaled["G1"]["tenure"].values())
     assert hhsize_sum == tenure_sum  # correction restored equality
     assert tenure_sum == 5  # drift was corrected upward (+1)
+
+
+def test_scale_controls_preserves_exact_requested_total_across_geographies() -> None:
+    raw = {
+        geography: {
+            "hhsize": {"1": 1.0, "2": 1.0},
+            "tenure": {"owner": 1.0, "renter": 1.0},
+        }
+        for geography in ("G1", "G2", "G3")
+    }
+
+    scaled, dropped = scale_and_validate_controls(raw, 5)
+
+    assert dropped == []
+    assert sum(sum(geography["hhsize"].values()) for geography in scaled.values()) == 5
+    for geography in scaled.values():
+        assert sum(geography["hhsize"].values()) == sum(geography["tenure"].values())
 
 
 def test_write_recoded_candidates_handles_non_numeric_hhsize(tmp_path: Path) -> None:

@@ -68,6 +68,7 @@ beginner generation workflows.
    introduction
    which-workflow
    scenarios
+   correctness
    acknowledgments
    field-primer
    glossary

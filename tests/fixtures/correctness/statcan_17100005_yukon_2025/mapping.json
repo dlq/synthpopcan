@@ -1,0 +1,9 @@
+{
+  "Gender": {
+    "Men+": "M",
+    "Women+": "F"
+  },
+  "Age group": {
+    "0 years": "age_000"
+  }
+}
