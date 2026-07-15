@@ -10,8 +10,8 @@ Start here. Open a linked implementation plan only when working on that area.
 
 | Horizon | Focus | Detail |
 | --- | --- | --- |
-| Next patch | Prepare and publish `0.5.1` as the current-architecture correctness-assurance release; its six workstreams and audited P1 blockers are complete. | [Correctness plan](plans/2026-07-12-correctness-assurance.md) |
-| Correctness | Core suite, public assurance statement, P1 integrity fixes, and bounded browser/WDS paths are implemented; run the release gate and preserve its evidence. | [Correctness plan](plans/2026-07-12-correctness-assurance.md) |
+| Released | `0.5.1` is published as the current-architecture correctness-assurance release, with scoped claims, checksums, permanent release evidence, and trusted PyPI publication. | [GitHub Release](https://github.com/dlq/synthpopcan/releases/tag/v0.5.1) |
+| Correctness | Preserve the `0.5.1` gate and implement the planned post-release assurance improvements in priority order. | [Correctness plan](plans/2026-07-12-correctness-assurance.md) |
 | Next minor | Build the durable backend IPF workbench for `0.6.0`. | [Local runtime plan](plans/2026-07-10-local-web-application-runtime.md) |
 | Later `0.6.x` | Move prepared-model generation and small-area synthesis into the same durable run model. | [Plan index](plans/README.md) |
 
@@ -44,11 +44,13 @@ owned by a linked implementation plan with a current status and next action.
 
 ## Current Product State
 
-`0.5.0` consolidates the CLI around `models`, `geo`, and `validate`, establishes
-linked-population artifact directories as the workflow contract, and provides a
-smaller typed beginner Python API. It also adds independent candidate-subsample
-seeds, stronger provenance, expanded small-area documentation, and planning
-cleanup.
+`0.5.1` adds the current architecture's correctness-assurance gate: independent
+and differential numerical checks, generated invariants, statistical model
+oracles, linked-record integrity checks, small-area artifact reconciliation,
+known-truth reference workflows, permanent release evidence, and a
+tag-constrained trusted-publishing path. It retains the consolidated CLI,
+smaller typed beginner API, linked-population artifact contract, independent
+candidate-subsample seeds, and stronger provenance introduced in `0.5.0`.
 
 Implemented capabilities include:
 
@@ -78,6 +80,7 @@ incremental artifact streaming are not implemented.
 | `0.3.x` | Joint person calibration, diagnostics, grouped household size, performance/memory work, validation, and stable scenarios. |
 | `0.4.0` | Model metadata/downloads, privacy presentation, safer WDS refinement, browser small-area preparation, and CLI handoff. |
 | `0.5.0` | Consolidated CLI and Python API, linked-population directory contracts, stronger typing and provenance, and documentation cleanup. |
+| `0.5.1` | Correctness-assurance suite and public claims matrix, audited integrity fixes, hardened release gates, permanent release evidence, and tag-constrained trusted publishing. |
 
 The original public baseline is achieved: users can install SynthPopCan, prepare
 StatCan inputs, generate and validate IPF or linked-model output, inspect
@@ -85,7 +88,8 @@ provenance, and reproduce work through the CLI.
 
 ## 0.5.x: Interface Stabilization And Correctness Hardening
 
-Status: active follow-up line.
+Status: complete; preserve its regression and release gates while `0.6.x`
+changes the runtime architecture.
 
 ### 0.5.0 release
 
@@ -101,10 +105,10 @@ For follow-up patches, run the release gate, installed-wheel and model-fetch
 smoke tests, public docs build, and the correctness checks available at that
 point.
 
-### 0.5.1 remaining release work
+### 0.5.1 release (completed 2026-07-15)
 
-The correctness implementation and selected release-safety P2 tranche are
-complete locally. The remaining work is release execution and evidence:
+The correctness implementation, selected release-safety P2 tranche, and public
+release are complete:
 
 - [x] Commit and push the complete correctness-assurance change set.
 - [x] Set the package version to `0.5.1`, refresh locked metadata, and finalize
@@ -112,11 +116,19 @@ complete locally. The remaining work is release execution and evidence:
 - [x] Run the normal, extended-correctness, documentation, browser, model-fetch,
   build, and isolated-wheel gates from the versioned commit; retain the commit
   SHA and machine-readable reports.
-- [ ] Create and push the annotated `v0.5.1` tag, then create the
+- [x] Create and push the annotated `v0.5.1` tag, then create the
   GitHub Release with scoped correctness claims, known limitations, checksums,
   and links to the tested commit and evidence.
-- [ ] Run the tag-constrained trusted-publishing workflow and verify `0.5.1` on
+- [x] Run the tag-constrained trusted-publishing workflow and verify `0.5.1` on
   PyPI, the GitHub Release, installation from PyPI, and rendered documentation.
+
+Release evidence: commit `71b326b9ef97fd674546b68b3f1d80dac96cff2f`,
+annotated tag `v0.5.1`, [GitHub Release](https://github.com/dlq/synthpopcan/releases/tag/v0.5.1),
+[trusted-publishing run](https://github.com/dlq/synthpopcan/actions/runs/29438201657),
+and [PyPI 0.5.1](https://pypi.org/project/synthpopcan/0.5.1/). The GitHub
+distribution assets are byte-for-byte identical to the files published on
+PyPI; the Release also permanently carries their checksums and the retained
+correctness JUnit report.
 
 ### 0.5.1 code-audit backlog
 

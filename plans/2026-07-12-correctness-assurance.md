@@ -1,11 +1,11 @@
 # Correctness Assurance Implementation Plan
 
-Status: active\
+Status: `0.5.1` gate complete; post-release evidence improvements active\
 Created: 2026-07-12\
 Last updated: 2026-07-15\
-Target: `0.5.1` current-architecture correctness gate\
-Next action: tag the verified release commit, publish `0.5.1`, and record the
-public release evidence\
+Target: preserve the `0.5.1` gate and extend public assurance evidence\
+Next action: prioritize the planned evidence improvements against the `0.6.x`
+runtime work\
 Roadmap: [PLANS.md](../PLANS.md) | [Plan index](README.md)
 
 ## Purpose
@@ -77,7 +77,7 @@ deferring checks of the current algorithms or artifacts.
 
 | Workstream | State | Remaining release work |
 | --- | --- | --- |
-| 1. IPF numerical correctness | Core complete | Consolidate known-truth fixtures under Workstream 6. |
+| 1. IPF numerical correctness | Core complete | Retain differential, metamorphic, and known-truth regression coverage as kernels evolve. |
 | 2. Integerization correctness | Core complete | Generated Python properties, finite-weight checks, realized residuals, and Python/browser parity are implemented. Retain regression coverage as output paths evolve. |
 | 3. Prepared-model correctness | Core complete | Analytical frequency probabilities, multi-seed thresholds, CART leaf/probability comparison, invalid weights, and semantic round trips are implemented. |
 | 4. Linked-population invariants | Core complete | Both model families now have deterministic identifier, relationship, inherited-condition, privacy-column, validation, and in-memory/CSV equivalence checks. |
