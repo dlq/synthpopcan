@@ -10,7 +10,7 @@ Start here. Open a linked implementation plan only when working on that area.
 
 | Horizon | Focus | Detail |
 | --- | --- | --- |
-| Next patch | Stabilize the new CLI, API, and linked-artifact contracts in `0.5.1`. | [CHANGELOG.md](CHANGELOG.md) |
+| Next patch | Resolve the audited correctness, data-loss, privacy, and artifact-contract blockers in `0.5.1`. | [Correctness plan](plans/2026-07-12-correctness-assurance.md) |
 | Correctness | Add Python/NumPy IPF differential tests, independent small-area reconciliation, then integerization properties. | [Correctness plan](plans/2026-07-12-correctness-assurance.md) |
 | Next minor | Build the durable backend IPF workbench for `0.6.0`. | [Local runtime plan](plans/2026-07-10-local-web-application-runtime.md) |
 | Later `0.6.x` | Move prepared-model generation and small-area synthesis into the same durable run model. | [Plan index](plans/README.md) |
@@ -98,6 +98,112 @@ Status: active follow-up line.
 For follow-up patches, run the release gate, installed-wheel and model-fetch
 smoke tests, public docs build, and the correctness checks available at that
 point.
+
+### 0.5.1 code-audit backlog
+
+The 2026-07-14 audit found no P0 issue, but it identified correctness and safety
+gaps not exercised by the green release gate. Fix the P1 items before treating
+the browser or small-area workflows as correctness-hardened. Keep each
+regression as a focused automated test after the implementation is repaired.
+
+#### Correctness, data integrity, and privacy
+
+- [ ] **P1 — Prevent in-place candidate data loss.** Reject
+  `--candidates-out` paths that alias `--candidates`, or recode atomically
+  through a distinct temporary file before replacement.
+- [ ] **P1 — Give scalar and NumPy IPF identical sparse-control semantics.** Do
+  not turn represented but omitted target cells into explicit zero targets;
+  add sparse-margin differential tests.
+- [ ] **P1 — Validate every reused NumPy IPF index against ordered margin
+  dimensions and categories.** Do not reuse the first geography's encoding for
+  an incompatible later geography, and independently reconcile reported
+  residuals.
+- [ ] **P1 — Replace browser largest-remainder expansion with the Python
+  systematic integerizer.** Cover highly fractional weights, row-order bias,
+  aggregate preservation, and Python/browser parity.
+- [ ] **P1 — Enforce finite, non-negative numeric invariants at every boundary.**
+  Reject Python control counts and weights containing `NaN` or infinity,
+  browser negative control targets, and negative/non-finite frequency-model
+  weights; ensure fit and validation can never swallow a non-finite residual as
+  zero error.
+- [ ] **P1 — Detect category collisions after WDS mapping.** When distinct
+  source labels map to one canonical category, aggregate them deliberately or
+  reject the mapping instead of silently keeping the last count.
+- [ ] **P1 — Enforce linked-person integrity whenever person rows are present.**
+  Reject orphan people and duplicate household/person identifiers before merge
+  realization so joins cannot silently drop or multiply people.
+- [ ] **P1 — Reserve generated identifier columns.** Prevent seed or model
+  fields from overwriting `synthetic_id`, `synthetic_household_id`, or
+  `synthetic_person_id`, and make linked validation check identifier uniqueness.
+- [ ] **P1 — Base disclosure support on contributing source-row counts.** Do
+  not let survey-weight totals satisfy frequency-model or geography minimum
+  support thresholds; keep weighted totals as separate statistical metadata.
+- [ ] **P1 — Preserve complete seed profiles in browser compact-weight output.**
+  Retain all seed dimensions and add a collision-safe fitted-weight column so
+  the artifact is self-contained for analysis, validation, and expansion.
+- [ ] **P2 — Preserve the exact requested total when scaling controls.** Use a
+  globally reconciled integer allocation rather than independent rounding by
+  geography/category.
+- [ ] **P2 — Require every declared normalized-control dimension to exist in
+  the CSV header.** Do not silently create an empty-string category or an empty
+  `ControlTable.dimensions` result.
+- [ ] **P2 — Apply the same model-package schema validation to mappings and
+  files.** Reject unsupported schema versions before generation regardless of
+  how the package entered the API.
+- [ ] **P2 — Make browser and CLI prepared-model reproduction claims exact.**
+  Share backend generation or a bit-identical RNG and seed schedule; until then,
+  do not claim that the same seed reproduces the same population.
+- [ ] **P2 — Align browser WDS snapshot selection with Python.** Exclude
+  `REF_DATE` from suggested dimensions and consistently select the latest
+  reference period.
+
+#### Web security and resource bounds
+
+- [ ] **P1 — Keep supported large models out of whole-payload browser paths.**
+  Enforce an uncompressed-size threshold and move large-model generation
+  server-side so the 531 MB Canada package is not copied repeatedly through
+  Python serialization, browser parsing, stringification, and workers.
+- [ ] **P1 — Bound WDS and ZIP processing before allocation.** Cap request
+  bodies, archive entries, compressed and aggregate uncompressed sizes, remote
+  response bytes, CSV rows, and concurrent work; inflate only the selected
+  member rather than retaining every archive entry.
+- [ ] **P2 — Validate uploaded model structure and bound browser execution.**
+  Reject cyclic or invalid CART graphs, cap household/person output, and add
+  worker cancellation, timeout, and stale-job handling.
+- [ ] **P2 — Harden the current local server until it is replaced.** Reject
+  non-loopback hosts, validate `Host` and `Origin`, protect state-changing
+  requests, require appropriate content types, cap `Content-Length`, and keep
+  the separate security design requirement for any future network mode.
+- [ ] **P2 — Escape standalone map content for its HTML and JavaScript
+  contexts.** HTML-escape titles, safely encode inline JSON including
+  `</script>`, and build tooltip content with text nodes rather than
+  `innerHTML`.
+- [ ] **P2 — Resolve paths before applying private-data safeguards.** Cover
+  symlinks and `..` traversal so a path into `data/private` cannot bypass the
+  sampling/release guard.
+- [ ] **P2 — Return structured 4xx errors for all invalid JSON shapes.** A
+  valid non-object JSON request must not escape as `AttributeError` and close
+  the connection.
+
+#### Filesystem, network, maps, and releases
+
+- [ ] **P2 — Serialize or lock model-cache fetches.** Use request-unique
+  temporary files plus atomic replacement so concurrent threads/processes do
+  not truncate, unlink, or replace one another's downloads.
+- [ ] **P2 — Make StatCan downloads bounded and atomic.** Add network timeouts,
+  stream to a temporary file, verify completion, and preserve a valid cached
+  file when a refresh fails partway through.
+- [ ] **P2 — Sequence asynchronous browser operations.** Snapshot inputs when a
+  job starts, abort or ignore stale model/WDS/estimate completions, and build CLI
+  handoff commands from the completed run rather than the current mutable form.
+- [ ] **P2 — Fail map generation when no population geography matches the
+  boundaries.** Do not emit HTML with empty variables or invalid infinite
+  bounds.
+- [ ] **P2 — Preserve shapefile polygon topology.** Classify exterior and
+  interior rings correctly so holes are not rendered as filled polygons.
+- [ ] **P2 — Constrain PyPI publishing to tested release tags.** A manual
+  workflow dispatch must verify tag/version agreement and pass the release gate
+  before trusted publishing.
 
 ### Remaining work
 
