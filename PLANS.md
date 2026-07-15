@@ -14,6 +14,8 @@ Start here. Open a linked implementation plan only when working on that area.
 | Correctness | Preserve the `0.5.1` gate and implement the planned post-release assurance improvements in priority order. | [Correctness plan](plans/2026-07-12-correctness-assurance.md) |
 | Next minor | Build the durable backend IPF workbench for `0.6.0`. | [Local runtime plan](plans/2026-07-10-local-web-application-runtime.md) |
 | Later `0.6.x` | Move prepared-model generation and small-area synthesis into the same durable run model. | [Plan index](plans/README.md) |
+| Later `0.7.x`–`0.8.x` | Add governed enrichment layers, then hand validated generated data to external simulation platforms without implementing population simulation in SynthPopCan. | [Plan index](plans/README.md) |
+| Far future, after `0.8.x` | Research optional, compositional public-health simulation only after the population, enrichment, and interchange contracts are stable; do not commit to one simulation platform. | [Far-future direction](#far-future-compositional-public-health-simulation) |
 
 ## Goal And Principles
 
@@ -292,11 +294,14 @@ Architecture decisions:
   framework.
 - Remain loopback-only with controlled workspace access; network serving needs a
   separate security design.
+- Keep the `0.6.0` run manifest extensible for linked artifacts, but defer the
+  stable public household/person/geography output contract to `0.6.1`, when
+  backend prepared-model generation owns those artifacts.
 
 | Release | Outcome |
 | --- | --- |
-| `0.6.0` | FastAPI/Uvicorn runtime, controlled workspace, durable runs, backend IPF, Runs workbench, and removal of browser IPF. |
-| `0.6.1` | Backend prepared-model generation, incremental artifacts, scale/disk preflight, and removal of browser tree generation. |
+| `0.6.0` | FastAPI/Uvicorn runtime, controlled workspace, durable runs, an extensible run manifest, backend IPF, Runs workbench, and removal of browser IPF. |
+| `0.6.1` | Backend prepared-model generation, the stable versioned linked-population schema, incremental artifacts, scale/disk preflight, and removal of browser tree generation. |
 | `0.6.2` | Guided small-area jobs, validation/maps, prominent non-convergence, calibration-mode guidance, chunked realization, and cleanup. |
 
 Completion criteria:
@@ -311,11 +316,110 @@ Completion criteria:
 - Local security, lifecycle, interruption, failure, and download scenarios have
   deterministic automated coverage.
 
-## 0.7.x And Later
+## 0.7.x: Ecosystem Enrichment
 
-Deferred until synthesis and the local runtime are stable: environmental and
-public-service enrichment, reviewed fine-area placement, scenario simulation,
-and richer reproducible public-source mappings.
+Status: planned after the stable local runtime and linked-population schema. See
+the [ecosystem enrichment plan](plans/2026-07-15-ecosystem-enrichment.md).
+
+| Release | Outcome |
+| --- | --- |
+| `0.7.0` | Versioned enrichment/source contract, complete private-source inventory, public-catalogue discovery, provenance/licensing controls, and reviewed fine-area placement foundation. |
+| `0.7.1` | Spatial and environmental layers, beginning with Can-FED as a first-class public food-environment source, profiled TOPO, MoNNET, and CANUE, plus suitable authoritative public geography, service, transport, built-environment, and environmental sources. |
+| `0.7.2` | Privacy-governed cohort attachment for MAVAN, CPTP, and other approved sources using documented harmonization, weighting or statistical matching, uncertainty, and representativeness checks. |
+| `0.7.3` | Modular school, workplace, healthcare, food-access, road/transport, contact-network, and reproducible scenario layers. |
+
+Public-source discovery begins with the
+[Open Government Canada open-data catalogue](https://search.open.canada.ca/opendata/)
+and the [Données Québec CKAN catalogue](https://www.donneesquebec.ca/), while
+remaining open to relevant datasets from authoritative Canadian federal,
+provincial, territorial, Indigenous-government, municipal, public-health,
+education, and other public-agency catalogues. Every public dataset is a
+candidate for evaluation rather than automatic inclusion: verify relevance,
+licensing and attribution, quality, geographic and temporal alignment,
+versioning, and reproducible access first. Selected public data are fetched or
+queried from authoritative sources with recorded metadata, licence, retrieval
+time, version, and checksum; they are not indiscriminately mirrored or bundled
+with the package.
+
+Restricted or access-controlled source data remain under `data/private` and
+never enter git, logs, fixtures, documentation, or release artifacts. Their
+local presence creates no commitment to use, redistribute, provide, or publish
+adapters or derived artifacts for them; dataset-specific work requires separate
+authority and should ordinarily run only against data supplied independently by
+an authorized user.
+
+## 0.8.x: Simulation Interoperability And Data Handoff
+
+Status: planned after the stable linked-population schema; individual adapters
+also depend on the location, activity, and network layers they require. See the
+[simulation interoperability plan](plans/2026-07-15-simulation-interoperability.md).
+
+SynthPopCan will construct, validate, document, and export synthetic population
+data for external models. It will not become a population-simulation engine in
+this track. A versioned simulator-neutral interchange bundle is the boundary;
+target-specific adapters translate that bundle and reject exports whose required
+activities, locations, schedules, networks, or model configuration are absent.
+
+| Release | Outcome |
+| --- | --- |
+| `0.8.0` | Versioned interchange bundle with stable identifiers, Parquet/CSV/GIS tables, manifest, data dictionary, provenance, checksums, and validation evidence. |
+| `0.8.1` | Initial table/Python-oriented adapters and examples for ActivitySim, Starsim, Mesa, and GAMA, selected only after contract research and fixture validation. |
+| `0.8.2` | Transport-demand adapters for MATSim and SUMO after `0.7.3` can supply the required activities, locations, times, memberships, and networks. |
+
+FRED, Vivarium, AnyLogic, and other platforms remain researched candidate
+targets rather than commitments. Promote them only when their supported custom
+population contract is verified and real user demand justifies maintenance.
+
+## Far Future: Compositional Public-Health Simulation
+
+Status: deliberately deferred until after the `0.8.x` data-handoff work; no
+release number or implementation platform is committed.
+
+The broader SynthEco public-health direction may eventually evaluate changes
+to food, healthcare, education, housing, transport, environmental exposure,
+and other public infrastructure. This is a different and much larger problem
+than generating a synthetic population or exporting it to an external model.
+A runnable simulation also needs documented behavioural, institutional,
+capacity, transition, outcome, and feedback rules, with calibration and
+validation evidence appropriate to the jurisdiction and period.
+
+Do not select a universal engine prematurely. Starsim and JUNE are important
+specialist candidates for disease, health-state, contact, and epidemiological
+work, but their disease orientation should not define the overall simulated
+world. OpenM++ remains a technical reference for Canadian-style longitudinal
+microsimulation rather than a platform commitment. GAMA or Mesa may support
+spatial, institutional, or exploratory models, while transport, accessibility,
+queueing, and health-transition components may remain separate tools connected
+through versioned data contracts.
+
+Before implementing dynamic simulation, prefer the least complicated method
+that answers the research question. Many useful public-health analyses require
+only a validated synthetic population plus facility, capacity, network, or
+environmental layers and static counterfactual comparison. Introduce dynamic
+simulation only when time, behaviour, interaction, constraints, or feedback
+materially affect the answer.
+
+If this track becomes justified, begin with research and small reference cases:
+
+- define a platform-neutral, readable intervention manifest covering timing,
+  targets, resource changes, eligibility, coverage, assumptions, outcomes, and
+  provenance without pretending that YAML supplies causal behaviour;
+- catalogue candidate Canadian and Quebec transition rules with jurisdiction,
+  population, observation period, source, estimation method, uncertainty,
+  access/licence restrictions, and validation status;
+- separate population, environment, accessibility, service/capacity,
+  transport, health-transition, disease/contact, and outcome components;
+- compare specialist adapters or coupled tools against concrete public-health
+  questions rather than ranking platforms in the abstract;
+- require baseline and intervention scenarios, repeated stochastic runs,
+  calibration targets, external validation, sensitivity analysis, and explicit
+  limits on causal claims; and
+- keep simulation behaviour and outcome validity outside SynthPopCan's core
+  population-generation correctness claims.
+
+Activation requires a concrete research question, suitable evidence for the
+necessary rules, a maintainable implementation owner or partner, and proof
+that static accessibility or counterfactual analysis is insufficient.
 
 ## Ongoing Tracks
 
@@ -331,6 +435,5 @@ and richer reproducible public-source mappings.
 - Dependency posture beyond the current pure Python, NumPy, and pandas runtime;
   SciPy CSR and Polars remain benchmark probes.
 - Default small-area geography levels beyond current 2016 CT/ADA workflows.
-- First stable public linked household/person/geography output schema.
 - Integerization alternatives beyond deterministic systematic expansion.
 - Boundary between automated model/privacy advice and required expert review.

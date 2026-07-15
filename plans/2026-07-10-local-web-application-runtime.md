@@ -2,7 +2,7 @@
 
 Status: planned\
 Created: 2026-07-10\
-Last updated: 2026-07-14\
+Last updated: 2026-07-15\
 Target: `0.6.0`–`0.6.2`\
 Next action: execute Stage 0, HTTP runtime and module-boundary skeleton\
 Roadmap: [PLANS.md](../PLANS.md) | [Plan index](README.md)
@@ -47,6 +47,10 @@ These decisions are settled for the 0.6.x implementation:
 1. A run is a durable research object, not an ephemeral browser promise. Its
    manifest, inputs or input references, parameters, random seed, status,
    diagnostics, artifacts, and reproducible command survive browser refreshes.
+1. `0.6.0` keeps the run manifest extensible for linked artifacts without
+   declaring their complete column contract stable. `0.6.1`, alongside backend
+   prepared-model generation, defines and ships the versioned stable public
+   linked household/person/geography schema.
 1. The first job manager runs one synthesis process at a time. This keeps local
    CPU and memory use predictable and avoids introducing a database, Redis,
    Celery, or a general distributed queue.
@@ -163,6 +167,12 @@ reproduction
 Input and artifact entries include a stable logical name, relative managed
 path, media type, byte size, and SHA-256 digest. Record row counts when they can
 be collected while reading or writing without another complete pass.
+
+The v1 run manifest must be able to reference a future linked-population schema
+and its data dictionary, but `0.6.0` does not freeze the complete linked CSV
+column set. The `0.6.1` contract will define required household/person
+identifiers and linkage, model-specific extension fields, geography metadata,
+types, missing-value conventions, code lists, and compatibility rules.
 
 `reproduction` contains both the canonical structured workflow request and a
 shell-safe CLI command rendered with `shlex.join`. Tests must execute the
@@ -640,8 +650,9 @@ depends on static hosting or browser-side synthesis.
 
 - **0.6.0:** FastAPI/Uvicorn runtime, durable runs, backend IPF, Runs workbench,
   and removal of browser IPF.
-- **0.6.1:** Backend prepared-model generation, chunked artifacts, scale
-  preflight, and removal of browser tree generation.
+- **0.6.1:** Backend prepared-model generation, the stable versioned
+  linked-population schema, chunked artifacts, scale preflight, and removal of
+  browser tree generation.
 - **0.6.2:** Guided small-area synthesis, validation/map results, selected
   utility workflows, cleanup, and final documentation parity.
 

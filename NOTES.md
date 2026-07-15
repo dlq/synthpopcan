@@ -149,6 +149,18 @@ The 2020 SynthEco methods draft is especially useful because it already translat
 - Pritchard and Miller's sparse list representation is explicitly called out as the memory-saving strategy.
 - Canadian PUMF limitations are central: person and household samples are not always linked in the way US PUMS-style workflows assume.
 
+### Canadian Food Environment Dataset
+
+Statistics Canada's Canadian Food Environment Dataset (Can-FED) is a
+first-class public source for the later SynthEco enrichment stage:
+
+- Canonical product page: https://www150.statcan.gc.ca/n1/pub/13-20-0001/132000012022001-eng.htm
+- It provides pan-Canadian retail food-environment measures at dissemination-area level.
+- Its intended uses include studying relationships between local food environments, dietary intake, and health outcomes, which directly matches the project's public-health purpose.
+- The public measures are based on 2018 food-outlet data; all derived layers and analyses must preserve that vintage and must not imply current establishment availability.
+- The public DA-level product must remain distinguishable from more detailed material available under controlled access through Statistics Canada Research Data Centres.
+- A supported Can-FED layer should document outlet categories, access metrics, geography linkage, missingness, provenance, and uncertainty before comparing access across synthetic population groups.
+
 ### Pritchard Paper And Code
 
 Reviewed source-bundle entries:
@@ -337,6 +349,17 @@ look like a CSV of raw records.
 
 Relevant work:
 
+- UNECE's *Synthetic Data for Official Statistics: A Starter Guide*
+  (ECE/CES/STAT/2022/6), developed with substantial Statistics Canada
+  authorship, is an authoritative reference for release use cases, synthesis
+  methods, disclosure-risk assessment, and utility evaluation. It distinguishes
+  dummy, fully synthetic, and partially synthetic files; emphasizes that
+  utility is specific to an intended analytical use; and treats utility and
+  disclosure risk as a joint, context-dependent assessment rather than a claim
+  of zero risk. For SynthPopCan, this guidance applies most directly to
+  tree-model releases, restricted-source or cohort enrichment, and public
+  output review. It complements but does not establish numerical correctness of
+  the IPF, calibration, sampling, or linked-population algorithms.
 - `synthpop` is directly relevant because its CART synthesis method uses
   terminal tree nodes to draw synthetic values from observed donors in that
   node. Its documentation explicitly lists `minbucket`, the minimum number of
@@ -433,6 +456,11 @@ safety, especially for restricted-source models.
 
 Sources:
 
+- UNECE, *Synthetic Data for Official Statistics: A Starter Guide*
+  (ECE/CES/STAT/2022/6):
+  https://unece.org/statistics/publications/synthetic-data-official-statistics-starter-guide
+- UN Digital Library record and stable publication metadata:
+  https://digitallibrary.un.org/record/4027270
 - synthpop resources and disclosure-risk publications:
   https://www.synthpop.org.uk/resources.html
 - synthpop package documentation, especially `syn.ctree`, `syn.cart`, and
@@ -534,6 +562,112 @@ Sources:
 - Starsim documentation: https://starsim.org/
 - Vivarium GitHub: https://github.com/ihmeuw/vivarium
 - pseudopeople GitHub: https://github.com/ihmeuw/pseudopeople
+
+### Fit Of Simulation Frameworks For Canadian And Quebec Rules
+
+Canadian and Quebec simulation rules exist, but as a fragmented collection
+rather than a single reusable rulebook. Important sources include Statistics
+Canada's Demosim demographic competing-risk model and POHEM health models,
+OncoSim cancer models, the Quebec/Canada COMPAS health microsimulation, ISQ
+demographic assumptions, and CCDSS/SISMACQ disease-surveillance estimates.
+Access varies: some methods and aggregate rates are public, COMPAS has published
+code and technical documentation for at least one application, and other
+production coefficients, source microdata, or model implementations are
+restricted or available only by request. Any reused rule therefore needs
+jurisdiction, population, observation period, source, estimation method,
+uncertainty, and validation provenance; an older Canadian estimate must not be
+treated as a timeless national default.
+
+For reusing these rules in downstream simulations, the current framework
+ranking is:
+
+1. **OpenM++** is the closest technical match to Canada's Modgen-derived
+   microsimulation heritage. Its entities, events, continuous-time competing
+   risks, scenario parameters, replications, and aggregate tables fit Demosim,
+   POHEM, COMPAS, and OncoSim-style life-course models. It is the strongest
+   long-term target for rigorous demographic and longitudinal microsimulation,
+   although model development and compilation are comparatively demanding.
+1. **Starsim** is the most practical first adapter. Its modern Python,
+   array-based person states, demographic and disease modules, interventions,
+   products, calibration, and scenario tooling fit COMPAS/POHEM-like health
+   transitions and CCDSS calibration targets. Detailed service choice,
+   capacity, and queues would still require new modules.
+1. **JUNE**, and potentially its Canadian descendant ODFEM, best fit the more
+   ambitious SynthEco-style world of households, schools, workplaces,
+   facilities, routines, contacts, disease, and policy. Porting Canadian
+   chronic-disease and healthcare-utilization rules would be substantial.
+   ODFEM could rank highly, but its public code availability, licensing,
+   interfaces, and active status need confirmation before it becomes a
+   dependency.
+1. **GAMA** is the strongest complement for explicitly spatial services and
+   institutions: clinic, school, food, rural-access, facility-placement, and
+   environmental scenarios. Canadian health hazards would need translation
+   into GAML.
+1. **Mesa** is useful for approachable Python prototypes, teaching models, and
+   testing a platform-neutral intervention manifest, but it supplies fewer
+   public-health components and is not the preferred national-scale runtime.
+1. **ActivitySim**, **MATSim**, and **SUMO** are specialized supporting tools,
+   not homes for the main Canadian health rule set. ActivitySim fits destination
+   and mode choice, MATSim fits travel-plan and network feedback, and SUMO fits
+   detailed vehicle and road operations. Their outputs can feed a health or
+   microsimulation model.
+
+This ranking answers a narrow question: how naturally could a framework express
+the Canadian and Quebec transition rules found in the literature? It is not a
+recommendation that one of these frameworks should own the broader SynthEco
+simulation world. OpenM++ is a close historical and mathematical match but has
+compiler, generated-code, specialist-language, and accessibility costs that do
+not fit the project's Python-first and non-specialist-facing direction well
+enough to justify a commitment. Its useful ideas can be studied independently
+of its platform.
+
+Starsim and JUNE also have a material domain limitation. Starsim's central
+abstractions concern diseases, health states, transmission networks, products,
+and interventions. JUNE represents a richer society of households, schools,
+workplaces, activities, and facilities, but primarily to create contacts and
+support epidemiological simulation. Both may become valuable specialist
+consumers of SynthPopCan output; neither should define a general world intended
+also for food availability, healthcare capacity, education access, housing,
+transport, environmental exposure, and institutional allocation.
+
+Much of that broader public-health work may not require agent simulation at
+all. A synthetic population combined with facilities, capacities, travel
+networks, and environmental layers can support static accessibility,
+distributional, demand-pressure, exposure, and counterfactual analyses. Dynamic
+simulation becomes justified when time, behaviour, queues, adaptation,
+interactions, resource constraints, or feedback change the result.
+
+The far-future direction should therefore be compositional rather than centered
+on one engine. Population and environment data remain platform-neutral;
+accessibility, service capacity and queues, transport, health transitions,
+disease/contact dynamics, and outcomes may be separate components or specialist
+adapters. GAMA may be useful for spatial institutions, Mesa for approachable
+prototypes, Starsim for health and disease, JUNE/ODFEM for routines and contact
+worlds, and ActivitySim/MATSim/SUMO for mobility at different levels. These are
+candidate roles, not commitments.
+
+A future intervention manifest can describe timing, targets, resource changes,
+eligibility, capacities, coverage, requested outcomes, and assumption
+provenance in readable YAML. It cannot by itself supply the causal rules: each
+component must still document how people and institutions respond and how
+those responses affect outcomes. Research into this broader simulation layer
+belongs after stable population generation, governed enrichment, and the
+simulator-neutral interchange bundle, and should begin only with a concrete
+public-health question for which static analysis is insufficient.
+
+Sources:
+
+- OpenM++ documentation: https://openmpp.org/wiki/openmpp-wiki.html
+- Starsim documentation: https://docs.starsim.org/
+- JUNE paper: https://doi.org/10.1098/rsos.210506
+- GAMA documentation: https://gama-platform.org/wiki/OptimizingModels
+- Demosim overview: https://www.statcan.gc.ca/en/microsimulation/demosim/demosim
+- Statistics Canada health models: https://www.statcan.gc.ca/en/microsimulation/health/health
+- COMPAS technical documentation: https://creei.ca/compas/
+- Published COMPAS CVD code: https://github.com/CEDIA-models/compascvd2017
+- OncoSim: https://www.partnershipagainstcancer.ca/tools/oncosim/
+- CCDSS: https://health-infobase.canada.ca/ccdss/
+- SISMACQ: https://www.inspq.qc.ca/boite-outils-pour-la-surveillance-post-sinistre-des-impacts-sur-la-sante-mentale/systemes-de-surveillance/systeme-integre-de-surveillance-des-maladies-chroniques-du-quebec-sismacq
 
 ### Statistics Canada Data Access
 
