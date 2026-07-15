@@ -1,4 +1,5 @@
 const WDS_BASE_URL = "https://www150.statcan.gc.ca/t1/wds/rest";
+const WDS_DOWNLOAD_HOST = "www150.statcan.gc.ca";
 
 export async function searchWdsTables(query, limit = 10) {
   const response = await fetch(`${WDS_BASE_URL}/getAllCubesListLite`);
@@ -119,7 +120,28 @@ export async function fetchWdsDownloadUrl(
   if (payload.status !== "SUCCESS" || !payload.object) {
     throw new Error("StatCan did not return a downloadable ZIP URL.");
   }
-  return payload.object;
+  return trustedWdsDownloadUrl(payload.object);
+}
+
+function trustedWdsDownloadUrl(value) {
+  let url;
+  try {
+    url = new URL(String(value));
+  } catch {
+    throw new Error("StatCan returned an invalid download URL.");
+  }
+  if (
+    url.protocol !== "https:" ||
+    url.hostname !== WDS_DOWNLOAD_HOST ||
+    url.username ||
+    url.password ||
+    url.port
+  ) {
+    throw new Error(
+      `StatCan returned a download URL outside the trusted ${WDS_DOWNLOAD_HOST} HTTPS host.`,
+    );
+  }
+  return url.href;
 }
 
 export function summarizeWdsMetadata(metadata) {

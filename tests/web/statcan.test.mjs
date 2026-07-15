@@ -116,3 +116,38 @@ test("fetches a WDS download URL from the product endpoint", async () => {
   ]);
   assert.equal(url, "https://www150.statcan.gc.ca/n1/tbl/csv/13100006-eng.zip");
 });
+
+test("rejects WDS download URLs outside the trusted StatCan HTTPS host", async () => {
+  const untrustedUrls = [
+    "javascript:alert(1)",
+    "http://www150.statcan.gc.ca/n1/tbl/csv/13100006-eng.zip",
+    "https://example.com/13100006-eng.zip",
+    "https://www150.statcan.gc.ca.example.com/13100006-eng.zip",
+    "https://user@www150.statcan.gc.ca/13100006-eng.zip",
+    "https://www150.statcan.gc.ca:8443/13100006-eng.zip",
+  ];
+
+  for (const object of untrustedUrls) {
+    await assert.rejects(
+      fetchWdsDownloadUrl("13100006", {
+        fetchImpl: async () => ({
+          ok: true,
+          json: async () => ({ status: "SUCCESS", object }),
+        }),
+      }),
+      /trusted www150\.statcan\.gc\.ca HTTPS host/,
+    );
+  }
+});
+
+test("rejects malformed WDS download URLs", async () => {
+  await assert.rejects(
+    fetchWdsDownloadUrl("13100006", {
+      fetchImpl: async () => ({
+        ok: true,
+        json: async () => ({ status: "SUCCESS", object: "not a URL" }),
+      }),
+    }),
+    /invalid download URL/,
+  );
+});

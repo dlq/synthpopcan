@@ -242,18 +242,17 @@ document
         throw new Error("Enter a Product ID first.");
       }
       const generated = await generateSeedAndControlsFromProduct(productId);
-      prepareWdsRefinement(generated, productId, productId);
-    } catch (error) {
-      if (error.downloadUrl) {
+      if (generated.downloadFallbackUrl) {
         showWdsDownloadFallback(
           wdsGeneratedResult,
           productId,
-          error.downloadUrl,
-          error,
+          generated.downloadFallbackUrl,
         );
-      } else {
-        showError(wdsGeneratedResult, error);
+        return;
       }
+      prepareWdsRefinement(generated, productId, productId);
+    } catch (error) {
+      showError(wdsGeneratedResult, error);
     }
   });
 
@@ -320,18 +319,16 @@ ipfForm.addEventListener("submit", async (event) => {
   }
 });
 
-async function fetchWdsZip(productId) {
+async function tryFetchWdsZip(productId) {
   const downloadUrl = await fetchWdsDownloadUrl(productId);
   try {
     const zipResponse = await fetch(downloadUrl);
     if (!zipResponse.ok) {
       throw new Error(`ZIP download returned HTTP ${zipResponse.status}`);
     }
-    return zipResponse.arrayBuffer();
-  } catch (error) {
-    error.downloadUrl = downloadUrl;
-    error.browserFetchFailed = true;
-    throw error;
+    return { downloadUrl, zipBuffer: await zipResponse.arrayBuffer() };
+  } catch {
+    return { downloadUrl, zipBuffer: null };
   }
 }
 
@@ -367,16 +364,14 @@ async function generateSeedAndControlsFromProduct(productId) {
     const payload = await response.json().catch(() => ({}));
     throw new Error(payload.error ?? `Local helper returned HTTP ${response.status}`);
   }
-  try {
-    const zipBuffer = await fetchWdsZip(productId);
-    return {
-      ...(await generateSeedAndControlsFromZip(zipBuffer)),
-      source: "browser-fetch",
-    };
-  } catch (error) {
-    error.localHelperUnavailable = true;
-    throw error;
+  const browserDownload = await tryFetchWdsZip(productId);
+  if (browserDownload.zipBuffer === null) {
+    return { downloadFallbackUrl: browserDownload.downloadUrl };
   }
+  return {
+    ...(await generateSeedAndControlsFromZip(browserDownload.zipBuffer)),
+    source: "browser-fetch",
+  };
 }
 
 async function generateSeedAndControlsFromZip(zipBuffer) {
@@ -700,10 +695,11 @@ function wdsCliCommands(generated, selectionManifest) {
   return commands;
 }
 
-function showWdsDownloadFallback(element, productId, downloadUrl, error) {
+function showWdsDownloadFallback(element, productId, downloadUrl) {
   revokeDownloads(element);
   element.className = "result-box warning";
-  element.textContent = fallbackMessage(error);
+  element.textContent =
+    "The local Python helper was not available, and the browser could not fetch the StatCan ZIP directly.";
   const list = document.createElement("div");
   list.className = "result-list";
   const linkItem = document.createElement("div");
@@ -721,26 +717,12 @@ function showWdsDownloadFallback(element, productId, downloadUrl, error) {
       "After download",
       "Choose the ZIP as the Downloaded StatCan ZIP, then select Use selected ZIP.",
     ),
-    resultItem("Why this happened", fallbackReason(error)),
+    resultItem(
+      "Why this happened",
+      "This page may be served by an older static-only server. Restart `synthpopcan serve` so /api/wds/seed-controls is available. The browser fallback also failed because StatCan's ZIP download is blocked by browser cross-origin rules.",
+    ),
   );
   element.append(list);
-}
-
-function fallbackMessage(error) {
-  if (error.localHelperUnavailable) {
-    return "The local Python helper was not available, and the browser could not fetch the StatCan ZIP directly.";
-  }
-  return "The browser could not fetch the StatCan ZIP directly.";
-}
-
-function fallbackReason(error) {
-  if (error.localHelperUnavailable) {
-    return "This page is probably being served by an older static-only server. Restart `synthpopcan serve` so /api/wds/seed-controls is available. The browser fallback also failed because StatCan's ZIP download is blocked by browser cross-origin rules.";
-  }
-  if (error.browserFetchFailed) {
-    return "StatCan's ZIP download can be opened by a browser tab, but JavaScript fetch is blocked by browser cross-origin rules.";
-  }
-  return error.message;
 }
 
 function starterDimensions() {
