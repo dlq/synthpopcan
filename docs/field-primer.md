@@ -30,7 +30,8 @@ validation choices.
 
 ## A Short Lineage
 
-Synthetic population work has roots in [spatial microsimulation](https://en.wikipedia.org/wiki/Spatial_microsimulation), transportation
+Synthetic population work has roots in
+[spatial microsimulation](https://doi.org/10.1007/978-94-007-4623-7_1), transportation
 planning, epidemiology, [statistical disclosure control](https://en.wikipedia.org/wiki/Statistical_disclosure_control), and agent-based
 simulation. Older IPF-based approaches often start with a microdata sample and
 reweight it to match area-level margins.
@@ -77,7 +78,7 @@ is a long table of geographies and characteristics.
 dimensions, labels, value columns, metadata, and download formats. A table must
 be inspected and normalized before it becomes a control table.
 
-[PUMF microdata](https://www150.statcan.gc.ca/n1/pub/98m0002x/98m0002x2016001-eng.htm)
+[PUMF microdata](https://www150.statcan.gc.ca/n1/en/catalogue/98M0002X2016001)
 also has structure. The 2016 hierarchical PUMF is especially important because
 it carries household, economic-family, census-family, and person identifiers. That makes it useful for household/person modelling, but it
 also means that a person row is not the whole story. Household structure,

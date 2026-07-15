@@ -96,6 +96,7 @@ For a guided command-line start that mirrors the web app, run:
 ```bash
 synthpopcan guide ipf
 synthpopcan guide model
+synthpopcan guide small-area
 ```
 
 ## Treat Generated Populations as Arguments, Not Facts

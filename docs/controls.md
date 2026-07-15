@@ -296,6 +296,11 @@ synthpopcan controls wds inspect table.zip
 synthpopcan controls wds inspect table.zip --format json
 ```
 
+Options:
+
+- `--sample-rows INTEGER`: number of source rows to preview; the default is `5`.
+- `--format table|json`: readable table or machine-readable output.
+
 ### `controls wds mapping-template`
 
 Writes a starter JSON file mapping raw WDS category labels to the values used
@@ -325,6 +330,15 @@ synthpopcan controls census-profile inspect profile.csv \
   --search "years"
 ```
 
+Options:
+
+- `--characteristic-column TEXT`: column containing characteristic labels; use
+  this when a profile export uses a non-standard heading.
+- `--count-column TEXT`: numeric count column to preview.
+- `--search TEXT`: case-insensitive text to find in characteristic labels.
+- `--limit INTEGER`: maximum matching rows to return.
+- `--format table|json`: readable table or machine-readable output.
+
 ### `controls census-profile template`
 
 Writes a pre-built mapping template for common Census Profile characteristics.
@@ -338,6 +352,15 @@ include `age5` and `sex`.
 synthpopcan controls census-profile template age5 \
   --out census-profile-mapping.json
 ```
+
+Options:
+
+- `NAME`: `age5` or `sex`.
+- `--geo-column TEXT`: source geography-code column.
+- `--geo-dimension TEXT`: output control dimension for geography.
+- `--characteristic-column TEXT`: source characteristic-label column.
+- `--count-column TEXT`: source count column.
+- `--out PATH`: required mapping JSON destination.
 
 ### `controls from-census-profile`
 
@@ -366,8 +389,8 @@ an interpretive research decision, not just a technical step.
 
 ## Further Reading
 
-- Statistics Canada WDS REST base used by SynthPopCan:
-  [https://www150.statcan.gc.ca/t1/wds/rest](https://www150.statcan.gc.ca/t1/wds/rest).
+- Statistics Canada [Web Data Service documentation](https://www.statcan.gc.ca/en/developers/wds),
+  including the REST operations used by SynthPopCan.
 - Statistics Canada 2016 Census Profile download endpoint used by SynthPopCan:
   [GetFile.cfm](https://www12.statcan.gc.ca/census-recensement/2016/dp-pd/prof/details/download-telecharger/comp/GetFile.cfm).
 - IPF background: [Iterative proportional fitting](https://en.wikipedia.org/wiki/Iterative_proportional_fitting).

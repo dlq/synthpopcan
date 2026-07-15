@@ -56,12 +56,29 @@ Then inspect the command line:
 synthpopcan --help
 ```
 
+Run a small offline smoke test with the bundled fictional model:
+
+```bash
+synthpopcan models generate demo-linked-household-person \
+  --households 10 \
+  --condition "geo=Demo North" \
+  --out synthpopcan-quickstart \
+  --random-seed 42
+synthpopcan validate linked synthpopcan-quickstart
+```
+
+This verifies linked household/person generation, but it does not create a
+representative Canadian population. The documentation explains how to choose
+research sources, controls, and model packages.
+
 For a one-off command without installing the tool into the current environment,
 use `uvx`:
 
 ```bash
 uvx synthpopcan --help
 uvx synthpopcan guide ipf
+uvx synthpopcan guide model
+uvx synthpopcan guide small-area
 ```
 
 From a source checkout for development:
@@ -84,6 +101,7 @@ README:
 | --- | --- |
 | Use the local browser app | [`docs/web-app.md`](docs/web-app.md) |
 | Generate with IPF from margin/control tables | [`docs/ipf.md`](docs/ipf.md), [`docs/controls.md`](docs/controls.md), [`docs/statcan.md`](docs/statcan.md) |
+| Assign linked households and people to small areas | [`docs/small-area.md`](docs/small-area.md) |
 | Use the beginner Python API | [`docs/library-getting-started.md`](docs/library-getting-started.md) |
 | Work with local data layout and `data doctor` | [`docs/data.md`](docs/data.md) |
 | Inspect source files safely | [`docs/data.md`](docs/data.md), [`docs/statcan.md`](docs/statcan.md), [`docs/microdata.md`](docs/microdata.md) |

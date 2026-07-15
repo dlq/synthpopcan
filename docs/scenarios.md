@@ -1,9 +1,14 @@
-# End-to-End Scenarios
+# Tested Workflow Inventory
 
-This inventory is the stable source of truth for SynthPopCan's main user
-stories. Tests, documentation, and release checks refer to the IDs below rather
-than copying complete command transcripts. Scenario IDs are permanent; a
-scenario can be expanded or retired, but its ID is not reused.
+This page records the **acceptance scenarios used by tests and release checks**.
+It is not a substitute for a walkthrough. For guided reader-facing paths, start
+with [Which Workflow Should We Use?](which-workflow.md), the [Local Web
+App](web-app.md), [IPF](ipf.md), [Generate From a Model
+Package](tree-generate.md), or [Small-Area Linked Synthesis](small-area.md).
+
+Tests, documentation, and release checks refer to the permanent IDs below
+rather than copying complete command transcripts. A scenario can be expanded or
+retired, but its ID is not reused.
 
 ## SCN-IPF-001
 

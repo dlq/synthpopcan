@@ -56,6 +56,7 @@ run:
 
    synthpopcan guide ipf
    synthpopcan guide model
+   synthpopcan guide small-area
 
 Advanced source preparation, microdata adapters, model training, audit reports,
 and release-readiness checks are still documented, but they come after the

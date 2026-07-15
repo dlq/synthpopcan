@@ -161,8 +161,9 @@ def test_cli_fetch_census_profile_rejects_unknown_geo_level(tmp_path: Path) -> N
         )
 
     message = str(excinfo.value)
-    assert "Unknown 2016 Census Profile geography level" in message
-    assert "Use one of:" in message
+    assert "is not one of" in message
+    assert "csd-all" in message
+    assert "da-all" in message
 
 
 def test_search_wds_tables_filters_inventory(monkeypatch) -> None:

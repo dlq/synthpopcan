@@ -27,6 +27,62 @@ browser.
 The first screen has **three guided paths**. All use only the local browser and
 the loopback Python helper.
 
+## Three Short Walkthroughs
+
+These walkthroughs name the controls as they appear in the app. They are meant
+to get us through one complete interaction before we study the detailed options
+later on this page.
+
+### Try IPF With the Teaching Files
+
+1. Keep **IPF from margin tables** selected.
+1. Under **Use a demo or make templates**, choose **Use demo age/sex files**.
+   The app fills both IPF file inputs with tiny fictional data.
+1. Keep **Expanded synthetic records** selected and leave the iteration and
+   tolerance defaults unchanged.
+1. Choose **Run IPF**.
+1. In the result, confirm that the fit converged, inspect the preview, and
+   download the CSV. Open **Continue in the CLI** when we want a copyable record
+   of the equivalent command-line steps.
+
+This run checks the browser workflow and teaches the input/output shape. It does
+not represent a Canadian population. Continue to [IPF](ipf.md) before replacing
+the teaching files with research inputs.
+
+### Generate Linked Households and People
+
+1. Choose **Generate from existing model**.
+1. Select **Safe demo household/person package**, then choose **Use premade
+   model**.
+1. Wait for the ready message. Keep `10` households and random seed `13`, and
+   enter `geo=Demo North` under **Conditions**.
+1. Choose **Generate rows**.
+1. Confirm that the linkage check passes, compare the household and person
+   counts, inspect both previews, and download both CSVs.
+
+Before using a public research package, read its provenance, privacy-review
+status, generation limits, and known limitations in the model summary. The
+[Generate From a Model Package](tree-generate.md) chapter explains how to do the
+same work reproducibly at larger scale.
+
+### Prepare a Small-Area Run
+
+1. Choose **Prepare a small-area synthesis**.
+1. Select a premade linked model or upload a reviewed local package.
+1. Upload normalized household controls and, when available, compatible person
+   controls. Enter the geography dimension used by the controls, such as `ct`
+   or `ada`.
+1. Set the candidate household count and, for an exploratory run, a calibration
+   pool size. Keep both random seeds recorded with the project.
+1. Choose **Estimate and prepare**.
+1. Read the target counts and surface recommendation, then copy the generated
+   `models fetch`, `geo estimate`, and `geo synthesize` commands into a script or
+   method note.
+
+This path is a **preflight**, not a browser calibration. Building appropriate
+controls and interpreting residuals are covered in
+[Small-Area Linked Synthesis](small-area.md).
+
 ### IPF from margin tables
 
 Choose this when we want to fit **seed rows** to **public margin/control totals**.

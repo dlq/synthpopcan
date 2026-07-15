@@ -21,7 +21,8 @@ Use `data/private` for **restricted files**.
 `data doctor` checks whether the expected directories exist. `data inspect`,
 `data schema`, and `data sample` inspect the actual files within that layout —
 **what files are present**, **what their columns are**, and **what a few rows
-look like**.
+look like**. `data example` writes tiny fictional files for a documented
+teaching workflow; these files are not source data.
 Use {doc}`statcan` to find and fetch public Statistics Canada sources to
 populate the layout. If a file is ready to become a control table, move to
 {doc}`controls`.
@@ -92,6 +93,26 @@ synthpopcan data doctor
 ```
 
 ## Subcommands
+
+### `data example`
+
+Writes small fictional files for a public teaching workflow. The current `ipf`
+example contains `seed.csv` and `controls.csv`, works without a source checkout
+or network connection, and is used by the [IPF](ipf.md) walkthrough.
+
+```bash
+synthpopcan data example ipf --out-dir synthpopcan-ipf-example
+```
+
+Options:
+
+- `NAME`: currently `ipf`.
+- `--out-dir PATH`: required destination directory.
+- `--force`: replace existing example files. Without this flag, SynthPopCan
+  refuses to overwrite them.
+
+These values are designed to make the mechanics visible. They do not represent
+a real census population and should not be reused as research inputs.
 
 ### `data doctor`
 

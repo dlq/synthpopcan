@@ -91,7 +91,9 @@ If census profile data for controls is not yet downloaded, use the `statcan`
 commands:
 
 ```bash
-synthpopcan statcan census-profile fetch --geo-level ct
+synthpopcan statcan census-profile fetch \
+  --geo-level ct \
+  --out-dir data/raw/statcan/census-profile/2016
 ```
 
 See `synthpopcan statcan --help` for the full list of available downloads.
@@ -304,6 +306,8 @@ Important options:
   `ada`, `da`, `csd`, `cd`, and `pr`.
 - `--out-dir`: directory for the prepared GeoJSON file.
 - `--coord-precision`: coordinate precision for the written GeoJSON.
+- `--url`: optional alternate StatCan ZIP URL, useful when a project maintains
+  a documented local mirror.
 
 Run this once per geography level and reuse the resulting file. The command
 needs an internet connection for the boundary download.
@@ -331,6 +335,9 @@ Important options:
 - `--target`: total household count used to scale the controls.
 - `--geo-prefix`: optional prefix filter. Use province codes for ADAs and CMA
   codes for CTs.
+- `--geo-level-value`: override the profile's `GEO_LEVEL` value only for a
+  non-standard profile; ordinary 2016 bulk downloads are detected from
+  `--geo-column`.
 - `--controls-out`: explicit controls CSV path.
 - `--candidates-out`: explicit recoded linked-population directory when
   `--candidates` is supplied.
@@ -391,6 +398,10 @@ Important options:
   fit.
 - `--subsample-seed`: reproducible seed for the `--pool-size` candidate
   subsample.
+- `--max-iterations`: maximum IPF iterations for each geography; the default is
+  `100`.
+- `--tolerance`: convergence tolerance for each geography; the default is
+  `1e-6`.
 - `--format summary|json`: printed report format.
 
 ### `geo synthesize`
@@ -415,12 +426,19 @@ Important options:
 - `--households`: candidate household count generated before calibration.
 - `--controls`: household controls with a target geography dimension.
 - `--person-controls`: optional linked-person controls.
+- `--geo-dimension`: geography dimension in the controls.
+- `--geo-column`: geography column written to the assigned outputs; defaults to
+  `--geo-dimension`.
+- `--out`: directory for calibrated `households.csv`, `persons.csv`, and
+  `report.json`.
+- `--include-weights`: also write the potentially large fitted weights CSV.
 - `--random-seed`: candidate generation seed.
 - `--pool-size`: optional maximum number of candidates used for calibration.
 - `--subsample-seed`: reproducible seed for the calibration subsample.
 - `--max-household-size`: group exact household sizes into a top-coded category,
   usually `5` for Census Profile controls.
 - `--household-size-group-column`: grouped-size column used for calibration.
+- `--format summary|json`: printed report format.
 
 ### `geo map`
 
@@ -435,13 +453,14 @@ synthpopcan geo map synthetic-population/ \
 
 Important options:
 
-- `--households`: assigned household CSV.
+- `POPULATION`: calibrated population directory, or an assigned household CSV.
 - `--persons`: optional assigned person CSV for person-level map variables.
 - `--boundaries`: StatCan shapefile, directory containing a shapefile, or
   prepared GeoJSON.
 - `--geo-column`: geography ID column in the household CSV.
 - `--geo-id-field`: boundary attribute matching the household geography ID.
 - `--out`: destination HTML file.
+- `--title`: title shown in the map panel.
 - `--coord-precision`: output coordinate precision.
 
 ## Beginner API Shape
@@ -499,10 +518,10 @@ for Quebec City.
 **Prerequisites:**
 
 - Quebec provincial model package (installed or downloaded):
-  `quebec-2016-all-fields-package.json`
+  `quebec-2016-all-fields`
 - National CT Census Profile CSV:
   `98-401-X2016043_English_CSV_data.csv`
-  (download free from StatCan, or use `synthpopcan statcan census-profile fetch --geo-level ct`)
+  (download free from StatCan, or use `synthpopcan statcan census-profile fetch --geo-level ct --out-dir data/raw/statcan/census-profile/2016`)
 
 **Step 1 — Build CT controls (Quebec City prefix = 421)**
 
@@ -521,8 +540,7 @@ to 338 000 households (the approximate 2016 Quebec City CMA total).
 **Step 2 — Generate candidates and calibrate**
 
 ```bash
-synthpopcan geo synthesize \
-  quebec-2016-all-fields-package.json \
+synthpopcan geo synthesize quebec-2016-all-fields \
   --households 338000 \
   --controls quebec-city-ct-controls.csv \
   --geo-dimension ct \
@@ -538,14 +556,15 @@ column remains in the household output.
 
 The same pattern works for any Canadian CMA whose provincial model is
 available: substitute the CMA code prefix (e.g. `602` for Winnipeg, `205` for
-Halifax, `505` for Ottawa) and the matching provincial package
-(`manitoba-2016-all-fields-package.json`, etc.).
+Halifax, `505` for Ottawa) and the matching model ID from `synthpopcan models list` (for example, `manitoba-2016-all-fields`).
 
 ## Statistical Quality
 
-The outputs are spatially coherent synthetic populations suitable for aggregate
-analysis and microsimulation inputs. Understanding what the calibration does and
-does not guarantee is important before using them for research.
+When the fit converges and the diagnostics are acceptable, the outputs can be
+useful for **aggregate exploration** and as inputs to carefully validated
+microsimulations. That is a conditional research use, not a general guarantee
+of suitability. Understanding what the calibration does and does not establish
+is essential before using the result.
 
 **What is guaranteed.** Converged fractional household weights reproduce the
 supplied household margins to the requested tolerance. When person controls are
@@ -563,7 +582,7 @@ small-area facts.
 
 **Practical guidance.**
 
-These outputs are appropriate for:
+Potential uses, after substantive validation, include:
 
 - agent-based models or microsimulations that need geographically anchored
   synthetic microdata as input;
@@ -580,14 +599,15 @@ Use caution for:
   records;
 - any claim requiring person-level geographic accuracy.
 
-**Comparison to alternatives.** These populations are better than drawing a
-provincial random sample and assigning geographies at random, because the
-geographic distribution reflects real Census structure. They are not as
-accurate as a synthetic population calibrated on many margins (age × sex ×
-geography, income × geography, etc.), which would require either restricted
-master-file access or substantially more Census Profile variables as controls.
-Most published synthetic population work operates at roughly this level of
-calibration.
+**Comparison to alternatives.** For the variables actually controlled,
+calibration preserves more published geographic structure than assigning a
+provincial sample to areas at random. That does not establish accuracy for
+uncontrolled variables. Adding more well-matched margins can constrain more of
+the result, but it can also expose incompatible totals, sparse candidate
+support, and new disclosure concerns. Comparative research shows that method
+performance depends on spatial scale, constraints, and the population being
+modelled; there is no single calibration depth that characterizes the field or
+guarantees a good result.
 
 ## Current Limits
 
@@ -602,3 +622,17 @@ calibration.
   joint fit converges; both summaries belong with the output.
 - DA-level runs remain more disclosure-sensitive and structurally sparse than
   CT- or ADA-level runs.
+
+## Further Reading
+
+- Statistics Canada's [2016 census geography chapter](https://www12.statcan.gc.ca/census-recensement/2016/ref/98-304/chap12-eng.cfm)
+  explains how CTs, ADAs, DAs, CSDs, and other dissemination geographies relate.
+- Tanton and Edwards' [introduction to spatial microsimulation](https://doi.org/10.1007/978-94-007-4623-7_1)
+  places small-area population construction in its broader methodological
+  history.
+- Harland et al., [“Creating Realistic Synthetic Populations at Varying Spatial
+  Scales”](https://doi.org/10.18564/jasss.1909), compares synthesis techniques
+  and emphasizes that performance changes with method and geography.
+- Chapuis, Taillandier, and Drogoul's [review of synthetic-population methods and
+  practices](https://doi.org/10.18564/jasss.4762) surveys later approaches and
+  their use in social simulation.

@@ -58,6 +58,16 @@ For a Canada-wide package, use:
 synthpopcan models fetch canada-2016-all-fields
 ```
 
+### `models remove`
+
+Removes a downloaded package from the local model cache. It does not remove the
+package from the public catalogue, and it cannot remove the bundled teaching
+model. We can fetch a removed package again later.
+
+```bash
+synthpopcan models remove montreal-cma-2016-all-fields
+```
+
 Inspect a package before generating — confirms what geography, columns, and
 conditioning structure it contains:
 
@@ -151,6 +161,9 @@ Options:
 - `--out DIRECTORY`: writes `households.csv`, `persons.csv`, and `manifest.json`
   together as one linked-population artifact.
 - `--random-seed INTEGER`: seed for reproducibility.
+- `--household-size-column TEXT`: override the package field that records how
+  many people belong to each household. Normally we should keep the package
+  default; use this only when a reviewed local package documents another field.
 
 The household count is controlled directly. The person count is derived from
 the model's household-size distribution and will not match a separate population
@@ -205,7 +218,7 @@ calibrate to Census Profile controls using {doc}`small-area`.
 per household ID. This can occur with packages trained on different household-
 size capping conventions. See {doc}`tree` for audit details.
 
-## Training Your Own Model
+## Training a Model
 
 If no suitable package exists for the geography, census year, or column profile,
 we can train a model from restricted microdata. That workflow —

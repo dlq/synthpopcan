@@ -24,6 +24,7 @@ STABLE_API_NAMES = (
     "SmallAreaResult",
     "calibrate_small_area",
     "expand_population",
+    "fetch_model",
     "fit_ipf",
     "generate_from_model",
     "read_controls",
@@ -135,6 +136,20 @@ def test_top_level_api_generates_from_linked_model_package(tmp_path: Path) -> No
     assert len(population.persons) >= 3
     assert (output_dir / "households.csv").is_file()
     assert (output_dir / "persons.csv").is_file()
+
+
+def test_top_level_api_fetches_bundled_demo_model() -> None:
+    package = spc.fetch_model("demo-linked-household-person")
+
+    population = spc.generate_from_model(
+        package,
+        households=2,
+        conditions={"geo": "Demo North"},
+        random_seed=11,
+    )
+
+    assert len(population.households) == 2
+    assert len(population.persons) >= 2
 
 
 def test_top_level_api_accepts_in_memory_ipf_inputs() -> None:

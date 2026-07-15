@@ -554,7 +554,6 @@ model cache.
 ```bash
 synthpopcan models list
 synthpopcan models list --format json
-synthpopcan models list
 synthpopcan models fetch montreal-cma-2016-all-fields
 ```
 

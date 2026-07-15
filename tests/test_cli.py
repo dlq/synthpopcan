@@ -767,6 +767,35 @@ def test_cli_data_inspect_oserror(tmp_path) -> None:
             main(["data", "inspect", str(tmp_path)])
 
 
+def test_cli_data_example_writes_public_ipf_files(tmp_path) -> None:
+    out_dir = tmp_path / "ipf-example"
+
+    assert main(["data", "example", "ipf", "--out-dir", str(out_dir)]) == 0
+    assert (out_dir / "seed.csv").read_text().splitlines()[0] == (
+        "PP_ID,AGEGRP,SEX,WEIGHT"
+    )
+    assert (out_dir / "controls.csv").read_text().splitlines()[0] == (
+        "margin,dimensions,AGEGRP,SEX,count"
+    )
+
+    with pytest.raises(click.ClickException, match="already exist"):
+        main(["data", "example", "ipf", "--out-dir", str(out_dir)])
+
+    assert (
+        main(
+            [
+                "data",
+                "example",
+                "ipf",
+                "--out-dir",
+                str(out_dir),
+                "--force",
+            ]
+        )
+        == 0
+    )
+
+
 def test_cli_data_sample_oserror(tmp_path) -> None:
     with patch("synthpopcan.cli.read_source_sample", side_effect=OSError("boom")):
         with pytest.raises(click.ClickException):

@@ -16,6 +16,8 @@ corresponding command-line page first:
   mappings.
 - [Statistics Canada Sources](statcan.md) explains WDS and Census Profile source
   discovery.
+- [Small-Area Linked Synthesis](small-area.md) explains household-first
+  calibration, geography controls, integerization, and mapping.
 - [Tree Models](tree.md) explains household/person generation, tree and forest
   concepts, support, purity, and model quality.
 - [Validate](validate.md) explains what validation reports do and do not prove.
@@ -230,6 +232,155 @@ Live source functions depend on Statistics Canada service availability and may
 raise network or source-format errors. In reproducible research scripts, store
 the downloaded source files and provenance manifests rather than relying on live
 downloads during every run.
+
+## Small-Area Synthesis
+
+The lower-level small-area modules separate **control extraction**, **run
+planning**, **calibration**, and **mapping**. That separation is useful when a
+research notebook needs to inspect intermediate decisions or replace one stage
+with a project-specific method. Start with the methodological discussion in
+[Small-Area Linked Synthesis](small-area.md); the code below assumes we already
+understand why the controls and candidate population must describe compatible
+universes.
+
+### Build and Inspect Geography Controls
+
+The 2016 Census Profile adapter extracts household-size and tenure rows, filters
+the requested geographies, and scales them to an explicit household target. We
+should inspect `dropped_geographies` rather than silently accepting missing
+margins.
+
+```python
+from pathlib import Path
+
+from synthpopcan.small_area_controls import (
+    extract_controls_from_profile,
+    scale_and_validate_controls,
+    write_controls_csv,
+)
+
+raw_controls = extract_controls_from_profile(
+    Path("98-401-X2016043_English_CSV_data.csv"),
+    geography_column="ct",
+    geo_prefix="421",  # Quebec City CMA
+)
+
+scaled_controls, dropped_geographies = scale_and_validate_controls(
+    raw_controls,
+    target_total=338_000,
+)
+print("dropped", dropped_geographies[:10])
+
+controls_path = Path("quebec-city-ct-controls.csv")
+write_controls_csv(
+    scaled_controls,
+    controls_path,
+    geography_column="ct",
+    household_size_column="household_size_group",
+)
+```
+
+The member IDs and total in this example are specific to the documented 2016
+workflow. Keep the original profile, extraction choices, target total, and
+dropped-geography list with the generated controls.
+
+### Estimate Before Calibrating
+
+Read the normalized controls and estimate the scale before generating a large
+candidate population:
+
+```python
+from synthpopcan.controls import read_control_table
+from synthpopcan.small_area_synthesis import estimate_small_area_run
+
+controls = read_control_table(controls_path)
+estimate = estimate_small_area_run(
+    controls,
+    geography_dimension="ct",
+    candidate_households=50_000,
+    pool_size=10_000,
+)
+
+print(estimate["target_geographies"])
+print(estimate["estimated_total_output_rows"])
+print(estimate["recommended_surface"])
+for note in estimate["guidance"]:
+    print(note)
+```
+
+The estimate is a planning aid, not a quality result. Candidate support,
+convergence, and integerized residuals still need review after calibration.
+
+### Calibrate Linked Candidate Files
+
+Use `calibrate_linked_household_csvs` when a pipeline needs explicit input and
+output paths or lower-level tuning. The function keeps people attached to their
+household and returns the same machine-readable report used by the CLI.
+
+```python
+from synthpopcan.small_area_synthesis import calibrate_linked_household_csvs
+
+output_dir = Path("quebec-city-population")
+output_dir.mkdir(exist_ok=True)
+
+report = calibrate_linked_household_csvs(
+    households_path=Path("candidates/households.csv"),
+    persons_path=Path("candidates/persons.csv"),
+    controls_path=controls_path,
+    geography_dimension="ct",
+    geography_column="ct",
+    households_out=output_dir / "households.csv",
+    persons_out=output_dir / "persons.csv",
+    report_out=output_dir / "report.json",
+    pool_size=10_000,
+    subsample_seed=42,
+)
+
+summary = report["summary"]
+print(summary["non_converged_count"] == 0, summary["max_abs_error"])
+```
+
+If we also have compatible person controls, pass `person_controls_path`. Review
+the input warnings and both fractional and integerized residual summaries in
+the report before treating the output as usable.
+
+### Prepare Boundaries and Render a Map
+
+Boundary preparation is normally a one-time download. The rendering function
+joins aggregate statistics to matching boundary IDs and writes a standalone
+HTML file; individual synthetic records should not be interpreted as known
+households at known locations.
+
+```python
+from synthpopcan.map_render import (
+    prepare_boundaries_geojson,
+    render_synthesis_map,
+)
+from synthpopcan.statcan import fetch_boundary_zip
+
+boundary_dir = Path("data/boundaries")
+shapefile = fetch_boundary_zip("ct", boundary_dir)
+geojson = prepare_boundaries_geojson(
+    shapefile,
+    id_field="CTUID",
+    out_path=boundary_dir / "2016-boundary-ct.geojson",
+)
+
+map_path = render_synthesis_map(
+    households_path=output_dir / "households.csv",
+    persons_path=output_dir / "persons.csv",
+    boundaries_path=geojson,
+    geography_column="ct",
+    geography_id_field="CTUID",
+    out_path=Path("quebec-city-map.html"),
+    title="Synthetic Quebec City Households",
+)
+```
+
+For most notebooks, the top-level `spc.calibrate_small_area` and
+`spc.render_small_area_map` wrappers are shorter. Use these module functions
+when we need the intermediate reports, custom output paths, or explicit boundary
+preparation shown here.
 
 ## Tree Models
 

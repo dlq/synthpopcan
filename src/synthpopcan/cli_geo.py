@@ -478,7 +478,7 @@ def map_command(
 
     \b
         synthpopcan geo map \\
-            --households synthetic-households.csv \\
+            synthetic-households.csv \\
             --boundaries /path/to/statcan-boundaries/ \\
             --geo-column ct
     """

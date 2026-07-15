@@ -19,7 +19,7 @@ there::
     fit = spc.fit_ipf("seed.csv", controls)
     spc.write_weights(fit, "synthetic-weights.csv")
 
-    package = spc.read_model_package("model-package.json")
+    package = spc.fetch_model("demo-linked-household-person")
     population = spc.generate_from_model(package, households=100)
     spc.write_linked_population(population, "synthetic-population/")
 """
@@ -37,6 +37,7 @@ from typing import Any
 from synthpopcan.controls import ControlTable, read_control_table, write_control_table
 from synthpopcan.ipf import IPFMargin, IPFResult, expand_records
 from synthpopcan.ipf import fit_ipf as fit_ipf_records
+from synthpopcan.models import fetch_model_package
 from synthpopcan.small_area_synthesis import calibrate_linked_household_csvs
 from synthpopcan.tabular import format_csv_number
 from synthpopcan.tree import (
@@ -59,6 +60,7 @@ __all__ = [
     "SmallAreaResult",
     "calibrate_small_area",
     "expand_population",
+    "fetch_model",
     "fit_ipf",
     "generate_from_model",
     "read_controls",
@@ -362,6 +364,45 @@ def read_model_package(path: str | Path) -> dict[str, Any]:
         raise ValueError("model package must be a JSON object")
     _validate_model_package_schema(payload)
     return payload
+
+
+def fetch_model(model_id: str) -> dict[str, Any]:
+    """Fetch and read a registered linked model package.
+
+    The bundled teaching model loads without an internet connection. Larger
+    public model packages are downloaded to SynthPopCan's local cache on first
+    use and reused on later calls.
+
+    Parameters
+    ----------
+    model_id:
+        Package ID shown by ``synthpopcan models list``. Use
+        ``demo-linked-household-person`` for the bundled synthetic teaching
+        model.
+
+    Returns
+    -------
+    dict[str, Any]
+        A reviewed model package ready for :func:`generate_from_model`.
+
+    Raises
+    ------
+    KeyError
+        Raised when ``model_id`` is not in the public model catalogue.
+    OSError
+        Raised when a downloadable package cannot be retrieved or cached.
+    ValueError
+        Raised when a downloaded package fails verification or cannot be read.
+
+    Examples
+    --------
+    >>> package = fetch_model("demo-linked-household-person")
+    >>> population = generate_from_model(package, households=5, random_seed=13)
+    >>> len(population.households)
+    5
+    """
+
+    return read_model_package(fetch_model_package(model_id))
 
 
 def generate_from_model(

@@ -80,6 +80,7 @@ from synthpopcan.sources import (
     read_source_schema,
 )
 from synthpopcan.statcan import (
+    CENSUS_PROFILE_2016_GEO_LEVELS,
     fetch_census_profile_2016,
     fetch_wds_metadata,
     fetch_wds_table,
@@ -683,6 +684,43 @@ def data_group() -> None:
     """Inspect local data files and check setup."""
 
 
+@data_group.command("example")
+@click.argument("name", type=click.Choice(["ipf"]))
+@click.option("--out-dir", required=True, type=_PATH)
+@click.option("--force", is_flag=True, help="Replace existing example files.")
+def write_example_data(name: str, out_dir: Path, force: bool) -> None:
+    """Write small fictional teaching files for a documented workflow."""
+
+    files = {
+        "seed.csv": ("PP_ID,AGEGRP,SEX,WEIGHT\n11101,adult,F,1\n11102,child,M,1\n"),
+        "controls.csv": (
+            "margin,dimensions,AGEGRP,SEX,count\n"
+            "age,AGEGRP,adult,,100\n"
+            "age,AGEGRP,child,,100\n"
+            "sex,SEX,,F,100\n"
+            "sex,SEX,,M,100\n"
+        ),
+    }
+    existing = [
+        out_dir / filename for filename in files if (out_dir / filename).exists()
+    ]
+    if existing and not force:
+        names = ", ".join(path.name for path in existing)
+        raise click.ClickException(
+            f"Example files already exist in {out_dir}: {names}. "
+            "Choose another --out-dir or pass --force to replace them."
+        )
+    try:
+        out_dir.mkdir(parents=True, exist_ok=True)
+        for filename, contents in files.items():
+            path = out_dir / filename
+            path.write_text(contents, encoding="utf-8")
+            print_wrote(path)
+    except OSError as exc:
+        raise click_file_access_error(out_dir, "write to", exc) from exc
+    click.echo(f"Wrote the fictional {name} teaching example; it is not census data.")
+
+
 @data_group.command("doctor")
 @click.option(
     "--data-root",
@@ -1225,7 +1263,12 @@ def census_profile() -> None:
 
 
 @census_profile.command("fetch")
-@click.option("--geo-level", required=True)
+@click.option(
+    "--geo-level",
+    required=True,
+    type=click.Choice(CENSUS_PROFILE_2016_GEO_LEVELS, case_sensitive=False),
+    help="Census Profile bulk-download geography product.",
+)
 @click.option("--out-dir", required=True, type=_PATH)
 def run_statcan_census_profile_fetch(geo_level: str, out_dir: Path) -> None:
     """Download a known Census Profile bulk CSV."""

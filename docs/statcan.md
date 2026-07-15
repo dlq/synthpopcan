@@ -173,13 +173,30 @@ year. The Census Profile contains several hundred demographic characteristics
 every geographic unit at the chosen level. It is the primary source for
 census-tract-level controls in small-area synthesis.
 
-Geography levels (`--geo-level`):
+Supported Census Profile downloads (`--geo-level`) are the keys below. These
+names identify **bulk download products**, so some use `-all` even though the
+geography itself is normally abbreviated without it:
 
-- `pt` — province/territory
-- `cd` — census division
-- `csd` — census subdivision
-- `ct` — census tract (most common for small-area controls)
-- `da` — dissemination area
+| Key | Bulk download contents |
+| --- | --- |
+| `pt` | Canada, provinces, and territories |
+| `cma-ca` | Census metropolitan areas and census agglomerations |
+| `cma-ca-csd` | CMAs, CAs, and their census subdivisions |
+| `cd` | Census divisions |
+| `csd-all` | Canada through census-subdivision level |
+| `da-all` | Canada through dissemination-area level |
+| `ct` | CMAs, tracted CAs, and census tracts |
+| `er` | Economic regions |
+| `popctr` | Population centres |
+| `fed` | Federal electoral districts, 2013 Representation Order |
+| `dpl` | Designated places |
+| `fsa` | Forward sortation areas |
+| `ada` | Aggregate dissemination areas |
+| `hr` | Health regions |
+
+Do not substitute `csd` for `csd-all` or `da` for `da-all` in this command.
+The separate `geo boundaries` command uses the shorter geography codes because
+it addresses boundary products rather than Census Profile bulk tables.
 
 The downloaded file is large and uses Statistics Canada's characteristic-row
 format, where each row is a named demographic characteristic rather than a

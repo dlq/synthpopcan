@@ -269,30 +269,32 @@ uncertainty. Do not treat exact-looking numbers as exact knowledge.
 
 ## Getting Started
 
-Export a seed from the tiny fixture:
+Create the tiny fictional seed and control files used in this walkthrough. This
+command is included in normal PyPI installations and does not download data:
 
 ```bash
-synthpopcan microdata export-seed \
-  tests/fixtures/workflows/microdata_ipf/hierarchical.csv \
-  --input-format statcan-2016-hierarchical \
-  --columns AGEGRP,SEX \
-  --out seed.csv
+synthpopcan data example ipf --out-dir synthpopcan-ipf-example
 ```
+
+The two rows are deliberately simple: one fictional adult woman and one
+fictional boy, each with starting weight `1`. The controls ask IPF to represent
+100 adults, 100 children, 100 women or girls, and 100 men or boys. This is a
+software and teaching example, not a claim about a real population.
 
 Check compatibility before fitting:
 
 ```bash
 synthpopcan ipf check-inputs \
-  --seed seed.csv \
-  --controls tests/fixtures/workflows/microdata_ipf/controls.csv
+  --seed synthpopcan-ipf-example/seed.csv \
+  --controls synthpopcan-ipf-example/controls.csv
 ```
 
 Fit weights and write a JSON report:
 
 ```bash
 synthpopcan ipf fit \
-  --seed seed.csv \
-  --controls tests/fixtures/workflows/microdata_ipf/controls.csv \
+  --seed synthpopcan-ipf-example/seed.csv \
+  --controls synthpopcan-ipf-example/controls.csv \
   --weight-column WEIGHT \
   --out weights.csv \
   --report fit-report.json
@@ -309,7 +311,7 @@ Validate the fitted weights:
 ```bash
 synthpopcan validate ipf \
   --population weights.csv \
-  --controls tests/fixtures/workflows/microdata_ipf/controls.csv \
+  --controls synthpopcan-ipf-example/controls.csv \
   --kind weights
 ```
 

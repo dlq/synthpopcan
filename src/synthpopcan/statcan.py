@@ -272,6 +272,7 @@ _CENSUS_PROFILE_2016_DOWNLOADS: dict[str, CensusProfileDownload] = {
     "ada": CensusProfileDownload("ada", "Aggregate dissemination areas", "CSV", "050"),
     "hr": CensusProfileDownload("hr", "Health regions", "CSV", "058"),
 }
+CENSUS_PROFILE_2016_GEO_LEVELS = tuple(_CENSUS_PROFILE_2016_DOWNLOADS)
 
 
 def wds_download_url(product_id: str, lang: str = "en") -> str:

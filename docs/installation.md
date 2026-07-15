@@ -134,45 +134,38 @@ Beginner command-line guidance is available with:
 ```bash
 synthpopcan guide ipf
 synthpopcan guide model
+synthpopcan guide small-area
 ```
 
 ## Quick Getting Started
 
-This tiny fixture workflow fits two seed rows to age and sex controls. It does
-not download public data and does not use private microdata.
-
-This is a smoke test for the command-line setup. For a fuller explanation of
-each IPF step, see [IPF](ipf.md). For the equivalent notebook-oriented Python
-workflow, see [Getting Started With the Beginner API](library-getting-started.md).
+This short workflow generates ten linked households and their people from the
+**bundled synthetic teaching model**. It works after a PyPI installation, under
+`uvx`, or from a source checkout. It does not need an internet connection,
+public census files, or private microdata.
 
 ```bash
-synthpopcan microdata export-seed \
-  tests/fixtures/workflows/microdata_ipf/hierarchical.csv \
-  --input-format statcan-2016-hierarchical \
-  --columns AGEGRP,SEX \
-  --out seed.csv
+synthpopcan models generate demo-linked-household-person \
+  --households 10 \
+  --condition "geo=Demo North" \
+  --out synthpopcan-quickstart \
+  --random-seed 42
 
-synthpopcan ipf check-inputs \
-  --seed seed.csv \
-  --controls tests/fixtures/workflows/microdata_ipf/controls.csv
-
-synthpopcan ipf fit \
-  --seed seed.csv \
-  --controls tests/fixtures/workflows/microdata_ipf/controls.csv \
-  --weight-column WEIGHT \
-  --out weights.csv \
-  --report fit-report.json
-
-synthpopcan ipf report fit-report.json
-
-synthpopcan validate ipf \
-  --population weights.csv \
-  --controls tests/fixtures/workflows/microdata_ipf/controls.csv \
-  --kind weights
+synthpopcan validate linked synthpopcan-quickstart
 ```
+
+The output directory contains `households.csv`, `persons.csv`, and a generation
+manifest. The validation command checks that people remain linked to known
+households and that recorded household sizes agree with the generated person
+rows. The model is deliberately small and fictional: it tests the installation,
+but it does not represent a Canadian population.
 
 If we are running from a source checkout without activating the environment, we
 can add `uv run` before each `synthpopcan` command.
+
+For a first IPF workflow, continue to [IPF](ipf.md). For a self-contained
+notebook example that creates tiny seed and control files, see
+[Getting Started With the Beginner API](library-getting-started.md).
 
 ## Build the Documentation
 
@@ -180,8 +173,14 @@ can add `uv run` before each `synthpopcan` command.
 uv run sphinx-build -W -b html docs docs/_build/html
 ```
 
-The `-W` flag treats warnings as errors. This is intentional: it catches broken
-links and malformed documentation before [Read the Docs](https://readthedocs.org/) publishes the site.
+The `-W` flag treats Sphinx warnings as errors. This catches malformed markup
+and unresolved internal references before [Read the
+Docs](https://about.readthedocs.com/) publishes the site. Check external links
+separately with:
+
+```bash
+uv run sphinx-build -b linkcheck docs docs/_build/linkcheck
+```
 
 Check the reStructuredText source files with:
 

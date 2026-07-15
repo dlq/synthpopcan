@@ -231,4 +231,4 @@ research tools.
 
 **Read the Docs**
 : The hosted documentation site for SynthPopCan:
-<https://synthpopcan.readthedocs.io/>.
+<https://synthpopcan.readthedocs.io/en/latest/>.

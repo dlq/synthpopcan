@@ -22,18 +22,18 @@ the lower-level library modules described in [Advanced Library Use](library.md).
 
 ## The Beginner Paths
 
-The beginner API mirrors the **two main web app paths**:
+The beginner API corresponds to the **three web app paths**:
 
 1. **IPF from margin tables:** read seed rows, read normalized controls, fit
    IPF weights, then write a weighted or expanded population artifact.
-1. **Generate from existing model:** read a reviewed model package, generate
+1. **Generate from existing model:** fetch or read a reviewed model package, generate
    linked household/person rows, then write the generated CSV files.
-
-It also exposes one **follow-on workflow**:
-
-3. **Small-area linked synthesis:** take generated linked household/person
+1. **Small-area linked synthesis:** take generated linked household/person
    candidate CSVs, calibrate household rows to small-area controls, and write
    household/person CSVs with an assigned geography such as census tract or ADA.
+
+The web app prepares the small-area run and hands its settings to the CLI or
+Python API; the browser does not perform a large calibration itself.
 
 Use the **web app** when we want guided local controls, previews, and downloads.
 Use the **beginner API** when we want the same work inside a notebook, script, or
@@ -91,17 +91,37 @@ process that actually runs the code cells.
 ## Fit Seed Rows With IPF
 
 A notebook is a good place to inspect files, try a small fit, and record the
-choices that shaped the output.
-
-The source checkout includes a **tiny already-exported seed file** and a **matching
-control file**. We will use those first so the notebook example has concrete
-paths:
+choices that shaped the output. We will create a **tiny seed file** and a
+**matching control file** so this example works with a normal PyPI installation
+as well as a source checkout. These are fictional teaching values, not census
+data.
 
 ```python
-fixture_root = Path("tests/fixtures/workflows/microdata_ipf")
-seed_path = fixture_root / "expected-seed.csv"
-controls_path = fixture_root / "controls.csv"
+example_dir = Path("synthpopcan-notebook-example")
+example_dir.mkdir(exist_ok=True)
+
+seed_path = example_dir / "seed.csv"
+seed_path.write_text(
+    "PP_ID,AGEGRP,SEX,WEIGHT\n"
+    "11101,adult,F,1\n"
+    "11102,child,M,1\n",
+    encoding="utf-8",
+)
+
+controls_path = example_dir / "controls.csv"
+controls_path.write_text(
+    "margin,dimensions,AGEGRP,SEX,count\n"
+    "age,AGEGRP,adult,,100\n"
+    "age,AGEGRP,child,,100\n"
+    "sex,SEX,,F,100\n"
+    "sex,SEX,,M,100\n",
+    encoding="utf-8",
+)
 ```
+
+Writing the values here makes the example inspectable and reproducible. For a
+research project, replace these files with a documented seed and controls that
+describe the same population universe.
 
 Read a seed file and look at its shape before fitting. The first line asks how
 many rows were read. The second shows one row so we can inspect the column
@@ -209,11 +229,11 @@ universe.
 ## Generate From a Prepared Model Package
 
 The beginner API treats model training and release packaging as advanced
-preparation work. Once a package has been prepared and reviewed, generation is
-short:
+preparation work. SynthPopCan includes a small, fictional package so we can run
+the complete generation path without downloading anything:
 
 ```python
-package = spc.read_model_package("linked-model-package.json")
+package = spc.fetch_model("demo-linked-household-person")
 
 population = spc.generate_from_model(
     package,
@@ -224,6 +244,11 @@ population = spc.generate_from_model(
 
 len(population.households), len(population.persons)
 ```
+
+For a real project, list reviewed public packages with `synthpopcan models list`, then pass the chosen ID to `spc.fetch_model`. Downloadable packages need
+an internet connection the first time; later calls reuse the verified local
+cache. Use `spc.read_model_package(path)` when a collaborator gives us a local
+package file instead.
 
 Write linked output to a directory:
 
@@ -271,25 +296,16 @@ are reproducible:
 
 ```python
 population = spc.generate_from_model(
-    "linked-model-package.json",
+    package,
     households=250,
+    conditions={"geo": "Demo North"},
     random_seed=2026,
 )
 ```
 
-Leave `require_publishable=True` unless we are deliberately inspecting a trusted
-local development package:
-
-```python
-population = spc.generate_from_model(
-    "linked-model-package.json",
-    households=25,
-    require_publishable=False,
-)
-```
-
-That option is useful for development and teaching, but publishable or shared
-work should use reviewed packages.
+Leave `require_publishable=True`, its default, for ordinary work. Advanced
+developers can disable that check while inspecting a trusted local development
+package, but publishable or shared work should use a reviewed package.
 
 ## A Good Notebook Record
 
@@ -316,6 +332,7 @@ The beginner API exposes a small set of names:
 - {py:func}`~synthpopcan.api.fit_ipf`
 - {py:func}`~synthpopcan.api.expand_population`
 - {py:func}`~synthpopcan.api.write_weights`
+- {py:func}`~synthpopcan.api.fetch_model`
 - {py:func}`~synthpopcan.api.read_model_package`
 - {py:func}`~synthpopcan.api.generate_from_model`
 - {py:func}`~synthpopcan.api.write_linked_population`

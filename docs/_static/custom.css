@@ -29,3 +29,12 @@ body[data-theme="dark"] {
     --color-code-background: #161b22;
   }
 }
+
+/* Keep the project copyright while omitting the theme attribution text. */
+.bottom-of-page .left-details {
+  font-size: 0;
+}
+
+.bottom-of-page .left-details .copyright {
+  font-size: 0.8rem;
+}

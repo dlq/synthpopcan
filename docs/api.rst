@@ -77,6 +77,22 @@ Small-Area Synthesis
              calibrate_linked_household_csvs
    :show-inheritance:
 
+Small-Area Control Preparation
+------------------------------
+
+.. automodule:: synthpopcan.small_area_controls
+   :members: extract_controls_from_profile, scale_and_validate_controls,
+             recode_household_size, write_controls_csv,
+             write_recoded_candidates
+   :show-inheritance:
+
+Small-Area Mapping
+------------------
+
+.. automodule:: synthpopcan.map_render
+   :members: prepare_boundaries_geojson, render_synthesis_map
+   :show-inheritance:
+
 Microdata
 ---------
 
@@ -96,7 +112,8 @@ Statistics Canada
 -----------------
 
 .. automodule:: synthpopcan.statcan
-   :members: CensusProfileDownload, WDSTableSearchResult, wds_download_url,
+   :members: BoundaryDownload, CensusProfileDownload, WDSTableSearchResult,
+             fetch_boundary_zip, wds_download_url,
              wds_all_cubes_lite_url, wds_metadata_url, search_wds_tables,
              fetch_wds_metadata, summarize_wds_metadata,
              classify_wds_ipf_suitability, extract_wds_dimension_names,
