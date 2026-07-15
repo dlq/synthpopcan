@@ -79,7 +79,17 @@ def _sniff_delimiter(path: Path) -> str:
 
 
 def _is_private_path(path: Path) -> bool:
-    parts = [part.lower() for part in path.parts]
+    # Resolve existing symlinks and collapse ``..`` before inspecting the path.
+    # ``strict=False`` also gives the right answer for a not-yet-created leaf
+    # below an existing private directory.
+    try:
+        expanded = path.expanduser()
+        resolved = expanded.resolve(strict=expanded.is_symlink())
+    except (OSError, RuntimeError):
+        # If a symlink chain cannot be resolved safely, do not permit row
+        # disclosure on the assumption that the path is public.
+        return True
+    parts = [part.lower() for part in resolved.parts]
     return any(
         current == "data" and following == "private"
         for current, following in zip(parts, parts[1:], strict=False)

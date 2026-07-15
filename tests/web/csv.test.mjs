@@ -9,6 +9,10 @@ test("parses quoted csv values and preserves headers", () => {
   assert.deepEqual(rows, [{ id: "1", name: "Montréal, QC", count: "2" }]);
 });
 
+test("rejects CSV input above an explicit browser row limit", () => {
+  assert.throws(() => parseCsv("id\n1\n2\n", { maxRows: 1 }), /1-row browser limit/);
+});
+
 test("stringifies rows with stable columns and quoting", () => {
   const csv = stringifyCsv([{ id: "1", name: "Montréal, QC", count: "2" }]);
 

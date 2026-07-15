@@ -53,7 +53,7 @@ export function appendCliFollowUp(element, commands) {
   const explanation = document.createElement("p");
   explanation.className = "cli-follow-up-note";
   explanation.textContent =
-    "Run these commands in a terminal to reproduce or continue this workflow with the same inputs and settings.";
+    "Run these commands in a terminal to continue with equivalent inputs and settings. Browser and CLI random-number generators may produce different synthetic rows from the same seed.";
   const copyButton = document.createElement("button");
   copyButton.className = "secondary-action cli-copy-action";
   copyButton.type = "button";

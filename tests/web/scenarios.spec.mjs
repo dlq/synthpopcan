@@ -163,7 +163,10 @@ test("SCN-WEB-001 runs demo IPF and exposes expanded synthetic records", async (
   await expect(page.locator("#ipf-result")).toContainText("Continue in the CLI");
   await expect(page.locator("#ipf-result .cli-follow-up")).not.toHaveAttribute("open");
   await expect(page.locator("#ipf-result")).toContainText(
-    "reproduce or continue this workflow",
+    "continue with equivalent inputs and settings",
+  );
+  await expect(page.locator("#ipf-result")).toContainText(
+    "may produce different synthetic rows from the same seed",
   );
   await expect(page.locator("#ipf-result")).toContainText(
     "synthpopcan ipf check-inputs",
@@ -214,6 +217,14 @@ test("SCN-WEB-002 inspects and generates from a linked model package", async ({
             provenance: "Synthetic browser test package",
             privacy: "No raw rows",
           },
+          {
+            id: "oversized-linked-model",
+            name: "Oversized linked model",
+            geography: "Canada",
+            description: "Too large for browser memory.",
+            installed: false,
+            browser_compatible: false,
+          },
         ],
       }),
     }),
@@ -224,6 +235,10 @@ test("SCN-WEB-002 inspects and generates from a linked model package", async ({
   await expect(page.getByRole("button", { name: "Generate rows" })).toBeDisabled();
   await expect(page.locator("#model-rows")).toBeDisabled();
   await expect(page.locator("#premade-model")).toContainText("download required");
+  await expect(
+    page.locator('#premade-model option[value="oversized-linked-model"]'),
+  ).toHaveJSProperty("disabled", true);
+  await expect(page.locator("#premade-model")).toContainText("CLI only");
   await page.locator("#premade-model").selectOption("downloadable-linked-model");
   await page.getByRole("button", { name: "Use premade model" }).click();
   await expect(page.locator("#model-download-status")).toBeVisible();

@@ -32,7 +32,7 @@ export function buildModelCliCommands(
     return [
       `# Review the linked model package before generating households and people.\nsynthpopcan models build inspect ${shellQuote(reference)}`,
       [
-        `# Generate a linked population directory with the same browser settings.\nsynthpopcan models generate ${shellQuote(reference)}`,
+        `# Generate a linked population directory with equivalent inputs and settings.\nsynthpopcan models generate ${shellQuote(reference)}`,
         `--households ${rows}`,
         ...conditionOptions,
         "--out synthpopcan-population",
@@ -42,7 +42,7 @@ export function buildModelCliCommands(
   }
   return [
     [
-      `# Generate synthetic rows from this model with the same browser settings.\nsynthpopcan models build generate ${shellQuote(reference)}`,
+      `# Generate synthetic rows from this model with equivalent inputs and settings.\nsynthpopcan models build generate ${shellQuote(reference)}`,
       `--rows ${rows}`,
       ...conditionOptions,
       "--out synthpopcan-tree-rows.csv",

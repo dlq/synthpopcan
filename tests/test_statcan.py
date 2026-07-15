@@ -664,7 +664,8 @@ def test_low_level_download_helpers_use_urlopen(tmp_path: Path, monkeypatch) -> 
             self.body = b""
             return body
 
-    def fake_urlopen(request):
+    def fake_urlopen(request, timeout=60):
+        assert timeout == 60
         calls.append(request)
         return FakeResponse(b'{"status": "SUCCESS"}')
 
@@ -680,6 +681,100 @@ def test_low_level_download_helpers_use_urlopen(tmp_path: Path, monkeypatch) -> 
     assert calls[0] == "https://example.test/data.json"
     assert calls[1].full_url == "https://example.test/post"
     assert calls[1].data == b'[{"productId": 1}]'
+
+
+def test_download_url_is_bounded_atomic_and_preserves_cached_file_on_failure(
+    tmp_path: Path, monkeypatch
+) -> None:
+    destination = tmp_path / "table.zip"
+    destination.write_bytes(b"valid cached bytes")
+
+    class FailingResponse:
+        headers = {"Content-Length": "10"}
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args) -> None:
+            return None
+
+        def read(self, _size: int = -1) -> bytes:
+            raise OSError("connection lost")
+
+    def fake_urlopen(url: str, timeout: int):
+        assert url == "https://example.test/table.zip"
+        assert timeout == 7
+        return FailingResponse()
+
+    monkeypatch.setattr("synthpopcan.statcan.urlopen", fake_urlopen)
+
+    with pytest.raises(OSError, match="connection lost"):
+        download_url(
+            "https://example.test/table.zip",
+            destination,
+            timeout=7,
+            max_bytes=20,
+        )
+
+    assert destination.read_bytes() == b"valid cached bytes"
+    assert list(tmp_path.iterdir()) == [destination]
+
+
+def test_download_url_rejects_declared_oversize_before_replacing(
+    tmp_path: Path, monkeypatch
+) -> None:
+    destination = tmp_path / "table.zip"
+    destination.write_bytes(b"valid cached bytes")
+
+    class OversizeResponse:
+        headers = {"Content-Length": "21"}
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args) -> None:
+            return None
+
+    monkeypatch.setattr(
+        "synthpopcan.statcan.urlopen",
+        lambda url, timeout: OversizeResponse(),
+    )
+
+    with pytest.raises(ValueError, match="safety limit"):
+        download_url("https://example.test/table.zip", destination, max_bytes=20)
+
+    assert destination.read_bytes() == b"valid cached bytes"
+
+
+def test_download_url_rejects_truncated_response(tmp_path: Path, monkeypatch) -> None:
+    destination = tmp_path / "table.zip"
+    destination.write_bytes(b"valid cached bytes")
+
+    class TruncatedResponse:
+        headers = {"Content-Length": "10"}
+
+        def __init__(self) -> None:
+            self.body = b"short"
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args) -> None:
+            return None
+
+        def read(self, _size: int = -1) -> bytes:
+            body, self.body = self.body, b""
+            return body
+
+    monkeypatch.setattr(
+        "synthpopcan.statcan.urlopen",
+        lambda url, timeout: TruncatedResponse(),
+    )
+
+    with pytest.raises(ValueError, match="5 of 10 bytes"):
+        download_url("https://example.test/table.zip", destination)
+
+    assert destination.read_bytes() == b"valid cached bytes"
 
 
 def test_normalizers_reject_invalid_values() -> None:

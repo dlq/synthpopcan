@@ -34,6 +34,11 @@ _WDS_METADATA_COLUMNS = {
     "UOM_ID",
 }
 _WDS_FETCH_TIMEOUT_SECONDS = 30
+_WDS_MAX_DOWNLOAD_BYTES = 64 * 1024 * 1024
+_WDS_MAX_ARCHIVE_ENTRIES = 32
+_WDS_MAX_UNCOMPRESSED_BYTES = 128 * 1024 * 1024
+_WDS_MAX_CSV_BYTES = 64 * 1024 * 1024
+_WDS_MAX_ROWS = 250_000
 WdsRow = tuple[int, dict[str, str]]
 
 
@@ -45,7 +50,23 @@ def fetch_wds_zip_bytes(product_id: str, lang: str = "en") -> tuple[bytes, str]:
         raise ValueError(f"StatCan WDS did not return a download URL for {product_id}")
     download_url = str(response["object"])
     with urlopen(download_url, timeout=_WDS_FETCH_TIMEOUT_SECONDS) as handle:
-        return handle.read(), download_url
+        content_length = _response_content_length(handle)
+        if content_length is not None and content_length > _WDS_MAX_DOWNLOAD_BYTES:
+            raise ValueError(
+                "StatCan WDS ZIP exceeds the local web helper download limit; "
+                "download and process it with the CLI"
+            )
+        chunks: list[bytes] = []
+        downloaded = 0
+        while chunk := handle.read(1024 * 1024):
+            downloaded += len(chunk)
+            if downloaded > _WDS_MAX_DOWNLOAD_BYTES:
+                raise ValueError(
+                    "StatCan WDS ZIP exceeded the local web helper download limit; "
+                    "download and process it with the CLI"
+                )
+            chunks.append(chunk)
+        return b"".join(chunks), download_url
 
 
 def generate_wds_seed_controls_from_zip_bytes(
@@ -55,11 +76,22 @@ def generate_wds_seed_controls_from_zip_bytes(
     count_column: str,
 ) -> dict[str, Any]:
     """Normalize a WDS ZIP into browser-ready seed and control CSV strings."""
+    if len(zip_bytes) > _WDS_MAX_DOWNLOAD_BYTES:
+        raise ValueError("WDS ZIP exceeds the local web helper compressed-size limit")
     with ZipFile(BytesIO(zip_bytes)) as archive:
+        _validate_wds_archive(archive)
         csv_member = _choose_wds_data_csv_member(archive)
+        if archive.getinfo(csv_member).file_size > _WDS_MAX_CSV_BYTES:
+            raise ValueError("WDS data CSV exceeds the local web helper size limit")
         with archive.open(csv_member) as raw_handle:
             handle = TextIOWrapper(raw_handle, encoding="utf-8-sig", newline="")
-            rows = list(csv.DictReader(handle))
+            rows: list[dict[str, str]] = []
+            for row_number, row in enumerate(csv.DictReader(handle), start=1):
+                if row_number > _WDS_MAX_ROWS:
+                    raise ValueError(
+                        "WDS data CSV exceeds the local web helper row limit"
+                    )
+                rows.append(dict(row))
 
     if not rows:
         raise ValueError("WDS table has no rows")
@@ -116,6 +148,28 @@ def _choose_wds_data_csv_member(archive: ZipFile) -> str:
     if selected is None:
         raise ValueError("WDS ZIP does not contain a CSV file")
     return selected
+
+
+def _validate_wds_archive(archive: ZipFile) -> None:
+    members = [info for info in archive.infolist() if not info.is_dir()]
+    if len(members) > _WDS_MAX_ARCHIVE_ENTRIES:
+        raise ValueError("WDS ZIP contains too many files for the local web helper")
+    if any(info.flag_bits & 0x1 for info in members):
+        raise ValueError("encrypted WDS ZIP entries are not supported")
+    if sum(info.file_size for info in members) > _WDS_MAX_UNCOMPRESSED_BYTES:
+        raise ValueError("WDS ZIP exceeds the local web helper uncompressed-size limit")
+
+
+def _response_content_length(response: object) -> int | None:
+    headers = getattr(response, "headers", {})
+    raw = headers.get("Content-Length") if hasattr(headers, "get") else None
+    if raw is None:
+        return None
+    try:
+        value = int(raw)
+    except (TypeError, ValueError):
+        return None
+    return max(value, 0)
 
 
 def parse_dimensions(value: object) -> tuple[str, ...]:

@@ -168,16 +168,19 @@ def test_webapp_serves_demo_model_api_endpoints() -> None:
             "households": 10,
             "conditions": "geo=Demo North",
         }
+        assert catalogue["models"][0]["browser_compatible"] is True
         assert catalogue["models"][1]["id"] == "montreal-cma-2016-all-fields"
         assert catalogue["models"][1]["release_status"] == "publishable_candidate"
         assert catalogue["models"][1]["safe_demo"] is False
         assert catalogue["models"][1]["distribution"] == "download"
         assert catalogue["models"][1]["installed"] is False
+        assert catalogue["models"][1]["browser_compatible"] is False
         assert catalogue["models"][2]["id"] == "quebec-2016-all-fields"
         assert catalogue["models"][2]["release_status"] == "publishable_candidate"
         assert catalogue["models"][2]["safe_demo"] is False
         assert catalogue["models"][2]["distribution"] == "download"
         assert catalogue["models"][2]["installed"] is False
+        assert catalogue["models"][2]["browser_compatible"] is False
         assert package["schema_version"] == "synthpopcan-linked-tree-package-v1"
         assert package["review"]["status"] == "safe demo"
         with pytest.raises(HTTPError) as exc_info:
@@ -189,7 +192,7 @@ def test_webapp_serves_demo_model_api_endpoints() -> None:
         thread.join(timeout=2)
 
 
-def test_webapp_reports_download_required_for_large_model(
+def test_webapp_refuses_model_above_browser_memory_limit(
     monkeypatch,
     tmp_path,
 ) -> None:
@@ -203,9 +206,33 @@ def test_webapp_reports_download_required_for_large_model(
                 f"{webapp_url(server)}api/models/quebec-2016-all-fields",
                 timeout=2,
             )
+        assert exc_info.value.code == 413
+        payload = json.loads(exc_info.value.read().decode("utf-8"))
+        assert "above the" in payload["error"]
+        assert "synthpopcan models generate quebec-2016-all-fields" in payload["error"]
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=2)
+
+
+def test_webapp_reports_download_required_for_browser_compatible_model(
+    monkeypatch,
+    tmp_path,
+) -> None:
+    monkeypatch.setenv("SYNTHPOPCAN_MODEL_CACHE", str(tmp_path))
+    server = build_webapp_server("127.0.0.1", 0)
+    thread = Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    try:
+        with pytest.raises(HTTPError) as exc_info:
+            urlopen(
+                f"{webapp_url(server)}api/models/pei-2016-minimal",
+                timeout=2,
+            )
         assert exc_info.value.code == 409
         payload = json.loads(exc_info.value.read().decode("utf-8"))
-        assert "synthpopcan models fetch quebec-2016-all-fields" in payload["error"]
+        assert "synthpopcan models fetch pei-2016-minimal" in payload["error"]
     finally:
         server.shutdown()
         server.server_close()
@@ -219,6 +246,7 @@ def test_webapp_fetches_and_returns_model_package(monkeypatch) -> None:
         "name": "Downloaded test package",
     }
     monkeypatch.setattr("synthpopcan.webapp.fetch_model_package", fetched.append)
+    monkeypatch.setattr("synthpopcan.webapp.model_browser_compatible", lambda _: True)
     monkeypatch.setattr("synthpopcan.webapp.model_payload", lambda model_id: package)
     server = build_webapp_server("127.0.0.1", 0)
     thread = Thread(target=server.serve_forever, daemon=True)
@@ -258,6 +286,7 @@ def test_webapp_model_fetch_reports_failures(
         raise failure
 
     monkeypatch.setattr("synthpopcan.webapp.fetch_model_package", fail_fetch)
+    monkeypatch.setattr("synthpopcan.webapp.model_browser_compatible", lambda _: True)
     server = build_webapp_server("127.0.0.1", 0)
     thread = Thread(target=server.serve_forever, daemon=True)
     thread.start()
@@ -356,6 +385,47 @@ def test_webapp_wds_seed_controls_api_reports_bad_requests(monkeypatch) -> None:
         with pytest.raises(HTTPError) as no_body_info:
             urlopen(no_body, timeout=2)
         assert no_body_info.value.code == 400
+
+        non_object = Request(
+            f"{webapp_url(server)}api/wds/seed-controls",
+            data=b"[]",
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        with pytest.raises(HTTPError) as non_object_info:
+            urlopen(non_object, timeout=2)
+        assert non_object_info.value.code == 400
+        assert "must be an object" in non_object_info.value.read().decode("utf-8")
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=2)
+
+
+def test_webapp_bounds_concurrent_wds_preparation(monkeypatch) -> None:
+    class NoAvailableSlot:
+        def acquire(self, *, blocking: bool) -> bool:
+            assert blocking is False
+            return False
+
+        def release(self) -> None:
+            raise AssertionError("an unacquired slot must not be released")
+
+    monkeypatch.setattr("synthpopcan.webapp._WDS_REQUEST_SLOTS", NoAvailableSlot())
+    server = build_webapp_server("127.0.0.1", 0)
+    thread = Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    try:
+        request = Request(
+            f"{webapp_url(server)}api/wds/seed-controls",
+            data=b"{}",
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        with pytest.raises(HTTPError) as exc_info:
+            urlopen(request, timeout=2)
+        assert exc_info.value.code == 429
+        assert "too many WDS" in exc_info.value.read().decode("utf-8")
     finally:
         server.shutdown()
         server.server_close()
@@ -626,14 +696,21 @@ def test_webapp_wds_helper_edge_cases(monkeypatch) -> None:
         fetch_wds_zip_bytes("13100005")
 
     class FakeResponse:
+        headers: dict[str, str] = {}
+
+        def __init__(self) -> None:
+            self.remaining = b"zip-bytes"
+
         def __enter__(self) -> FakeResponse:
             return self
 
         def __exit__(self, *args: object) -> None:
             return None
 
-        def read(self) -> bytes:
-            return b"zip-bytes"
+        def read(self, size: int = -1) -> bytes:
+            chunk = self.remaining[:size] if size >= 0 else self.remaining
+            self.remaining = self.remaining[len(chunk) :]
+            return chunk
 
     monkeypatch.setattr(
         "synthpopcan.web_wds.fetch_json",
@@ -648,6 +725,56 @@ def test_webapp_wds_helper_edge_cases(monkeypatch) -> None:
         b"zip-bytes",
         "https://example.test/table.zip",
     )
+
+
+def test_webapp_wds_helper_enforces_download_archive_and_row_limits(
+    monkeypatch,
+) -> None:
+    monkeypatch.setattr("synthpopcan.web_wds._WDS_MAX_ARCHIVE_ENTRIES", 1)
+    with pytest.raises(ValueError, match="too many files"):
+        generate_wds_seed_controls_from_zip_bytes(
+            build_wds_zip(
+                {
+                    "table.csv": "GEO,VALUE\nCanada,1\n",
+                    "metadata.csv": "name,value\na,b\n",
+                }
+            ),
+            dimensions=("GEO",),
+            count_column="VALUE",
+        )
+
+    monkeypatch.setattr("synthpopcan.web_wds._WDS_MAX_ARCHIVE_ENTRIES", 32)
+    monkeypatch.setattr("synthpopcan.web_wds._WDS_MAX_ROWS", 1)
+    with pytest.raises(ValueError, match="row limit"):
+        generate_wds_seed_controls_from_zip_bytes(
+            build_wds_zip({"table.csv": "GEO,VALUE\nCanada,1\nYukon,2\n"}),
+            dimensions=("GEO",),
+            count_column="VALUE",
+        )
+
+    class OversizedResponse:
+        headers = {"Content-Length": "5"}
+
+        def __enter__(self) -> OversizedResponse:
+            return self
+
+        def __exit__(self, *args: object) -> None:
+            return None
+
+        def read(self, size: int = -1) -> bytes:
+            return b"12345"
+
+    monkeypatch.setattr("synthpopcan.web_wds._WDS_MAX_DOWNLOAD_BYTES", 4)
+    monkeypatch.setattr(
+        "synthpopcan.web_wds.fetch_json",
+        lambda url: {"status": "SUCCESS", "object": "https://example.test/table.zip"},
+    )
+    monkeypatch.setattr(
+        "synthpopcan.web_wds.urlopen",
+        lambda url, timeout: OversizedResponse(),
+    )
+    with pytest.raises(ValueError, match="download limit"):
+        fetch_wds_zip_bytes("13100005")
 
 
 def test_webapp_demo_model_catalogue_serves_safe_linked_package() -> None:

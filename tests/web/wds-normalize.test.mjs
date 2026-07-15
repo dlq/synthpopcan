@@ -10,7 +10,11 @@ import {
   snapshotWdsRows,
   suggestWdsColumns,
 } from "../../src/synthpopcan/web/wds-normalize.mjs";
-import { readZipEntries } from "../../src/synthpopcan/web/zip.mjs";
+import {
+  readZipDirectory,
+  readZipEntries,
+  readZipEntry,
+} from "../../src/synthpopcan/web/zip.mjs";
 
 test("normalizes WDS rows into controls and compatible seed rows", () => {
   const rows = parseCsv(
@@ -83,6 +87,30 @@ test("reads stored CSV entries from a ZIP file", async () => {
   const entries = await readZipEntries(zipBytes);
 
   assert.deepEqual(entries, [{ name: "table.csv", text: "A,B\nx,1\n" }]);
+});
+
+test("inspects ZIP metadata before inflating only the selected entry", async () => {
+  const zipBytes = buildStoredZip("table.csv", "A,B\nx,1\n");
+
+  const directory = readZipDirectory(zipBytes);
+
+  assert.equal(directory.length, 1);
+  assert.equal(directory[0].name, "table.csv");
+  assert.equal("text" in directory[0], false);
+  assert.equal(await readZipEntry(zipBytes, directory[0]), "A,B\nx,1\n");
+});
+
+test("rejects ZIPs outside browser compressed and uncompressed limits", async () => {
+  const zipBytes = buildStoredZip("table.csv", "A,B\nx,1\n");
+
+  assert.throws(
+    () => readZipDirectory(zipBytes, { maxArchiveBytes: 1 }),
+    /compressed-size limit/,
+  );
+  assert.throws(
+    () => readZipDirectory(zipBytes, { maxEntryBytes: 3 }),
+    /uncompressed-size limit/,
+  );
 });
 
 test("chooses the data CSV instead of the metadata CSV", () => {

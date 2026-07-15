@@ -191,6 +191,7 @@ class FrequencyGroup:
     conditions: dict[str, str]
     support: float
     outcomes: tuple[FrequencyOutcome, ...]
+    source_rows: int
 
     def to_dict(self) -> dict[str, Any]:
         """Return a JSON-serializable representation."""
@@ -198,6 +199,7 @@ class FrequencyGroup:
         return {
             "conditions": self.conditions,
             "support": self.support,
+            "source_rows": self.source_rows,
             "outcomes": [outcome.to_dict() for outcome in self.outcomes],
         }
 
@@ -234,9 +236,12 @@ class FrequencyTreeModel:
     def to_dict(self) -> dict[str, Any]:
         """Serialize the model to a JSON-compatible dictionary."""
 
-        minimum_support = min((group.support for group in self.groups), default=0.0)
+        minimum_support = min((group.source_rows for group in self.groups), default=0)
+        minimum_weighted_support = min(
+            (group.support for group in self.groups), default=0.0
+        )
         groups_below_threshold = sum(
-            1 for group in self.groups if group.support < self.min_support_threshold
+            1 for group in self.groups if group.source_rows < self.min_support_threshold
         )
         return {
             "schema_version": "synthpopcan-tree-model-v1",
@@ -251,6 +256,7 @@ class FrequencyTreeModel:
                 "contains_raw_rows": False,
                 "contains_source_identifiers": False,
                 "minimum_support": minimum_support,
+                "minimum_weighted_support": minimum_weighted_support,
                 "min_support_threshold": self.min_support_threshold,
                 "groups_below_threshold": groups_below_threshold,
                 "publishable": self.release_class == "publishable_candidate",
@@ -283,6 +289,7 @@ class FrequencyTreeModel:
                 FrequencyGroup(
                     conditions=dict(group["conditions"]),  # type: ignore[index]
                     support=float(group["support"]),  # type: ignore[index]
+                    source_rows=int(group.get("source_rows", 0)),  # type: ignore[union-attr]
                     outcomes=tuple(
                         FrequencyOutcome(
                             values=dict(outcome["values"]),  # type: ignore[index]
@@ -593,6 +600,9 @@ def audit_tree_model(
             "records_trained": model.records_trained,
             "groups_or_leaves": len(units),
             "minimum_support": min((unit["support"] for unit in units), default=0.0),
+            "minimum_weighted_support": min(
+                (unit["weighted_support"] for unit in units), default=0.0
+            ),
             "below_min_support": len(below_min_support),
             "above_max_purity": len(above_max_purity),
             "contains_raw_rows": contains_raw_rows,
@@ -607,7 +617,8 @@ def audit_units(model: TreeModel) -> list[dict[str, Any]]:
         return [
             {
                 "label": f"group {index}",
-                "support": group.support,
+                "support": group.source_rows,
+                "weighted_support": group.support,
                 "purity": outcome_purity(
                     tuple(outcome.weight for outcome in group.outcomes)
                 ),
@@ -620,6 +631,7 @@ def audit_units(model: TreeModel) -> list[dict[str, Any]]:
         {
             "label": f"leaf {node_id}",
             "support": float(support),
+            "weighted_support": float(model.weighted_n_node_samples[node_id]),
             "purity": outcome_purity(model.value[node_id]),
             "dominant_outcome": dominant_cart_outcome(model, node_id),
             "conditions": {},
@@ -660,11 +672,12 @@ def support_issue(unit: dict[str, Any], min_support: float) -> dict[str, Any]:
         "severity": "error",
         "kind": "below_min_support",
         "message": (
-            f"{unit['label']} has support {unit['support']}, below minimum "
-            f"{min_support}."
+            f"{unit['label']} has {unit['support']} contributing source rows, "
+            f"below minimum {min_support}."
         ),
         "label": unit["label"],
         "support": unit["support"],
+        "weighted_support": unit["weighted_support"],
         "threshold": min_support,
         "purity": unit["purity"],
         "dominant_outcome": unit["dominant_outcome"],
@@ -681,6 +694,7 @@ def purity_issue(unit: dict[str, Any], max_purity: float) -> dict[str, Any]:
         ),
         "label": unit["label"],
         "support": unit["support"],
+        "weighted_support": unit["weighted_support"],
         "purity": unit["purity"],
         "threshold": max_purity,
         "dominant_outcome": unit["dominant_outcome"],
@@ -791,6 +805,7 @@ def train_frequency_model(
     grouped: dict[tuple[str, ...], dict[tuple[str, ...], float]] = defaultdict(
         lambda: defaultdict(float)
     )
+    group_source_rows: dict[tuple[str, ...], int] = defaultdict(int)
     global_counts: dict[tuple[str, ...], float] = defaultdict(float)
 
     for row_number, record in enumerate(sample.records, start=2):
@@ -798,6 +813,7 @@ def train_frequency_model(
         condition_key = tuple(record[column] for column in sample.conditioning_columns)
         target_key = tuple(record[column] for column in sample.target_columns)
         grouped[condition_key][target_key] += weight
+        group_source_rows[condition_key] += 1
         global_counts[target_key] += weight
 
     groups = tuple(
@@ -807,6 +823,7 @@ def train_frequency_model(
             ),
             support=sum(outcome_counts.values()),
             outcomes=frequency_outcomes(sample.target_columns, outcome_counts),
+            source_rows=group_source_rows[condition_key],
         )
         for condition_key, outcome_counts in sorted(grouped.items())
     )
@@ -1641,6 +1658,7 @@ def matching_frequency_groups(
             },
             support=sum(outcome.weight for outcome in model.global_outcomes),
             outcomes=model.global_outcomes,
+            source_rows=model.records_trained,
         ),
     )
 

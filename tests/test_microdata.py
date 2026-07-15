@@ -1311,12 +1311,30 @@ def test_geography_feasibility_advisory_helpers() -> None:
         [],
         conditioning_columns=("group",),
         target_columns=("target",),
-    ) == {"groups": 0, "minimum_support": 0.0, "maximum_purity": 0.0}
+    ) == {
+        "groups": 0,
+        "minimum_support": 0,
+        "minimum_weighted_support": 0.0,
+        "maximum_purity": 0.0,
+    }
     assert support_and_purity_summary(
         rows,
         conditioning_columns=("group",),
         target_columns=("target",),
-    ) == {"groups": 2, "minimum_support": 1.0, "maximum_purity": 1.0}
+    ) == {
+        "groups": 2,
+        "minimum_support": 1,
+        "minimum_weighted_support": 1.0,
+        "maximum_purity": 1.0,
+    }
+    assert (
+        support_and_purity_summary(
+            [{"group": "A", "target": "x", "WEIGHT": "1000"}],
+            conditioning_columns=("group",),
+            target_columns=("target",),
+        )["minimum_support"]
+        == 1
+    )
     reasons = feasibility_reasons(
         person_rows=100,
         household_rows=50,

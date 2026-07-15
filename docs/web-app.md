@@ -50,6 +50,12 @@ count, and source unit. Avoid modes marked as potentially overlapping. The web
 app downloads the resulting `synthpopcan-wds-selection.json` so the same subset
 can be passed to `controls from-wds --selection`.
 
+The local helper and browser enforce limits on request and download bytes, ZIP
+entries, compressed and uncompressed sizes, selected CSV size and row count,
+and concurrent WDS preparation. Only the selected data CSV is inflated in the
+browser. If a table exceeds these workbench limits, download and process it
+with the CLI instead of increasing browser memory pressure.
+
 After the two IPF input files are loaded, **Expanded synthetic records** is the
 default for selections at or below the 100,000-row browser limit. Larger WDS
 selections switch to **Compact fitted weights** automatically. Weighted output
@@ -68,10 +74,11 @@ The same workflow is documented for command-line use in {doc}`statcan`,
 Choose this when we have a **prepared model JSON** or a **linked household/person
 package JSON**. The web app can also load premade packages served by the local
 helper. The bundled safe demo package is synthetic toy data, not Census
-microdata. When a published model such as `montreal-cma-2016-all-fields` is not
-yet in the local cache, **Use premade model** downloads and verifies it before
-loading it. The web app shows an indeterminate download indicator and the known
-compressed package size while that first-use download is running.
+microdata. Registered packages up to the 32 MiB uncompressed browser threshold
+can be downloaded and verified on first use. Larger packages are labelled
+**CLI only** and the local API refuses to serialize them into browser memory;
+use `synthpopcan models generate MODEL_ID ...` for those models. Server-side
+generation will replace that handoff in the planned backend runtime.
 Generation stays disabled until the selected package has loaded successfully or
 an uploaded JSON file has been inspected. The ready state names the active model
 and adapts the row label and available condition columns to that package.

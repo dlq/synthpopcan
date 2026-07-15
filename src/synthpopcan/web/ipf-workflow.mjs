@@ -43,7 +43,14 @@ import {
   summarizeWdsSelection,
 } from "./wds-selection.mjs";
 import { showWdsMetadata, showWdsSearchResults } from "./workflow-views.mjs";
-import { csvEntries, readZipEntries } from "./zip.mjs";
+import {
+  csvEntries,
+  DEFAULT_ZIP_LIMITS,
+  readZipDirectory,
+  readZipEntry,
+} from "./zip.mjs";
+
+const MAX_WDS_ROWS = 250000;
 
 const workflowButtons = document.querySelectorAll("[data-workflow-tab]");
 const workflowPanels = document.querySelectorAll("[data-workflow-panel]");
@@ -268,6 +275,11 @@ document
       if (!file) {
         throw new Error("Choose a downloaded StatCan ZIP first.");
       }
+      if (file.size > DEFAULT_ZIP_LIMITS.maxArchiveBytes) {
+        throw new Error(
+          "The selected ZIP exceeds the browser size limit. Process it with the CLI instead.",
+        );
+      }
       const generated = await generateSeedAndControlsFromZip(await file.arrayBuffer());
       prepareWdsRefinement(
         generated,
@@ -326,7 +338,7 @@ async function tryFetchWdsZip(productId) {
     if (!zipResponse.ok) {
       throw new Error(`ZIP download returned HTTP ${zipResponse.status}`);
     }
-    return { downloadUrl, zipBuffer: await zipResponse.arrayBuffer() };
+    return { downloadUrl, zipBuffer: await readBoundedResponse(zipResponse) };
   } catch {
     return { downloadUrl, zipBuffer: null };
   }
@@ -375,8 +387,9 @@ async function generateSeedAndControlsFromProduct(productId) {
 }
 
 async function generateSeedAndControlsFromZip(zipBuffer) {
-  const entries = csvEntries(await readZipEntries(zipBuffer));
-  const entry = chooseWdsDataCsvEntry(entries);
+  const entries = csvEntries(readZipDirectory(zipBuffer));
+  const selected = chooseWdsDataCsvEntry(entries);
+  const entry = { ...selected, text: await readZipEntry(zipBuffer, selected) };
   const rows = parseWdsCsv(entry.text);
   const suggestion = suggestWdsColumns(rows);
   const requestedDimensions = parseDimensionList(
@@ -422,7 +435,44 @@ async function generateSeedAndControlsFromZip(zipBuffer) {
 }
 
 function parseWdsCsv(text) {
-  return parseCsv(text);
+  return parseCsv(text, { maxRows: MAX_WDS_ROWS });
+}
+
+async function readBoundedResponse(response) {
+  const declaredSize = Number(response.headers.get("Content-Length"));
+  if (
+    Number.isFinite(declaredSize) &&
+    declaredSize > DEFAULT_ZIP_LIMITS.maxArchiveBytes
+  ) {
+    throw new Error("StatCan ZIP exceeds the browser download limit.");
+  }
+  if (!response.body) {
+    const buffer = await response.arrayBuffer();
+    if (buffer.byteLength > DEFAULT_ZIP_LIMITS.maxArchiveBytes) {
+      throw new Error("StatCan ZIP exceeds the browser download limit.");
+    }
+    return buffer;
+  }
+  const reader = response.body.getReader();
+  const chunks = [];
+  let total = 0;
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    total += value.byteLength;
+    if (total > DEFAULT_ZIP_LIMITS.maxArchiveBytes) {
+      await reader.cancel();
+      throw new Error("StatCan ZIP exceeded the browser download limit.");
+    }
+    chunks.push(value);
+  }
+  const output = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) {
+    output.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return output;
 }
 
 function currentWdsDimensions() {

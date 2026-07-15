@@ -1,5 +1,6 @@
-export function parseCsv(text) {
-  const records = parseCsvRecords(text);
+export function parseCsv(text, { maxRows = null } = {}) {
+  const maxRecords = maxRows === null ? null : maxRows + 1;
+  const records = parseCsvRecords(text, maxRecords);
   if (records.length === 0) {
     return [];
   }
@@ -30,7 +31,7 @@ export function stringifyCsv(rows, columns = null) {
   return `${lines.join("\n")}\n`;
 }
 
-function parseCsvRecords(text) {
+function parseCsvRecords(text, maxRecords) {
   const records = [];
   let record = [];
   let field = "";
@@ -60,6 +61,7 @@ function parseCsvRecords(text) {
     } else if (char === "\n") {
       record.push(field);
       records.push(record);
+      enforceRecordLimit(records, maxRecords);
       record = [];
       field = "";
     } else if (char !== "\r") {
@@ -70,8 +72,15 @@ function parseCsvRecords(text) {
   if (field !== "" || record.length > 0) {
     record.push(field);
     records.push(record);
+    enforceRecordLimit(records, maxRecords);
   }
   return records;
+}
+
+function enforceRecordLimit(records, maxRecords) {
+  if (maxRecords !== null && records.length > maxRecords) {
+    throw new Error(`CSV exceeds the ${maxRecords - 1}-row browser limit.`);
+  }
 }
 
 function hasAnyValue(record) {

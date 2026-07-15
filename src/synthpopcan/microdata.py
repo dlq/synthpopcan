@@ -972,6 +972,8 @@ def geography_feasibility_region(
         "person_condition_groups": person_risk["groups"],
         "household_min_support": household_risk["minimum_support"],
         "person_min_support": person_risk["minimum_support"],
+        "household_min_weighted_support": household_risk["minimum_weighted_support"],
+        "person_min_weighted_support": person_risk["minimum_weighted_support"],
         "household_max_purity": household_risk["maximum_purity"],
         "person_max_purity": person_risk["maximum_purity"],
         "tier": tier,
@@ -999,15 +1001,22 @@ def support_and_purity_summary(
     target_columns: tuple[str, ...],
 ) -> dict[str, Any]:
     if not rows:
-        return {"groups": 0, "minimum_support": 0.0, "maximum_purity": 0.0}
+        return {
+            "groups": 0,
+            "minimum_support": 0,
+            "minimum_weighted_support": 0.0,
+            "maximum_purity": 0.0,
+        }
     grouped: dict[tuple[str, ...], dict[tuple[str, ...], float]] = defaultdict(
         lambda: defaultdict(float)
     )
+    source_rows_by_group: dict[tuple[str, ...], int] = defaultdict(int)
     for row in rows:
         condition_key = tuple(row[column] for column in conditioning_columns)
         target_key = tuple(row[column] for column in target_columns)
         grouped[condition_key][target_key] += float(row.get("WEIGHT", "1") or 1)
-    supports = [sum(outcomes.values()) for outcomes in grouped.values()]
+        source_rows_by_group[condition_key] += 1
+    weighted_supports = [sum(outcomes.values()) for outcomes in grouped.values()]
     purities = [
         max(outcomes.values()) / sum(outcomes.values())
         for outcomes in grouped.values()
@@ -1015,7 +1024,8 @@ def support_and_purity_summary(
     ]
     return {
         "groups": len(grouped),
-        "minimum_support": round(min(supports), 4),
+        "minimum_support": min(source_rows_by_group.values()),
+        "minimum_weighted_support": round(min(weighted_supports), 4),
         "maximum_purity": round(max(purities, default=0.0), 4),
     }
 

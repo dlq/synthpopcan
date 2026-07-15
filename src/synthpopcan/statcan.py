@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import json
-import shutil
+import os
+import tempfile
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
@@ -20,6 +21,8 @@ _BOUNDARY_2016_BASE_URL = (
     "https://www12.statcan.gc.ca/census-recensement/2011/geo/bound-limit/"
     "files-fichiers/2016/"
 )
+_STATCAN_TIMEOUT_SECONDS = 60
+_MAX_STATCAN_DOWNLOAD_BYTES = 8 * 1024 * 1024 * 1024
 
 __all__ = [
     "BoundaryDownload",
@@ -167,13 +170,21 @@ def fetch_boundary_zip(
     zip_path = out_dir / entry.zip_name
     download_url(download_url_, zip_path)
 
-    with ZipFile(zip_path) as archive:
-        shp_exts = {".shp", ".dbf", ".shx", ".prj", ".cpg"}
-        for member in archive.namelist():
-            if Path(member).suffix.lower() in shp_exts:
-                archive.extract(member, out_dir)
-
-    zip_path.unlink(missing_ok=True)
+    try:
+        with ZipFile(zip_path) as archive:
+            shp_exts = {".shp", ".dbf", ".shx", ".prj", ".cpg"}
+            for info in archive.infolist():
+                member_name = Path(info.filename).name
+                if not member_name or Path(member_name).suffix.lower() not in shp_exts:
+                    continue
+                with archive.open(info) as source:
+                    _atomic_copy_stream(
+                        source,
+                        out_dir / member_name,
+                        max_bytes=_MAX_STATCAN_DOWNLOAD_BYTES,
+                    )
+    finally:
+        zip_path.unlink(missing_ok=True)
 
     shp_path = out_dir / entry.shp_name
     if not shp_path.exists():
@@ -620,13 +631,18 @@ def extract_census_profile_csv(download_path: Path, destination: Path) -> None:
             ]
             if not csv_members:
                 raise ValueError("Census Profile ZIP did not contain a data CSV")
-            destination.write_bytes(archive.read(csv_members[0]))
+            with archive.open(csv_members[0]) as source:
+                _atomic_copy_stream(
+                    source,
+                    destination,
+                    max_bytes=_MAX_STATCAN_DOWNLOAD_BYTES,
+                )
     except BadZipFile:
         download_path.replace(destination)
 
 
 def fetch_json(url: str) -> Any:
-    with urlopen(url) as response:
+    with urlopen(url, timeout=_STATCAN_TIMEOUT_SECONDS) as response:
         return json.loads(response.read().decode("utf-8"))
 
 
@@ -637,13 +653,85 @@ def post_json(url: str, payload: Any) -> Any:
         headers={"Content-Type": "application/json"},
         method="POST",
     )
-    with urlopen(request) as response:
+    with urlopen(request, timeout=_STATCAN_TIMEOUT_SECONDS) as response:
         return json.loads(response.read().decode("utf-8"))
 
 
-def download_url(url: str, destination: Path) -> None:
-    with urlopen(url) as response, destination.open("wb") as handle:
-        shutil.copyfileobj(response, handle)
+def download_url(
+    url: str,
+    destination: Path,
+    *,
+    timeout: int = _STATCAN_TIMEOUT_SECONDS,
+    max_bytes: int = _MAX_STATCAN_DOWNLOAD_BYTES,
+) -> None:
+    """Download to a unique sibling and atomically replace on completion."""
+
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    temporary = _temporary_sibling(destination, ".download")
+    try:
+        with urlopen(url, timeout=timeout) as response:
+            headers = getattr(response, "headers", {})
+            content_length = (
+                headers.get("Content-Length") if hasattr(headers, "get") else None
+            )
+            expected: int | None = None
+            if content_length:
+                try:
+                    expected = int(content_length)
+                except (TypeError, ValueError):
+                    expected = None
+                if expected is not None and expected > max_bytes:
+                    raise ValueError(
+                        f"StatCan download exceeds the {max_bytes}-byte safety limit"
+                    )
+            downloaded = 0
+            with temporary.open("wb") as handle:
+                while chunk := response.read(1024 * 1024):
+                    downloaded += len(chunk)
+                    if downloaded > max_bytes:
+                        raise ValueError(
+                            "StatCan download exceeded the "
+                            f"{max_bytes}-byte safety limit"
+                        )
+                    handle.write(chunk)
+                handle.flush()
+                os.fsync(handle.fileno())
+            if expected is not None and downloaded != expected:
+                raise ValueError(
+                    f"StatCan download ended after {downloaded} of {expected} bytes"
+                )
+        temporary.replace(destination)
+    finally:
+        temporary.unlink(missing_ok=True)
+
+
+def _temporary_sibling(destination: Path, suffix: str) -> Path:
+    descriptor, name = tempfile.mkstemp(
+        prefix=f".{destination.name}.", suffix=suffix, dir=destination.parent
+    )
+    os.close(descriptor)
+    return Path(name)
+
+
+def _atomic_copy_stream(source: Any, destination: Path, *, max_bytes: int) -> None:
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    temporary = _temporary_sibling(destination, ".part")
+    copied = 0
+    try:
+        with temporary.open("wb") as target:
+            while chunk := source.read(1024 * 1024):
+                copied += len(chunk)
+                if copied > max_bytes:
+                    raise ValueError(
+                        "extracted StatCan file exceeded the "
+                        f"{max_bytes}-byte safety limit"
+                    )
+                target.write(chunk)
+            target.flush()
+            os.fsync(target.fileno())
+        temporary.replace(destination)
+    finally:
+        temporary.unlink(missing_ok=True)
 
 
 def write_manifest(path: Path, data: dict[str, Any]) -> None:

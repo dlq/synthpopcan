@@ -23,6 +23,9 @@ for every inference, or that disclosure risk has been eliminated.
 | Current small-area artifacts reconcile with supplied household and person controls. | Independent read-back aggregation, geography-isolation, serial/parallel, subsampling, non-convergence, and household/person oracle tests in [`test_small_area_correctness.py`](https://github.com/dlq/synthpopcan/blob/main/tests/test_small_area_correctness.py). | Structural zeros and incompatible controls can make an exact solution impossible and must be reported, not hidden. |
 | A versioned public Statistics Canada example reproduces independently recorded totals. | The frozen source selection, mapping, expected controls, provenance, and independent total in [`tests/fixtures/correctness`](https://github.com/dlq/synthpopcan/tree/main/tests/fixtures/correctness), exercised by [`test_reference_correctness.py`](https://github.com/dlq/synthpopcan/blob/main/tests/test_reference_correctness.py). | One reference table cannot represent every Statistics Canada product, vintage, or transformation. |
 | The distributed wheel contains a working library, CLI, and required web assets. | An isolated installation outside the checkout runs IPF, resource, import-origin, and CLI checks through [`check-wheel.sh`](https://github.com/dlq/synthpopcan/blob/main/scripts/check-wheel.sh). | This is a representative packaging smoke test, not an exhaustive installed-package test. |
+| Browser-facing WDS and registered-model paths reject inputs outside documented resource bounds. | Download, request, archive, decompression, row-count, concurrency, selected-member, catalogue, and API regression tests in [`test_webapp.py`](https://github.com/dlq/synthpopcan/blob/main/tests/test_webapp.py) and [`wds-normalize.test.mjs`](https://github.com/dlq/synthpopcan/blob/main/tests/web/wds-normalize.test.mjs). | Resource limits reduce accidental exhaustion; they do not make the current loopback server suitable for network deployment. |
+| Standalone maps preserve tested polygon topology and cannot embed supplied labels as executable HTML. | Hole/island classification, unmatched-geography, inline JSON, title escaping, and text-node tooltip tests in [`test_map_render.py`](https://github.com/dlq/synthpopcan/blob/main/tests/test_map_render.py). | Projection and topology checks cover current StatCan polygon inputs, not every malformed or non-polygon geospatial source. |
+| Published external artifacts replace valid local files only after a bounded, verified transfer. | Concurrent model-cache and interrupted, oversized, or truncated StatCan transfer tests in [`test_models.py`](https://github.com/dlq/synthpopcan/blob/main/tests/test_models.py) and [`test_statcan.py`](https://github.com/dlq/synthpopcan/blob/main/tests/test_statcan.py). | A successful transfer does not independently establish the accuracy or continued availability of the upstream source. |
 
 ## How the evidence runs
 
@@ -34,8 +37,9 @@ for every inference, or that disclosure risk has been eliminated.
   runs larger generated-case and multi-seed suites each week and on demand. It
   also checks the live Statistics Canada WDS interface for external drift.
 - The [package publishing workflow](https://github.com/dlq/synthpopcan/actions/workflows/publish.yml)
-  reruns the extended correctness suite and tests the built wheel before PyPI
-  publishing can proceed.
+  checks out an existing release tag, verifies that it exactly matches the
+  package version, reruns the extended correctness suite, and tests the built
+  wheel before PyPI publishing can proceed.
 - Browser unit tests and real Chromium workflow scenarios check the independent
   browser implementation and its user-visible integration.
 

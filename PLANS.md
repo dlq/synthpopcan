@@ -10,8 +10,8 @@ Start here. Open a linked implementation plan only when working on that area.
 
 | Horizon | Focus | Detail |
 | --- | --- | --- |
-| Next patch | Make `0.5.1` the current-architecture correctness-assurance release: complete the six correctness workstreams and resolve the audited P1 data-integrity blockers. | [Correctness plan](plans/2026-07-12-correctness-assurance.md) |
-| Correctness | Core suite and public assurance statement implemented; finish the remaining `0.5.1` P1 audit fixes and broaden durable release evidence. | [Correctness plan](plans/2026-07-12-correctness-assurance.md) |
+| Next patch | Prepare and publish `0.5.1` as the current-architecture correctness-assurance release; its six workstreams and audited P1 blockers are complete. | [Correctness plan](plans/2026-07-12-correctness-assurance.md) |
+| Correctness | Core suite, public assurance statement, P1 integrity fixes, and bounded browser/WDS paths are implemented; run the release gate and preserve its evidence. | [Correctness plan](plans/2026-07-12-correctness-assurance.md) |
 | Next minor | Build the durable backend IPF workbench for `0.6.0`. | [Local runtime plan](plans/2026-07-10-local-web-application-runtime.md) |
 | Later `0.6.x` | Move prepared-model generation and small-area synthesis into the same durable run model. | [Plan index](plans/README.md) |
 
@@ -39,6 +39,8 @@ Principles:
 
 Completed release notes belong in [CHANGELOG.md](CHANGELOG.md), research
 background in [NOTES.md](NOTES.md), and detailed tasks in [`plans/`](plans/).
+Every unfinished roadmap item must either appear directly in this file or be
+owned by a linked implementation plan with a current status and next action.
 
 ## Current Product State
 
@@ -99,12 +101,28 @@ For follow-up patches, run the release gate, installed-wheel and model-fetch
 smoke tests, public docs build, and the correctness checks available at that
 point.
 
+### 0.5.1 remaining release work
+
+The correctness implementation and selected release-safety P2 tranche are
+complete locally. The remaining work is release execution and evidence:
+
+- [ ] Commit and push the complete correctness-assurance change set.
+- [ ] Set the package version to `0.5.1`, refresh locked metadata, and finalize
+  the changelog and release notes for the versioned commit.
+- [ ] Run the normal, extended-correctness, documentation, browser, model-fetch,
+  build, and isolated-wheel gates from the versioned commit; retain the commit
+  SHA and machine-readable reports.
+- [ ] Create and push the annotated `v0.5.1` tag, then create the
+  GitHub Release with scoped correctness claims, known limitations, checksums,
+  and links to the tested commit and evidence.
+- [ ] Run the tag-constrained trusted-publishing workflow and verify `0.5.1` on
+  PyPI, the GitHub Release, installation from PyPI, and rendered documentation.
+
 ### 0.5.1 code-audit backlog
 
-The 2026-07-14 audit found no P0 issue, but it identified correctness and safety
-gaps not exercised by the green release gate. Fix the P1 items before treating
-the browser or small-area workflows as correctness-hardened. Keep each
-regression as a focused automated test after the implementation is repaired.
+The 2026-07-14 audit found no P0 issue. Its P1 items and selected release-safety
+P2 items are complete with focused regression tests. The three remaining P2
+items below are explicitly owned by the `0.6.x` runtime migration.
 
 `0.5.1` is also the correctness-assurance release for every algorithm and
 artifact path present in the current architecture. Complete all six workstreams
@@ -144,7 +162,7 @@ the release that introduces that behavior.
 - [x] **P1 — Reserve generated identifier columns.** Prevent seed or model
   fields from overwriting `synthetic_id`, `synthetic_household_id`, or
   `synthetic_person_id`, and make linked validation check identifier uniqueness.
-- [ ] **P1 — Base disclosure support on contributing source-row counts.** Do
+- [x] **P1 — Base disclosure support on contributing source-row counts.** Do
   not let survey-weight totals satisfy frequency-model or geography minimum
   support thresholds; keep weighted totals as separate statistical metadata.
 - [x] **P1 — Preserve complete seed profiles in browser compact-weight output.**
@@ -159,58 +177,61 @@ the release that introduces that behavior.
 - [x] **P2 — Apply the same model-package schema validation to mappings and
   files.** Reject unsupported schema versions before generation regardless of
   how the package entered the API.
-- [ ] **P2 — Make browser and CLI prepared-model reproduction claims exact.**
+- [x] **P2 — Make browser and CLI prepared-model reproduction claims exact.**
   Share backend generation or a bit-identical RNG and seed schedule; until then,
   do not claim that the same seed reproduces the same population.
-- [ ] **P2 — Align browser WDS snapshot selection with Python.** Exclude
+- [x] **P2 — Align browser WDS snapshot selection with Python.** Exclude
   `REF_DATE` from suggested dimensions and consistently select the latest
   reference period.
 
 #### Web security and resource bounds
 
-- [ ] **P1 — Keep supported large models out of whole-payload browser paths.**
-  Enforce an uncompressed-size threshold and move large-model generation
-  server-side so the 531 MB Canada package is not copied repeatedly through
-  Python serialization, browser parsing, stringification, and workers.
-- [ ] **P1 — Bound WDS and ZIP processing before allocation.** Cap request
+- [x] **P1 — Keep supported large models out of whole-payload browser paths.**
+  Registered packages above the 32 MiB uncompressed browser threshold are
+  disabled in the web catalogue and rejected by the local API with an exact
+  CLI handoff. Backend generation remains the `0.6.1` replacement path.
+- [x] **P1 — Bound WDS and ZIP processing before allocation.** Cap request
   bodies, archive entries, compressed and aggregate uncompressed sizes, remote
   response bytes, CSV rows, and concurrent work; inflate only the selected
   member rather than retaining every archive entry.
-- [ ] **P2 — Validate uploaded model structure and bound browser execution.**
+- [ ] **P2 / `0.6.1` — Validate uploaded model structure and bound execution.**
   Reject cyclic or invalid CART graphs, cap household/person output, and add
-  worker cancellation, timeout, and stale-job handling.
-- [ ] **P2 — Harden the current local server until it is replaced.** Reject
+  worker cancellation, timeout, and stale-job handling in the backend model-run
+  path before removing browser generation.
+- [ ] **P2 / `0.6.0` — Harden or replace the current local server.** Reject
   non-loopback hosts, validate `Host` and `Origin`, protect state-changing
-  requests, require appropriate content types, cap `Content-Length`, and keep
-  the separate security design requirement for any future network mode.
-- [ ] **P2 — Escape standalone map content for its HTML and JavaScript
+  requests, require appropriate content types, cap `Content-Length`, and carry
+  these requirements into the FastAPI replacement. Any network mode still
+  requires a separate security design.
+- [x] **P2 — Escape standalone map content for its HTML and JavaScript
   contexts.** HTML-escape titles, safely encode inline JSON including
   `</script>`, and build tooltip content with text nodes rather than
   `innerHTML`.
-- [ ] **P2 — Resolve paths before applying private-data safeguards.** Cover
+- [x] **P2 — Resolve paths before applying private-data safeguards.** Cover
   symlinks and `..` traversal so a path into `data/private` cannot bypass the
   sampling/release guard.
-- [ ] **P2 — Return structured 4xx errors for all invalid JSON shapes.** A
+- [x] **P2 — Return structured 4xx errors for all invalid JSON shapes.** A
   valid non-object JSON request must not escape as `AttributeError` and close
   the connection.
 
 #### Filesystem, network, maps, and releases
 
-- [ ] **P2 — Serialize or lock model-cache fetches.** Use request-unique
+- [x] **P2 — Serialize or lock model-cache fetches.** Use request-unique
   temporary files plus atomic replacement so concurrent threads/processes do
   not truncate, unlink, or replace one another's downloads.
-- [ ] **P2 — Make StatCan downloads bounded and atomic.** Add network timeouts,
+- [x] **P2 — Make StatCan downloads bounded and atomic.** Add network timeouts,
   stream to a temporary file, verify completion, and preserve a valid cached
   file when a refresh fails partway through.
-- [ ] **P2 — Sequence asynchronous browser operations.** Snapshot inputs when a
-  job starts, abort or ignore stale model/WDS/estimate completions, and build CLI
-  handoff commands from the completed run rather than the current mutable form.
-- [ ] **P2 — Fail map generation when no population geography matches the
+- [ ] **P2 / `0.6.0`–`0.6.1` — Sequence asynchronous browser operations.**
+  Snapshot inputs when a job starts, abort or ignore stale model/WDS/estimate
+  completions, and build CLI handoff commands from the completed durable run
+  rather than the current mutable form.
+- [x] **P2 — Fail map generation when no population geography matches the
   boundaries.** Do not emit HTML with empty variables or invalid infinite
   bounds.
-- [ ] **P2 — Preserve shapefile polygon topology.** Classify exterior and
+- [x] **P2 — Preserve shapefile polygon topology.** Classify exterior and
   interior rings correctly so holes are not rendered as filled polygons.
-- [ ] **P2 — Constrain PyPI publishing to tested release tags.** A manual
+- [x] **P2 — Constrain PyPI publishing to tested release tags.** A manual
   workflow dispatch must verify tag/version agreement and pass the release gate
   before trusted publishing.
 

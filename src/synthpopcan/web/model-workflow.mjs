@@ -174,15 +174,20 @@ function populateModelSelect(select, models, { showDownloadStatus = false } = {}
   const placeholder = new Option("No premade model selected", "");
   select.replaceChildren(placeholder);
   models.forEach((model) => {
+    const browserCompatible = model.browser_compatible !== false;
     const option = new Option(
-      showDownloadStatus && !model.installed
-        ? `${model.name} (${model.geography}) - download required`
-        : `${model.name} (${model.geography})`,
+      !browserCompatible
+        ? `${model.name} (${model.geography}) - CLI only`
+        : showDownloadStatus && !model.installed
+          ? `${model.name} (${model.geography}) - download required`
+          : `${model.name} (${model.geography})`,
       model.id,
     );
+    option.disabled = !browserCompatible;
     option.title = modelOptionTitle(model);
     option.dataset.installed = String(model.installed);
     option.dataset.distribution = model.distribution;
+    option.dataset.browserCompatible = String(browserCompatible);
     if (model.size_bytes) option.dataset.sizeBytes = String(model.size_bytes);
     select.append(option);
   });
@@ -202,6 +207,9 @@ function modelOptionTitle(model) {
     `Source: ${model.provenance ?? "not listed"}`,
     `Privacy: ${model.privacy ?? "not listed"}`,
     `Limits: ${model.generation_limits ?? "not listed"}`,
+    model.browser_compatible === false
+      ? "Browser loading disabled because the expanded package exceeds the local browser memory limit; use the CLI."
+      : null,
     `Known limitations: ${model.known_limitations ?? "not listed"}`,
   ]
     .filter(Boolean)

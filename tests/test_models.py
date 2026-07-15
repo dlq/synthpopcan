@@ -3,6 +3,8 @@ from __future__ import annotations
 import gzip
 import hashlib
 import sys
+import time
+from concurrent.futures import ThreadPoolExecutor
 from io import BytesIO
 from pathlib import Path
 from unittest.mock import patch
@@ -244,6 +246,43 @@ def test_fetch_model_package_cleans_up_temp_file_on_exception(
 
     temp_files = list(tmp_path.glob("*.part")) + list(tmp_path.glob("*.download"))
     assert temp_files == []
+
+
+def test_fetch_model_package_serializes_concurrent_cache_updates(
+    monkeypatch, tmp_path
+) -> None:
+    content = b'{"schema_version": "synthpopcan-linked-tree-package-v1"}'
+    compressed = gzip_bytes(content)
+    opens: list[str] = []
+    monkeypatch.setenv("SYNTHPOPCAN_MODEL_CACHE", str(tmp_path))
+
+    def fake_urlopen(url: str, timeout: int) -> FakeResponse:
+        opens.append(url)
+        time.sleep(0.1)
+        return FakeResponse(compressed)
+
+    monkeypatch.setattr(models, "urlopen", fake_urlopen)
+    metadata = models.model_registry_entry("montreal-cma-2016-all-fields")
+    original_sha = metadata["sha256"]
+    original_uncompressed_sha = metadata["uncompressed_sha256"]
+    metadata["sha256"] = hashlib.sha256(compressed).hexdigest()
+    metadata["uncompressed_sha256"] = hashlib.sha256(content).hexdigest()
+    try:
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            paths = list(
+                executor.map(
+                    models.fetch_model_package,
+                    ["montreal-cma-2016-all-fields"] * 2,
+                )
+            )
+    finally:
+        metadata["sha256"] = original_sha
+        metadata["uncompressed_sha256"] = original_uncompressed_sha
+
+    assert paths == [tmp_path / metadata["filename"]] * 2
+    assert len(opens) == 1
+    assert paths[0].read_bytes() == content
+    assert not list(tmp_path.glob("*.lock"))
 
 
 def test_remove_cached_model_returns_false_for_bundled_model(

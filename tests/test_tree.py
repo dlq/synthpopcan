@@ -223,7 +223,8 @@ def test_trains_frequency_model_without_raw_rows(tmp_path) -> None:
     assert payload["privacy"] == {
         "contains_raw_rows": False,
         "contains_source_identifiers": False,
-        "minimum_support": 1.0,
+        "minimum_support": 1,
+        "minimum_weighted_support": 1.0,
         "min_support_threshold": 2,
         "groups_below_threshold": 1,
         "publishable": False,
@@ -239,6 +240,7 @@ def test_trains_frequency_model_without_raw_rows(tmp_path) -> None:
     assert qc_group == {
         "conditions": {"geo": "QC", "household_size": "2"},
         "support": 3.0,
+        "source_rows": 2,
         "outcomes": [{"values": {"age_group": "adult", "sex": "F"}, "weight": 3.0}],
     }
 
@@ -541,16 +543,17 @@ def test_cli_tree_parser_and_formatter_helpers_cover_edges() -> None:
         "1,200 records; 2.0 KiB; 2 targets"
     )
     assert format_model_summary("bad") == ""
-    assert (
-        format_audit_summary(
-            {
-                "passed": True,
-                "issue_count": 0,
-                "minimum_support": 12.5,
-                "above_max_purity": 1,
-            }
-        )
-        == "Audit passed; issues=0; minimum support=12.5; high purity=1"
+    assert format_audit_summary(
+        {
+            "passed": True,
+            "issue_count": 0,
+            "minimum_support": 12.5,
+            "minimum_weighted_support": 20.0,
+            "above_max_purity": 1,
+        }
+    ) == (
+        "Audit passed; issues=0; minimum source rows=12.5; "
+        "minimum weighted support=20; high purity=1"
     )
     assert format_bytes_or_blank("bad") == ""
     assert format_bytes_or_blank(1_048_576) == "1.0 MiB"
@@ -1217,7 +1220,8 @@ def test_audits_frequency_model_support_and_purity(tmp_path) -> None:
     assert report["publishable_candidate"] is False
     assert report["summary"]["groups_or_leaves"] == 2
     assert report["summary"]["minimum_support"] == 1.0
-    assert report["summary"]["below_min_support"] == 1
+    assert report["summary"]["minimum_weighted_support"] == 1.0
+    assert report["summary"]["below_min_support"] == 2
     assert report["summary"]["above_max_purity"] == 2
     assert {issue["kind"] for issue in report["issues"]} == {
         "private_working_release_class",
@@ -1230,7 +1234,8 @@ def test_audits_frequency_model_support_and_purity(tmp_path) -> None:
         if issue["kind"] == "above_max_purity"
         and issue["conditions"] == {"geo": "QC", "household_size": "2"}
     )
-    assert purity_issue["support"] == 3.0
+    assert purity_issue["support"] == 1
+    assert purity_issue["weighted_support"] == 3.0
     assert purity_issue["dominant_outcome"] == {
         "age_group": "adult",
         "sex": "F",
@@ -1387,7 +1392,7 @@ def test_cli_audits_tree_model_as_json(tmp_path, capsys) -> None:
 
     report = json.loads(capsys.readouterr().out)
     assert report["passed"] is False
-    assert report["summary"]["below_min_support"] == 1
+    assert report["summary"]["below_min_support"] == 2
 
 
 def test_cli_refuses_to_package_model_with_audit_warnings(tmp_path) -> None:

@@ -97,6 +97,45 @@ def test_sources_sample_requires_private_override(tmp_path) -> None:
     )
 
 
+def test_sources_sample_private_guard_resolves_parent_traversal(tmp_path) -> None:
+    private_dir = tmp_path / "data" / "private"
+    public_dir = tmp_path / "data" / "public"
+    private_dir.mkdir(parents=True)
+    public_dir.mkdir()
+    source = private_dir / "sample.csv"
+    source.write_text("age,sex\nold,F\n")
+
+    disguised = public_dir / ".." / "private" / "sample.csv"
+    with pytest.raises(ClickException, match="private data"):
+        main(["data", "sample", str(disguised), "--format", "json"])
+
+
+def test_sources_sample_private_guard_resolves_symlink(tmp_path) -> None:
+    private_dir = tmp_path / "data" / "private"
+    private_dir.mkdir(parents=True)
+    source = private_dir / "sample.csv"
+    source.write_text("age,sex\nold,F\n")
+    link = tmp_path / "apparently-public.csv"
+    try:
+        link.symlink_to(source)
+    except OSError:
+        pytest.skip("symlinks are unavailable on this platform")
+
+    with pytest.raises(ClickException, match="private data"):
+        main(["data", "sample", str(link), "--format", "json"])
+
+
+def test_sources_sample_private_guard_fails_closed_on_symlink_loop(tmp_path) -> None:
+    link = tmp_path / "loop.csv"
+    try:
+        link.symlink_to(link)
+    except OSError:
+        pytest.skip("symlinks are unavailable on this platform")
+
+    with pytest.raises(ClickException, match="private data"):
+        main(["data", "sample", str(link), "--format", "json"])
+
+
 def test_sources_sample_wraps_reader_errors(tmp_path) -> None:
     source = tmp_path / "sample.csv"
     source.write_text("age,sex\nold,F\n")

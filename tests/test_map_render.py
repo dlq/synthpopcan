@@ -10,7 +10,9 @@ import numpy as np
 import pytest
 
 from synthpopcan.map_render import (
+    _classify_polygon_rings,
     _compute_geo_stats,
+    _json_for_inline_script,
     _lcc_to_wgs84,
     _median,
     _pct_of,
@@ -19,6 +21,29 @@ from synthpopcan.map_render import (
     prepare_boundaries_geojson,
     render_synthesis_map,
 )
+
+
+def test_classify_polygon_rings_preserves_holes_and_islands() -> None:
+    exterior = [[0, 0], [10, 0], [10, 10], [0, 10], [0, 0]]
+    hole = [[2, 2], [2, 8], [8, 8], [8, 2], [2, 2]]
+    island = [[4, 4], [6, 4], [6, 6], [4, 6], [4, 4]]
+
+    polygons = _classify_polygon_rings([hole, island, exterior])
+
+    assert len(polygons) == 2
+    assert sorted(len(polygon) for polygon in polygons) == [1, 2]
+    polygon_with_hole = next(polygon for polygon in polygons if len(polygon) == 2)
+    assert polygon_with_hole[0][0] == exterior[0]
+    assert polygon_with_hole[1][0] == hole[-1]
+
+
+def test_inline_map_json_cannot_terminate_script_element() -> None:
+    encoded = _json_for_inline_script({"geo_id": "</script><img src=x>"})
+
+    assert "</script>" not in encoded
+    assert "<img" not in encoded
+    assert "\\u003c/script\\u003e" in encoded
+
 
 # ---------------------------------------------------------------------------
 # _median
@@ -1106,6 +1131,53 @@ def test_render_synthesis_map_skips_null_shape(tmp_path: Path) -> None:
 
     assert out.exists()
     assert geo_id in out.read_text()
+
+
+def test_render_synthesis_map_rejects_no_matching_boundaries(tmp_path: Path) -> None:
+    gj_path = tmp_path / "boundaries.geojson"
+    _write_fake_geojson(gj_path, ["different-geography"])
+    hh = tmp_path / "households.csv"
+    hh.write_text(
+        "synthetic_household_id,ct,household_size,TENUR,DTYPE,REPAIR,SHELCO\n"
+        "h1,requested-geography,2,1,1,1,1200\n"
+    )
+
+    with pytest.raises(ValueError, match="No population geography values matched"):
+        render_synthesis_map(
+            households_path=hh,
+            boundaries_path=gj_path,
+            geography_column="ct",
+            geography_id_field="CTUID",
+            out_path=tmp_path / "map.html",
+        )
+
+
+def test_render_synthesis_map_escapes_title_and_uses_text_tooltips(
+    tmp_path: Path,
+) -> None:
+    gj_path = tmp_path / "boundaries.geojson"
+    _write_fake_geojson(gj_path, ["G1"])
+    hh = tmp_path / "households.csv"
+    hh.write_text(
+        "synthetic_household_id,ct,household_size,TENUR,DTYPE,REPAIR,SHELCO\n"
+        "h1,G1,2,1,1,1,1200\n"
+    )
+    out = tmp_path / "map.html"
+
+    render_synthesis_map(
+        households_path=hh,
+        boundaries_path=gj_path,
+        geography_column="ct",
+        geography_id_field="CTUID",
+        out_path=out,
+        title='Unsafe </script><img src=x onerror="alert(1)">',
+    )
+
+    output = out.read_text()
+    assert '<img src=x onerror="alert(1)">' not in output
+    assert "&lt;/script&gt;&lt;img" in output
+    assert "tip.innerHTML" not in output
+    assert "tip.replaceChildren()" in output
 
 
 def test_render_synthesis_map_skips_degenerate_ring(tmp_path: Path) -> None:

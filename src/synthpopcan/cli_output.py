@@ -355,7 +355,7 @@ def print_tree_geography_feasibility_table(report: dict[str, Any]) -> None:
     table.add_column("Tier", no_wrap=True)
     table.add_column("Persons", justify="right")
     table.add_column("Households", justify="right")
-    table.add_column("Person Min Support", justify="right")
+    table.add_column("Person Min Rows", justify="right")
     table.add_column("Max Purity", justify="right")
     table.add_column("First Move")
     table.add_column("Aggregation Hint")

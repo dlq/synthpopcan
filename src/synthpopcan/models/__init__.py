@@ -12,7 +12,10 @@ import hashlib
 import json
 import os
 import sys
-from collections.abc import Callable
+import tempfile
+import time
+from collections.abc import Callable, Iterator
+from contextlib import contextmanager
 from importlib.resources import files
 from pathlib import Path
 from typing import Any
@@ -21,6 +24,7 @@ from urllib.request import urlopen
 ProgressCallback = Callable[[int, int | None], None]
 
 _RELEASE_BASE_URL = "https://github.com/dlq/synthpopcan/releases/download/v0.2.1"
+_BROWSER_MODEL_MAX_UNCOMPRESSED_BYTES = 32 * 1024 * 1024
 _DEMO_CATALOGUE_METADATA = {
     "census_vintage": "Not applicable",
     "release_status": "publishable_candidate",
@@ -457,7 +461,20 @@ def model_catalogue_entry(model_id: str) -> dict[str, Any]:
         "distribution": str(metadata["distribution"]),
         "installed": model_is_installed(model_id),
         "size_bytes": metadata.get("size_bytes"),
+        "uncompressed_size_bytes": metadata.get("uncompressed_size_bytes"),
+        "browser_compatible": model_browser_compatible(model_id),
+        "browser_max_uncompressed_size_bytes": (_BROWSER_MODEL_MAX_UNCOMPRESSED_BYTES),
     }
+
+
+def model_browser_compatible(model_id: str) -> bool:
+    """Return whether a registered package may be loaded into browser memory."""
+
+    metadata = model_registry_entry(model_id)
+    if metadata.get("distribution") == "bundled":
+        return True
+    size = metadata.get("uncompressed_size_bytes")
+    return isinstance(size, int) and size <= _BROWSER_MODEL_MAX_UNCOMPRESSED_BYTES
 
 
 def model_payload(model_id: str) -> dict[str, Any]:
@@ -544,42 +561,83 @@ def fetch_model_package(
     if metadata.get("distribution") != "download":
         return _model_path(model_id)
     destination = model_cache_path(model_id)
-    if destination.exists():
-        try:
-            _verify_model_checksum(destination, metadata)
-        except ValueError:
-            # A corrupt cached file would fail verification on every retry;
-            # remove it and fall through to a fresh download.
-            destination.unlink()
-        else:
-            return destination
-
     destination.parent.mkdir(parents=True, exist_ok=True)
-    download_path = destination.with_suffix(destination.suffix + ".download")
-    temporary_path = destination.with_suffix(destination.suffix + ".part")
-    url = str(metadata["url"])
-    try:
-        with urlopen(url, timeout=60) as response:
-            total_bytes = _download_size(response, metadata)
-            if progress_callback:
-                progress_callback(0, total_bytes)
-            with download_path.open("wb") as handle:
-                downloaded = 0
-                while chunk := response.read(1024 * 1024):
-                    handle.write(chunk)
-                    downloaded += len(chunk)
-                    if progress_callback:
-                        progress_callback(downloaded, total_bytes)
-        _verify_download_checksum(download_path, metadata)
-        _unpack_downloaded_model(download_path, temporary_path, metadata)
-        _verify_model_checksum(temporary_path, metadata)
-        temporary_path.replace(destination)
-    finally:
-        if download_path.exists():
-            download_path.unlink()
-        if temporary_path.exists():
-            temporary_path.unlink()
+    with _model_cache_lock(destination):
+        if destination.exists():
+            try:
+                _verify_model_checksum(destination, metadata)
+            except ValueError:
+                # A corrupt cached file would fail verification on every retry;
+                # remove it while holding the per-model cache lock.
+                destination.unlink()
+            else:
+                return destination
+
+        download_path = _unique_cache_temp(destination, ".download")
+        temporary_path = _unique_cache_temp(destination, ".part")
+        url = str(metadata["url"])
+        try:
+            with urlopen(url, timeout=60) as response:
+                total_bytes = _download_size(response, metadata)
+                if progress_callback:
+                    progress_callback(0, total_bytes)
+                with download_path.open("wb") as handle:
+                    downloaded = 0
+                    while chunk := response.read(1024 * 1024):
+                        handle.write(chunk)
+                        downloaded += len(chunk)
+                        if progress_callback:
+                            progress_callback(downloaded, total_bytes)
+            _verify_download_checksum(download_path, metadata)
+            _unpack_downloaded_model(download_path, temporary_path, metadata)
+            _verify_model_checksum(temporary_path, metadata)
+            temporary_path.replace(destination)
+        finally:
+            download_path.unlink(missing_ok=True)
+            temporary_path.unlink(missing_ok=True)
     return destination
+
+
+def _unique_cache_temp(destination: Path, suffix: str) -> Path:
+    descriptor, name = tempfile.mkstemp(
+        prefix=f".{destination.name}.", suffix=suffix, dir=destination.parent
+    )
+    os.close(descriptor)
+    return Path(name)
+
+
+@contextmanager
+def _model_cache_lock(destination: Path) -> Iterator[None]:
+    """Serialize cache updates across threads and processes without dependencies."""
+
+    lock_path = destination.with_suffix(destination.suffix + ".lock")
+    started = time.monotonic()
+    descriptor: int | None = None
+    while descriptor is None:
+        try:
+            descriptor = os.open(lock_path, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
+        except FileExistsError:
+            try:
+                stale = time.time() - lock_path.stat().st_mtime > 300
+            except FileNotFoundError:
+                continue
+            if stale:
+                try:
+                    lock_path.unlink()
+                except FileNotFoundError:
+                    pass
+                continue
+            if time.monotonic() - started > 120:
+                raise TimeoutError(
+                    f"timed out waiting for model cache lock {lock_path}"
+                ) from None
+            time.sleep(0.05)
+    try:
+        os.write(descriptor, str(os.getpid()).encode("ascii"))
+        yield
+    finally:
+        os.close(descriptor)
+        lock_path.unlink(missing_ok=True)
 
 
 def remove_cached_model(model_id: str) -> bool:

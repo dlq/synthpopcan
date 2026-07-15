@@ -8,6 +8,7 @@ import csv
 import json
 import math
 import statistics
+from html import escape as html_escape
 from pathlib import Path
 from typing import Any
 
@@ -116,8 +117,11 @@ def _read_shapefile_geojson(
             if not rings:
                 continue
 
-            geom_type = "MultiPolygon" if len(rings) > 1 else "Polygon"
-            coords = [[r] for r in rings] if geom_type == "MultiPolygon" else rings
+            polygons = _classify_polygon_rings(rings)
+            if not polygons:
+                continue
+            geom_type = "MultiPolygon" if len(polygons) > 1 else "Polygon"
+            coords = polygons if geom_type == "MultiPolygon" else polygons[0]
 
             features.append(
                 {
@@ -225,6 +229,80 @@ def _simplify_ring(
         ry = np.append(ry, ry[0])
 
     return [[float(x), float(y)] for x, y in zip(rx, ry, strict=False)]
+
+
+def _ring_signed_area(ring: list[list[float]]) -> float:
+    """Return the signed planar area of a closed coordinate ring."""
+
+    return 0.5 * sum(
+        x1 * y2 - x2 * y1 for (x1, y1), (x2, y2) in zip(ring, ring[1:], strict=False)
+    )
+
+
+def _point_in_ring(point: list[float], ring: list[list[float]]) -> bool:
+    """Return whether *point* lies inside *ring* using an even-odd ray cast."""
+
+    x, y = point
+    inside = False
+    for (x1, y1), (x2, y2) in zip(ring, ring[1:], strict=False):
+        if (y1 > y) != (y2 > y):
+            crossing = (x2 - x1) * (y - y1) / (y2 - y1) + x1
+            if x < crossing:
+                inside = not inside
+    return inside
+
+
+def _orient_ring(ring: list[list[float]], *, clockwise: bool) -> list[list[float]]:
+    """Return a GeoJSON ring with the requested winding order."""
+
+    is_clockwise = _ring_signed_area(ring) < 0
+    return list(reversed(ring)) if is_clockwise != clockwise else ring
+
+
+def _classify_polygon_rings(
+    rings: list[list[list[float]]],
+) -> list[list[list[list[float]]]]:
+    """Group shapefile rings into GeoJSON polygons while preserving holes.
+
+    Shapefile winding order is not consistently preserved by all producers, so
+    containment depth is used: even-depth rings are exteriors and odd-depth
+    rings are holes belonging to their nearest containing exterior.
+    """
+
+    if not rings:
+        return []
+    areas = [abs(_ring_signed_area(ring)) for ring in rings]
+    containers: list[list[int]] = []
+    for index, ring in enumerate(rings):
+        containers.append(
+            [
+                candidate
+                for candidate, outer in enumerate(rings)
+                if candidate != index
+                and areas[candidate] > areas[index]
+                and _point_in_ring(ring[0], outer)
+            ]
+        )
+    depths = [len(value) for value in containers]
+    exterior_indexes = [index for index, depth in enumerate(depths) if depth % 2 == 0]
+    polygons: dict[int, list[list[list[float]]]] = {
+        index: [_orient_ring(rings[index], clockwise=False)]
+        for index in exterior_indexes
+    }
+    for index, depth in enumerate(depths):
+        if depth % 2 == 0:
+            continue
+        possible_exteriors = [
+            candidate for candidate in containers[index] if depths[candidate] % 2 == 0
+        ]
+        if not possible_exteriors:
+            # Malformed orphan holes are safer to preserve as visible polygons
+            # than to silently discard.
+            polygons[index] = [_orient_ring(rings[index], clockwise=False)]
+            continue
+        parent = max(possible_exteriors, key=lambda candidate: depths[candidate])
+        polygons[parent].append(_orient_ring(rings[index], clockwise=True))
+    return [polygons[index] for index in sorted(polygons)]
 
 
 # ---------------------------------------------------------------------------
@@ -527,13 +605,22 @@ map.on('load', () => {{
     hid = f.id;
     map.setFeatureState({{source:'syn',id:hid}},{{hover:true}});
 
-    tip.innerHTML = '<strong>' + p.geo_id + '</strong>' +
-      VARIABLES.map(v => '<div class="tip-row">' +
-        '<span class="tip-lbl">' + v.label + '</span>' +
-        '<span class="tip-val">' +
-        (p[v.field] != null ? v.fmt(p[v.field]) : '—') + '</span>' +
-        '</div>'
-      ).join('');
+    tip.replaceChildren();
+    const heading = document.createElement('strong');
+    heading.textContent = String(p.geo_id ?? '');
+    tip.appendChild(heading);
+    VARIABLES.forEach(v => {{
+      const row = document.createElement('div');
+      row.className = 'tip-row';
+      const label = document.createElement('span');
+      label.className = 'tip-lbl';
+      label.textContent = v.label;
+      const value = document.createElement('span');
+      value.className = 'tip-val';
+      value.textContent = p[v.field] != null ? v.fmt(p[v.field]) : '—';
+      row.append(label, value);
+      tip.appendChild(row);
+    }});
     tip.style.display = 'block';
     tip.style.left = (e.point.x + 16) + 'px';
     tip.style.top  = (e.point.y - 10) + 'px';
@@ -656,6 +743,12 @@ def render_synthesis_map(
             coord_precision=coord_precision,
         )
 
+    if not geojson["features"]:
+        raise ValueError(
+            "No population geography values matched the supplied boundary features. "
+            "Check the geography column, boundary ID field, and identifier formats."
+        )
+
     # 3. Join stats into feature properties
     for feature in geojson["features"]:
         geo_id = feature["properties"]["geo_id"]
@@ -708,8 +801,8 @@ def render_synthesis_map(
             variables.append(_pct_spec(field, label, vals))
 
     # 5. Serialise — compact JSON (no whitespace) keeps file small
-    geojson_js = json.dumps(geojson, separators=(",", ":"))
-    variables_js = json.dumps(variables, separators=(",", ":"))
+    geojson_js = _json_for_inline_script(geojson)
+    variables_js = _json_for_inline_script(variables)
 
     # JS formatter functions must be raw JS, not JSON strings — splice them in
     for fn in _JS_FUNCS:
@@ -718,7 +811,7 @@ def render_synthesis_map(
     bounds_js = f"[[{bbox[0]},{bbox[1]}],[{bbox[2]},{bbox[3]}]]"
 
     html = _TEMPLATE.format(
-        title=title,
+        title=html_escape(title, quote=True),
         geojson=geojson_js,
         variables=variables_js,
         bounds=bounds_js,
@@ -727,3 +820,16 @@ def render_synthesis_map(
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(html, encoding="utf-8")
     return out_path
+
+
+def _json_for_inline_script(value: object) -> str:
+    """Serialize JSON without permitting data to terminate the script element."""
+
+    return (
+        json.dumps(value, separators=(",", ":"))
+        .replace("&", "\\u0026")
+        .replace("<", "\\u003c")
+        .replace(">", "\\u003e")
+        .replace("\u2028", "\\u2028")
+        .replace("\u2029", "\\u2029")
+    )

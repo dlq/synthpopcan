@@ -11,11 +11,18 @@ from http import HTTPStatus
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from importlib.resources import files
 from pathlib import Path
+from threading import BoundedSemaphore
 from typing import Any, Protocol
 from urllib.parse import urlparse
 
 from synthpopcan.controls import parse_control_table
-from synthpopcan.models import fetch_model_package, model_catalogue, model_payload
+from synthpopcan.models import (
+    fetch_model_package,
+    model_browser_compatible,
+    model_catalogue,
+    model_catalogue_entry,
+    model_payload,
+)
 from synthpopcan.small_area_synthesis import estimate_small_area_run
 from synthpopcan.statcan import normalize_product_id
 from synthpopcan.web_wds import (
@@ -23,6 +30,10 @@ from synthpopcan.web_wds import (
     generate_wds_seed_controls_from_zip_bytes,
     parse_dimensions,
 )
+
+_MAX_API_JSON_BYTES = 8 * 1024 * 1024
+_MAX_WDS_JSON_BYTES = 64 * 1024
+_WDS_REQUEST_SLOTS = BoundedSemaphore(2)
 
 
 class _WebAppServer(Protocol):
@@ -70,24 +81,40 @@ class _SynthPopCanWebHandler(SimpleHTTPRequestHandler):
 
     def _handle_model(self, model_id: str) -> None:
         try:
+            _require_browser_compatible_model(model_id)
             self._send_json(model_payload(model_id))
         except KeyError:
             self.send_error(HTTPStatus.NOT_FOUND, "Unknown model")
+        except OverflowError as exc:
+            self._send_json(
+                {"error": str(exc)}, status=HTTPStatus.REQUEST_ENTITY_TOO_LARGE
+            )
         except FileNotFoundError as exc:
             self._send_json({"error": str(exc)}, status=HTTPStatus.CONFLICT)
 
     def _handle_model_fetch(self, model_id: str) -> None:
         try:
+            _require_browser_compatible_model(model_id)
             fetch_model_package(model_id)
             self._send_json({"model": model_payload(model_id)})
         except KeyError:
             self.send_error(HTTPStatus.NOT_FOUND, "Unknown model")
+        except OverflowError as exc:
+            self._send_json(
+                {"error": str(exc)}, status=HTTPStatus.REQUEST_ENTITY_TOO_LARGE
+            )
         except (OSError, ValueError) as exc:
             self._send_json({"error": str(exc)}, status=HTTPStatus.BAD_GATEWAY)
 
     def _handle_wds_seed_controls(self) -> None:
+        if not _WDS_REQUEST_SLOTS.acquire(blocking=False):
+            self._send_json(
+                {"error": "too many WDS preparation requests are already running"},
+                status=HTTPStatus.TOO_MANY_REQUESTS,
+            )
+            return
         try:
-            payload = self._read_json_body()
+            payload = self._read_json_body(max_bytes=_MAX_WDS_JSON_BYTES)
             product_id = normalize_product_id(str(payload.get("productId", "")))
             zip_bytes, download_url = fetch_wds_zip_bytes(product_id)
             generated = generate_wds_seed_controls_from_zip_bytes(
@@ -104,6 +131,8 @@ class _SynthPopCanWebHandler(SimpleHTTPRequestHandler):
             )
         except Exception as exc:  # noqa: BLE001
             self._send_json({"error": str(exc)}, status=HTTPStatus.BAD_REQUEST)
+        finally:
+            _WDS_REQUEST_SLOTS.release()
 
     def _handle_small_area_estimate(self) -> None:
         try:
@@ -132,11 +161,18 @@ class _SynthPopCanWebHandler(SimpleHTTPRequestHandler):
         except (TypeError, ValueError) as exc:
             self._send_json({"error": str(exc)}, status=HTTPStatus.BAD_REQUEST)
 
-    def _read_json_body(self) -> dict[str, Any]:
+    def _read_json_body(
+        self, *, max_bytes: int = _MAX_API_JSON_BYTES
+    ) -> dict[str, Any]:
         length = int(self.headers.get("Content-Length", "0"))
         if length <= 0:
             return {}
-        return json.loads(self.rfile.read(length).decode("utf-8"))
+        if length > max_bytes:
+            raise ValueError("request body exceeds the local API size limit")
+        payload = json.loads(self.rfile.read(length).decode("utf-8"))
+        if not isinstance(payload, dict):
+            raise ValueError("JSON request body must be an object")
+        return payload
 
     def _send_json(
         self, payload: dict[str, Any], *, status: HTTPStatus = HTTPStatus.OK
@@ -153,6 +189,19 @@ def _optional_int(value: object) -> int | None:
     if value in {None, ""}:
         return None
     return int(value)  # type: ignore[arg-type]
+
+
+def _require_browser_compatible_model(model_id: str) -> None:
+    if model_browser_compatible(model_id):
+        return
+    entry = model_catalogue_entry(model_id)
+    size = entry.get("uncompressed_size_bytes")
+    limit = entry["browser_max_uncompressed_size_bytes"]
+    raise OverflowError(
+        f"model package {model_id} expands to {size} bytes, above the "
+        f"{limit}-byte browser limit; use `synthpopcan models generate "
+        f"{model_id} ...` from the CLI"
+    )
 
 
 def build_webapp_server(host: str, port: int) -> ThreadingHTTPServer:

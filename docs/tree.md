@@ -450,7 +450,9 @@ synthpopcan models build audit household-model.json \
 
 Important options:
 
-- `--min-support`: minimum acceptable support for each group or leaf.
+- `--min-support`: minimum acceptable number of contributing source rows for
+  each group or leaf. Survey weights do not make a one-row group satisfy this
+  threshold; weighted support is reported separately as statistical metadata.
 - `--max-purity`: warning threshold for dominant-outcome purity.
 
 The audit also checks whether model metadata says raw rows or source identifiers

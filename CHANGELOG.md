@@ -4,6 +4,33 @@ All notable public changes to SynthPopCan are tracked here.
 
 ## Unreleased
 
+- Added a public correctness-assurance statement, independent numerical and
+  artifact oracles, generated invariant and parity tests, a versioned public
+  Statistics Canada fixture, scheduled/live-drift checks, and installed-wheel
+  verification before publishing.
+- Corrected sparse IPF semantics, browser integerization, exact geographic
+  allocation, linked identifier checks, finite numeric boundaries, WDS mapping
+  collisions, and output-column collisions uncovered by the assurance pass.
+- Based model disclosure thresholds on contributing source-row counts while
+  retaining weighted support separately, preventing survey weights from making
+  a one-row group appear adequately supported.
+- Bounded local WDS preparation by request/download size, ZIP entry and
+  decompression totals, selected CSV size, row count, and concurrency; browser
+  ZIP handling now inspects metadata before inflating only the selected data
+  member.
+- Disabled registered models above a 32 MiB uncompressed threshold in the web
+  app and local model API, with a CLI handoff until backend generation replaces
+  browser whole-payload processing.
+- Hardened standalone maps by escaping HTML and inline-script data, constructing
+  tooltips with text nodes, rejecting unmatched geographies, and preserving
+  polygon holes and islands from shapefiles.
+- Resolved private-data paths before disclosure guards, serialized concurrent
+  model-cache updates through unique temporary files, and made StatCan downloads
+  bounded, completion-checked, and atomic so failed refreshes preserve cached data.
+- Clarified that browser and CLI random-number generators do not promise
+  identical rows, aligned their WDS latest-period selection, and constrained
+  trusted PyPI publishing to tested tags matching the package version.
+
 ## 0.5.0 - 2026-07-14
 
 Simplified and consolidated the public CLI, Python API, and linked-population

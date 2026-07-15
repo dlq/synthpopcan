@@ -1611,6 +1611,7 @@ def _summarize_package_audits(
             "issue_count": len(issues) if isinstance(issues, list) else None,
             "groups_or_leaves": summary.get("groups_or_leaves"),
             "minimum_support": summary.get("minimum_support"),
+            "minimum_weighted_support": summary.get("minimum_weighted_support"),
             "below_min_support": summary.get("below_min_support"),
             "above_max_purity": summary.get("above_max_purity"),
         }
@@ -1741,7 +1742,9 @@ def format_audit_summary(value: object) -> str:
     return (
         f"{_format_audit_passed(audit.get('passed'))}; "
         f"issues={format_int_or_blank(audit.get('issue_count'))}; "
-        f"minimum support={format_number_or_blank(audit.get('minimum_support'))}; "
+        f"minimum source rows={format_number_or_blank(audit.get('minimum_support'))}; "
+        "minimum weighted support="
+        f"{format_number_or_blank(audit.get('minimum_weighted_support'))}; "
         f"high purity={format_int_or_blank(audit.get('above_max_purity'))}"
     )
 
