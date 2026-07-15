@@ -162,7 +162,7 @@ and richer reproducible public-source mappings.
 | Data | Track code, docs, public-safe metadata, and tiny fixtures; ignore raw/restricted data, large caches, real generated populations, and unpublished private-data models. |
 | Testing | Prefer correctness evidence over defensive-branch coverage; keep default tests public and deterministic, with live StatCan/full-data checks opt-in. |
 | Documentation | Document `models remove`; keep workflow examples synchronized with tested CLI help; add contributor internals only when useful. |
-| Releases | Align tags, PyPI, Read the Docs, release notes, checksums, model provenance, installed-wheel smoke tests, and model-fetch checks. |
+| Releases | Align tags, PyPI, Read the Docs, release notes, checksums, model provenance, installed-wheel smoke tests, and model-fetch checks; later add automatic Zenodo publication for versioned archival releases and DOI metadata. |
 
 ## Open Decisions
 
