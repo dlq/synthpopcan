@@ -86,7 +86,7 @@ function showEstimate(element, response, model) {
   element.className = `result-box ${cliRecommended ? "warning" : "success"}`;
   element.textContent = cliRecommended
     ? "Preflight complete. Use the CLI for this run size."
-    : "Preflight complete. This is a small run, but 0.5.0 still hands synthesis to the CLI.";
+    : "Preflight complete. This is a small run, but the local app still hands synthesis to the CLI.";
   const summary = document.createElement("div");
   summary.className = "result-list compact-result-list";
   summary.append(

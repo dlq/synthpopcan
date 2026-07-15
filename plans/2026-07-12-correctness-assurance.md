@@ -4,8 +4,8 @@ Status: active\
 Created: 2026-07-12\
 Last updated: 2026-07-15\
 Target: `0.5.1` current-architecture correctness gate\
-Next action: verify the completed P1 and release-safety P2 tranche through the
-`0.5.1` release gate, record its evidence, and prepare release metadata\
+Next action: tag the verified release commit, publish `0.5.1`, and record the
+public release evidence\
 Roadmap: [PLANS.md](../PLANS.md) | [Plan index](README.md)
 
 ## Purpose

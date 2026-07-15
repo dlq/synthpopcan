@@ -4,6 +4,8 @@ All notable public changes to SynthPopCan are tracked here.
 
 ## Unreleased
 
+## 0.5.1 - 2026-07-15
+
 - Added a public correctness-assurance statement, independent numerical and
   artifact oracles, generated invariant and parity tests, a versioned public
   Statistics Canada fixture, scheduled/live-drift checks, and installed-wheel

@@ -2,7 +2,7 @@
 
 Status: release-phased roadmap\
 Last updated: 2026-07-15\
-Current release: `0.5.0`
+Current release: `0.5.1`
 
 ## Current Focus
 
@@ -106,10 +106,10 @@ point.
 The correctness implementation and selected release-safety P2 tranche are
 complete locally. The remaining work is release execution and evidence:
 
-- [ ] Commit and push the complete correctness-assurance change set.
-- [ ] Set the package version to `0.5.1`, refresh locked metadata, and finalize
+- [x] Commit and push the complete correctness-assurance change set.
+- [x] Set the package version to `0.5.1`, refresh locked metadata, and finalize
   the changelog and release notes for the versioned commit.
-- [ ] Run the normal, extended-correctness, documentation, browser, model-fetch,
+- [x] Run the normal, extended-correctness, documentation, browser, model-fetch,
   build, and isolated-wheel gates from the versioned commit; retain the commit
   SHA and machine-readable reports.
 - [ ] Create and push the annotated `v0.5.1` tag, then create the
