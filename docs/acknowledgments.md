@@ -1,4 +1,4 @@
-# Acknowledgments
+# Acknowledgements
 
 SynthPopCan began from work undertaken in connection with the **SynthEco
 proposal** and its broader research vision for synthetic populations embedded

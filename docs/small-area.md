@@ -25,6 +25,15 @@ The ones relevant to this workflow are:
   Statistics Canada releases census data, typically 400–700 people. DAs are
   building blocks for ADAs.
 
+```{admonition} Census tracts do not cover all of Canada
+:class: note
+
+CTs cover qualifying metropolitan areas and census agglomerations, not the
+whole country. For province-wide or Canada-wide synthesis, use a wall-to-wall
+geography such as **ADA** or **DA**, depending on the detail the research needs
+and the controls the seed can support.
+```
+
 ```{figure} _static/geography-ladder.svg
 :alt: A Canadian census geography ladder showing broad geographies, CT, ADA, and DA calibration geographies, and DB placement later.
 :align: center
@@ -65,10 +74,27 @@ their assigned household. Optional person controls refine the household weights
 using linked-person category counts; they never separate people from their
 household.
 
-## Step 0 — Prepare Boundary Files (once)
+## Worked Workflow
 
-Before running `geo map`, we need a local boundary file for the target
-geography. `geo boundaries` downloads the StatCan 2016 boundary ZIP,
+**Runnable research workflow; network and time required.** The steps below use
+the reviewed Quebec package and public 2016 Census Profile controls to produce a
+census-tract population for Quebec City CMA (`421`). Enter them in order from
+one project working directory. The downloads are public, but substantially
+larger than the fictional installation and IPF examples.
+
+The `338,000` household target makes the walkthrough concrete and runnable; it
+is an illustrative rounded value, not a value SynthPopCan derives. For research
+use, replace it with a target appropriate to the project's population universe
+and keep the source citation with the controls.
+
+(step-0-prepare-boundary-files-once)=
+
+```{rubric} Step 0 — Prepare Boundary Files (once)
+:class: workflow-step
+```
+
+Before running `geo map`, we need a local CT boundary file. `geo boundaries`
+downloads the StatCan 2016 boundary ZIP,
 extracts the shapefile, and converts it from NAD83 / Statistics Canada Lambert
 to WGS-84 GeoJSON in one step. Run this once per geography level and reuse the
 result across all maps.
@@ -87,8 +113,7 @@ Supported levels: `ct` (census tracts), `ada` (aggregate dissemination areas),
 `da` (dissemination areas), `csd` (census subdivisions), `cd` (census
 divisions), `pr` (provinces and territories).
 
-If census profile data for controls is not yet downloaded, use the `statcan`
-commands:
+Download the matching CT Census Profile at the same time:
 
 ```bash
 synthpopcan statcan census-profile fetch \
@@ -96,18 +121,35 @@ synthpopcan statcan census-profile fetch \
   --out-dir data/raw/statcan/census-profile/2016
 ```
 
-See `synthpopcan statcan --help` for the full list of available downloads.
+This writes
+`data/raw/statcan/census-profile/2016/2016-census-profile-ct.csv` and a
+provenance manifest beside it. Both commands in this step require a network
+connection.
 
-## Step 1 — Generate Candidates
+(step-1-generate-candidates)=
 
-```bash
-synthpopcan models generate MODEL_PACKAGE.json \
-  --households 50000 \
-  --out candidates/ \
-  --random-seed 462
+```{rubric} Step 1 — Generate Candidates
+:class: workflow-step
 ```
 
-## Step 2 — Build Controls from Census Profile
+```bash
+synthpopcan models fetch quebec-2016-all-fields
+
+synthpopcan models generate quebec-2016-all-fields \
+  --households 50000 \
+  --out candidates/ \
+  --random-seed 421
+```
+
+The fetch requires a network connection the first time. Later runs reuse the
+verified package in the local model cache. Candidate generation writes
+`candidates/households.csv`, `candidates/persons.csv`, and `manifest.json`.
+
+(step-2-build-controls-from-census-profile)=
+
+```{rubric} Step 2 — Build Controls from Census Profile
+:class: workflow-step
+```
 
 The `geo controls` command reads a StatCan 2247-variable Census Profile bulk
 CSV, extracts household-size (members 52–56: 1, 2, 3, 4, 5-or-more persons) and
@@ -125,18 +167,23 @@ dimension-mismatch error in `geo calibrate`.
 
 ```bash
 synthpopcan geo controls \
-  --profile 98-401-X2016044_English_CSV_data.csv \
-  --geo-column ada \
-  --geo-prefix 35 \
-  --target 5500000 \
+  --profile data/raw/statcan/census-profile/2016/2016-census-profile-ct.csv \
+  --geo-column ct \
+  --geo-prefix 421 \
+  --target 338000 \
   --candidates candidates/
 ```
 
+This writes `candidates-controls-338000.csv` and `candidates-recoded/`. The
+controls describe Quebec City census tracts; the recoded candidate households
+contain `household_size_group` for the public five-or-more household-size
+category while retaining exact `household_size`.
+
 | Option | Description |
 | --- | --- |
-| `--profile` | StatCan Census Profile bulk CSV (2247-variable form). Fetch with `synthpopcan statcan census-profile fetch --geo-level ada`. |
+| `--profile` | StatCan Census Profile bulk CSV (2247-variable form). This walkthrough fetches the CT product in Step 0. |
 | `--geo-column` | Target geography type: `ada`, `ct`, `csd`, `cd`, or `da`. Determines which `GEO_LEVEL` rows to read. |
-| `--target` | Total household count to scale controls to (e.g. 5 500 000). |
+| `--target` | Total household count to scale controls to (338 000 for this Quebec City example). |
 | `--candidates` | Linked population directory to recode; exact `household_size` is preserved and `household_size_group` is added for Census Profile controls. |
 | `--geo-prefix` | Filter to geographies whose ID starts with this prefix. Use the two-digit province code for ADAs (e.g. `35`=Ontario, `24`=Quebec) or the three-digit CMA code for CTs (e.g. `535`=Toronto, `462`=Montreal). |
 | `--controls-out` | Output controls CSV. Defaults to `<candidates-name>-controls-<target>.csv`. |
@@ -145,7 +192,11 @@ synthpopcan geo controls \
 The Census Profile for a given geography level can be downloaded free from
 [Statistics Canada's Census Profile, 2016 Census](https://www12.statcan.gc.ca/census-recensement/2016/dp-pd/prof/index.cfm?Lang=E) page.
 
-## Step 2.5 — Estimate Run Size
+(step-2-5-estimate-run-size)=
+
+```{rubric} Step 2.5 — Estimate Run Size
+:class: workflow-step
+```
 
 Before launching a large calibration, use `geo estimate` to check the scale
 of the job. The command reads the controls, counts target geographies and
@@ -154,8 +205,8 @@ whether to use the web app, CLI, or Python API.
 
 ```bash
 synthpopcan geo estimate \
-  --controls candidates-controls-5500000.csv \
-  --geo-dimension ada \
+  --controls candidates-controls-338000.csv \
+  --geo-dimension ct \
   --candidate-households 50000 \
   --pool-size 10000
 ```
@@ -163,12 +214,12 @@ synthpopcan geo estimate \
 Example summary:
 
 ```text
-Target geographies: 1,115
-Target households: 3,750,000
-Estimated persons: 8,325,000
-Estimated output rows: 12,075,000
+Target geographies: 181
+Target households: 338,000
+Estimated persons: 750,360
+Estimated output rows: 1,088,360
 Calibration pool: 10,000 of 50,000 candidates
-Fits to run: 1,115
+Fits to run: 181
 Recommended surface: CLI or Python API
 Guidance:
   - Calibration will fit 10,000 candidate households for each target geography.
@@ -189,38 +240,33 @@ which candidates were drawn, run the calibration a few times with different
 controlled separately by `--random-seed`. Without `--pool-size`, the full pool is
 used and the subsample seed has no effect.
 
-Contributors can exercise the tracked calibration benchmark with:
+(step-3-calibrate-to-controls)=
 
-```bash
-uv run python scripts/benchmarks.py small-area
-uv run python scripts/benchmarks.py small-area --province-scale
+```{rubric} Step 3 — Calibrate to Controls
+:class: workflow-step
 ```
-
-The province-scale profile records 10,000 retained candidates, 1,200 target
-geographies, 4.5 million target households, a 180-second fit budget, and a
-512 MiB retained-weight budget. Timing is opt-in because it depends on the
-machine; fixture shape and memory estimates are checked by the default tests.
-
-## Step 3 — Calibrate to Controls
 
 ```bash
 synthpopcan geo calibrate candidates-recoded/ \
-  --controls candidates-controls-5500000.csv \
-  --geo-dimension ada \
-  --geo-column ada \
-  --out synthetic-population/
+  --controls candidates-controls-338000.csv \
+  --geo-dimension ct \
+  --geo-column ct \
+  --pool-size 10000 \
+  --out quebec-city-population/
 ```
 
 When compatible person margins are available, add a second normalized control
-file:
+file. **Template: replace the optional person-control path** with a file that
+describes the same Quebec City CT universe:
 
 ```bash
 synthpopcan geo calibrate candidates-recoded/ \
-  --controls household-controls.csv \
-  --person-controls person-age-sex-controls.csv \
-  --geo-dimension ada \
-  --geo-column ada \
-  --out synthetic-population/
+  --controls candidates-controls-338000.csv \
+  --person-controls quebec-city-ct-age-sex-controls.csv \
+  --geo-dimension ct \
+  --geo-column ct \
+  --pool-size 10000 \
+  --out quebec-city-population-with-person-controls/
 ```
 
 Household controls are fitted first. The optional second stage uses iterative
@@ -259,16 +305,22 @@ and remaining difference after calibration. Non-converged geographies usually
 mean the controls conflict, categories were not mapped consistently, or the
 candidate pool does not contain enough matching household types.
 
-## Step 4 — Explore Results as an Interactive Map
+(step-4-explore-results-as-an-interactive-map)=
+
+```{rubric} Step 4 — Explore Results as an Interactive Map
+:class: workflow-step
+```
 
 The `map` command generates a self-contained MapLibre GL JS choropleth HTML file
 from the synthesis output. It reprojects StatCan LCC boundary shapefiles to
 WGS-84 automatically; no external GIS tools are required.
 
 ```bash
-synthpopcan geo map synthetic-population/ \
-  --boundaries /path/to/lct_000b16a_e.shp \
-  --geo-column ct
+synthpopcan geo map quebec-city-population/ \
+  --boundaries data/boundaries/2016-boundary-ct.geojson \
+  --geo-column ct \
+  --out quebec-city-ct-map.html \
+  --title "Synthetic Quebec City Households"
 ```
 
 Pass `--boundaries` either as a `.geojson` produced by `geo boundaries`
@@ -465,7 +517,9 @@ Important options:
 
 ## Beginner API Shape
 
-The calibration step is also available from the beginner API:
+**Continue from the worked workflow.** The calibration step is also available
+from the beginner API using the candidate, control, and boundary artifacts
+created above:
 
 ```python
 from pathlib import Path
@@ -473,15 +527,15 @@ from pathlib import Path
 import synthpopcan as spc
 
 population = spc.LinkedPopulationFiles(
-    households=Path("candidate-households-recoded.csv"),
-    persons=Path("candidate-persons.csv"),
+    households=Path("candidates-recoded/households.csv"),
+    persons=Path("candidates-recoded/persons.csv"),
 )
 result = spc.calibrate_small_area(
     population,
-    Path("candidates-controls-5500000.csv"),
-    person_controls=Path("person-age-sex-controls.csv"),  # optional
-    geography_dimension="ada",
-    output_dir=Path("synthetic-ada-population"),
+    Path("candidates-controls-338000.csv"),
+    geography_dimension="ct",
+    output_dir=Path("quebec-city-api-population"),
+    pool_size=10_000,
 )
 
 result.assigned_households, result.assigned_persons, result.converged
@@ -493,11 +547,11 @@ map as `geo map`:
 ```python
 spc.render_small_area_map(
     households=result,
-    boundaries="data/boundaries/2016-boundary-ada.geojson",
-    geography_column="ada",
-    geography_id_field="ADAUID",
-    out="synthetic-ada-map.html",
-    title="Synthetic ADA Population",
+    boundaries="data/boundaries/2016-boundary-ct.geojson",
+    geography_column="ct",
+    geography_id_field="CTUID",
+    out="quebec-city-api-map.html",
+    title="Synthetic Quebec City Households",
 )
 ```
 
@@ -505,58 +559,26 @@ Use the API when a notebook needs to keep prose, file choices, and generated
 output together. Use the CLI when the output is large enough that streaming CSV
 writing and progress feedback are more useful.
 
-## Example: Quebec City CMA at Census-Tract Level
+## Adapt the Walkthrough to Another CMA
 
-Quebec City (CMA 421) is a good illustration of the full two-command workflow.
-The PUMF does not contain a Quebec City CMA code — only the five largest CMAs
-are individually coded in the public microdata. But the Quebec provincial model
-covers all Quebec households, and the publicly available 2016 Census Profile
-contains CT-level household-size and tenure margins for every CMA in Canada.
-Together they are enough to produce a calibrated, CT-level synthetic population
-for Quebec City.
+The worked workflow uses Quebec City because it demonstrates an important
+relationship between public sources. The PUMF does not identify Quebec City as
+one of its individually coded CMAs, but the reviewed Quebec provincial package
+can supply candidate household/person relationships, while the national Census
+Profile supplies CT controls for CMA `421`.
 
-**Prerequisites:**
+The same pattern works for another Canadian CMA when a suitable provincial
+package is available. Replace all of the following together:
 
-- Quebec provincial model package (installed or downloaded):
-  `quebec-2016-all-fields`
-- National CT Census Profile CSV:
-  `98-401-X2016043_English_CSV_data.csv`
-  (download free from StatCan, or use `synthpopcan statcan census-profile fetch --geo-level ct --out-dir data/raw/statcan/census-profile/2016`)
+- the reviewed model-package ID;
+- the three-digit CMA prefix passed to `--geo-prefix`;
+- the target household total and its citation;
+- output names and method notes.
 
-**Step 1 — Build CT controls (Quebec City prefix = 421)**
-
-```bash
-synthpopcan geo controls \
-  --profile 98-401-X2016043_English_CSV_data.csv \
-  --geo-column ct \
-  --geo-prefix 421 \
-  --target 338000 \
-  --controls-out quebec-city-ct-controls.csv
-```
-
-This extracts 181 census tracts and scales household-size and tenure margins
-to 338 000 households (the approximate 2016 Quebec City CMA total).
-
-**Step 2 — Generate candidates and calibrate**
-
-```bash
-synthpopcan geo synthesize quebec-2016-all-fields \
-  --households 338000 \
-  --controls quebec-city-ct-controls.csv \
-  --geo-dimension ct \
-  --geo-column ct \
-  --max-household-size 5 \
-  --out quebec-city-population/
-```
-
-`--max-household-size 5` adds a `household_size_group` column before calibration
-so generated households of size 5, 6, 7, and larger all fit the Census
-Profile's "5 or more persons" category. The original exact `household_size`
-column remains in the household output.
-
-The same pattern works for any Canadian CMA whose provincial model is
-available: substitute the CMA code prefix (e.g. `602` for Winnipeg, `205` for
-Halifax, `505` for Ottawa) and the matching model ID from `synthpopcan models list` (for example, `manitoba-2016-all-fields`).
+For example, Winnipeg uses prefix `602`, Halifax uses `205`, and Ottawa–Gatineau
+uses `505`. Confirm the appropriate package with `synthpopcan models show`, and
+do not assume that a provincial candidate model automatically represents every
+local relationship equally well.
 
 ## Statistical Quality
 

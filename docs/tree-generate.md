@@ -40,6 +40,11 @@ before generating output we intend to publish or share.
 
 ## Getting Started
 
+**Network required for published packages.** `models list` also shows the
+bundled fictional package, but the Montréal and Canada packages below must be
+downloaded on first use. To test generation entirely offline, use the bundled
+package in {doc}`installation`.
+
 List the packages SynthPopCan knows about:
 
 ```bash
@@ -56,16 +61,6 @@ For a Canada-wide package, use:
 
 ```bash
 synthpopcan models fetch canada-2016-all-fields
-```
-
-### `models remove`
-
-Removes a downloaded package from the local model cache. It does not remove the
-package from the public catalogue, and it cannot remove the bundled teaching
-model. We can fetch a removed package again later.
-
-```bash
-synthpopcan models remove montreal-cma-2016-all-fields
 ```
 
 Inspect a package before generating — confirms what geography, columns, and
@@ -125,6 +120,16 @@ synthpopcan models fetch montreal-cma-2016-all-fields
 synthpopcan models fetch canada-2016-all-fields
 ```
 
+### `models remove`
+
+Removes a downloaded package from the local model cache. It does not remove the
+package from the public catalogue, and it cannot remove the bundled teaching
+model. We can fetch a removed package again later.
+
+```bash
+synthpopcan models remove montreal-cma-2016-all-fields
+```
+
 ### `models build inspect`
 
 Prints a summary of a package — its geography, training period, column
@@ -168,36 +173,6 @@ Options:
 The household count is controlled directly. The person count is derived from
 the model's household-size distribution and will not match a separate population
 target exactly.
-
-### `models build generate-linked`
-
-Generates linked rows from two separate model JSON files rather than a packaged
-artifact. Use this when working with local model files that have not yet been
-packaged.
-
-```bash
-synthpopcan models build generate-linked \
-  --household-model household-model.json \
-  --person-model person-model.json \
-  --households 1000 \
-  --households-out synthetic-households.csv \
-  --persons-out synthetic-persons.csv \
-  --manifest-out generation-manifest.json \
-  --random-seed 42
-```
-
-### `models build generate`
-
-Generates flat rows from a single model file. Use this for non-linked
-(flat person or household) models rather than the household/person pair.
-
-```bash
-synthpopcan models build generate person-model.json \
-  --rows 1000 \
-  --condition PR=24 \
-  --out synthetic-persons.csv \
-  --manifest-out generation-manifest.json
-```
 
 ## Troubleshooting
 

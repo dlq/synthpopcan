@@ -2,10 +2,21 @@
 
 The `serve` command starts the **local SynthPopCan web app**. It is meant for
 local inspection and guided workflows: configuring runs, reviewing controls,
-checking outputs, and downloading generated artifacts. It is **not a public
-deployment command**.
+checking outputs, and downloading generated artifacts.
+
+```{admonition} The web app is local, not a deployment server
+:class: warning
+
+The `serve` command is **not a public deployment command**. Keep the app bound
+to the local loopback address unless we have separately provided appropriate
+authentication, access controls, and production hosting.
+```
 
 ## Getting Started
+
+**Runnable after installation.** The local app includes fictional IPF files and
+a bundled model package, so its first two teaching workflows work without a
+network connection or source checkout.
 
 From an installed environment:
 
@@ -83,6 +94,8 @@ This path is a **preflight**, not a browser calibration. Building appropriate
 controls and interpreting residuals are covered in
 [Small-Area Linked Synthesis](small-area.md).
 
+## Workflow Details
+
 ### IPF from margin tables
 
 Choose this when we want to fit **seed rows** to **public margin/control totals**.
@@ -133,8 +146,7 @@ helper. The bundled safe demo package is synthetic toy data, not Census
 microdata. Registered packages up to the 32 MiB uncompressed browser threshold
 can be downloaded and verified on first use. Larger packages are labelled
 **CLI only** and the local API refuses to serialize them into browser memory;
-use `synthpopcan models generate MODEL_ID ...` for those models. Server-side
-generation will replace that handoff in the planned backend runtime.
+use `synthpopcan models generate MODEL_ID ...` for those models.
 Generation stays disabled until the selected package has loaded successfully or
 an uploaded JSON file has been inspected. The ready state names the active model
 and adapts the row label and available condition columns to that package.
@@ -177,9 +189,9 @@ the CLI and reports:
 - whether the run belongs in the web app or the CLI/Python API;
 - concrete planning guidance.
 
-The `0.5.x` local app does not run the full calibration in the browser. The
-result ends with
-commented commands to fetch a selected published model, repeat
+The local app prepares the small-area workflow but does not run the full
+calibration in the browser. The result ends with commented commands to fetch a
+selected published model, repeat
 `geo estimate`, and execute `geo synthesize`. This keeps
 province-scale output out of browser memory while preserving the exact choices
 made in the form. When the controls use the Census Profile

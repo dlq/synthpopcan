@@ -689,10 +689,11 @@ def render_small_area_map(
     persons:
         Optional synthesis person CSV when ``households`` is a household path.
     boundaries:
-        StatCan boundary shapefile (.shp) for the target geography level.
-        For census tracts use ``lct_000b16a_e.shp``; for ADAs use
-        ``lada000b16a_e.shp``.  The file may stay in its original Lambert
-        Conformal Conic projection — reprojection to WGS-84 is automatic.
+        StatCan boundary shapefile (``.shp``) or prepared WGS-84 GeoJSON for the
+        target geography level. For census tracts, a source shapefile may be
+        named ``lct_000b16a_e.shp``; for ADAs, ``lada000b16a_e.shp``. Source
+        shapefiles may stay in their original Lambert Conformal Conic projection
+        because reprojection to WGS-84 is automatic.
     geography_column:
         Column in ``households`` that holds the geography ID (e.g. ``ct``).
     geography_id_field:

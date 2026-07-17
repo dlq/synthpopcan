@@ -27,6 +27,17 @@ unless we already know we need **lower-level objects** such as `IPFMargin`,
 `ControlTable`, or `FrequencyTreeModel`. This page is the advanced guide to the
 full library surface.
 
+```{admonition} These are composable workflow fragments
+:class: note
+
+The examples on this page are complete Python fragments, but most are not
+standalone teaching programs. They use files introduced in the surrounding
+section or values created by an earlier fragment. Replace research paths and
+run the sections in order when they share variables such as `controls_path` or
+`output_dir`. Live Statistics Canada examples require a network connection, and
+microdata examples require appropriately controlled local source files.
+```
+
 ## Import Style
 
 For longer research code, import from the **module that owns a concept**:
@@ -46,6 +57,57 @@ Use `synthpopcan.api` or `import synthpopcan as spc` for the beginner-friendly
 workflow functions. Use modules such as `synthpopcan.ipf`,
 `synthpopcan.controls`, and `synthpopcan.tree` when we need lower-level
 objects or advanced options.
+
+## Local Data and Sources
+
+The local-data helpers let a notebook or research script check its expected
+directories and inspect source-file structure before a modelling function reads
+the data. The layout check is non-destructive and does not open private source
+rows:
+
+```python
+from pathlib import Path
+
+from synthpopcan.localdata import inspect_local_data_layout
+from synthpopcan.sources import inspect_source_root, read_source_schema
+
+data_root = Path("data")
+
+for check in inspect_local_data_layout(data_root):
+    print(check.status, check.name, check.path)
+
+summary = inspect_source_root(data_root / "raw")
+schema = read_source_schema(data_root / "raw" / "example.csv")
+
+print(summary["files"], summary["extensions"])
+print(schema["delimiter"], schema["columns"])
+```
+
+`inspect_source_root` counts files and extensions without parsing their rows.
+`read_source_schema` reads the header and detects the delimiter, but does not
+return source records. These are useful first checks when a project needs to
+record what arrived before deciding how to normalize it.
+
+```{admonition} Sampling is a disclosure decision
+:class: warning
+
+The lower-level `read_source_sample` function returns actual source rows. Unlike
+the command-line `data sample` wrapper, it does not require an
+`--allow-private` confirmation. Call it only when we have already decided that
+showing those rows in a notebook, terminal, log, or saved output is appropriate.
+```
+
+For a public or fictional file, sampling can be explicit and small:
+
+```python
+from synthpopcan.sources import read_source_sample
+
+preview = read_source_sample(data_root / "raw" / "example.csv", rows=3)
+preview["rows"]
+```
+
+See [Data](data.md) for the local directory policy, privacy boundaries, and
+command-line safeguards that also apply when we call these functions directly.
 
 ## Controls
 
@@ -433,10 +495,17 @@ model. The shared conditioning columns on the person model must be available in
 generated household rows.
 
 ```python
-from synthpopcan.tree import generate_linked_population, validate_linked_population
+from pathlib import Path
 
-# household_model and person_model can be read from JSON with read_tree_model()
-# or created earlier in the script with train_frequency_model().
+from synthpopcan.tree import (
+    generate_linked_population,
+    read_tree_model,
+    validate_linked_population,
+)
+
+household_model = read_tree_model(Path("household-model.json"))
+person_model = read_tree_model(Path("person-model.json"))
+
 households, persons = generate_linked_population(
     household_model,
     person_model,
@@ -449,47 +518,14 @@ link_report = validate_linked_population(households, persons)
 print(link_report["passed"])
 ```
 
-## Maintainer Package Workflow Script
-
-Training, reviewing, and bundling a model package from restricted microdata is
-not part of the beginner API. It is still useful to keep that workflow in
-Python when the goal is a reproducible release artifact rather than a one-off
-interactive command.
-
-The repository includes `scripts/build_all_model_packages.py`, which builds
-every province and PUMF-coded CMA package in a single run:
-
-```bash
-uv run python scripts/build_all_model_packages.py
-```
-
-Pass `--only` to build a subset:
-
-```bash
-uv run python scripts/build_all_model_packages.py --only quebec-2016 ontario-2016
-```
-
-That script uses library modules directly to:
-
-- read the local 2016 hierarchical PUMF once, then filter per geography;
-- resolve all currently supported household and person column blocks;
-- train linked conditional-frequency household and person models;
-- audit the private working models and block on any release-blocking issues;
-- write publishable-candidate model copies and release manifests;
-- write a linked package JSON under `data/private/model-release-assets/`
-  ready for upload as a GitHub Release asset.
-
-Ordinary installs never run this script — they fetch packages on demand via
-`synthpopcan models fetch`.
-
-The full script is at `scripts/build_all_model_packages.py` in the source
-checkout.
-
 ## Validation
 
 Validation functions return JSON-serializable dictionaries so they can be saved,
 printed, tested, or rendered in notebooks. They are checks on a particular
 artifact, not a claim that a synthetic population is substantively correct.
+
+This example continues with `controls` and `fit` from the **Controls** and
+**IPF** sections above:
 
 ```python
 from synthpopcan.validation import build_control_validation_report
@@ -507,7 +543,10 @@ if not report["passed"]:
         print(issue["message"])
 ```
 
-Tree-output validation compares generated distributions with a training view:
+Tree-output validation compares generated distributions with a training view.
+
+The next example continues with `person_training`, `person_targets`, and
+`person_conditions` from **Microdata**, and `rows` from **Tree Models**:
 
 ```python
 from synthpopcan.validation import build_tree_output_validation_report

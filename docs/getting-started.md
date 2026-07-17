@@ -1,8 +1,28 @@
-# Which Workflow Should We Use?
+# Getting Started
+
+This page comes after the {doc}`introduction` and {doc}`installation`. It helps
+us choose a first practical workflow, then points us to the walkthrough and
+reference material for that path.
+
+## Check the Installation First
+
+Before choosing a workflow, make sure the installation check succeeds:
+
+```bash
+synthpopcan --help
+```
+
+If the terminal cannot find `synthpopcan`, return to {doc}`installation`. That
+page explains installation with `pip`, one-off commands with `uvx`, and commands
+run from a source checkout. It also includes a short fictional generation and
+validation example. Once that example works, the same installation is ready for
+the paths below.
+
+## Choose a Workflow
 
 SynthPopCan has several entry points because people come to synthetic
-population work with different questions. This page helps us choose a first
-path before we learn the command names.
+population work with different questions. We can choose a path before learning
+all of the command names.
 
 SynthPopCan has three friendly surfaces: the **local web app**, the **command
 line**, and the **beginner Python API**. They can do related work, but they
@@ -14,7 +34,11 @@ that fits our working style, and keep the generated files together with
 inspection, the command line is good for reproducible runs, and a notebook is
 good when code, prose, and interpretation need to sit side by side.
 
-## If We Want To Try SynthPopCan
+(if-we-want-to-try-synthpopcan)=
+
+```{rubric} If We Want To Try SynthPopCan
+:class: workflow-step
+```
 
 Start with the {doc}`web-app`.
 
@@ -28,9 +52,15 @@ Use this path when:
 - we want to see the shape of controls, generated rows, and validation output;
 - we are not yet sure which command-line workflow we need.
 
-After that, move to the command-line pages when we need reproducibility.
+After that, move to {doc}`command-line` when we need reproducibility. It maps the
+command groups onto the same beginner workflows and explains how to find help at
+each level.
 
-## If We Want a Notebook or Teaching Script
+(if-we-want-a-notebook-or-teaching-script)=
+
+```{rubric} If We Want a Notebook or Teaching Script
+:class: workflow-step
+```
 
 Start with {doc}`library-getting-started`.
 
@@ -42,7 +72,8 @@ exposes a small surface:
 - read controls;
 - fit IPF weights;
 - generate from a reviewed model package;
-- calibrate linked candidates to small-area controls.
+- calibrate linked candidates to small-area controls;
+- render calibrated small-area output as a browser map.
 
 Use this path when:
 
@@ -53,9 +84,16 @@ Use this path when:
 The deeper library discussion is in {doc}`library`, and the generated reference
 is in {doc}`api`.
 
-## If We Have Seed Rows and Control Totals
+(if-we-have-seed-rows-and-control-totals)=
 
-Start with {doc}`ipf`, then use {doc}`controls` and {doc}`statcan` as needed.
+```{rubric} If We Have Seed Rows and Control Totals
+:class: workflow-step
+```
+
+If we already have normalized controls, start with {doc}`ipf`. If we still need
+to find and prepare public totals, follow {doc}`statcan`, then {doc}`controls`,
+and continue to {doc}`ipf`. The {doc}`command-line` chapter shows this complete
+sequence as one workflow.
 
 IPF is the right first method when our **seed table already contains the
 columns we want to fit**. For example, if the seed rows contain age group and
@@ -72,7 +110,11 @@ Use this path when:
 Do not use IPF to **invent a missing variable**. If the seed rows do not contain
 a column, IPF cannot fit controls for that column.
 
-## If We Have or Need Linked Households and People
+(if-we-have-or-need-linked-households-and-people)=
+
+```{rubric} If We Have or Need Linked Households and People
+:class: workflow-step
+```
 
 Start with {doc}`tree-generate` if we have a reviewed package. Use {doc}`tree`
 when we need to train, audit, or package models.
@@ -91,7 +133,11 @@ Use this path when:
 Tree output should be read as **modelled candidate data**. It still needs
 validation, and it may need calibration to public controls.
 
-## If We Need Small-Area Geography
+(if-we-need-small-area-geography)=
+
+```{rubric} If We Need Small-Area Geography
+:class: workflow-step
+```
 
 Start with {doc}`small-area`.
 
@@ -111,7 +157,11 @@ Dissemination blocks belong later in the workflow. They are better understood
 as a **placement geography** after households have been calibrated to CTs, ADAs,
 or DAs.
 
-## If We Are Still Inspecting Sources
+(if-we-are-still-inspecting-sources)=
+
+```{rubric} If We Are Still Inspecting Sources
+:class: workflow-step
+```
 
 Start with {doc}`data`, {doc}`statcan`, and {doc}`microdata`.
 
@@ -126,7 +176,11 @@ Use this path when:
 - we are checking whether a file belongs in a public workflow, a private cache,
   or a derived model package.
 
-## If We Need To Check an Output
+(if-we-need-to-check-an-output)=
+
+```{rubric} If We Need To Check an Output
+:class: workflow-step
+```
 
 Start with {doc}`validate`.
 
@@ -144,6 +198,7 @@ Use this path when:
 | Situation | Start Here | Why |
 | --- | --- | --- |
 | We want the friendliest first run | {doc}`web-app` | Forms, previews, and downloads reduce setup friction. |
+| We want a reproducible terminal workflow | {doc}`command-line` | Commands, inputs, and reports can become part of the research record. |
 | We want a notebook | {doc}`library-getting-started` | Prose, code, outputs, and interpretation stay together. |
 | We have seed rows and margins | {doc}`ipf` | IPF adjusts weights to match controls already represented in the seed. |
 | We have a reviewed model package | {doc}`tree-generate` | Generate linked households and people from the package. |

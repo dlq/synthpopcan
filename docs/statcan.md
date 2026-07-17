@@ -8,10 +8,14 @@ over the network directly from Statistics Canada's public servers. If a server
 is unavailable or a URL changes, the command fails — treat downloaded files as
 worth keeping locally so we do not need to re-fetch them.
 
+```{admonition} Downloaded Statistics Canada files are not controls yet
+:class: note
+
 Downloading a file is **only the first step**. The fetched files are **raw**:
 wide format, Statistics Canada labels, characteristic codes, and not ready to
 use as controls directly. After downloading, use {doc}`controls` to inspect,
 map categories, and normalize before fitting.
+```
 
 ## Concept
 
@@ -52,6 +56,10 @@ researcher. A table that is appropriate for one geography or population
 universe may be misleading for another.
 
 ## Getting Started
+
+**Network required.** These commands query or download from Statistics Canada's
+public services. Search and metadata results can change as the service changes;
+keep downloaded files and provenance manifests with the project.
 
 The WDS workflow starts with a keyword search to find a product ID, then a
 quick metadata check before committing to a full download:

@@ -439,7 +439,7 @@ no browser involvement. The API never returns the complete output CSV as JSON.
 - Create: focused ES modules for API access, run state, run list, workflow steps,
   and progress events
 
-- Modify: `tests/web/scenarios.spec.mjs`, `docs/scenarios.md`, `docs/web-app.md`
+- Modify: `tests/web/scenarios.spec.mjs`, `tests/SCENARIOS.md`, `docs/web-app.md`
 
 - [ ] Replace the workflow-card first screen with the Runs workbench and a
   single New run action while preserving existing visual tokens and branding.
@@ -603,7 +603,7 @@ instead of becoming a second menu that mirrors every CLI command.
 - Remove obsolete browser computation modules and tests
 
 - Modify: `README.md`, `PLANS.md`, `CHANGELOG.md`, `docs/web-app.md`,
-  `docs/which-workflow.md`, `docs/scenarios.md`, `docs/glossary.md`
+  `docs/getting-started.md`, `tests/SCENARIOS.md`, `docs/glossary.md`
 
 - Modify: packaging, CI, architecture, API, workflow, and browser tests
 

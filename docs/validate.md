@@ -24,8 +24,12 @@ and release, see {doc}`tree`.
 
 ## What Validation Does Not Prove
 
+```{admonition} A passing report is evidence, not proof
+:class: important
+
 A passing validation report is **not a certificate** that the synthetic population is
 substantively correct. It proves only that the checks we asked for passed.
+```
 
 Validation can miss:
 
@@ -63,6 +67,11 @@ The goal is not to make validation longer for its own sake. The goal is to stop
 a neat pass/fail summary from hiding **where the model is weakest**.
 
 ## Getting Started
+
+**Continue from the previous step.** Validation reads generated files and the
+controls or training view used to create them. The filenames below match the
+preceding IPF and model workflows; replace them when our project uses other
+names.
 
 The typical validation sequence follows the generation steps. After IPF
 fitting, validate the fitted weights against the controls that were used to fit

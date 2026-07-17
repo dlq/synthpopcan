@@ -15,17 +15,17 @@ social scientists, policy researchers, and technically curious project teams.
 The documentation assumes that many readers care more about source choices,
 categories, provenance, and interpretation than about Python internals.
 
-Before working through any workflow, read the {doc}`field-primer`. It explains
-the field around synthetic populations, IPF, tree models, disclosure risk,
-validation, and why these outputs should be treated as interpretive artifacts
-rather than recovered facts. The field primer also makes the case for why
-humanities and digital-humanities perspectives are methodologically central —
-not supplementary — to this kind of work. Readers who skip it and go straight
-to installation are likely to miss framing that shapes everything else.
+After this introduction, continue to {doc}`installation`, then use
+{doc}`getting-started` to choose a practical path through the web app, command
+line, or beginner Python API.
 
-If we already know the kind of task we want to do, use
-{doc}`which-workflow` as a map. If unfamiliar terms get in the way, keep the
-{doc}`glossary` open in another tab.
+Before we use generated data in research, read the {doc}`field-primer`. It
+explains the field around synthetic populations, IPF, tree models, disclosure
+risk, validation, and why these outputs should be treated as interpretive
+artifacts rather than recovered facts. The primer also makes the case for why
+humanities and digital-humanities perspectives are methodologically central,
+not supplementary, to this kind of work. If unfamiliar terms get in the way,
+keep the {doc}`glossary` open in another tab.
 
 ## What Is a Synthetic Population?
 
@@ -179,11 +179,13 @@ Most SynthPopCan workflows follow the same pattern:
 This pattern is intentionally conservative. It helps readers understand not only
 what the tool produced, but what choices shaped the result.
 
-The rest of the documentation follows this pattern. Use
-[Which Workflow Should We Use?](which-workflow.md) when we are choosing a path, [Data](data.md) when we are still inspecting files, [Statistics Canada
+The rest of the documentation follows this pattern. Use [Getting
+Started](getting-started.md) when we are choosing a path, [Data](data.md) when we are still inspecting files, [Statistics Canada
 Sources](statcan.md) and [Controls](controls.md) when we are preparing public
 aggregate totals, [IPF](ipf.md) when we are fitting seed rows to controls,
-[Tree Models](tree.md) when we are training or using conditional generation,
+[Generate From a Model Package](tree-generate.md) when we are using a reviewed
+conditional model, [Tree Models](tree.md) when we are training, auditing, or
+packaging a new model,
 [Small-Area Linked Synthesis](small-area.md) when assigning linked outputs to
 CTs, ADAs, or DAs, and [Validate](validate.md) when we are checking outputs.
 If we prefer Python notebooks to command-line workflows, start with

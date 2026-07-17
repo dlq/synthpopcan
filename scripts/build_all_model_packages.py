@@ -59,8 +59,8 @@ ASSETS_DIR = ROOT / "data/private/model-release-assets"
 # "profile" is "full" for geographies with ≥2 000 households; "minimal" for
 # smaller ones where the full column set would produce sparse / unpublishable
 # models.
-# Quebec (PR=24) and Montreal (CMA=462) are excluded — they have dedicated
-# build scripts.
+# Quebec (PR=24) and Montreal (CMA=462) are excluded. Their currently published
+# packages were prepared separately and are not reconstructed by this batch tool.
 # Territories (PR=70, ~402 hh) are excluded — too small to be publishable.
 
 TARGETS: list[dict] = [

@@ -1,17 +1,39 @@
 # Installation
 
 SynthPopCan is a **command-line tool** and **Python library**. Using it requires
-opening a **terminal** — a text window where we type commands rather than click
-buttons. For readers who have not used a terminal before, these introductions
-are written for humanities researchers and require no prior programming
-experience:
+opening a **terminal**, a text window where we type commands rather than click
+buttons. The examples in this documentation use a **Unix-style shell** so that
+the same commands work on macOS, Linux, and Windows through the Windows
+Subsystem for Linux (WSL).
 
-- **Mac:** [Introduction to the Bash Command Line](https://programminghistorian.org/en/lessons/intro-to-bash)
-  — Programming Historian
-- **Windows:** [Introduction to the Windows Command Line with PowerShell](https://programminghistorian.org/en/lessons/intro-to-powershell)
-  — Programming Historian
+For a short introduction, start with MDN's [Command Line Crash
+Course](https://developer.mozilla.org/en-US/docs/Learn_web_development/Getting_started/Environment_setup/Command_line).
+For a longer research-oriented lesson, use [Library Carpentry: The UNIX
+Shell](https://librarycarpentry.github.io/lc-shell/) or [Software Carpentry: The
+Unix Shell](https://swcarpentry.github.io/shell-novice/). These lessons assume no
+previous shell experience and explain folders, paths, files, commands, options,
+and pipes.
 
-Read one of those first, then return here.
+````{admonition} Windows users
+:class: note
+
+We recommend using the **Windows Subsystem for Linux (WSL)** so the Unix-style
+examples on this site work unchanged. Follow Microsoft's [Install
+WSL](https://learn.microsoft.com/en-us/windows/wsl/install) guide, then open the
+**Ubuntu** profile in [Windows
+Terminal](https://learn.microsoft.com/en-us/windows/terminal/) and run:
+
+```bash
+sudo apt update
+sudo apt install python3 python3-pip python3-venv
+python3 --version
+```
+
+The final command must report Python 3.11 or newer. Continue through this page
+inside the Ubuntu terminal. For help locating Windows files from WSL, see
+Microsoft's [WSL development-environment
+guide](https://learn.microsoft.com/en-us/windows/wsl/setup/environment).
+````
 
 SynthPopCan can be installed from [PyPI](https://pypi.org/), run as a one-off
 command with `uvx`, or installed from a source checkout for development. If we
@@ -21,10 +43,11 @@ the source checkout.
 
 ## Requirements
 
-- Python 3.11 or newer. Download from [python.org/downloads](https://www.python.org/downloads/).
-  For readers who have not used Python before, the Programming Historian's
-  [Introduction to Python](https://programminghistorian.org/en/lessons/introduction-and-installation)
-  is a good starting point.
+- Python 3.11 or newer in the macOS, Linux, or WSL environment where we will run
+  SynthPopCan. Download from
+  [python.org/downloads](https://www.python.org/downloads/) on macOS, use the
+  operating system's package manager on Linux, or follow the WSL steps above on
+  Windows.
 - Git, only when cloning from the repository.
 - `pip`, which is included with most Python installations.
 - Optional: [`uv`](https://docs.astral.sh/uv/), when using `uvx` for one-off commands or when working on the
@@ -36,10 +59,25 @@ command-line workflows.
 
 ## Install From PyPI
 
-For most readers, the best first path is the **published package from PyPI**:
+For most readers, the best first path is the **published package from PyPI**.
+Create a project folder and an isolated Python environment first:
 
 ```bash
+mkdir synthpopcan-work
+cd synthpopcan-work
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
 python -m pip install synthpopcan
+```
+
+The virtual environment keeps SynthPopCan and its dependencies separate from
+other Python projects. When we return to this folder in a new terminal session,
+activate it again before running SynthPopCan:
+
+```bash
+cd synthpopcan-work
+source .venv/bin/activate
 ```
 
 Then check that the command is available:
@@ -163,47 +201,9 @@ but it does not represent a Canadian population.
 If we are running from a source checkout without activating the environment, we
 can add `uv run` before each `synthpopcan` command.
 
-For a first IPF workflow, continue to [IPF](ipf.md). For a self-contained
-notebook example that creates tiny seed and control files, see
-[Getting Started With the Beginner API](library-getting-started.md).
-
-## Build the Documentation
-
-```bash
-uv run sphinx-build -W -b html docs docs/_build/html
-```
-
-The `-W` flag treats Sphinx warnings as errors. This catches malformed markup
-and unresolved internal references before [Read the
-Docs](https://about.readthedocs.com/) publishes the site. Check external links
-separately with:
-
-```bash
-uv run sphinx-build -b linkcheck docs docs/_build/linkcheck
-```
-
-Check the reStructuredText source files with:
-
-```bash
-uv run --group docs doc8 docs
-```
-
-Check Markdown formatting with:
-
-```bash
-uv run --group docs mdformat --check docs README.md
-```
-
-Apply Markdown formatting with:
-
-```bash
-uv run --group docs mdformat docs README.md
-```
-
-When changing examples, also run the examples that are presented as runnable.
-Good examples are part of the interface: check command names, fixture paths,
-column names, output files, and whether the example still makes sense in the
-surrounding explanation.
+Once this check succeeds, continue to [Getting Started](getting-started.md).
+That page helps us choose between the local web app, a command-line workflow,
+and a self-contained notebook example.
 
 ## Local Data
 
@@ -227,8 +227,11 @@ else.
 
 ## Working Folder Advice
 
-Run commands from the repository root unless a page says otherwise. In examples,
-lines ending with `\` continue onto the next line.
+Run commands from a **project working directory** where we are comfortable
+creating input, output, and report files. Source contributors should use the
+repository root for the development commands in
+[CONTRIBUTING.md](https://github.com/dlq/synthpopcan/blob/main/CONTRIBUTING.md).
+In examples, lines ending with `\` continue onto the next line.
 
 Most examples write small files such as `seed.csv`, `weights.csv`, and
 `fit-report.json` in the current directory. For a real project, create a

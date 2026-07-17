@@ -263,9 +263,11 @@ to make them explicit enough that readers can argue with them.
 
 Start with the command pages when we need to run a workflow:
 
-- {doc}`which-workflow` when we know the task but not the right surface;
+- {doc}`getting-started` when we know the task but not the right surface;
 - {doc}`ipf` for margin-table calibration;
-- {doc}`tree` for conditional and linked household/person generation;
+- {doc}`tree-generate` for linked household/person generation from a reviewed
+  package;
+- {doc}`tree` for training, auditing, and packaging conditional models;
 - {doc}`controls` and {doc}`statcan` for preparing public aggregate sources;
 - {doc}`validate` for checking generated artifacts.
 
@@ -293,8 +295,9 @@ commands, options, examples, and troubleshooting.
   to become IPF seed rows or tree-training rows.
 - **Calibration:** use {doc}`ipf` for the check, fit, report, validate pattern.
   IPF changes row weights; it does not invent unsupported categories.
-- **Conditional generation:** use {doc}`tree` for tree-model training,
-  generation, linked household/person workflows, and model-release review.
+- **Conditional generation:** use {doc}`tree-generate` to generate linked rows
+  from a reviewed package. Use {doc}`tree` when we need to train, audit, or
+  package a model ourselves.
 - **Validation:** use {doc}`validate` to keep explicit evidence beside each
   generated artifact. Validation is evidence, not a certificate.
 

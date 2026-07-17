@@ -269,6 +269,10 @@ uncertainty. Do not treat exact-looking numbers as exact knowledge.
 
 ## Getting Started
 
+**Runnable teaching example.** The commands in this section create their own
+small fictional inputs and can be entered in order after installation. They do
+not require a network connection or source checkout.
+
 Create the tiny fictional seed and control files used in this walkthrough. This
 command is included in normal PyPI installations and does not download data:
 
@@ -361,8 +365,13 @@ Options:
 - `--allow-nonconverged`: write weights even if the fit does not converge.
 - `--report PATH`: JSON fit report path.
 
+```{admonition} Non-converged output is diagnostic only
+:class: warning
+
 By default, non-converged fits fail before writing weights. Use
-`--allow-nonconverged` only for deliberate diagnostic work.
+`--allow-nonconverged` only for deliberate diagnostic work, and do not treat the
+resulting weights as a finished synthetic population.
+```
 
 ### `ipf report`
 

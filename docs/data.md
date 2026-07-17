@@ -41,19 +41,19 @@ Large published packages should be attached as GitHub Release assets and fetched
 on demand with `synthpopcan models fetch MODEL_ID`, not bundled into the default
 Python install.
 
-Model packages are still derived research artifacts. Before publishing one:
-
-- check that it contains no raw rows, source identifiers, or private paths;
-- confirm the source citation and redistribution note are clear;
-- run the relevant tree-model audit and release workflow;
-- inspect package metadata with `synthpopcan models build inspect`;
-- verify large package files are outside the installed package and listed in
-  the model registry with a checksum.
+Model packages are still derived research artifacts, not raw data. Researchers
+preparing a package should follow {doc}`tree`; repository maintainers should
+also follow the model-safety and release-asset procedures in
+[CONTRIBUTING.md](https://github.com/dlq/synthpopcan/blob/main/CONTRIBUTING.md#data-and-model-safety).
 
 SynthPopCan is independent research software. It is not affiliated with or
 endorsed by Statistics Canada or the Government of Canada.
 
 ## Getting Started
+
+**Mixed runnable and template commands.** `data doctor` is safe to run as shown.
+For `data inspect`, `data schema`, and `data sample`, replace the example path
+with a file or directory in our own project.
 
 `data doctor` checks whether the expected subdirectories exist under the data
 root. Run it at the start of a new project to confirm the layout is correct, or
@@ -170,9 +170,15 @@ synthpopcan data schema data/raw/example.csv --format json
 ### `data sample`
 
 Prints a small number of rows from a file so we can see its actual structure.
-Because sample outputs real source data, files under `data/private` require
-`--allow-private` — this is a deliberate friction to prevent accidentally
-printing restricted content to a shared terminal, log, or screen-share session.
+
+```{admonition} Sampling private data writes it to the terminal
+:class: warning
+
+Because `data sample` outputs real source data, files under `data/private`
+require `--allow-private`. This deliberate friction helps prevent us from
+printing restricted content accidentally in a shared terminal, log, or
+screen-share session.
+```
 
 ```bash
 synthpopcan data sample data/raw/example.csv --rows 10

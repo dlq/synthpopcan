@@ -1,9 +1,16 @@
 from __future__ import annotations
 
+import ast
 import importlib
 import inspect
+import json
 import re
+import shlex
 from pathlib import Path
+
+import click
+
+from synthpopcan.cli import cli
 
 
 def test_helper_modules_declare_public_exports() -> None:
@@ -81,8 +88,8 @@ def split_members(raw_members: str) -> list[str]:
     return [member.strip() for member in raw_members.split(",") if member.strip()]
 
 
-def test_documented_scenarios_have_automated_test_references() -> None:
-    scenario_text = Path("docs/scenarios.md").read_text()
+def test_scenario_inventory_matches_automated_test_references() -> None:
+    scenario_text = Path("tests/SCENARIOS.md").read_text()
     scenario_ids = re.findall(r"^## (SCN-[A-Z]+-\d{3})$", scenario_text, re.MULTILINE)
     test_text = "\n".join(
         (
@@ -113,3 +120,159 @@ def test_correctness_assurance_is_public_and_names_each_evidence_family() -> Non
         "scripts/check-wheel.sh",
     ):
         assert evidence_path in correctness_text
+
+
+def test_command_line_navigation_follows_workflow_dependencies() -> None:
+    docs_index_text = Path("docs/index.rst").read_text()
+    command_line_section = docs_index_text.split(":caption: Command Line", 1)[1]
+    command_line_section = command_line_section.split(":caption: Library", 1)[0]
+    expected_pages = (
+        "command-line",
+        "data",
+        "statcan",
+        "controls",
+        "ipf",
+        "tree-generate",
+        "small-area",
+        "validate",
+        "microdata",
+        "tree",
+        "web-app",
+    )
+
+    positions = [command_line_section.index(f"   {page}\n") for page in expected_pages]
+    assert positions == sorted(positions)
+
+
+def test_documented_commands_use_the_current_cli_surface() -> None:
+    documented_paths = (
+        Path("README.md"),
+        Path("CORRECTNESS.md"),
+        Path("CONTRIBUTING.md"),
+        *Path("docs").glob("*.md"),
+    )
+    checked_commands = 0
+    errors: list[str] = []
+
+    for path in documented_paths:
+        bash_blocks = re.findall(
+            r"^```bash\n(.*?)^```$",
+            path.read_text(),
+            re.MULTILINE | re.DOTALL,
+        )
+        for block_number, block in enumerate(bash_blocks, start=1):
+            for line in block.replace("\\\n", " ").splitlines():
+                tokens = shlex.split(line.strip())
+                args = documented_synthpopcan_args(tokens)
+                if args is None:
+                    continue
+                checked_commands += 1
+                errors.extend(documented_command_errors(path, block_number, args))
+
+    assert checked_commands >= 150
+    assert not errors, "\n".join(errors)
+
+
+def documented_synthpopcan_args(tokens: list[str]) -> list[str] | None:
+    """Return CLI arguments from a documented invocation, when present."""
+
+    for prefix in (
+        ["synthpopcan"],
+        ["uvx", "synthpopcan"],
+        ["uv", "run", "synthpopcan"],
+    ):
+        if tokens[: len(prefix)] == prefix:
+            return tokens[len(prefix) :]
+    return None
+
+
+def documented_command_errors(
+    path: Path,
+    block_number: int,
+    args: list[str],
+) -> list[str]:
+    """Check one documented command path and its displayed option names."""
+
+    command: click.Command = cli
+    command_path: list[str] = []
+    index = 0
+    while isinstance(command, click.Group) and index < len(args):
+        token = args[index]
+        if token.startswith("-") or token in {"COMMAND", "SUBCOMMAND"}:
+            break
+        child = command.commands.get(token)
+        if child is None:
+            return [
+                f"{path}: bash block {block_number}: unknown command "
+                f"{' '.join([*command_path, token])}"
+            ]
+        command = child
+        command_path.append(token)
+        index += 1
+
+    if not command_path:
+        return []
+    valid_options = {"-h", "--help"}
+    for parameter in command.params:
+        valid_options.update(getattr(parameter, "opts", ()))
+        valid_options.update(getattr(parameter, "secondary_opts", ()))
+    shown_options = {
+        token.split("=", 1)[0] for token in args[index:] if token.startswith("-")
+    }
+    unknown_options = sorted(shown_options - valid_options)
+    if not unknown_options:
+        return []
+    return [
+        f"{path}: bash block {block_number}: "
+        f"{' '.join(command_path)} uses unknown options "
+        f"{', '.join(unknown_options)}"
+    ]
+
+
+def test_library_examples_and_companion_notebook_are_parseable() -> None:
+    for path in (
+        Path("docs/library-getting-started.md"),
+        Path("docs/library.md"),
+    ):
+        python_blocks = re.findall(
+            r"^```python\n(.*?)^```$",
+            path.read_text(),
+            re.MULTILINE | re.DOTALL,
+        )
+        assert python_blocks, f"{path} should contain Python examples"
+        for index, block in enumerate(python_blocks, start=1):
+            ast.parse(block, filename=f"{path}:python-block-{index}")
+
+    notebook_path = Path("docs/_static/library-getting-started.ipynb")
+    notebook = json.loads(notebook_path.read_text())
+    notebook_text = "\n".join("".join(cell["source"]) for cell in notebook["cells"])
+    for workflow_name in (
+        "fit_ipf",
+        "generate_from_model",
+        "calibrate_small_area",
+        "render_small_area_map",
+    ):
+        assert workflow_name in notebook_text
+
+    for cell in notebook["cells"]:
+        if cell["cell_type"] == "code":
+            ast.parse("".join(cell["source"]), filename=f"{notebook_path}:{cell['id']}")
+
+
+def test_beginner_notebook_code_cells_execute(tmp_path: Path, monkeypatch) -> None:
+    notebook_path = Path("docs/_static/library-getting-started.ipynb").resolve()
+    notebook = json.loads(notebook_path.read_text())
+    monkeypatch.chdir(tmp_path)
+    namespace: dict[str, object] = {}
+
+    for cell in notebook["cells"]:
+        if cell["cell_type"] != "code":
+            continue
+        source = "".join(cell["source"])
+        code = compile(source, f"{notebook_path}:{cell['id']}", "exec")
+        exec(code, namespace)
+
+    assert Path("synthetic-weights.csv").is_file()
+    assert Path("expanded-population.csv").is_file()
+    assert Path("synthetic-linked-population/households.csv").is_file()
+    assert Path("synthetic-linked-population/persons.csv").is_file()

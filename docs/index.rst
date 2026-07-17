@@ -18,12 +18,19 @@ validation reports are what make the generated population interpretable.
 Start By Task
 -------------
 
-If we are unsure where to begin, start with
-:doc:`Which Workflow Should We Use? <which-workflow>`. It maps common research
-situations to the **web app**, **command-line tools**, **notebook API**, and
-**advanced library** pages.
+If we are new to SynthPopCan, follow these pages in order:
 
-Most new readers should start with one of two generation workflows:
+#. Read the :doc:`Introduction <introduction>` to understand what synthetic
+   populations are and what SynthPopCan can and cannot claim.
+#. Use :doc:`Installation <installation>` to install the package and run a
+   small fictional smoke test.
+#. Continue to :doc:`Getting Started <getting-started>` to choose a workflow
+   and move into the **web app**, **command-line tools**, or **notebook API**.
+
+If SynthPopCan is already installed, we can go directly to
+:doc:`Getting Started <getting-started>`.
+
+Most new readers should start with one of these generation workflows:
 
 **IPF from margin tables**
    Use this when we have seed rows and public control totals, or when we want
@@ -36,7 +43,9 @@ Most new readers should start with one of two generation workflows:
    Use this when we have a prepared household/person model package and want to
    generate linked synthetic households and people. Start with the
    :doc:`web app <web-app>` for a guided local run, or use
-   :doc:`Tree Models <tree>` when we need command-line details.
+   :doc:`Generate From a Model Package <tree-generate>` when we need
+   command-line details. :doc:`Tree Models <tree>` is the advanced path for
+   training, auditing, and packaging a new model.
 
 **Assign linked output to small areas**
    Use this after generating candidate household/person rows when we also have
@@ -50,7 +59,8 @@ page uses ``import synthpopcan as spc`` and keeps **advanced training**,
 **auditing**, and **packaging** out of the first path.
 
 If we prefer the command line but want the same beginner lane as the web app,
-run:
+start with :doc:`Command-Line Getting Started <command-line>`. Its built-in
+workflow guides can also remind us of the next command:
 
 .. code-block:: bash
 
@@ -67,28 +77,28 @@ beginner generation workflows.
    :caption: Overview
 
    introduction
-   which-workflow
-   scenarios
-   correctness
-   acknowledgments
+   installation
+   getting-started
    field-primer
    glossary
-   installation
+   correctness
+   acknowledgments
 
 .. toctree::
    :maxdepth: 2
    :caption: Command Line
 
-   web-app
-   ipf
-   controls
+   command-line
+   data
    statcan
+   controls
+   ipf
    tree-generate
    small-area
    validate
    microdata
    tree
-   data
+   web-app
 
 .. toctree::
    :maxdepth: 2

@@ -67,7 +67,7 @@ testpaths = ["tests"]
 markers = [
   "live_statcan: opt-in tests that call live Statistics Canada WDS services",
   "performance: opt-in timing-sensitive tests for local performance checks",
-  "scenario(id): stable user-scenario ID documented in docs/scenarios.md",
+  "scenario(id): stable acceptance-scenario ID documented in tests/SCENARIOS.md",
 ]
 
 [tool.ruff]

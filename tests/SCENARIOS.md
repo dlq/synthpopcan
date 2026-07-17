@@ -1,10 +1,11 @@
-# Tested Workflow Inventory
+# Automated Workflow Scenario Inventory
 
-This page records the **acceptance scenarios used by tests and release checks**.
-It is not a substitute for a walkthrough. For guided reader-facing paths, start
-with [Which Workflow Should We Use?](which-workflow.md), the [Local Web
-App](web-app.md), [IPF](ipf.md), [Generate From a Model
-Package](tree-generate.md), or [Small-Area Linked Synthesis](small-area.md).
+This is a **maintainer-facing acceptance-test inventory**, not part of the
+public user documentation. Reader-facing walkthroughs begin with [Getting
+Started](../docs/getting-started.md), the [Local Web App](../docs/web-app.md),
+[IPF](../docs/ipf.md), [Generate From a Model
+Package](../docs/tree-generate.md), or [Small-Area Linked
+Synthesis](../docs/small-area.md).
 
 Tests, documentation, and release checks refer to the permanent IDs below
 rather than copying complete command transcripts. A scenario can be expanded or

@@ -139,18 +139,22 @@ their separate marginal distributions. Joint margins are worth using when a
 published Statistics Canada table provides the cross-tabulated totals and we
 have a specific research reason to preserve the correlation.
 
-**Seed coverage.** For IPF to fit a margin, every category cell in that margin
-must be represented by at least one seed record. A one-way age margin only
-needs at least one adult and one child — usually easy to satisfy. A joint age
-× sex margin needs a record in *every* combination: adult female, adult male,
-child female, child male. The more dimensions and finer the categories, the
-more likely some combinations will be absent from the seed ("zero coverage").
+```{admonition} Zero-coverage cells cannot be fitted
+:class: important
 
-IPF cannot move a zero-coverage cell — there are no records to reweight. The
-cell stays at zero while the remaining cells absorb all the adjustment,
+For IPF to fit a margin, every category cell in that margin must be represented
+by at least one seed record. A one-way age margin only needs at least one adult
+and one child — usually easy to satisfy. A joint age × sex margin needs a record
+in *every* combination: adult female, adult male, child female, and child male.
+The more dimensions and finer the categories, the more likely some combinations
+will be absent from the seed ("zero coverage").
+
+IPF cannot move a zero-coverage cell because there are no records to reweight.
+The cell stays at zero while the remaining cells absorb all the adjustment,
 distorting the rest of the margin in ways that are hard to detect. The command
-`synthpopcan ipf check-inputs` flags zero-coverage cells before any fitting
-begins; treat its output as a required check, not an optional one.
+`synthpopcan ipf check-inputs` flags zero-coverage cells before fitting begins;
+treat its output as a required check, not an optional one.
+```
 
 As a practical rule: start with one-way margins and confirm the fit is
 acceptable before adding joint margins. A joint margin across three or more
@@ -164,6 +168,10 @@ to check seed compatibility and fit weights, or {doc}`validate` to evaluate
 generated output against them.
 
 ## Getting Started
+
+**Template: replace these paths.** This section assumes we already have a raw
+aggregate table, WDS ZIP, or normalized control file. For a self-contained
+fictional workflow that creates its own inputs, start with {doc}`ipf`.
 
 The typical workflow has two phases. First, **normalize** a raw source table
 into SynthPopCan's long control format — the normalized CSV is what all

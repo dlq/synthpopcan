@@ -27,20 +27,43 @@ page are supported advanced APIs, but may still evolve before version 1.0. Other
 module attributes and ``__all__`` declarations are implementation details unless
 they are listed here.
 
-Package
--------
+Top-Level Beginner API
+----------------------
 
 The top-level package exposes a **small beginner-friendly API** for concise
-notebooks and examples. The lower-level generated reference below is organized
-by the module that owns each concept.
+notebooks and examples:
+
+.. code-block:: python
+
+   import synthpopcan as spc
+
+   controls = spc.read_controls("controls.csv")
+   fit = spc.fit_ipf("seed.csv", controls)
+
+The workflow functions and result classes are defined in
+:mod:`synthpopcan.api`, then re-exported unchanged from :mod:`synthpopcan`.
+Autodoc therefore displays signatures such as
+``synthpopcan.api.fit_ipf(...)`` below. Calling ``spc.fit_ipf(...)`` uses that
+same supported function; it is the shorter form taught in the beginner guide.
 
 .. automodule:: synthpopcan
 
-Beginner API
-------------
+Beginner API Members
+--------------------
 
 .. automodule:: synthpopcan.api
    :members:
+   :show-inheritance:
+
+Local Data and Sources
+----------------------
+
+.. automodule:: synthpopcan.localdata
+   :members: DataLayoutCheck, inspect_local_data_layout
+   :show-inheritance:
+
+.. automodule:: synthpopcan.sources
+   :members: inspect_source_root, read_source_schema, read_source_sample
    :show-inheritance:
 
 Controls
@@ -63,34 +86,6 @@ IPF
    :members: IPFMargin, IPFResult, expand_records, integerize_weights,
              fit_ipf, validate_margin_coverage, weighted_totals,
              calculate_max_abs_error
-   :show-inheritance:
-
-Small-Area Synthesis
---------------------
-
-.. automodule:: synthpopcan.small_area_synthesis
-   :members: GeographyHouseholdFit, controls_by_geography,
-             check_small_area_calibration_inputs,
-             check_linked_person_calibration_inputs,
-             fit_households_by_geography, fit_linked_by_geography,
-             estimate_small_area_run, realize_linked_geography_population,
-             calibrate_linked_household_csvs
-   :show-inheritance:
-
-Small-Area Control Preparation
-------------------------------
-
-.. automodule:: synthpopcan.small_area_controls
-   :members: extract_controls_from_profile, scale_and_validate_controls,
-             recode_household_size, write_controls_csv,
-             write_recoded_candidates
-   :show-inheritance:
-
-Small-Area Mapping
-------------------
-
-.. automodule:: synthpopcan.map_render
-   :members: prepare_boundaries_geojson, render_synthesis_map
    :show-inheritance:
 
 Microdata
@@ -122,6 +117,34 @@ Statistics Canada
              normalize_language
    :show-inheritance:
 
+Small-Area Synthesis
+--------------------
+
+.. automodule:: synthpopcan.small_area_synthesis
+   :members: GeographyHouseholdFit, controls_by_geography,
+             check_small_area_calibration_inputs,
+             check_linked_person_calibration_inputs,
+             fit_households_by_geography, fit_linked_by_geography,
+             estimate_small_area_run, realize_linked_geography_population,
+             calibrate_linked_household_csvs
+   :show-inheritance:
+
+Small-Area Control Preparation
+------------------------------
+
+.. automodule:: synthpopcan.small_area_controls
+   :members: extract_controls_from_profile, scale_and_validate_controls,
+             recode_household_size, write_controls_csv,
+             write_recoded_candidates
+   :show-inheritance:
+
+Small-Area Mapping
+------------------
+
+.. automodule:: synthpopcan.map_render
+   :members: prepare_boundaries_geojson, render_synthesis_map
+   :show-inheritance:
+
 Tree Models
 -----------
 
@@ -142,15 +165,4 @@ Validation
    :members: build_control_validation_report,
              build_tree_output_validation_report, comparison_dimensions,
              build_distribution_comparison
-   :show-inheritance:
-
-Local Data And Sources
-----------------------
-
-.. automodule:: synthpopcan.localdata
-   :members: DataLayoutCheck, inspect_local_data_layout
-   :show-inheritance:
-
-.. automodule:: synthpopcan.sources
-   :members: inspect_source_root, read_source_schema, read_source_sample
    :show-inheritance:

@@ -187,16 +187,20 @@ Watch for these patterns:
   support, purity, raw-row metadata, and source identifiers. It cannot decide
   whether a generated population should be used for a sensitive interpretive
   claim.
-- **Model artifacts treated as harmless.** A trained model is not automatically
-  safe just because it is JSON rather than a CSV of source records. Splits,
-  leaf counts, class summaries, encoders, and package metadata can still reveal
-  rare paths or small subgroups.
 - **Validation against the training view only.** A tree-output validation report
   can compare generated rows to the training distribution. It does not prove the
   model matches an external population unless external controls are also used.
 - **Linked rows validated only mechanically.** Household/person linkage can be
   internally consistent while still sociologically implausible if the household
   and person models were trained with poor column choices.
+
+```{admonition} Model artifacts still require privacy review
+:class: warning
+
+A trained model is not automatically safe just because it is JSON rather than a
+CSV of source records. Splits, leaf counts, class summaries, encoders, and
+package metadata can still reveal rare paths or small subgroups.
+```
 
 Additional issues to consider before trusting a tree model:
 
@@ -292,6 +296,11 @@ clearer research question, broader categories, a larger geography, fewer target
 columns, or a decision to keep the artifact private.
 
 ## Getting Started: Linked Household and Person Models
+
+**Source checkout required for this teaching sequence.** It uses the fictional
+hierarchical CSV under `tests/fixtures`. Real model development replaces that
+path with local microdata and therefore also carries a **restricted source data
+required** label.
 
 Column choice is a research decision, not a technical default. Before training,
 ask the adapter to suggest which columns are safe and coherent for each record
@@ -591,141 +600,45 @@ Statistics Canada special codes such as not applicable, not available, or valid
 skip, depending on the column. Do not treat these as ordinary numeric values
 without decoding the relevant field metadata.
 
-## Example: Broad Montréal CMA Linked Model
+## Preparing Repository Release Assets
 
-This example shows the full CLI sequence for a local 2016 hierarchical PUMF
-workflow. It uses Montréal CMA (`CMA=462`), combines all currently supported
-household and person suggestion blocks, checks release-readiness, prepares
-publishable-candidate copies, packages the linked model, and generates a large
-linked synthetic population.
+The commands above explain each stage of a model's path from **private working
+artifact** to **reviewed package**. Repository maintainers who are building a
+set of public release assets should use the canonical batch workflow in
+[CONTRIBUTING.md](https://github.com/dlq/synthpopcan/blob/main/CONTRIBUTING.md#building-model-release-assets)
+and complete the checklist in
+[RELEASING.md](https://github.com/dlq/synthpopcan/blob/main/RELEASING.md). That
+workflow keeps restricted source paths, benchmark output, registry checksums,
+and release operations out of the reader-facing generation examples.
 
-The source microdata path below is intentionally under `data/raw` and the
-outputs are under `data/private`; neither should be committed to the repository.
+Ordinary users do not need to perform those release steps. Once a reviewed
+package is listed in the catalogue, we can fetch, inspect, generate, and
+validate it using {doc}`tree-generate`.
 
-```bash
-mkdir -p data/private/benchmarks/tree-release-2016-cma462-all-fields
-```
+## Example: Use the Published Quebec Province Model
 
-Train the broad linked household/person model:
-
-```bash
-synthpopcan models build train-linked \
-  "data/raw/statcan/2016-census/PUMF Census 2016/pumf-98M0002-E-2016-hierarchical/pumf-98M0002-E-2016-hierarchical_F1.csv" \
-  --household-block all \
-  --person-block all \
-  --geo-column CMA \
-  --geo-value 462 \
-  --target-profile full \
-  --random-seed 7 \
-  --household-model-out data/private/benchmarks/tree-release-2016-cma462-all-fields/household-model.json \
-  --person-model-out data/private/benchmarks/tree-release-2016-cma462-all-fields/person-model.json \
-  --manifest-out data/private/benchmarks/tree-release-2016-cma462-all-fields/linked-training-manifest.json
-```
-
-Check whether the private working models are eligible for release preparation:
+The reviewed `quebec-2016-all-fields` package is already available through the
+model catalogue. Fetch and inspect it before generation:
 
 ```bash
-synthpopcan models build check-release \
-  --household-model data/private/benchmarks/tree-release-2016-cma462-all-fields/household-model.json \
-  --person-model data/private/benchmarks/tree-release-2016-cma462-all-fields/person-model.json \
-  --training-manifest data/private/benchmarks/tree-release-2016-cma462-all-fields/linked-training-manifest.json \
-  --household-size-column household_size \
-  --min-support 50 \
-  --max-purity 0.95
+synthpopcan models fetch quebec-2016-all-fields
+synthpopcan models show quebec-2016-all-fields
 ```
 
-Prepare reviewed publishable-candidate copies:
+Generate and validate a small linked population:
 
 ```bash
-synthpopcan models build prepare-release \
-  data/private/benchmarks/tree-release-2016-cma462-all-fields/household-model.json \
-  --out data/private/benchmarks/tree-release-2016-cma462-all-fields/household-model-publishable.json \
-  --manifest-out data/private/benchmarks/tree-release-2016-cma462-all-fields/household-release-manifest.json \
-  --min-support 50 \
-  --max-purity 0.95 \
-  --review-note "Montreal CMA 462 all-household and all-person-block household model reviewed with SynthPopCan release checks."
+synthpopcan models generate quebec-2016-all-fields \
+  --households 500 \
+  --out quebec-example/ \
+  --random-seed 42
 
-synthpopcan models build prepare-release \
-  data/private/benchmarks/tree-release-2016-cma462-all-fields/person-model.json \
-  --out data/private/benchmarks/tree-release-2016-cma462-all-fields/person-model-publishable.json \
-  --manifest-out data/private/benchmarks/tree-release-2016-cma462-all-fields/person-release-manifest.json \
-  --min-support 50 \
-  --max-purity 0.95 \
-  --review-note "Montreal CMA 462 all-household and all-person-block person model reviewed with SynthPopCan release checks."
+synthpopcan validate linked quebec-example/
 ```
 
-Create a small source-provenance JSON file before packaging. The exact metadata
-should match the source access terms and citation used by the project:
-
-```json
-{
-  "schema_version": "synthpopcan-source-provenance-v1",
-  "title": "2016 Census Hierarchical Public Use Microdata File",
-  "provider": "Statistics Canada",
-  "access_class": "local restricted/source-controlled data root",
-  "citation": "Statistics Canada, 2016 Census Hierarchical Public Use Microdata File.",
-  "redistribution_note": "Do not redistribute source microdata. Package contains model artifacts only.",
-  "local_path": "data/raw/statcan/2016-census/PUMF Census 2016/pumf-98M0002-E-2016-hierarchical/pumf-98M0002-E-2016-hierarchical_F1.csv"
-}
-```
-
-Package the linked model:
-
-```bash
-synthpopcan models build package-linked \
-  --household-model data/private/benchmarks/tree-release-2016-cma462-all-fields/household-model-publishable.json \
-  --person-model data/private/benchmarks/tree-release-2016-cma462-all-fields/person-model-publishable.json \
-  --training-manifest data/private/benchmarks/tree-release-2016-cma462-all-fields/linked-training-manifest.json \
-  --source-provenance data/private/benchmarks/tree-release-2016-cma462-all-fields/source-provenance.json \
-  --household-release-manifest data/private/benchmarks/tree-release-2016-cma462-all-fields/household-release-manifest.json \
-  --person-release-manifest data/private/benchmarks/tree-release-2016-cma462-all-fields/person-release-manifest.json \
-  --review-note "Montreal CMA 462 all-household and all-person-block linked package reviewed by SynthPopCan release-readiness checks." \
-  --out data/private/benchmarks/tree-release-2016-cma462-all-fields/linked-model-package.json \
-  --household-size-column household_size \
-  --min-support 50 \
-  --max-purity 0.95
-```
-
-Generate the linked synthetic population:
-
-```bash
-synthpopcan models list
-synthpopcan models fetch montreal-cma-2016-all-fields
-synthpopcan models build inspect montreal-cma-2016-all-fields
-synthpopcan models generate \
-  montreal-cma-2016-all-fields \
-  --households 1830000 \
-  --out data/private/benchmarks/tree-release-2016-cma462-all-fields/population/ \
-  --random-seed 7
-```
-
-The household count is controlled directly by `--households`. The person count
-is generated from the model's household-size distribution, so it will usually
-not match a separate target exactly. In one local Montréal CMA run, requesting
-1,830,000 households produced 4,238,633 person rows.
-
-The Montréal package is a published model package. It is listed by the CLI and
-web app, but the large JSON is downloaded into a local cache only after
-`synthpopcan models fetch montreal-cma-2016-all-fields`.
-
-## Example: Quebec Province Linked Model With Python
-
-The advanced library documentation includes a maintained Python script for the
-same release pattern applied to Quebec (`PR=24`). Use it when we want a
-reproducible library workflow rather than a long command-line transcript:
-
-```bash
-uv run python scripts/build_quebec_model_package.py
-uv run python scripts/build_quebec_model_package.py --generate
-```
-
-The first command trains, audits, releases, and prepares the reviewed
-`quebec-2016-all-fields` package for release-asset upload. The optional
-`--generate` run writes the large local household/person CSV outputs under
-`data/private/benchmarks/`.
-See [Advanced Library Use](library.md#maintainer-package-workflow-script) for
-the script and notes about what belongs in the public repo versus release
-assets.
+See {doc}`tree-generate` for the complete package-generation workflow.
+Maintainers preparing new release assets should follow the repository's
+[model-building contributor workflow](https://github.com/dlq/synthpopcan/blob/main/CONTRIBUTING.md#building-model-release-assets).
 
 ### `models build inspect`
 

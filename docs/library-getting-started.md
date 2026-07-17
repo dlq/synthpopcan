@@ -90,6 +90,9 @@ process that actually runs the code cells.
 
 ## Fit Seed Rows With IPF
 
+**Runnable teaching example.** Run the cells in this section from top to bottom.
+They create their own fictional files in the notebook's working directory.
+
 A notebook is a good place to inspect files, try a small fit, and record the
 choices that shaped the output. We will create a **tiny seed file** and a
 **matching control file** so this example works with a normal PyPI installation
@@ -266,6 +269,11 @@ returned `LinkedPopulationFiles` keeps the two paths together for later steps.
 
 ## Assign Generated Rows To Small Areas
 
+**Template: replace these paths.** This section continues from the generated
+population above, but it also needs research-specific geography controls. Use
+the runnable {doc}`small-area` walkthrough to prepare compatible controls and
+boundaries first.
+
 Small-area synthesis starts after a candidate linked population exists. The
 controls must include one geography dimension, such as `ct` for census tract or
 `ada` for aggregate dissemination area, plus household dimensions already
@@ -288,6 +296,35 @@ SynthPopCan refines the household weights against linked-person category counts
 without splitting households. Keep both fractional and integerized residual
 summaries with the output. `result.population` contains the paired output paths,
 and `result.details` retains the complete machine-readable report.
+
+## Render the Small-Area Result as a Map
+
+Once calibration has produced assigned household and person files, the beginner
+API can render the same self-contained browser map as `synthpopcan geo map`.
+Mapping also needs a boundary file for the same geography level. The
+{doc}`small-area` walkthrough explains how to prepare and inspect that file.
+
+The following cell continues the research-specific calibration template above:
+
+```python
+map_path = spc.render_small_area_map(
+    households=result,
+    boundaries="data/boundaries/2016-boundary-ct.geojson",
+    geography_column="ct",
+    geography_id_field="CTUID",
+    out="synthetic-ct-map.html",
+    title="Synthetic Census-Tract Population",
+)
+
+map_path
+```
+
+The boundary identifiers must match the assigned geography values in the
+household output. The generated HTML contains the mapped data, but it needs an
+internet connection when opened because the browser fetches base-map tiles.
+Keep the calibration report with the map so readers can distinguish controlled
+geographic patterns from variables that were only carried through from the
+candidate population.
 
 ## Reproducible Generation
 
@@ -325,22 +362,44 @@ controls, or package version shaped the result.
 
 ## Beginner API Objects
 
-The beginner API exposes a small set of names:
+The beginner API groups a small set of names around common tasks.
+
+**Read and fit IPF inputs:**
 
 - {py:func}`~synthpopcan.api.read_seed`
 - {py:func}`~synthpopcan.api.read_controls`
 - {py:func}`~synthpopcan.api.fit_ipf`
 - {py:func}`~synthpopcan.api.expand_population`
 - {py:func}`~synthpopcan.api.write_weights`
+- {py:func}`~synthpopcan.api.write_population`
+
+**Generate linked households and people:**
+
 - {py:func}`~synthpopcan.api.fetch_model`
 - {py:func}`~synthpopcan.api.read_model_package`
 - {py:func}`~synthpopcan.api.generate_from_model`
 - {py:func}`~synthpopcan.api.write_linked_population`
-- {py:func}`~synthpopcan.api.write_population`
+
+**Assign and map small-area results:**
+
 - {py:func}`~synthpopcan.api.calibrate_small_area`
 - {py:func}`~synthpopcan.api.render_small_area_map`
+
+**Inspect returned results:**
+
 - {py:class}`~synthpopcan.controls.ControlTable`
 - {py:class}`~synthpopcan.ipf.IPFResult`
 - {py:class}`~synthpopcan.api.LinkedPopulation`
 - {py:class}`~synthpopcan.api.LinkedPopulationFiles`
 - {py:class}`~synthpopcan.api.SmallAreaResult`
+
+## Where To Go Next
+
+Continue to {doc}`library` when we need to inspect intermediate objects, prepare
+source-specific controls, call lower-level calibration functions, or train and
+audit models. That page assumes we already understand the corresponding method
+and concentrates on composing the library modules.
+
+Use the {doc}`api` when we already know the object or function name and need its
+exact signature, parameters, return type, exceptions, or member-level notes. We
+do not need to read the generated reference from beginning to end.

@@ -48,6 +48,12 @@ household columns are constant within each household.
 
 ## Getting Started
 
+**Source checkout required for the teaching paths below.** The
+`tests/fixtures/workflows/linked_tree/hierarchical.csv` file is fictional and is
+available in the repository, but it is not installed with the PyPI package.
+When working from an ordinary installation, replace that path with an
+appropriately controlled local hierarchical microdata file.
+
 Always **inspect the file first**. The `inspect` command reports row and household
 counts, detected identifier and weight columns, available geography columns,
 and the full column list — without printing any source rows. Use this output

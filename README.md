@@ -44,10 +44,16 @@ Project planning and research notes are tracked separately:
 
 ## Quick Start
 
+These commands use a Unix-style shell. Windows readers should first complete
+the [WSL setup in the Installation guide](docs/installation.md),
+then run the same commands inside the Ubuntu terminal.
+
 Install the published package from PyPI:
 
+**Network required for installation.**
+
 ```bash
-python -m pip install synthpopcan
+python3 -m pip install synthpopcan
 ```
 
 Then inspect the command line:
@@ -57,6 +63,8 @@ synthpopcan --help
 ```
 
 Run a small offline smoke test with the bundled fictional model:
+
+**Runnable teaching example.** Enter both commands in order.
 
 ```bash
 synthpopcan models generate demo-linked-household-person \
@@ -74,6 +82,9 @@ research sources, controls, and model packages.
 For a one-off command without installing the tool into the current environment,
 use `uvx`:
 
+**Network and `uv` required.** See the Installation guide before using this
+route if `uvx --version` is not already available.
+
 ```bash
 uvx synthpopcan --help
 uvx synthpopcan guide ipf
@@ -82,6 +93,8 @@ uvx synthpopcan guide small-area
 ```
 
 From a source checkout for development:
+
+**Source checkout, network, Git, and `uv` required.**
 
 ```bash
 git clone https://github.com/dlq/synthpopcan.git
@@ -99,6 +112,8 @@ README:
 
 | Task | Documentation |
 | --- | --- |
+| Choose a first workflow | [`docs/getting-started.md`](docs/getting-started.md) |
+| Start a reproducible command-line workflow | [`docs/command-line.md`](docs/command-line.md) |
 | Use the local browser app | [`docs/web-app.md`](docs/web-app.md) |
 | Generate with IPF from margin/control tables | [`docs/ipf.md`](docs/ipf.md), [`docs/controls.md`](docs/controls.md), [`docs/statcan.md`](docs/statcan.md) |
 | Assign linked households and people to small areas | [`docs/small-area.md`](docs/small-area.md) |
@@ -113,6 +128,9 @@ README:
 
 Build the documentation locally with:
 
+**Source checkout required.** Contributor setup is documented in
+[`CONTRIBUTING.md`](CONTRIBUTING.md).
+
 ```bash
 uv run sphinx-build -W -b html docs docs/_build/html
 ```
@@ -120,6 +138,9 @@ uv run sphinx-build -W -b html docs docs/_build/html
 ## Developer Benchmarks
 
 Benchmark fixtures are developer tooling, not normal user workflows:
+
+**Source checkout required.** The province-scale timing run can also require
+substantial time and memory.
 
 ```bash
 uv run python scripts/benchmarks.py ipf

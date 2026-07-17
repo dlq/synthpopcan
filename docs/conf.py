@@ -87,6 +87,7 @@ copybutton_prompt_is_regexp = True
 autoclass_content = "both"
 autodoc_member_order = "bysource"
 autodoc_typehints = "description"
+toc_object_entries = False
 autodoc_mock_imports = [
     package
     for package in ("numpy", "pandas", "sklearn", "scipy", "polars")
