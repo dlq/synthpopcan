@@ -17,6 +17,7 @@ build/
 
 # JavaScript dev tooling artifacts.
 node_modules/
+/coverage/
 /playwright-report/
 /test-results/
 .npm/

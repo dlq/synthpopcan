@@ -41,7 +41,7 @@ async function readHorizontalLayout(page) {
   });
 }
 
-test("SCN-WEB-001 runs demo IPF and exposes expanded synthetic records", async ({
+test("SCN-WEB-001 runs durable demo IPF and recovers results after refresh", async ({
   page,
 }) => {
   const consoleErrors = [];
@@ -55,132 +55,98 @@ test("SCN-WEB-001 runs demo IPF and exposes expanded synthetic records", async (
       body: '{"models":[]}',
     }),
   );
-  await page.route("**/api/wds/seed-controls", (route) =>
-    route.fulfill({
-      status: 200,
-      contentType: "application/json",
-      body: JSON.stringify({
-        seedCsv: "id,GEO,Gender,Age group\nseed-1,Canada,Men+,0 years\n",
-        controlsCsv:
-          'margin,dimensions,GEO,Gender,Age group,count\nwds,"GEO,Gender,Age group",Canada,Men+,0 years,100\nwds,"GEO,Gender,Age group",Yukon,Men+,0 years,11\nwds,"GEO,Gender,Age group",Yukon,Women+,0 years,12\nwds,"GEO,Gender,Age group",Yukon,Total - gender,All ages,50\n',
-        dimensions: ["GEO", "Gender", "Age group"],
-        countColumn: "VALUE",
-        csvMember: "17100005.csv",
-        referencePeriod: "2025",
-        categories: {
-          GEO: ["Canada", "Yukon"],
-          Gender: ["Total - gender", "Men+", "Women+"],
-          "Age group": ["All ages", "0 years"],
-        },
-        estimatedTotal: 173,
-        unitRows: [
-          { GEO: "Canada", Gender: "Men+", "Age group": "0 years", unit: "Persons" },
-          { GEO: "Yukon", Gender: "Men+", "Age group": "0 years", unit: "Persons" },
-          { GEO: "Yukon", Gender: "Women+", "Age group": "0 years", unit: "Persons" },
-          {
-            GEO: "Yukon",
-            Gender: "Total - gender",
-            "Age group": "All ages",
-            unit: "Persons",
-          },
-        ],
-      }),
-    }),
-  );
-
   await page.goto("/");
   await expect(page).toHaveTitle("SynthPopCan");
-  await expect(page.getByRole("heading", { name: "Choose a workflow" })).toBeVisible();
-  const demoSetupTab = page.getByRole("button", {
-    name: "Use a demo or make templates",
-  });
-  const statcanSetupTab = page.getByRole("button", {
-    name: "Generate from a StatCan table",
-  });
-  await expect(demoSetupTab).toHaveAttribute("aria-pressed", "true");
-  await expect(page.getByRole("button", { name: "Search", exact: true })).toBeHidden();
-  await page.locator("#starter-dimensions").fill("age, household_size");
-  await statcanSetupTab.click();
-  await expect(statcanSetupTab).toHaveAttribute("aria-pressed", "true");
-  await expect(page.getByRole("button", { name: "Search", exact: true })).toBeVisible();
-  const stagedResultOrder = await page
-    .locator("#setup-statcan-panel > [id]")
-    .evaluateAll((elements) => elements.map((element) => element.id));
-  expect(stagedResultOrder).toEqual([
-    "wds-search-form",
-    "wds-search-result",
-    "wds-explain-form",
-    "wds-metadata-result",
-    "wds-refinement",
-    "wds-generated-result",
-  ]);
-  await page.locator("#wds-search-query").fill("population households");
-  await page.getByRole("button", { name: "Use 17100005" }).click();
-  await expect(page.getByRole("region", { name: "Refine WDS table" })).toBeVisible();
-  await page.locator("#wds-filter-geo").selectOption("Yukon");
-  await expect(page.locator("#wds-selection-estimate")).toContainText(
-    "about 23 expanded records",
-  );
-  await page.getByRole("button", { name: "Generate selected IPF files" }).click();
-  await expect(
-    page.getByRole("link", { name: "Download synthpopcan-wds-selection.json" }),
-  ).toBeVisible();
-  await expect(page.locator("#wds-generated-result")).toContainText(
-    "synthpopcan controls from-wds",
-  );
-  await expect(page.locator("#wds-generated-result")).toContainText(
-    "# Rebuild normalized controls",
-  );
-  await page.setViewportSize({ width: 768, height: 900 });
-  const refinementLayout = await readHorizontalLayout(page);
-  expect(
-    refinementLayout.documentScrollWidth,
-    JSON.stringify(refinementLayout),
-  ).toBeLessThanOrEqual(refinementLayout.viewportWidth);
-  await page.setViewportSize({ width: 1280, height: 900 });
-  await demoSetupTab.click();
-  await expect(page.locator("#starter-dimensions")).toHaveValue("age, household_size");
-  await statcanSetupTab.click();
-  await expect(page.locator("#wds-search-query")).toHaveValue("population households");
-  await demoSetupTab.click();
+  await expect(page.getByRole("heading", { name: "Runs" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "New run" })).toHaveCount(1);
   await page.getByRole("button", { name: /Use demo age\/sex files/ }).click();
-  await expect(page.locator("#ipf-result")).toContainText(
-    "Demo seed and controls are loaded",
+  await expect(page.locator("#seed-upload-status")).toContainText(
+    "demo-age-sex-seed.csv",
   );
-  await expect(page.locator("#ipf-seed-file")).toHaveClass(/file-ready/);
-  await expect(page.locator("#ipf-controls-file")).toHaveClass(/file-ready/);
-  await expect(page.locator("#ipf-output-kind")).toHaveValue("expanded");
-  await expect(page.locator("#ipf-output-hint")).toContainText(
-    "One integerized row per synthetic record",
-  );
-  await page.getByRole("button", { name: "Run IPF" }).click();
-  await expect(page.locator("#ipf-result")).toContainText("IPF converged");
+  await page.getByRole("button", { name: "Upload and continue" }).click();
+  await expect(page.getByRole("heading", { name: "Configure the fit" })).toBeVisible();
   await expect(
-    page.getByRole("link", { name: "Download synthpopcan-ipf-expanded.csv" }),
+    page.getByText("Compact fitted weights — one row per seed profile."),
   ).toBeVisible();
-  await expect(page.getByText("Preview: synthpopcan-ipf-expanded.csv")).toBeVisible();
-  await expect(page.locator("#ipf-result")).toContainText("synthetic_id");
-  await expect(page.locator("#ipf-result")).toContainText("Continue in the CLI");
-  await expect(page.locator("#ipf-result .cli-follow-up")).not.toHaveAttribute("open");
-  await expect(page.locator("#ipf-result")).toContainText(
-    "continue with equivalent inputs and settings",
+  await expect(page.locator("#ipf-max-iterations")).toBeHidden();
+  await page.getByRole("button", { name: "Check inputs" }).click();
+  await expect(page.getByRole("heading", { name: "Preflight" })).toBeVisible();
+  await expect(page.locator("#preflight-results")).toContainText("4");
+  await expect(page.locator("#preflight-results")).toContainText("age, sex");
+  await page.getByRole("button", { name: "Start run" }).click();
+  await expect(page.getByRole("heading", { name: "Results" })).toBeVisible({
+    timeout: 15_000,
+  });
+  await expect(page.locator("#fit-diagnostics")).toContainText("Converged");
+  await expect(page.locator("#weights-preview")).toContainText("weight");
+  await expect(page.locator("#weights-preview tbody tr")).toHaveCount(4);
+  await expect(page.getByRole("link", { name: "Download weights.csv" })).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: "Download fit-report.json" }),
+  ).toBeVisible();
+  await expect(page.locator("#reproduction-command")).toContainText(
+    "synthpopcan ipf fit",
   );
-  await expect(page.locator("#ipf-result")).toContainText(
-    "may produce different synthetic rows from the same seed",
-  );
-  await expect(page.locator("#ipf-result")).toContainText(
-    "synthpopcan ipf check-inputs",
-  );
-  await expect(page.locator("#ipf-result")).toContainText(
-    "# Fit one compact IPF weight per seed row",
-  );
-  await page.setViewportSize({ width: 768, height: 900 });
+  await expect(page.locator(".run-list-item")).toHaveCount(1);
+
+  await page.setViewportSize({ width: 375, height: 812 });
   await page.reload();
+  await expect(page.getByRole("heading", { name: "Results" })).toBeVisible();
+  await expect(page.locator("#weights-preview tbody tr")).toHaveCount(4);
   const layout = await readHorizontalLayout(page);
   expect(layout.documentScrollWidth, JSON.stringify(layout)).toBeLessThanOrEqual(
     layout.viewportWidth,
   );
   expect(consoleErrors).toEqual([]);
+});
+
+test("durable IPF preflight blocks incompatible inputs", async ({ page }) => {
+  await page.route("**/api/models", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: '{"models":[]}',
+    }),
+  );
+  await page.goto("/");
+  await page.getByRole("button", { name: "New run" }).click();
+  await page.locator("#ipf-seed-file").setInputFiles({
+    name: "seed.csv",
+    mimeType: "text/csv",
+    buffer: Buffer.from("id,age\n1,young\n"),
+  });
+  await page.locator("#ipf-controls-file").setInputFiles({
+    name: "controls.csv",
+    mimeType: "text/csv",
+    buffer: Buffer.from("margin,dimensions,age,count\nage,age,old,1\n"),
+  });
+  await page.getByRole("button", { name: "Upload and continue" }).click();
+  await page.getByRole("button", { name: "Check inputs" }).click();
+  await expect(page.locator("#workbench-message")).toContainText(
+    "missing control categories",
+  );
+  await expect(page.getByRole("button", { name: "Start run" })).toBeDisabled();
+});
+
+test("active durable IPF run can be cancelled", async ({ page }) => {
+  await page.route("**/api/models", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: '{"models":[]}',
+    }),
+  );
+  await page.goto("/");
+  await page.getByRole("button", { name: "New run" }).click();
+  await page.getByRole("button", { name: /Use demo age\/sex files/ }).click();
+  await page.getByRole("button", { name: "Upload and continue" }).click();
+  await page.getByRole("button", { name: "Check inputs" }).click();
+  await page.getByRole("button", { name: "Start run" }).click();
+  const cancel = page.getByRole("button", { name: "Cancel run" });
+  await cancel.click();
+  await expect(page.locator("#run-status")).toContainText(/Cancelled|Cancelling/, {
+    timeout: 10_000,
+  });
 });
 
 test("SCN-WEB-002 inspects and generates from a linked model package", async ({
@@ -231,6 +197,7 @@ test("SCN-WEB-002 inspects and generates from a linked model package", async ({
   );
 
   await page.goto("/");
+  await page.getByText("Legacy browser tools").click();
   await page.getByRole("button", { name: /Generate from existing model/ }).click();
   await expect(page.getByRole("button", { name: "Generate rows" })).toBeDisabled();
   await expect(page.locator("#model-rows")).toBeDisabled();
@@ -332,6 +299,7 @@ test("SCN-WEB-003 prepares a small-area run and CLI handoff", async ({ page }) =
   });
 
   await page.goto("/");
+  await page.getByText("Legacy browser tools").click();
   await page.getByRole("button", { name: /Prepare a small-area synthesis/ }).click();
   await page
     .locator("#small-area-premade-model")

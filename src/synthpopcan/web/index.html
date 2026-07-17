@@ -28,303 +28,150 @@
         <div class="status-pill">Local</div>
       </header>
 
-      <section class="workspace-grid" aria-label="SynthPopCan workspace">
-        <article class="panel primary-panel">
+      <section class="workbench" aria-label="Runs workbench">
+        <aside class="runs-panel panel">
           <div class="panel-heading">
-            <h2>Choose a workflow</h2>
-            <span>Browser local</span>
-          </div>
-          <div class="workflow-list primary-workflow-list">
-            <button
-              class="workflow-card selected"
-              type="button"
-              data-workflow-tab="ipf"
-            >
-              <strong>IPF from margin tables</strong>
-              <span>
-                Use seed rows and margin/control totals to generate synthetic
-                population weights or expanded rows.
-              </span>
-            </button>
-            <button
-              class="workflow-card"
-              type="button"
-              data-workflow-tab="model"
-            >
-              <strong>Generate from existing model</strong>
-              <span>
-                Load a prepared household/person model package and export
-                synthetic household and person rows.
-              </span>
-            </button>
-            <button
-              class="workflow-card"
-              type="button"
-              data-workflow-tab="small-area"
-            >
-              <strong>Prepare a small-area synthesis</strong>
-              <span>
-                Combine a linked model with geographic controls, estimate the
-                run size, and continue with an exact CLI command.
-              </span>
-            </button>
-          </div>
-        </article>
-      </section>
-
-      <section class="workflow-panel active" data-workflow-panel="ipf">
-        <div class="panel-heading">
-          <h2>IPF from margin tables</h2>
-          <span>Guided setup or file upload</span>
-        </div>
-
-        <section
-          class="workflow-card-section setup-paths"
-          aria-label="Ways to prepare IPF inputs"
-        >
-          <div class="setup-heading">
-            <h3>Choose one setup path</h3>
-            <p>
-              Both paths prepare the same two IPF inputs: a seed CSV and a
-              normalized margin/control CSV.
-            </p>
-          </div>
-
-          <div class="workflow-list setup-tab-list">
-            <button
-              class="workflow-card selected"
-              type="button"
-              aria-label="Use a demo or make templates"
-              aria-controls="setup-demo-panel"
-              aria-pressed="true"
-              data-setup-path-tab="demo"
-            >
-              <strong>Use a demo or make templates</strong>
-              <span>
-                Load a tiny example immediately, or create blank CSVs to fill
-                yourself.
-              </span>
-            </button>
-            <button
-              class="workflow-card"
-              type="button"
-              aria-label="Generate from a StatCan table"
-              aria-controls="setup-statcan-panel"
-              aria-pressed="false"
-              data-setup-path-tab="statcan"
-            >
-              <strong>Generate from a StatCan table</strong>
-              <span>
-                Search by plain words, inspect a product ID, then generate
-                matching seed and control CSVs.
-              </span>
-            </button>
-          </div>
-
-          <section
-            id="setup-demo-panel"
-            class="starter-panel setup-path-panel active"
-            aria-label="Demo or template setup path"
-            data-setup-path-panel="demo"
-          >
-            <div class="starter-actions">
-              <button
-                id="use-demo-ipf"
-                class="secondary-action"
-                type="button"
-                title="Loads a tiny example seed CSV and control CSV so you can try IPF immediately."
-              >
-                Use demo age/sex files
-              </button>
-              <button
-                id="download-seed-template"
-                class="secondary-action"
-                type="button"
-                title="Creates a starter seed CSV with one row per example person or household category."
-              >
-                Download seed template
-              </button>
-              <button
-                id="download-controls-template"
-                class="secondary-action"
-                type="button"
-                title="Creates a starter control CSV with target totals for IPF to match."
-              >
-                Download controls template
-              </button>
+            <div>
+              <p class="eyebrow">Workspace history</p>
+              <h2>Runs</h2>
             </div>
-            <label class="wide-field">
-              <span
-                class="help-label"
-                data-help="Dimensions are the categories IPF matches, such as geography, age group, sex, or household size."
-              >Template dimensions</span>
-              <input id="starter-dimensions" value="age, sex">
-            </label>
+            <button id="new-run" class="primary-action" type="button">New run</button>
+          </div>
+          <p id="workspace-location" class="workspace-location"></p>
+          <div id="runs-list" class="runs-list" aria-live="polite">
+            <p class="empty-state">Loading workspace runs…</p>
+          </div>
+          <details class="legacy-tools">
+            <summary>Legacy browser tools</summary>
+            <p>These workflows will move into the durable workbench in later stages.</p>
+            <button class="text-action" type="button" data-workflow-tab="model">
+              Generate from existing model
+            </button>
+            <button class="text-action" type="button" data-workflow-tab="small-area">
+              Prepare a small-area synthesis
+            </button>
+          </details>
+        </aside>
+
+        <section id="run-workspace" class="run-workspace panel" aria-labelledby="run-title">
+          <div class="run-heading">
+            <div>
+              <p id="run-kicker" class="eyebrow">New durable run</p>
+              <h2 id="run-title">IPF from margin tables</h2>
+              <p id="run-subtitle">Fit compact weights from seed records and normalized controls.</p>
+            </div>
+            <span id="run-status" class="run-status draft">Draft</span>
+          </div>
+
+          <ol class="step-list" aria-label="IPF run steps">
+            <li data-step-indicator="inputs" class="active">1. Inputs</li>
+            <li data-step-indicator="configure">2. Configure</li>
+            <li data-step-indicator="preflight">3. Preflight</li>
+            <li data-step-indicator="run">4. Run</li>
+            <li data-step-indicator="results">5. Results</li>
+          </ol>
+
+          <div id="workbench-message" class="result-box" role="status" aria-live="polite"></div>
+
+          <section class="run-step active" data-run-step="inputs" aria-labelledby="inputs-heading">
+            <div class="setup-heading">
+              <h3 id="inputs-heading">Choose the two IPF input files</h3>
+              <p>Files stream directly into this local workspace. They are not loaded into browser memory for fitting.</p>
+            </div>
+            <div class="starter-actions">
+              <button id="use-demo-ipf" class="secondary-action" type="button">Use demo age/sex files</button>
+            </div>
+            <div class="form-grid">
+              <label>Seed CSV
+                <input id="ipf-seed-file" type="file" accept=".csv,text/csv" required>
+                <small id="seed-upload-status" class="field-hint">Choose one CSV.</small>
+              </label>
+              <label>Normalized margin/control CSV
+                <input id="ipf-controls-file" type="file" accept=".csv,text/csv" required>
+                <small id="controls-upload-status" class="field-hint">Choose one CSV.</small>
+              </label>
+            </div>
+            <div class="step-actions">
+              <button id="upload-inputs" class="primary-action" type="button" disabled>Upload and continue</button>
+            </div>
           </section>
 
-          <section
-            id="setup-statcan-panel"
-            class="starter-panel setup-path-panel"
-            aria-label="StatCan WDS setup path"
-            data-setup-path-panel="statcan"
-            hidden
-          >
-            <div class="recommended-source">
-              <div>
-                <strong>Recommended starting table</strong>
-                <span>Population estimates on July 1, by age and gender.</span>
-              </div>
-              <button id="use-recommended-wds" class="secondary-action" type="button">
-                Use 17100005
-              </button>
+          <section class="run-step" data-run-step="configure" aria-labelledby="configure-heading" hidden>
+            <div class="setup-heading">
+              <h3 id="configure-heading">Configure the fit</h3>
+              <p>Compact fitted weights are the durable output. Expansion remains a separate, explicit workflow.</p>
             </div>
-            <form id="wds-search-form" class="inline-form">
-              <label>
-                Search terms
-                <input id="wds-search-query" value="population estimates age gender">
-              </label>
-              <button class="secondary-action" type="submit">Search</button>
-            </form>
-            <div id="wds-search-result" class="result-box" aria-live="polite"></div>
-            <form id="wds-explain-form" class="inline-form">
-              <label>
-                <span
-                  class="help-label"
-                  data-help="A StatCan table identifier, also called a product ID. Search results can fill this for you."
-                >Product ID</span>
-                <input id="wds-product-id" placeholder="Example: 98100001">
-              </label>
-              <button
-                class="secondary-action"
-                type="submit"
-                title="Reads StatCan metadata so you can see what dimensions the table contains."
-              >Inspect product</button>
-              <button
-                id="generate-from-product-id"
-                class="secondary-action"
-                type="button"
-                title="Loads the latest table snapshot so you can choose non-overlapping categories before generating IPF files."
-              >
-                Load categories
-              </button>
-            </form>
-            <div id="wds-metadata-result" class="result-box" aria-live="polite"></div>
-            <section
-              id="wds-refinement"
-              class="wds-refinement"
-              aria-label="Refine WDS table"
-              hidden
-            >
-              <div class="setup-heading">
-                <h4>Refine table</h4>
-                <p>Choose one coherent population slice before generating IPF files.</p>
-              </div>
-              <div id="wds-refinement-fields" class="form-grid"></div>
-              <div id="wds-selection-estimate" class="selection-estimate" aria-live="polite"></div>
-              <button id="apply-wds-selection" class="primary-action" type="button">
-                Generate selected IPF files
-              </button>
-            </section>
+            <div class="output-default">
+              <strong>Output</strong>
+              <span>Compact fitted weights — one row per seed profile.</span>
+            </div>
             <details class="advanced-options">
-              <summary>Use a downloaded ZIP or advanced columns</summary>
-              <div class="advanced-options-body">
-                <div class="inline-form">
-                  <label>
-                    <span
-                      class="help-label"
-                      data-help="Use this only when you already have a downloaded StatCan WDS ZIP file."
-                    >Downloaded StatCan ZIP</span>
-                    <input id="wds-zip-file" type="file" accept=".zip,application/zip">
-                  </label>
-                  <button
-                    id="generate-from-downloaded-zip"
-                    class="secondary-action"
-                    type="button"
-                    title="Reads the selected ZIP locally so you can refine its categories before generating IPF files."
-                  >
-                    Load selected ZIP categories
-                  </button>
-                </div>
-                <div class="inline-form">
-                  <label>
-                    <span
-                      class="help-label"
-                      data-help="WDS means StatCan Web Data Service. WDS dimensions are the table columns to use as IPF categories."
-                    >WDS dimensions</span>
-                    <input id="wds-dimensions" placeholder="GEO, Age group, Sex">
-                  </label>
-                  <label>
-                    <span
-                      class="help-label"
-                      data-help="The numeric StatCan column containing the target values to match. Usually VALUE."
-                    >Count column</span>
-                    <input id="wds-count-column" value="VALUE">
-                  </label>
-                </div>
+              <summary>Advanced IPF settings</summary>
+              <div class="form-grid advanced-options-body">
+                <label>Weight column
+                  <input id="ipf-weight-field" placeholder="Optional">
+                </label>
+                <label>Maximum iterations
+                  <input id="ipf-max-iterations" type="number" min="1" value="100">
+                </label>
+                <label>Tolerance
+                  <input id="ipf-tolerance" type="number" min="0" step="0.000001" value="0.000001">
+                </label>
+                <label class="checkbox-field">
+                  <input id="ipf-allow-nonconverged" type="checkbox">
+                  Keep a result when IPF reaches the iteration limit
+                </label>
               </div>
             </details>
-            <div id="wds-generated-result" class="result-box" aria-live="polite"></div>
+            <div class="step-actions">
+              <button class="secondary-action" type="button" data-go-step="inputs">Back</button>
+              <button id="check-preflight" class="primary-action" type="button">Check inputs</button>
+            </div>
           </section>
-        </section>
 
-        <section class="workflow-card-section run-panel" aria-label="Run IPF">
-          <div class="setup-heading">
-            <h3>IPF inputs and controls</h3>
-            <p>
-              Use files prepared above, or choose your own seed and
-              margin/control CSVs here.
-            </p>
-          </div>
-          <form id="ipf-form" class="form-grid">
-            <label>
-              <span
-                class="help-label"
-                data-help="Seed rows are example records that contain the categories IPF can reweight."
-              >Seed CSV</span>
-              <input id="ipf-seed-file" class="ipf-file-input" type="file" accept=".csv,text/csv" required>
-            </label>
-            <label>
-              <span
-                class="help-label"
-                data-help="Control totals are the target margins IPF tries to match."
-              >Normalized margin/control CSV</span>
-              <input id="ipf-controls-file" class="ipf-file-input" type="file" accept=".csv,text/csv" required>
-            </label>
-            <label>
-              <span
-                class="help-label"
-                data-help="Optional starting weights for seed rows. Leave blank when each seed row starts equally."
-              >Weight column</span>
-              <input id="ipf-weight-field" placeholder="Optional">
-            </label>
-            <label>
-              <span
-                class="help-label"
-                data-help="Expanded records are easier to use as a population. Compact weights preserve the exact fitted values for weighted analysis."
-              >Output</span>
-              <select id="ipf-output-kind" aria-describedby="ipf-output-hint">
-                <option value="expanded">Expanded synthetic records</option>
-                <option value="weights">Compact fitted weights</option>
-              </select>
-              <small id="ipf-output-hint" class="field-hint"></small>
-            </label>
-            <label>
-              <span
-                class="help-label"
-                data-help="Maximum number of IPF adjustment rounds before stopping."
-              >Max iterations</span>
-              <input id="ipf-max-iterations" type="number" min="1" value="100">
-            </label>
-            <label>
-              <span
-                class="help-label"
-                data-help="How close fitted totals must be to the control totals before IPF stops."
-              >Tolerance</span>
-              <input id="ipf-tolerance" type="number" min="0" step="0.000001" value="0.000001">
-            </label>
-            <button class="primary-action" type="submit">Run IPF</button>
-          </form>
-          <div id="ipf-result" class="result-box" aria-live="polite"></div>
+          <section class="run-step" data-run-step="preflight" aria-labelledby="preflight-heading" hidden>
+            <div class="setup-heading">
+              <h3 id="preflight-heading">Preflight</h3>
+              <p>Review parsed records, control margins, expected output, and workspace capacity before starting.</p>
+            </div>
+            <div id="preflight-results" class="diagnostic-grid"></div>
+            <div class="step-actions">
+              <button class="secondary-action" type="button" data-go-step="configure">Change settings</button>
+              <button id="start-run" class="primary-action" type="button" disabled>Start run</button>
+            </div>
+          </section>
+
+          <section class="run-step" data-run-step="run" aria-labelledby="progress-heading" hidden>
+            <div class="setup-heading">
+              <h3 id="progress-heading">Run progress</h3>
+              <p>This work continues in an isolated local process. You can refresh and reconnect from the Runs list.</p>
+            </div>
+            <progress id="run-progress" max="100"></progress>
+            <ol id="progress-events" class="progress-events" aria-live="polite"></ol>
+            <div class="step-actions">
+              <button id="cancel-run" class="secondary-action danger-action" type="button">Cancel run</button>
+            </div>
+          </section>
+
+          <section class="run-step" data-run-step="results" aria-labelledby="results-heading" hidden>
+            <div class="setup-heading">
+              <h3 id="results-heading">Results</h3>
+              <p id="results-intro">The completed run and its artifacts are stored in the local workspace.</p>
+            </div>
+            <div id="fit-diagnostics" class="diagnostic-grid"></div>
+            <section class="preview-section" aria-labelledby="preview-heading">
+              <h4 id="preview-heading">Weighted output preview</h4>
+              <div id="weights-preview" class="table-scroll"></div>
+            </section>
+            <section class="artifacts-section" aria-labelledby="artifacts-heading">
+              <h4 id="artifacts-heading">Artifacts</h4>
+              <div id="run-artifacts" class="download-list"></div>
+            </section>
+            <section class="reproduction-section" aria-labelledby="reproduction-heading">
+              <h4 id="reproduction-heading">Reproduce from the command line</h4>
+              <pre id="reproduction-command"></pre>
+            </section>
+          </section>
         </section>
       </section>
 

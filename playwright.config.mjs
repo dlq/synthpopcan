@@ -1,5 +1,7 @@
 import { defineConfig } from "@playwright/test";
 
+const workspace = `/tmp/synthpopcan-e2e-runs-${process.pid}`;
+
 export default defineConfig({
   testDir: "tests/web",
   testMatch: "scenarios.spec.mjs",
@@ -12,7 +14,7 @@ export default defineConfig({
   },
   webServer: {
     command:
-      "UV_CACHE_DIR=/tmp/synthpopcan-uv-cache uv run synthpopcan serve --host 127.0.0.1 --port 8765 --no-open --workspace /tmp/synthpopcan-e2e-runs",
+      `UV_CACHE_DIR=/tmp/synthpopcan-uv-cache uv run synthpopcan serve --host 127.0.0.1 --port 8765 --no-open --workspace ${workspace}`,
     url: "http://127.0.0.1:8765",
     reuseExistingServer: true,
   },

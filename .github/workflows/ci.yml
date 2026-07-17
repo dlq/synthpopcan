@@ -37,15 +37,24 @@ jobs:
       - name: Check Python types
         run: uv run pyright src
 
-      - name: Run tests
-        run: uv run pytest --junitxml=correctness-report.xml
+      - name: Run tests with enforced coverage
+        run: >-
+          uv run pytest
+          --junitxml=correctness-report.xml
+          --cov=src/synthpopcan
+          --cov-branch
+          --cov-report=term-missing:skip-covered
+          --cov-report=xml:coverage.xml
+          --cov-fail-under=95
 
       - name: Retain machine-readable correctness report
         if: always()
         uses: actions/upload-artifact@v7.0.1
         with:
           name: correctness-report-python-${{ matrix.python-version }}-${{ github.sha }}
-          path: correctness-report.xml
+          path: |
+            correctness-report.xml
+            coverage.xml
 
       - name: Build documentation
         run: uv run sphinx-build -W -b html docs docs/_build/html
@@ -112,8 +121,8 @@ jobs:
       - name: Check web assets
         run: npm run check:web
 
-      - name: Run web unit tests
-        run: npm run test:web
+      - name: Run web unit tests with coverage guardrails
+        run: npm run test:web:coverage
 
       - name: Install Chromium
         run: npx playwright install --with-deps chromium

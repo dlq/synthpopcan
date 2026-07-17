@@ -441,27 +441,27 @@ no browser involvement. The API never returns the complete output CSV as JSON.
 
 - Modify: `tests/web/scenarios.spec.mjs`, `tests/SCENARIOS.md`, `docs/web-app.md`
 
-- [ ] Replace the workflow-card first screen with the Runs workbench and a
+- [x] Replace the workflow-card first screen with the Runs workbench and a
   single New run action while preserving existing visual tokens and branding.
 
-- [ ] Implement Inputs, Configure, Preflight, Run, and Results views for IPF.
+- [x] Implement Inputs, Configure, Preflight, Run, and Results views for IPF.
 
-- [ ] Stream selected files to `/api/uploads`; do not call `File.text()` for
+- [x] Stream selected files to `/api/uploads`; do not call `File.text()` for
   synthesis inputs.
 
-- [ ] Show input diagnostics before enabling Run, keep expert IPF settings under
+- [x] Show input diagnostics before enabling Run, keep expert IPF settings under
   Advanced, and display weighted output as the default.
 
-- [ ] Reconnect to active runs after refresh and list completed runs from the
+- [x] Reconnect to active runs after refresh and list completed runs from the
   workspace.
 
-- [ ] Show fit diagnostics, a bounded preview, artifacts, and the reproducible
+- [x] Show fit diagnostics, a bounded preview, artifacts, and the reproducible
   CLI command on the Results view.
 
-- [ ] Update `SCN-WEB-001` from browser-local computation to the durable backend
+- [x] Update `SCN-WEB-001` from browser-local computation to the durable backend
   run lifecycle.
 
-- [ ] Delete browser IPF computation only after the replacement scenario and
+- [x] Delete browser IPF computation only after the replacement scenario and
   Python/JavaScript parity fixtures pass.
 
 **Acceptance:** A first-time user can complete the demo IPF run without knowing

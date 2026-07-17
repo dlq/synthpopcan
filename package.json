@@ -6,10 +6,12 @@
     "check:web": "biome check src/synthpopcan/web tests/web playwright.config.mjs",
     "format:web": "biome format --write src/synthpopcan/web tests/web",
     "test:web": "node --test tests/web/*.test.mjs",
+    "test:web:coverage": "c8 --all --include='src/synthpopcan/web/*.mjs' --check-coverage --lines=40 --branches=60 --functions=75 --reporter=text --reporter=json-summary node --test tests/web/*.test.mjs",
     "test:web:e2e": "playwright test"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.3",
-    "@playwright/test": "^1.61.1"
+    "@playwright/test": "^1.61.1",
+    "c8": "^12.0.0"
   }
 }

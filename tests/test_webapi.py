@@ -26,7 +26,7 @@ def test_ipf_api_upload_preflight_run_events_artifacts_and_reproduction(
         session_secret="test-session",
     )
 
-    async def exercise() -> tuple[dict, bytes, str, str]:
+    async def exercise() -> tuple[dict, bytes, dict, str, str]:
         transport = httpx.ASGITransport(app=app)
         async with httpx.AsyncClient(
             transport=transport, base_url="http://127.0.0.1"
@@ -56,16 +56,27 @@ def test_ipf_api_upload_preflight_run_events_artifacts_and_reproduction(
             artifact = await client.get(
                 f"/api/runs/{run_id}/artifacts/{weights['artifact_id']}"
             )
+            preview = await client.get(
+                f"/api/runs/{run_id}/artifacts/{weights['artifact_id']}/preview",
+                params={"rows": 2},
+            )
+            assert preview.status_code == 200
             assert artifact.status_code == 200
             assert artifact.headers["content-disposition"].endswith(
                 'filename="weights.csv"'
             )
             listed = await client.get("/api/runs")
             assert listed.json()["runs"][0]["run_id"] == run_id
-            return manifest, artifact.content, events.text, replay_after_end.text
+            return (
+                manifest,
+                artifact.content,
+                preview.json(),
+                events.text,
+                replay_after_end.text,
+            )
 
     try:
-        manifest, weights_bytes, event_stream, replay_after_end = asyncio.run(
+        manifest, weights_bytes, preview, event_stream, replay_after_end = asyncio.run(
             exercise()
         )
     finally:
@@ -79,6 +90,9 @@ def test_ipf_api_upload_preflight_run_events_artifacts_and_reproduction(
     rows = list(csv.DictReader(StringIO(weights_bytes.decode())))
     assert len(rows) == 4
     assert sum(float(row["weight"]) for row in rows) == 100
+    assert preview["columns"] == ["id", "age", "sex", "weight"]
+    assert len(preview["rows"]) == 2
+    assert preview["limit"] == 2
     rendered = shlex.split(manifest["reproduction"]["shell"])
     assert rendered[0] == "synthpopcan"
     assert main(rendered[1:]) == 0

@@ -73,6 +73,15 @@ markers = [
   "scenario(id): stable acceptance-scenario ID documented in tests/SCENARIOS.md",
 ]
 
+[tool.coverage.run]
+branch = true
+source = ["synthpopcan"]
+
+[tool.coverage.report]
+fail_under = 95
+show_missing = true
+skip_covered = true
+
 [tool.ruff]
 target-version = "py311"
 line-length = 88

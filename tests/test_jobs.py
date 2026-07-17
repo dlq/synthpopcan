@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import csv
+import queue
+import threading
 import time
 from pathlib import Path
 
-from synthpopcan.jobs import JobManager
+from synthpopcan.jobs import JobManager, _ipf_worker
 from synthpopcan.runs import RunStore
 
 
@@ -142,6 +144,54 @@ def test_job_manager_cancels_queued_run_without_starting_worker(tmp_path: Path) 
 
     assert manifest["status"] == "cancelled"
     assert store.read_events(run_id)[-1]["stage"] == "cancelled"
+
+
+def test_ipf_worker_contract_is_covered_in_process(tmp_path: Path) -> None:
+    """Exercise the spawned target directly so coverage includes its contract."""
+    store = RunStore(tmp_path)
+    run_id = create_valid_run(store)
+    messages: queue.SimpleQueue = queue.SimpleQueue()
+
+    _ipf_worker(
+        str(store.root),
+        run_id,
+        store.load_run(run_id),
+        messages,
+        threading.Event(),
+    )
+
+    emitted = []
+    while not messages.empty():
+        emitted.append(messages.get())
+    assert emitted[-1]["type"] == "succeeded"
+    assert emitted[-1]["summary"] == {
+        "converged": True,
+        "iterations": 1,
+        "max_abs_error": 0.0,
+        "seed_records": 4,
+    }
+    assert {item["logical_name"] for item in emitted[-1]["artifacts"]} == {
+        "weights",
+        "fit_report",
+    }
+
+
+def test_ipf_worker_contract_reports_immediate_cancellation(tmp_path: Path) -> None:
+    store = RunStore(tmp_path)
+    run_id = create_valid_run(store)
+    messages: queue.SimpleQueue = queue.SimpleQueue()
+    cancelled = threading.Event()
+    cancelled.set()
+
+    _ipf_worker(
+        str(store.root),
+        run_id,
+        store.load_run(run_id),
+        messages,
+        cancelled,
+    )
+
+    assert messages.get()["type"] == "cancelled"
 
 
 def create_valid_run(store: RunStore) -> str:

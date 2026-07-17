@@ -33,10 +33,15 @@ uv run synthpopcan serve
 By default, the app listens on `127.0.0.1:8000` and opens in the default
 browser.
 
-## Choose a Workflow
+## Runs Workbench
 
-The first screen has **three guided paths**. All use only the local browser and
-the loopback Python helper.
+The first screen is a durable **Runs** workbench. **New run** starts an IPF job;
+the left-hand history lists active and completed jobs stored in the local
+workspace. Inputs, progress events, fit diagnostics, and artifacts survive a
+page refresh and can be reopened by run ID.
+
+Prepared-model generation and small-area planning remain available under
+**Legacy browser tools** while they are migrated into the same durable runtime.
 
 ## Three Short Walkthroughs
 
@@ -46,23 +51,26 @@ later on this page.
 
 ### Try IPF With the Teaching Files
 
-1. Keep **IPF from margin tables** selected.
-1. Under **Use a demo or make templates**, choose **Use demo age/sex files**.
-   The app fills both IPF file inputs with tiny fictional data.
-1. Keep **Expanded synthetic records** selected and leave the iteration and
-   tolerance defaults unchanged.
-1. Choose **Run IPF**.
-1. In the result, confirm that the fit converged, inspect the preview, and
-   download the CSV. Open **Continue in the CLI** when we want a copyable record
-   of the equivalent command-line steps.
+1. Choose **New run**, then **Use demo age/sex files**.
+1. Choose **Upload and continue**. The two tiny fictional CSVs stream to the
+   local workspace instead of being parsed for synthesis in the browser.
+1. Keep the default compact weighted output. Iteration, tolerance, starting
+   weight, and non-convergence options are under **Advanced IPF settings**.
+1. Choose **Check inputs** and review the seed count, control margins,
+   dimensions, estimated output size, and workspace capacity.
+1. Choose **Start run**. The isolated Python worker records progress even if the
+   page is reloaded.
+1. In **Results**, confirm convergence, inspect the bounded weighted preview,
+   download `weights.csv` and `fit-report.json`, and keep the displayed CLI
+   command with the research record.
 
-This run checks the browser workflow and teaches the input/output shape. It does
-not represent a Canadian population. Continue to [IPF](ipf.md) before replacing
-the teaching files with research inputs.
+This run tests the durable browser-to-Python workflow and teaches the
+input/output shape. It does not represent a Canadian population. Continue to
+[IPF](ipf.md) before replacing the teaching files with research inputs.
 
 ### Generate Linked Households and People
 
-1. Choose **Generate from existing model**.
+1. Open **Legacy browser tools**, then choose **Generate from existing model**.
 1. Select **Safe demo household/person package**, then choose **Use premade
    model**.
 1. Wait for the ready message. Keep `10` households and random seed `13`, and
@@ -78,7 +86,7 @@ same work reproducibly at larger scale.
 
 ### Prepare a Small-Area Run
 
-1. Choose **Prepare a small-area synthesis**.
+1. Open **Legacy browser tools**, then choose **Prepare a small-area synthesis**.
 1. Select a premade linked model or upload a reviewed local package.
 1. Upload normalized household controls and, when available, compatible person
    controls. Enter the geography dimension used by the controls, such as `ct`
@@ -99,44 +107,28 @@ controls and interpreting residuals are covered in
 ### IPF from margin tables
 
 Choose this when we want to fit **seed rows** to **public margin/control totals**.
-This path can start in two ways:
+The current workbench accepts a seed CSV and a normalized controls CSV, or fills
+both with the bundled teaching example. Statistics Canada WDS discovery and
+normalization remain available in the CLI while their durable web migration is
+completed; see {doc}`statcan` and {doc}`controls`.
 
-- use the demo files or blank templates when we are learning the format; or
-- search for a Statistics Canada [WDS](https://www.statcan.gc.ca/en/developers/wds) product ID, inspect the table, refine it to a non-overlapping population
-  slice, and let the local helper fill the seed CSV and normalized margin/control
-  CSV.
+Uploads are streamed and hashed by the loopback service. **Preflight** uses the
+same Python input diagnostics as the CLI, including missing dimensions,
+unsupported categories, expected weighted rows, output-size estimate, and free
+workspace capacity. **Start run** atomically claims the uploads, creates a run
+manifest, and executes IPF in one isolated worker process. The event stream and
+manifest are persisted, so refresh and reconnect do not restart the fit.
 
-The web app offers table `17100005`, **Population estimates on July 1, by age
-and gender**, as a recommended starting point. Plain-word search results are
-ranked for population-count usefulness and identify tables whose measure or
-unit needs closer review. Downloaded ZIP and column overrides remain available
-under the advanced options disclosure.
+Compact fitted weights are the default and only Stage 3 run artifact. They
+preserve fractional weights without creating a potentially enormous expanded
+population in browser memory. The results page requests at most 10 preview rows
+from a server endpoint capped at 25; full artifacts are available only through
+download responses. Use `synthpopcan ipf expand` when an explicitly expanded
+CSV is required.
 
-The WDS refinement step chooses a geography and offers detailed gender and
-single-year or five-year age schemes when those dimensions are present. Its
-live estimate reports the selected control cells, approximate expanded record
-count, and source unit. Avoid modes marked as potentially overlapping. The web
-app downloads the resulting `synthpopcan-wds-selection.json` so the same subset
-can be passed to `controls from-wds --selection`.
-
-The local helper and browser enforce limits on request and download bytes, ZIP
-entries, compressed and uncompressed sizes, selected CSV size and row count,
-and concurrent WDS preparation. Only the selected data CSV is inflated in the
-browser. If a table exceeds these workbench limits, download and process it
-with the CLI instead of increasing browser memory pressure.
-
-After the two IPF input files are loaded, **Expanded synthetic records** is the
-default for selections at or below the 100,000-row browser limit. Larger WDS
-selections switch to **Compact fitted weights** automatically. Weighted output
-is smaller and preserves fractional fitted weights; expanded output creates one
-integerized row per synthetic record.
-
-Completed WDS, IPF, and prepared-model runs end with a collapsed **Continue in
-the CLI** section. The commands use the selected product or model, input
-filenames, conditions, random seed, and output settings shown in the web app.
-
-The same workflow is documented for command-line use in {doc}`statcan`,
-{doc}`controls`, and {doc}`ipf`.
+Each completed run stores `weights.csv`, `fit-report.json`, checksums, fit
+diagnostics, and a shell-safe reproduction command. The same workflow is
+documented for command-line use in {doc}`ipf`.
 
 ### Generate from existing model
 

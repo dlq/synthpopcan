@@ -64,12 +64,15 @@ warnings, and preserved household/person links.
 
 ## SCN-WEB-001
 
-**First browser IPF run.** A first-time user loads the bundled demo seed and
-controls, runs browser-local IPF, previews the result, and receives a weights
-CSV download without a server-side synthesis job.
+**First durable browser IPF run.** A first-time user loads the bundled demo seed
+and controls, streams both uploads to the local workspace, passes Python
+preflight, starts a backend IPF job, and reopens its persisted result after a
+page refresh.
 
-Acceptance evidence: meaningful first screen, demo-loaded status, successful
-IPF result, CSV preview, download link, and no browser console errors.
+Acceptance evidence: Runs workbench with one New run action, input diagnostics,
+backend progress, fit summary, bounded weighted preview, artifact links,
+reproduction command, refresh recovery, cancellation and blocked-preflight
+coverage, and no browser console errors.
 
 ## SCN-WEB-002
 

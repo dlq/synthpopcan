@@ -4,6 +4,7 @@ from __future__ import annotations
 
 __all__ = ["create_web_app"]
 
+import csv
 import hmac
 import json
 import secrets
@@ -247,6 +248,23 @@ def create_web_app(
         except ValueError as exc:
             return _error_response(str(exc), HTTPStatus.CONFLICT)
 
+    @app.get("/api/runs/{run_id}/artifacts/{artifact_id}/preview")
+    async def preview_artifact(
+        run_id: str, artifact_id: str, rows: int = 10
+    ) -> Response:
+        try:
+            if rows < 1 or rows > 25:
+                raise ValueError("preview rows must be between 1 and 25")
+            path, artifact = run_store.artifact_path(run_id, artifact_id)
+            if artifact["media_type"] != "text/csv":
+                raise ValueError("only CSV artifacts can be previewed")
+            preview = await run_in_threadpool(_read_csv_preview, path, rows)
+            return JSONResponse(preview)
+        except KeyError as exc:
+            return _error_response(str(exc), HTTPStatus.NOT_FOUND)
+        except ValueError as exc:
+            return _error_response(str(exc), HTTPStatus.BAD_REQUEST)
+
     @app.get("/api/runs/{run_id}/artifacts/{artifact_id}")
     async def get_artifact(run_id: str, artifact_id: str) -> Response:
         try:
@@ -398,6 +416,20 @@ def _optional_int(value: object) -> int | None:
     if value in {None, ""}:
         return None
     return int(value)  # type: ignore[arg-type]
+
+
+def _read_csv_preview(path: Path, rows: int) -> dict[str, Any]:
+    """Read at most a small fixed number of CSV records for the browser."""
+    with path.open(newline="", encoding="utf-8-sig") as handle:
+        reader = csv.DictReader(handle)
+        if reader.fieldnames is None:
+            raise ValueError("CSV artifact has no header row")
+        preview_rows = []
+        for row in reader:
+            preview_rows.append(dict(row))
+            if len(preview_rows) >= rows:
+                break
+    return {"columns": reader.fieldnames, "rows": preview_rows, "limit": rows}
 
 
 def _require_browser_compatible_model(model_id: str) -> None:

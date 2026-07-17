@@ -1,5 +1,4 @@
-import { parseCsv, stringifyCsv } from "./csv.mjs";
-import { expandRecords, fitIpf, readControlTable, weightsToRows } from "./ipf.mjs";
+import { stringifyCsv } from "./csv.mjs";
 import {
   generateLinkedPopulation,
   generateTreeRows,
@@ -24,45 +23,10 @@ self.addEventListener("message", (event) => {
 });
 
 function runJob(job) {
-  if (job.type === "ipf") {
-    return runIpfJob(job);
-  }
   if (job.type === "model") {
     return runModelJob(job);
   }
   throw new Error("unknown browser job");
-}
-
-function runIpfJob(job) {
-  const seedRows = parseCsv(job.seedText);
-  const controlRows = parseCsv(job.controlsText);
-  const controlTable = readControlTable(controlRows);
-  const fit = fitIpf(seedRows, controlTable.margins, {
-    weightField: job.weightField,
-    maxIterations: job.maxIterations,
-    tolerance: job.tolerance,
-  });
-  const expandedRowCount = Math.round(
-    fit.weights.reduce((total, weight) => total + weight, 0),
-  );
-  if (job.outputKind === "expanded" && expandedRowCount > job.maxExpandedRows) {
-    throw new Error(
-      `Expanded output would create about ${formatNumber(expandedRowCount)} records, above the ${formatNumber(job.maxExpandedRows)}-record browser limit. No file was created. Choose Compact fitted weights, or run the CLI when you need the full expanded population.`,
-    );
-  }
-  const outputRows =
-    job.outputKind === "expanded"
-      ? expandRecords(seedRows, fit.weights)
-      : weightsToRows(seedRows, fit.weights);
-  const filename =
-    job.outputKind === "expanded"
-      ? "synthpopcan-ipf-expanded.csv"
-      : "synthpopcan-ipf-weights.csv";
-
-  return {
-    message: `IPF ${fit.converged ? "converged" : "stopped"} after ${fit.iterations} iteration(s). Max absolute error: ${formatNumber(fit.maxAbsError)}.`,
-    downloads: [{ filename, text: stringifyCsv(outputRows), type: "text/csv" }],
-  };
 }
 
 function runModelJob(job) {
@@ -115,8 +79,4 @@ function runModelJob(job) {
       },
     ],
   };
-}
-
-function formatNumber(value) {
-  return Number.isInteger(value) ? String(value) : String(Number(value.toPrecision(6)));
 }
