@@ -1,10 +1,10 @@
 # Local Web Application Runtime Implementation Plan
 
-Status: planned\
+Status: in progress; Stages 0–5 complete\
 Created: 2026-07-10\
-Last updated: 2026-07-15\
-Target: `0.6.0`–`0.6.2`\
-Next action: execute Stage 0, HTTP runtime and module-boundary skeleton\
+Last updated: 2026-07-17\
+Target: `0.6.0`; stable linked schema follows in `0.6.1`\
+Next action: execute Stage 6, guided small-area workflow\
 Roadmap: [PLANS.md](../PLANS.md) | [Plan index](README.md)
 
 > **For agentic workers:** Execute this plan one stage at a time. Keep each
@@ -482,22 +482,22 @@ from the Runs list.
 
 - Modify: `tests/test_tree.py`, `tests/test_workflows.py`, browser scenarios
 
-- [ ] Extract prepared-package inspection, publishability checks, linked
+- [x] Extract prepared-package inspection, publishability checks, linked
   generation, output writing, manifest data, and linked validation from the CLI
   adapter.
 
-- [ ] Add typed prepared-model run requests using a catalogue model ID or claimed
+- [x] Add typed prepared-model run requests using a catalogue model ID or claimed
   package upload plus household count, conditions, and random seed.
 
-- [ ] Make package provenance and privacy metadata part of preflight, not a
+- [x] Make package provenance and privacy metadata part of preflight, not a
   separate optional inspection action.
 
-- [ ] Write household and person CSVs directly to the run artifact workspace and
+- [x] Write household and person CSVs directly to the run artifact workspace and
   return only summaries and bounded previews through HTTP.
 
-- [ ] Update `SCN-WEB-002` to exercise the backend job and durable run result.
+- [x] Update `SCN-WEB-002` to exercise the backend job and durable run result.
 
-- [ ] Remove browser tree/model generation after fixed-seed parity tests and the
+- [x] Remove browser tree/model generation after fixed-seed parity tests and the
   replacement scenario pass.
 
 **Acceptance:** CLI, beginner API, and web runs use the same Python model
@@ -516,22 +516,22 @@ frequency sampling, or linked-population generation logic.
 
 - Modify: model, workflow, benchmark, and browser tests
 
-- [ ] Add an iterator or chunk callback for linked generation while retaining the
+- [x] Add an iterator or chunk callback for linked generation while retaining the
   current collecting API for compatibility.
 
-- [ ] Preserve deterministic fixed-seed output regardless of configured write
+- [x] Preserve deterministic fixed-seed output regardless of configured write
   chunk size.
 
-- [ ] Keep household/person identifiers and link validation correct across chunk
+- [x] Keep household/person identifiers and link validation correct across chunk
   boundaries.
 
-- [ ] Write CSV rows, hashes, byte counts, and row counts incrementally.
+- [x] Write CSV rows, hashes, byte counts, and row counts incrementally.
 
-- [ ] Add cancellation checks between chunks and before artifact finalization.
+- [x] Add cancellation checks between chunks and before artifact finalization.
 
-- [ ] Add preflight estimates and explicit disk headroom for prepared-model runs.
+- [x] Add preflight estimates and explicit disk headroom for prepared-model runs.
 
-- [ ] Add a deterministic medium-scale CI profile and an opt-in province-scale
+- [x] Add a deterministic medium-scale CI profile and an opt-in province-scale
   local profile. The large profile must use the same job and artifact path as
   the web app, not a separate benchmark-only implementation.
 
@@ -554,24 +554,24 @@ model plus configured chunk size rather than complete generated output.
 
 - Modify: small-area, workflow, scenario, and browser tests
 
-- [ ] Extract scale estimation, linked calibration, report writing, linked
+- [x] Extract scale estimation, linked calibration, report writing, linked
   validation, and optional map creation into one file-backed workflow.
 
 - [ ] Allow the run to start from existing linked candidate uploads or chain
   prepared-model generation inside the same run request.
 
-- [ ] Present household controls, optional person controls, geography settings,
+- [x] Present household controls, optional person controls, geography settings,
   candidate pool, and output scale as one guided flow.
 
 - [ ] Block launch on incompatible geography dimensions, missing linked IDs,
   unrepresentable controls, or insufficient disk.
 
-- [ ] Show household and person residual summaries before artifact links.
+- [x] Show household and person residual summaries before artifact links.
 
-- [ ] Produce the standalone map through `map_render.py` and expose it as a named
+- [x] Produce the standalone map through `map_render.py` and expose it as a named
   artifact without changing the exported MapLibre/OpenFreeMap architecture.
 
-- [ ] Update `SCN-SMALLAREA-001` with an HTTP/browser-owned acceptance path while
+- [x] Update `SCN-SMALLAREA-001` with an HTTP/browser-owned acceptance path while
   retaining the CLI integration scenario.
 
 **Acceptance:** A user can generate or provide linked candidates, calibrate
@@ -648,13 +648,11 @@ depends on static hosting or browser-side synthesis.
 
 ## Suggested Release Slices
 
-- **0.6.0:** FastAPI/Uvicorn runtime, durable runs, backend IPF, Runs workbench,
-  and removal of browser IPF.
-- **0.6.1:** Backend prepared-model generation, the stable versioned
-  linked-population schema, chunked artifacts, scale preflight, and removal of
-  browser tree generation.
-- **0.6.2:** Guided small-area synthesis, validation/map results, selected
-  utility workflows, cleanup, and final documentation parity.
+- **0.6.0:** Complete Stages 0–8: FastAPI/Uvicorn, durable IPF and prepared-model
+  runs, bounded artifacts, guided small-area synthesis, selected utilities,
+  removal of browser synthesis, cleanup, and release proof.
+- **0.6.1:** Stabilize and version the public linked household/person/geography
+  schema after the local runtime owns all three workflows.
 
 Do not make the release split a reason to leave two synthesis implementations
 indefinitely. Every migrated workflow has a named cleanup gate in the same

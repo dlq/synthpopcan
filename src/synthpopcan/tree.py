@@ -5,6 +5,8 @@ from __future__ import annotations
 import csv
 import json
 import random
+import sqlite3
+import tempfile
 from bisect import bisect_left
 from collections import Counter, defaultdict
 from collections.abc import Callable, Iterator, Sequence
@@ -40,6 +42,7 @@ __all__ = [
     "train_cart_model",
     "train_frequency_model",
     "validate_linked_population",
+    "validate_linked_population_files",
     "write_generated_rows",
     "write_tree_model",
 ]
@@ -1271,6 +1274,247 @@ def validate_linked_population(
         "household_size_column": household_size_column,
         "issues": issues,
     }
+
+
+def validate_linked_population_files(
+    households_path: Path,
+    persons_path: Path,
+    *,
+    household_id_column: str = "synthetic_household_id",
+    person_household_id_column: str = "synthetic_household_id",
+    person_id_column: str = "synthetic_person_id",
+    household_size_column: str = "household_size",
+    max_issue_details: int = 100,
+) -> dict[str, Any]:
+    """Validate linked CSV files without loading the population into memory.
+
+    Identifiers and per-household counts are indexed in a temporary SQLite file
+    beside the output. Diagnostic details are bounded while summary counts cover
+    every input row.
+    """
+
+    if max_issue_details < 0:
+        raise ValueError("max issue details must not be negative")
+    scratch = tempfile.NamedTemporaryFile(
+        prefix=".linked-validation-",
+        suffix=".sqlite3",
+        dir=households_path.parent,
+        delete=False,
+    )
+    scratch_path = Path(scratch.name)
+    scratch.close()
+    connection = sqlite3.connect(scratch_path)
+    issues: list[dict[str, Any]] = []
+    household_count = 0
+    person_count = 0
+    missing_household_ids = 0
+    missing_person_ids = 0
+    duplicate_household_ids = 0
+    duplicate_person_ids = 0
+    invalid_household_sizes = 0
+
+    def add_issue(issue: dict[str, Any]) -> None:
+        if len(issues) < max_issue_details:
+            issues.append(issue)
+
+    try:
+        connection.executescript(
+            """
+            CREATE TABLE households (
+                identifier TEXT PRIMARY KEY,
+                expected_persons INTEGER
+            );
+            CREATE TABLE person_ids (identifier TEXT PRIMARY KEY);
+            CREATE TABLE household_counts (
+                identifier TEXT PRIMARY KEY,
+                person_count INTEGER NOT NULL
+            );
+            """
+        )
+        with households_path.open(newline="") as handle:
+            reader = csv.DictReader(handle)
+            _require_csv_columns(
+                reader.fieldnames,
+                (household_id_column, household_size_column),
+                "household",
+            )
+            for household in reader:
+                household_count += 1
+                identifier = household.get(household_id_column, "")
+                if not identifier:
+                    missing_household_ids += 1
+                    continue
+                try:
+                    expected_persons = read_household_size(
+                        household, household_size_column
+                    )
+                except ValueError as exc:
+                    invalid_household_sizes += 1
+                    expected_persons = None
+                    add_issue(
+                        {
+                            "severity": "error",
+                            "kind": "invalid_household_size",
+                            "household_id": identifier,
+                            "message": str(exc),
+                        }
+                    )
+                try:
+                    connection.execute(
+                        "INSERT INTO households VALUES (?, ?)",
+                        (identifier, expected_persons),
+                    )
+                except sqlite3.IntegrityError:
+                    duplicate_household_ids += 1
+                    add_issue(
+                        {
+                            "severity": "error",
+                            "kind": "duplicate_household_identifier",
+                            "identifier": identifier,
+                            "message": "household identifiers must be unique.",
+                        }
+                    )
+
+        with persons_path.open(newline="") as handle:
+            reader = csv.DictReader(handle)
+            _require_csv_columns(
+                reader.fieldnames,
+                (person_id_column, person_household_id_column),
+                "person",
+            )
+            for person in reader:
+                person_count += 1
+                person_id = person.get(person_id_column, "")
+                household_id = person.get(person_household_id_column, "")
+                if not person_id:
+                    missing_person_ids += 1
+                else:
+                    try:
+                        connection.execute(
+                            "INSERT INTO person_ids VALUES (?)", (person_id,)
+                        )
+                    except sqlite3.IntegrityError:
+                        duplicate_person_ids += 1
+                        add_issue(
+                            {
+                                "severity": "error",
+                                "kind": "duplicate_person_identifier",
+                                "identifier": person_id,
+                                "message": "person identifiers must be unique.",
+                            }
+                        )
+                connection.execute(
+                    """
+                    INSERT INTO household_counts VALUES (?, 1)
+                    ON CONFLICT(identifier) DO UPDATE
+                    SET person_count = person_count + 1
+                    """,
+                    (household_id,),
+                )
+        connection.commit()
+
+        unknown_person_households = int(
+            connection.execute(
+                """
+                SELECT COALESCE(SUM(c.person_count), 0)
+                FROM household_counts AS c
+                LEFT JOIN households AS h ON h.identifier = c.identifier
+                WHERE h.identifier IS NULL
+                """
+            ).fetchone()[0]
+        )
+        size_mismatches = 0
+        for identifier, expected, actual in connection.execute(
+            """
+            SELECT h.identifier, h.expected_persons, COALESCE(c.person_count, 0)
+            FROM households AS h
+            LEFT JOIN household_counts AS c ON c.identifier = h.identifier
+            WHERE h.expected_persons IS NOT NULL
+              AND h.expected_persons != COALESCE(c.person_count, 0)
+            """
+        ):
+            size_mismatches += 1
+            add_issue(
+                {
+                    "severity": "error",
+                    "kind": "household_size_mismatch",
+                    "household_id": identifier,
+                    "expected_persons": expected,
+                    "actual_persons": actual,
+                    "message": (
+                        f"household {identifier} expected {expected} persons "
+                        f"but has {actual}."
+                    ),
+                }
+            )
+
+        for count, kind, message in (
+            (
+                missing_household_ids,
+                "missing_household_identifier",
+                f"{missing_household_ids} household rows have no identifier.",
+            ),
+            (
+                missing_person_ids,
+                "missing_person_identifier",
+                f"{missing_person_ids} person rows have no identifier.",
+            ),
+            (
+                unknown_person_households,
+                "unknown_person_household",
+                (
+                    f"{unknown_person_households} person rows reference unknown "
+                    "households."
+                ),
+            ),
+        ):
+            if count:
+                add_issue(
+                    {
+                        "severity": "error",
+                        "kind": kind,
+                        "rows": count,
+                        "message": message,
+                    }
+                )
+
+        issue_count = (
+            missing_household_ids
+            + missing_person_ids
+            + duplicate_household_ids
+            + duplicate_person_ids
+            + invalid_household_sizes
+            + unknown_person_households
+            + size_mismatches
+        )
+        return {
+            "passed": issue_count == 0,
+            "summary": {
+                "households": household_count,
+                "persons": person_count,
+                "households_with_size_mismatches": size_mismatches,
+                "persons_with_unknown_households": unknown_person_households,
+                "issue_count": issue_count,
+                "issue_details_truncated": issue_count > len(issues),
+            },
+            "household_id_column": household_id_column,
+            "person_household_id_column": person_household_id_column,
+            "household_size_column": household_size_column,
+            "issues": issues,
+        }
+    finally:
+        connection.close()
+        scratch_path.unlink(missing_ok=True)
+
+
+def _require_csv_columns(
+    fieldnames: Sequence[str] | None,
+    required: tuple[str, ...],
+    label: str,
+) -> None:
+    missing = [column for column in required if column not in (fieldnames or [])]
+    if missing:
+        raise ValueError(f"{label} CSV is missing columns: {', '.join(missing)}")
 
 
 def strip_synthetic_id(row: dict[str, str]) -> dict[str, str]:

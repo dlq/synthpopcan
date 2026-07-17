@@ -16,6 +16,7 @@ import re
 import secrets
 import shutil
 import threading
+from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, BinaryIO
@@ -41,11 +42,13 @@ class UploadWriter:
         *,
         upload_id: str,
         display_name: str,
+        media_type: str,
         max_bytes: int,
     ) -> None:
         self._store = store
         self.upload_id = upload_id
         self.display_name = display_name
+        self.media_type = media_type
         self.max_bytes = max_bytes
         self.byte_size = 0
         self._digest = hashlib.sha256()
@@ -80,7 +83,7 @@ class UploadWriter:
         metadata = {
             "upload_id": self.upload_id,
             "display_name": self.display_name,
-            "media_type": "text/csv",
+            "media_type": self.media_type,
             "byte_size": self.byte_size,
             "sha256": self._digest.hexdigest(),
             "created_at": _utc_now(),
@@ -117,6 +120,7 @@ class RunStore:
         self,
         display_name: str,
         *,
+        media_type: str = "text/csv",
         max_bytes: int,
     ) -> UploadWriter:
         """Allocate an opaque upload and return its incremental writer."""
@@ -127,6 +131,7 @@ class RunStore:
             self,
             upload_id=upload_id,
             display_name=_safe_display_name(display_name),
+            media_type=media_type,
             max_bytes=max_bytes,
         )
 
@@ -210,6 +215,168 @@ class RunStore:
                 return self.load_run(run_id)
             except Exception:
                 for metadata in reversed(claimed_metadata):
+                    self._release_upload_claim(metadata)
+                shutil.rmtree(run_dir, ignore_errors=True)
+                raise
+
+    def create_model_run(self, request: dict[str, Any]) -> dict[str, Any]:
+        """Create a prepared-model run from a catalogue ID or package upload."""
+        with self._lock:
+            inputs = request.get("inputs")
+            if not isinstance(inputs, dict):
+                raise ValueError("model run inputs must be an object")
+            model_id = inputs.get("model_id")
+            package_upload_id = inputs.get("package_upload_id")
+            if bool(model_id) == bool(package_upload_id):
+                raise ValueError(
+                    "model run requires exactly one model_id or package_upload_id"
+                )
+            upload = (
+                self.get_upload(str(package_upload_id), require_unclaimed=True)
+                if package_upload_id
+                else None
+            )
+            run_id = _new_run_id()
+            run_dir = self.runs_dir / run_id
+            inputs_dir = run_dir / "inputs"
+            for directory in (inputs_dir, run_dir / "artifacts", run_dir / "work"):
+                directory.mkdir(parents=True, exist_ok=False)
+            try:
+                claimed_inputs = []
+                if upload is not None:
+                    claimed_inputs.append(
+                        self._claim_upload(
+                            upload,
+                            run_id,
+                            inputs_dir,
+                            "package",
+                            "package.json",
+                        )
+                    )
+                now = _utc_now()
+                manifest: dict[str, Any] = {
+                    "schema_version": RUN_SCHEMA_VERSION,
+                    "run_id": run_id,
+                    "workflow": "model",
+                    "status": "queued",
+                    "created_at": now,
+                    "started_at": None,
+                    "finished_at": None,
+                    "synthpopcan_version": __version__,
+                    "request": request,
+                    "random_seed": request.get("options", {}).get("random_seed"),
+                    "inputs": claimed_inputs,
+                    "artifacts": [],
+                    "summary": {},
+                    "error": None,
+                    "reproduction": None,
+                }
+                self._write_json_atomic(run_dir / "run.json", manifest)
+                (run_dir / "events.ndjson").touch(exist_ok=False)
+                self.append_event(run_id, "queued", "Run queued")
+                return self.load_run(run_id)
+            except Exception:
+                if upload is not None and upload.get("claimed_by") == run_id:
+                    self._release_upload_claim(upload)
+                shutil.rmtree(run_dir, ignore_errors=True)
+                raise
+
+    def create_small_area_run(self, request: dict[str, Any]) -> dict[str, Any]:
+        """Create a small-area run and claim its package/control uploads."""
+        with self._lock:
+            inputs = request.get("inputs")
+            if not isinstance(inputs, dict):
+                raise ValueError("small-area run inputs must be an object")
+            model_id = inputs.get("model_id")
+            package_id = inputs.get("package_upload_id")
+            if bool(model_id) == bool(package_id):
+                raise ValueError(
+                    "small-area run requires exactly one model_id or package_upload_id"
+                )
+            controls_id = str(inputs.get("controls_upload_id", ""))
+            person_controls_id = inputs.get("person_controls_upload_id")
+            upload_specs: list[tuple[dict[str, Any], str, str]] = []
+            if package_id:
+                upload_specs.append(
+                    (
+                        self.get_upload(str(package_id), require_unclaimed=True),
+                        "package",
+                        "package.json",
+                    )
+                )
+            upload_specs.append(
+                (
+                    self.get_upload(controls_id, require_unclaimed=True),
+                    "controls",
+                    "controls.csv",
+                )
+            )
+            if person_controls_id:
+                upload_specs.append(
+                    (
+                        self.get_upload(
+                            str(person_controls_id), require_unclaimed=True
+                        ),
+                        "person_controls",
+                        "person-controls.csv",
+                    )
+                )
+            boundaries_id = inputs.get("boundaries_upload_id")
+            if boundaries_id:
+                upload_specs.append(
+                    (
+                        self.get_upload(str(boundaries_id), require_unclaimed=True),
+                        "boundaries",
+                        "boundaries.geojson",
+                    )
+                )
+            upload_ids = [str(metadata["upload_id"]) for metadata, _, _ in upload_specs]
+            if len(upload_ids) != len(set(upload_ids)):
+                raise ValueError("small-area input uploads must differ")
+
+            run_id = _new_run_id()
+            run_dir = self.runs_dir / run_id
+            inputs_dir = run_dir / "inputs"
+            for directory in (inputs_dir, run_dir / "artifacts", run_dir / "work"):
+                directory.mkdir(parents=True, exist_ok=False)
+            claimed: list[dict[str, Any]] = []
+            try:
+                claimed_inputs = []
+                for metadata, logical_name, filename in upload_specs:
+                    claimed_inputs.append(
+                        self._claim_upload(
+                            metadata,
+                            run_id,
+                            inputs_dir,
+                            logical_name,
+                            filename,
+                        )
+                    )
+                    claimed.append(metadata)
+                now = _utc_now()
+                manifest: dict[str, Any] = {
+                    "schema_version": RUN_SCHEMA_VERSION,
+                    "run_id": run_id,
+                    "workflow": "small_area",
+                    "status": "queued",
+                    "created_at": now,
+                    "started_at": None,
+                    "finished_at": None,
+                    "synthpopcan_version": __version__,
+                    "request": request,
+                    "random_seed": request.get("options", {}).get("random_seed"),
+                    "inputs": claimed_inputs,
+                    "artifacts": [],
+                    "summary": {},
+                    "error": None,
+                    "reproduction": None,
+                }
+                self._write_json_atomic(run_dir / "run.json", manifest)
+                (run_dir / "events.ndjson").touch(exist_ok=False)
+                self.append_event(run_id, "queued", "Run queued")
+                return self.load_run(run_id)
+            except Exception:
+                for metadata in reversed(claimed):
                     self._release_upload_claim(metadata)
                 shutil.rmtree(run_dir, ignore_errors=True)
                 raise
@@ -439,6 +606,7 @@ def publish_artifact(
     logical_name: str,
     media_type: str,
     row_count: int | None = None,
+    cancel_check: Callable[[], None] | None = None,
 ) -> dict[str, Any]:
     """Copy, hash, fsync, and atomically publish one completed artifact."""
     digest = hashlib.sha256()
@@ -446,12 +614,19 @@ def publish_artifact(
     temporary = source.with_name(f".{source.name}.publish-{secrets.token_hex(6)}")
     try:
         with source.open("rb") as input_handle, temporary.open("xb") as output_handle:
-            while chunk := input_handle.read(1024 * 1024):
+            while True:
+                if cancel_check is not None:
+                    cancel_check()
+                chunk = input_handle.read(1024 * 1024)
+                if not chunk:
+                    break
                 output_handle.write(chunk)
                 digest.update(chunk)
                 byte_size += len(chunk)
             output_handle.flush()
             os.fsync(output_handle.fileno())
+        if cancel_check is not None:
+            cancel_check()
         os.replace(temporary, destination)
         source.unlink()
     finally:

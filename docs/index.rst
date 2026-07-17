@@ -41,8 +41,8 @@ Most new readers should start with one of these generation workflows:
 
 **Generate from existing model**
    Use this when we have a prepared household/person model package and want to
-   generate linked synthetic households and people. Start with the
-   :doc:`web app <web-app>` for a guided local run, or use
+   generate linked synthetic households and people. Start a durable Python-backed
+   run in the :doc:`web app <web-app>`, or use
    :doc:`Generate From a Model Package <tree-generate>` when we need
    command-line details. :doc:`Tree Models <tree>` is the advanced path for
    training, auditing, and packaging a new model.

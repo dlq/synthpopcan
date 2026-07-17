@@ -1,39 +1,17 @@
-import { buildSmallAreaCliCommands } from "./cli-commands.mjs";
-import {
-  numberValue,
-  optionalNumberValue,
-  readFileText,
-  valueOrNull,
-} from "./form-utils.mjs";
-import { fetchJson } from "./http.mjs";
-import {
-  appendCliFollowUp,
-  resultItem,
-  revokeDownloads,
-  showError,
-  showStatus,
-} from "./result-ui.mjs";
+import { numberValue, optionalNumberValue } from "./form-utils.mjs";
+import { resultItem, revokeDownloads, showError, showStatus } from "./result-ui.mjs";
+import { createRun, preflightRun, uploadCsv } from "./run-api.mjs";
 
 export function bindSmallAreaWorkflow() {
   const form = document.querySelector("#small-area-form");
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
     const resultBox = document.querySelector("#small-area-result");
-    showStatus(resultBox, "Checking the planned small-area run...");
+    showStatus(resultBox, "Uploading and checking the planned small-area run...");
     try {
-      const model = selectedModel();
-      const response = await fetchJson("/api/small-area/estimate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          controlsCsv: await readFileText("#small-area-controls-file"),
-          geographyDimension: valueOrNull("#small-area-geo-dimension"),
-          candidateHouseholds: numberValue("#small-area-candidate-households"),
-          poolSize: optionalNumberValue("#small-area-pool-size"),
-          averagePersonsPerHousehold: numberValue("#small-area-average-persons"),
-        }),
-      });
-      showEstimate(resultBox, response, model);
+      const request = await buildRequest();
+      const preflight = await preflightRun(request);
+      showEstimate(resultBox, preflight);
     } catch (error) {
       showError(resultBox, error);
     }
@@ -42,16 +20,14 @@ export function bindSmallAreaWorkflow() {
   document
     .querySelector("#small-area-premade-model")
     .addEventListener("change", (event) => {
-      if (event.target.value) {
+      if (event.target.value)
         document.querySelector("#small-area-model-file").value = "";
-      }
     });
   document
     .querySelector("#small-area-model-file")
     .addEventListener("change", (event) => {
-      if (event.target.files?.length) {
+      if (event.target.files?.length)
         document.querySelector("#small-area-premade-model").value = "";
-      }
     });
   document
     .querySelector("#small-area-geo-dimension")
@@ -66,27 +42,61 @@ export function bindSmallAreaWorkflow() {
     });
 }
 
-function selectedModel() {
-  const select = document.querySelector("#small-area-premade-model");
-  const uploaded = document.querySelector("#small-area-model-file").files?.[0];
-  if (uploaded) return { reference: uploaded.name, distribution: "local" };
-  if (select.value) {
-    return {
-      reference: select.value,
-      distribution: select.selectedOptions[0]?.dataset.distribution,
-    };
+async function buildRequest() {
+  const modelSelect = document.querySelector("#small-area-premade-model");
+  const packageFile = document.querySelector("#small-area-model-file").files?.[0];
+  if (!packageFile && !modelSelect.value)
+    throw new Error("Choose a premade linked model or a package JSON file.");
+  const controlsFile = document.querySelector("#small-area-controls-file").files?.[0];
+  if (!controlsFile) throw new Error("Choose household controls CSV.");
+  const personControlsFile = document.querySelector("#small-area-person-controls-file")
+    .files?.[0];
+  const boundariesFile = document.querySelector("#small-area-boundaries-file")
+    .files?.[0];
+  const controls = await uploadCsv(controlsFile);
+  const inputs = { controls_upload_id: controls.upload_id };
+  if (packageFile) {
+    const uploaded = await uploadCsv(packageFile);
+    inputs.package_upload_id = uploaded.upload_id;
+  } else {
+    inputs.model_id = modelSelect.value;
   }
-  throw new Error("Choose a premade linked model or a package JSON file.");
+  if (personControlsFile) {
+    const uploaded = await uploadCsv(personControlsFile);
+    inputs.person_controls_upload_id = uploaded.upload_id;
+  }
+  if (boundariesFile) {
+    const uploaded = await uploadCsv(boundariesFile);
+    inputs.boundaries_upload_id = uploaded.upload_id;
+  }
+  return {
+    workflow: "small_area",
+    inputs,
+    options: {
+      candidate_households: numberValue("#small-area-candidate-households"),
+      geography_dimension: document
+        .querySelector("#small-area-geo-dimension")
+        .value.trim(),
+      geography_column: document.querySelector("#small-area-geo-column").value.trim(),
+      conditions: {},
+      average_persons_per_household: numberValue("#small-area-average-persons"),
+      random_seed: optionalNumberValue("#small-area-random-seed"),
+      pool_size: optionalNumberValue("#small-area-pool-size"),
+      subsample_seed: numberValue("#small-area-subsample-seed"),
+      chunk_size: 1000,
+      geography_id_field: "geo_id",
+      map_title: "Synthetic Population",
+    },
+  };
 }
 
-function showEstimate(element, response, model) {
-  const estimate = response.estimate;
-  const cliRecommended = estimate.recommended_surface === "cli_or_python_api";
+function showEstimate(element, preflight) {
+  const estimate = preflight.estimate;
   revokeDownloads(element);
-  element.className = `result-box ${cliRecommended ? "warning" : "success"}`;
-  element.textContent = cliRecommended
-    ? "Preflight complete. Use the CLI for this run size."
-    : "Preflight complete. This is a small run, but the local app still hands synthesis to the CLI.";
+  element.className = `result-box ${preflight.ready ? "success" : "warning"}`;
+  element.textContent = preflight.ready
+    ? "Preflight complete. Review the scale before starting the durable run."
+    : "Preflight found insufficient workspace capacity.";
   const summary = document.createElement("div");
   summary.className = "result-list compact-result-list";
   summary.append(
@@ -94,41 +104,31 @@ function showEstimate(element, response, model) {
     resultItem("Target households", estimate.target_households.toLocaleString()),
     resultItem("Estimated persons", estimate.estimated_persons.toLocaleString()),
     resultItem(
-      "Estimated output rows",
-      estimate.estimated_total_output_rows.toLocaleString(),
+      "Candidate pool",
+      `${estimate.calibration_pool_size.toLocaleString()} of ${estimate.candidate_households.toLocaleString()}`,
     ),
     resultItem(
-      "Calibration pool",
-      `${estimate.calibration_pool_size.toLocaleString()} of ${estimate.candidate_households.toLocaleString()} candidates`,
-    ),
-    resultItem(
-      "Recommended surface",
-      cliRecommended ? "CLI or Python API" : "Web app scale, CLI execution",
+      "Workspace capacity",
+      estimate.enough_disk ? "Enough disk space" : "Too little disk space",
     ),
   );
   element.append(summary);
-  const guidance = document.createElement("div");
-  guidance.className = "model-warning-note";
-  guidance.append(resultItem("Planning guidance", estimate.guidance.join(" ")));
-  element.append(guidance);
-  appendCliFollowUp(
-    element,
-    buildSmallAreaCliCommands({
-      modelReference: model.reference,
-      modelDistribution: model.distribution,
-      controlsName: document.querySelector("#small-area-controls-file").files[0].name,
-      personControlsName: document.querySelector("#small-area-person-controls-file")
-        .files?.[0]?.name,
-      controlDimensions: response.controlDimensions,
-      geographyDimension: document
-        .querySelector("#small-area-geo-dimension")
-        .value.trim(),
-      geographyColumn: document.querySelector("#small-area-geo-column").value.trim(),
-      candidateHouseholds: numberValue("#small-area-candidate-households"),
-      poolSize: optionalNumberValue("#small-area-pool-size"),
-      averagePersons: numberValue("#small-area-average-persons"),
-      randomSeed: numberValue("#small-area-random-seed"),
-      subsampleSeed: numberValue("#small-area-subsample-seed"),
-    }),
-  );
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "primary-action";
+  button.textContent = "Start durable small-area run";
+  button.disabled = !preflight.ready;
+  button.addEventListener("click", async () => {
+    button.disabled = true;
+    showStatus(element, "Starting the durable small-area run...");
+    try {
+      const run = await createRun(preflight.request);
+      document.dispatchEvent(
+        new CustomEvent("synthpopcan:run-created", { detail: run }),
+      );
+    } catch (error) {
+      showError(element, error);
+    }
+  });
+  element.append(button);
 }

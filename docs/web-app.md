@@ -40,8 +40,9 @@ the left-hand history lists active and completed jobs stored in the local
 workspace. Inputs, progress events, fit diagnostics, and artifacts survive a
 page refresh and can be reopened by run ID.
 
-Prepared-model generation and small-area planning remain available under
-**Legacy browser tools** while they are migrated into the same durable runtime.
+Prepared-model generation is another **New run** path. **Small-area workflow**
+opens the linked generation/calibration setup; its resulting job appears in the
+same durable Runs history.
 
 ## Three Short Walkthroughs
 
@@ -70,12 +71,12 @@ input/output shape. It does not represent a Canadian population. Continue to
 
 ### Generate Linked Households and People
 
-1. Open **Legacy browser tools**, then choose **Generate from existing model**.
-1. Select **Safe demo household/person package**, then choose **Use premade
-   model**.
-1. Wait for the ready message. Keep `10` households and random seed `13`, and
+1. Choose **New run**, then **Generate from a prepared model**.
+1. Select **Safe demo household/person package**.
+1. Keep `10` households and random seed `13`, and
    enter `geo=Demo North` under **Conditions**.
-1. Choose **Generate rows**.
+1. Choose **Check model and scale**, review the package provenance, privacy
+   status, estimated scale, and available disk space, then choose **Start run**.
 1. Confirm that the linkage check passes, compare the household and person
    counts, inspect both previews, and download both CSVs.
 
@@ -86,21 +87,23 @@ same work reproducibly at larger scale.
 
 ### Prepare a Small-Area Run
 
-1. Open **Legacy browser tools**, then choose **Prepare a small-area synthesis**.
+1. Open **Small-area workflow**, then choose **Prepare a small-area synthesis**.
 1. Select a premade linked model or upload a reviewed local package.
 1. Upload normalized household controls and, when available, compatible person
    controls. Enter the geography dimension used by the controls, such as `ct`
    or `ada`.
 1. Set the candidate household count and, for an exploratory run, a calibration
    pool size. Keep both random seeds recorded with the project.
-1. Choose **Estimate and prepare**.
-1. Read the target counts and surface recommendation, then copy the generated
-   `models fetch`, `geo estimate`, and `geo synthesize` commands into a script or
-   method note.
+1. Choose **Estimate and prepare**, review target counts and workspace capacity,
+   then start the durable small-area run.
+1. Review convergence and residual diagnostics, inspect bounded household and
+   person previews, download the linked CSVs and report, and retain the exact
+   `geo synthesize` reproduction command. Optionally upload prepared boundary
+   GeoJSON to receive a standalone map artifact.
 
-This path is a **preflight**, not a browser calibration. Building appropriate
-controls and interpreting residuals are covered in
-[Small-Area Linked Synthesis](small-area.md).
+Generation and calibration execute in Python; complete populations are not
+serialized into the browser. Building appropriate controls and interpreting
+residuals are covered in [Small-Area Linked Synthesis](small-area.md).
 
 ## Workflow Details
 
@@ -132,18 +135,16 @@ documented for command-line use in {doc}`ipf`.
 
 ### Generate from existing model
 
-Choose this when we have a **prepared model JSON** or a **linked household/person
-package JSON**. The web app can also load premade packages served by the local
-helper. The bundled safe demo package is synthetic toy data, not Census
-microdata. Registered packages up to the 32 MiB uncompressed browser threshold
-can be downloaded and verified on first use. Larger packages are labelled
-**CLI only** and the local API refuses to serialize them into browser memory;
-use `synthpopcan models generate MODEL_ID ...` for those models.
-Generation stays disabled until the selected package has loaded successfully or
-an uploaded JSON file has been inspected. The ready state names the active model
-and adapts the row label and available condition columns to that package.
+Choose this when we have a **prepared linked household/person package JSON**.
+The web app can also use reviewed packages served by the local helper. The
+bundled safe demo package is synthetic toy data, not Census microdata. Package
+inspection, generation, and validation run in Python; uploaded JSON and output
+CSVs remain in the controlled workspace rather than being materialized in
+browser memory. Generation stays disabled until preflight has checked package
+structure, publishability, provenance, privacy metadata, requested conditions,
+estimated scale, and available disk space.
 
-For a linked household/person package, the browser generates household rows
+For a linked household/person package, the durable worker writes household rows
 first and then person rows inside each household. The result panel shows:
 
 - generated household and person counts;
@@ -151,7 +152,7 @@ first and then person rows inside each household. The result panel shows:
 - whether each household's `household_size` matches its generated persons;
 - download links for `households.csv` and `persons.csv`;
 - short previews of both CSV files;
-- copyable `models build generate` or `models generate` follow-up commands.
+- a copyable `models generate` reproduction command.
 
 Model-generated previews preserve the package's raw source codes. For
 PUMF-derived packages, values such as `99999999`, `9999`, `99`, and `9` are

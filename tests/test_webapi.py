@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import csv
 import hashlib
+import json
 import shlex
 import shutil
 import time
@@ -13,7 +14,9 @@ import httpx
 import pytest
 
 from synthpopcan.cli import main
-from synthpopcan.webapi import create_web_app
+from synthpopcan.models import model_payload
+from synthpopcan.runs import RunStore
+from synthpopcan.webapi import _preflight_small_area_run, create_web_app
 from synthpopcan.webapp import get_webapp_root
 
 
@@ -140,6 +143,304 @@ def test_upload_is_streamed_hashed_sanitized_and_session_protected(
     assert uploaded.json()["display_name"] == "seed.csv"
     assert uploaded.json()["byte_size"] == len(body)
     assert uploaded.json()["sha256"] == hashlib.sha256(body).hexdigest()
+
+
+def test_prepared_model_api_preflight_run_preview_and_reproduction(
+    tmp_path: Path,
+) -> None:
+    app = create_web_app(
+        static_root=get_webapp_root(),
+        workspace=tmp_path / "workspace",
+        session_secret="test-session",
+    )
+
+    async def exercise() -> dict:
+        transport = httpx.ASGITransport(app=app)
+        async with httpx.AsyncClient(
+            transport=transport, base_url="http://127.0.0.1"
+        ) as client:
+            await client.get("/api/app")
+            request = {
+                "workflow": "model",
+                "inputs": {"model_id": "demo-linked-household-person"},
+                "options": {
+                    "households": 6,
+                    "conditions": {"geo": "Demo North"},
+                    "random_seed": 13,
+                    "chunk_size": 2,
+                },
+            }
+            preflight = await client.post("/api/preflight", json=request)
+            assert preflight.status_code == 200
+            assert preflight.json()["ready"] is True
+            assert (
+                preflight.json()["model_diagnostics"]["privacy"][
+                    "publishable_candidate"
+                ]
+                is True
+            )
+            created = await client.post("/api/runs", json=request)
+            assert created.status_code == 202
+            manifest = await wait_for_terminal(client, created.json()["run_id"])
+            households = next(
+                artifact
+                for artifact in manifest["artifacts"]
+                if artifact["logical_name"] == "households"
+            )
+            preview = await client.get(
+                f"/api/runs/{manifest['run_id']}/artifacts/"
+                f"{households['artifact_id']}/preview"
+            )
+            assert len(preview.json()["rows"]) == 6
+            return manifest
+
+    try:
+        manifest = asyncio.run(exercise())
+    finally:
+        app.state.job_manager.shutdown()
+
+    assert manifest["status"] == "succeeded"
+    assert manifest["summary"]["generated_households"] == 6
+    assert manifest["summary"]["linked_validation_passed"] is True
+    rendered = shlex.split(manifest["reproduction"]["shell"])
+    assert rendered[:4] == [
+        "synthpopcan",
+        "models",
+        "generate",
+        "demo-linked-household-person",
+    ]
+    assert main(rendered[1:]) == 0
+
+
+def test_prepared_model_preflight_rejects_non_positive_chunk_size(
+    tmp_path: Path,
+) -> None:
+    app = create_web_app(
+        static_root=get_webapp_root(),
+        workspace=tmp_path / "workspace",
+        session_secret="test-session",
+    )
+
+    async def exercise() -> httpx.Response:
+        transport = httpx.ASGITransport(app=app)
+        async with httpx.AsyncClient(
+            transport=transport, base_url="http://127.0.0.1"
+        ) as client:
+            await client.get("/api/app")
+            return await client.post(
+                "/api/preflight",
+                json={
+                    "workflow": "model",
+                    "inputs": {"model_id": "demo-linked-household-person"},
+                    "options": {"households": 2, "chunk_size": 0},
+                },
+            )
+
+    response = asyncio.run(exercise())
+    assert response.status_code == 400
+    assert response.json()["error"] == "chunk size must be positive"
+
+
+def test_prepared_model_preflight_accepts_claimable_json_upload(tmp_path: Path) -> None:
+    app = create_web_app(
+        static_root=get_webapp_root(),
+        workspace=tmp_path,
+        session_secret="test-session",
+    )
+
+    async def exercise() -> httpx.Response:
+        transport = httpx.ASGITransport(app=app)
+        async with httpx.AsyncClient(
+            transport=transport, base_url="http://127.0.0.1"
+        ) as client:
+            await client.get("/api/app")
+            body = json.dumps(model_payload("demo-linked-household-person")).encode()
+            uploaded = await client.post(
+                "/api/uploads",
+                content=body,
+                headers={
+                    "x-filename": "package.json",
+                    "content-type": "application/json",
+                },
+            )
+            return await client.post(
+                "/api/preflight",
+                json={
+                    "workflow": "model",
+                    "inputs": {"package_upload_id": uploaded.json()["upload_id"]},
+                    "options": {"households": 3},
+                },
+            )
+
+    try:
+        preflight = asyncio.run(exercise())
+    finally:
+        app.state.job_manager.shutdown()
+    assert preflight.status_code == 200
+    assert preflight.json()["ready"] is True
+
+
+def test_small_area_api_runs_generation_and_calibration_durably(tmp_path: Path) -> None:
+    app = create_web_app(
+        static_root=get_webapp_root(),
+        workspace=tmp_path / "workspace",
+        session_secret="test-session",
+    )
+
+    async def exercise() -> dict:
+        transport = httpx.ASGITransport(app=app)
+        async with httpx.AsyncClient(
+            transport=transport, base_url="http://127.0.0.1"
+        ) as client:
+            await client.get("/api/app")
+            controls = await client.post(
+                "/api/uploads",
+                content=(
+                    b"margin,dimensions,tract,tenure,count\n"
+                    b'tenure,"tract,tenure",001,owner,2\n'
+                    b'tenure,"tract,tenure",001,renter,1\n'
+                    b'tenure,"tract,tenure",002,owner,2\n'
+                    b'tenure,"tract,tenure",002,renter,1\n'
+                ),
+                headers={"x-filename": "controls.csv", "content-type": "text/csv"},
+            )
+            request = {
+                "workflow": "small_area",
+                "inputs": {
+                    "model_id": "demo-linked-household-person",
+                    "controls_upload_id": controls.json()["upload_id"],
+                },
+                "options": {
+                    "candidate_households": 20,
+                    "geography_dimension": "tract",
+                    "geography_column": "tract",
+                    "conditions": {"geo": "Demo North"},
+                    "random_seed": 13,
+                    "pool_size": 20,
+                    "subsample_seed": 7,
+                    "chunk_size": 3,
+                },
+            }
+            preflight = await client.post("/api/preflight", json=request)
+            assert preflight.status_code == 200
+            assert preflight.json()["estimate"]["target_geographies"] == 2
+            created = await client.post("/api/runs", json=request)
+            assert created.status_code == 202
+            return await wait_for_terminal(client, created.json()["run_id"])
+
+    try:
+        manifest = asyncio.run(exercise())
+    finally:
+        app.state.job_manager.shutdown()
+
+    assert manifest["status"] == "succeeded"
+    assert manifest["summary"]["assigned_households"] == 6
+    assert manifest["summary"]["total_geographies"] == 2
+    assert manifest["summary"]["non_converged_count"] == 0
+    assert {artifact["logical_name"] for artifact in manifest["artifacts"]} == {
+        "households",
+        "persons",
+        "small_area_report",
+    }
+    assert "geo synthesize" in manifest["reproduction"]["shell"]
+
+
+def test_small_area_preflight_optional_inputs_and_validation(tmp_path: Path) -> None:
+    store = RunStore(tmp_path)
+    package = store_upload(
+        store,
+        "package.json",
+        json.dumps(model_payload("demo-linked-household-person")).encode(),
+    )
+    controls = store_upload(
+        store,
+        "controls.csv",
+        (
+            b"margin,dimensions,tract,tenure,count\n"
+            b'tenure,"tract,tenure",001,owner,1\n'
+            b'tenure,"tract,tenure",001,renter,1\n'
+        ),
+    )
+    person_controls = store_upload(
+        store,
+        "person-controls.csv",
+        (
+            b"margin,dimensions,tract,sex,count\n"
+            b'sex,"tract,sex",001,F,1\n'
+            b'sex,"tract,sex",001,M,1\n'
+        ),
+    )
+    boundaries = store_upload(
+        store,
+        "boundaries.geojson",
+        b'{"type":"FeatureCollection","features":[]}',
+    )
+    base = {
+        "workflow": "small_area",
+        "inputs": {
+            "package_upload_id": package,
+            "controls_upload_id": controls,
+            "person_controls_upload_id": person_controls,
+            "boundaries_upload_id": boundaries,
+        },
+        "options": {
+            "candidate_households": 10,
+            "geography_dimension": "tract",
+            "conditions": {"geo": "Demo North"},
+            "max_household_size": 5,
+        },
+    }
+
+    preflight = _preflight_small_area_run(store, base)
+    assert preflight["ready"] is True
+    assert preflight["request"]["inputs"]["package_upload_id"] == package
+    assert preflight["request"]["options"]["max_household_size"] == 5
+    assert "map" in preflight["expected_artifacts"]
+
+    bad_boundaries = store_upload(store, "bad.geojson", b'{"type":"Feature"}')
+    with pytest.raises(ValueError, match="GeoJSON FeatureCollection"):
+        _preflight_small_area_run(
+            store,
+            {
+                **base,
+                "inputs": {
+                    **base["inputs"],
+                    "boundaries_upload_id": bad_boundaries,
+                },
+            },
+        )
+    with pytest.raises(ValueError, match="model conditions must be an object"):
+        _preflight_small_area_run(
+            store,
+            {**base, "options": {**base["options"], "conditions": []}},
+        )
+    with pytest.raises(ValueError, match="unsupported model condition"):
+        _preflight_small_area_run(
+            store,
+            {**base, "options": {**base["options"], "conditions": {"bad": "x"}}},
+        )
+    with pytest.raises(ValueError, match="maximum household size"):
+        _preflight_small_area_run(
+            store,
+            {**base, "options": {**base["options"], "max_household_size": 0}},
+        )
+
+    unsupported_controls = store_upload(
+        store,
+        "unsupported.csv",
+        b'margin,dimensions,tract,unknown,count\nx,"tract,unknown",001,x,1\n',
+    )
+    with pytest.raises(ValueError, match="unsupported candidate columns: unknown"):
+        _preflight_small_area_run(
+            store,
+            {
+                **base,
+                "inputs": {
+                    "model_id": "demo-linked-household-person",
+                    "controls_upload_id": unsupported_controls,
+                },
+            },
+        )
 
 
 def test_preflight_blocks_invalid_inputs_and_run_rechecks_claimed_uploads(
@@ -273,6 +574,12 @@ def test_preflight_blocks_run_when_workspace_disk_is_insufficient(
     assert preflight.json()["ready"] is False
     assert preflight.json()["estimate"]["enough_disk"] is False
     assert blocked.status_code == 400
+
+
+def store_upload(store: RunStore, name: str, body: bytes) -> str:
+    writer = store.begin_upload(name, max_bytes=len(body))
+    writer.write(body)
+    return str(writer.finish()["upload_id"])
 
 
 async def upload(client: httpx.AsyncClient, name: str, body: bytes) -> str:

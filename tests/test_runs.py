@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from synthpopcan.runs import RUN_SCHEMA_VERSION, RunStore
+from synthpopcan.runs import RUN_SCHEMA_VERSION, RunStore, publish_artifact
 
 
 def test_run_store_streams_claims_and_records_uploads(tmp_path: Path) -> None:
@@ -42,6 +42,31 @@ def test_upload_writer_rejects_empty_and_oversize_files(tmp_path: Path) -> None:
         oversized.write(b"four")
     oversized.abort()
     assert list(store.uploads_dir.glob("*.part")) == []
+
+
+def test_artifact_publication_checks_cancellation_before_atomic_publish(
+    tmp_path: Path,
+) -> None:
+    source = tmp_path / "work.csv"
+    destination = tmp_path / "artifact.csv"
+    source.write_bytes(b"value\n1\n")
+
+    def cancelled() -> None:
+        raise RuntimeError("cancelled")
+
+    with pytest.raises(RuntimeError, match="cancelled"):
+        publish_artifact(
+            tmp_path,
+            source,
+            destination,
+            logical_name="test",
+            media_type="text/csv",
+            cancel_check=cancelled,
+        )
+
+    assert source.is_file()
+    assert not destination.exists()
+    assert list(tmp_path.glob(".*.publish-*")) == []
 
 
 def test_run_store_rejects_ids_traversal_and_symlink_escape(tmp_path: Path) -> None:

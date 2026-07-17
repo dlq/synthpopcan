@@ -16,7 +16,7 @@ export function renderRunList(element, runs, selectedRunId, onSelect) {
     button.classList.toggle("selected", run.run_id === selectedRunId);
     button.setAttribute("aria-pressed", String(run.run_id === selectedRunId));
     const title = document.createElement("strong");
-    title.textContent = `IPF · ${shortDate(run.created_at)}`;
+    title.textContent = `${workflowLabel(run.workflow)} · ${shortDate(run.created_at)}`;
     const detail = document.createElement("span");
     detail.textContent = `${statusLabel(run.status)} · ${shortId(run.run_id)}`;
     const status = document.createElement("i");
@@ -26,6 +26,12 @@ export function renderRunList(element, runs, selectedRunId, onSelect) {
     button.addEventListener("click", () => onSelect(run));
     element.append(button);
   }
+}
+
+function workflowLabel(workflow) {
+  if (workflow === "model") return "Model";
+  if (workflow === "small_area") return "Small area";
+  return "IPF";
 }
 
 function shortId(runId) {

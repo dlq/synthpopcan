@@ -4,19 +4,51 @@ from __future__ import annotations
 
 __all__ = ["JobManager"]
 
+import json
 import multiprocessing
 import queue
 import threading
 from pathlib import Path
 from typing import Any
 
+from synthpopcan.models import model_payload
 from synthpopcan.runs import RunStore, publish_artifact
 from synthpopcan.workflows.ipf import fit_ipf_files
+from synthpopcan.workflows.models import (
+    PreparedModelRequest,
+    generate_prepared_model_files,
+)
+from synthpopcan.workflows.small_area import (
+    SmallAreaRequest,
+    synthesize_small_area_files,
+)
 from synthpopcan.workflows.types import IPFFitRequest, WorkflowProgress
 
 
 class _WorkerCancelled(RuntimeError):
     pass
+
+
+def _workflow_worker(workspace, run_id, manifest, messages, cancel_event) -> None:
+    """Dispatch a durable manifest to its file-backed workflow."""
+    if manifest.get("workflow") == "ipf":
+        _ipf_worker(workspace, run_id, manifest, messages, cancel_event)
+        return
+    if manifest.get("workflow") == "model":
+        _model_worker(workspace, run_id, manifest, messages, cancel_event)
+        return
+    if manifest.get("workflow") == "small_area":
+        _small_area_worker(workspace, run_id, manifest, messages, cancel_event)
+        return
+    messages.put(
+        {
+            "type": "failed",
+            "error": {
+                "kind": "ValueError",
+                "message": f"unsupported workflow {manifest.get('workflow')!r}",
+            },
+        }
+    )
 
 
 def _ipf_worker(
@@ -44,6 +76,10 @@ def _ipf_worker(
             raise _WorkerCancelled
         messages.put({"type": "progress", "event": event.as_dict()})
 
+    def check_cancelled() -> None:
+        if cancel_event.is_set():
+            raise _WorkerCancelled
+
     try:
         result = fit_ipf_files(
             IPFFitRequest(
@@ -70,6 +106,7 @@ def _ipf_worker(
                 logical_name="weights",
                 media_type="text/csv",
                 row_count=int(result.report["seed_records"]),
+                cancel_check=check_cancelled,
             ),
             publish_artifact(
                 root,
@@ -77,6 +114,7 @@ def _ipf_worker(
                 final_report,
                 logical_name="fit_report",
                 media_type="application/json",
+                cancel_check=check_cancelled,
             ),
         ]
         messages.put(
@@ -103,6 +141,259 @@ def _ipf_worker(
         )
 
 
+def _model_worker(
+    workspace: str,
+    run_id: str,
+    manifest: dict[str, Any],
+    messages,
+    cancel_event,
+) -> None:
+    """Execute prepared-model generation in the spawned worker."""
+    root = Path(workspace)
+    run_dir = root / "runs" / run_id
+    work_dir = run_dir / "work"
+    artifact_dir = run_dir / "artifacts"
+    inputs = manifest["request"]["inputs"]
+    options = manifest["request"].get("options", {})
+    package_reference: str
+    if inputs.get("model_id"):
+        package_reference = str(inputs["model_id"])
+        package_path = work_dir / "package.json"
+        package_path.write_text(json.dumps(model_payload(package_reference)))
+    else:
+        package_reference = "inputs/package.json"
+        package_path = run_dir / "inputs" / "package.json"
+
+    def progress(event: WorkflowProgress) -> None:
+        if cancel_event.is_set():
+            raise _WorkerCancelled
+        messages.put({"type": "progress", "event": event.as_dict()})
+
+    def check_cancelled() -> None:
+        if cancel_event.is_set():
+            raise _WorkerCancelled
+
+    try:
+        result = generate_prepared_model_files(
+            PreparedModelRequest(
+                package_path=package_path,
+                households_path=work_dir / "households.csv",
+                persons_path=work_dir / "persons.csv",
+                report_path=work_dir / "generation-report.json",
+                households=int(options.get("households", 10)),
+                conditions=dict(options.get("conditions", {})),
+                random_seed=options.get("random_seed"),
+                household_size_column=options.get("household_size_column"),
+                package_reference=package_reference,
+                chunk_size=int(options.get("chunk_size", 1000)),
+            ),
+            progress=progress,
+        )
+        if cancel_event.is_set():
+            raise _WorkerCancelled
+        artifacts = [
+            publish_artifact(
+                root,
+                result.households_path,
+                artifact_dir / "households.csv",
+                logical_name="households",
+                media_type="text/csv",
+                row_count=result.household_count,
+                cancel_check=check_cancelled,
+            ),
+            publish_artifact(
+                root,
+                result.persons_path,
+                artifact_dir / "persons.csv",
+                logical_name="persons",
+                media_type="text/csv",
+                row_count=result.person_count,
+                cancel_check=check_cancelled,
+            ),
+            publish_artifact(
+                root,
+                result.report_path,
+                artifact_dir / "generation-report.json",
+                logical_name="generation_report",
+                media_type="application/json",
+                cancel_check=check_cancelled,
+            ),
+        ]
+        messages.put(
+            {
+                "type": "succeeded",
+                "artifacts": artifacts,
+                "summary": {
+                    "generated_households": result.household_count,
+                    "generated_persons": result.person_count,
+                    "linked_validation_passed": result.report["validation"]["passed"],
+                    "package": result.report["package"],
+                },
+                "reproduction": result.reproduction.as_dict(),
+            }
+        )
+    except _WorkerCancelled:
+        messages.put({"type": "cancelled"})
+    except Exception as exc:  # noqa: BLE001
+        messages.put(
+            {
+                "type": "failed",
+                "error": {"kind": type(exc).__name__, "message": str(exc)},
+            }
+        )
+
+
+def _small_area_worker(
+    workspace: str,
+    run_id: str,
+    manifest: dict[str, Any],
+    messages,
+    cancel_event,
+) -> None:
+    """Execute linked generation and small-area calibration in one worker."""
+    root = Path(workspace)
+    run_dir = root / "runs" / run_id
+    work_dir = run_dir / "work"
+    artifact_dir = run_dir / "artifacts"
+    request_inputs = manifest["request"]["inputs"]
+    options = manifest["request"].get("options", {})
+    input_paths = {
+        str(item["logical_name"]): root / str(item["path"])
+        for item in manifest["inputs"]
+    }
+    if request_inputs.get("model_id"):
+        package_reference = str(request_inputs["model_id"])
+        package_path = work_dir / "package.json"
+        package_path.write_text(json.dumps(model_payload(package_reference)))
+    else:
+        package_reference = "inputs/package.json"
+        package_path = input_paths["package"]
+
+    def progress(event: WorkflowProgress) -> None:
+        if cancel_event.is_set():
+            raise _WorkerCancelled
+        messages.put({"type": "progress", "event": event.as_dict()})
+
+    def check_cancelled() -> None:
+        if cancel_event.is_set():
+            raise _WorkerCancelled
+
+    try:
+        result = synthesize_small_area_files(
+            SmallAreaRequest(
+                package_path=package_path,
+                controls_path=input_paths["controls"],
+                person_controls_path=input_paths.get("person_controls"),
+                candidates_dir=work_dir / "candidates",
+                output_dir=work_dir / "output",
+                candidate_households=int(options.get("candidate_households", 10_000)),
+                geography_dimension=str(options["geography_dimension"]),
+                geography_column=str(
+                    options.get("geography_column") or options["geography_dimension"]
+                ),
+                conditions=dict(options.get("conditions", {})),
+                package_reference=package_reference,
+                random_seed=options.get("random_seed"),
+                pool_size=options.get("pool_size"),
+                subsample_seed=int(options.get("subsample_seed", 42)),
+                max_household_size=options.get("max_household_size"),
+                household_size_group_column=str(
+                    options.get("household_size_group_column", "household_size_group")
+                ),
+                include_weights=bool(options.get("include_weights", False)),
+                chunk_size=int(options.get("chunk_size", 1000)),
+                boundaries_path=input_paths.get("boundaries"),
+                map_path=(
+                    work_dir / "output" / "map.html"
+                    if "boundaries" in input_paths
+                    else None
+                ),
+                geography_id_field=str(options.get("geography_id_field", "geo_id")),
+                map_title=str(options.get("map_title", "Synthetic Population")),
+            ),
+            progress=progress,
+        )
+        check_cancelled()
+        artifacts = [
+            publish_artifact(
+                root,
+                result.households_path,
+                artifact_dir / "households.csv",
+                logical_name="households",
+                media_type="text/csv",
+                row_count=int(result.details["assigned_households"]),
+                cancel_check=check_cancelled,
+            ),
+            publish_artifact(
+                root,
+                result.persons_path,
+                artifact_dir / "persons.csv",
+                logical_name="persons",
+                media_type="text/csv",
+                row_count=int(result.details["assigned_persons"]),
+                cancel_check=check_cancelled,
+            ),
+            publish_artifact(
+                root,
+                result.report_path,
+                artifact_dir / "report.json",
+                logical_name="small_area_report",
+                media_type="application/json",
+                cancel_check=check_cancelled,
+            ),
+        ]
+        if result.weights_path is not None:
+            artifacts.append(
+                publish_artifact(
+                    root,
+                    result.weights_path,
+                    artifact_dir / "weights.csv",
+                    logical_name="weights",
+                    media_type="text/csv",
+                    cancel_check=check_cancelled,
+                )
+            )
+        if result.map_path is not None:
+            artifacts.append(
+                publish_artifact(
+                    root,
+                    result.map_path,
+                    artifact_dir / "map.html",
+                    logical_name="map",
+                    media_type="text/html",
+                    cancel_check=check_cancelled,
+                )
+            )
+        summary = result.details["summary"]
+        messages.put(
+            {
+                "type": "succeeded",
+                "artifacts": artifacts,
+                "summary": {
+                    "assigned_households": result.details["assigned_households"],
+                    "assigned_persons": result.details["assigned_persons"],
+                    "total_geographies": summary["total_geographies"],
+                    "non_converged_count": summary["non_converged_count"],
+                    "max_abs_error": summary["max_abs_error"],
+                    "realized_max_abs_error": summary["realized_max_abs_error"],
+                    "largest_residuals": summary["largest_residuals"],
+                    "suggested_next_steps": result.details["suggested_next_steps"],
+                    "calibration_mode": result.details["calibration_mode"],
+                },
+                "reproduction": result.reproduction.as_dict(),
+            }
+        )
+    except _WorkerCancelled:
+        messages.put({"type": "cancelled"})
+    except Exception as exc:  # noqa: BLE001
+        messages.put(
+            {
+                "type": "failed",
+                "error": {"kind": type(exc).__name__, "message": str(exc)},
+            }
+        )
+
+
 class JobManager:
     """Run at most one spawned local synthesis process at a time."""
 
@@ -110,11 +401,11 @@ class JobManager:
         self,
         store: RunStore,
         *,
-        worker_target=_ipf_worker,
+        worker_target=None,
         cancel_grace_seconds: float = 1.0,
     ) -> None:
         self.store = store
-        self._worker_target = worker_target
+        self._worker_target = worker_target or _workflow_worker
         self._cancel_grace_seconds = cancel_grace_seconds
         self._context = multiprocessing.get_context("spawn")
         self._pending: queue.Queue[str | None] = queue.Queue()

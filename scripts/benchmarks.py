@@ -4,15 +4,17 @@ Usage::
 
     uv run python scripts/benchmarks.py ipf
     uv run python scripts/benchmarks.py ipf-backends --case easy_balanced
+    uv run python scripts/benchmarks.py model-run --out-dir /tmp/model-bench
     uv run python scripts/benchmarks.py tree-linked SOURCE --out-dir /tmp/bench
 """
 
 from __future__ import annotations
 
 import importlib.util
+import shutil
 from dataclasses import dataclass
 from pathlib import Path
-from time import perf_counter
+from time import perf_counter, sleep
 
 import click
 from rich.console import Console
@@ -26,6 +28,8 @@ from synthpopcan.benchmarks import (
 )
 from synthpopcan.console import make_table
 from synthpopcan.ipf import IPFResult, fit_ipf
+from synthpopcan.jobs import JobManager
+from synthpopcan.runs import RunStore
 from synthpopcan.tree_benchmark import run_linked_tree_benchmark
 
 
@@ -140,6 +144,90 @@ def benchmark_small_area(
             <= budget.max_retained_weight_bytes
         )
         table.add_row("Province-scale budget", "pass" if within_budget else "fail")
+    Console(width=120).print(table)
+
+
+@cli.command("model-run")
+@click.option(
+    "--out-dir",
+    required=True,
+    type=click.Path(path_type=Path, file_okay=False),
+    help="Durable benchmark workspace.",
+)
+@click.option("--households", default=50_000, show_default=True, type=int)
+@click.option("--chunk-size", default=1_000, show_default=True, type=int)
+@click.option(
+    "--province-scale",
+    is_flag=True,
+    help="Opt in to 4.5 million households using the production job path.",
+)
+def benchmark_model_run(
+    out_dir: Path,
+    households: int,
+    chunk_size: int,
+    province_scale: bool,
+) -> None:
+    """Run prepared-model generation through the durable web-app job path."""
+    if province_scale:
+        households = 4_500_000
+    if households <= 0 or chunk_size <= 0:
+        raise click.UsageError("households and chunk size must be positive")
+    estimated_bytes = households * 4 * 256
+    out_dir.mkdir(parents=True, exist_ok=True)
+    if shutil.disk_usage(out_dir).free < estimated_bytes * 2:
+        raise click.ClickException(
+            "insufficient disk headroom for the requested prepared-model run"
+        )
+
+    store = RunStore(out_dir)
+    manifest = store.create_model_run(
+        {
+            "workflow": "model",
+            "inputs": {"model_id": "demo-linked-household-person"},
+            "options": {
+                "households": households,
+                "conditions": {"geo": "Demo North"},
+                "random_seed": 13,
+                "chunk_size": chunk_size,
+            },
+        }
+    )
+    run_id = str(manifest["run_id"])
+    manager = JobManager(store)
+    start = perf_counter()
+    try:
+        manager.enqueue(run_id)
+        while True:
+            manifest = store.load_run(run_id)
+            if manifest["status"] in {
+                "succeeded",
+                "failed",
+                "cancelled",
+                "interrupted",
+            }:
+                break
+            sleep(0.05)
+    finally:
+        manager.shutdown()
+    elapsed = perf_counter() - start
+    if manifest["status"] != "succeeded":
+        raise click.ClickException(
+            f"prepared-model benchmark ended in state {manifest['status']}"
+        )
+
+    table = make_table(title="Durable Prepared-Model Benchmark")
+    table.add_column("Metric")
+    table.add_column("Value", justify="right")
+    table.add_row("Run ID", run_id)
+    table.add_row("Households", _fmt_int(manifest["summary"]["generated_households"]))
+    table.add_row("Persons", _fmt_int(manifest["summary"]["generated_persons"]))
+    table.add_row("Chunk size", _fmt_int(chunk_size))
+    table.add_row("Elapsed seconds", _fmt_float(elapsed))
+    table.add_row(
+        "Artifact bytes",
+        _fmt_bytes(sum(int(item["byte_size"]) for item in manifest["artifacts"])),
+    )
+    table.add_row("Workspace", str(out_dir))
     Console(width=120).print(table)
 
 

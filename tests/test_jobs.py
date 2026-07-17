@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 import csv
+import json
 import queue
 import threading
 import time
 from pathlib import Path
 
-from synthpopcan.jobs import JobManager, _ipf_worker
+from synthpopcan.jobs import JobManager, _ipf_worker, _model_worker, _small_area_worker
+from synthpopcan.models import model_payload
 from synthpopcan.runs import RunStore
 
 
@@ -192,6 +194,142 @@ def test_ipf_worker_contract_reports_immediate_cancellation(tmp_path: Path) -> N
     )
 
     assert messages.get()["type"] == "cancelled"
+
+
+def test_model_worker_medium_scale_uses_durable_artifact_path(tmp_path: Path) -> None:
+    store = RunStore(tmp_path)
+    run = store.create_model_run(
+        {
+            "workflow": "model",
+            "inputs": {"model_id": "demo-linked-household-person"},
+            "options": {
+                "households": 5_000,
+                "conditions": {"geo": "Demo North"},
+                "random_seed": 13,
+                "chunk_size": 257,
+            },
+        }
+    )
+    messages: queue.SimpleQueue = queue.SimpleQueue()
+
+    _model_worker(
+        str(store.root),
+        str(run["run_id"]),
+        run,
+        messages,
+        threading.Event(),
+    )
+
+    emitted = []
+    while not messages.empty():
+        emitted.append(messages.get())
+    succeeded = emitted[-1]
+    assert succeeded["type"] == "succeeded"
+    assert succeeded["summary"]["generated_households"] == 5_000
+    assert succeeded["summary"]["linked_validation_passed"] is True
+    assert {artifact["logical_name"] for artifact in succeeded["artifacts"]} == {
+        "households",
+        "persons",
+        "generation_report",
+    }
+    for artifact in succeeded["artifacts"]:
+        assert store.resolve_managed_path(artifact["path"]).is_file()
+        assert len(artifact["sha256"]) == 64
+
+
+def test_small_area_worker_contract_is_covered_in_process(tmp_path: Path) -> None:
+    store = RunStore(tmp_path)
+    package = write_upload(
+        store,
+        "package.json",
+        json.dumps(model_payload("demo-linked-household-person")).encode(),
+    )
+    controls = write_upload(
+        store,
+        "controls.csv",
+        (
+            b"margin,dimensions,tract,tenure,count\n"
+            b'tenure,"tract,tenure",001,owner,2\n'
+            b'tenure,"tract,tenure",001,renter,1\n'
+            b'tenure,"tract,tenure",002,owner,2\n'
+            b'tenure,"tract,tenure",002,renter,1\n'
+        ),
+    )
+    boundaries = write_upload(
+        store,
+        "boundaries.geojson",
+        json.dumps(
+            {
+                "type": "FeatureCollection",
+                "features": [
+                    {
+                        "type": "Feature",
+                        "properties": {"geo_id": geography},
+                        "geometry": {
+                            "type": "Polygon",
+                            "coordinates": [
+                                [
+                                    [offset, 0],
+                                    [offset + 0.5, 0],
+                                    [offset + 0.5, 0.5],
+                                    [offset, 0.5],
+                                    [offset, 0],
+                                ]
+                            ],
+                        },
+                    }
+                    for geography, offset in (("001", 0), ("002", 1))
+                ],
+            }
+        ).encode(),
+    )
+    run = store.create_small_area_run(
+        {
+            "workflow": "small_area",
+            "inputs": {
+                "package_upload_id": package,
+                "controls_upload_id": controls,
+                "boundaries_upload_id": boundaries,
+            },
+            "options": {
+                "candidate_households": 20,
+                "geography_dimension": "tract",
+                "geography_column": "tract",
+                "conditions": {"geo": "Demo North"},
+                "random_seed": 13,
+                "pool_size": 20,
+                "subsample_seed": 7,
+                "chunk_size": 3,
+                "include_weights": True,
+            },
+        }
+    )
+    messages: queue.SimpleQueue = queue.SimpleQueue()
+
+    _small_area_worker(
+        str(store.root),
+        str(run["run_id"]),
+        run,
+        messages,
+        threading.Event(),
+    )
+
+    emitted = []
+    while not messages.empty():
+        emitted.append(messages.get())
+    succeeded = emitted[-1]
+    assert succeeded["type"] == "succeeded"
+    assert succeeded["summary"]["assigned_households"] == 6
+    assert succeeded["summary"]["total_geographies"] == 2
+    assert succeeded["summary"]["non_converged_count"] == 0
+    assert {artifact["logical_name"] for artifact in succeeded["artifacts"]} == {
+        "households",
+        "persons",
+        "small_area_report",
+        "weights",
+        "map",
+    }
+    assert "geo synthesize" in succeeded["reproduction"]["shell"]
 
 
 def create_valid_run(store: RunStore) -> str:

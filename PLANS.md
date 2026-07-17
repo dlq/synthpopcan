@@ -1,7 +1,7 @@
 # SynthPopCan Plan
 
 Status: release-phased roadmap\
-Last updated: 2026-07-15\
+Last updated: 2026-07-17\
 Current release: `0.5.1`
 
 ## Current Focus
@@ -12,8 +12,8 @@ Start here. Open a linked implementation plan only when working on that area.
 | --- | --- | --- |
 | Released | `0.5.1` is published as the current-architecture correctness-assurance release, with scoped claims, checksums, permanent release evidence, and trusted PyPI publication. | [GitHub Release](https://github.com/dlq/synthpopcan/releases/tag/v0.5.1) |
 | Correctness | Preserve the `0.5.1` gate and implement the planned post-release assurance improvements in priority order. | [Correctness plan](plans/2026-07-12-correctness-assurance.md) |
-| Next minor | Build the durable backend IPF workbench for `0.6.0`. | [Local runtime plan](plans/2026-07-10-local-web-application-runtime.md) |
-| Later `0.6.x` | Move prepared-model generation and small-area synthesis into the same durable run model. | [Plan index](plans/README.md) |
+| Next minor | Finish the durable local runtime for `0.6.0`; backend IPF and prepared-model Stages 0–5 are complete, and guided small-area work is next. | [Local runtime plan](plans/2026-07-10-local-web-application-runtime.md) |
+| Next patch | Stabilize the public linked household/person/geography schema in `0.6.1` after all workflows use the durable runtime. | [Local runtime plan](plans/2026-07-10-local-web-application-runtime.md) |
 | Later `0.7.x`–`0.8.x` | Add governed enrichment layers, then hand validated generated data to external simulation platforms without implementing population simulation in SynthPopCan. | [Plan index](plans/README.md) |
 | Far future, after `0.8.x` | Research optional, compositional public-health simulation only after the population, enrichment, and interchange contracts are stable; do not commit to one simulation platform. | [Far-future direction](#far-future-compositional-public-health-simulation) |
 
@@ -69,9 +69,12 @@ Implemented capabilities include:
 - a packaged local web app for guided IPF, prepared models, WDS preparation,
   small-area preflight, downloads, and exact CLI handoff.
 
-The current app still uses the standard-library loopback server and browser-side
-IPF/tree generation. Durable runs, progress, cancellation, restart recovery, and
-incremental artifact streaming are not implemented.
+The in-development `0.6.0` app now uses FastAPI/Uvicorn, a controlled workspace,
+durable manifests and events, isolated Python jobs, progress, cancellation,
+restart recovery, bounded previews, incremental artifact publication, backend
+IPF, and backend prepared-model generation. Browser IPF and tree generation are
+removed. Guided small-area jobs, selected utilities, final cleanup, and release
+proof remain.
 
 ## Release History
 
@@ -280,7 +283,7 @@ the release that introduces that behavior.
 
 ## 0.6.x: Local Web Application Runtime
 
-Status: planned. See the
+Status: in progress; Stages 0–5 complete. See the
 [staged implementation plan](plans/2026-07-10-local-web-application-runtime.md).
 
 Architecture decisions:
@@ -295,14 +298,13 @@ Architecture decisions:
 - Remain loopback-only with controlled workspace access; network serving needs a
   separate security design.
 - Keep the `0.6.0` run manifest extensible for linked artifacts, but defer the
-  stable public household/person/geography output contract to `0.6.1`, when
-  backend prepared-model generation owns those artifacts.
+  stable public household/person/geography output contract to `0.6.1`, after
+  backend prepared-model and small-area workflows own those artifacts.
 
 | Release | Outcome |
 | --- | --- |
-| `0.6.0` | FastAPI/Uvicorn runtime, controlled workspace, durable runs, an extensible run manifest, backend IPF, Runs workbench, and removal of browser IPF. |
-| `0.6.1` | Backend prepared-model generation, the stable versioned linked-population schema, incremental artifacts, scale/disk preflight, and removal of browser tree generation. |
-| `0.6.2` | Guided small-area jobs, validation/maps, prominent non-convergence, calibration-mode guidance, chunked realization, and cleanup. |
+| `0.6.0` | Complete the local-runtime redesign: controlled workspace, durable backend IPF/prepared-model/small-area runs, bounded artifacts, selected utilities, removal of browser synthesis, cleanup, and release proof. |
+| `0.6.1` | Stabilize and version the public linked household/person/geography schema, with explicit compatibility and migration rules. |
 
 Completion criteria:
 

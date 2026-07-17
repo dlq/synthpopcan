@@ -99,15 +99,15 @@ def test_webapp_assets_include_index() -> None:
     assert (root / "runs-workbench.mjs").is_file()
     assert not (root / "ipf.mjs").exists()
     assert not (root / "ipf-workflow.mjs").exists()
-    assert (root / "model-workflow.mjs").is_file()
     assert (root / "preview.mjs").is_file()
-    assert (root / "tree-model.mjs").is_file()
     assert (root / "starter-files.mjs").is_file()
     assert (root / "small-area-workflow.mjs").is_file()
     assert (root / "statcan.mjs").is_file()
     assert (root / "wds-normalize.mjs").is_file()
     assert (root / "zip.mjs").is_file()
-    assert (root / "worker.mjs").is_file()
+    assert not (root / "model-workflow.mjs").exists()
+    assert not (root / "tree-model.mjs").exists()
+    assert not (root / "worker.mjs").exists()
     assert (root / "synthpopcan-logo-256.png").is_file()
 
 

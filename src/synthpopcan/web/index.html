@@ -42,11 +42,8 @@
             <p class="empty-state">Loading workspace runs…</p>
           </div>
           <details class="legacy-tools">
-            <summary>Legacy browser tools</summary>
-            <p>These workflows will move into the durable workbench in later stages.</p>
-            <button class="text-action" type="button" data-workflow-tab="model">
-              Generate from existing model
-            </button>
+            <summary>Small-area workflow</summary>
+            <p>Generate linked candidates and calibrate them in one durable Python run.</p>
             <button class="text-action" type="button" data-workflow-tab="small-area">
               Prepare a small-area synthesis
             </button>
@@ -80,6 +77,7 @@
             </div>
             <div class="starter-actions">
               <button id="use-demo-ipf" class="secondary-action" type="button">Use demo age/sex files</button>
+              <button id="start-model-workflow" class="secondary-action" type="button">Generate from a prepared model</button>
             </div>
             <div class="form-grid">
               <label>Seed CSV
@@ -93,6 +91,37 @@
             </div>
             <div class="step-actions">
               <button id="upload-inputs" class="primary-action" type="button" disabled>Upload and continue</button>
+            </div>
+          </section>
+
+          <section class="run-step" data-run-step="model-inputs" aria-labelledby="model-inputs-heading" hidden>
+            <div class="setup-heading">
+              <h3 id="model-inputs-heading">Generate from a prepared model</h3>
+              <p>Choose a reviewed catalogue package or upload a linked package JSON. Generation and validation run in Python.</p>
+            </div>
+            <div class="form-grid">
+              <label>Prepared model
+                <select id="run-model-select">
+                  <option value="">Choose a catalogue model</option>
+                </select>
+              </label>
+              <label>Or package JSON
+                <input id="run-model-file" type="file" accept=".json,application/json">
+              </label>
+              <label>Households
+                <input id="run-model-households" type="number" min="1" value="10">
+              </label>
+              <label>Conditions
+                <input id="run-model-conditions" placeholder="geo=Demo North">
+                <small class="field-hint">Comma-separated name=value pairs supported by the package.</small>
+              </label>
+              <label>Random seed
+                <input id="run-model-random-seed" type="number" value="13">
+              </label>
+            </div>
+            <div class="step-actions">
+              <button class="secondary-action" type="button" data-go-step="inputs">Back</button>
+              <button id="check-model-preflight" class="primary-action" type="button">Check model and scale</button>
             </div>
           </section>
 
@@ -161,7 +190,11 @@
             <div id="fit-diagnostics" class="diagnostic-grid"></div>
             <section class="preview-section" aria-labelledby="preview-heading">
               <h4 id="preview-heading">Weighted output preview</h4>
-              <div id="weights-preview" class="table-scroll"></div>
+              <div id="primary-preview" class="table-scroll"></div>
+              <div id="secondary-preview-block" hidden>
+                <h4 id="secondary-preview-heading">Person output preview</h4>
+                <div id="secondary-preview" class="table-scroll"></div>
+              </div>
             </section>
             <section class="artifacts-section" aria-labelledby="artifacts-heading">
               <h4 id="artifacts-heading">Artifacts</h4>
@@ -175,99 +208,6 @@
         </section>
       </section>
 
-      <section class="workflow-panel" data-workflow-panel="model">
-        <div class="panel-heading">
-          <h2>Generate from existing model</h2>
-          <span>Model JSON or linked package JSON</span>
-        </div>
-        <section class="model-setup" aria-label="Generate from a prepared model">
-          <p class="panel-intro">
-            Load a prepared model JSON or linked household/person package, inspect
-            it, then generate synthetic rows in the browser.
-          </p>
-          <div class="model-file-row">
-            <label>
-              <span
-                class="help-label"
-                data-help="The demo is bundled. The local backend downloads and verifies larger published models when you first use them."
-              >Premade model</span>
-              <select id="premade-model">
-                <option value="">No premade model selected</option>
-              </select>
-            </label>
-            <button
-              id="load-premade-model"
-              class="secondary-action"
-              type="button"
-              disabled
-            >
-              Use premade model
-            </button>
-          </div>
-          <div
-            id="model-download-status"
-            class="model-download-status"
-            role="status"
-            aria-live="polite"
-            hidden
-          >
-            <progress aria-label="Downloading premade model"></progress>
-            <span id="model-download-message">Downloading premade model...</span>
-          </div>
-          <div class="model-file-row">
-            <label>
-              <span
-                class="help-label"
-                data-help="A prepared model JSON generates one table. A linked package JSON generates household and person tables together."
-              >Model or package JSON</span>
-              <input id="model-file" type="file" accept=".json,application/json" required>
-            </label>
-            <button
-              id="inspect-model-file"
-              class="secondary-action"
-              type="button"
-              title="Reads the selected JSON and summarizes what it can generate."
-            >
-              Inspect selected model
-            </button>
-          </div>
-          <div id="model-inspect-result" class="result-box" aria-live="polite"></div>
-          <div id="model-ready-status" class="selection-estimate" role="status">
-            Choose and load a premade model, or inspect a JSON file, before generating.
-          </div>
-          <form id="model-form" class="form-grid">
-            <label>
-              <span
-                class="help-label"
-                data-help="For a linked household/person package, this is the number of households. For a single model, this is the number of rows."
-              ><span id="model-row-label-text">Rows or households</span></span>
-              <input id="model-rows" type="number" min="1" value="10" required>
-            </label>
-            <label>
-              <span
-                class="help-label"
-                data-help="A random seed makes repeated generation runs reproducible."
-              >Random seed</span>
-              <input id="model-random-seed" type="number" value="13">
-            </label>
-            <label class="wide-field">
-              <span
-                class="help-label"
-                data-help="Optional filters for model conditioning columns, written as name=value pairs such as geo=QC."
-              >Conditions</span>
-              <input id="model-conditions" placeholder="geo=QC, household_size=2">
-              <small id="model-conditions-hint" class="field-hint">
-                Available condition columns appear after the model is loaded.
-              </small>
-            </label>
-            <button id="generate-model" class="primary-action" type="submit" disabled>
-              Generate rows
-            </button>
-          </form>
-          <div id="model-result" class="result-box" aria-live="polite"></div>
-        </section>
-      </section>
-
       <section class="workflow-panel" data-workflow-panel="small-area">
         <div class="panel-heading">
           <h2>Prepare a small-area synthesis</h2>
@@ -275,8 +215,8 @@
         </div>
         <section class="model-setup" aria-label="Prepare a small-area synthesis">
           <p class="panel-intro">
-            Choose a linked model and normalized geographic controls. The local
-            helper checks the planned scale; large output remains a CLI workflow.
+            Choose a linked model and normalized geographic controls. Preflight
+            checks compatibility, scale, and disk before the durable run starts.
           </p>
           <form id="small-area-form" class="form-grid">
             <label>
@@ -308,6 +248,13 @@
                 data-help="Optional person-level controls used for joint linked calibration. They are included in the CLI command but not needed for the scale estimate."
               >Person controls CSV</span>
               <input id="small-area-person-controls-file" class="ipf-file-input" type="file" accept=".csv,text/csv">
+            </label>
+            <label>
+              <span
+                class="help-label"
+                data-help="Optional prepared WGS-84 GeoJSON whose features use a geo_id property matching the output geography values."
+              >Boundary GeoJSON for map</span>
+              <input id="small-area-boundaries-file" type="file" accept=".geojson,.json,application/json">
             </label>
             <label>
               <span

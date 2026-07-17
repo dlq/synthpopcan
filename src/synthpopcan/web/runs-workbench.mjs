@@ -19,6 +19,7 @@ export function bindRunsWorkbench(bootstrap) {
   const state = {
     runs: [],
     selectedRun: null,
+    workflow: "ipf",
     uploads: null,
     preflight: null,
     stopEvents: null,
@@ -28,6 +29,11 @@ export function bindRunsWorkbench(bootstrap) {
   document
     .querySelector("#use-demo-ipf")
     .addEventListener("click", () => useDemoFiles());
+  document.querySelector("#start-model-workflow").addEventListener("click", () => {
+    state.workflow = "model";
+    showStep("model-inputs");
+    showMessage("", "");
+  });
   document.querySelector("#ipf-seed-file").addEventListener("change", filesChanged);
   document.querySelector("#ipf-controls-file").addEventListener("change", filesChanged);
   document
@@ -36,6 +42,9 @@ export function bindRunsWorkbench(bootstrap) {
   document
     .querySelector("#check-preflight")
     .addEventListener("click", () => checkPreflight(state));
+  document
+    .querySelector("#check-model-preflight")
+    .addEventListener("click", () => checkModelPreflight(state));
   document.querySelector("#start-run").addEventListener("click", () => startRun(state));
   document
     .querySelector("#cancel-run")
@@ -44,6 +53,11 @@ export function bindRunsWorkbench(bootstrap) {
     button.addEventListener("click", () => showStep(button.dataset.goStep));
   });
   bindLegacyTools();
+  document.addEventListener("synthpopcan:run-created", async (event) => {
+    await refreshRuns(state);
+    await selectRun(state, event.detail);
+  });
+  loadModelCatalogue();
   refreshRuns(state, true);
 }
 
@@ -77,9 +91,11 @@ async function refreshRuns(state, selectNewest = false) {
 }
 
 function newDraft(state) {
+  showWorkbench();
   state.stopEvents?.();
   state.stopEvents = null;
   state.selectedRun = null;
+  state.workflow = "ipf";
   state.uploads = null;
   state.preflight = null;
   for (const id of ["#ipf-seed-file", "#ipf-controls-file"])
@@ -182,6 +198,72 @@ async function checkPreflight(state) {
   }
 }
 
+async function checkModelPreflight(state) {
+  showMessage("Checking package provenance, privacy, and output scale…", "");
+  const button = document.querySelector("#check-model-preflight");
+  button.disabled = true;
+  try {
+    const file = document.querySelector("#run-model-file").files?.[0];
+    const modelId = document.querySelector("#run-model-select").value;
+    if (!file && !modelId) throw new Error("Choose a catalogue model or package JSON.");
+    let inputs;
+    if (file) {
+      const uploaded = await uploadCsv(file);
+      state.uploads = { package: uploaded };
+      inputs = { package_upload_id: uploaded.upload_id };
+    } else {
+      inputs = { model_id: modelId };
+    }
+    state.workflow = "model";
+    state.preflight = await preflightRun({
+      workflow: "model",
+      inputs,
+      options: {
+        households: Number(document.querySelector("#run-model-households").value),
+        conditions: parseConditions(
+          document.querySelector("#run-model-conditions").value,
+        ),
+        random_seed: optionalNumber("#run-model-random-seed"),
+        chunk_size: 1000,
+      },
+    });
+    renderModelPreflight(state.preflight);
+    document.querySelector("#start-run").disabled = !state.preflight.ready;
+    showStep("preflight");
+    showMessage(
+      state.preflight.ready
+        ? "Model preflight passed. Provenance and privacy metadata are recorded."
+        : "Model preflight found a blocking scale problem.",
+      state.preflight.ready ? "success" : "error",
+    );
+  } catch (error) {
+    showMessage(error.message, "error");
+  } finally {
+    button.disabled = false;
+  }
+}
+
+function renderModelPreflight(preflight) {
+  const model = preflight.model_diagnostics;
+  renderDiagnostics(document.querySelector("#preflight-results"), [
+    ["Package", model.name],
+    ["Publishable candidate", model.privacy.publishable_candidate ? "Yes" : "No"],
+    [
+      "Privacy review",
+      model.privacy.review_status ||
+        (model.privacy.safe_demo ? "Safe synthetic demo" : "Recorded"),
+    ],
+    ["Supported conditions", model.conditions.join(", ") || "None"],
+    ["Requested households", preflight.estimate.households],
+    ["Estimated total rows", preflight.estimate.estimated_total_rows],
+    ["Estimated artifact size", formatBytes(preflight.estimate.output_bytes)],
+    [
+      "Workspace capacity",
+      preflight.estimate.enough_disk ? "Enough disk space" : "Insufficient disk space",
+    ],
+  ]);
+}
+
 function renderPreflight(preflight) {
   const diagnostics = preflight.input_diagnostics;
   const estimate = preflight.estimate;
@@ -218,7 +300,11 @@ async function startRun(state) {
   try {
     const run = await createRun(state.preflight.request);
     state.selectedRun = run;
-    setRunHeading(`Run ${run.run_id.slice(-12)}`, "IPF from margin tables", run.status);
+    setRunHeading(
+      `Run ${run.run_id.slice(-12)}`,
+      workflowTitle(run.workflow),
+      run.status,
+    );
     showStep("run");
     showMessage("Run queued. You can safely refresh this page.", "success");
     await refreshRuns(state);
@@ -271,6 +357,7 @@ async function requestCancel(state) {
 
 async function selectRun(state, summary) {
   try {
+    showWorkbench();
     const run = await getRun(summary.run_id);
     state.selectedRun = run;
     renderRunList(
@@ -279,7 +366,12 @@ async function selectRun(state, summary) {
       run.run_id,
       (item) => selectRun(state, item),
     );
-    setRunHeading(`Run ${run.run_id.slice(-12)}`, "IPF from margin tables", run.status);
+    state.workflow = run.workflow;
+    setRunHeading(
+      `Run ${run.run_id.slice(-12)}`,
+      workflowTitle(run.workflow),
+      run.status,
+    );
     if (TERMINAL.has(run.status)) await showTerminalRun(state, run);
     else {
       showStep("run");
@@ -302,6 +394,16 @@ async function showTerminalRun(_state, run) {
   }
   showStep("results");
   showMessage("Run completed and persisted in the workspace.", "success");
+  if (run.workflow === "model") {
+    await showModelResults(run);
+    return;
+  }
+  if (run.workflow === "small_area") {
+    await showSmallAreaResults(run);
+    return;
+  }
+  document.querySelector("#preview-heading").textContent = "Weighted output preview";
+  document.querySelector("#secondary-preview-block").hidden = true;
   renderDiagnostics(document.querySelector("#fit-diagnostics"), [
     ["Converged", run.summary.converged ? "Yes" : "No"],
     ["Iterations", run.summary.iterations],
@@ -320,11 +422,107 @@ async function showTerminalRun(_state, run) {
   const weights = run.artifacts.find((item) => item.logical_name === "weights");
   if (weights)
     renderPreview(
-      document.querySelector("#weights-preview"),
+      document.querySelector("#primary-preview"),
       await previewArtifact(run.run_id, weights.artifact_id),
     );
   document.querySelector("#reproduction-command").textContent =
     run.reproduction?.shell ?? "";
+}
+
+async function showModelResults(run) {
+  document.querySelector("#results-intro").textContent =
+    "Linked household and person artifacts were generated and validated in Python.";
+  document.querySelector("#preview-heading").textContent = "Household output preview";
+  document.querySelector("#secondary-preview-heading").textContent =
+    "Person output preview";
+  document.querySelector("#secondary-preview-block").hidden = false;
+  renderDiagnostics(document.querySelector("#fit-diagnostics"), [
+    ["Generated households", run.summary.generated_households],
+    ["Generated persons", run.summary.generated_persons],
+    ["Linked validation", run.summary.linked_validation_passed ? "Passed" : "Failed"],
+    ["Package", run.summary.package?.name || "Prepared linked model"],
+  ]);
+  const artifacts = document.querySelector("#run-artifacts");
+  artifacts.replaceChildren();
+  for (const artifact of run.artifacts) {
+    const link = document.createElement("a");
+    link.className = "download-link";
+    link.href = artifactUrl(run.run_id, artifact.artifact_id);
+    link.textContent = `Download ${artifact.filename}`;
+    artifacts.append(link);
+  }
+  const households = run.artifacts.find((item) => item.logical_name === "households");
+  const persons = run.artifacts.find((item) => item.logical_name === "persons");
+  if (households) {
+    renderPreview(
+      document.querySelector("#primary-preview"),
+      await previewArtifact(run.run_id, households.artifact_id),
+    );
+  }
+  if (persons) {
+    renderPreview(
+      document.querySelector("#secondary-preview"),
+      await previewArtifact(run.run_id, persons.artifact_id),
+    );
+  }
+  document.querySelector("#reproduction-command").textContent =
+    run.reproduction?.shell ?? "";
+}
+
+async function showSmallAreaResults(run) {
+  if (run.summary.non_converged_count > 0) {
+    showMessage(
+      `${run.summary.non_converged_count} geographies did not converge. Review report.json and the largest residual before using the output.`,
+      "warning",
+    );
+  }
+  document.querySelector("#results-intro").textContent =
+    "Linked candidates were generated, calibrated, and validated in Python.";
+  document.querySelector("#preview-heading").textContent = "Assigned household preview";
+  document.querySelector("#secondary-preview-heading").textContent =
+    "Assigned person preview";
+  document.querySelector("#secondary-preview-block").hidden = false;
+  renderDiagnostics(document.querySelector("#fit-diagnostics"), [
+    ["Assigned households", run.summary.assigned_households],
+    ["Assigned persons", run.summary.assigned_persons],
+    ["Target geographies", run.summary.total_geographies],
+    ["Non-converged geographies", run.summary.non_converged_count],
+    ["Maximum absolute error", run.summary.max_abs_error],
+    ["Largest residual", describeResidual(run.summary.largest_residuals?.[0])],
+    ["Realized maximum error", run.summary.realized_max_abs_error ?? "Not reported"],
+    ["Calibration mode", run.summary.calibration_mode],
+  ]);
+  const artifacts = document.querySelector("#run-artifacts");
+  artifacts.replaceChildren();
+  for (const artifact of run.artifacts) {
+    const link = document.createElement("a");
+    link.className = "download-link";
+    link.href = artifactUrl(run.run_id, artifact.artifact_id);
+    link.textContent = `Download ${artifact.filename}`;
+    artifacts.append(link);
+  }
+  const households = run.artifacts.find((item) => item.logical_name === "households");
+  const persons = run.artifacts.find((item) => item.logical_name === "persons");
+  if (households)
+    renderPreview(
+      document.querySelector("#primary-preview"),
+      await previewArtifact(run.run_id, households.artifact_id),
+    );
+  if (persons)
+    renderPreview(
+      document.querySelector("#secondary-preview"),
+      await previewArtifact(run.run_id, persons.artifact_id),
+    );
+  document.querySelector("#reproduction-command").textContent =
+    run.reproduction?.shell ?? "";
+}
+
+function describeResidual(residual) {
+  if (!residual) return "None above tolerance";
+  const categories = Object.entries(residual.categories ?? {})
+    .map(([key, value]) => `${key}=${value}`)
+    .join(", ");
+  return `${residual.abs_error} in ${residual.geography} · ${residual.margin}${categories ? ` · ${categories}` : ""}`;
 }
 
 function renderPreview(element, preview) {
@@ -398,7 +596,8 @@ function clearResults() {
   for (const selector of [
     "#preflight-results",
     "#fit-diagnostics",
-    "#weights-preview",
+    "#primary-preview",
+    "#secondary-preview",
     "#run-artifacts",
     "#progress-events",
   ])
@@ -406,6 +605,66 @@ function clearResults() {
   document.querySelector("#reproduction-command").textContent = "";
   document.querySelector("#start-run").disabled = true;
   document.querySelector("#cancel-run").disabled = false;
+}
+
+async function loadModelCatalogue() {
+  const select = document.querySelector("#run-model-select");
+  const smallAreaSelect = document.querySelector("#small-area-premade-model");
+  try {
+    const response = await fetch("/api/models");
+    if (!response.ok) throw new Error("Model catalogue unavailable");
+    const payload = await response.json();
+    for (const model of payload.models) {
+      const option = document.createElement("option");
+      option.value = model.id;
+      option.textContent = `${model.name} · ${model.geography}`;
+      option.disabled = !model.installed;
+      select.append(option);
+
+      const smallAreaOption = document.createElement("option");
+      smallAreaOption.value = model.id;
+      smallAreaOption.textContent = `${model.name} · ${model.geography}`;
+      smallAreaOption.dataset.distribution = model.distribution;
+      smallAreaSelect.append(smallAreaOption);
+    }
+  } catch {
+    for (const target of [select, smallAreaSelect]) {
+      const option = document.createElement("option");
+      option.disabled = true;
+      option.textContent = "Premade models unavailable";
+      target.append(option);
+    }
+  }
+}
+
+function parseConditions(value) {
+  const conditions = {};
+  for (const item of value.split(",")) {
+    if (!item.trim()) continue;
+    const separator = item.indexOf("=");
+    if (separator < 1) throw new Error("Conditions must use name=value pairs.");
+    conditions[item.slice(0, separator).trim()] = item.slice(separator + 1).trim();
+  }
+  return conditions;
+}
+
+function optionalNumber(selector) {
+  const value = document.querySelector(selector).value.trim();
+  return value === "" ? null : Number(value);
+}
+
+function workflowTitle(workflow) {
+  if (workflow === "model") return "Generate from a prepared model";
+  if (workflow === "small_area") return "Small-area linked synthesis";
+  return "IPF from margin tables";
+}
+
+function showWorkbench() {
+  document.querySelector(".workbench").hidden = false;
+  document.querySelectorAll("[data-workflow-panel]").forEach((panel) => {
+    panel.classList.remove("active");
+    panel.hidden = true;
+  });
 }
 
 function formatBytes(bytes) {

@@ -40,6 +40,10 @@ from synthpopcan.web_wds import (
     parse_dimensions,
 )
 from synthpopcan.workflows.ipf import check_ipf_inputs
+from synthpopcan.workflows.models import (
+    inspect_prepared_model,
+    read_prepared_model_package,
+)
 
 _MAX_API_JSON_BYTES = 8 * 1024 * 1024
 _MAX_WDS_JSON_BYTES = 64 * 1024
@@ -129,6 +133,12 @@ def create_web_app(
     @app.post("/api/uploads")
     async def upload_file(request: Request) -> Response:
         display_name = request.headers.get("x-filename", "upload.csv")
+        media_type = request.headers.get("content-type", "text/csv").split(";", 1)[0]
+        if media_type not in {"text/csv", "application/json"}:
+            return _error_response(
+                "upload Content-Type must be text/csv or application/json",
+                HTTPStatus.UNSUPPORTED_MEDIA_TYPE,
+            )
         declared_length = request.headers.get("content-length")
         if declared_length is not None:
             try:
@@ -147,7 +157,11 @@ def create_web_app(
                     "insufficient workspace disk space for upload",
                     HTTPStatus.INSUFFICIENT_STORAGE,
                 )
-        writer = run_store.begin_upload(display_name, max_bytes=_MAX_UPLOAD_BYTES)
+        writer = run_store.begin_upload(
+            display_name,
+            media_type=media_type,
+            max_bytes=_MAX_UPLOAD_BYTES,
+        )
         try:
             async for chunk in request.stream():
                 writer.write(chunk)
@@ -172,7 +186,7 @@ def create_web_app(
     async def preflight_run(request: Request) -> Response:
         try:
             payload = await _read_json_body(request)
-            result = await run_in_threadpool(_preflight_ipf_run, run_store, payload)
+            result = await run_in_threadpool(_preflight_run, run_store, payload)
             return JSONResponse(result)
         except (KeyError, TypeError, ValueError) as exc:
             return _error_response(str(exc), HTTPStatus.BAD_REQUEST)
@@ -185,13 +199,23 @@ def create_web_app(
     async def create_run(request: Request) -> Response:
         try:
             payload = await _read_json_body(request)
-            preflight = await run_in_threadpool(_preflight_ipf_run, run_store, payload)
+            preflight = await run_in_threadpool(_preflight_run, run_store, payload)
             if not preflight["ready"]:
+                message = (
+                    "IPF preflight has blocking input diagnostics"
+                    if payload.get("workflow") == "ipf"
+                    else "run preflight has blocking diagnostics"
+                )
                 return _error_response(
-                    "IPF preflight has blocking input diagnostics",
+                    message,
                     HTTPStatus.BAD_REQUEST,
                 )
-            manifest = run_store.create_ipf_run(preflight["request"])
+            if preflight["request"]["workflow"] == "ipf":
+                manifest = run_store.create_ipf_run(preflight["request"])
+            elif preflight["request"]["workflow"] == "model":
+                manifest = run_store.create_model_run(preflight["request"])
+            else:
+                manifest = run_store.create_small_area_run(preflight["request"])
             job_manager.enqueue(str(manifest["run_id"]))
             return JSONResponse(manifest, status_code=HTTPStatus.ACCEPTED)
         except (KeyError, TypeError, ValueError) as exc:
@@ -499,4 +523,243 @@ def _preflight_ipf_run(store: RunStore, payload: dict[str, Any]) -> dict[str, An
             "enough_disk": enough_disk,
         },
         "expected_artifacts": ["weights", "fit_report"],
+    }
+
+
+def _preflight_run(store: RunStore, payload: dict[str, Any]) -> dict[str, Any]:
+    workflow = payload.get("workflow")
+    if workflow == "ipf":
+        return _preflight_ipf_run(store, payload)
+    if workflow == "model":
+        return _preflight_model_run(store, payload)
+    if workflow == "small_area":
+        return _preflight_small_area_run(store, payload)
+    raise ValueError("only workflows 'ipf', 'model', and 'small_area' are supported")
+
+
+def _preflight_model_run(store: RunStore, payload: dict[str, Any]) -> dict[str, Any]:
+    inputs = payload.get("inputs")
+    if not isinstance(inputs, dict):
+        raise ValueError("model inputs must be an object")
+    model_id = inputs.get("model_id")
+    package_upload_id = inputs.get("package_upload_id")
+    if bool(model_id) == bool(package_upload_id):
+        raise ValueError("provide exactly one model_id or package_upload_id")
+    if model_id:
+        package = model_payload(str(model_id))
+        normalized_inputs = {"model_id": str(model_id)}
+    else:
+        package_path = store.upload_path(str(package_upload_id), require_unclaimed=True)
+        package = read_prepared_model_package(package_path)
+        normalized_inputs = {"package_upload_id": str(package_upload_id)}
+    inspection = inspect_prepared_model(package)
+    options = payload.get("options", {})
+    if not isinstance(options, dict):
+        raise ValueError("model options must be an object")
+    households = int(options.get("households", 10))
+    if households <= 0:
+        raise ValueError("households must be positive")
+    chunk_size = int(options.get("chunk_size", 1000))
+    if chunk_size <= 0:
+        raise ValueError("chunk size must be positive")
+    conditions_payload = options.get("conditions", {})
+    if not isinstance(conditions_payload, dict):
+        raise ValueError("model conditions must be an object")
+    conditions = {
+        str(key).strip(): str(value)
+        for key, value in conditions_payload.items()
+        if str(key).strip()
+    }
+    unsupported = sorted(set(conditions) - set(inspection["conditions"]))
+    if unsupported:
+        raise ValueError(
+            "unsupported model condition columns: " + ", ".join(unsupported)
+        )
+    estimated_output_rows = households * 4
+    estimated_output_bytes = max(8192, estimated_output_rows * 256)
+    disk_free = shutil.disk_usage(store.root).free
+    enough_disk = disk_free >= estimated_output_bytes * 2
+    normalized_request = {
+        "workflow": "model",
+        "inputs": normalized_inputs,
+        "options": {
+            "households": households,
+            "conditions": conditions,
+            "random_seed": _optional_int(options.get("random_seed")),
+            "household_size_column": options.get("household_size_column"),
+            "chunk_size": chunk_size,
+        },
+    }
+    return {
+        "ready": enough_disk,
+        "request": normalized_request,
+        "model_diagnostics": inspection,
+        "estimate": {
+            "households": households,
+            "estimated_total_rows": estimated_output_rows,
+            "output_bytes": estimated_output_bytes,
+            "disk_free_bytes": disk_free,
+            "enough_disk": enough_disk,
+        },
+        "expected_artifacts": ["households", "persons", "generation_report"],
+    }
+
+
+def _preflight_small_area_run(
+    store: RunStore, payload: dict[str, Any]
+) -> dict[str, Any]:
+    inputs = payload.get("inputs")
+    if not isinstance(inputs, dict):
+        raise ValueError("small-area inputs must be an object")
+    model_id = inputs.get("model_id")
+    package_upload_id = inputs.get("package_upload_id")
+    if bool(model_id) == bool(package_upload_id):
+        raise ValueError("provide exactly one model_id or package_upload_id")
+    if model_id:
+        package = model_payload(str(model_id))
+        normalized_inputs: dict[str, str] = {"model_id": str(model_id)}
+    else:
+        package_path = store.upload_path(str(package_upload_id), require_unclaimed=True)
+        package = read_prepared_model_package(package_path)
+        normalized_inputs = {"package_upload_id": str(package_upload_id)}
+    inspection = inspect_prepared_model(package)
+
+    controls_id = str(inputs.get("controls_upload_id", ""))
+    controls_path = store.upload_path(controls_id, require_unclaimed=True)
+    controls = read_control_table(controls_path)
+    if not controls.margins:
+        raise ValueError("controls CSV has no control rows")
+    normalized_inputs["controls_upload_id"] = controls_id
+    person_controls_id = inputs.get("person_controls_upload_id")
+    person_controls = None
+    if person_controls_id:
+        person_controls_path = store.upload_path(
+            str(person_controls_id), require_unclaimed=True
+        )
+        person_controls = read_control_table(person_controls_path)
+        if not person_controls.margins:
+            raise ValueError("person controls CSV has no control rows")
+        normalized_inputs["person_controls_upload_id"] = str(person_controls_id)
+    boundaries_id = inputs.get("boundaries_upload_id")
+    if boundaries_id:
+        boundaries_path = store.upload_path(str(boundaries_id), require_unclaimed=True)
+        boundaries = json.loads(boundaries_path.read_text())
+        if (
+            not isinstance(boundaries, dict)
+            or boundaries.get("type") != "FeatureCollection"
+        ):
+            raise ValueError("boundaries must be a GeoJSON FeatureCollection")
+        normalized_inputs["boundaries_upload_id"] = str(boundaries_id)
+
+    options = payload.get("options", {})
+    if not isinstance(options, dict):
+        raise ValueError("small-area options must be an object")
+    geography_dimension = str(options.get("geography_dimension", "")).strip()
+    if not geography_dimension:
+        raise ValueError("geography dimension is required")
+    candidate_households = int(options.get("candidate_households", 0))
+    pool_size = _optional_int(options.get("pool_size"))
+    estimate = estimate_small_area_run(
+        controls,
+        geography_dimension=geography_dimension,
+        candidate_households=candidate_households,
+        pool_size=pool_size,
+        average_persons_per_household=float(
+            options.get("average_persons_per_household", 2.22)
+        ),
+    )
+    conditions_payload = options.get("conditions", {})
+    if not isinstance(conditions_payload, dict):
+        raise ValueError("model conditions must be an object")
+    conditions = {str(key): str(value) for key, value in conditions_payload.items()}
+    unsupported = sorted(set(conditions) - set(inspection["conditions"]))
+    if unsupported:
+        raise ValueError(
+            "unsupported model condition columns: " + ", ".join(unsupported)
+        )
+    chunk_size = int(options.get("chunk_size", 1000))
+    if chunk_size <= 0:
+        raise ValueError("chunk size must be positive")
+    max_household_size = _optional_int(options.get("max_household_size"))
+    if max_household_size is not None and max_household_size <= 0:
+        raise ValueError("maximum household size must be positive")
+    group_column = str(
+        options.get("household_size_group_column", "household_size_group")
+    )
+    household_columns = {
+        *inspection["conditions"],
+        *inspection["household_targets"],
+        geography_dimension,
+    }
+    if max_household_size is not None:
+        household_columns.add(group_column)
+    unsupported_household_dimensions = sorted(
+        {
+            dimension
+            for margin in controls.margins
+            for dimension in margin.dimensions
+            if dimension not in household_columns
+        }
+    )
+    if unsupported_household_dimensions:
+        raise ValueError(
+            "household controls require unsupported candidate columns: "
+            + ", ".join(unsupported_household_dimensions)
+        )
+    if person_controls is not None:
+        person_columns = {
+            *household_columns,
+            *inspection["person_targets"],
+        }
+        unsupported_person_dimensions = sorted(
+            {
+                dimension
+                for margin in person_controls.margins
+                for dimension in margin.dimensions
+                if dimension not in person_columns
+            }
+        )
+        if unsupported_person_dimensions:
+            raise ValueError(
+                "person controls require unsupported candidate columns: "
+                + ", ".join(unsupported_person_dimensions)
+            )
+    estimated_bytes = max(8192, int(estimate["estimated_total_output_rows"]) * 256)
+    disk_free = shutil.disk_usage(store.root).free
+    enough_disk = disk_free >= estimated_bytes * 2
+    normalized_options = {
+        "candidate_households": candidate_households,
+        "geography_dimension": geography_dimension,
+        "geography_column": str(options.get("geography_column") or geography_dimension),
+        "conditions": conditions,
+        "random_seed": _optional_int(options.get("random_seed")),
+        "pool_size": pool_size,
+        "subsample_seed": int(options.get("subsample_seed", 42)),
+        "max_household_size": max_household_size,
+        "household_size_group_column": group_column,
+        "include_weights": bool(options.get("include_weights", False)),
+        "chunk_size": chunk_size,
+        "geography_id_field": str(options.get("geography_id_field", "geo_id")),
+        "map_title": str(options.get("map_title", "Synthetic Population")),
+    }
+    return {
+        "ready": enough_disk,
+        "request": {
+            "workflow": "small_area",
+            "inputs": normalized_inputs,
+            "options": normalized_options,
+        },
+        "model_diagnostics": inspection,
+        "estimate": {
+            **estimate,
+            "output_bytes": estimated_bytes,
+            "disk_free_bytes": disk_free,
+            "enough_disk": enough_disk,
+        },
+        "expected_artifacts": [
+            "households",
+            "persons",
+            "small_area_report",
+            *(["map"] if boundaries_id else []),
+        ],
     }

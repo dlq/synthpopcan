@@ -32,8 +32,9 @@ The beginner API corresponds to the **three web app paths**:
    candidate CSVs, calibrate household rows to small-area controls, and write
    household/person CSVs with an assigned geography such as census tract or ADA.
 
-The web app prepares the small-area run and hands its settings to the CLI or
-Python API; the browser does not perform a large calibration itself.
+The web app runs IPF and prepared-model generation through the same Python
+implementations used by scripts. It still prepares the small-area run and hands
+its settings to the CLI or Python API until that workflow is migrated.
 
 Use the **web app** when we want guided local controls, previews, and downloads.
 Use the **beginner API** when we want the same work inside a notebook, script, or
