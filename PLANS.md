@@ -2,7 +2,7 @@
 
 Status: release-phased roadmap\
 Last updated: 2026-07-17\
-Current release: `0.5.1`
+Current release: `0.6.0`
 
 ## Current Focus
 
@@ -10,9 +10,8 @@ Start here. Open a linked implementation plan only when working on that area.
 
 | Horizon | Focus | Detail |
 | --- | --- | --- |
-| Released | `0.5.1` is published as the current-architecture correctness-assurance release, with scoped claims, checksums, permanent release evidence, and trusted PyPI publication. | [GitHub Release](https://github.com/dlq/synthpopcan/releases/tag/v0.5.1) |
-| Correctness | Preserve the `0.5.1` gate and implement the planned post-release assurance improvements in priority order. | [Correctness plan](plans/2026-07-12-correctness-assurance.md) |
-| Next minor | Review and release the completed durable local runtime as `0.6.0`; Stages 0–8 and release proof are complete. | [Local runtime plan](plans/2026-07-10-local-web-application-runtime.md) |
+| Released | `0.6.0` completes the durable local-runtime redesign while retaining the `0.5.1` correctness-assurance gate. | [GitHub Release](https://github.com/dlq/synthpopcan/releases/tag/v0.6.0) |
+| Correctness | Preserve and extend the correctness-assurance gate in priority order. | [Correctness plan](plans/2026-07-12-correctness-assurance.md) |
 | Next patch | Stabilize the public linked household/person/geography schema in `0.6.1` after all workflows use the durable runtime. | [Local runtime plan](plans/2026-07-10-local-web-application-runtime.md) |
 | Later `0.7.x`–`0.8.x` | Add governed enrichment layers, then hand validated generated data to external simulation platforms without implementing population simulation in SynthPopCan. | [Plan index](plans/README.md) |
 | Far future, after `0.8.x` | Research optional, compositional public-health simulation only after the population, enrichment, and interchange contracts are stable; do not commit to one simulation platform. | [Far-future direction](#far-future-compositional-public-health-simulation) |
@@ -69,7 +68,7 @@ Implemented capabilities include:
 - a packaged local web app for guided IPF, prepared models, WDS preparation,
   small-area preflight, downloads, and exact CLI handoff.
 
-The in-development `0.6.0` app now uses FastAPI/Uvicorn, a controlled workspace,
+The released `0.6.0` app uses FastAPI/Uvicorn, a controlled workspace,
 durable manifests and events, isolated Python jobs, progress, cancellation,
 restart recovery, bounded previews, incremental artifact publication, and
 backend IPF, prepared-model, and guided small-area workflows. Existing linked
@@ -77,7 +76,7 @@ candidates can enter the same small-area path, and model catalogue installation
 and removal stay bounded in the browser. Browser IPF and tree generation are
 removed. The implementation, cleanup, documentation, clean-wheel smoke, full
 correctness/coverage gate, browser scenarios, and bounded scale smokes are
-complete; versioning and release review are next.
+complete.
 
 ## Release History
 

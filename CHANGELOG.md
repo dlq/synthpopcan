@@ -4,6 +4,8 @@ All notable public changes to SynthPopCan are tracked here.
 
 ## Unreleased
 
+## 0.6.0 - 2026-07-17
+
 - Replaced browser-owned IPF, prepared-model, and small-area synthesis with
   durable FastAPI/Uvicorn runs backed by the same file-oriented Python
   workflows as the CLI and beginner API.

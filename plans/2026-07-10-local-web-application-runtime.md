@@ -4,7 +4,7 @@ Status: implementation complete; Stages 0–8 verified\
 Created: 2026-07-10\
 Last updated: 2026-07-17\
 Target: `0.6.0`; stable linked schema follows in `0.6.1`\
-Next action: prepare and review the `0.6.0` release\
+Next action: preserve the verified runtime while implementing the `0.6.1` schema\
 Roadmap: [PLANS.md](../PLANS.md) | [Plan index](README.md)
 
 > **For agentic workers:** Execute this plan one stage at a time. Keep each
