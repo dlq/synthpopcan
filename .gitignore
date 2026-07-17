@@ -37,6 +37,7 @@ venv/
 # Future run outputs and notebooks checkpoints.
 /runs/
 /outputs/
+/synthpopcan-runs/
 .ipynb_checkpoints/
 
 # Editor settings.

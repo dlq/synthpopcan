@@ -1,14 +1,24 @@
 from __future__ import annotations
 
+import asyncio
 import csv
 import json
+from http.cookiejar import CookieJar
 from io import BytesIO, StringIO
+from pathlib import Path
 from threading import Thread
 from urllib.error import HTTPError
-from urllib.request import Request, urlopen
+from urllib.parse import urlsplit
+from urllib.request import (
+    HTTPCookieProcessor,
+    Request,
+    build_opener,
+)
 from zipfile import ZipFile
 
+import httpx
 import pytest
+from click import ClickException
 
 from synthpopcan.cli import main
 from synthpopcan.models import model_catalogue, model_payload
@@ -22,6 +32,7 @@ from synthpopcan.web_wds import (
     generate_wds_seed_controls_from_zip_bytes,
     parse_dimensions,
 )
+from synthpopcan.webapi import create_web_app
 from synthpopcan.webapp import (
     build_webapp_server,
     get_webapp_root,
@@ -29,11 +40,31 @@ from synthpopcan.webapp import (
     webapp_url,
 )
 
+_WEB_OPENERS: dict[str, object] = {}
+
+
+def urlopen(url_or_request, *, timeout: float):
+    """Open a local test URL after establishing its app session cookie."""
+    url = (
+        url_or_request.full_url
+        if isinstance(url_or_request, Request)
+        else str(url_or_request)
+    )
+    parsed = urlsplit(url)
+    origin = f"{parsed.scheme}://{parsed.netloc}"
+    opener = _WEB_OPENERS.get(origin)
+    if opener is None:
+        opener = build_opener(HTTPCookieProcessor(CookieJar()))
+        opener.open(f"{origin}/api/app", timeout=timeout)
+        _WEB_OPENERS[origin] = opener
+    return opener.open(url_or_request, timeout=timeout)
+
 
 class FakeServer:
     def __init__(self) -> None:
         self.server_address = ("127.0.0.1", 8123)
         self.served = False
+        self.stopped = False
         self.closed = False
 
     def serve_forever(self) -> None:
@@ -41,6 +72,9 @@ class FakeServer:
 
     def server_close(self) -> None:
         self.closed = True
+
+    def shutdown(self) -> None:
+        self.stopped = True
 
 
 class InterruptingServer(FakeServer):
@@ -95,6 +129,7 @@ def test_serve_webapp_opens_browser_and_closes_server() -> None:
     assert url == "http://127.0.0.1:8123/"
     assert opened_urls == [url]
     assert server.served is True
+    assert server.stopped is True
     assert server.closed is True
 
 
@@ -110,6 +145,7 @@ def test_serve_webapp_closes_quietly_on_keyboard_interrupt() -> None:
 
     assert url == "http://127.0.0.1:8123/"
     assert server.served is True
+    assert server.stopped is True
     assert server.closed is True
 
 
@@ -124,8 +160,91 @@ def test_cli_serve_delegates_to_webapp_runner(monkeypatch) -> None:
 
     assert main(["serve", "--host", "127.0.0.1", "--port", "8123", "--no-open"]) == 0
     assert calls == [
-        {"host": "127.0.0.1", "port": 8123, "open_browser": False},
+        {
+            "host": "127.0.0.1",
+            "port": 8123,
+            "workspace": Path("synthpopcan-runs"),
+            "open_browser": False,
+        },
     ]
+
+
+def test_cli_serve_rejects_network_exposure() -> None:
+    with pytest.raises(ClickException, match="only accepts loopback hosts"):
+        main(["serve", "--host", "0.0.0.0", "--no-open"])
+
+
+def test_webapp_bootstrap_sets_strict_session_and_no_store(tmp_path: Path) -> None:
+    app = create_web_app(
+        static_root=get_webapp_root(),
+        workspace=tmp_path,
+        session_secret="test-session-secret",
+    )
+
+    async def exercise() -> httpx.Response:
+        transport = httpx.ASGITransport(app=app)
+        async with httpx.AsyncClient(
+            transport=transport, base_url="http://127.0.0.1"
+        ) as client:
+            return await client.get("/api/app")
+
+    response = asyncio.run(exercise())
+
+    assert response.status_code == 200
+    assert response.json()["workspace"] == str(tmp_path.resolve())
+    assert response.headers["Cache-Control"] == "no-store"
+    cookie = response.headers["set-cookie"]
+    assert "HttpOnly" in cookie
+    assert "SameSite=strict" in cookie
+
+
+def test_webapp_requires_session_and_expected_origin(tmp_path: Path) -> None:
+    app = create_web_app(
+        static_root=get_webapp_root(),
+        workspace=tmp_path,
+        session_secret="test-session-secret",
+    )
+
+    async def exercise() -> tuple[httpx.Response, httpx.Response, httpx.Response]:
+        transport = httpx.ASGITransport(app=app)
+        async with httpx.AsyncClient(
+            transport=transport, base_url="http://127.0.0.1"
+        ) as client:
+            missing = await client.get("/api/models")
+            await client.get("/api/app")
+            hostile = await client.get(
+                "/api/models", headers={"Origin": "https://attacker.example"}
+            )
+            expected = await client.get(
+                "/api/models", headers={"Origin": "http://127.0.0.1"}
+            )
+            return missing, hostile, expected
+
+    missing, hostile, expected = asyncio.run(exercise())
+
+    assert missing.status_code == 403
+    assert hostile.status_code == 403
+    assert expected.status_code == 200
+
+
+def test_webapp_rejects_non_loopback_host(tmp_path: Path) -> None:
+    app = create_web_app(
+        static_root=get_webapp_root(),
+        workspace=tmp_path,
+        session_secret="test-session-secret",
+    )
+
+    async def exercise() -> httpx.Response:
+        transport = httpx.ASGITransport(app=app)
+        async with httpx.AsyncClient(
+            transport=transport, base_url="http://example.test"
+        ) as client:
+            return await client.get("/")
+
+    response = asyncio.run(exercise())
+
+    assert response.status_code == 400
+    assert response.json() == {"error": "request Host must be loopback"}
 
 
 def test_webapp_static_assets_are_not_browser_cached() -> None:
@@ -245,9 +364,9 @@ def test_webapp_fetches_and_returns_model_package(monkeypatch) -> None:
         "schema_version": "synthpopcan-linked-tree-package-v1",
         "name": "Downloaded test package",
     }
-    monkeypatch.setattr("synthpopcan.webapp.fetch_model_package", fetched.append)
-    monkeypatch.setattr("synthpopcan.webapp.model_browser_compatible", lambda _: True)
-    monkeypatch.setattr("synthpopcan.webapp.model_payload", lambda model_id: package)
+    monkeypatch.setattr("synthpopcan.webapi.fetch_model_package", fetched.append)
+    monkeypatch.setattr("synthpopcan.webapi.model_browser_compatible", lambda _: True)
+    monkeypatch.setattr("synthpopcan.webapi.model_payload", lambda model_id: package)
     server = build_webapp_server("127.0.0.1", 0)
     thread = Thread(target=server.serve_forever, daemon=True)
     thread.start()
@@ -285,8 +404,8 @@ def test_webapp_model_fetch_reports_failures(
     def fail_fetch(model_id: str) -> None:
         raise failure
 
-    monkeypatch.setattr("synthpopcan.webapp.fetch_model_package", fail_fetch)
-    monkeypatch.setattr("synthpopcan.webapp.model_browser_compatible", lambda _: True)
+    monkeypatch.setattr("synthpopcan.webapi.fetch_model_package", fail_fetch)
+    monkeypatch.setattr("synthpopcan.webapi.model_browser_compatible", lambda _: True)
     server = build_webapp_server("127.0.0.1", 0)
     thread = Thread(target=server.serve_forever, daemon=True)
     thread.start()
@@ -311,11 +430,11 @@ def test_webapp_wds_seed_controls_api_uses_local_helper(monkeypatch) -> None:
     zip_bytes = b"fake-zip"
 
     monkeypatch.setattr(
-        "synthpopcan.webapp.fetch_wds_zip_bytes",
+        "synthpopcan.webapi.fetch_wds_zip_bytes",
         lambda product_id: (zip_bytes, f"https://example.test/{product_id}.zip"),
     )
     monkeypatch.setattr(
-        "synthpopcan.webapp.generate_wds_seed_controls_from_zip_bytes",
+        "synthpopcan.webapi.generate_wds_seed_controls_from_zip_bytes",
         lambda data, *, dimensions, count_column: {
             "seedCsv": "id,age\nseed-1,young\n",
             "controlsCsv": "margin,dimensions,age,count\nage,age,young,1\n",
@@ -354,7 +473,7 @@ def test_webapp_wds_seed_controls_api_uses_local_helper(monkeypatch) -> None:
 
 def test_webapp_wds_seed_controls_api_reports_bad_requests(monkeypatch) -> None:
     monkeypatch.setattr(
-        "synthpopcan.webapp.fetch_wds_zip_bytes",
+        "synthpopcan.webapi.fetch_wds_zip_bytes",
         lambda product_id: (_ for _ in ()).throw(ValueError("download failed")),
     )
     server = build_webapp_server("127.0.0.1", 0)
@@ -364,6 +483,7 @@ def test_webapp_wds_seed_controls_api_reports_bad_requests(monkeypatch) -> None:
         request = Request(
             f"{webapp_url(server)}api/wds/seed-controls",
             data=json.dumps({"productId": "13100005"}).encode("utf-8"),
+            headers={"Content-Type": "application/json"},
             method="POST",
         )
         with pytest.raises(HTTPError) as exc_info:
@@ -411,7 +531,7 @@ def test_webapp_bounds_concurrent_wds_preparation(monkeypatch) -> None:
         def release(self) -> None:
             raise AssertionError("an unacquired slot must not be released")
 
-    monkeypatch.setattr("synthpopcan.webapp._WDS_REQUEST_SLOTS", NoAvailableSlot())
+    monkeypatch.setattr("synthpopcan.webapi._WDS_REQUEST_SLOTS", NoAvailableSlot())
     server = build_webapp_server("127.0.0.1", 0)
     thread = Thread(target=server.serve_forever, daemon=True)
     thread.start()
@@ -504,6 +624,7 @@ def test_webapp_small_area_estimate_reports_invalid_controls() -> None:
                     "candidateHouseholds": 100,
                 }
             ).encode("utf-8"),
+            headers={"Content-Type": "application/json"},
             method="POST",
         )
         with pytest.raises(HTTPError) as no_rows_info:
@@ -524,6 +645,7 @@ def test_webapp_small_area_estimate_reports_invalid_controls() -> None:
                     "candidateHouseholds": 100,
                 }
             ).encode("utf-8"),
+            headers={"Content-Type": "application/json"},
             method="POST",
         )
         with pytest.raises(HTTPError) as no_geography_info:

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Literal, cast
 
 __all__ = ["main", "resolve_data_root"]
 
@@ -22,7 +22,7 @@ from rich.progress import (
 
 from synthpopcan import __version__
 from synthpopcan.cli_geo import small_area
-from synthpopcan.cli_ipf import ipf, read_population_artifact
+from synthpopcan.cli_ipf import ipf
 from synthpopcan.cli_microdata import microdata
 from synthpopcan.cli_output import (
     click_file_access_error,
@@ -88,11 +88,10 @@ from synthpopcan.statcan import (
     summarize_wds_metadata,
 )
 from synthpopcan.tree import validate_linked_population
-from synthpopcan.validation import (
-    build_control_validation_report,
-    build_tree_output_validation_report,
-)
-from synthpopcan.webapp import serve_webapp
+from synthpopcan.validation import build_tree_output_validation_report
+from synthpopcan.webapp import serve_webapp, validate_loopback_host
+from synthpopcan.workflows.ipf import validate_ipf_artifact
+from synthpopcan.workflows.types import IPFValidationRequest
 
 _PATH = click.Path(path_type=Path)
 
@@ -281,10 +280,29 @@ def guide_small_area() -> None:
     show_default=True,
     help="Open the web app in your default browser.",
 )
-def serve(host: str, port: int, open_browser: bool) -> None:
+@click.option(
+    "--workspace",
+    default=Path("synthpopcan-runs"),
+    show_default=True,
+    type=_PATH,
+    help="Managed workspace for local uploads, runs, and artifacts.",
+)
+def serve(host: str, port: int, open_browser: bool, workspace: Path) -> None:
     """Serve the local SynthPopCan web app."""
-    print_success(f"Serving SynthPopCan at http://{host}:{port}/")
-    serve_webapp(host=host, port=port, open_browser=open_browser)
+    try:
+        normalized_host = validate_loopback_host(host)
+        browser_host = (
+            f"[{normalized_host}]" if ":" in normalized_host else normalized_host
+        )
+        print_success(f"Serving SynthPopCan at http://{browser_host}:{port}/")
+        serve_webapp(
+            host=normalized_host,
+            port=port,
+            workspace=workspace,
+            open_browser=open_browser,
+        )
+    except ValueError as exc:
+        raise click.ClickException(str(exc)) from exc
 
 
 def _print_workflow_choice_guide() -> None:
@@ -516,20 +534,15 @@ def validate_ipf_output_command(
     output_format: str,
 ) -> None:
     """Validate a generated population against normalized controls."""
+    request = IPFValidationRequest(
+        population_path=population_path,
+        controls_path=controls_path,
+        artifact_kind=cast(Literal["weights", "expanded"], artifact_kind),
+        weight_column=weight_column,
+        tolerance=tolerance,
+    )
     try:
-        control_table = read_control_table(controls_path)
-        rows, weights = read_population_artifact(
-            population_path,
-            artifact_kind,
-            weight_column,
-        )
-        report = build_control_validation_report(
-            control_table,
-            rows,
-            weights,
-            tolerance=tolerance,
-            artifact_kind=artifact_kind,
-        )
+        result = validate_ipf_artifact(request)
     except OSError as exc:
         raise click_file_access_error(
             exc.filename or controls_path, "read", exc
@@ -537,6 +550,7 @@ def validate_ipf_output_command(
     except ValueError as exc:
         raise click_value_error(exc) from exc
 
+    report = result.report
     write_report(report, output_format, print_validation_report_table)
 
     if not report["passed"]:

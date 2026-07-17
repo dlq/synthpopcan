@@ -12,7 +12,7 @@ export default defineConfig({
   },
   webServer: {
     command:
-      "python3 -m http.server 8765 --bind 127.0.0.1 --directory src/synthpopcan/web",
+      "UV_CACHE_DIR=/tmp/synthpopcan-uv-cache uv run synthpopcan serve --host 127.0.0.1 --port 8765 --no-open --workspace /tmp/synthpopcan-e2e-runs",
     url: "http://127.0.0.1:8765",
     reuseExistingServer: true,
   },

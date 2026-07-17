@@ -1,0 +1,165 @@
+from __future__ import annotations
+
+import json
+from pathlib import Path
+
+import pytest
+
+from synthpopcan.runs import RUN_SCHEMA_VERSION, RunStore
+
+
+def test_run_store_streams_claims_and_records_uploads(tmp_path: Path) -> None:
+    store = RunStore(tmp_path / "workspace")
+    seed = write_upload(store, "../private/seed.csv", b"id,age\n1,young\n")
+    controls = write_upload(
+        store,
+        "controls.csv",
+        b"margin,dimensions,age,count\nage,age,young,1\n",
+    )
+
+    manifest = store.create_ipf_run(ipf_request(seed, controls))
+
+    assert manifest["schema_version"] == RUN_SCHEMA_VERSION
+    assert manifest["status"] == "queued"
+    assert manifest["inputs"][0]["display_name"] == "seed.csv"
+    assert store.resolve_managed_path(manifest["inputs"][0]["path"]).read_bytes() == (
+        b"id,age\n1,young\n"
+    )
+    assert len(manifest["inputs"][0]["sha256"]) == 64
+    assert store.read_events(manifest["run_id"])[0]["stage"] == "queued"
+    with pytest.raises(ValueError, match="already been claimed"):
+        store.get_upload(seed, require_unclaimed=True)
+
+
+def test_upload_writer_rejects_empty_and_oversize_files(tmp_path: Path) -> None:
+    store = RunStore(tmp_path)
+    empty = store.begin_upload("empty.csv", max_bytes=10)
+    with pytest.raises(ValueError, match="empty"):
+        empty.finish()
+
+    oversized = store.begin_upload("large.csv", max_bytes=3)
+    with pytest.raises(ValueError, match="size limit"):
+        oversized.write(b"four")
+    oversized.abort()
+    assert list(store.uploads_dir.glob("*.part")) == []
+
+
+def test_run_store_rejects_ids_traversal_and_symlink_escape(tmp_path: Path) -> None:
+    store = RunStore(tmp_path / "workspace")
+
+    with pytest.raises(ValueError, match="invalid upload ID"):
+        store.get_upload("../secret")
+    with pytest.raises(ValueError, match="invalid run ID"):
+        store.load_run("../secret")
+    with pytest.raises(ValueError, match="escapes"):
+        store.resolve_managed_path("../secret")
+    with pytest.raises(ValueError, match="must be relative"):
+        store.resolve_managed_path(str((tmp_path / "absolute.csv").resolve()))
+
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    link = store.root / "escape"
+    try:
+        link.symlink_to(outside, target_is_directory=True)
+    except OSError:
+        pytest.skip("symlinks are unavailable")
+    with pytest.raises(ValueError, match="escapes"):
+        store.resolve_managed_path("escape/secret.csv")
+
+
+def test_run_store_recovers_unfinished_runs_as_interrupted(tmp_path: Path) -> None:
+    workspace = tmp_path / "workspace"
+    store = RunStore(workspace)
+    seed = write_upload(store, "seed.csv", b"id,age\n1,young\n")
+    controls = write_upload(
+        store,
+        "controls.csv",
+        b"margin,dimensions,age,count\nage,age,young,1\n",
+    )
+    manifest = store.create_ipf_run(ipf_request(seed, controls))
+    run_id = str(manifest["run_id"])
+    store.transition_run(run_id, "running")
+
+    recovered = RunStore(workspace).load_run(run_id)
+
+    assert recovered["status"] == "interrupted"
+    assert recovered["finished_at"] is not None
+    assert recovered["error"]["kind"] == "interrupted"
+    assert RunStore(workspace).read_events(run_id)[-1]["stage"] == "interrupted"
+
+
+def test_manifest_updates_are_valid_json_and_transitions_are_checked(
+    tmp_path: Path,
+) -> None:
+    store = RunStore(tmp_path)
+    seed = write_upload(store, "seed.csv", b"id,age\n1,young\n")
+    controls = write_upload(
+        store,
+        "controls.csv",
+        b"margin,dimensions,age,count\nage,age,young,1\n",
+    )
+    manifest = store.create_ipf_run(ipf_request(seed, controls))
+    run_id = str(manifest["run_id"])
+
+    updated = store.update_run(run_id, summary={"test": True})
+
+    assert updated["summary"] == {"test": True}
+    assert json.loads((store.run_dir(run_id) / "run.json").read_text()) == updated
+    with pytest.raises(ValueError, match="invalid run transition"):
+        store.transition_run(run_id, "succeeded")
+
+
+def test_run_creation_rolls_back_partially_claimed_uploads(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    store = RunStore(tmp_path)
+    seed = write_upload(store, "seed.csv", b"id,age\n1,young\n")
+    controls = write_upload(
+        store,
+        "controls.csv",
+        b"margin,dimensions,age,count\nage,age,young,1\n",
+    )
+    original_write = store._write_json_atomic
+    writes = 0
+
+    def fail_second_claim(path: Path, payload: dict) -> None:
+        nonlocal writes
+        writes += 1
+        if writes == 2:
+            raise OSError("simulated metadata failure")
+        original_write(path, payload)
+
+    monkeypatch.setattr(store, "_write_json_atomic", fail_second_claim)
+
+    with pytest.raises(OSError, match="simulated metadata failure"):
+        store.create_ipf_run(ipf_request(seed, controls))
+
+    assert store.get_upload(seed, require_unclaimed=True)["claimed_by"] is None
+    assert store.get_upload(controls, require_unclaimed=True)["claimed_by"] is None
+    assert store.upload_path(seed).is_file()
+    assert store.upload_path(controls).is_file()
+    assert list(store.runs_dir.iterdir()) == []
+
+
+def write_upload(store: RunStore, name: str, body: bytes) -> str:
+    writer = store.begin_upload(name, max_bytes=max(1, len(body)))
+    midpoint = len(body) // 2
+    writer.write(body[:midpoint])
+    writer.write(body[midpoint:])
+    return str(writer.finish()["upload_id"])
+
+
+def ipf_request(seed_upload_id: str, controls_upload_id: str) -> dict:
+    return {
+        "workflow": "ipf",
+        "inputs": {
+            "seed_upload_id": seed_upload_id,
+            "controls_upload_id": controls_upload_id,
+        },
+        "options": {
+            "weight_column": None,
+            "max_iterations": 100,
+            "tolerance": 1e-6,
+            "allow_nonconverged": False,
+        },
+    }

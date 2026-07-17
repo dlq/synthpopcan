@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import csv
 import json
 from pathlib import Path
 
@@ -21,12 +20,23 @@ from synthpopcan.cli_output import (
     write_report,
 )
 from synthpopcan.console import print_wrote
-from synthpopcan.controls import read_control_table
-from synthpopcan.diagnostics import build_ipf_fit_report, build_ipf_input_report
-from synthpopcan.ipf import fit_ipf, integerize_weights
-from synthpopcan.tabular import format_csv_number
+from synthpopcan.workflows.ipf import (
+    IPFNonConvergenceError,
+    check_ipf_inputs,
+    expand_ipf_weights,
+    fit_ipf_files,
+    read_population_artifact,
+    read_weighted_seed,
+    write_expanded_seed,
+    write_weighted_seed,
+)
+from synthpopcan.workflows.types import IPFExpandRequest, IPFFitRequest
 
 _PATH = click.Path(path_type=Path)
+
+_read_weighted_seed = read_weighted_seed
+_write_expanded_seed = write_expanded_seed
+_write_weighted_seed = write_weighted_seed
 
 __all__ = [
     "ipf",
@@ -64,13 +74,11 @@ def _check_ipf_inputs(
 ) -> None:
     """Check whether seed records cover the control dimensions and categories."""
     try:
-        seed_rows = read_csv_rows(seed_path)
-        control_table = read_control_table(controls_path)
+        report = check_ipf_inputs(seed_path, controls_path)
     except OSError as exc:
         raise click_file_access_error(exc.filename, "read", exc) from exc
     except ValueError as exc:
         raise click_value_error(exc) from exc
-    report = build_ipf_input_report(seed_rows, control_table)
     write_report(report, output_format, print_ipf_input_check_table)
 
 
@@ -146,32 +154,26 @@ def _fit_ipf_command(
     report_path: Path | None,
 ) -> None:
     """Fit seed records to controls and write compact weights."""
+    request = IPFFitRequest(
+        seed_path=seed_path,
+        controls_path=controls_path,
+        output_path=out_path,
+        weight_column=weight_column,
+        max_iterations=max_iterations,
+        tolerance=tolerance,
+        allow_nonconverged=allow_nonconverged,
+        report_path=report_path,
+    )
     try:
-        seed_rows = read_csv_rows(seed_path)
-        control_table = read_control_table(controls_path)
-        result = fit_ipf(
-            seed_rows,
-            control_table.to_ipf_margins(),
-            weight_field=weight_column,
-            max_iterations=max_iterations,
-            tolerance=tolerance,
-        )
+        fit_ipf_files(request)
     except OSError as exc:
-        raise click_file_access_error(exc.filename or seed_path, "read", exc) from exc
+        error_path = Path(exc.filename) if exc.filename else seed_path
+        action = "write" if error_path in {out_path, report_path} else "read"
+        raise click_file_access_error(error_path, action, exc) from exc
     except ValueError as exc:
         raise click_value_error(exc, format_fit_value_error) from exc
-    report = build_ipf_fit_report(control_table, result)
-    if report_path:
-        try:
-            report_path.write_text(json.dumps(report, indent=2) + "\n")
-        except OSError as exc:
-            raise click_file_access_error(report_path, "write", exc) from exc
-    if not result.converged and not allow_nonconverged:
-        raise click.ClickException(format_nonconvergence_message(report))
-    try:
-        _write_weighted_seed(out_path, seed_rows, result.weights)
-    except OSError as exc:
-        raise click_file_access_error(out_path, "write", exc) from exc
+    except IPFNonConvergenceError as exc:
+        raise click.ClickException(format_nonconvergence_message(exc.report)) from exc
     if report_path:
         print_wrote(report_path)
     print_wrote(out_path)
@@ -197,8 +199,13 @@ def _fit_ipf_command(
 def _expand_ipf(weights_path: Path, out_path: Path, weight_column: str) -> None:
     """Expand fitted weights into full synthetic rows."""
     try:
-        seed_rows, weights = _read_weighted_seed(weights_path, weight_column)
-        _write_expanded_seed(out_path, seed_rows, weights)
+        expand_ipf_weights(
+            IPFExpandRequest(
+                weights_path=weights_path,
+                output_path=out_path,
+                weight_column=weight_column,
+            )
+        )
     except OSError as exc:
         raise click_file_access_error(
             exc.filename or weights_path, "access", exc
@@ -226,95 +233,3 @@ def _report_ipf(path: Path, output_format: str) -> None:
     except json.JSONDecodeError as exc:
         raise click.ClickException(f"{path} is not valid JSON") from exc
     write_report(report, output_format, print_ipf_report_table)
-
-
-def _read_weighted_seed(
-    path: Path, weight_field: str
-) -> tuple[list[dict[str, str]], list[float]]:
-    """Read compact weighted IPF output into seed rows and fitted weights."""
-
-    rows: list[dict[str, str]] = []
-    weights: list[float] = []
-    with path.open(newline="") as handle:
-        for row_number, row in enumerate(csv.DictReader(handle), start=2):
-            selected_weight_field = (
-                "fitted_weight"
-                if weight_field == "weight" and "fitted_weight" in row
-                else weight_field
-            )
-            try:
-                weight_value = row.pop(selected_weight_field)
-            except KeyError as exc:
-                raise ValueError(
-                    f"weights CSV requires a {weight_field!r} column"
-                ) from exc
-            try:
-                weights.append(float(weight_value))
-            except ValueError as exc:
-                raise ValueError(
-                    f"weights row {row_number} has invalid weight"
-                ) from exc
-            rows.append(row)
-    return rows, weights
-
-
-def read_population_artifact(
-    path: Path,
-    artifact_kind: str,
-    weight_field: str,
-) -> tuple[list[dict[str, str]], list[float]]:
-    """Read a weighted or expanded population artifact for validation."""
-
-    if artifact_kind == "weights":
-        return _read_weighted_seed(path, weight_field)
-    if artifact_kind == "expanded":
-        rows = read_csv_rows(path)
-        return rows, [1.0 for _row in rows]
-    raise ValueError(f"unknown population artifact kind {artifact_kind!r}")
-
-
-def _write_weighted_seed(
-    path: Path, rows: list[dict[str, str]], weights: list[float]
-) -> None:
-    """Write seed rows plus fitted IPF weights as the compact default output."""
-
-    if not rows:
-        raise ValueError("cannot write weighted output for empty seed rows")
-    weight_column = "weight" if "weight" not in rows[0] else "fitted_weight"
-    fieldnames = [*rows[0].keys(), weight_column]
-    with path.open("w", newline="") as handle:
-        writer = csv.DictWriter(handle, fieldnames=fieldnames)
-        writer.writeheader()
-        for row, weight in zip(rows, weights, strict=True):
-            writer.writerow({**row, weight_column: format_csv_number(weight)})
-
-
-def _write_expanded_seed(
-    path: Path, rows: list[dict[str, str]], weights: list[float]
-) -> None:
-    """Write a full expanded synthetic CSV from integerized fitted weights."""
-
-    counts = integerize_weights(weights)
-    if sum(counts) == 0:
-        raise ValueError("expanded synthetic population is empty")
-    fieldnames = [
-        "synthetic_id",
-        "seed_id",
-        *(field for field in rows[0] if field != "id"),
-    ]
-    with path.open("w", newline="") as handle:
-        writer = csv.DictWriter(handle, fieldnames=fieldnames)
-        writer.writeheader()
-        synthetic_id = 1
-        for source_index, row in enumerate(rows, start=1):
-            seed_id = str(row.get("id", source_index))
-            attributes = {key: value for key, value in row.items() if key != "id"}
-            for _ in range(counts[source_index - 1]):
-                writer.writerow(
-                    {
-                        "synthetic_id": str(synthetic_id),
-                        "seed_id": seed_id,
-                        **attributes,
-                    }
-                )
-                synthetic_id += 1

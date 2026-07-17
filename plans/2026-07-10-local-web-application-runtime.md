@@ -335,23 +335,23 @@ Rules enforced in `tests/test_architecture.py`:
 
 - Modify: `tests/test_architecture.py`, `tests/test_webapp.py`
 
-- [ ] Add FastAPI and Uvicorn runtime dependencies and an HTTP client test
+- [x] Add FastAPI and Uvicorn runtime dependencies and an HTTP client test
   dependency in the development group.
 
-- [ ] Add `create_web_app(...)` with `/api/app`, existing model endpoints, the
+- [x] Add `create_web_app(...)` with `/api/app`, existing model endpoints, the
   WDS seed/control helper, and packaged static assets.
 
-- [ ] Preserve `synthpopcan serve --port` and `--open / --no-open`; add
+- [x] Preserve `synthpopcan serve --port` and `--open / --no-open`; add
   `--workspace`; reject non-loopback `--host` values with a helpful message.
 
-- [ ] Ignore the default `synthpopcan-runs/` workspace so starting the app from
+- [x] Ignore the default `synthpopcan-runs/` workspace so starting the app from
   a source checkout cannot accidentally stage generated inputs or populations.
 
-- [ ] Add session-cookie, origin, cache-control, and graceful-shutdown tests.
+- [x] Add session-cookie, origin, cache-control, and graceful-shutdown tests.
 
-- [ ] Extend architecture checks before adding application modules.
+- [x] Extend architecture checks before adding application modules.
 
-- [ ] Run the existing browser scenarios against the new server without changing
+- [x] Run the existing browser scenarios against the new server without changing
   their computation path yet.
 
 **Acceptance:** The server implementation changes, but current IPF and prepared
@@ -374,20 +374,20 @@ API tests pass through FastAPI.
 
 - Modify: `tests/test_ipf.py`, `tests/test_workflows.py`
 
-- [ ] Extract file-backed input checking, fitting, report writing, compact weight
+- [x] Extract file-backed input checking, fitting, report writing, compact weight
   output, streamed expansion, and validation from Click command bodies.
 
-- [ ] Keep Click responsible only for parsing options, translating exceptions,
+- [x] Keep Click responsible only for parsing options, translating exceptions,
   and presenting success or error output.
 
-- [ ] Add a progress callback protocol with no dependency on the job runner.
+- [x] Add a progress callback protocol with no dependency on the job runner.
 
-- [ ] Build the canonical structured reproduction request and CLI renderer.
+- [x] Build the canonical structured reproduction request and CLI renderer.
 
-- [ ] Prove that the migrated CLI fixture outputs and reports are byte-for-byte
+- [x] Prove that the migrated CLI fixture outputs and reports are byte-for-byte
   equivalent where timestamps are not present.
 
-- [ ] Keep the beginner in-memory API behavior unchanged while reusing shared
+- [x] Keep the beginner in-memory API behavior unchanged while reusing shared
   lower-level functions where that removes duplication.
 
 **Acceptance:** `SCN-IPF-001` and `SCN-WDS-001` still pass, and the IPF workflow
@@ -405,26 +405,26 @@ can be invoked without importing Click, Rich, FastAPI, or browser modules.
 
 - Create: `tests/test_runs.py`, `tests/test_jobs.py`, `tests/test_webapi.py`
 
-- [ ] Implement workspace creation, opaque run/upload IDs, versioned manifests,
+- [x] Implement workspace creation, opaque run/upload IDs, versioned manifests,
   safe relative paths, hashes collected while copying or writing, and atomic
   state updates.
 
-- [ ] Implement streamed uploads and upload claiming without loading complete
+- [x] Implement streamed uploads and upload claiming without loading complete
   files into Python memory.
 
-- [ ] Implement authenticated preflight for IPF and repeat its blocking checks
+- [x] Implement authenticated preflight for IPF and repeat its blocking checks
   when the run is created.
 
-- [ ] Implement one queued spawned worker, event persistence, SSE replay,
+- [x] Implement one queued spawned worker, event persistence, SSE replay,
   cancellation, partial-artifact isolation, and startup interruption recovery.
 
-- [ ] Add the generic run lifecycle routes and support `workflow: "ipf"` first.
+- [x] Add the generic run lifecycle routes and support `workflow: "ipf"` first.
 
-- [ ] Add a deterministic API integration test that uploads fixtures, starts an
+- [x] Add a deterministic API integration test that uploads fixtures, starts an
   IPF run, observes progress, downloads the result and report, and executes the
   reproduction command.
 
-- [ ] Test failure before fitting, failure during work, cancellation, restart,
+- [x] Test failure before fitting, failure during work, cancellation, restart,
   path traversal, unknown IDs, and insufficient disk preflight.
 
 **Acceptance:** A complete IPF run can be created and recovered by run ID with

@@ -36,7 +36,45 @@ UI_BOUNDARY_IMPORTS = (
     "synthpopcan.cli_output",
     "synthpopcan.cli_tree",
     "synthpopcan.console",
+    "synthpopcan.jobs",
+    "synthpopcan.runs",
     "synthpopcan.web",
+    "synthpopcan.webapi",
+    "synthpopcan.webapp",
+    "synthpopcan.workflows",
+)
+
+API_BOUNDARY_IMPORTS = tuple(
+    root
+    for root in UI_BOUNDARY_IMPORTS
+    if root not in {"synthpopcan.jobs", "synthpopcan.runs", "synthpopcan.workflows"}
+)
+
+ADAPTER_MODULES = ("cli", "webapi", "webapp")
+
+WORKFLOW_BOUNDARY_IMPORTS = (
+    "click",
+    "fastapi",
+    "rich",
+    "synthpopcan.cli",
+    "synthpopcan.cli_output",
+    "synthpopcan.console",
+    "synthpopcan.jobs",
+    "synthpopcan.runs",
+    "synthpopcan.web",
+    "synthpopcan.webapi",
+    "synthpopcan.webapp",
+)
+
+RUNTIME_BOUNDARY_IMPORTS = (
+    "click",
+    "fastapi",
+    "rich",
+    "synthpopcan.cli",
+    "synthpopcan.cli_output",
+    "synthpopcan.console",
+    "synthpopcan.web",
+    "synthpopcan.webapi",
     "synthpopcan.webapp",
 )
 
@@ -60,7 +98,7 @@ def test_package_declares_inline_typing_support() -> None:
 def test_beginner_api_does_not_depend_on_cli_or_web_adapters() -> None:
     imports = module_imports(PACKAGE_ROOT / "api.py")
 
-    assert forbidden_imports(imports, UI_BOUNDARY_IMPORTS) == []
+    assert forbidden_imports(imports, API_BOUNDARY_IMPORTS) == []
 
 
 def test_core_modules_do_not_depend_on_cli_or_ui_modules() -> None:
@@ -73,6 +111,47 @@ def test_core_modules_do_not_depend_on_cli_or_ui_modules() -> None:
             violations[f"synthpopcan.{module_name}"] = forbidden
 
     assert violations == {}
+
+
+def test_adapter_modules_do_not_import_each_other_backwards() -> None:
+    forbidden_by_module = {
+        "cli": ("synthpopcan.webapi",),
+        "webapi": ("synthpopcan.cli", "synthpopcan.webapp"),
+        "webapp": ("synthpopcan.cli",),
+    }
+    violations = {
+        module_name: forbidden_imports(
+            module_imports(PACKAGE_ROOT / f"{module_name}.py"),
+            forbidden_by_module[module_name],
+        )
+        for module_name in ADAPTER_MODULES
+    }
+
+    assert violations == {module_name: [] for module_name in ADAPTER_MODULES}
+
+
+def test_workflows_do_not_depend_on_ui_or_runtime_adapters() -> None:
+    violations = {
+        str(path): forbidden_imports(
+            module_imports(path),
+            WORKFLOW_BOUNDARY_IMPORTS,
+        )
+        for path in sorted((PACKAGE_ROOT / "workflows").glob("*.py"))
+    }
+
+    assert violations == {path: [] for path in violations}
+
+
+def test_run_store_and_job_runner_do_not_depend_on_ui_adapters() -> None:
+    violations = {
+        module_name: forbidden_imports(
+            module_imports(PACKAGE_ROOT / f"{module_name}.py"),
+            RUNTIME_BOUNDARY_IMPORTS,
+        )
+        for module_name in ("runs", "jobs")
+    }
+
+    assert violations == {"runs": [], "jobs": []}
 
 
 def module_imports(path: Path) -> set[str]:

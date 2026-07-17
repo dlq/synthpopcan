@@ -1037,7 +1037,8 @@ def test_cli_ipf_check_inputs_value_error_on_controls_raises_click_exception(
     controls = tmp_path / "controls.csv"
     controls.write_text("not a valid controls file\n")
     with patch(
-        "synthpopcan.cli_ipf.read_control_table", side_effect=ValueError("bad controls")
+        "synthpopcan.workflows.ipf.read_control_table",
+        side_effect=ValueError("bad controls"),
     ):
         with pytest.raises(click.ClickException) as exc_info:
             main(

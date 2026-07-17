@@ -1,47 +1,85 @@
-"""Local web-app serving helpers."""
+"""Uvicorn lifecycle helpers for the packaged local web application."""
 
 from __future__ import annotations
 
-__all__ = ["build_webapp_server", "get_webapp_root", "serve_webapp", "webapp_url"]
+__all__ = [
+    "build_webapp_server",
+    "get_webapp_root",
+    "serve_webapp",
+    "validate_loopback_host",
+    "webapp_url",
+]
 
-import json
+import ipaddress
+import socket
+import threading
 import webbrowser
-from functools import partial
-from http import HTTPStatus
-from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from importlib.resources import files
 from pathlib import Path
-from threading import BoundedSemaphore
-from typing import Any, Protocol
-from urllib.parse import urlparse
+from typing import Protocol
 
-from synthpopcan.controls import parse_control_table
-from synthpopcan.models import (
-    fetch_model_package,
-    model_browser_compatible,
-    model_catalogue,
-    model_catalogue_entry,
-    model_payload,
-)
-from synthpopcan.small_area_synthesis import estimate_small_area_run
-from synthpopcan.statcan import normalize_product_id
-from synthpopcan.web_wds import (
-    fetch_wds_zip_bytes,
-    generate_wds_seed_controls_from_zip_bytes,
-    parse_dimensions,
-)
+import uvicorn
 
-_MAX_API_JSON_BYTES = 8 * 1024 * 1024
-_MAX_WDS_JSON_BYTES = 64 * 1024
-_WDS_REQUEST_SLOTS = BoundedSemaphore(2)
+from synthpopcan.webapi import create_web_app
+
+DEFAULT_WORKSPACE = Path("synthpopcan-runs")
 
 
 class _WebAppServer(Protocol):
-    server_address: tuple[str, int]
+    @property
+    def server_address(self) -> tuple[str, int]: ...
 
     def serve_forever(self) -> None: ...
 
+    def shutdown(self) -> None: ...
+
     def server_close(self) -> None: ...
+
+
+class UvicornWebAppServer:
+    """Compatibility wrapper exposing the previous local-server lifecycle."""
+
+    def __init__(self, host: str, port: int, *, workspace: Path) -> None:
+        app = create_web_app(
+            static_root=get_webapp_root(),
+            workspace=workspace,
+        )
+        config = uvicorn.Config(
+            app,
+            host=host,
+            port=port,
+            log_level="warning",
+            access_log=False,
+        )
+        self._host = host
+        self._port = port
+        self._server = uvicorn.Server(config)
+        self._server_address = (host, port)
+        self._started = threading.Event()
+
+    @property
+    def server_address(self) -> tuple[str, int]:
+        if self._port != 0:
+            return self._host, self._port
+        self._started.wait(timeout=2)
+        return self._server_address
+
+    def serve_forever(self) -> None:
+        family = socket.AF_INET6 if ":" in self._host else socket.AF_INET
+        with socket.socket(family, socket.SOCK_STREAM) as listener:
+            listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            listener.bind((self._host, self._port))
+            listener.listen()
+            host, port = listener.getsockname()[:2]
+            self._server_address = (str(host), int(port))
+            self._started.set()
+            self._server.run(sockets=[listener])
+
+    def shutdown(self) -> None:
+        self._server.should_exit = True
+
+    def server_close(self) -> None:
+        self._server.should_exit = True
 
 
 def get_webapp_root() -> Path:
@@ -49,172 +87,41 @@ def get_webapp_root() -> Path:
     return Path(str(files("synthpopcan.web")))
 
 
-class _SynthPopCanWebHandler(SimpleHTTPRequestHandler):
-    """Static file handler with small localhost API helpers."""
-
-    def end_headers(self) -> None:
-        self.send_header("Cache-Control", "no-store")
-        super().end_headers()
-
-    def do_GET(self) -> None:  # noqa: N802
-        path = urlparse(self.path).path
-        if path == "/api/models":
-            self._send_json({"models": model_catalogue()})
-            return
-        if path.startswith("/api/models/"):
-            self._handle_model(path.rsplit("/", 1)[-1])
-            return
-        super().do_GET()
-
-    def do_POST(self) -> None:  # noqa: N802
-        path = urlparse(self.path).path
-        if path == "/api/wds/seed-controls":
-            self._handle_wds_seed_controls()
-            return
-        if path == "/api/small-area/estimate":
-            self._handle_small_area_estimate()
-            return
-        if path.startswith("/api/models/") and path.endswith("/fetch"):
-            self._handle_model_fetch(path.split("/")[-2])
-            return
-        self.send_error(HTTPStatus.NOT_FOUND)
-
-    def _handle_model(self, model_id: str) -> None:
-        try:
-            _require_browser_compatible_model(model_id)
-            self._send_json(model_payload(model_id))
-        except KeyError:
-            self.send_error(HTTPStatus.NOT_FOUND, "Unknown model")
-        except OverflowError as exc:
-            self._send_json(
-                {"error": str(exc)}, status=HTTPStatus.REQUEST_ENTITY_TOO_LARGE
-            )
-        except FileNotFoundError as exc:
-            self._send_json({"error": str(exc)}, status=HTTPStatus.CONFLICT)
-
-    def _handle_model_fetch(self, model_id: str) -> None:
-        try:
-            _require_browser_compatible_model(model_id)
-            fetch_model_package(model_id)
-            self._send_json({"model": model_payload(model_id)})
-        except KeyError:
-            self.send_error(HTTPStatus.NOT_FOUND, "Unknown model")
-        except OverflowError as exc:
-            self._send_json(
-                {"error": str(exc)}, status=HTTPStatus.REQUEST_ENTITY_TOO_LARGE
-            )
-        except (OSError, ValueError) as exc:
-            self._send_json({"error": str(exc)}, status=HTTPStatus.BAD_GATEWAY)
-
-    def _handle_wds_seed_controls(self) -> None:
-        if not _WDS_REQUEST_SLOTS.acquire(blocking=False):
-            self._send_json(
-                {"error": "too many WDS preparation requests are already running"},
-                status=HTTPStatus.TOO_MANY_REQUESTS,
-            )
-            return
-        try:
-            payload = self._read_json_body(max_bytes=_MAX_WDS_JSON_BYTES)
-            product_id = normalize_product_id(str(payload.get("productId", "")))
-            zip_bytes, download_url = fetch_wds_zip_bytes(product_id)
-            generated = generate_wds_seed_controls_from_zip_bytes(
-                zip_bytes,
-                dimensions=parse_dimensions(payload.get("dimensions", [])),
-                count_column=str(payload.get("countColumn") or "VALUE"),
-            )
-            self._send_json(
-                {
-                    "productId": product_id,
-                    "downloadUrl": download_url,
-                    **generated,
-                }
-            )
-        except Exception as exc:  # noqa: BLE001
-            self._send_json({"error": str(exc)}, status=HTTPStatus.BAD_REQUEST)
-        finally:
-            _WDS_REQUEST_SLOTS.release()
-
-    def _handle_small_area_estimate(self) -> None:
-        try:
-            payload = self._read_json_body()
-            controls = parse_control_table(str(payload.get("controlsCsv", "")))
-            if not controls.margins:
-                raise ValueError("controls CSV has no control rows")
-            geography_dimension = str(payload.get("geographyDimension", "")).strip()
-            if not geography_dimension:
-                raise ValueError("geography dimension is required")
-            estimate = estimate_small_area_run(
-                controls,
-                geography_dimension=geography_dimension,
-                candidate_households=int(payload.get("candidateHouseholds", 0)),
-                pool_size=_optional_int(payload.get("poolSize")),
-                average_persons_per_household=float(
-                    payload.get("averagePersonsPerHousehold", 2.22)
-                ),
-            )
-            self._send_json(
-                {
-                    "estimate": estimate,
-                    "controlDimensions": list(controls.dimensions),
-                }
-            )
-        except (TypeError, ValueError) as exc:
-            self._send_json({"error": str(exc)}, status=HTTPStatus.BAD_REQUEST)
-
-    def _read_json_body(
-        self, *, max_bytes: int = _MAX_API_JSON_BYTES
-    ) -> dict[str, Any]:
-        length = int(self.headers.get("Content-Length", "0"))
-        if length <= 0:
-            return {}
-        if length > max_bytes:
-            raise ValueError("request body exceeds the local API size limit")
-        payload = json.loads(self.rfile.read(length).decode("utf-8"))
-        if not isinstance(payload, dict):
-            raise ValueError("JSON request body must be an object")
-        return payload
-
-    def _send_json(
-        self, payload: dict[str, Any], *, status: HTTPStatus = HTTPStatus.OK
-    ) -> None:
-        body = json.dumps(payload).encode("utf-8")
-        self.send_response(status)
-        self.send_header("Content-Type", "application/json")
-        self.send_header("Content-Length", str(len(body)))
-        self.end_headers()
-        self.wfile.write(body)
-
-
-def _optional_int(value: object) -> int | None:
-    if value in {None, ""}:
-        return None
-    return int(value)  # type: ignore[arg-type]
-
-
-def _require_browser_compatible_model(model_id: str) -> None:
-    if model_browser_compatible(model_id):
-        return
-    entry = model_catalogue_entry(model_id)
-    size = entry.get("uncompressed_size_bytes")
-    limit = entry["browser_max_uncompressed_size_bytes"]
-    raise OverflowError(
-        f"model package {model_id} expands to {size} bytes, above the "
-        f"{limit}-byte browser limit; use `synthpopcan models generate "
-        f"{model_id} ...` from the CLI"
+def validate_loopback_host(host: str) -> str:
+    """Return a normalized loopback host or reject network exposure."""
+    candidate = host.strip().lower()
+    if candidate == "localhost":
+        return candidate
+    try:
+        if ipaddress.ip_address(candidate).is_loopback:
+            return candidate
+    except ValueError:
+        pass
+    raise ValueError(
+        "the local web app only accepts loopback hosts (127.0.0.1, ::1, or localhost)"
     )
 
 
-def build_webapp_server(host: str, port: int) -> ThreadingHTTPServer:
-    """Build a local HTTP server for the packaged web app."""
-    root = get_webapp_root()
-    handler = partial(_SynthPopCanWebHandler, directory=str(root))
-    return ThreadingHTTPServer((host, port), handler)
+def build_webapp_server(
+    host: str,
+    port: int,
+    *,
+    workspace: Path = DEFAULT_WORKSPACE,
+) -> UvicornWebAppServer:
+    """Build the FastAPI/Uvicorn server for the packaged web app."""
+    return UvicornWebAppServer(
+        validate_loopback_host(host),
+        port,
+        workspace=workspace,
+    )
 
 
 def webapp_url(server: _WebAppServer) -> str:
     """Return the browser URL for a local server."""
     host, port = server.server_address
-    browser_host = "127.0.0.1" if host in {"", "0.0.0.0", "::"} else host
+    if host in {"0.0.0.0", "::"}:
+        host = "127.0.0.1" if host == "0.0.0.0" else "::1"
+    browser_host = f"[{host}]" if ":" in host else host
     return f"http://{browser_host}:{port}/"
 
 
@@ -222,12 +129,21 @@ def serve_webapp(
     *,
     host: str = "127.0.0.1",
     port: int = 8000,
+    workspace: Path = DEFAULT_WORKSPACE,
     open_browser: bool = True,
     opener=webbrowser.open,
-    server_factory=build_webapp_server,
+    server_factory=None,
 ) -> str:
     """Serve the packaged web app and optionally open it in a browser."""
-    server = server_factory(host, port)
+    normalized_host = validate_loopback_host(host)
+    if server_factory is None:
+        server = build_webapp_server(
+            normalized_host,
+            port,
+            workspace=workspace,
+        )
+    else:
+        server = server_factory(normalized_host, port)
     url = webapp_url(server)
     if open_browser:
         opener(url)
@@ -237,6 +153,9 @@ def serve_webapp(
     except KeyboardInterrupt:
         pass
     finally:
+        shutdown = getattr(server, "shutdown", None)
+        if shutdown is not None:
+            shutdown()
         server.server_close()
 
     return url

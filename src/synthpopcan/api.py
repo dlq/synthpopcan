@@ -45,6 +45,7 @@ from synthpopcan.tree import (
     FrequencyTreeModel,
     generate_linked_population,
 )
+from synthpopcan.workflows.ipf import read_csv_records
 
 _SeedInput = str | Path | Sequence[Mapping[str, object]]
 _ControlInput = str | Path | ControlTable
@@ -160,8 +161,7 @@ def read_seed(path: str | Path) -> PopulationRows:
     '18-64'
     """
 
-    with Path(path).open(newline="") as handle:
-        return list(csv.DictReader(handle))
+    return read_csv_records(Path(path))
 
 
 def read_controls(path: str | Path) -> ControlTable:
