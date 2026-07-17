@@ -105,6 +105,11 @@
                   <option value="">Choose a catalogue model</option>
                 </select>
               </label>
+              <div class="model-catalogue-actions">
+                <button id="install-run-model" class="secondary-action" type="button" disabled>Download selected model</button>
+                <button id="remove-run-model" class="secondary-action" type="button" disabled>Remove downloaded model</button>
+                <small id="run-model-catalogue-status" class="field-hint">Downloadable models stay in the local SynthPopCan cache.</small>
+              </div>
               <label>Or package JSON
                 <input id="run-model-file" type="file" accept=".json,application/json">
               </label>
@@ -234,6 +239,20 @@
                 data-help="Use a local linked package JSON instead of a premade model ID."
               >Or package JSON</span>
               <input id="small-area-model-file" type="file" accept=".json,application/json">
+            </label>
+            <label>
+              <span
+                class="help-label"
+                data-help="Use an existing validated household CSV instead of generating candidates from a model. A person CSV is also required."
+              >Or candidate households CSV</span>
+              <input id="small-area-candidate-households-file" type="file" accept=".csv,text/csv">
+            </label>
+            <label>
+              <span
+                class="help-label"
+                data-help="Linked person candidates accompanying the candidate household CSV."
+              >Candidate persons CSV</span>
+              <input id="small-area-candidate-persons-file" type="file" accept=".csv,text/csv">
             </label>
             <label>
               <span

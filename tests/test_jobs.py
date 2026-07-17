@@ -332,6 +332,64 @@ def test_small_area_worker_contract_is_covered_in_process(tmp_path: Path) -> Non
     assert "geo synthesize" in succeeded["reproduction"]["shell"]
 
 
+def test_small_area_worker_accepts_existing_linked_candidates(tmp_path: Path) -> None:
+    store = RunStore(tmp_path)
+    households = write_upload(
+        store,
+        "households.csv",
+        (b"synthetic_household_id,household_size,tenure\nh1,1,owner\nh2,1,renter\n"),
+    )
+    persons = write_upload(
+        store,
+        "persons.csv",
+        (b"synthetic_person_id,synthetic_household_id,sex\np1,h1,F\np2,h2,M\n"),
+    )
+    controls = write_upload(
+        store,
+        "controls.csv",
+        (
+            b"margin,dimensions,tract,tenure,count\n"
+            b'tenure,"tract,tenure",001,owner,1\n'
+            b'tenure,"tract,tenure",001,renter,1\n'
+        ),
+    )
+    run = store.create_small_area_run(
+        {
+            "workflow": "small_area",
+            "inputs": {
+                "candidate_households_upload_id": households,
+                "candidate_persons_upload_id": persons,
+                "controls_upload_id": controls,
+            },
+            "options": {
+                "candidate_households": 2,
+                "geography_dimension": "tract",
+                "geography_column": "tract",
+                "subsample_seed": 7,
+            },
+        }
+    )
+    messages: queue.SimpleQueue = queue.SimpleQueue()
+
+    _small_area_worker(
+        str(store.root),
+        str(run["run_id"]),
+        run,
+        messages,
+        threading.Event(),
+    )
+
+    emitted = []
+    while not messages.empty():
+        emitted.append(messages.get())
+    succeeded = emitted[-1]
+    assert succeeded["type"] == "succeeded"
+    assert succeeded["summary"]["assigned_households"] == 2
+    assert succeeded["summary"]["assigned_persons"] == 2
+    assert "geo calibrate" in succeeded["reproduction"]["shell"]
+    assert "inputs" in succeeded["reproduction"]["shell"]
+
+
 def create_valid_run(store: RunStore) -> str:
     seed = write_upload(
         store,

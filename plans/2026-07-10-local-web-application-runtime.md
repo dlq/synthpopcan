@@ -1,10 +1,10 @@
 # Local Web Application Runtime Implementation Plan
 
-Status: in progress; Stages 0–5 complete\
+Status: implementation complete; Stages 0–8 verified\
 Created: 2026-07-10\
 Last updated: 2026-07-17\
 Target: `0.6.0`; stable linked schema follows in `0.6.1`\
-Next action: execute Stage 6, guided small-area workflow\
+Next action: prepare and review the `0.6.0` release\
 Roadmap: [PLANS.md](../PLANS.md) | [Plan index](README.md)
 
 > **For agentic workers:** Execute this plan one stage at a time. Keep each
@@ -557,13 +557,13 @@ model plus configured chunk size rather than complete generated output.
 - [x] Extract scale estimation, linked calibration, report writing, linked
   validation, and optional map creation into one file-backed workflow.
 
-- [ ] Allow the run to start from existing linked candidate uploads or chain
+- [x] Allow the run to start from existing linked candidate uploads or chain
   prepared-model generation inside the same run request.
 
 - [x] Present household controls, optional person controls, geography settings,
   candidate pool, and output scale as one guided flow.
 
-- [ ] Block launch on incompatible geography dimensions, missing linked IDs,
+- [x] Block launch on incompatible geography dimensions, missing linked IDs,
   unrepresentable controls, or insufficient disk.
 
 - [x] Show household and person residual summaries before artifact links.
@@ -583,11 +583,15 @@ durable run without manually carrying intermediate filenames between commands.
 Add web surfaces only where a guided interface clearly reduces setup or
 interpretation work:
 
-- data inspect, schema, and bounded sample;
-- controls validation and input compatibility checks;
-- model catalogue, fetch, inspect, and removal;
-- linked-output, control, and tree-output validation;
-- existing run and artifact inspection.
+- [x] Compose data inspection, schema reporting, and bounded samples into
+  preflight and artifact previews.
+- [x] Compose controls validation and input compatibility checks into preflight.
+- [x] Provide model catalogue, checksum-verified installation, inspection, and
+  local-cache removal without loading large model payloads in the browser.
+- [x] Compose linked-output, control, and tree-output validation into workflow
+  preflight and results.
+- [x] Provide existing run, diagnostic, reproduction, and bounded artifact
+  inspection through the durable Runs workbench.
 
 Each utility should call an existing domain or application function and return
 structured data. Do not expose commands by executing the CLI, and do not add a
@@ -607,24 +611,24 @@ instead of becoming a second menu that mirrors every CLI command.
 
 - Modify: packaging, CI, architecture, API, workflow, and browser tests
 
-- [ ] Remove the standard-library request handler and all fallback messages for
+- [x] Remove the standard-library request handler and all fallback messages for
   static-only or browser-only operation.
 
-- [ ] Remove browser IPF, tree generation, ZIP processing, and worker modules
+- [x] Remove browser IPF, tree generation, ZIP processing, and worker modules
   that no longer own UI behavior. Keep focused preview/parsing helpers only when
   they still remove real duplication.
 
-- [ ] Document workspace location, run lifecycle, privacy, cancellation,
+- [x] Document workspace location, run lifecycle, privacy, cancellation,
   recovery, scale expectations, and CLI reproduction.
 
-- [ ] Update performance guidance so the web app and CLI are alternate adapters
+- [x] Update performance guidance so the web app and CLI are alternate adapters
   over the same runtime rather than different computational tiers.
 
-- [ ] Build a wheel and sdist, install the wheel in a clean environment, launch
+- [x] Build a wheel and sdist, install the wheel in a clean environment, launch
   `synthpopcan serve`, complete demo IPF and prepared-model runs, and verify
   packaged static assets and runtime dependencies.
 
-- [ ] Run the full Python suite, architecture checks, Biome, Playwright desktop
+- [x] Run the full Python suite, architecture checks, Biome, Playwright desktop
   and mobile scenarios, Sphinx with warnings as errors, and opt-in scale smoke
   tests.
 
@@ -645,6 +649,10 @@ depends on static hosting or browser-side synthesis.
 | Progress/cancel | Job state tests | Worker termination/recovery | Progress and cancel UI | Long-running job |
 | Security | Origin/session/path tests | Symlink and traversal tests | Session expiry | - |
 | Packaging | - | Clean installed wheel | Packaged app smoke | - |
+
+Node coverage measures reusable browser modules. DOM-bound controllers are
+excluded from that denominator and covered by the named Playwright scenarios;
+obsolete test-only modules must never be retained merely to raise coverage.
 
 ## Suggested Release Slices
 

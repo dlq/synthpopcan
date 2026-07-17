@@ -191,6 +191,14 @@ select {
   gap: 18px;
 }
 
+.model-catalogue-actions {
+  align-items: flex-start;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  justify-content: flex-end;
+}
+
 .workflow-card-section {
   border: 1px solid #d6d6d6;
   border-radius: 4px;

@@ -30,10 +30,12 @@ from synthpopcan.models import (
     model_catalogue,
     model_catalogue_entry,
     model_payload,
+    remove_cached_model,
 )
 from synthpopcan.runs import RunStore
 from synthpopcan.small_area_synthesis import estimate_small_area_run
 from synthpopcan.statcan import normalize_product_id
+from synthpopcan.tree import validate_linked_population_files
 from synthpopcan.web_wds import (
     fetch_wds_zip_bytes,
     generate_wds_seed_controls_from_zip_bytes,
@@ -314,6 +316,31 @@ def create_web_app(
         except (OSError, ValueError) as exc:
             return _error_response(str(exc), HTTPStatus.BAD_GATEWAY)
 
+    @app.post("/api/models/{model_id}/install")
+    async def install_model(model_id: str) -> Response:
+        """Install a catalogue model without loading its payload in the browser."""
+
+        try:
+            await run_in_threadpool(fetch_model_package, model_id)
+            return JSONResponse({"model": model_catalogue_entry(model_id)})
+        except KeyError:
+            return _error_response("Unknown model", HTTPStatus.NOT_FOUND)
+        except (OSError, TimeoutError, ValueError) as exc:
+            return _error_response(str(exc), HTTPStatus.BAD_GATEWAY)
+
+    @app.delete("/api/models/{model_id}")
+    async def remove_model(model_id: str) -> Response:
+        """Remove a downloaded catalogue model from the local cache."""
+
+        try:
+            model_catalogue_entry(model_id)
+            removed = await run_in_threadpool(remove_cached_model, model_id)
+            return JSONResponse(
+                {"removed": removed, "model": model_catalogue_entry(model_id)}
+            )
+        except KeyError:
+            return _error_response("Unknown model", HTTPStatus.NOT_FOUND)
+
     @app.get("/api/models/{model_id}")
     async def get_model(model_id: str) -> Response:
         try:
@@ -454,6 +481,74 @@ def _read_csv_preview(path: Path, rows: int) -> dict[str, Any]:
             if len(preview_rows) >= rows:
                 break
     return {"columns": reader.fieldnames, "rows": preview_rows, "limit": rows}
+
+
+def _csv_columns(path: Path) -> list[str]:
+    with path.open(newline="", encoding="utf-8-sig") as handle:
+        fieldnames = csv.DictReader(handle).fieldnames
+    if fieldnames is None:
+        raise ValueError("CSV input has no header row")
+    return list(fieldnames)
+
+
+def _csv_category_support(path: Path, dimensions: set[str]) -> dict[str, set[str]]:
+    support = {dimension: set() for dimension in dimensions}
+    if not dimensions:
+        return support
+    with path.open(newline="", encoding="utf-8-sig") as handle:
+        reader = csv.DictReader(handle)
+        missing = dimensions - set(reader.fieldnames or ())
+        if missing:
+            raise ValueError(
+                "candidate CSV is missing columns: " + ", ".join(sorted(missing))
+            )
+        for row in reader:
+            for dimension in dimensions:
+                support[dimension].add(str(row[dimension]))
+    return support
+
+
+def _model_category_support(
+    package: dict[str, Any], level: str, dimensions: set[str]
+) -> dict[str, set[str]]:
+    support = {dimension: set() for dimension in dimensions}
+    models = package.get("models")
+    model = models.get(level) if isinstance(models, dict) else None
+    if not isinstance(model, dict):
+        return support
+
+    def collect(value: object) -> None:
+        if isinstance(value, dict):
+            for key, child in value.items():
+                if key in support:
+                    values = child if isinstance(child, list) else [child]
+                    support[key].update(
+                        str(item)
+                        for item in values
+                        if isinstance(item, str | int | float)
+                    )
+                collect(child)
+        elif isinstance(value, list):
+            for child in value:
+                collect(child)
+
+    collect(model)
+    return support
+
+
+def _unsupported_control_categories(
+    controls: Any,
+    support: dict[str, set[str]],
+    *,
+    ignored_dimensions: set[str],
+) -> list[str]:
+    problems = []
+    for dimension in sorted(set(support) - ignored_dimensions):
+        requested = controls.categories_for(dimension)
+        missing = sorted(requested - support[dimension])
+        if missing:
+            problems.append(f"{dimension}: {', '.join(missing)}")
+    return problems
 
 
 def _require_browser_compatible_model(model_id: str) -> None:
@@ -613,16 +708,52 @@ def _preflight_small_area_run(
         raise ValueError("small-area inputs must be an object")
     model_id = inputs.get("model_id")
     package_upload_id = inputs.get("package_upload_id")
-    if bool(model_id) == bool(package_upload_id):
-        raise ValueError("provide exactly one model_id or package_upload_id")
+    candidate_households_id = inputs.get("candidate_households_upload_id")
+    candidate_persons_id = inputs.get("candidate_persons_upload_id")
+    has_model_source = bool(model_id) ^ bool(package_upload_id)
+    has_candidate_source = bool(candidate_households_id) and bool(candidate_persons_id)
+    if bool(candidate_households_id) != bool(candidate_persons_id):
+        raise ValueError("provide both candidate household and person uploads")
+    if has_model_source == has_candidate_source:
+        raise ValueError("provide one model/package or one linked candidate pair")
+    candidate_validation = None
+    candidate_households_path: Path | None = None
+    candidate_persons_path: Path | None = None
+    package: dict[str, Any] | None = None
     if model_id:
         package = model_payload(str(model_id))
         normalized_inputs: dict[str, str] = {"model_id": str(model_id)}
-    else:
+        inspection = inspect_prepared_model(package)
+    elif package_upload_id:
         package_path = store.upload_path(str(package_upload_id), require_unclaimed=True)
         package = read_prepared_model_package(package_path)
         normalized_inputs = {"package_upload_id": str(package_upload_id)}
-    inspection = inspect_prepared_model(package)
+        inspection = inspect_prepared_model(package)
+    else:
+        candidate_households_path = store.upload_path(
+            str(candidate_households_id), require_unclaimed=True
+        )
+        candidate_persons_path = store.upload_path(
+            str(candidate_persons_id), require_unclaimed=True
+        )
+        candidate_validation = validate_linked_population_files(
+            candidate_households_path, candidate_persons_path
+        )
+        if not candidate_validation["passed"]:
+            raise ValueError("uploaded linked candidates failed validation")
+        normalized_inputs = {
+            "candidate_households_upload_id": str(candidate_households_id),
+            "candidate_persons_upload_id": str(candidate_persons_id),
+        }
+        inspection = {
+            "ready": True,
+            "name": "Uploaded linked candidates",
+            "conditions": [],
+            "household_targets": _csv_columns(candidate_households_path),
+            "person_targets": _csv_columns(candidate_persons_path),
+            "privacy": {"publishable_candidate": None},
+            "provenance": {},
+        }
 
     controls_id = str(inputs.get("controls_upload_id", ""))
     controls_path = store.upload_path(controls_id, require_unclaimed=True)
@@ -658,6 +789,8 @@ def _preflight_small_area_run(
     if not geography_dimension:
         raise ValueError("geography dimension is required")
     candidate_households = int(options.get("candidate_households", 0))
+    if candidate_validation is not None:
+        candidate_households = int(candidate_validation["summary"]["households"])
     pool_size = _optional_int(options.get("pool_size"))
     estimate = estimate_small_area_run(
         controls,
@@ -706,6 +839,30 @@ def _preflight_small_area_run(
             "household controls require unsupported candidate columns: "
             + ", ".join(unsupported_household_dimensions)
         )
+    controlled_household_dimensions = {
+        dimension
+        for margin in controls.margins
+        for dimension in margin.dimensions
+        if dimension != geography_dimension
+    }
+    if candidate_households_path is not None:
+        household_support = _csv_category_support(
+            candidate_households_path, controlled_household_dimensions
+        )
+    else:
+        household_support = _model_category_support(
+            package or {}, "household", controlled_household_dimensions
+        )
+    unsupported_household_categories = _unsupported_control_categories(
+        controls,
+        household_support,
+        ignored_dimensions={group_column} if max_household_size is not None else set(),
+    )
+    if unsupported_household_categories:
+        raise ValueError(
+            "household controls contain categories absent from candidates: "
+            + "; ".join(unsupported_household_categories)
+        )
     if person_controls is not None:
         person_columns = {
             *household_columns,
@@ -723,6 +880,28 @@ def _preflight_small_area_run(
             raise ValueError(
                 "person controls require unsupported candidate columns: "
                 + ", ".join(unsupported_person_dimensions)
+            )
+        controlled_person_dimensions = {
+            dimension
+            for margin in person_controls.margins
+            for dimension in margin.dimensions
+            if dimension != geography_dimension
+        }
+        if candidate_persons_path is not None:
+            person_support = _csv_category_support(
+                candidate_persons_path, controlled_person_dimensions
+            )
+        else:
+            person_support = _model_category_support(
+                package or {}, "person", controlled_person_dimensions
+            )
+        unsupported_person_categories = _unsupported_control_categories(
+            person_controls, person_support, ignored_dimensions=set()
+        )
+        if unsupported_person_categories:
+            raise ValueError(
+                "person controls contain categories absent from candidates: "
+                + "; ".join(unsupported_person_categories)
             )
     estimated_bytes = max(8192, int(estimate["estimated_total_output_rows"]) * 256)
     disk_free = shutil.disk_usage(store.root).free

@@ -12,7 +12,7 @@ Start here. Open a linked implementation plan only when working on that area.
 | --- | --- | --- |
 | Released | `0.5.1` is published as the current-architecture correctness-assurance release, with scoped claims, checksums, permanent release evidence, and trusted PyPI publication. | [GitHub Release](https://github.com/dlq/synthpopcan/releases/tag/v0.5.1) |
 | Correctness | Preserve the `0.5.1` gate and implement the planned post-release assurance improvements in priority order. | [Correctness plan](plans/2026-07-12-correctness-assurance.md) |
-| Next minor | Finish the durable local runtime for `0.6.0`; backend IPF and prepared-model Stages 0–5 are complete, and guided small-area work is next. | [Local runtime plan](plans/2026-07-10-local-web-application-runtime.md) |
+| Next minor | Review and release the completed durable local runtime as `0.6.0`; Stages 0–8 and release proof are complete. | [Local runtime plan](plans/2026-07-10-local-web-application-runtime.md) |
 | Next patch | Stabilize the public linked household/person/geography schema in `0.6.1` after all workflows use the durable runtime. | [Local runtime plan](plans/2026-07-10-local-web-application-runtime.md) |
 | Later `0.7.x`–`0.8.x` | Add governed enrichment layers, then hand validated generated data to external simulation platforms without implementing population simulation in SynthPopCan. | [Plan index](plans/README.md) |
 | Far future, after `0.8.x` | Research optional, compositional public-health simulation only after the population, enrichment, and interchange contracts are stable; do not commit to one simulation platform. | [Far-future direction](#far-future-compositional-public-health-simulation) |
@@ -71,10 +71,13 @@ Implemented capabilities include:
 
 The in-development `0.6.0` app now uses FastAPI/Uvicorn, a controlled workspace,
 durable manifests and events, isolated Python jobs, progress, cancellation,
-restart recovery, bounded previews, incremental artifact publication, backend
-IPF, and backend prepared-model generation. Browser IPF and tree generation are
-removed. Guided small-area jobs, selected utilities, final cleanup, and release
-proof remain.
+restart recovery, bounded previews, incremental artifact publication, and
+backend IPF, prepared-model, and guided small-area workflows. Existing linked
+candidates can enter the same small-area path, and model catalogue installation
+and removal stay bounded in the browser. Browser IPF and tree generation are
+removed. The implementation, cleanup, documentation, clean-wheel smoke, full
+correctness/coverage gate, browser scenarios, and bounded scale smokes are
+complete; versioning and release review are next.
 
 ## Release History
 

@@ -289,9 +289,21 @@ class RunStore:
                 raise ValueError("small-area run inputs must be an object")
             model_id = inputs.get("model_id")
             package_id = inputs.get("package_upload_id")
-            if bool(model_id) == bool(package_id):
+            candidate_households_id = inputs.get("candidate_households_upload_id")
+            candidate_persons_id = inputs.get("candidate_persons_upload_id")
+            has_model_source = bool(model_id) ^ bool(package_id)
+            has_candidate_source = bool(candidate_households_id) and bool(
+                candidate_persons_id
+            )
+            if bool(candidate_households_id) != bool(candidate_persons_id):
                 raise ValueError(
-                    "small-area run requires exactly one model_id or package_upload_id"
+                    "small-area candidate household and person uploads are both "
+                    "required"
+                )
+            if has_model_source == has_candidate_source:
+                raise ValueError(
+                    "small-area run requires one model/package or one linked "
+                    "candidate pair"
                 )
             controls_id = str(inputs.get("controls_upload_id", ""))
             person_controls_id = inputs.get("person_controls_upload_id")
@@ -302,6 +314,25 @@ class RunStore:
                         self.get_upload(str(package_id), require_unclaimed=True),
                         "package",
                         "package.json",
+                    )
+                )
+            if candidate_households_id and candidate_persons_id:
+                upload_specs.extend(
+                    (
+                        (
+                            self.get_upload(
+                                str(candidate_households_id), require_unclaimed=True
+                            ),
+                            "candidate_households",
+                            "households.csv",
+                        ),
+                        (
+                            self.get_upload(
+                                str(candidate_persons_id), require_unclaimed=True
+                            ),
+                            "candidate_persons",
+                            "persons.csv",
+                        ),
                     )
                 )
             upload_specs.append(

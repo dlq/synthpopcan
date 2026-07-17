@@ -16,7 +16,11 @@ import pytest
 from synthpopcan.cli import main
 from synthpopcan.models import model_payload
 from synthpopcan.runs import RunStore
-from synthpopcan.webapi import _preflight_small_area_run, create_web_app
+from synthpopcan.webapi import (
+    _model_category_support,
+    _preflight_small_area_run,
+    create_web_app,
+)
 from synthpopcan.webapp import get_webapp_root
 
 
@@ -99,6 +103,82 @@ def test_ipf_api_upload_preflight_run_events_artifacts_and_reproduction(
     rendered = shlex.split(manifest["reproduction"]["shell"])
     assert rendered[0] == "synthpopcan"
     assert main(rendered[1:]) == 0
+
+
+def test_model_install_and_removal_return_bounded_catalogue_metadata(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    calls: list[tuple[str, str]] = []
+
+    def fetch(model_id: str) -> Path:
+        if model_id == "missing":
+            raise KeyError(model_id)
+        if model_id == "broken":
+            raise OSError("download failed")
+        calls.append(("install", model_id))
+        return tmp_path / "model.json"
+
+    def remove(model_id: str) -> bool:
+        calls.append(("remove", model_id))
+        return True
+
+    def entry(model_id: str) -> dict[str, object]:
+        if model_id == "missing":
+            raise KeyError(model_id)
+        return {
+            "id": model_id,
+            "installed": calls[-1][0] == "install",
+            "distribution": "download",
+        }
+
+    monkeypatch.setattr("synthpopcan.webapi.fetch_model_package", fetch)
+    monkeypatch.setattr("synthpopcan.webapi.remove_cached_model", remove)
+    monkeypatch.setattr("synthpopcan.webapi.model_catalogue_entry", entry)
+    app = create_web_app(
+        static_root=get_webapp_root(),
+        workspace=tmp_path / "workspace",
+        session_secret="test-session",
+    )
+
+    async def exercise() -> tuple[httpx.Response, ...]:
+        transport = httpx.ASGITransport(app=app)
+        async with httpx.AsyncClient(
+            transport=transport, base_url="http://127.0.0.1"
+        ) as client:
+            await client.get("/api/app")
+            installed = await client.post("/api/models/large-model/install")
+            removed = await client.delete("/api/models/large-model")
+            missing = await client.delete("/api/models/missing")
+            missing_install = await client.post("/api/models/missing/install")
+            broken_install = await client.post("/api/models/broken/install")
+            return installed, removed, missing, missing_install, broken_install
+
+    try:
+        installed, removed, missing, missing_install, broken_install = asyncio.run(
+            exercise()
+        )
+    finally:
+        app.state.job_manager.shutdown()
+
+    assert installed.status_code == 200
+    assert installed.json() == {
+        "model": {
+            "id": "large-model",
+            "installed": True,
+            "distribution": "download",
+        }
+    }
+    assert removed.status_code == 200
+    assert removed.json()["removed"] is True
+    assert "payload" not in removed.json()["model"]
+    assert missing.status_code == 404
+    assert missing_install.status_code == 404
+    assert broken_install.status_code == 502
+    assert calls == [("install", "large-model"), ("remove", "large-model")]
+
+
+def test_model_category_support_handles_absent_model_level() -> None:
+    assert _model_category_support({"models": {}}, "person", {"sex"}) == {"sex": set()}
 
 
 def test_upload_is_streamed_hashed_sanitized_and_session_protected(
@@ -438,6 +518,60 @@ def test_small_area_preflight_optional_inputs_and_validation(tmp_path: Path) -> 
                 "inputs": {
                     "model_id": "demo-linked-household-person",
                     "controls_upload_id": unsupported_controls,
+                },
+            },
+        )
+
+    candidate_households = store_upload(
+        store,
+        "candidate-households.csv",
+        b"synthetic_household_id,household_size,tenure\nh1,1,owner\nh2,1,renter\n",
+    )
+    candidate_persons = store_upload(
+        store,
+        "candidate-persons.csv",
+        b"synthetic_person_id,synthetic_household_id,sex\np1,h1,F\np2,h2,M\n",
+    )
+    candidate_preflight = _preflight_small_area_run(
+        store,
+        {
+            "workflow": "small_area",
+            "inputs": {
+                "candidate_households_upload_id": candidate_households,
+                "candidate_persons_upload_id": candidate_persons,
+                "controls_upload_id": controls,
+            },
+            "options": {
+                "candidate_households": 999,
+                "geography_dimension": "tract",
+            },
+        },
+    )
+    assert candidate_preflight["request"]["options"]["candidate_households"] == 2
+    assert candidate_preflight["model_diagnostics"]["name"] == (
+        "Uploaded linked candidates"
+    )
+    unsupported_categories = store_upload(
+        store,
+        "unsupported-categories.csv",
+        (
+            b"margin,dimensions,tract,tenure,count\n"
+            b'tenure,"tract,tenure",001,cooperative,1\n'
+        ),
+    )
+    with pytest.raises(ValueError, match="tenure: cooperative"):
+        _preflight_small_area_run(
+            store,
+            {
+                "workflow": "small_area",
+                "inputs": {
+                    "candidate_households_upload_id": candidate_households,
+                    "candidate_persons_upload_id": candidate_persons,
+                    "controls_upload_id": unsupported_categories,
+                },
+                "options": {
+                    "candidate_households": 2,
+                    "geography_dimension": "tract",
                 },
             },
         )

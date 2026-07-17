@@ -87,15 +87,15 @@ errors.
 
 ## SCN-WEB-003
 
-**Prepare a small-area linked synthesis.** A researcher chooses a published or
-local linked model, supplies normalized geographic controls, configures the
-candidate and calibration pool sizes, and runs a Python-backed preflight before
-starting a potentially large synthesis.
+**Run a small-area linked synthesis.** A researcher chooses a published or
+local linked model or uploads existing linked candidates, supplies normalized
+geographic controls, configures the candidate and calibration pool sizes, and
+passes Python-backed preflight before starting a durable synthesis.
 
-Acceptance evidence: target geography and output-row estimates, an explicit
-web-versus-CLI recommendation, planning guidance, and commented commands that
-fetch the model when necessary, repeat `geo estimate`, and execute
-`geo synthesize` with the selected files and settings.
+Acceptance evidence: target geography and output-row estimates, workspace
+capacity, durable progress, residual and convergence diagnostics, linked
+artifacts, an optional map, and an exact `geo synthesize` or `geo calibrate`
+reproduction command.
 
 ## Test Ownership
 

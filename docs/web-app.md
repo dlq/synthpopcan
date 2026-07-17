@@ -44,6 +44,28 @@ Prepared-model generation is another **New run** path. **Small-area workflow**
 opens the linked generation/calibration setup; its resulting job appears in the
 same durable Runs history.
 
+### Workspace and run lifecycle
+
+The default workspace is `synthpopcan-runs/` under the directory where the
+server starts. Use `--workspace PATH` to place it elsewhere. Each run receives a
+separate directory containing claimed input copies, an append-only progress
+event stream, a versioned manifest, temporary work files, and published
+artifacts. The app displays the active workspace path before a run begins.
+
+Queued and running jobs can be cancelled. A page refresh reconnects to the
+stored event stream and manifest; after a server restart, unfinished runs are
+recorded as interrupted rather than silently restarted. Succeeded, failed,
+cancelled, and interrupted records remain inspectable until the user removes
+the workspace. Published artifacts are written atomically and previews are
+bounded; complete CSVs are downloaded directly rather than embedded in JSON.
+
+The app records package provenance and privacy-review metadata where available,
+but a successful run is not a privacy certification or a fitness-for-purpose
+finding. Every completed synthesis also records a shell-safe CLI reproduction
+command. The web app, CLI, and Python API are adapters over the same Python
+workflow functions; choose among them for guidance, automation, or notebook
+integration rather than for different algorithms.
+
 ## Three Short Walkthroughs
 
 These walkthroughs name the controls as they appear in the app. They are meant
@@ -88,7 +110,8 @@ same work reproducibly at larger scale.
 ### Prepare a Small-Area Run
 
 1. Open **Small-area workflow**, then choose **Prepare a small-area synthesis**.
-1. Select a premade linked model or upload a reviewed local package.
+1. Select a premade linked model, upload a reviewed local package, or upload
+   both existing linked candidate CSVs.
 1. Upload normalized household controls and, when available, compatible person
    controls. Enter the geography dimension used by the controls, such as `ct`
    or `ada`.
@@ -98,7 +121,7 @@ same work reproducibly at larger scale.
    then start the durable small-area run.
 1. Review convergence and residual diagnostics, inspect bounded household and
    person previews, download the linked CSVs and report, and retain the exact
-   `geo synthesize` reproduction command. Optionally upload prepared boundary
+   `geo synthesize` or `geo calibrate` reproduction command. Optionally upload prepared boundary
    GeoJSON to receive a standalone map artifact.
 
 Generation and calibration execute in Python; complete populations are not
@@ -165,10 +188,11 @@ release workflows remain advanced command-line/library work; see {doc}`tree`.
 
 ### Prepare a small-area synthesis
 
-Choose this when we have a linked household/person model plus normalized
-controls for census tracts, aggregate dissemination areas, or another target
-geography. Select a premade model ID or a local package JSON, then upload the
-household controls and optional person controls.
+Choose this when we have a linked household/person model or an existing linked
+candidate population plus normalized controls for census tracts, aggregate
+dissemination areas, or another target geography. Select a premade model ID,
+upload a local package JSON, or upload both `households.csv` and `persons.csv`,
+then upload the household controls and optional person controls.
 
 The form asks for the geography dimension and output column, candidate household
 count, optional calibration pool size, average persons per household, and random
@@ -182,12 +206,11 @@ the CLI and reports:
 - whether the run belongs in the web app or the CLI/Python API;
 - concrete planning guidance.
 
-The local app prepares the small-area workflow but does not run the full
-calibration in the browser. The result ends with commented commands to fetch a
-selected published model, repeat
-`geo estimate`, and execute `geo synthesize`. This keeps
-province-scale output out of browser memory while preserving the exact choices
-made in the form. When the controls use the Census Profile
+The local app runs generation and calibration in an isolated Python worker and
+publishes bounded previews plus downloadable artifacts. The result retains an
+exact `geo synthesize` command for model-based runs or `geo calibrate` for
+existing candidates. This keeps province-scale output out of browser memory
+while preserving the exact choices made in the form. When the controls use the Census Profile
 `household_size_group` dimension, the generated command automatically adds
 `--max-household-size 5` and the matching grouped-column option. See
 {doc}`small-area` for control-building, validation, and mapping steps.
@@ -208,6 +231,8 @@ Important options:
 - `--port`: local port. Use another port if `8000` is already in use.
 - `--open / --no-open`: open the browser automatically, or start the server
   without opening a browser.
+- `--workspace`: durable run directory. The default is `synthpopcan-runs/` in
+  the current directory.
 
 ## Troubleshooting
 

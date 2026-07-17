@@ -11,6 +11,7 @@ from typing import Any
 from synthpopcan.map_render import render_synthesis_map
 from synthpopcan.small_area_controls import write_recoded_candidates
 from synthpopcan.small_area_synthesis import calibrate_linked_household_csvs
+from synthpopcan.tree import validate_linked_population_files
 from synthpopcan.workflows.models import (
     PreparedModelRequest,
     generate_prepared_model_files,
@@ -27,7 +28,7 @@ from synthpopcan.workflows.types import (
 class SmallAreaRequest:
     """One linked generation and small-area calibration request."""
 
-    package_path: Path
+    package_path: Path | None
     controls_path: Path
     candidates_dir: Path
     output_dir: Path
@@ -44,37 +45,54 @@ class SmallAreaRequest:
     household_size_group_column: str = "household_size_group"
     include_weights: bool = False
     chunk_size: int = 1000
+    candidate_households_path: Path | None = None
+    candidate_persons_path: Path | None = None
     boundaries_path: Path | None = None
     map_path: Path | None = None
     geography_id_field: str = "geo_id"
     map_title: str = "Synthetic Population"
 
     def reproduction(self) -> WorkflowReproduction:
-        reference = self.package_reference or str(self.package_path)
-        arguments = [
-            "geo",
-            "synthesize",
-            reference,
-            "--households",
-            str(self.candidate_households),
-            "--controls",
-            str(self.controls_path),
-            "--geo-dimension",
-            self.geography_dimension,
-            "--geo-column",
-            self.geography_column,
-            "--out",
-            str(self.output_dir),
-            "--subsample-seed",
-            str(self.subsample_seed),
-        ]
+        reference = self.package_reference or (
+            str(self.package_path) if self.package_path is not None else None
+        )
+        if reference is not None:
+            arguments = [
+                "geo",
+                "synthesize",
+                reference,
+                "--households",
+                str(self.candidate_households),
+            ]
+        else:
+            if self.candidate_households_path is None:
+                raise ValueError("candidate household path is required")
+            arguments = [
+                "geo",
+                "calibrate",
+                str(self.candidate_households_path.parent),
+            ]
+        arguments.extend(
+            (
+                "--controls",
+                str(self.controls_path),
+                "--geo-dimension",
+                self.geography_dimension,
+                "--geo-column",
+                self.geography_column,
+                "--out",
+                str(self.output_dir),
+                "--subsample-seed",
+                str(self.subsample_seed),
+            )
+        )
         if self.person_controls_path is not None:
             arguments.extend(("--person-controls", str(self.person_controls_path)))
-        if self.random_seed is not None:
+        if reference is not None and self.random_seed is not None:
             arguments.extend(("--random-seed", str(self.random_seed)))
         if self.pool_size is not None:
             arguments.extend(("--pool-size", str(self.pool_size)))
-        if self.max_household_size is not None:
+        if reference is not None and self.max_household_size is not None:
             arguments.extend(("--max-household-size", str(self.max_household_size)))
             arguments.extend(
                 ("--household-size-group-column", self.household_size_group_column)
@@ -86,6 +104,16 @@ class SmallAreaRequest:
                 "workflow": "small_area",
                 "inputs": {
                     "package": reference,
+                    "candidate_households": (
+                        str(self.candidate_households_path)
+                        if self.candidate_households_path is not None
+                        else None
+                    ),
+                    "candidate_persons": (
+                        str(self.candidate_persons_path)
+                        if self.candidate_persons_path is not None
+                        else None
+                    ),
                     "controls": str(self.controls_path),
                     "person_controls": (
                         str(self.person_controls_path)
@@ -129,28 +157,48 @@ def synthesize_small_area_files(
     """Generate candidates, calibrate them, and write linked output artifacts."""
     request.candidates_dir.mkdir(parents=True, exist_ok=True)
     request.output_dir.mkdir(parents=True, exist_ok=True)
-    generated = generate_prepared_model_files(
-        PreparedModelRequest(
-            package_path=request.package_path,
-            households_path=request.candidates_dir / "households.csv",
-            persons_path=request.candidates_dir / "persons.csv",
-            report_path=request.candidates_dir / "generation-report.json",
-            households=request.candidate_households,
-            conditions=request.conditions,
-            random_seed=request.random_seed,
-            package_reference=request.package_reference,
-            chunk_size=request.chunk_size,
-        ),
-        progress=progress,
-    )
-    candidate_households = generated.households_path
+    if request.package_path is not None:
+        generated = generate_prepared_model_files(
+            PreparedModelRequest(
+                package_path=request.package_path,
+                households_path=request.candidates_dir / "households.csv",
+                persons_path=request.candidates_dir / "persons.csv",
+                report_path=request.candidates_dir / "generation-report.json",
+                households=request.candidate_households,
+                conditions=request.conditions,
+                random_seed=request.random_seed,
+                package_reference=request.package_reference,
+                chunk_size=request.chunk_size,
+            ),
+            progress=progress,
+        )
+        candidate_households = generated.households_path
+        candidate_persons = generated.persons_path
+        household_size_column = str(generated.report["household_size_column"])
+    elif (
+        request.candidate_households_path is not None
+        and request.candidate_persons_path is not None
+    ):
+        _emit(progress, "validating", "Validating uploaded linked candidates")
+        validation = validate_linked_population_files(
+            request.candidate_households_path,
+            request.candidate_persons_path,
+        )
+        if not validation["passed"]:
+            raise ValueError("uploaded linked candidates failed validation")
+        candidate_households = request.candidate_households_path
+        candidate_persons = request.candidate_persons_path
+        household_size_column = "household_size"
+    else:
+        raise ValueError("provide a package or linked candidate household/person CSVs")
     if request.max_household_size is not None:
         _emit(progress, "recoding", "Grouping candidate household sizes")
+        source_households = candidate_households
         candidate_households = request.candidates_dir / "households-recoded.csv"
         write_recoded_candidates(
-            generated.households_path,
+            source_households,
             candidate_households,
-            hhsize_col=str(generated.report["household_size_column"]),
+            hhsize_col=household_size_column,
             group_col=request.household_size_group_column,
             cap=request.max_household_size,
         )
@@ -164,7 +212,7 @@ def synthesize_small_area_files(
     _emit(progress, "calibrating", "Fitting candidates to small-area controls")
     details = calibrate_linked_household_csvs(
         households_path=candidate_households,
-        persons_path=generated.persons_path,
+        persons_path=candidate_persons,
         controls_path=request.controls_path,
         person_controls_path=request.person_controls_path,
         geography_dimension=request.geography_dimension,

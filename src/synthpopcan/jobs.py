@@ -261,13 +261,18 @@ def _small_area_worker(
         str(item["logical_name"]): root / str(item["path"])
         for item in manifest["inputs"]
     }
+    package_reference: str | None
+    package_path: Path | None
     if request_inputs.get("model_id"):
         package_reference = str(request_inputs["model_id"])
         package_path = work_dir / "package.json"
         package_path.write_text(json.dumps(model_payload(package_reference)))
-    else:
+    elif request_inputs.get("package_upload_id"):
         package_reference = "inputs/package.json"
         package_path = input_paths["package"]
+    else:
+        package_reference = None
+        package_path = None
 
     def progress(event: WorkflowProgress) -> None:
         if cancel_event.is_set():
@@ -293,6 +298,8 @@ def _small_area_worker(
                 ),
                 conditions=dict(options.get("conditions", {})),
                 package_reference=package_reference,
+                candidate_households_path=input_paths.get("candidate_households"),
+                candidate_persons_path=input_paths.get("candidate_persons"),
                 random_seed=options.get("random_seed"),
                 pool_size=options.get("pool_size"),
                 subsample_seed=int(options.get("subsample_seed", 42)),

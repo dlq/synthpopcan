@@ -153,6 +153,10 @@ Use `--seed-records` for smaller or larger IPF runs. The province-scale
 small-area timing check is opt-in because it depends on the machine. Optional
 SciPy CSR and Polars comparisons remain benchmark probes rather than runtime
 backends, and full-data tree-model smoke tests remain outside the default suite.
+The CLI, beginner Python API, and local web app call the same Python workflow
+and domain implementations. Browser guidance and durable artifacts do not
+define a separate computational tier; scale limits come from the selected
+workflow, model, output size, and available machine resources.
 
 ## Data Policy
 

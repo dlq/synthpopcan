@@ -175,6 +175,52 @@ test("SCN-WEB-002 inspects and generates from a linked model package", async ({
   expect(consoleErrors).toEqual([]);
 });
 
+test("downloadable catalogue models install without returning their payload", async ({
+  page,
+}) => {
+  let installed = false;
+  const model = () => ({
+    id: "large-model",
+    name: "Large model",
+    geography: "Canada",
+    distribution: "download",
+    installed,
+  });
+  await page.route("**/api/models", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ models: [model()] }),
+    }),
+  );
+  await page.route("**/api/models/large-model/install", (route) => {
+    installed = true;
+    return route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ model: model() }),
+    });
+  });
+
+  await page.goto("/");
+  await page.getByRole("button", { name: "New run" }).click();
+  await page
+    .getByRole("button", { name: "Generate from a prepared model", exact: true })
+    .click();
+  await page.locator("#run-model-select").selectOption("large-model");
+  await expect(
+    page.getByRole("button", { name: "Download selected model" }),
+  ).toBeEnabled();
+  await page.getByRole("button", { name: "Download selected model" }).click();
+  await expect(page.locator("#run-model-catalogue-status")).toContainText(
+    "downloaded, verified",
+  );
+  await expect(page.locator("#run-model-select")).toHaveValue("large-model");
+  await expect(
+    page.getByRole("button", { name: "Remove downloaded model" }),
+  ).toBeEnabled();
+});
+
 test("SCN-WEB-003 runs durable linked small-area synthesis", async ({ page }) => {
   const consoleErrors = [];
   page.on("console", (message) => {

@@ -45,6 +45,15 @@ export function bindRunsWorkbench(bootstrap) {
   document
     .querySelector("#check-model-preflight")
     .addEventListener("click", () => checkModelPreflight(state));
+  document
+    .querySelector("#run-model-select")
+    .addEventListener("change", updateModelCatalogueActions);
+  document
+    .querySelector("#install-run-model")
+    .addEventListener("click", () => changeModelInstallation("install"));
+  document
+    .querySelector("#remove-run-model")
+    .addEventListener("click", () => changeModelInstallation("remove"));
   document.querySelector("#start-run").addEventListener("click", () => startRun(state));
   document
     .querySelector("#cancel-run")
@@ -610,6 +619,10 @@ function clearResults() {
 async function loadModelCatalogue() {
   const select = document.querySelector("#run-model-select");
   const smallAreaSelect = document.querySelector("#small-area-premade-model");
+  const selected = select.value;
+  const smallAreaSelected = smallAreaSelect.value;
+  select.replaceChildren(new Option("Choose a catalogue model", ""));
+  smallAreaSelect.replaceChildren(new Option("Choose a prepared model", ""));
   try {
     const response = await fetch("/api/models");
     if (!response.ok) throw new Error("Model catalogue unavailable");
@@ -617,16 +630,27 @@ async function loadModelCatalogue() {
     for (const model of payload.models) {
       const option = document.createElement("option");
       option.value = model.id;
-      option.textContent = `${model.name} · ${model.geography}`;
-      option.disabled = !model.installed;
+      option.textContent = `${model.name} · ${model.geography}${model.installed ? "" : " · download required"}`;
+      option.dataset.installed = String(model.installed);
+      option.dataset.distribution = model.distribution;
       select.append(option);
 
       const smallAreaOption = document.createElement("option");
       smallAreaOption.value = model.id;
       smallAreaOption.textContent = `${model.name} · ${model.geography}`;
       smallAreaOption.dataset.distribution = model.distribution;
+      smallAreaOption.dataset.installed = String(model.installed);
       smallAreaSelect.append(smallAreaOption);
     }
+    if ([...select.options].some((option) => option.value === selected)) {
+      select.value = selected;
+    }
+    if (
+      [...smallAreaSelect.options].some((option) => option.value === smallAreaSelected)
+    ) {
+      smallAreaSelect.value = smallAreaSelected;
+    }
+    updateModelCatalogueActions();
   } catch {
     for (const target of [select, smallAreaSelect]) {
       const option = document.createElement("option");
@@ -634,6 +658,52 @@ async function loadModelCatalogue() {
       option.textContent = "Premade models unavailable";
       target.append(option);
     }
+    updateModelCatalogueActions();
+  }
+}
+
+function updateModelCatalogueActions() {
+  const option = document.querySelector("#run-model-select").selectedOptions[0];
+  const downloadable = option?.dataset.distribution === "download";
+  const installed = option?.dataset.installed === "true";
+  document.querySelector("#install-run-model").disabled = !downloadable || installed;
+  document.querySelector("#remove-run-model").disabled = !downloadable || !installed;
+}
+
+async function changeModelInstallation(action) {
+  const select = document.querySelector("#run-model-select");
+  const modelId = select.value || select.selectedOptions[0]?.value;
+  if (!modelId) return;
+  const install = action === "install";
+  const status = document.querySelector("#run-model-catalogue-status");
+  const buttons = [
+    document.querySelector("#install-run-model"),
+    document.querySelector("#remove-run-model"),
+  ];
+  buttons.forEach((button) => {
+    button.disabled = true;
+  });
+  status.textContent = install ? "Downloading and verifying model…" : "Removing model…";
+  try {
+    const response = await fetch(
+      `/api/models/${encodeURIComponent(modelId)}${install ? "/install" : ""}`,
+      {
+        method: install ? "POST" : "DELETE",
+      },
+    );
+    const payload = await response.json();
+    if (!response.ok) throw new Error(payload.error || "Model catalogue update failed");
+    await loadModelCatalogue();
+    select.value = install ? modelId : "";
+    updateModelCatalogueActions();
+    status.textContent = install
+      ? "Model downloaded, verified, and ready for durable Python runs."
+      : payload.removed
+        ? "Downloaded model removed from the local cache."
+        : "The model was not present in the local cache.";
+  } catch (error) {
+    status.textContent = error.message;
+    updateModelCatalogueActions();
   }
 }
 

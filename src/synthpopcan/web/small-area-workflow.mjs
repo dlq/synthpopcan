@@ -45,8 +45,17 @@ export function bindSmallAreaWorkflow() {
 async function buildRequest() {
   const modelSelect = document.querySelector("#small-area-premade-model");
   const packageFile = document.querySelector("#small-area-model-file").files?.[0];
-  if (!packageFile && !modelSelect.value)
-    throw new Error("Choose a premade linked model or a package JSON file.");
+  const candidateHouseholds = document.querySelector(
+    "#small-area-candidate-households-file",
+  ).files?.[0];
+  const candidatePersons = document.querySelector("#small-area-candidate-persons-file")
+    .files?.[0];
+  if (Boolean(candidateHouseholds) !== Boolean(candidatePersons))
+    throw new Error("Choose both candidate household and person CSV files.");
+  const hasModelSource = Boolean(packageFile || modelSelect.value);
+  const hasCandidateSource = Boolean(candidateHouseholds && candidatePersons);
+  if (hasModelSource === hasCandidateSource)
+    throw new Error("Choose one model/package or one linked candidate pair.");
   const controlsFile = document.querySelector("#small-area-controls-file").files?.[0];
   if (!controlsFile) throw new Error("Choose household controls CSV.");
   const personControlsFile = document.querySelector("#small-area-person-controls-file")
@@ -55,7 +64,14 @@ async function buildRequest() {
     .files?.[0];
   const controls = await uploadCsv(controlsFile);
   const inputs = { controls_upload_id: controls.upload_id };
-  if (packageFile) {
+  if (candidateHouseholds && candidatePersons) {
+    const [households, persons] = await Promise.all([
+      uploadCsv(candidateHouseholds),
+      uploadCsv(candidatePersons),
+    ]);
+    inputs.candidate_households_upload_id = households.upload_id;
+    inputs.candidate_persons_upload_id = persons.upload_id;
+  } else if (packageFile) {
     const uploaded = await uploadCsv(packageFile);
     inputs.package_upload_id = uploaded.upload_id;
   } else {

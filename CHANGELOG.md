@@ -4,6 +4,21 @@ All notable public changes to SynthPopCan are tracked here.
 
 ## Unreleased
 
+- Replaced browser-owned IPF, prepared-model, and small-area synthesis with
+  durable FastAPI/Uvicorn runs backed by the same file-oriented Python
+  workflows as the CLI and beginner API.
+- Added a controlled run workspace with streamed uploads, versioned manifests,
+  persisted progress, cancellation and restart recovery, bounded previews,
+  atomic artifacts, and exact CLI reproduction commands.
+- Added Python-backed small-area generation and calibration from either a
+  reviewed model/package or existing linked candidate CSVs, with scale,
+  linkage, dimension, category, disk, convergence, residual, and map checks.
+- Added bounded model catalogue installation and removal for large published
+  packages without loading their JSON payloads into browser memory.
+- Removed obsolete browser synthesis and ZIP/WDS-normalization modules; the
+  local web app, CLI, and Python API now share Python implementations rather
+  than separate computational tiers.
+
 ## 0.5.1 - 2026-07-15
 
 - Added a public correctness-assurance statement, independent numerical and

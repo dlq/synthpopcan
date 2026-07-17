@@ -98,3 +98,44 @@ def test_small_area_workflow_generates_calibrates_and_reports(tmp_path: Path) ->
         "synthesize",
         "demo-linked-household-person",
     ]
+
+
+def test_small_area_workflow_accepts_existing_linked_candidates(tmp_path: Path) -> None:
+    households_path = tmp_path / "candidate-households.csv"
+    persons_path = tmp_path / "candidate-persons.csv"
+    controls_path = tmp_path / "controls.csv"
+    households_path.write_text(
+        "synthetic_household_id,household_size,tenure\nh1,1,owner\nh2,1,renter\n"
+    )
+    persons_path.write_text(
+        "synthetic_person_id,synthetic_household_id,sex\np1,h1,F\np2,h2,M\n"
+    )
+    controls_path.write_text(
+        "margin,dimensions,tract,tenure,count\n"
+        'tenure,"tract,tenure",001,owner,1\n'
+        'tenure,"tract,tenure",001,renter,1\n'
+    )
+
+    result = synthesize_small_area_files(
+        SmallAreaRequest(
+            package_path=None,
+            controls_path=controls_path,
+            candidates_dir=tmp_path / "candidates",
+            output_dir=tmp_path / "output",
+            candidate_households=2,
+            geography_dimension="tract",
+            geography_column="tract",
+            conditions={},
+            candidate_households_path=households_path,
+            candidate_persons_path=persons_path,
+            pool_size=2,
+        )
+    )
+
+    assert result.details["assigned_households"] == 2
+    assert result.details["assigned_persons"] == 2
+    assert shlex.split(result.reproduction.command.render())[:3] == [
+        "synthpopcan",
+        "geo",
+        "calibrate",
+    ]

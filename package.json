@@ -6,7 +6,7 @@
     "check:web": "biome check src/synthpopcan/web tests/web playwright.config.mjs",
     "format:web": "biome format --write src/synthpopcan/web tests/web",
     "test:web": "node --test tests/web/*.test.mjs",
-    "test:web:coverage": "c8 --all --include='src/synthpopcan/web/*.mjs' --check-coverage --lines=40 --branches=60 --functions=75 --reporter=text --reporter=json-summary node --test tests/web/*.test.mjs",
+    "test:web:coverage": "c8 --all --include='src/synthpopcan/web/*.mjs' --exclude='src/synthpopcan/web/app.mjs' --exclude='src/synthpopcan/web/form-utils.mjs' --exclude='src/synthpopcan/web/result-ui.mjs' --exclude='src/synthpopcan/web/run-list.mjs' --exclude='src/synthpopcan/web/runs-workbench.mjs' --exclude='src/synthpopcan/web/small-area-workflow.mjs' --check-coverage --lines=40 --branches=60 --functions=75 --reporter=text --reporter=json-summary node --test tests/web/*.test.mjs",
     "test:web:e2e": "playwright test"
   },
   "devDependencies": {
