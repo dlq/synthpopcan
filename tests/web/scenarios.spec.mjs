@@ -88,11 +88,17 @@ test("SCN-WEB-001 runs durable demo IPF and recovers results after refresh", asy
 test("a new draft wins over a delayed initial run-history response", async ({
   page,
 }) => {
-  await page.route("**/api/runs", async (route) => {
+  let detailRequested;
+  const requestStarted = new Promise((resolve) => {
+    detailRequested = resolve;
+  });
+  await page.route("**/api/runs/*", async (route) => {
+    detailRequested();
     await new Promise((resolve) => setTimeout(resolve, 500));
     await route.continue();
   });
   await page.goto("/");
+  await requestStarted;
   await page.getByRole("button", { name: "New run" }).click();
   await expect(page.locator("#ipf-seed-file")).toBeVisible();
   await page.waitForTimeout(750);

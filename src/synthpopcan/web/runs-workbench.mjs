@@ -369,9 +369,12 @@ async function requestCancel(state) {
 }
 
 async function selectRun(state, summary) {
+  const viewRevision = state.viewRevision + 1;
+  state.viewRevision = viewRevision;
   try {
     showWorkbench();
     const run = await getRun(summary.run_id);
+    if (state.viewRevision !== viewRevision) return;
     state.selectedRun = run;
     renderRunList(
       document.querySelector("#runs-list"),
