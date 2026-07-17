@@ -23,6 +23,7 @@ export function bindRunsWorkbench(bootstrap) {
     uploads: null,
     preflight: null,
     stopEvents: null,
+    viewRevision: 0,
   };
   document.querySelector("#workspace-location").textContent = bootstrap.workspace;
   document.querySelector("#new-run").addEventListener("click", () => newDraft(state));
@@ -85,6 +86,7 @@ function bindLegacyTools() {
 }
 
 async function refreshRuns(state, selectNewest = false) {
+  const viewRevision = state.viewRevision;
   try {
     state.runs = (await listRuns()).runs;
     renderRunList(
@@ -93,13 +95,15 @@ async function refreshRuns(state, selectNewest = false) {
       state.selectedRun?.run_id,
       (run) => selectRun(state, run),
     );
-    if (selectNewest && state.runs.length > 0) await selectRun(state, state.runs[0]);
+    if (selectNewest && state.runs.length > 0 && state.viewRevision === viewRevision)
+      await selectRun(state, state.runs[0]);
   } catch (error) {
     showMessage(error.message, "error");
   }
 }
 
 function newDraft(state) {
+  state.viewRevision += 1;
   showWorkbench();
   state.stopEvents?.();
   state.stopEvents = null;
