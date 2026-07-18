@@ -443,8 +443,7 @@ label {
   cursor: help;
 }
 
-.help-label::after {
-  content: "?";
+.help-marker {
   display: inline-grid;
   place-items: center;
   width: 18px;
@@ -458,8 +457,7 @@ label {
   line-height: 1;
 }
 
-.help-label::before {
-  content: attr(data-help);
+.help-popup {
   box-sizing: border-box;
   position: absolute;
   z-index: 10;
@@ -481,9 +479,9 @@ label {
   transform: translateY(4px);
 }
 
-.help-label:hover::before,
-.help-label:focus::before,
-.help-label.open::before {
+.help-label:hover .help-popup,
+.help-label:focus .help-popup,
+.help-label.open .help-popup {
   opacity: 1;
   transform: translateY(0);
 }
@@ -1254,7 +1252,7 @@ a:focus-visible {
     grid-column: auto;
   }
 
-  .help-label::before {
+  .help-popup {
     position: fixed;
     right: 24px;
     bottom: 24px;

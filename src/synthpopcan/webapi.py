@@ -579,8 +579,12 @@ def _preflight_ipf_run(store: RunStore, payload: dict[str, Any]) -> dict[str, An
     margin_totals = [
         sum(cell.count for cell in margin.cells) for margin in controls.margins
     ]
-    estimated_rows = round(max(margin_totals, default=0))
-    estimated_output_bytes = max(4096, estimated_rows * 128)
+    population_total = round(max(margin_totals, default=0))
+    compact_output_rows = int(diagnostics["seed_records"])
+    estimated_output_bytes = max(
+        4096,
+        seed_path.stat().st_size + compact_output_rows * 32,
+    )
     disk_free = shutil.disk_usage(store.root).free
     options_payload = payload.get("options", {})
     if not isinstance(options_payload, dict):
@@ -612,7 +616,8 @@ def _preflight_ipf_run(store: RunStore, payload: dict[str, Any]) -> dict[str, An
         "request": normalized_request,
         "input_diagnostics": diagnostics,
         "estimate": {
-            "output_rows": estimated_rows,
+            "compact_output_rows": compact_output_rows,
+            "population_total": population_total,
             "output_bytes": estimated_output_bytes,
             "disk_free_bytes": disk_free,
             "enough_disk": enough_disk,
@@ -670,8 +675,9 @@ def _preflight_model_run(store: RunStore, payload: dict[str, Any]) -> dict[str, 
         raise ValueError(
             "unsupported model condition columns: " + ", ".join(unsupported)
         )
-    estimated_output_rows = households * 4
-    estimated_output_bytes = max(8192, estimated_output_rows * 256)
+    # Reserve a conservative amount per requested household without pretending
+    # to know the package's generated household-size distribution in advance.
+    estimated_output_bytes = max(8192, households * 4096)
     disk_free = shutil.disk_usage(store.root).free
     enough_disk = disk_free >= estimated_output_bytes * 2
     normalized_request = {
@@ -691,8 +697,8 @@ def _preflight_model_run(store: RunStore, payload: dict[str, Any]) -> dict[str, 
         "model_diagnostics": inspection,
         "estimate": {
             "households": households,
-            "estimated_total_rows": estimated_output_rows,
             "output_bytes": estimated_output_bytes,
+            "storage_basis": "4 KiB per requested household",
             "disk_free_bytes": disk_free,
             "enough_disk": enough_disk,
         },

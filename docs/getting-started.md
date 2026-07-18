@@ -34,6 +34,23 @@ that fits our working style, and keep the generated files together with
 inspection, the command line is good for reproducible runs, and a notebook is
 good when code, prose, and interpretation need to sit side by side.
 
+### Quick Decision Table
+
+Scan these choices first, then use the matching path below for context and next
+steps.
+
+| Situation | Start Here |
+| --- | --- |
+| We want the friendliest first run | {doc}`web-app` |
+| We want a reproducible terminal workflow | {doc}`command-line` |
+| We want a notebook | {doc}`library-getting-started` |
+| We have seed rows and margins | {doc}`ipf` |
+| We have a reviewed model package | {doc}`tree-generate` |
+| We need to train or audit a model | {doc}`tree` |
+| We need CT, ADA, or DA assignment | {doc}`small-area` |
+| We need to inspect data first | {doc}`data` |
+| We need to check results | {doc}`validate` |
+
 (if-we-want-to-try-synthpopcan)=
 
 ```{rubric} If We Want To Try SynthPopCan
@@ -192,20 +209,6 @@ Use this path when:
 - we need to compare output rows back to controls;
 - we need to check household/person links;
 - we need a report to keep with a method note, notebook, or release artifact.
-
-## A Simple Decision Table
-
-| Situation | Start Here | Why |
-| --- | --- | --- |
-| We want the friendliest first run | {doc}`web-app` | Forms, previews, and downloads reduce setup friction. |
-| We want a reproducible terminal workflow | {doc}`command-line` | Commands, inputs, and reports can become part of the research record. |
-| We want a notebook | {doc}`library-getting-started` | Prose, code, outputs, and interpretation stay together. |
-| We have seed rows and margins | {doc}`ipf` | IPF adjusts weights to match controls already represented in the seed. |
-| We have a reviewed model package | {doc}`tree-generate` | Generate linked households and people from the package. |
-| We need to train or audit a model | {doc}`tree` | Advanced model-building and release-readiness tools live there. |
-| We need CT, ADA, or DA assignment | {doc}`small-area` | Calibrate linked candidates to small-area controls. |
-| We need to inspect data first | {doc}`data` | Check local layout, source shape, and provenance before modelling. |
-| We need to check results | {doc}`validate` | Keep evidence with the generated output. |
 
 ## What We Should Keep With Any Workflow
 

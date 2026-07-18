@@ -268,8 +268,8 @@ function renderModelPreflight(preflight) {
     ],
     ["Supported conditions", model.conditions.join(", ") || "None"],
     ["Requested households", preflight.estimate.households],
-    ["Estimated total rows", preflight.estimate.estimated_total_rows],
-    ["Estimated artifact size", formatBytes(preflight.estimate.output_bytes)],
+    ["Planning storage allowance", formatBytes(preflight.estimate.output_bytes)],
+    ["Storage estimate basis", preflight.estimate.storage_basis],
     [
       "Workspace capacity",
       preflight.estimate.enough_disk ? "Enough disk space" : "Insufficient disk space",
@@ -287,7 +287,8 @@ function renderPreflight(preflight) {
       "Dimensions",
       diagnostics.dimensions?.map((item) => item.dimension).join(", ") || "—",
     ],
-    ["Expected weighted rows", estimate.output_rows],
+    ["Compact output rows", estimate.compact_output_rows],
+    ["Fitted population total", estimate.population_total],
     ["Estimated artifact size", formatBytes(estimate.output_bytes)],
     [
       "Workspace capacity",

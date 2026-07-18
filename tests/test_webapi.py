@@ -45,7 +45,8 @@ def test_ipf_api_upload_preflight_run_events_artifacts_and_reproduction(
             preflight = await client.post("/api/preflight", json=request)
             assert preflight.status_code == 200
             assert preflight.json()["ready"] is True
-            assert preflight.json()["estimate"]["output_rows"] == 100
+            assert preflight.json()["estimate"]["compact_output_rows"] == 4
+            assert preflight.json()["estimate"]["population_total"] == 100
             created = await client.post("/api/runs", json=request)
             assert created.status_code == 202
             run_id = created.json()["run_id"]
@@ -253,6 +254,11 @@ def test_prepared_model_api_preflight_run_preview_and_reproduction(
             preflight = await client.post("/api/preflight", json=request)
             assert preflight.status_code == 200
             assert preflight.json()["ready"] is True
+            estimate = preflight.json()["estimate"]
+            assert estimate["households"] == 6
+            assert estimate["output_bytes"] == 24_576
+            assert estimate["storage_basis"] == "4 KiB per requested household"
+            assert estimate["enough_disk"] is True
             assert (
                 preflight.json()["model_diagnostics"]["privacy"][
                     "publishable_candidate"

@@ -112,6 +112,18 @@ def test_webapp_assets_include_index() -> None:
     assert (root / "synthpopcan-logo-256.png").is_file()
 
 
+def test_small_area_panel_starts_hidden_and_help_is_prepared_for_keyboard() -> None:
+    root = get_webapp_root()
+    html = (root / "index.html").read_text()
+    app_source = (root / "app.mjs").read_text()
+
+    assert 'data-workflow-panel="small-area" hidden' in html
+    assert "prepareHelpLabels();" in app_source
+    assert "label.tabIndex = 0" in app_source
+    assert 'label.setAttribute("aria-label"' in app_source
+    assert 'field.setAttribute("aria-label", name)' in app_source
+
+
 def test_webapp_url_uses_loopback_for_wildcard_host() -> None:
     server = FakeServer()
     server.server_address = ("0.0.0.0", 8123)

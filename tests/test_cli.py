@@ -94,40 +94,36 @@ def test_guide_command_shows_web_app_workflow_choices(capsys) -> None:
     output = capsys.readouterr().out
     assert "Choose a Workflow" in output
     assert "IPF from margin tables" in output
-    assert "Generate from existing model" in output
+    assert "Generate from an existing model" in output
     assert "synthpopcan guide ipf" in output
     assert "synthpopcan guide model" in output
 
 
-def test_guide_ipf_matches_beginner_web_flow(capsys) -> None:
+def test_guide_ipf_provides_offline_and_research_paths(capsys) -> None:
     assert main(["guide", "ipf"]) == 0
 
     output = capsys.readouterr().out
     assert "IPF from Margin Tables" in output
-    assert "Setup Path" in output
-    assert "Command or Next Step" in output
-    assert "Use a demo or make templates" in output
-    assert "Generate from a StatCan table" in output
-    assert "Inspect product" in output
+    assert "Offline teaching path" in output
+    assert "synthpopcan data example ipf" in output
+    assert "require a network connection" in output
     assert "synthpopcan statcan wds search" in output
+    assert "synthpopcan statcan wds fetch" in output
     assert "synthpopcan controls from-wds" in output
     assert "synthpopcan ipf fit" in output
 
 
-def test_guide_model_matches_beginner_web_flow(capsys) -> None:
+def test_guide_model_uses_bundled_demo_before_network_packages(capsys) -> None:
     assert main(["guide", "model"]) == 0
 
     output = capsys.readouterr().out
-    assert "Generate from Existing Model" in output
-    assert "Setup Path" in output
-    assert "Command or Next Step" in output
-    assert "Use premade model" in output
-    assert "Inspect selected model" in output
-    assert "Generate rows" in output
-    assert "synthpopcan models fetch" in output
+    assert "Generate from an Existing Model" in output
+    assert "Offline teaching path" in output
+    assert "demo-linked-household-person" in output
     assert "synthpopcan models show" in output
     assert "synthpopcan models generate" in output
     assert "synthpopcan validate linked" in output
+    assert "Downloadable packages require a network connection" in output
 
 
 def test_cli_models_list_marks_downloadable_models(

@@ -80,7 +80,8 @@ later on this page.
 1. Keep the default compact weighted output. Iteration, tolerance, starting
    weight, and non-convergence options are under **Advanced IPF settings**.
 1. Choose **Check inputs** and review the seed count, control margins,
-   dimensions, estimated output size, and workspace capacity.
+   dimensions, compact output rows, fitted population total, estimated output
+   size, and workspace capacity.
 1. Choose **Start run**. The isolated Python worker records progress even if the
    page is reloaded.
 1. In **Results**, confirm convergence, inspect the bounded weighted preview,
@@ -98,7 +99,8 @@ input/output shape. It does not represent a Canadian population. Continue to
 1. Keep `10` households and random seed `13`, and
    enter `geo=Demo North` under **Conditions**.
 1. Choose **Check model and scale**, review the package provenance, privacy
-   status, estimated scale, and available disk space, then choose **Start run**.
+   status, requested household count, conservative storage allowance, and
+   available disk space, then choose **Start run**.
 1. Confirm that the linkage check passes, compare the household and person
    counts, inspect both previews, and download both CSVs.
 
@@ -140,8 +142,8 @@ completed; see {doc}`statcan` and {doc}`controls`.
 
 Uploads are streamed and hashed by the loopback service. **Preflight** uses the
 same Python input diagnostics as the CLI, including missing dimensions,
-unsupported categories, expected weighted rows, output-size estimate, and free
-workspace capacity. **Start run** atomically claims the uploads, creates a run
+unsupported categories, compact output rows, fitted population total,
+output-size estimate, and free workspace capacity. **Start run** atomically claims the uploads, creates a run
 manifest, and executes IPF in one isolated worker process. The event stream and
 manifest are persisted, so refresh and reconnect do not restart the fit.
 
@@ -196,7 +198,8 @@ then upload the household controls and optional person controls.
 
 The form asks for the geography dimension and output column, candidate household
 count, optional calibration pool size, average persons per household, and random
-seed. **Estimate and prepare** sends only the controls text and numeric settings
+seed. Question-mark help labels can be hovered, tapped, or reached with the
+keyboard for a short field explanation. **Estimate and prepare** sends only the controls text and numeric settings
 to the local Python helper. It uses the same `estimate_small_area_run` logic as
 the CLI and reports:
 

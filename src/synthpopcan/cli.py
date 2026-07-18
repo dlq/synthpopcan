@@ -306,151 +306,136 @@ def serve(host: str, port: int, open_browser: bool, workspace: Path) -> None:
 
 
 def _print_workflow_choice_guide() -> None:
-    table = make_table(title="Choose a Workflow")
-    table.add_column("Workflow", no_wrap=True)
-    table.add_column("Use When")
-    table.add_column("Next Command", no_wrap=True)
-    table.add_row(
-        "IPF from margin tables",
-        (
-            "You have seed rows, want to find or prepare margin/control totals, "
-            "and need fitted weights or expanded rows."
-        ),
+    click.echo("Choose a Workflow\n")
+    _print_guide_item(
+        "1. IPF from margin tables",
+        "Seed rows already contain the variables in the controls.",
         "synthpopcan guide ipf",
     )
-    table.add_row(
-        "Generate from existing model",
-        (
-            "You have a prepared household/person model package and want to "
-            "export synthetic household and person rows."
-        ),
+    _print_guide_item(
+        "2. Generate from an existing model",
+        "A prepared package should generate linked households and people.",
         "synthpopcan guide model",
     )
-    table.add_row(
-        "Linked small-area synthesis",
-        (
-            "You have geography controls and want linked household/person rows "
-            "assigned to target areas."
-        ),
+    _print_guide_item(
+        "3. Linked small-area synthesis",
+        "Linked candidates must be calibrated and assigned to target areas.",
         "synthpopcan guide small-area",
     )
-    print_table(table)
+    click.echo("Other tasks: synthpopcan --help")
 
 
 def _print_ipf_workflow_guide() -> None:
-    table = make_table(title="IPF from Margin Tables")
-    table.add_column("Step", justify="right", no_wrap=True)
-    table.add_column("Setup Path", no_wrap=True)
-    table.add_column("Command or Next Step")
-    table.add_row(
-        "1",
-        "Use a demo or make templates",
-        "synthpopcan serve",
+    click.echo("IPF from Margin Tables\n")
+    click.echo("Offline teaching path (fictional data):\n")
+    _print_command_step(
+        1,
+        "Create the teaching files.",
+        "synthpopcan data example ipf --out-dir ipf-example",
     )
-    table.add_row(
-        "2",
-        "Generate from a StatCan table",
-        'synthpopcan statcan wds search "population age sex"',
+    _print_command_step(
+        2,
+        "Check and fit the inputs.",
+        "synthpopcan ipf check-inputs --seed ipf-example/seed.csv "
+        "--controls ipf-example/controls.csv\n"
+        "synthpopcan ipf fit --seed ipf-example/seed.csv "
+        "--controls ipf-example/controls.csv --out ipf-example/weights.csv "
+        "--report ipf-example/fit-report.json",
     )
-    table.add_row(
-        "3",
-        "Inspect product",
-        "synthpopcan statcan wds explain PRODUCT_ID",
+    _print_command_step(
+        3,
+        "Review and validate the fit.",
+        "synthpopcan ipf report ipf-example/fit-report.json\n"
+        "synthpopcan validate ipf --population ipf-example/weights.csv "
+        "--controls ipf-example/controls.csv --kind weights",
     )
-    table.add_row(
-        "4",
-        "Prepare IPF inputs",
-        (
-            "synthpopcan controls wds inspect TABLE.zip\n"
-            "synthpopcan controls from-wds TABLE.zip --dimensions "
-            '"GEO,Age group,Sex" --count-column VALUE --out controls.csv'
-        ),
+    click.echo(
+        "Research controls from Statistics Canada require a network connection:\n"
     )
-    table.add_row(
-        "5",
-        "Run IPF",
-        (
-            "synthpopcan ipf check-inputs --seed seed.csv --controls controls.csv\n"
-            "synthpopcan ipf fit --seed seed.csv --controls controls.csv "
-            "--out weights.csv --report fit-report.json"
-        ),
+    _print_command_step(
+        4,
+        "Find, inspect, and download a suitable WDS product.",
+        'synthpopcan statcan wds search "population age sex"\n'
+        "synthpopcan statcan wds explain PRODUCT_ID\n"
+        "synthpopcan statcan wds fetch PRODUCT_ID --out-dir statcan-table",
     )
-    table.add_row(
-        "6",
-        "Preview or validate",
-        (
-            "synthpopcan ipf report fit-report.json\n"
-            "synthpopcan validate ipf --population weights.csv "
-            "--controls controls.csv --kind weights"
-        ),
+    _print_command_step(
+        5,
+        "Inspect and normalize the downloaded controls; replace the placeholders.",
+        "synthpopcan controls wds inspect TABLE.zip\n"
+        "synthpopcan controls from-wds TABLE.zip --dimensions "
+        '"GEO,Age group,Sex" --count-column VALUE --out controls.csv',
     )
-    print_table(table)
+    click.echo(
+        "Use a reviewed seed CSV with those controls, then repeat steps 2 and 3."
+    )
 
 
 def _print_model_workflow_guide() -> None:
-    table = make_table(title="Generate from Existing Model")
-    table.add_column("Step", justify="right", no_wrap=True)
-    table.add_column("Setup Path", no_wrap=True)
-    table.add_column("Command or Next Step")
-    table.add_row(
-        "1",
-        "Use premade model",
-        "synthpopcan serve",
+    click.echo("Generate from an Existing Model\n")
+    click.echo("Offline teaching path (bundled synthetic model):\n")
+    _print_command_step(
+        1,
+        "Inspect the package and its limitations.",
+        "synthpopcan models show demo-linked-household-person",
     )
-    table.add_row(
-        "2",
-        "Inspect selected model",
-        "synthpopcan models list\n"
-        "synthpopcan models fetch montreal-cma-2016-all-fields\n"
-        "synthpopcan models show montreal-cma-2016-all-fields",
+    _print_command_step(
+        2,
+        "Generate linked households and people.",
+        "synthpopcan models generate demo-linked-household-person "
+        "--households 10 --condition 'geo=Demo North' --random-seed 13 "
+        "--out population",
     )
-    table.add_row(
-        "3",
-        "Generate rows",
-        (
-            "synthpopcan models generate montreal-cma-2016-all-fields "
-            "--households 100 --out population/"
-        ),
+    _print_command_step(
+        3,
+        "Validate the household and person links.",
+        "synthpopcan validate linked population",
     )
-    table.add_row(
-        "4",
-        "Preview or validate",
-        ("synthpopcan validate linked population/"),
-    )
-    print_table(table)
+    click.echo("Discover research packages with: synthpopcan models list")
+    click.echo("Downloadable packages require a network connection and models fetch.")
 
 
 def _print_small_area_workflow_guide() -> None:
-    table = make_table(title="Linked Small-Area Synthesis")
-    table.add_column("Step", justify="right", no_wrap=True)
-    table.add_column("Task", no_wrap=True)
-    table.add_column("Command or Next Step")
-    table.add_row(
-        "1",
-        "Prepare controls",
+    click.echo("Linked Small-Area Synthesis\n")
+    click.echo("Template path: replace MODEL, PROFILE.csv, and the target scale.\n")
+    _print_command_step(
+        1,
+        "Prepare normalized controls.",
         "synthpopcan geo controls --profile PROFILE.csv --geo-column ct "
         "--target 10000 --controls-out controls.csv",
     )
-    table.add_row(
-        "2",
-        "Estimate scale",
+    _print_command_step(
+        2,
+        "Estimate the run before generating output.",
         "synthpopcan geo estimate --controls controls.csv --geo-dimension ct "
         "--candidate-households 10000",
     )
-    table.add_row(
-        "3",
-        "Generate and calibrate",
+    _print_command_step(
+        3,
+        "Generate linked candidates and calibrate them.",
         "synthpopcan geo synthesize MODEL --households 10000 "
-        "--controls controls.csv --geo-dimension ct --out small-area/",
+        "--controls controls.csv --geo-dimension ct --out small-area",
     )
-    table.add_row(
-        "4",
-        "Validate and map",
-        "synthpopcan validate linked small-area/\n"
-        "synthpopcan geo map small-area/ --boundaries boundaries.geojson "
+    _print_command_step(
+        4,
+        "Validate the links; map only when matching boundaries are available.",
+        "synthpopcan validate linked small-area\n"
+        "synthpopcan geo map small-area --boundaries boundaries.geojson "
         "--geo-column ct",
     )
-    print_table(table)
+
+
+def _print_guide_item(title: str, use_when: str, next_command: str) -> None:
+    click.echo(title)
+    click.echo(f"   Use when: {use_when}")
+    click.echo(f"   Next: {next_command}\n")
+
+
+def _print_command_step(number: int, instruction: str, commands: str) -> None:
+    click.echo(f"{number}. {instruction}")
+    for command in commands.splitlines():
+        click.echo(f"   {command}")
+    click.echo()
 
 
 def _format_model_availability(model: dict[str, Any]) -> str:
