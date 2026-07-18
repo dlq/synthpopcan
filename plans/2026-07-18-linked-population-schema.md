@@ -1,10 +1,10 @@
 # Linked Population Schema Implementation Plan
 
-Status: implementation complete; release validation pending\
+Status: release candidate validated\
 Created: 2026-07-18\
 Last updated: 2026-07-18\
 Target: `0.6.1`\
-Next action: run packaging, clean-install, and final release gates\
+Next action: commit and tag the validated release candidate\
 Roadmap: [PLANS.md](../PLANS.md) | [Plan index](README.md)
 
 ## Objective
@@ -47,7 +47,7 @@ calibration, future enrichment, and later simulator interchange.
   training, package loading, linked generation, v1 artifact writing, and
   relationship validation.
 - [x] Audit and finish stale asynchronous browser-operation sequencing.
-- [ ] Run the complete correctness, documentation, browser, packaging, and
+- [x] Run the complete correctness, documentation, browser, packaging, and
   installed-wheel gates before release.
 
 ## Acceptance criteria

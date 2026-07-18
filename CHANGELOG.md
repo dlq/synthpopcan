@@ -4,6 +4,8 @@ All notable public changes to SynthPopCan are tracked here.
 
 ## Unreleased
 
+## 0.6.1 - 2026-07-18
+
 - Add the versioned `synthpopcan-linked-population-v1` household/person artifact
   contract, shared descriptors across library, CLI, prepared-model, and
   small-area outputs, explicit geography inheritance, compatibility rules, and
