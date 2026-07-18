@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -96,6 +97,119 @@ def test_adopt_legacy_linked_population_validates_relationships(
         "synthetic_person_id,synthetic_household_id\np1,missing\n"
     )
     with pytest.raises(ValueError, match="unknown households"):
+        adopt_linked_population_directory(tmp_path)
+
+
+@pytest.mark.parametrize(
+    ("path", "value", "message"),
+    [
+        (("format",), "json", "requires CSV tables"),
+        (("tables",), [], "tables must be an object"),
+        (("tables", "households"), [], "households table must be an object"),
+        (("tables", "households", "path"), "../households.csv", "filename"),
+        (("tables", "households", "path"), "", "filename"),
+        (("tables", "households", "rows"), -1, "non-negative"),
+        (("tables", "households", "rows"), True, "non-negative"),
+        (("tables", "households", "primary_key"), "legacy_id", "primary key"),
+        (("tables", "households", "columns"), "id", "columns must be strings"),
+        (("tables", "households", "columns"), [""], "columns must be strings"),
+        (
+            ("tables", "households", "columns"),
+            ["synthetic_household_id", "synthetic_household_id"],
+            "columns must be unique",
+        ),
+        (("tables", "households", "columns"), ["household_size"], "missing"),
+        (("relationships",), {}, "missing the household link"),
+        (("relationships",), [], "missing the household link"),
+        (("geography",), [], "geography must be an object"),
+        (("geography", "household_column"), "", "non-empty string"),
+        (("geography", "household_column"), 1, "non-empty string"),
+        (("geography", "household_column"), "ada", "missing from"),
+        (("geography", "person_assignment"), "copied", "unsupported"),
+    ],
+)
+def test_contract_validation_rejects_each_invalid_contract_shape(
+    tmp_path: Path,
+    path: tuple[str, ...],
+    value: object,
+    message: str,
+) -> None:
+    households, persons = _write_linked_fixture(tmp_path)
+    payload = build_linked_population_contract(
+        households,
+        persons,
+        geography_column="csd",
+    )
+    _replace_nested(payload, path, value)
+
+    with pytest.raises(ValueError, match=message):
+        validate_linked_population_contract(payload)
+
+
+@pytest.mark.parametrize(
+    ("contents", "message"),
+    [
+        ("", "is empty"),
+        (",household_size\nh1,1\n", "invalid header"),
+        (
+            "synthetic_household_id,synthetic_household_id\nh1,h1\n",
+            "duplicate columns",
+        ),
+    ],
+)
+def test_contract_builder_rejects_invalid_csv_headers(
+    tmp_path: Path,
+    contents: str,
+    message: str,
+) -> None:
+    households, persons = _write_linked_fixture(tmp_path)
+    households.write_text(contents)
+
+    with pytest.raises(ValueError, match=message):
+        build_linked_population_contract(households, persons)
+
+
+def test_contract_builder_requires_declared_geography(tmp_path: Path) -> None:
+    households, persons = _write_linked_fixture(tmp_path)
+
+    with pytest.raises(ValueError, match="missing required columns: ada"):
+        build_linked_population_contract(
+            households,
+            persons,
+            geography_column="ada",
+        )
+
+
+@pytest.mark.parametrize(
+    ("contents", "message"),
+    [
+        ("{", "is not valid JSON"),
+        ("[]", "must be a JSON object"),
+    ],
+)
+def test_contract_reader_rejects_invalid_json_documents(
+    tmp_path: Path,
+    contents: str,
+    message: str,
+) -> None:
+    manifest = tmp_path / "manifest.json"
+    manifest.write_text(contents)
+
+    with pytest.raises(ValueError, match=message):
+        read_linked_population_contract(manifest)
+
+
+def test_legacy_adoption_reports_fallback_validation_message(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _write_linked_fixture(tmp_path)
+    monkeypatch.setattr(
+        "synthpopcan.tree.validate_linked_population_files",
+        lambda *args, **kwargs: {"passed": False, "issues": []},
+    )
+
+    with pytest.raises(ValueError, match="identifiers failed validation"):
         adopt_linked_population_directory(tmp_path)
 
 
@@ -205,3 +319,16 @@ def _write_linked_fixture(tmp_path: Path) -> tuple[Path, Path]:
         "p3,h2,adult\n"
     )
     return households, persons
+
+
+def _replace_nested(
+    payload: dict[str, Any],
+    path: tuple[str, ...],
+    value: object,
+) -> None:
+    target: dict[str, Any] = payload
+    for key in path[:-1]:
+        nested = target[key]
+        assert isinstance(nested, dict)
+        target = nested
+    target[path[-1]] = value

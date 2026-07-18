@@ -17,6 +17,9 @@ All notable public changes to SynthPopCan are tracked here.
 - Sequence browser uploads, preflights, catalogue changes, estimates, durable
   submissions, and result previews so stale asynchronous completions cannot
   overwrite newer drafts or selected runs.
+- Expand failure and lifecycle coverage for linked schemas, durable workers,
+  prepared-model packages, and public API adapters; make the local check script
+  enforce the same 95% Python branch-coverage threshold as CI.
 - Add year-aware Census Profile downloads for verified 2021 CT, ADA, and
   national CSD products, national CSD cartographic boundaries for both
   vintages, balance the local 2016/2021 small-area source coverage, and parse

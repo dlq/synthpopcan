@@ -13,6 +13,7 @@ from synthpopcan.workflows.models import (
     PreparedModelRequest,
     generate_prepared_model_files,
     inspect_prepared_model,
+    read_prepared_model_package,
 )
 
 
@@ -79,6 +80,55 @@ def test_prepared_model_inspection_rejects_unpublishable_package() -> None:
     package["privacy"] = {"publishable_candidate": False}
     with pytest.raises(ValueError, match="publishable candidate"):
         inspect_prepared_model(package)
+
+
+@pytest.mark.parametrize(
+    ("payload", "message"),
+    [
+        ([], "must be a JSON object"),
+        ({}, "unsupported linked model package schema"),
+    ],
+)
+def test_prepared_model_reader_rejects_invalid_package_documents(
+    tmp_path: Path,
+    payload: object,
+    message: str,
+) -> None:
+    package_path = tmp_path / "package.json"
+    package_path.write_text(json.dumps(payload))
+
+    with pytest.raises(ValueError, match=message):
+        read_prepared_model_package(package_path)
+
+
+def test_prepared_model_inspection_rejects_invalid_schema_and_model_type() -> None:
+    package = model_payload("demo-linked-household-person")
+    package["schema_version"] = "legacy"
+    with pytest.raises(ValueError, match="unsupported linked model package schema"):
+        inspect_prepared_model(package)
+
+    package = model_payload("demo-linked-household-person")
+    package["models"]["household"]["model_type"] = "unsupported"
+    with pytest.raises(ValueError, match="supported household and person models"):
+        inspect_prepared_model(package)
+
+
+def test_prepared_model_reproduction_includes_household_size_override(
+    tmp_path: Path,
+) -> None:
+    request = PreparedModelRequest(
+        package_path=tmp_path / "package.json",
+        households_path=tmp_path / "out" / "households.csv",
+        persons_path=tmp_path / "out" / "persons.csv",
+        report_path=tmp_path / "out" / "report.json",
+        households=2,
+        conditions={},
+        household_size_column="persons_per_household",
+    )
+
+    assert "--household-size-column persons_per_household" in (
+        request.reproduction().command.render()
+    )
 
 
 def test_prepared_model_workflow_enforces_explicit_output_bounds(

@@ -7,7 +7,16 @@ import threading
 import time
 from pathlib import Path
 
-from synthpopcan.jobs import JobManager, _ipf_worker, _model_worker, _small_area_worker
+import pytest
+
+import synthpopcan.jobs as jobs
+from synthpopcan.jobs import (
+    JobManager,
+    _ipf_worker,
+    _model_worker,
+    _small_area_worker,
+    _workflow_worker,
+)
 from synthpopcan.models import model_payload
 from synthpopcan.runs import RunStore
 
@@ -168,6 +177,103 @@ def test_job_manager_cancels_queued_run_without_starting_worker(tmp_path: Path) 
     assert store.read_events(run_id)[-1]["stage"] == "cancelled"
 
 
+def test_job_manager_rejects_invalid_lifecycle_requests(tmp_path: Path) -> None:
+    store = RunStore(tmp_path)
+    with pytest.raises(ValueError, match="maximum run seconds"):
+        JobManager(store, max_run_seconds=0)
+
+    run_id = create_valid_run(store)
+    manager = JobManager(store)
+    manager.cancel(run_id)
+    with pytest.raises(ValueError, match="cannot be cancelled"):
+        manager.cancel(run_id)
+    with pytest.raises(ValueError, match="only queued runs"):
+        manager.enqueue(run_id)
+
+
+@pytest.mark.parametrize(
+    ("workflow", "worker_name"),
+    [
+        ("ipf", "_ipf_worker"),
+        ("model", "_model_worker"),
+        ("small_area", "_small_area_worker"),
+    ],
+)
+def test_workflow_dispatches_to_the_selected_worker(
+    monkeypatch: pytest.MonkeyPatch,
+    workflow: str,
+    worker_name: str,
+) -> None:
+    calls = []
+    monkeypatch.setattr(
+        jobs,
+        worker_name,
+        lambda *args: calls.append(args),
+    )
+    messages: queue.SimpleQueue = queue.SimpleQueue()
+
+    _workflow_worker("workspace", "run-id", {"workflow": workflow}, messages, None)
+
+    assert len(calls) == 1
+    assert calls[0][:3] == ("workspace", "run-id", {"workflow": workflow})
+    assert messages.empty()
+
+
+def test_workflow_dispatch_reports_an_unknown_workflow() -> None:
+    messages: queue.SimpleQueue = queue.SimpleQueue()
+
+    _workflow_worker(
+        "workspace",
+        "run-id",
+        {"workflow": "unknown"},
+        messages,
+        None,
+    )
+
+    assert messages.get() == {
+        "type": "failed",
+        "error": {
+            "kind": "ValueError",
+            "message": "unsupported workflow 'unknown'",
+        },
+    }
+
+
+def test_dispatch_marks_a_queued_run_failed_when_startup_raises(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    store = RunStore(tmp_path)
+    run_id = create_valid_run(store)
+    manager = JobManager(store)
+    monkeypatch.setattr(
+        manager,
+        "_run_one",
+        lambda _run_id: (_ for _ in ()).throw(RuntimeError("cannot spawn")),
+    )
+    manager._pending.put(run_id)
+    manager._pending.put(None)
+
+    manager._dispatch()
+
+    manifest = store.load_run(run_id)
+    assert manifest["status"] == "failed"
+    assert manifest["error"] == {"kind": "RuntimeError", "message": "cannot spawn"}
+
+
+def test_dispatch_skips_a_run_that_is_no_longer_queued(tmp_path: Path) -> None:
+    store = RunStore(tmp_path)
+    run_id = create_valid_run(store)
+    manager = JobManager(store)
+    manager.cancel(run_id)
+    manager._pending.put(run_id)
+    manager._pending.put(None)
+
+    manager._dispatch()
+
+    assert store.load_run(run_id)["status"] == "cancelled"
+
+
 def test_ipf_worker_contract_is_covered_in_process(tmp_path: Path) -> None:
     """Exercise the spawned target directly so coverage includes its contract."""
     store = RunStore(tmp_path)
@@ -216,6 +322,28 @@ def test_ipf_worker_contract_reports_immediate_cancellation(tmp_path: Path) -> N
     assert messages.get()["type"] == "cancelled"
 
 
+def test_ipf_worker_contract_reports_processing_failure(tmp_path: Path) -> None:
+    store = RunStore(tmp_path)
+    seed = write_upload(store, "seed.csv", b"id,age\n1,young\n")
+    controls = write_upload(store, "controls.csv", b"not,controls\n1,2\n")
+    run_id = str(store.create_ipf_run(ipf_request(seed, controls))["run_id"])
+    messages: queue.SimpleQueue = queue.SimpleQueue()
+
+    _ipf_worker(
+        str(store.root),
+        run_id,
+        store.load_run(run_id),
+        messages,
+        threading.Event(),
+    )
+
+    emitted = []
+    while not messages.empty():
+        emitted.append(messages.get())
+    assert emitted[-1]["type"] == "failed"
+    assert emitted[-1]["error"]["message"]
+
+
 def test_model_worker_medium_scale_uses_durable_artifact_path(tmp_path: Path) -> None:
     store = RunStore(tmp_path)
     run = store.create_model_run(
@@ -255,6 +383,56 @@ def test_model_worker_medium_scale_uses_durable_artifact_path(tmp_path: Path) ->
     for artifact in succeeded["artifacts"]:
         assert store.resolve_managed_path(artifact["path"]).is_file()
         assert len(artifact["sha256"]) == 64
+
+
+def test_model_worker_contract_reports_invalid_uploaded_package(tmp_path: Path) -> None:
+    store = RunStore(tmp_path)
+    package = write_upload(store, "package.json", b"{}")
+    run = store.create_model_run(
+        {
+            "workflow": "model",
+            "inputs": {"package_upload_id": package},
+            "options": {"households": 2},
+        }
+    )
+    messages: queue.SimpleQueue = queue.SimpleQueue()
+
+    _model_worker(
+        str(store.root),
+        str(run["run_id"]),
+        run,
+        messages,
+        threading.Event(),
+    )
+
+    assert messages.get()["type"] == "failed"
+
+
+def test_model_worker_contract_reports_immediate_cancellation(tmp_path: Path) -> None:
+    store = RunStore(tmp_path)
+    run = store.create_model_run(
+        {
+            "workflow": "model",
+            "inputs": {"model_id": "demo-linked-household-person"},
+            "options": {"households": 2},
+        }
+    )
+    messages: queue.SimpleQueue = queue.SimpleQueue()
+    cancelled = threading.Event()
+    cancelled.set()
+
+    _model_worker(
+        str(store.root),
+        str(run["run_id"]),
+        run,
+        messages,
+        cancelled,
+    )
+
+    emitted = []
+    while not messages.empty():
+        emitted.append(messages.get())
+    assert emitted[-1]["type"] == "cancelled"
 
 
 def test_small_area_worker_contract_is_covered_in_process(tmp_path: Path) -> None:

@@ -230,6 +230,16 @@ def test_top_level_api_reports_empty_outputs_and_invalid_packages(
             ),
             tmp_path / "wrong-output.csv",
         )
+    with pytest.raises(ValueError, match="without households"):
+        spc.write_linked_population(
+            spc.LinkedPopulation(households=[], persons=[{"id": "p1"}]),
+            tmp_path / "empty-households",
+        )
+    with pytest.raises(ValueError, match="without persons"):
+        spc.write_linked_population(
+            spc.LinkedPopulation(households=[{"id": "h1"}], persons=[]),
+            tmp_path / "empty-persons",
+        )
 
     invalid_json_path = tmp_path / "invalid.json"
     invalid_json_path.write_text("{")
@@ -507,3 +517,94 @@ def test_render_small_area_map_delegates_to_render_synthesis_map(tmp_path) -> No
     assert calls[0]["geography_column"] == "ct"
     assert calls[0]["geography_id_field"] == "CTUID"
     assert result == tmp_path / "out.html"
+
+
+def test_render_small_area_map_accepts_paired_files_and_explicit_paths(
+    tmp_path: Path,
+) -> None:
+    calls: list[dict] = []
+    files = spc.LinkedPopulationFiles(
+        households=tmp_path / "households.csv",
+        persons=tmp_path / "persons.csv",
+    )
+
+    def _fake_render(**kwargs):
+        calls.append(kwargs)
+        return tmp_path / "map.html"
+
+    with patch("synthpopcan.map_render.render_synthesis_map", _fake_render):
+        api.render_small_area_map(
+            households=files,
+            boundaries=tmp_path / "boundaries.geojson",
+            geography_column="ct",
+            geography_id_field="CTUID",
+            out=tmp_path / "paired.html",
+        )
+        api.render_small_area_map(
+            households=tmp_path / "households.csv",
+            persons=tmp_path / "persons.csv",
+            boundaries=tmp_path / "boundaries.geojson",
+            geography_column="ct",
+            geography_id_field="CTUID",
+            out=tmp_path / "paths.html",
+        )
+
+    assert calls[0]["households_path"] == files.households
+    assert calls[0]["persons_path"] == files.persons
+    assert calls[1]["households_path"] == tmp_path / "households.csv"
+    assert calls[1]["persons_path"] == tmp_path / "persons.csv"
+
+
+def test_render_small_area_map_rejects_duplicate_person_path_for_paired_inputs(
+    tmp_path: Path,
+) -> None:
+    files = spc.LinkedPopulationFiles(
+        households=tmp_path / "households.csv",
+        persons=tmp_path / "persons.csv",
+    )
+    result = spc.SmallAreaResult(
+        population=files,
+        report_path=tmp_path / "report.json",
+        weights_path=None,
+        assigned_households=0,
+        assigned_persons=0,
+        total_geographies=0,
+        converged=True,
+        max_abs_error=0,
+        calibration_mode="household_only",
+        details={},
+    )
+    common = {
+        "persons": tmp_path / "duplicate-persons.csv",
+        "boundaries": tmp_path / "boundaries.geojson",
+        "geography_column": "ct",
+        "geography_id_field": "CTUID",
+        "out": tmp_path / "map.html",
+    }
+
+    with pytest.raises(ValueError, match="persons must be omitted"):
+        api.render_small_area_map(households=files, **common)
+    with pytest.raises(ValueError, match="persons must be omitted"):
+        api.render_small_area_map(households=result, **common)
+
+
+def test_calibrate_small_area_rejects_missing_linked_csvs(tmp_path: Path) -> None:
+    population_dir = tmp_path / "population"
+    population_dir.mkdir()
+
+    with pytest.raises(FileNotFoundError, match="household CSV not found"):
+        spc.calibrate_small_area(
+            population_dir,
+            tmp_path / "controls.csv",
+            geography_dimension="ct",
+            output_dir=tmp_path / "missing-household-output",
+        )
+
+    (population_dir / "households.csv").write_text("synthetic_household_id\nh1\n")
+    with pytest.raises(FileNotFoundError, match="person CSV not found"):
+        spc.calibrate_small_area(
+            population_dir,
+            tmp_path / "controls.csv",
+            geography_dimension="ct",
+            output_dir=tmp_path / "missing-person-output",
+        )
