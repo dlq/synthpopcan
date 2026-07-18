@@ -11,6 +11,7 @@ import pytest
 
 from synthpopcan.map_render import (
     _classify_polygon_rings,
+    _classify_polygon_rings_by_winding,
     _compute_geo_stats,
     _json_for_inline_script,
     _lcc_to_wgs84,
@@ -35,6 +36,16 @@ def test_classify_polygon_rings_preserves_holes_and_islands() -> None:
     polygon_with_hole = next(polygon for polygon in polygons if len(polygon) == 2)
     assert polygon_with_hole[0][0] == exterior[0]
     assert polygon_with_hole[1][0] == hole[-1]
+
+
+def test_classify_polygon_rings_by_winding_preserves_holes_and_islands() -> None:
+    exterior = [[0, 0], [10, 0], [10, 10], [0, 10], [0, 0]]
+    hole = [[2, 2], [2, 8], [8, 8], [8, 2], [2, 2]]
+    island = [[4, 4], [6, 4], [6, 6], [4, 6], [4, 4]]
+
+    polygons = _classify_polygon_rings_by_winding([hole, island, exterior])
+
+    assert sorted(len(polygon) for polygon in polygons) == [1, 2]
 
 
 def test_inline_map_json_cannot_terminate_script_element() -> None:
@@ -667,7 +678,9 @@ def test_compute_geo_stats_pct_immigrant(tmp_path: Path) -> None:
 # ---------------------------------------------------------------------------
 
 
-def _write_fake_shapefile(shp_dir: Path, geo_id: str) -> Path:
+def _write_fake_shapefile(
+    shp_dir: Path, geo_id: str, *, dguid: str | None = None
+) -> Path:
     """Write the simplest possible polygon shapefile using pyshp."""
     import shapefile
 
@@ -684,8 +697,13 @@ def _write_fake_shapefile(shp_dir: Path, geo_id: str) -> Path:
     ]
     with shapefile.Writer(str(shp_path)) as w:
         w.field("CTUID", "C", 20)
+        if dguid is not None:
+            w.field("DGUID", "C", 30)
         w.poly([ring])
-        w.record(CTUID=geo_id)
+        record = {"CTUID": geo_id}
+        if dguid is not None:
+            record["DGUID"] = dguid
+        w.record(**record)
     return shp_path
 
 
@@ -1455,6 +1473,70 @@ def test_prepare_boundaries_geojson_writes_geojson(tmp_path: Path) -> None:
     assert data["features"][0]["properties"]["geo_id"] == "4620001.00"
 
 
+def test_prepare_boundaries_geojson_preserves_requested_dguid(tmp_path: Path) -> None:
+    pytest.importorskip("shapefile")
+    import json as _json
+
+    shp_path = _write_fake_shapefile(
+        tmp_path, "4620001.00", dguid="2021S05074620001.00"
+    )
+    out = tmp_path / "out.geojson"
+
+    prepare_boundaries_geojson(shp_path, "CTUID", out, property_fields=("DGUID",))
+
+    properties = _json.loads(out.read_text())["features"][0]["properties"]
+    assert properties == {
+        "geo_id": "4620001.00",
+        "DGUID": "2021S05074620001.00",
+    }
+
+
+def test_prepare_boundaries_geojson_streams_multiple_features(
+    tmp_path: Path, monkeypatch
+) -> None:
+    import json as _json
+
+    def fake_reader(*_args, feature_sink=None, **_kwargs):
+        assert feature_sink is not None
+        for geo_id in ("A", "B"):
+            feature_sink(
+                {
+                    "type": "Feature",
+                    "properties": {"geo_id": geo_id},
+                    "geometry": None,
+                }
+            )
+        return ({"type": "FeatureCollection", "features": []}, (0, 0, 1, 1))
+
+    monkeypatch.setattr("synthpopcan.map_render._read_shapefile_geojson", fake_reader)
+    out = tmp_path / "out.geojson"
+
+    prepare_boundaries_geojson(tmp_path / "unused.shp", "CTUID", out)
+
+    assert [
+        feature["properties"]["geo_id"]
+        for feature in _json.loads(out.read_text())["features"]
+    ] == ["A", "B"]
+
+
+def test_prepare_boundaries_geojson_removes_partial_output_on_failure(
+    tmp_path: Path, monkeypatch
+) -> None:
+    def failing_reader(*_args, **_kwargs):
+        raise RuntimeError("conversion failed")
+
+    monkeypatch.setattr(
+        "synthpopcan.map_render._read_shapefile_geojson", failing_reader
+    )
+    out = tmp_path / "out.geojson"
+
+    with pytest.raises(RuntimeError, match="conversion failed"):
+        prepare_boundaries_geojson(tmp_path / "unused.shp", "CTUID", out)
+
+    assert not out.exists()
+    assert not list(tmp_path.glob(".out.geojson.*.tmp"))
+
+
 # ---------------------------------------------------------------------------
 # render_synthesis_map — GeoJSON boundaries path
 # ---------------------------------------------------------------------------
@@ -1523,6 +1605,73 @@ def test_cli_prepare_boundaries_success(tmp_path: Path) -> None:
     assert exit_code == 0
     mock_dl.assert_called_once()
     mock_conv.assert_called_once()
+
+
+def test_cli_prepare_boundaries_2021_preserves_dguid(tmp_path: Path) -> None:
+    pytest.importorskip("shapefile")
+    from unittest.mock import patch
+
+    from synthpopcan.cli import main as cli_main
+
+    shp_path = _write_fake_shapefile(
+        tmp_path, "4620001.00", dguid="2021S05074620001.00"
+    )
+    with (
+        patch(
+            "synthpopcan.statcan.fetch_boundary_zip", return_value=shp_path
+        ) as mock_dl,
+        patch(
+            "synthpopcan.map_render.prepare_boundaries_geojson",
+            return_value=tmp_path / "2021-boundary-ct.geojson",
+        ) as mock_conv,
+    ):
+        exit_code = cli_main(
+            [
+                "geo",
+                "boundaries",
+                "--census-year",
+                "2021",
+                "--geo-level",
+                "ct",
+                "--out-dir",
+                str(tmp_path),
+            ]
+        )
+
+    assert exit_code == 0
+    mock_dl.assert_called_once_with("ct", tmp_path, census_year=2021, url=None)
+    assert mock_conv.call_args.kwargs["property_fields"] == ("DGUID",)
+    assert mock_conv.call_args.kwargs["trust_ring_winding"] is True
+    assert mock_conv.call_args.kwargs["out_path"].name == "2021-boundary-ct.geojson"
+
+
+def test_cli_downloads_2021_relationship_file(tmp_path: Path) -> None:
+    from unittest.mock import patch
+
+    from synthpopcan.cli import main as cli_main
+
+    csv_path = tmp_path / "2021_98260004.csv"
+    with patch(
+        "synthpopcan.statcan.fetch_dgrf_2021", return_value=csv_path
+    ) as mock_fetch:
+        exit_code = cli_main(["geo", "relationship-file", "--out-dir", str(tmp_path)])
+
+    assert exit_code == 0
+    mock_fetch.assert_called_once_with(tmp_path, url=None)
+
+
+def test_cli_relationship_file_reports_download_error(tmp_path: Path) -> None:
+    from unittest.mock import patch
+
+    import click
+
+    from synthpopcan.cli import main as cli_main
+
+    with patch(
+        "synthpopcan.statcan.fetch_dgrf_2021", side_effect=OSError("network error")
+    ):
+        with pytest.raises(click.ClickException, match="network error"):
+            cli_main(["geo", "relationship-file", "--out-dir", str(tmp_path)])
 
 
 def test_cli_prepare_boundaries_download_oserror(tmp_path: Path) -> None:

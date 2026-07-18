@@ -8,6 +8,8 @@ import csv
 import json
 import math
 import statistics
+import tempfile
+from collections.abc import Callable
 from html import escape as html_escape
 from pathlib import Path
 from typing import Any
@@ -74,6 +76,9 @@ def _read_shapefile_geojson(
     id_field: str,
     keep_ids: set[str] | None,
     coord_precision: int = 5,
+    property_fields: tuple[str, ...] = (),
+    feature_sink: Callable[[dict[str, Any]], None] | None = None,
+    trust_ring_winding: bool = False,
 ) -> tuple[dict[str, Any], tuple[float, float, float, float]]:
     """Read a StatCan LCC shapefile and return a WGS-84 GeoJSON FeatureCollection.
 
@@ -88,6 +93,7 @@ def _read_shapefile_geojson(
     with shapefile.Reader(str(shp_path), encoding="latin1") as sf:
         field_names = [f[0] for f in sf.fields[1:]]  # type: ignore[attr-defined]
         id_idx = field_names.index(id_field)
+        property_indices = {name: field_names.index(name) for name in property_fields}
 
         for sr in sf.iterShapeRecords():  # type: ignore[attr-defined]
             geo_id = str(sr.record[id_idx]).strip()
@@ -117,19 +123,32 @@ def _read_shapefile_geojson(
             if not rings:
                 continue
 
-            polygons = _classify_polygon_rings(rings)
+            polygons = (
+                _classify_polygon_rings_by_winding(rings)
+                if trust_ring_winding
+                else _classify_polygon_rings(rings)
+            )
             if not polygons:
                 continue
             geom_type = "MultiPolygon" if len(polygons) > 1 else "Polygon"
             coords = polygons if geom_type == "MultiPolygon" else polygons[0]
 
-            features.append(
+            properties = {"geo_id": geo_id}
+            properties.update(
                 {
-                    "type": "Feature",
-                    "properties": {"geo_id": geo_id},
-                    "geometry": {"type": geom_type, "coordinates": coords},
+                    name: str(sr.record[index]).strip()
+                    for name, index in property_indices.items()
                 }
             )
+            feature = {
+                "type": "Feature",
+                "properties": properties,
+                "geometry": {"type": geom_type, "coordinates": coords},
+            }
+            if feature_sink is None:
+                features.append(feature)
+            else:
+                feature_sink(feature)
 
     return (
         {"type": "FeatureCollection", "features": features},
@@ -142,26 +161,62 @@ def prepare_boundaries_geojson(
     id_field: str,
     out_path: Path,
     coord_precision: int = 5,
+    property_fields: tuple[str, ...] = (),
+    trust_ring_winding: bool = False,
 ) -> Path:
     """Convert a StatCan LCC shapefile to a WGS-84 GeoJSON file.
 
     Reads *all* features from *shp_path*, reprojects coordinates from
     NAD83 / Statistics Canada Lambert to WGS-84, and writes a
-    FeatureCollection to *out_path*.  Each feature carries a ``geo_id``
-    property taken from *id_field*.
+    FeatureCollection to *out_path*. Each feature carries a ``geo_id``
+    property taken from *id_field*. Named *property_fields* are also copied;
+    this is used to retain the 2021 Census ``DGUID``.
+
+    Set *trust_ring_winding* for official shapefiles whose exterior/interior
+    orientation follows the format contract. This avoids costly containment
+    tests for highly fragmented national coastal features.
 
     The resulting file can be passed directly to ``render_synthesis_map``
     as the *boundaries_path* argument (suffix ``.geojson``), avoiding the
     need to ship the full shapefile alongside the synthesis outputs.
     """
-    geojson, _ = _read_shapefile_geojson(
-        shp_path,
-        id_field=id_field,
-        keep_ids=None,  # type: ignore[arg-type]  # None → keep all
-        coord_precision=coord_precision,
-    )
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    out_path.write_text(json.dumps(geojson, separators=(",", ":")))
+    temp_path: Path | None = None
+    try:
+        with tempfile.NamedTemporaryFile(
+            "w",
+            encoding="utf-8",
+            dir=out_path.parent,
+            prefix=f".{out_path.name}.",
+            suffix=".tmp",
+            delete=False,
+        ) as output:
+            temp_path = Path(output.name)
+            output.write('{"type":"FeatureCollection","features":[')
+            first_feature = True
+
+            def write_feature(feature: dict[str, Any]) -> None:
+                nonlocal first_feature
+                if not first_feature:
+                    output.write(",")
+                json.dump(feature, output, separators=(",", ":"))
+                first_feature = False
+
+            _read_shapefile_geojson(
+                shp_path,
+                id_field=id_field,
+                keep_ids=None,
+                coord_precision=coord_precision,
+                property_fields=property_fields,
+                feature_sink=write_feature,
+                trust_ring_winding=trust_ring_winding,
+            )
+            output.write("]}")
+        temp_path.replace(out_path)
+    except BaseException:
+        if temp_path is not None:
+            temp_path.unlink(missing_ok=True)
+        raise
     return out_path
 
 
@@ -272,15 +327,54 @@ def _classify_polygon_rings(
     if not rings:
         return []
     areas = [abs(_ring_signed_area(ring)) for ring in rings]
+    bounds = [
+        (
+            min(point[0] for point in ring),
+            min(point[1] for point in ring),
+            max(point[0] for point in ring),
+            max(point[1] for point in ring),
+        )
+        for ring in rings
+    ]
+    grid_size = min(128, max(8, math.ceil(math.sqrt(len(rings)))))
+    all_west = min(value[0] for value in bounds)
+    all_south = min(value[1] for value in bounds)
+    width = max(max(value[2] for value in bounds) - all_west, 1e-12)
+    height = max(max(value[3] for value in bounds) - all_south, 1e-12)
+
+    def grid_cell(x: float, y: float) -> tuple[int, int]:
+        column = min(grid_size - 1, max(0, int((x - all_west) / width * grid_size)))
+        row = min(grid_size - 1, max(0, int((y - all_south) / height * grid_size)))
+        return column, row
+
+    grid: dict[tuple[int, int], set[int]] = {}
+    global_candidates: set[int] = set()
+    for index, (west, south, east, north) in enumerate(bounds):
+        first_column, first_row = grid_cell(west, south)
+        last_column, last_row = grid_cell(east, north)
+        cell_count = (last_column - first_column + 1) * (last_row - first_row + 1)
+        if cell_count > 1_024:
+            global_candidates.add(index)
+            continue
+        for column in range(first_column, last_column + 1):
+            for row in range(first_row, last_row + 1):
+                grid.setdefault((column, row), set()).add(index)
+
     containers: list[list[int]] = []
     for index, ring in enumerate(rings):
+        west, south, east, north = bounds[index]
+        candidate_indices = grid.get(grid_cell(*ring[0]), set()) | global_candidates
         containers.append(
             [
                 candidate
-                for candidate, outer in enumerate(rings)
+                for candidate in candidate_indices
                 if candidate != index
                 and areas[candidate] > areas[index]
-                and _point_in_ring(ring[0], outer)
+                and bounds[candidate][0] <= west
+                and bounds[candidate][1] <= south
+                and bounds[candidate][2] >= east
+                and bounds[candidate][3] >= north
+                and _point_in_ring(ring[0], rings[candidate])
             ]
         )
     depths = [len(value) for value in containers]
@@ -302,6 +396,64 @@ def _classify_polygon_rings(
             continue
         parent = max(possible_exteriors, key=lambda candidate: depths[candidate])
         polygons[parent].append(_orient_ring(rings[index], clockwise=True))
+    return [polygons[index] for index in sorted(polygons)]
+
+
+def _classify_polygon_rings_by_winding(
+    rings: list[list[list[float]]],
+) -> list[list[list[list[float]]]]:
+    """Classify rings using a shapefile producer's reliable winding contract."""
+
+    if not rings:
+        return []
+    signed_areas = [_ring_signed_area(ring) for ring in rings]
+    largest = max(range(len(rings)), key=lambda index: abs(signed_areas[index]))
+    exterior_clockwise = signed_areas[largest] < 0
+    exterior_indexes = [
+        index
+        for index, area in enumerate(signed_areas)
+        if (area < 0) == exterior_clockwise
+    ]
+    polygons: dict[int, list[list[list[float]]]] = {
+        index: [_orient_ring(rings[index], clockwise=False)]
+        for index in exterior_indexes
+    }
+    bounds = [
+        (
+            min(point[0] for point in ring),
+            min(point[1] for point in ring),
+            max(point[0] for point in ring),
+            max(point[1] for point in ring),
+        )
+        for ring in rings
+    ]
+    for index in range(len(rings)):
+        if index in polygons:
+            continue
+        west, south, east, north = bounds[index]
+        candidates = sorted(
+            (
+                candidate
+                for candidate in exterior_indexes
+                if bounds[candidate][0] <= west
+                and bounds[candidate][1] <= south
+                and bounds[candidate][2] >= east
+                and bounds[candidate][3] >= north
+            ),
+            key=lambda candidate: abs(signed_areas[candidate]),
+        )
+        parent = next(
+            (
+                candidate
+                for candidate in candidates
+                if _point_in_ring(rings[index][0], rings[candidate])
+            ),
+            None,
+        )
+        if parent is None:
+            polygons[index] = [_orient_ring(rings[index], clockwise=False)]
+        else:
+            polygons[parent].append(_orient_ring(rings[index], clockwise=True))
     return [polygons[index] for index in sorted(polygons)]
 
 

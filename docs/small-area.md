@@ -94,7 +94,7 @@ and keep the source citation with the controls.
 ```
 
 Before running `geo map`, we need a local CT boundary file. `geo boundaries`
-downloads the StatCan 2016 boundary ZIP,
+downloads the selected StatCan boundary ZIP,
 extracts the shapefile, and converts it from NAD83 / Statistics Canada Lambert
 to WGS-84 GeoJSON in one step. Run this once per geography level and reuse the
 result across all maps.
@@ -112,6 +112,40 @@ This writes `data/boundaries/2016-boundary-ct.geojson`. Pass it directly to
 Supported levels: `ct` (census tracts), `ada` (aggregate dissemination areas),
 `da` (dissemination areas), `csd` (census subdivisions), `cd` (census
 divisions), `pr` (provinces and territories).
+
+For a 2021 workflow, select the matching census vintage explicitly:
+
+```bash
+synthpopcan geo boundaries \
+  --census-year 2021 \
+  --geo-level ct \
+  --out-dir data/boundaries/
+
+synthpopcan geo boundaries \
+  --census-year 2021 \
+  --geo-level ada \
+  --out-dir data/boundaries/
+```
+
+These write national `2021-boundary-ct.geojson` and
+`2021-boundary-ada.geojson` files. The CT product contains all tracts in
+Canada's tracted CMAs and CAs; smaller untracted CAs have no CTs. The ADA
+product covers all of Canada. Both retain StatCan's 2021 `DGUID` alongside the
+short geography identifier. Keep boundary and Census Profile/control vintages
+aligned; do not calibrate 2021 controls against 2016 geography.
+
+The national ADA geometry is detailed and much larger than the CT product. For
+countrywide overview maps, `--coord-precision 3` reduces conversion time and
+output size; retain the default precision when the extra spatial detail is
+actually required. StatCan's [2021 Dissemination Geographies Relationship
+File](https://www150.statcan.gc.ca/n1/en/catalogue/98260004) supplies the
+official DGUID links from these areas to higher census geography levels.
+Download its final 2021 CSV and provenance manifest with:
+
+```bash
+synthpopcan geo relationship-file \
+  --out-dir data/boundaries/2021/
+```
 
 Download the matching CT Census Profile at the same time:
 
@@ -343,11 +377,12 @@ household income.
 
 ### `geo boundaries`
 
-Downloads a Statistics Canada 2016 boundary ZIP for a geography level, extracts
-the shapefile, and writes a WGS-84 GeoJSON file for `geo map`.
+Downloads a Statistics Canada boundary ZIP for a geography level, extracts the
+shapefile, and writes a WGS-84 GeoJSON file for `geo map`.
 
 ```bash
 synthpopcan geo boundaries \
+  --census-year 2021 \
   --geo-level ada \
   --out-dir data/boundaries
 ```
@@ -355,7 +390,10 @@ synthpopcan geo boundaries \
 Important options:
 
 - `--geo-level`: boundary geography to prepare. Supported values include `ct`,
-  `ada`, `da`, `csd`, `cd`, and `pr`.
+  `ada`, `da`, `csd`, `cd`, and `pr` for 2016. The current 2021 catalogue
+  supports the national `ct` and `ada` products.
+- `--census-year`: boundary vintage, either `2016` (the default for backward
+  compatibility) or `2021`.
 - `--out-dir`: directory for the prepared GeoJSON file.
 - `--coord-precision`: coordinate precision for the written GeoJSON.
 - `--url`: optional alternate StatCan ZIP URL, useful when a project maintains
@@ -363,6 +401,17 @@ Important options:
 
 Run this once per geography level and reuse the resulting file. The command
 needs an internet connection for the boundary download.
+
+### `geo relationship-file`
+
+Downloads and extracts the final 2021 Dissemination Geographies Relationship
+File. Its dissemination-block-level rows connect the `DGUID` retained in CT
+and ADA boundaries to CMA/CA, province/territory, census division, census
+subdivision, and other supported parent geographies.
+
+```bash
+synthpopcan geo relationship-file --out-dir data/boundaries/2021
+```
 
 ### `geo controls`
 

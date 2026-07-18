@@ -4,6 +4,15 @@ All notable public changes to SynthPopCan are tracked here.
 
 ## Unreleased
 
+- Add explicit Statistics Canada 2021 hierarchical and individuals PUMF
+  adapters, a year-specific linked-tree column profile, streaming inspection
+  for full-size public microdata, and linked 2021 model-training support.
+- Add reproducible extraction of public-safe variable labels and fixed-width
+  metadata from the official SPSS command files.
+- Add national 2021 CT and ADA cartographic-boundary preparation with retained
+  DGUIDs, streaming atomic GeoJSON output, and the final 2021 dissemination-
+  geographies relationship-file download.
+
 ## 0.6.0 - 2026-07-17
 
 - Replaced browser-owned IPF, prepared-model, and small-area synthesis with

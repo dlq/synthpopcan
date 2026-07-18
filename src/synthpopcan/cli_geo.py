@@ -795,6 +795,13 @@ _KNOWN_GEO_LEVELS = ("ct", "ada", "da", "csd", "cd", "pr")
     help="Geography level to download: ct, ada, da, csd, cd, or pr.",
 )
 @click.option(
+    "--census-year",
+    default="2016",
+    type=click.Choice(("2016", "2021")),
+    show_default=True,
+    help="Boundary vintage. The 2021 catalogue currently supports CT and ADA.",
+)
+@click.option(
     "--out-dir",
     "out_dir",
     required=True,
@@ -815,11 +822,12 @@ _KNOWN_GEO_LEVELS = ("ct", "ada", "da", "csd", "cd", "pr")
 )
 def boundaries_command(
     geo_level: str,
+    census_year: str,
     out_dir: Path,
     coord_precision: int,
     url: str | None,
 ) -> None:
-    """Download and convert a StatCan 2016 census boundary shapefile to GeoJSON.
+    """Download and convert a StatCan census boundary shapefile to GeoJSON.
 
     Downloads the boundary ZIP for the specified geography level from Statistics
     Canada, extracts the shapefile, and converts it from NAD83 / Statistics
@@ -839,23 +847,29 @@ def boundaries_command(
     \b
     Example:
 
-        synthpopcan geo boundaries --geo-level ct --out-dir data/boundaries/
+        synthpopcan geo boundaries --census-year 2021 --geo-level ct \
+          --out-dir data/boundaries/
 
-    The 2016 boundary ZIPs are sourced from Statistics Canada's geography
-    program.  An internet connection is required.
+    Boundary ZIPs are sourced from Statistics Canada's geography program. An
+    internet connection is required. The 2021 products are cartographic files;
+    their DGUID values are retained in the output.
     """
     from synthpopcan.map_render import prepare_boundaries_geojson
     from synthpopcan.statcan import (
-        _BOUNDARY_2016_DOWNLOADS,
         BoundaryDownload,
         fetch_boundary_zip,
+        get_boundary_download,
     )
 
-    entry: BoundaryDownload = _BOUNDARY_2016_DOWNLOADS[geo_level.lower()]
+    year = int(census_year)
+    try:
+        entry: BoundaryDownload = get_boundary_download(geo_level, year)
+    except ValueError as exc:
+        raise click_value_error(exc) from exc
 
     click.echo(f"Downloading {entry.description} boundary file…", err=True)
     try:
-        shp_path = fetch_boundary_zip(geo_level, out_dir, url=url)
+        shp_path = fetch_boundary_zip(geo_level, out_dir, census_year=year, url=url)
     except OSError as exc:
         raise click.ClickException(f"Download failed: {exc}") from exc
     except ValueError as exc:
@@ -864,13 +878,15 @@ def boundaries_command(
     click.echo(f"  Shapefile: {shp_path}", err=True)
     click.echo("Converting to WGS-84 GeoJSON…", err=True)
 
-    geojson_path = out_dir / f"2016-boundary-{geo_level.lower()}.geojson"
+    geojson_path = out_dir / f"{year}-boundary-{geo_level.lower()}.geojson"
     try:
         prepare_boundaries_geojson(
             shp_path,
             id_field=entry.id_field,
             out_path=geojson_path,
             coord_precision=coord_precision,
+            property_fields=("DGUID",) if year == 2021 else (),
+            trust_ring_winding=True,
         )
     except ImportError as exc:
         raise click.ClickException(
@@ -885,6 +901,39 @@ def boundaries_command(
         err=True,
     )
     click.echo(geojson_path)
+
+
+@small_area.command("relationship-file")
+@click.option(
+    "--out-dir",
+    "out_dir",
+    required=True,
+    type=_PATH,
+    help="Directory where the 2021 relationship CSV and manifest will be saved.",
+)
+@click.option(
+    "--url",
+    default=None,
+    help="Override the StatCan download URL (useful for cached mirrors).",
+)
+def relationship_file_command(out_dir: Path, url: str | None) -> None:
+    """Download the 2021 dissemination-geographies relationship CSV.
+
+    The dissemination-block-level file links CT, ADA, and other 2021 Census
+    geographies to their parent areas through DGUID columns.
+    """
+    from synthpopcan.statcan import fetch_dgrf_2021
+
+    click.echo(
+        "Downloading 2021 Dissemination Geographies Relationship File…",
+        err=True,
+    )
+    try:
+        csv_path = fetch_dgrf_2021(out_dir, url=url)
+    except OSError as exc:
+        raise click.ClickException(f"Download failed: {exc}") from exc
+    print_wrote(csv_path)
+    click.echo(csv_path)
 
 
 @small_area.command("synthesize")

@@ -35,16 +35,32 @@ to choose an appropriate distribution. The tree documentation explains the
 model risks in more detail, especially low support, high purity, and overfit
 geography-specific models.
 
-SynthPopCan currently exposes two adapter formats in the CLI:
+SynthPopCan currently exposes four adapter formats in the CLI:
 
 - `statcan-2016-hierarchical` for the [Statistics Canada 2016 hierarchical PUMF](https://www150.statcan.gc.ca/n1/en/catalogue/98M0002X2016001)
-  shape used by the current local workflow; and
+  shape used by the current local workflow;
+- `statcan-2021-hierarchical` for the [Statistics Canada 2021 hierarchical PUMF](https://www150.statcan.gc.ca/n1/en/catalogue/98M0001X2021002)
+  v2, including linked household, economic-family, census-family, and person
+  identifiers;
+- `statcan-2021-individual` for the [Statistics Canada 2021 individuals PUMF](https://www150.statcan.gc.ca/n1/en/catalogue/98M0001X2021001)
+  v2; and
 - `fixture-v1` for small test and demonstration files.
 
-The 2016 hierarchical PUMF is a person-row file with household and family
+The 2016 and 2021 hierarchical PUMFs are person-row files with household and family
 identifiers such as `HH_ID`, `EF_ID`, `CF_ID`, and `PP_ID`. Household-level
 exports are derived from that person-row file and are only valid when selected
-household columns are constant within each household.
+household columns are constant within each household. The 2021 individuals PUMF
+contains independent person records identified by `PPSORT`; it cannot reconstruct
+households or train a linked household/person package.
+
+Use the adapter matching the source year. The 2021 profile reflects renamed
+variables such as `GENDER`, `MARSTH`, and `LFACT`; it does not silently translate
+them into the 2016 names `SEX`, `MarStH`, and `LFTAG`.
+
+Use the corrected v2 files. Statistics Canada corrected `STIR_GRP` in the 2021
+hierarchical release and corrected the `IMMCAT5` labels in the individuals
+release. SynthPopCan records the source format but does not attempt to repair an
+older raw file silently.
 
 ## Getting Started
 
@@ -62,8 +78,8 @@ available before choosing what to export.
 
 ```bash
 synthpopcan microdata inspect \
-  tests/fixtures/workflows/linked_tree/hierarchical.csv \
-  --input-format statcan-2016-hierarchical
+  /controlled/path/data_donnees_2021_hier_v2.csv \
+  --input-format statcan-2021-hierarchical
 ```
 
 **For an IPF seed (person level):** export the columns the controls use.
@@ -148,8 +164,8 @@ synthpopcan microdata inspect hierarchical.csv \
 
 Important options:
 
-- `--input-format`: source adapter, currently `statcan-2016-hierarchical` or
-  `fixture-v1`.
+- `--input-format`: source adapter, currently `statcan-2016-hierarchical`,
+  `statcan-2021-hierarchical`, `statcan-2021-individual`, or `fixture-v1`.
 - `--level`: required for `fixture-v1`, where the fixture must be declared as
   `household` or `person`.
 - `--weight-column`, `--geo-columns`, and `--id-columns`: fixture-oriented
@@ -159,10 +175,11 @@ Important options:
 ### `microdata check-seed`
 
 Checks whether selected household columns can be safely exported as seed rows
-from a `statcan-2016-hierarchical` file.
+from a supported 2016 or 2021 hierarchical file.
 
 ```bash
 synthpopcan microdata check-seed hierarchical.csv \
+  --input-format statcan-2021-hierarchical \
   --columns TENUR
 ```
 
@@ -185,7 +202,7 @@ synthpopcan microdata export-seed hierarchical.csv \
   --out seed.csv
 ```
 
-For `statcan-2016-hierarchical`, person-level export is the default. Use
+For both hierarchical adapters, person-level export is the default. Use
 `--level household` when we intentionally want one row per household. Run
 `check-seed` first to confirm the selected columns are constant within each
 household — if they are not, the export will collapse variation silently.
@@ -207,6 +224,10 @@ Suggests broad household and person column blocks for tree modelling.
 
 ```bash
 synthpopcan microdata suggest-tree-columns hierarchical.csv
+
+# For the 2021 hierarchical PUMF:
+synthpopcan microdata suggest-tree-columns hierarchical-2021.csv \
+  --input-format statcan-2021-hierarchical
 ```
 
 Treat this as a starting point, not as an automatic model design. A suggested
@@ -263,6 +284,32 @@ synthpopcan microdata export-training hierarchical.csv \
   --out household-training.csv
 ```
 
+The 2021 individuals PUMF supports only person-level training exports. These
+rows can train a standalone person model, but they do not provide the household
+links required by `models build train-linked`:
+
+```bash
+synthpopcan microdata export-training individual-2021.csv \
+  --input-format statcan-2021-individual \
+  --level person \
+  --target-columns AGEGRP,Gender \
+  --conditioning-columns PR \
+  --out person-training.csv
+```
+
+To train linked 2021 household/person models directly from the hierarchical
+PUMF, select its source profile explicitly:
+
+```bash
+synthpopcan models build train-linked hierarchical-2021.csv \
+  --input-format statcan-2021-hierarchical \
+  --household-block household_core \
+  --person-block person_demographics \
+  --household-model-out household-model.json \
+  --person-model-out person-model.json \
+  --manifest-out linked-training-manifest.json
+```
+
 The `--target-columns` are generated by the model. The
 `--conditioning-columns` shape which target distributions are used. If a
 conditioning column is too detailed, the model may have very small groups; if it
@@ -272,8 +319,9 @@ question.
 ## Troubleshooting
 
 **The command says the input format is unsupported:** check the adapter name.
-The current CLI accepts `statcan-2016-hierarchical` for the main census
-microdata workflow and `fixture-v1` for small local fixtures.
+The current CLI accepts `statcan-2016-hierarchical`,
+`statcan-2021-hierarchical`, and `statcan-2021-individual` for Census PUMFs,
+plus `fixture-v1` for small local fixtures.
 
 **Household seed export fails:** run `microdata check-seed` and look for
 columns that vary within `HH_ID`. We should either remove those columns, derive

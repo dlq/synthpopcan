@@ -21,6 +21,14 @@ _BOUNDARY_2016_BASE_URL = (
     "https://www12.statcan.gc.ca/census-recensement/2011/geo/bound-limit/"
     "files-fichiers/2016/"
 )
+_BOUNDARY_2021_BASE_URL = (
+    "https://www12.statcan.gc.ca/census-recensement/2021/geo/sip-pis/"
+    "boundary-limites/files-fichiers/"
+)
+_DGRF_2021_URL = (
+    "https://www12.statcan.gc.ca/census-recensement/2021/geo/sip-pis/"
+    "dguid-idugd/files-fichiers/2021_98260004.zip"
+)
 _STATCAN_TIMEOUT_SECONDS = 60
 _MAX_STATCAN_DOWNLOAD_BYTES = 8 * 1024 * 1024 * 1024
 
@@ -32,7 +40,9 @@ __all__ = [
     "extract_wds_dimension_names",
     "extract_wds_dimension_previews",
     "fetch_boundary_zip",
+    "get_boundary_download",
     "fetch_census_profile_2016",
+    "fetch_dgrf_2021",
     "fetch_wds_metadata",
     "fetch_wds_table",
     "normalize_language",
@@ -78,9 +88,9 @@ class CensusProfileDownload:
 class BoundaryDownload:
     """Metadata for one StatCan census boundary file download.
 
-    Covers the 2016 census boundary files (NAD83 / Statistics Canada Lambert
-    projection). The 2016 files are hosted under StatCan's 2011 geography
-    program path — this is intentional on StatCan's end, not a typo.
+    Boundary files use the NAD83 / Statistics Canada Lambert projection. The
+    2016 files are hosted under StatCan's 2011 geography program path — this is
+    intentional on StatCan's end, not a typo.
     """
 
     geo_level: str
@@ -88,11 +98,13 @@ class BoundaryDownload:
     zip_name: str
     shp_name: str
     id_field: str
+    census_year: int = 2016
+    base_url: str = _BOUNDARY_2016_BASE_URL
 
     @property
     def url(self) -> str:
         """Return the Statistics Canada download URL for this boundary file."""
-        return f"{_BOUNDARY_2016_BASE_URL}{self.zip_name}"
+        return f"{self.base_url}{self.zip_name}"
 
 
 _BOUNDARY_2016_DOWNLOADS: dict[str, BoundaryDownload] = {
@@ -140,30 +152,71 @@ _BOUNDARY_2016_DOWNLOADS: dict[str, BoundaryDownload] = {
     ),
 }
 
+_BOUNDARY_2021_DOWNLOADS: dict[str, BoundaryDownload] = {
+    "ct": BoundaryDownload(
+        geo_level="ct",
+        description="Census tracts (2021 cartographic)",
+        zip_name="lct_000b21a_e.zip",
+        shp_name="lct_000b21a_e.shp",
+        id_field="CTUID",
+        census_year=2021,
+        base_url=_BOUNDARY_2021_BASE_URL,
+    ),
+    "ada": BoundaryDownload(
+        geo_level="ada",
+        description="Aggregate dissemination areas (2021 cartographic)",
+        zip_name="lada000b21a_e.zip",
+        shp_name="lada000b21a_e.shp",
+        id_field="ADAUID",
+        census_year=2021,
+        base_url=_BOUNDARY_2021_BASE_URL,
+    ),
+}
+
+_BOUNDARY_DOWNLOADS: dict[int, dict[str, BoundaryDownload]] = {
+    2016: _BOUNDARY_2016_DOWNLOADS,
+    2021: _BOUNDARY_2021_DOWNLOADS,
+}
+
+
+def get_boundary_download(geo_level: str, census_year: int = 2016) -> BoundaryDownload:
+    """Return metadata for a supported census-year/geography boundary product."""
+
+    try:
+        downloads = _BOUNDARY_DOWNLOADS[census_year]
+    except KeyError as exc:
+        known_years = ", ".join(str(year) for year in sorted(_BOUNDARY_DOWNLOADS))
+        raise ValueError(
+            f"Unsupported census year {census_year!r} for boundary download. "
+            f"Supported: {known_years}."
+        ) from exc
+    try:
+        return downloads[geo_level.lower()]
+    except KeyError as exc:
+        known = ", ".join(sorted(downloads))
+        raise ValueError(
+            f"Unknown geography level {geo_level!r} for {census_year} boundary "
+            f"download. Supported: {known}."
+        ) from exc
+
 
 def fetch_boundary_zip(
     geo_level: str,
     out_dir: Path,
     *,
+    census_year: int = 2016,
     url: str | None = None,
 ) -> Path:
-    """Download and extract a StatCan 2016 census boundary shapefile.
+    """Download and extract a supported StatCan census boundary shapefile.
 
     Downloads the boundary ZIP for *geo_level* (one of ``ct``, ``ada``,
     ``da``, ``csd``, ``cd``, ``pr``) to *out_dir*, extracts all shapefile
     components (.shp, .dbf, .shx, .prj), and returns the path to the .shp.
 
-    Pass *url* to override the default StatCan URL (useful for mirrors,
-    cached copies, or future census vintages).
+    Pass *census_year* to select the boundary vintage. Pass *url* to override
+    the default StatCan URL (useful for mirrors or cached copies).
     """
-    try:
-        entry = _BOUNDARY_2016_DOWNLOADS[geo_level.lower()]
-    except KeyError as exc:
-        known = ", ".join(sorted(_BOUNDARY_2016_DOWNLOADS))
-        raise ValueError(
-            f"Unknown geography level {geo_level!r} for boundary download. "
-            f"Supported: {known}."
-        ) from exc
+    entry = get_boundary_download(geo_level, census_year)
 
     out_dir.mkdir(parents=True, exist_ok=True)
     download_url_ = url or entry.url
@@ -197,9 +250,13 @@ def fetch_boundary_zip(
         shp_path = candidates[0]
 
     write_manifest(
-        out_dir / f"2016-boundary-{entry.geo_level}.json",
+        out_dir / f"{entry.census_year}-boundary-{entry.geo_level}.json",
         {
-            "source": "Statistics Canada 2016 census boundary files",
+            "source": (
+                f"Statistics Canada {entry.census_year} census cartographic "
+                "boundary files"
+            ),
+            "census_year": entry.census_year,
             "geo_level": entry.geo_level,
             "description": entry.description,
             "source_url": download_url_,
@@ -207,6 +264,48 @@ def fetch_boundary_zip(
         },
     )
     return shp_path
+
+
+def fetch_dgrf_2021(out_dir: Path, *, url: str | None = None) -> Path:
+    """Download the final 2021 Dissemination Geographies Relationship File."""
+
+    out_dir.mkdir(parents=True, exist_ok=True)
+    download_url_ = url or _DGRF_2021_URL
+    zip_path = out_dir / "2021_98260004.zip"
+    csv_path = out_dir / "2021_98260004.csv"
+    download_url(download_url_, zip_path)
+    try:
+        with ZipFile(zip_path) as archive:
+            candidates = [
+                info
+                for info in archive.infolist()
+                if Path(info.filename).name == csv_path.name
+            ]
+            if not candidates:
+                raise FileNotFoundError(
+                    f"Could not find {csv_path.name} in {zip_path.name}"
+                )
+            with archive.open(candidates[0]) as source:
+                _atomic_copy_stream(
+                    source,
+                    csv_path,
+                    max_bytes=_MAX_STATCAN_DOWNLOAD_BYTES,
+                )
+    finally:
+        zip_path.unlink(missing_ok=True)
+
+    write_manifest(
+        out_dir / "2021-dissemination-geographies-relationship.json",
+        {
+            "source": "Statistics Canada 2021 Census",
+            "census_year": 2021,
+            "product": "Dissemination Geographies Relationship File",
+            "catalogue_number": "98-26-0004",
+            "source_url": download_url_,
+            "csv_path": str(csv_path),
+        },
+    )
+    return csv_path
 
 
 @dataclass(frozen=True)

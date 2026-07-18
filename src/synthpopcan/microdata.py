@@ -19,12 +19,20 @@ __all__ = [
     "TreeColumnSuggestionProfile",
     "build_tree_geography_feasibility_report",
     "check_statcan_2016_household_seed_columns",
+    "check_statcan_hierarchical_household_seed_columns",
     "derive_statcan_2016_household_seed_sample",
+    "derive_statcan_hierarchical_household_seed_sample",
     "export_seed_rows",
     "export_statcan_2016_household_training_rows",
     "export_statcan_2016_person_training_rows",
+    "export_statcan_hierarchical_household_training_rows",
+    "export_statcan_hierarchical_person_training_rows",
     "export_training_rows",
+    "inspect_statcan_microdata",
     "read_fixture_seed_sample",
+    "read_statcan_2021_hierarchical_seed_sample",
+    "read_statcan_2021_individual_seed_sample",
+    "read_statcan_hierarchical_seed_sample",
     "read_statcan_2016_hierarchical_seed_sample",
     "resolve_tree_column_block_pair",
     "suggest_tree_column_blocks",
@@ -190,11 +198,104 @@ _STATCAN_2016_HIERARCHICAL_TREE_PROFILE = TreeColumnSuggestionProfile(
     ),
 )
 
+_STATCAN_2021_HIERARCHICAL_TREE_PROFILE = TreeColumnSuggestionProfile(
+    source_format="statcan-2021-hierarchical",
+    geography_columns=("PR", "CMA"),
+    identifier_columns=("HH_ID", "EF_ID", "CF_ID", "PP_ID"),
+    weight_columns=("WEIGHT",),
+    replicate_weight_prefixes=("WT",),
+    derived_columns=("household_size",),
+    blocks=(
+        TreeColumnBlockSpec(
+            name="household_core",
+            level="household",
+            target_columns=(
+                "household_size",
+                "TENUR",
+                "DTYPE",
+                "ROOM",
+                "BEDRM",
+                "CONDO",
+                "PRESMORTG",
+                "VALUE",
+                "SHELCO",
+                "SUBSIDY",
+                "REPAIR",
+                "BUILT",
+            ),
+            conditioning_columns=("PR",),
+        ),
+        TreeColumnBlockSpec(
+            name="household_family_context",
+            level="household",
+            target_columns=("FCOND", "NOS"),
+            conditioning_columns=("PR", "household_size", "TENUR"),
+        ),
+        TreeColumnBlockSpec(
+            name="person_demographics",
+            level="person",
+            target_columns=("AGEGRP", "GENDER", "MARSTH", "IMMSTAT"),
+            conditioning_columns=("PR", "household_size", "TENUR"),
+        ),
+        TreeColumnBlockSpec(
+            name="person_identity_language",
+            level="person",
+            target_columns=(
+                "CITIZEN",
+                "GENSTAT",
+                "POB",
+                "VISMIN",
+                "MTNEN",
+                "MTNFR",
+                "MTNNO",
+                "HLMOSTEN",
+                "HLMOSTFR",
+                "HLMOSTNO",
+            ),
+            conditioning_columns=(
+                "PR",
+                "household_size",
+                "TENUR",
+                "AGEGRP",
+                "GENDER",
+            ),
+        ),
+        TreeColumnBlockSpec(
+            name="person_education_work_income",
+            level="person",
+            target_columns=(
+                "HDGREE",
+                "LFACT",
+                "EMPIN",
+                "FPTWK",
+                "HRSWRK",
+                "WKSWRK",
+                "WRKACT",
+                "TOTINC",
+            ),
+            conditioning_columns=(
+                "PR",
+                "household_size",
+                "TENUR",
+                "AGEGRP",
+                "GENDER",
+            ),
+        ),
+    ),
+)
+
 _TREE_COLUMN_SUGGESTION_PROFILES = {
     _STATCAN_2016_HIERARCHICAL_TREE_PROFILE.source_format: (
         _STATCAN_2016_HIERARCHICAL_TREE_PROFILE
-    )
+    ),
+    _STATCAN_2021_HIERARCHICAL_TREE_PROFILE.source_format: (
+        _STATCAN_2021_HIERARCHICAL_TREE_PROFILE
+    ),
 }
+
+_STATCAN_HIERARCHICAL_FORMATS = frozenset(
+    {"statcan-2016-hierarchical", "statcan-2021-hierarchical"}
+)
 
 
 def read_fixture_seed_sample(
@@ -236,6 +337,81 @@ def read_fixture_seed_sample(
     )
 
 
+def inspect_statcan_microdata(path: Path, *, source_format: str) -> dict[str, Any]:
+    """Stream a structural summary without retaining a full PUMF in memory."""
+
+    hierarchical = source_format in _STATCAN_HIERARCHICAL_FORMATS
+    if not hierarchical and source_format != "statcan-2021-individual":
+        raise ValueError(f"unsupported StatCan source format: {source_format}")
+    required = (
+        ("HH_ID", "EF_ID", "CF_ID", "PP_ID", "WEIGHT")
+        if hierarchical
+        else ("PPSORT", "WEIGHT")
+    )
+    record_id_column = "PP_ID" if hierarchical else "PPSORT"
+    seen_record_ids: set[str] = set()
+    seen_household_ids: set[str] = set()
+    duplicate_record_ids = 0
+    records = 0
+    with path.open(newline="", encoding="utf-8-sig") as handle:
+        reader = csv.DictReader(handle)
+        columns = tuple(reader.fieldnames or ())
+        validate_columns(columns, required=required)
+        for row in reader:
+            records += 1
+            record_id = row.get(record_id_column, "")
+            if record_id:
+                if record_id in seen_record_ids:
+                    duplicate_record_ids += 1
+                else:
+                    seen_record_ids.add(record_id)
+            if hierarchical and row.get("HH_ID"):
+                seen_household_ids.add(row["HH_ID"])
+
+    summary: dict[str, Any] = {
+        "level": "person",
+        "source_format": source_format,
+        "records": records,
+        "columns": list(columns),
+        "weight_column": "WEIGHT",
+        "geography_columns": (
+            []
+            if hierarchical
+            else [column for column in ("PR", "CMA") if column in columns]
+        ),
+        "id_columns": [record_id_column],
+    }
+    if hierarchical:
+        household_count = len(seen_household_ids)
+        summary.update(
+            {
+                "household_id_column": "HH_ID",
+                "economic_family_id_column": "EF_ID",
+                "census_family_id_column": "CF_ID",
+                "person_id_column": "PP_ID",
+                "households": household_count,
+                "people": records,
+                "average_household_size": (
+                    round(records / household_count, 4) if household_count else 0
+                ),
+                "duplicate_person_ids": duplicate_record_ids,
+            }
+        )
+        if source_format == "statcan-2021-hierarchical":
+            summary["census_year"] = 2021
+    else:
+        summary.update(
+            {
+                "census_year": 2021,
+                "record_id_column": "PPSORT",
+                "people": records,
+                "duplicate_record_ids": duplicate_record_ids,
+                "linked_households": False,
+            }
+        )
+    return summary
+
+
 def read_statcan_2016_hierarchical_seed_sample(
     path: Path,
     *,
@@ -248,7 +424,39 @@ def read_statcan_2016_hierarchical_seed_sample(
     duplicate-person-ID check in its metadata.
     """
 
-    with path.open(newline="") as handle:
+    return read_statcan_hierarchical_seed_sample(
+        path,
+        source_format="statcan-2016-hierarchical",
+        columns=columns,
+    )
+
+
+def read_statcan_2021_hierarchical_seed_sample(
+    path: Path,
+    *,
+    columns: tuple[str, ...] | None = None,
+) -> SeedSample:
+    """Read a Statistics Canada 2021 hierarchical PUMF CSV extract."""
+
+    return read_statcan_hierarchical_seed_sample(
+        path,
+        source_format="statcan-2021-hierarchical",
+        columns=columns,
+    )
+
+
+def read_statcan_hierarchical_seed_sample(
+    path: Path,
+    *,
+    source_format: str,
+    columns: tuple[str, ...] | None = None,
+) -> SeedSample:
+    """Read a supported Statistics Canada hierarchical PUMF CSV extract."""
+
+    if source_format not in _STATCAN_HIERARCHICAL_FORMATS:
+        raise ValueError(f"unsupported hierarchical source format: {source_format}")
+
+    with path.open(newline="", encoding="utf-8-sig") as handle:
         reader = csv.DictReader(handle)
         source_columns = tuple(reader.fieldnames or ())
         required_columns = ("HH_ID", "EF_ID", "CF_ID", "PP_ID", "WEIGHT")
@@ -297,6 +505,8 @@ def read_statcan_2016_hierarchical_seed_sample(
         "average_household_size": average_household_size,
         "duplicate_person_ids": duplicate_person_ids,
     }
+    if source_format == "statcan-2021-hierarchical":
+        metadata["census_year"] = 2021
     if columns is not None:
         metadata.update(
             {
@@ -308,12 +518,76 @@ def read_statcan_2016_hierarchical_seed_sample(
 
     return SeedSample(
         level="person",
-        source_format="statcan-2016-hierarchical",
+        source_format=source_format,
         records=records,
         columns=retained_columns,
         weight_column="WEIGHT",
         geography_columns=(),
         id_columns=("PP_ID",),
+        metadata=metadata,
+    )
+
+
+def read_statcan_2021_individual_seed_sample(
+    path: Path,
+    *,
+    columns: tuple[str, ...] | None = None,
+) -> SeedSample:
+    """Read the Statistics Canada 2021 individuals PUMF CSV.
+
+    This file contains independent person records. It is suitable for person-level
+    seed and training exports but cannot be used to reconstruct linked households.
+    """
+
+    with path.open(newline="", encoding="utf-8-sig") as handle:
+        reader = csv.DictReader(handle)
+        source_columns = tuple(reader.fieldnames or ())
+        requested_columns = tuple(columns or ())
+        validate_columns(
+            source_columns,
+            required=("PPSORT", "WEIGHT", *requested_columns),
+        )
+        if columns is None:
+            retained_columns = source_columns
+        else:
+            retained_set = {"PPSORT", "WEIGHT", *requested_columns}
+            retained_columns = tuple(
+                column for column in source_columns if column in retained_set
+            )
+        records = tuple(
+            {column: row.get(column, "") for column in retained_columns}
+            for row in reader
+        )
+
+    record_ids = [record["PPSORT"] for record in records if record.get("PPSORT")]
+    duplicate_record_ids = sum(
+        count - 1 for count in Counter(record_ids).values() if count > 1
+    )
+    metadata: dict[str, Any] = {
+        "census_year": 2021,
+        "record_id_column": "PPSORT",
+        "people": len(records),
+        "duplicate_record_ids": duplicate_record_ids,
+        "linked_households": False,
+    }
+    if columns is not None:
+        metadata.update(
+            {
+                "source_column_count": len(source_columns),
+                "retained_column_count": len(retained_columns),
+                "column_projection": True,
+            }
+        )
+    return SeedSample(
+        level="person",
+        source_format="statcan-2021-individual",
+        records=records,
+        columns=retained_columns,
+        weight_column="WEIGHT",
+        geography_columns=tuple(
+            column for column in ("PR", "CMA") if column in retained_columns
+        ),
+        id_columns=("PPSORT",),
         metadata=metadata,
     )
 
@@ -375,32 +649,70 @@ def export_training_rows(
     selected columns, identifiers, and weight column.
     """
 
-    if sample.source_format != "statcan-2016-hierarchical":
-        raise ValueError("training export requires statcan-2016-hierarchical")
     if not target_columns:
         raise ValueError("at least one target column is required")
     if not conditioning_columns:
         raise ValueError("at least one conditioning column is required")
-    if level == "person":
-        return export_statcan_2016_person_training_rows(
+    if sample.source_format == "statcan-2021-individual":
+        if level != "person":
+            raise ValueError(
+                "statcan-2021-individual supports only person-level training export"
+            )
+        return export_statcan_2021_individual_training_rows(
             sample,
             target_columns=target_columns,
             conditioning_columns=conditioning_columns,
         )
-    return export_statcan_2016_household_training_rows(
+    _require_statcan_hierarchical(sample, operation="training export")
+    if level == "person":
+        return export_statcan_hierarchical_person_training_rows(
+            sample,
+            target_columns=target_columns,
+            conditioning_columns=conditioning_columns,
+        )
+    return export_statcan_hierarchical_household_training_rows(
         sample,
         target_columns=target_columns,
         conditioning_columns=conditioning_columns,
     )
 
 
-def export_statcan_2016_person_training_rows(
+def export_statcan_2021_individual_training_rows(
     sample: SeedSample,
     *,
     target_columns: tuple[str, ...],
     conditioning_columns: tuple[str, ...],
 ) -> tuple[list[dict[str, str]], dict[str, Any]]:
-    """Export person-level training rows from 2016 hierarchical microdata.
+    """Export person-level training rows from the 2021 individuals PUMF."""
+
+    validate_columns(sample.columns, required=("PPSORT", "WEIGHT"))
+    selected_columns = unique_columns((*conditioning_columns, *target_columns))
+    validate_columns(sample.columns, required=selected_columns)
+    output_columns = unique_columns(
+        ("PPSORT", *conditioning_columns, *target_columns, "WEIGHT")
+    )
+    rows = [
+        {column: record.get(column, "") for column in output_columns}
+        for record in sample.records
+    ]
+    return rows, training_export_summary(
+        sample,
+        level="person",
+        rows_written=len(rows),
+        output_columns=output_columns,
+        target_columns=target_columns,
+        conditioning_columns=conditioning_columns,
+        id_columns=("PPSORT",),
+    )
+
+
+def export_statcan_hierarchical_person_training_rows(
+    sample: SeedSample,
+    *,
+    target_columns: tuple[str, ...],
+    conditioning_columns: tuple[str, ...],
+) -> tuple[list[dict[str, str]], dict[str, Any]]:
+    """Export person-level training rows from supported hierarchical microdata.
 
     ``household_size`` may be requested even though it is not a source column;
     it is derived from the number of persons sharing each ``HH_ID``.
@@ -440,7 +752,7 @@ def export_statcan_2016_person_training_rows(
     )
 
 
-def export_statcan_2016_household_training_rows(
+def export_statcan_hierarchical_household_training_rows(
     sample: SeedSample,
     *,
     target_columns: tuple[str, ...],
@@ -449,12 +761,12 @@ def export_statcan_2016_household_training_rows(
     """Export one household-level training row per household ID.
 
     Household-level source columns must be constant within each household. Use
-    :func:`check_statcan_2016_household_seed_columns` before exporting when
+    :func:`check_statcan_hierarchical_household_seed_columns` before exporting when
     preparing a model design interactively.
     """
 
     selected_columns = unique_columns((*conditioning_columns, *target_columns))
-    household_sample = derive_statcan_2016_household_seed_sample(
+    household_sample = derive_statcan_hierarchical_household_seed_sample(
         sample,
         columns=tuple(
             column for column in selected_columns if column != "household_size"
@@ -501,7 +813,7 @@ def training_export_summary(
     }
 
 
-def derive_statcan_2016_household_seed_sample(
+def derive_statcan_hierarchical_household_seed_sample(
     sample: SeedSample,
     *,
     columns: tuple[str, ...],
@@ -513,8 +825,7 @@ def derive_statcan_2016_household_seed_sample(
     derived from the number of person rows.
     """
 
-    if sample.source_format != "statcan-2016-hierarchical":
-        raise ValueError("household derivation requires statcan-2016-hierarchical")
+    _require_statcan_hierarchical(sample, operation="household derivation")
     if not columns:
         raise ValueError("at least one household column is required")
     validate_columns(sample.columns, required=("HH_ID", "WEIGHT", *columns))
@@ -556,7 +867,7 @@ def derive_statcan_2016_household_seed_sample(
     )
 
 
-def check_statcan_2016_household_seed_columns(
+def check_statcan_hierarchical_household_seed_columns(
     sample: SeedSample,
     *,
     columns: tuple[str, ...],
@@ -567,8 +878,7 @@ def check_statcan_2016_household_seed_columns(
     plus checks for ``WEIGHT`` and derived ``household_size``.
     """
 
-    if sample.source_format != "statcan-2016-hierarchical":
-        raise ValueError("household seed checks require statcan-2016-hierarchical")
+    _require_statcan_hierarchical(sample, operation="household seed checks")
     if not columns:
         raise ValueError("at least one household column is required")
     validate_columns(sample.columns, required=("HH_ID", "WEIGHT", *columns))
@@ -596,6 +906,59 @@ def check_statcan_2016_household_seed_columns(
         "passed": all(check["status"] == "ok" for check in checks),
         "checks": checks,
     }
+
+
+def export_statcan_2016_person_training_rows(
+    sample: SeedSample,
+    *,
+    target_columns: tuple[str, ...],
+    conditioning_columns: tuple[str, ...],
+) -> tuple[list[dict[str, str]], dict[str, Any]]:
+    """Export person training rows through the year-independent hierarchical adapter."""
+
+    return export_statcan_hierarchical_person_training_rows(
+        sample,
+        target_columns=target_columns,
+        conditioning_columns=conditioning_columns,
+    )
+
+
+def export_statcan_2016_household_training_rows(
+    sample: SeedSample,
+    *,
+    target_columns: tuple[str, ...],
+    conditioning_columns: tuple[str, ...],
+) -> tuple[list[dict[str, str]], dict[str, Any]]:
+    """Export household training rows through the year-independent adapter."""
+
+    return export_statcan_hierarchical_household_training_rows(
+        sample,
+        target_columns=target_columns,
+        conditioning_columns=conditioning_columns,
+    )
+
+
+def derive_statcan_2016_household_seed_sample(
+    sample: SeedSample,
+    *,
+    columns: tuple[str, ...],
+) -> SeedSample:
+    """Derive household seed rows through the year-independent hierarchical adapter."""
+
+    return derive_statcan_hierarchical_household_seed_sample(sample, columns=columns)
+
+
+def check_statcan_2016_household_seed_columns(
+    sample: SeedSample,
+    *,
+    columns: tuple[str, ...],
+) -> dict[str, Any]:
+    """Check household seed columns through the year-independent adapter."""
+
+    return check_statcan_hierarchical_household_seed_columns(
+        sample,
+        columns=columns,
+    )
 
 
 def suggest_tree_column_blocks(sample: SeedSample) -> dict[str, Any]:
@@ -756,10 +1119,10 @@ def build_tree_geography_feasibility_report(
     sparse or identifying subsets.
     """
 
-    if sample.source_format != "statcan-2016-hierarchical":
-        raise ValueError(
-            "tree geography feasibility requires statcan-2016-hierarchical"
-        )
+    _require_statcan_hierarchical(
+        sample,
+        operation="tree geography feasibility",
+    )
     validate_columns(sample.columns, required=(geography_column,))
     (
         household_target_columns,
@@ -1410,3 +1773,13 @@ def unique_columns(columns: tuple[str | None, ...]) -> tuple[str, ...]:
         if column and column not in output:
             output.append(column)
     return tuple(output)
+
+
+def _require_statcan_hierarchical(
+    sample: SeedSample,
+    *,
+    operation: str,
+) -> None:
+    if sample.source_format not in _STATCAN_HIERARCHICAL_FORMATS:
+        supported = " or ".join(sorted(_STATCAN_HIERARCHICAL_FORMATS))
+        raise ValueError(f"{operation} requires {supported}")

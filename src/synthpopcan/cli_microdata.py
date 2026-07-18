@@ -25,16 +25,23 @@ from synthpopcan.console import print_summary_table, print_wrote
 from synthpopcan.microdata import (
     SeedSample,
     build_tree_geography_feasibility_report,
-    check_statcan_2016_household_seed_columns,
-    derive_statcan_2016_household_seed_sample,
+    check_statcan_hierarchical_household_seed_columns,
+    derive_statcan_hierarchical_household_seed_sample,
     export_seed_rows,
     export_training_rows,
+    inspect_statcan_microdata,
     read_fixture_seed_sample,
-    read_statcan_2016_hierarchical_seed_sample,
+    read_statcan_2021_individual_seed_sample,
+    read_statcan_hierarchical_seed_sample,
     suggest_tree_column_blocks,
 )
 
 _PATH = click.Path(path_type=Path)
+_HIERARCHICAL_FORMATS = [
+    "statcan-2016-hierarchical",
+    "statcan-2021-hierarchical",
+]
+_STATCAN_FORMATS = [*_HIERARCHICAL_FORMATS, "statcan-2021-individual"]
 
 
 def _read_fixture_sample(
@@ -78,6 +85,21 @@ def _write_export_summary(
         print_wrote(out_path)
 
 
+def _read_statcan_sample(
+    path: Path,
+    *,
+    source_format: str,
+    columns: tuple[str, ...] | None = None,
+) -> SeedSample:
+    if source_format == "statcan-2021-individual":
+        return read_statcan_2021_individual_seed_sample(path, columns=columns)
+    return read_statcan_hierarchical_seed_sample(
+        path,
+        source_format=source_format,
+        columns=columns,
+    )
+
+
 @click.group(name="microdata")
 def microdata() -> None:
     """Inspect and normalize census microdata seed samples."""
@@ -89,7 +111,7 @@ def microdata() -> None:
     "--input-format",
     "source_format",
     required=True,
-    type=click.Choice(["fixture-v1", "statcan-2016-hierarchical"]),
+    type=click.Choice(["fixture-v1", *_STATCAN_FORMATS]),
     help="Input microdata adapter format.",
 )
 @click.option(
@@ -133,16 +155,26 @@ def inspect_microdata(
                 id_columns=id_columns,
             )
         else:
-            sample = read_statcan_2016_hierarchical_seed_sample(path)
+            summary = inspect_statcan_microdata(path, source_format=source_format)
     except OSError as exc:
         raise click_file_access_error(path, "read", exc) from exc
     except ValueError as exc:
         raise click_value_error(exc) from exc
-    write_output(sample.as_summary(), output_format, title="Microdata Summary")
+    if source_format == "fixture-v1":
+        summary = sample.as_summary()
+    write_output(summary, output_format, title="Microdata Summary")
 
 
 @microdata.command("check-seed")
 @click.argument("path", type=_PATH)
+@click.option(
+    "--input-format",
+    "source_format",
+    default="statcan-2016-hierarchical",
+    type=click.Choice(_HIERARCHICAL_FORMATS),
+    show_default=True,
+    help="Hierarchical PUMF adapter format.",
+)
 @click.option(
     "--columns",
     required=True,
@@ -158,17 +190,19 @@ def inspect_microdata(
 )
 def check_microdata_seed(
     path: Path,
+    source_format: str,
     columns: str,
     output_format: str,
 ) -> None:
     """Check whether selected microdata columns can be exported as seed rows."""
     try:
         selected_columns = parse_columns(columns)
-        sample = read_statcan_2016_hierarchical_seed_sample(
+        sample = read_statcan_hierarchical_seed_sample(
             path,
+            source_format=source_format,
             columns=selected_columns,
         )
-        report = check_statcan_2016_household_seed_columns(
+        report = check_statcan_hierarchical_household_seed_columns(
             sample,
             columns=selected_columns,
         )
@@ -183,6 +217,14 @@ def check_microdata_seed(
 @microdata.command("suggest-tree-columns")
 @click.argument("path", type=_PATH)
 @click.option(
+    "--input-format",
+    "source_format",
+    default="statcan-2016-hierarchical",
+    type=click.Choice(_HIERARCHICAL_FORMATS),
+    show_default=True,
+    help="Hierarchical PUMF adapter format.",
+)
+@click.option(
     "--format",
     "output_format",
     default="table",
@@ -192,11 +234,15 @@ def check_microdata_seed(
 )
 def suggest_microdata_tree_columns(
     path: Path,
+    source_format: str,
     output_format: str,
 ) -> None:
     """Suggest broad tree-model column blocks from known microdata columns."""
     try:
-        sample = read_statcan_2016_hierarchical_seed_sample(path)
+        sample = read_statcan_hierarchical_seed_sample(
+            path,
+            source_format=source_format,
+        )
         report = suggest_tree_column_blocks(sample)
     except OSError as exc:
         raise click_file_access_error(path, "read", exc) from exc
@@ -208,6 +254,14 @@ def suggest_microdata_tree_columns(
 
 @microdata.command("feasibility")
 @click.argument("path", type=_PATH)
+@click.option(
+    "--input-format",
+    "source_format",
+    default="statcan-2016-hierarchical",
+    type=click.Choice(_HIERARCHICAL_FORMATS),
+    show_default=True,
+    help="Hierarchical PUMF adapter format.",
+)
 @click.option(
     "--geo-column",
     default="PR",
@@ -278,6 +332,7 @@ def suggest_microdata_tree_columns(
 )
 def tree_geography_feasibility(
     path: Path,
+    source_format: str,
     geo_column: str,
     household_block: str,
     person_block: str,
@@ -291,7 +346,10 @@ def tree_geography_feasibility(
 ) -> None:
     """Estimate which geographies are plausible for publishable tree models."""
     try:
-        sample = read_statcan_2016_hierarchical_seed_sample(path)
+        sample = read_statcan_hierarchical_seed_sample(
+            path,
+            source_format=source_format,
+        )
         report = build_tree_geography_feasibility_report(
             sample,
             geography_column=geo_column,
@@ -318,7 +376,7 @@ def tree_geography_feasibility(
     "--input-format",
     "source_format",
     required=True,
-    type=click.Choice(["fixture-v1", "statcan-2016-hierarchical"]),
+    type=click.Choice(["fixture-v1", *_STATCAN_FORMATS]),
     help="Input microdata adapter format.",
 )
 @click.option(
@@ -377,12 +435,17 @@ def export_microdata_seed(
                 id_columns=id_columns,
             )
         else:
-            sample = read_statcan_2016_hierarchical_seed_sample(
+            sample = _read_statcan_sample(
                 path,
+                source_format=source_format,
                 columns=selected_columns,
             )
             if level == "household":
-                sample = derive_statcan_2016_household_seed_sample(
+                if source_format == "statcan-2021-individual":
+                    raise ValueError(
+                        "statcan-2021-individual cannot produce household seed rows"
+                    )
+                sample = derive_statcan_hierarchical_household_seed_sample(
                     sample,
                     columns=selected_columns,
                 )
@@ -397,6 +460,14 @@ def export_microdata_seed(
 
 @microdata.command("export-training")
 @click.argument("path", type=_PATH)
+@click.option(
+    "--input-format",
+    "source_format",
+    default="statcan-2016-hierarchical",
+    type=click.Choice(_STATCAN_FORMATS),
+    show_default=True,
+    help="Input microdata adapter format.",
+)
 @click.option(
     "--level",
     required=True,
@@ -430,6 +501,7 @@ def export_microdata_seed(
 )
 def export_microdata_training(
     path: Path,
+    source_format: str,
     level: str,
     target_columns: str,
     conditioning_columns: str,
@@ -443,8 +515,9 @@ def export_microdata_training(
         projected_columns = tuple(
             dict.fromkeys((*selected_conditions, *selected_targets))
         )
-        sample = read_statcan_2016_hierarchical_seed_sample(
+        sample = _read_statcan_sample(
             path,
+            source_format=source_format,
             columns=projected_columns,
         )
         rows, summary = export_training_rows(

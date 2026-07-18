@@ -14,6 +14,7 @@ from synthpopcan.cli import (
 )
 from synthpopcan.statcan import (
     _BOUNDARY_2016_DOWNLOADS,
+    _BOUNDARY_2021_DOWNLOADS,
     _CENSUS_PROFILE_2016_DOWNLOADS,
     WDSTableSearchResult,
     classify_wds_ipf_suitability,
@@ -22,9 +23,11 @@ from synthpopcan.statcan import (
     extract_wds_dimension_previews,
     fetch_boundary_zip,
     fetch_census_profile_2016,
+    fetch_dgrf_2021,
     fetch_json,
     fetch_wds_metadata,
     fetch_wds_table,
+    get_boundary_download,
     normalize_language,
     normalize_product_id,
     post_json,
@@ -872,6 +875,20 @@ def test_boundary_download_all_levels_present() -> None:
         assert level in _BOUNDARY_2016_DOWNLOADS
 
 
+def test_boundary_download_2021_national_ct_and_ada_products() -> None:
+    assert set(_BOUNDARY_2021_DOWNLOADS) == {"ct", "ada"}
+    assert _BOUNDARY_2021_DOWNLOADS["ct"].url.endswith("lct_000b21a_e.zip")
+    assert _BOUNDARY_2021_DOWNLOADS["ada"].url.endswith("lada000b21a_e.zip")
+    assert all(entry.census_year == 2021 for entry in _BOUNDARY_2021_DOWNLOADS.values())
+
+
+def test_get_boundary_download_rejects_unsupported_year_and_level() -> None:
+    with pytest.raises(ValueError, match="Unsupported census year"):
+        get_boundary_download("ct", 2011)
+    with pytest.raises(ValueError, match="2021.*Supported: ada, ct"):
+        get_boundary_download("da", 2021)
+
+
 def test_fetch_boundary_zip_rejects_unknown_level(tmp_path: Path) -> None:
     with pytest.raises(ValueError, match="Unknown geography level"):
         fetch_boundary_zip("xyz", tmp_path)
@@ -906,6 +923,72 @@ def test_fetch_boundary_zip_downloads_and_extracts(tmp_path: Path, monkeypatch) 
     # Manifest should exist
     manifest = tmp_path / "2016-boundary-ct.json"
     assert manifest.exists()
+
+
+def test_fetch_boundary_zip_2021_writes_vintage_manifest(
+    tmp_path: Path, monkeypatch
+) -> None:
+    import io
+    from zipfile import ZipFile
+
+    entry = _BOUNDARY_2021_DOWNLOADS["ct"]
+    buf = io.BytesIO()
+    with ZipFile(buf, "w") as zf:
+        zf.writestr(entry.shp_name, b"FAKE SHP DATA")
+
+    monkeypatch.setattr(
+        "synthpopcan.statcan.download_url",
+        lambda _url, dest: dest.write_bytes(buf.getvalue()),
+    )
+
+    shp_path = fetch_boundary_zip("ct", tmp_path, census_year=2021)
+
+    assert shp_path.name == entry.shp_name
+    manifest = json.loads((tmp_path / "2021-boundary-ct.json").read_text())
+    assert manifest["census_year"] == 2021
+    assert manifest["source_url"] == entry.url
+
+
+def test_fetch_dgrf_2021_extracts_csv_and_writes_manifest(
+    tmp_path: Path, monkeypatch
+) -> None:
+    import io
+
+    buf = io.BytesIO()
+    with ZipFile(buf, "w") as zf:
+        zf.writestr("nested/2021_98260004.csv", "DBDGUID_IDIDUGD\n2021S0512\n")
+
+    monkeypatch.setattr(
+        "synthpopcan.statcan.download_url",
+        lambda _url, dest: dest.write_bytes(buf.getvalue()),
+    )
+
+    csv_path = fetch_dgrf_2021(tmp_path)
+
+    assert csv_path.read_text().startswith("DBDGUID_IDIDUGD")
+    assert not (tmp_path / "2021_98260004.zip").exists()
+    manifest = json.loads(
+        (tmp_path / "2021-dissemination-geographies-relationship.json").read_text()
+    )
+    assert manifest["census_year"] == 2021
+    assert manifest["catalogue_number"] == "98-26-0004"
+
+
+def test_fetch_dgrf_2021_rejects_archive_without_expected_csv(
+    tmp_path: Path, monkeypatch
+) -> None:
+    import io
+
+    buf = io.BytesIO()
+    with ZipFile(buf, "w") as zf:
+        zf.writestr("README.txt", "missing")
+    monkeypatch.setattr(
+        "synthpopcan.statcan.download_url",
+        lambda _url, dest: dest.write_bytes(buf.getvalue()),
+    )
+
+    with pytest.raises(FileNotFoundError, match="2021_98260004.csv"):
+        fetch_dgrf_2021(tmp_path)
 
 
 def test_fetch_boundary_zip_finds_shp_in_subdirectory(

@@ -57,6 +57,24 @@ def inspect_local_data_layout(data_root: Path) -> list[DataLayoutCheck]:
             "2016 individual metadata",
             _metadata_path(data_root, "statcan-2016-individual-pumf"),
         ),
+        _check_variable_metadata(
+            "2021 hierarchical metadata",
+            _metadata_path(
+                data_root,
+                "statcan-2021-hierarchical-pumf",
+                census_year=2021,
+            ),
+            census_year=2021,
+        ),
+        _check_variable_metadata(
+            "2021 individual metadata",
+            _metadata_path(
+                data_root,
+                "statcan-2021-individual-pumf",
+                census_year=2021,
+            ),
+            census_year=2021,
+        ),
         _check_file(
             "2016 Census Profile tract metadata",
             data_root
@@ -72,12 +90,17 @@ def inspect_local_data_layout(data_root: Path) -> list[DataLayoutCheck]:
     return checks
 
 
-def _metadata_path(data_root: Path, package_name: str) -> Path:
+def _metadata_path(
+    data_root: Path,
+    package_name: str,
+    *,
+    census_year: int = 2016,
+) -> Path:
     return (
         data_root
         / "raw"
         / "statcan"
-        / "2016-census"
+        / f"{census_year}-census"
         / "metadata"
         / package_name
         / "variable-labels.json"
@@ -98,9 +121,14 @@ def _check_file(name: str, path: Path, *, missing_tip: str = "") -> DataLayoutCh
     return DataLayoutCheck(name, "missing", "not found", path, missing_tip)
 
 
-def _check_variable_metadata(name: str, path: Path) -> DataLayoutCheck:
+def _check_variable_metadata(
+    name: str,
+    path: Path,
+    *,
+    census_year: int = 2016,
+) -> DataLayoutCheck:
     tip = (
-        "Expected variable-labels.json here. Download the 2016 PUMF metadata "
+        f"Expected variable-labels.json here. Download the {census_year} PUMF metadata "
         "package or pass --data-root PATH."
     )
     if not path.is_file():

@@ -66,6 +66,7 @@ from synthpopcan.microdata import (
     minimal_household_targets,
     minimal_person_targets,
     read_statcan_2016_hierarchical_seed_sample,
+    read_statcan_hierarchical_seed_sample,
     reduced_household_targets,
     reduced_person_targets,
     resolve_tree_column_block_pair,
@@ -206,6 +207,14 @@ def train_tree_generator(
 @model_build.command("train-linked")
 @click.argument("source", type=_PATH)
 @click.option(
+    "--input-format",
+    "source_format",
+    default="statcan-2016-hierarchical",
+    type=click.Choice(["statcan-2016-hierarchical", "statcan-2021-hierarchical"]),
+    show_default=True,
+    help="Hierarchical PUMF adapter format.",
+)
+@click.option(
     "--household-block",
     default="household_core",
     show_default=True,
@@ -283,6 +292,7 @@ def train_tree_generator(
 @click.option("--max-depth", default=None, type=int, help="Optional CART max depth.")
 def train_linked_tree_generator(
     source: Path,
+    source_format: str,
     household_block: str,
     person_block: str,
     geo_column: str | None,
@@ -310,7 +320,13 @@ def train_linked_tree_generator(
         ) as progress:
             task_id = progress.add_task("Reading source microdata", total=7)
 
-            sample = read_statcan_2016_hierarchical_seed_sample(source)
+            if source_format == "statcan-2016-hierarchical":
+                sample = read_statcan_2016_hierarchical_seed_sample(source)
+            else:
+                sample = read_statcan_hierarchical_seed_sample(
+                    source,
+                    source_format=source_format,
+                )
             progress.advance(task_id)
             progress.update(task_id, description="Filtering and choosing columns")
             sample = filter_training_sample_by_geography(

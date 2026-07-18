@@ -308,6 +308,14 @@ Architecture decisions:
 | `0.6.0` | Complete the local-runtime redesign: controlled workspace, durable backend IPF/prepared-model/small-area runs, bounded artifacts, selected utilities, removal of browser synthesis, cleanup, and release proof. |
 | `0.6.1` | Stabilize and version the public linked household/person/geography schema, with explicit compatibility and migration rules. |
 
+The `0.6.1` development line also accepts the corrected Statistics Canada 2021
+hierarchical and individuals PUMFs as explicit, year-specific input formats.
+The hierarchical adapter feeds linked household/person training; the individuals
+adapter remains person-level and must not imply household linkage. It also adds
+reproducible national 2021 census-tract and aggregate-dissemination-area
+cartographic boundary preparation, retaining DGUIDs and requiring boundary,
+control, and output geography vintages to agree.
+
 Completion criteria:
 
 - CLI and HTTP share services for IPF, prepared-model, and small-area workflows.

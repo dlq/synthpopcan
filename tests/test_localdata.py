@@ -35,6 +35,8 @@ def test_inspects_expected_local_data_layout(tmp_path: Path) -> None:
     assert statuses["Raw data directory"] == "found"
     assert statuses["2016 hierarchical metadata"] == "found"
     assert statuses["2016 individual metadata"] == "missing"
+    assert statuses["2021 hierarchical metadata"] == "missing"
+    assert statuses["2021 individual metadata"] == "missing"
     hierarchical_check = next(
         check for check in checks if check.name == "2016 hierarchical metadata"
     )
@@ -69,6 +71,29 @@ def test_inspects_variable_metadata_edge_cases(tmp_path: Path) -> None:
     assert checks["2016 individual metadata"].status == "problem"
     assert checks["2016 individual metadata"].detail == "invalid JSON"
     assert checks["2016 Census Profile tract metadata"].status == "found"
+
+
+def test_inspects_2021_pumf_metadata(tmp_path: Path) -> None:
+    data_root = tmp_path / "data"
+    hierarchical = _metadata_path(
+        data_root,
+        "statcan-2021-hierarchical-pumf",
+        census_year=2021,
+    )
+    individual = _metadata_path(
+        data_root,
+        "statcan-2021-individual-pumf",
+        census_year=2021,
+    )
+    hierarchical.parent.mkdir(parents=True)
+    individual.parent.mkdir(parents=True)
+    hierarchical.write_text(json.dumps({"variable_count": 122, "variables": {}}))
+    individual.write_text(json.dumps({"variable_count": 144, "variables": {}}))
+
+    checks = {check.name: check for check in inspect_local_data_layout(data_root)}
+
+    assert checks["2021 hierarchical metadata"].detail == "122 variable labels"
+    assert checks["2021 individual metadata"].detail == "144 variable labels"
 
 
 def test_inspects_variable_metadata_missing_labels(tmp_path: Path) -> None:
