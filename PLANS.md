@@ -2,7 +2,7 @@
 
 Status: release-phased roadmap\
 Last updated: 2026-07-18\
-Current release: `0.6.0`
+Current release: `0.6.1`
 
 ## Current Focus
 
@@ -10,9 +10,8 @@ Start here. Open a linked implementation plan only when working on that area.
 
 | Horizon | Focus | Detail |
 | --- | --- | --- |
-| Released | `0.6.0` completes the durable local-runtime redesign while retaining the `0.5.1` correctness-assurance gate. | [GitHub Release](https://github.com/dlq/synthpopcan/releases/tag/v0.6.0) |
+| Released | `0.6.1` stabilizes the linked household/person/geography contract, adds explicit 2021 Census support, and hardens durable model generation and browser sequencing. | [GitHub Release](https://github.com/dlq/synthpopcan/releases/tag/v0.6.1) |
 | Correctness | Preserve and extend the correctness-assurance gate in priority order. | [Correctness plan](plans/2026-07-12-correctness-assurance.md) |
-| Next patch | Release the validated public linked household/person/geography schema in `0.6.1`. | [Linked schema plan](plans/2026-07-18-linked-population-schema.md) |
 | Later `0.7.x`–`0.8.x` | Add governed enrichment layers, then hand validated generated data to external simulation platforms without implementing population simulation in SynthPopCan. | [Plan index](plans/README.md) |
 | Far future, after `0.8.x` | Research optional, compositional public-health simulation only after the population, enrichment, and interchange contracts are stable; do not commit to one simulation platform. | [Far-future direction](#far-future-compositional-public-health-simulation) |
 
@@ -49,13 +48,14 @@ owned by a linked implementation plan with a current status and next action.
 
 ## Current Product State
 
-`0.5.1` adds the current architecture's correctness-assurance gate: independent
-and differential numerical checks, generated invariants, statistical model
-oracles, linked-record integrity checks, small-area artifact reconciliation,
-known-truth reference workflows, permanent release evidence, and a
-tag-constrained trusted-publishing path. It retains the consolidated CLI,
-smaller typed beginner API, linked-population artifact contract, independent
-candidate-subsample seeds, and stronger provenance introduced in `0.5.0`.
+`0.6.1` adds the versioned linked household/person/geography output contract,
+explicit 2016/2021 Census adapters and fixtures, a parallel 2021 prepared-model
+catalogue, bounded model execution, and stale-operation protection throughout
+the local web workbench. It retains the durable `0.6.0` runtime and the `0.5.1`
+correctness-assurance gate: independent and differential numerical checks,
+generated invariants, statistical model oracles, linked-record integrity
+checks, small-area artifact reconciliation, known-truth reference workflows,
+permanent release evidence, and tag-constrained trusted publishing.
 
 Implemented capabilities include:
 
@@ -290,8 +290,8 @@ the release that introduces that behavior.
 
 ## 0.6.x: Local Web Application Runtime
 
-Status: the `0.6.0` runtime implementation and Stages 0–8 are complete and
-verified; the `0.6.1` linked-schema follow-up is active. See the
+Status: the `0.6.0` runtime implementation, Stages 0–8, and the `0.6.1`
+linked-schema follow-up are complete and verified. See the
 [staged implementation plan](plans/2026-07-10-local-web-application-runtime.md).
 
 Architecture decisions:
@@ -305,8 +305,8 @@ Architecture decisions:
   framework.
 - Remain loopback-only with controlled workspace access; network serving needs a
   separate security design.
-- Keep the `0.6.0` run manifest extensible for linked artifacts, but defer the
-  stable public household/person/geography output contract to `0.6.1`, after
+- The `0.6.0` run manifest remained extensible for linked artifacts; `0.6.1`
+  stabilizes the public household/person/geography output contract now that
   backend prepared-model and small-area workflows own those artifacts.
 
 | Release | Outcome |
@@ -314,7 +314,7 @@ Architecture decisions:
 | `0.6.0` | Complete the local-runtime redesign: controlled workspace, durable backend IPF/prepared-model/small-area runs, bounded artifacts, selected utilities, removal of browser synthesis, cleanup, and release proof. |
 | `0.6.1` | Stabilize and version the public linked household/person/geography schema, with explicit compatibility and migration rules. |
 
-The `0.6.1` development line also accepts the corrected Statistics Canada 2021
+The `0.6.1` release also accepts the corrected Statistics Canada 2021
 hierarchical and individuals PUMFs as explicit, year-specific input formats.
 The hierarchical adapter feeds linked household/person training; the individuals
 adapter remains person-level and must not imply household linkage. It also adds
