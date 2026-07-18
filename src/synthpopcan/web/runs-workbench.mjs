@@ -1,4 +1,5 @@
 import { stringifyCsv } from "./csv.mjs";
+import { createOperationSequencer } from "./operation-sequencer.mjs";
 import {
   artifactUrl,
   cancelRun,
@@ -24,19 +25,25 @@ export function bindRunsWorkbench(bootstrap) {
     preflight: null,
     stopEvents: null,
     viewRevision: 0,
+    operations: createOperationSequencer(),
   };
   document.querySelector("#workspace-location").textContent = bootstrap.workspace;
   document.querySelector("#new-run").addEventListener("click", () => newDraft(state));
   document
     .querySelector("#use-demo-ipf")
-    .addEventListener("click", () => useDemoFiles());
+    .addEventListener("click", () => useDemoFiles(state));
   document.querySelector("#start-model-workflow").addEventListener("click", () => {
+    invalidateDraftOperations(state);
     state.workflow = "model";
     showStep("model-inputs");
     showMessage("", "");
   });
-  document.querySelector("#ipf-seed-file").addEventListener("change", filesChanged);
-  document.querySelector("#ipf-controls-file").addEventListener("change", filesChanged);
+  document
+    .querySelector("#ipf-seed-file")
+    .addEventListener("change", () => filesChanged(state));
+  document
+    .querySelector("#ipf-controls-file")
+    .addEventListener("change", () => filesChanged(state));
   document
     .querySelector("#upload-inputs")
     .addEventListener("click", () => uploadInputs(state));
@@ -46,15 +53,20 @@ export function bindRunsWorkbench(bootstrap) {
   document
     .querySelector("#check-model-preflight")
     .addEventListener("click", () => checkModelPreflight(state));
+  document.querySelector("#run-model-select").addEventListener("change", () => {
+    state.operations.invalidate("model-install");
+    invalidatePreflight(state);
+    updateModelCatalogueActions();
+  });
   document
-    .querySelector("#run-model-select")
-    .addEventListener("change", updateModelCatalogueActions);
+    .querySelector("#run-model-file")
+    .addEventListener("change", () => invalidatePreflight(state));
   document
     .querySelector("#install-run-model")
-    .addEventListener("click", () => changeModelInstallation("install"));
+    .addEventListener("click", () => changeModelInstallation(state, "install"));
   document
     .querySelector("#remove-run-model")
-    .addEventListener("click", () => changeModelInstallation("remove"));
+    .addEventListener("click", () => changeModelInstallation(state, "remove"));
   document.querySelector("#start-run").addEventListener("click", () => startRun(state));
   document
     .querySelector("#cancel-run")
@@ -62,12 +74,30 @@ export function bindRunsWorkbench(bootstrap) {
   document.querySelectorAll("[data-go-step]").forEach((button) => {
     button.addEventListener("click", () => showStep(button.dataset.goStep));
   });
+  for (const selector of [
+    "#ipf-weight-field",
+    "#ipf-max-iterations",
+    "#ipf-tolerance",
+    "#ipf-allow-nonconverged",
+    "#run-model-households",
+    "#run-model-conditions",
+    "#run-model-random-seed",
+  ]) {
+    document
+      .querySelector(selector)
+      .addEventListener("input", () => invalidatePreflight(state));
+  }
   bindLegacyTools();
   document.addEventListener("synthpopcan:run-created", async (event) => {
+    const viewRevision = state.viewRevision;
     await refreshRuns(state);
-    await selectRun(state, event.detail);
+    const detail = event.detail?.run
+      ? event.detail
+      : { run: event.detail, select: true };
+    if (detail.select && state.viewRevision === viewRevision)
+      await selectRun(state, detail.run);
   });
-  loadModelCatalogue();
+  loadModelCatalogue(state);
   refreshRuns(state, true);
 }
 
@@ -86,9 +116,12 @@ function bindLegacyTools() {
 }
 
 async function refreshRuns(state, selectNewest = false) {
+  const operation = state.operations.begin("runs-list");
   const viewRevision = state.viewRevision;
   try {
-    state.runs = (await listRuns()).runs;
+    const runs = (await listRuns()).runs;
+    if (!operation.isCurrent()) return;
+    state.runs = runs;
     renderRunList(
       document.querySelector("#runs-list"),
       state.runs,
@@ -98,11 +131,12 @@ async function refreshRuns(state, selectNewest = false) {
     if (selectNewest && state.runs.length > 0 && state.viewRevision === viewRevision)
       await selectRun(state, state.runs[0]);
   } catch (error) {
-    showMessage(error.message, "error");
+    if (operation.isCurrent()) showMessage(error.message, "error");
   }
 }
 
 function newDraft(state) {
+  state.operations.invalidateAll();
   state.viewRevision += 1;
   showWorkbench();
   state.stopEvents?.();
@@ -113,7 +147,7 @@ function newDraft(state) {
   state.preflight = null;
   for (const id of ["#ipf-seed-file", "#ipf-controls-file"])
     document.querySelector(id).value = "";
-  filesChanged();
+  filesChanged(state);
   setRunHeading("New durable run", "IPF from margin tables", "Draft");
   clearResults();
   showMessage("", "");
@@ -123,7 +157,7 @@ function newDraft(state) {
   );
 }
 
-function useDemoFiles() {
+function useDemoFiles(state) {
   const seed = new File(
     [stringifyCsv(buildAgeSexSeedRows())],
     "demo-age-sex-seed.csv",
@@ -136,7 +170,7 @@ function useDemoFiles() {
   );
   setInputFiles("#ipf-seed-file", [seed]);
   setInputFiles("#ipf-controls-file", [controls]);
-  filesChanged();
+  filesChanged(state);
   showMessage("Demo files are ready to upload.", "success");
 }
 
@@ -146,7 +180,12 @@ function setInputFiles(selector, files) {
   document.querySelector(selector).files = transfer.files;
 }
 
-function filesChanged() {
+function filesChanged(state) {
+  state.operations.invalidate("upload");
+  state.uploads = null;
+  invalidatePreflight(state);
+  if (document.querySelector("#workbench-message").textContent.startsWith("Streaming"))
+    showMessage("Files changed. Upload the current pair to continue.", "warning");
   const seed = document.querySelector("#ipf-seed-file").files?.[0];
   const controls = document.querySelector("#ipf-controls-file").files?.[0];
   document.querySelector("#seed-upload-status").textContent = fileLabel(seed);
@@ -159,23 +198,42 @@ function fileLabel(file) {
 }
 
 async function uploadInputs(state) {
+  const operation = state.operations.begin("upload");
   const button = document.querySelector("#upload-inputs");
   button.disabled = true;
   showMessage("Streaming the two CSV files into the local workspace…", "");
+  const seedFile = document.querySelector("#ipf-seed-file").files[0];
+  const controlsFile = document.querySelector("#ipf-controls-file").files[0];
   try {
-    const seedFile = document.querySelector("#ipf-seed-file").files[0];
-    const controlsFile = document.querySelector("#ipf-controls-file").files[0];
     const [seed, controls] = await Promise.all([
       uploadCsv(seedFile),
       uploadCsv(controlsFile),
     ]);
+    if (!operation.isCurrent()) return;
     state.uploads = { seed, controls };
     showMessage("Inputs uploaded and fingerprinted.", "success");
     showStep("configure");
   } catch (error) {
+    if (!operation.isCurrent()) return;
     showMessage(error.message, "error");
     button.disabled = false;
   }
+}
+
+function invalidateDraftOperations(state) {
+  state.operations.invalidate("upload");
+  state.uploads = null;
+  invalidatePreflight(state);
+}
+
+function invalidatePreflight(state) {
+  state.operations.invalidate("preflight");
+  state.operations.invalidate("start-run");
+  state.preflight = null;
+  document.querySelector("#start-run").disabled = true;
+  document.querySelector("#check-model-preflight").disabled = false;
+  if (document.querySelector("#workbench-message").textContent.startsWith("Checking"))
+    showMessage("Inputs changed. Check the current settings again.", "warning");
 }
 
 function buildRequest(state) {
@@ -195,65 +253,82 @@ function buildRequest(state) {
 }
 
 async function checkPreflight(state) {
+  const operation = state.operations.begin("preflight");
   showMessage("Checking input structure and workspace capacity…", "");
   try {
-    state.preflight = await preflightRun(buildRequest(state));
-    const problems = renderPreflight(state.preflight);
-    document.querySelector("#start-run").disabled = !state.preflight.ready;
+    const request = buildRequest(state);
+    const preflight = await preflightRun(request);
+    if (!operation.isCurrent()) return;
+    state.preflight = preflight;
+    const problems = renderPreflight(preflight);
+    document.querySelector("#start-run").disabled = !preflight.ready;
     showStep("preflight");
-    if (state.preflight.ready) {
+    if (preflight.ready) {
       showMessage("Preflight passed. The run is ready to start.", "success");
     } else if (problems.length === 0) {
       showMessage("Preflight found a workspace capacity problem.", "error");
     }
   } catch (error) {
-    showMessage(error.message, "error");
+    if (operation.isCurrent()) showMessage(error.message, "error");
   }
 }
 
 async function checkModelPreflight(state) {
+  const operation = state.operations.begin("preflight");
   showMessage("Checking package provenance, privacy, and output scale…", "");
   const button = document.querySelector("#check-model-preflight");
   button.disabled = true;
   try {
-    const file = document.querySelector("#run-model-file").files?.[0];
-    const modelId = document.querySelector("#run-model-select").value;
-    if (!file && !modelId) throw new Error("Choose a catalogue model or package JSON.");
+    const draft = snapshotModelDraft();
     let inputs;
-    if (file) {
-      const uploaded = await uploadCsv(file);
+    if (draft.file) {
+      const uploaded = await uploadCsv(draft.file);
+      if (!operation.isCurrent()) return;
       state.uploads = { package: uploaded };
       inputs = { package_upload_id: uploaded.upload_id };
     } else {
-      inputs = { model_id: modelId };
+      inputs = { model_id: draft.modelId };
     }
-    state.workflow = "model";
-    state.preflight = await preflightRun({
+    const preflight = await preflightRun({
       workflow: "model",
       inputs,
-      options: {
-        households: Number(document.querySelector("#run-model-households").value),
-        conditions: parseConditions(
-          document.querySelector("#run-model-conditions").value,
-        ),
-        random_seed: optionalNumber("#run-model-random-seed"),
-        chunk_size: 1000,
-      },
+      options: draft.options,
     });
-    renderModelPreflight(state.preflight);
-    document.querySelector("#start-run").disabled = !state.preflight.ready;
+    if (!operation.isCurrent()) return;
+    state.workflow = "model";
+    state.preflight = preflight;
+    renderModelPreflight(preflight);
+    document.querySelector("#start-run").disabled = !preflight.ready;
     showStep("preflight");
     showMessage(
-      state.preflight.ready
+      preflight.ready
         ? "Model preflight passed. Provenance and privacy metadata are recorded."
         : "Model preflight found a blocking scale problem.",
-      state.preflight.ready ? "success" : "error",
+      preflight.ready ? "success" : "error",
     );
   } catch (error) {
-    showMessage(error.message, "error");
+    if (operation.isCurrent()) showMessage(error.message, "error");
   } finally {
-    button.disabled = false;
+    if (operation.isCurrent()) button.disabled = false;
   }
+}
+
+function snapshotModelDraft() {
+  const file = document.querySelector("#run-model-file").files?.[0];
+  const modelId = document.querySelector("#run-model-select").value;
+  if (!file && !modelId) throw new Error("Choose a catalogue model or package JSON.");
+  return {
+    file,
+    modelId,
+    options: {
+      households: Number(document.querySelector("#run-model-households").value),
+      conditions: parseConditions(
+        document.querySelector("#run-model-conditions").value,
+      ),
+      random_seed: optionalNumber("#run-model-random-seed"),
+      chunk_size: 1000,
+    },
+  };
 }
 
 function renderModelPreflight(preflight) {
@@ -309,10 +384,17 @@ function renderPreflight(preflight) {
 }
 
 async function startRun(state) {
+  if (!state.preflight?.request) return;
+  const operation = state.operations.begin("start-run");
+  const request = structuredClone(state.preflight.request);
   document.querySelector("#start-run").disabled = true;
   showMessage("Creating the durable run…", "");
   try {
-    const run = await createRun(state.preflight.request);
+    const run = await createRun(request);
+    if (!operation.isCurrent()) {
+      await refreshRuns(state);
+      return;
+    }
     state.selectedRun = run;
     setRunHeading(
       `Run ${run.run_id.slice(-12)}`,
@@ -322,24 +404,35 @@ async function startRun(state) {
     showStep("run");
     showMessage("Run queued. You can safely refresh this page.", "success");
     await refreshRuns(state);
+    if (!operation.isCurrent() || state.selectedRun?.run_id !== run.run_id) return;
     followRun(state, run.run_id);
   } catch (error) {
+    if (!operation.isCurrent()) return;
     showMessage(error.message, "error");
     document.querySelector("#start-run").disabled = false;
   }
 }
 
 function followRun(state, runId) {
+  const operation = state.operations.begin("follow-run");
   state.stopEvents?.();
   const events = document.querySelector("#progress-events");
   events.replaceChildren();
   state.stopEvents = followRunEvents(runId, {
-    onEvent: (event) => appendProgressEvent(events, event),
-    onReconnect: () => document.querySelector("#run-progress").removeAttribute("value"),
+    onEvent: (event) => {
+      if (operation.isCurrent() && state.selectedRun?.run_id === runId)
+        appendProgressEvent(events, event);
+    },
+    onReconnect: () => {
+      if (operation.isCurrent() && state.selectedRun?.run_id === runId)
+        document.querySelector("#run-progress").removeAttribute("value");
+    },
     onTerminal: async (run) => {
+      if (!operation.isCurrent() || state.selectedRun?.run_id !== runId) return;
       state.selectedRun = run;
       state.stopEvents = null;
       await refreshRuns(state);
+      if (!operation.isCurrent() || state.selectedRun?.run_id !== runId) return;
       await showTerminalRun(state, run);
     },
   });
@@ -357,13 +450,17 @@ function appendProgressEvent(list, event) {
 
 async function requestCancel(state) {
   if (!state.selectedRun) return;
+  const runId = state.selectedRun.run_id;
+  const operation = state.operations.begin("cancel-run");
   document.querySelector("#cancel-run").disabled = true;
   try {
-    const run = await cancelRun(state.selectedRun.run_id);
+    const run = await cancelRun(runId);
+    if (!operation.isCurrent() || state.selectedRun?.run_id !== runId) return;
     state.selectedRun = run;
     setRunStatus(run.status);
     showMessage("Cancellation requested.", "warning");
   } catch (error) {
+    if (!operation.isCurrent() || state.selectedRun?.run_id !== runId) return;
     showMessage(error.message, "error");
     document.querySelector("#cancel-run").disabled = false;
   }
@@ -372,6 +469,10 @@ async function requestCancel(state) {
 async function selectRun(state, summary) {
   const viewRevision = state.viewRevision + 1;
   state.viewRevision = viewRevision;
+  state.operations.invalidate("follow-run");
+  state.operations.invalidate("results");
+  state.stopEvents?.();
+  state.stopEvents = null;
   try {
     showWorkbench();
     const run = await getRun(summary.run_id);
@@ -396,11 +497,15 @@ async function selectRun(state, summary) {
       followRun(state, run.run_id);
     }
   } catch (error) {
-    showMessage(error.message, "error");
+    if (state.viewRevision === viewRevision) showMessage(error.message, "error");
   }
 }
 
-async function showTerminalRun(_state, run) {
+async function showTerminalRun(state, run) {
+  const operation = state.operations.begin("results");
+  const isCurrent = () =>
+    operation.isCurrent() && state.selectedRun?.run_id === run.run_id;
+  if (!isCurrent()) return;
   setRunStatus(run.status);
   document.querySelector("#cancel-run").disabled = true;
   if (run.status !== "succeeded") {
@@ -412,11 +517,11 @@ async function showTerminalRun(_state, run) {
   showStep("results");
   showMessage("Run completed and persisted in the workspace.", "success");
   if (run.workflow === "model") {
-    await showModelResults(run);
+    await showModelResults(run, isCurrent);
     return;
   }
   if (run.workflow === "small_area") {
-    await showSmallAreaResults(run);
+    await showSmallAreaResults(run, isCurrent);
     return;
   }
   document.querySelector("#preview-heading").textContent = "Weighted output preview";
@@ -437,16 +542,16 @@ async function showTerminalRun(_state, run) {
     artifacts.append(link);
   }
   const weights = run.artifacts.find((item) => item.logical_name === "weights");
-  if (weights)
-    renderPreview(
-      document.querySelector("#primary-preview"),
-      await previewArtifact(run.run_id, weights.artifact_id),
-    );
   document.querySelector("#reproduction-command").textContent =
     run.reproduction?.shell ?? "";
+  if (weights) {
+    const preview = await previewArtifact(run.run_id, weights.artifact_id);
+    if (!isCurrent()) return;
+    renderPreview(document.querySelector("#primary-preview"), preview);
+  }
 }
 
-async function showModelResults(run) {
+async function showModelResults(run, isCurrent) {
   document.querySelector("#results-intro").textContent =
     "Linked household and person artifacts were generated and validated in Python.";
   document.querySelector("#preview-heading").textContent = "Household output preview";
@@ -470,23 +575,21 @@ async function showModelResults(run) {
   }
   const households = run.artifacts.find((item) => item.logical_name === "households");
   const persons = run.artifacts.find((item) => item.logical_name === "persons");
-  if (households) {
-    renderPreview(
-      document.querySelector("#primary-preview"),
-      await previewArtifact(run.run_id, households.artifact_id),
-    );
-  }
-  if (persons) {
-    renderPreview(
-      document.querySelector("#secondary-preview"),
-      await previewArtifact(run.run_id, persons.artifact_id),
-    );
-  }
   document.querySelector("#reproduction-command").textContent =
     run.reproduction?.shell ?? "";
+  if (households) {
+    const preview = await previewArtifact(run.run_id, households.artifact_id);
+    if (!isCurrent()) return;
+    renderPreview(document.querySelector("#primary-preview"), preview);
+  }
+  if (persons) {
+    const preview = await previewArtifact(run.run_id, persons.artifact_id);
+    if (!isCurrent()) return;
+    renderPreview(document.querySelector("#secondary-preview"), preview);
+  }
 }
 
-async function showSmallAreaResults(run) {
+async function showSmallAreaResults(run, isCurrent) {
   if (run.summary.non_converged_count > 0) {
     showMessage(
       `${run.summary.non_converged_count} geographies did not converge. Review report.json and the largest residual before using the output.`,
@@ -520,18 +623,18 @@ async function showSmallAreaResults(run) {
   }
   const households = run.artifacts.find((item) => item.logical_name === "households");
   const persons = run.artifacts.find((item) => item.logical_name === "persons");
-  if (households)
-    renderPreview(
-      document.querySelector("#primary-preview"),
-      await previewArtifact(run.run_id, households.artifact_id),
-    );
-  if (persons)
-    renderPreview(
-      document.querySelector("#secondary-preview"),
-      await previewArtifact(run.run_id, persons.artifact_id),
-    );
   document.querySelector("#reproduction-command").textContent =
     run.reproduction?.shell ?? "";
+  if (households) {
+    const preview = await previewArtifact(run.run_id, households.artifact_id);
+    if (!isCurrent()) return;
+    renderPreview(document.querySelector("#primary-preview"), preview);
+  }
+  if (persons) {
+    const preview = await previewArtifact(run.run_id, persons.artifact_id);
+    if (!isCurrent()) return;
+    renderPreview(document.querySelector("#secondary-preview"), preview);
+  }
 }
 
 function describeResidual(residual) {
@@ -624,32 +727,36 @@ function clearResults() {
   document.querySelector("#cancel-run").disabled = false;
 }
 
-async function loadModelCatalogue() {
+async function loadModelCatalogue(state) {
+  const operation = state.operations.begin("catalogue-load");
   const select = document.querySelector("#run-model-select");
   const smallAreaSelect = document.querySelector("#small-area-premade-model");
-  const selected = select.value;
-  const smallAreaSelected = smallAreaSelect.value;
-  select.replaceChildren(new Option("Choose a catalogue model", ""));
-  smallAreaSelect.replaceChildren(new Option("Choose a prepared model", ""));
   try {
     const response = await fetch("/api/models");
     if (!response.ok) throw new Error("Model catalogue unavailable");
     const payload = await response.json();
+    if (!operation.isCurrent()) return;
+    const selected = select.value;
+    const smallAreaSelected = smallAreaSelect.value;
+    const runOptions = [new Option("Choose a catalogue model", "")];
+    const smallAreaOptions = [new Option("Choose a prepared model", "")];
     for (const model of payload.models) {
       const option = document.createElement("option");
       option.value = model.id;
       option.textContent = `${model.name} · ${model.geography}${model.installed ? "" : " · download required"}`;
       option.dataset.installed = String(model.installed);
       option.dataset.distribution = model.distribution;
-      select.append(option);
+      runOptions.push(option);
 
       const smallAreaOption = document.createElement("option");
       smallAreaOption.value = model.id;
       smallAreaOption.textContent = `${model.name} · ${model.geography}`;
       smallAreaOption.dataset.distribution = model.distribution;
       smallAreaOption.dataset.installed = String(model.installed);
-      smallAreaSelect.append(smallAreaOption);
+      smallAreaOptions.push(smallAreaOption);
     }
+    select.replaceChildren(...runOptions);
+    smallAreaSelect.replaceChildren(...smallAreaOptions);
     if ([...select.options].some((option) => option.value === selected)) {
       select.value = selected;
     }
@@ -660,7 +767,14 @@ async function loadModelCatalogue() {
     }
     updateModelCatalogueActions();
   } catch {
+    if (!operation.isCurrent()) return;
     for (const target of [select, smallAreaSelect]) {
+      target.replaceChildren(
+        new Option(
+          target === select ? "Choose a catalogue model" : "Choose a prepared model",
+          "",
+        ),
+      );
       const option = document.createElement("option");
       option.disabled = true;
       option.textContent = "Premade models unavailable";
@@ -678,7 +792,8 @@ function updateModelCatalogueActions() {
   document.querySelector("#remove-run-model").disabled = !downloadable || !installed;
 }
 
-async function changeModelInstallation(action) {
+async function changeModelInstallation(state, action) {
+  const operation = state.operations.begin("model-install");
   const select = document.querySelector("#run-model-select");
   const modelId = select.value || select.selectedOptions[0]?.value;
   if (!modelId) return;
@@ -701,7 +816,12 @@ async function changeModelInstallation(action) {
     );
     const payload = await response.json();
     if (!response.ok) throw new Error(payload.error || "Model catalogue update failed");
-    await loadModelCatalogue();
+    if (!operation.isCurrent()) {
+      await loadModelCatalogue(state);
+      return;
+    }
+    await loadModelCatalogue(state);
+    if (!operation.isCurrent()) return;
     select.value = install ? modelId : "";
     updateModelCatalogueActions();
     status.textContent = install
@@ -710,6 +830,7 @@ async function changeModelInstallation(action) {
         ? "Downloaded model removed from the local cache."
         : "The model was not present in the local cache.";
   } catch (error) {
+    if (!operation.isCurrent()) return;
     status.textContent = error.message;
     updateModelCatalogueActions();
   }

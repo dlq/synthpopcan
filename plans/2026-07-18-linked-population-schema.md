@@ -1,11 +1,10 @@
 # Linked Population Schema Implementation Plan
 
-Status: in progress; v1 contract and shared descriptor implementation started\
+Status: implementation complete; release validation pending\
 Created: 2026-07-18\
 Last updated: 2026-07-18\
 Target: `0.6.1`\
-Next action: complete integration validation, legacy compatibility helpers, and
-artifact-level regression coverage\
+Next action: run packaging, clean-install, and final release gates\
 Roadmap: [PLANS.md](../PLANS.md) | [Plan index](README.md)
 
 ## Objective
@@ -47,7 +46,7 @@ calibration, future enrichment, and later simulator interchange.
 - [x] Exercise representative 2016 and 2021 hierarchical Census inputs through
   training, package loading, linked generation, v1 artifact writing, and
   relationship validation.
-- [ ] Audit and finish stale asynchronous browser-operation sequencing.
+- [x] Audit and finish stale asynchronous browser-operation sequencing.
 - [ ] Run the complete correctness, documentation, browser, packaging, and
   installed-wheel gates before release.
 

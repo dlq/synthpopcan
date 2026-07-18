@@ -12,6 +12,9 @@ All notable public changes to SynthPopCan are tracked here.
 - Reject malformed, cyclic, multiply rooted, or inconsistent serialized CART
   models; bound local-web generation to 250,000 households and 2,000,000
   people; and terminate isolated workers that exceed the six-hour run limit.
+- Sequence browser uploads, preflights, catalogue changes, estimates, durable
+  submissions, and result previews so stale asynchronous completions cannot
+  overwrite newer drafts or selected runs.
 - Add year-aware Census Profile downloads for verified 2021 CT, ADA, and
   national CSD products, national CSD cartographic boundaries for both
   vintages, balance the local 2016/2021 small-area source coverage, and parse

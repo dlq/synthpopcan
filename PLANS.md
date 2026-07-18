@@ -246,7 +246,7 @@ the release that introduces that behavior.
 - [x] **P2 — Make StatCan downloads bounded and atomic.** Add network timeouts,
   stream to a temporary file, verify completion, and preserve a valid cached
   file when a refresh fails partway through.
-- [ ] **P2 / `0.6.1` — Sequence asynchronous browser operations.**
+- [x] **P2 / `0.6.1` — Sequence asynchronous browser operations.**
   Snapshot inputs when a job starts, abort or ignore stale model/WDS/estimate
   completions, and build CLI handoff commands from the completed durable run
   rather than the current mutable form.

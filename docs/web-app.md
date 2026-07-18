@@ -147,6 +147,13 @@ output-size estimate, and free workspace capacity. **Start run** atomically clai
 manifest, and executes IPF in one isolated worker process. The event stream and
 manifest are persisted, so refresh and reconnect do not restart the fit.
 
+Uploads, preflights, model catalogue changes, estimates, run creation, and
+result previews are sequenced against the draft or durable run that started
+them. Editing a form invalidates an older pending response instead of allowing
+it to overwrite the newer state. Once a run is created, previews and the CLI
+reproduction command come from its persisted manifest rather than mutable form
+fields.
+
 Compact fitted weights are the default and only Stage 3 run artifact. They
 preserve fractional weights without creating a potentially enormous expanded
 population in browser memory. The results page requests at most 10 preview rows
