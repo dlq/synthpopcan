@@ -87,7 +87,11 @@ eligible for evaluation, not automatically suitable or automatically included.
 Every candidate receives a source profile covering:
 
 - authoritative publisher and canonical dataset/resource identifier;
-- title, description, variables, unit of observation, and data dictionary;
+- title, description, variables, unit of observation, and data dictionary,
+  retaining authoritative English and French forms when available;
+- source language availability plus translation status and provenance for each
+  descriptive field, distinguishing official text from reviewed
+  project-supplied translations;
 - licence and attribution requirements, including modification and
   redistribution permissions;
 - formats, API/resource URLs, update frequency, version, and temporal coverage;
@@ -141,6 +145,11 @@ Every layer records:
 - source licence/access classification and permitted output classification;
 - validation results and an exact reproduction request.
 
+Use stable language-neutral keys for machines and paired English/French display
+metadata for people. A single-language upstream source may use an explicit
+fallback, but missing French or English metadata must remain visible rather than
+being silently treated as bilingual.
+
 Prefer normalized linked tables over continually widening household/person
 CSVs. Candidate table families include `locations`, `environment`, `services`,
 `activities`, `cohort_attributes`, and `contacts`, keyed through stable public
@@ -153,6 +162,9 @@ synthetic identifiers and versioned geography/location identifiers.
 - Complete safe profiles for every private source family and the first public
   catalogue candidates.
 - Implement versioned source-profile and enrichment-manifest schemas.
+- Define bilingual descriptive-metadata fields, language availability,
+  authoritative-versus-project translation provenance, and deterministic
+  fallback rules without localizing stable schema identifiers.
 - Add CKAN catalogue discovery and metadata capture, beginning with Données
   Québec, plus Open Government Canada catalogue discovery; keep
   provider-specific code behind a generic catalogue interface and registry.
@@ -209,6 +221,9 @@ synthetic identifiers and versioned geography/location identifiers.
   depend on undocumented manual downloads.
 - Every selected public resource has verified licensing, attribution,
   provenance, version, retrieval evidence, and geography/temporal coverage.
+- Supported source profiles, data dictionaries, and user-facing enrichment
+  metadata expose reviewed English and French text where available, declare
+  single-language gaps explicitly, and pass metadata-parity tests.
 - No private record or restricted derived value enters git, CI logs, public
   fixtures, documentation, releases, or telemetry.
 - Enrichment layers retain stable linkage to the validated base population and

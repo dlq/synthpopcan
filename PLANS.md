@@ -32,6 +32,10 @@ Principles:
 - Keep standalone artifacts such as `geo map` independent from the app runtime.
 - Use approachable defaults and language for humanities users while preserving
   machine-readable output.
+- Make public-facing interfaces, documentation, and descriptive metadata as
+  bilingual in English and French as practicable, with stable language-neutral
+  identifiers and explicit provenance for official versus project-supplied
+  translations.
 - Preserve source, geography, variables, filters, model version, seeds, and
   validation metrics with generated output.
 - Choose geography according to the research question rather than treating one
@@ -73,15 +77,15 @@ Implemented capabilities include:
 - a packaged local web app for guided IPF, prepared models, WDS preparation,
   small-area preflight, downloads, and exact CLI handoff.
 
-The released `0.6.0` app uses FastAPI/Uvicorn, a controlled workspace,
-durable manifests and events, isolated Python jobs, progress, cancellation,
-restart recovery, bounded previews, incremental artifact publication, and
-backend IPF, prepared-model, and guided small-area workflows. Existing linked
-candidates can enter the same small-area path, and model catalogue installation
-and removal stay bounded in the browser. Browser IPF and tree generation are
-removed. The implementation, cleanup, documentation, clean-wheel smoke, full
-correctness/coverage gate, browser scenarios, and bounded scale smokes are
-complete.
+The current app retains the FastAPI/Uvicorn runtime introduced in `0.6.0`: a
+controlled workspace, durable manifests and events, isolated Python jobs,
+progress, cancellation, restart recovery, bounded previews, incremental
+artifact publication, and backend IPF, prepared-model, and guided small-area
+workflows. Existing linked candidates can enter the same small-area path, and
+model catalogue installation and removal stay bounded in the browser. Browser
+IPF and tree generation are removed. The implementation, cleanup,
+documentation, clean-wheel smoke, full correctness/coverage gate, browser
+scenarios, and bounded scale smokes are complete.
 
 ## Release History
 
@@ -93,6 +97,8 @@ complete.
 | `0.4.0` | Model metadata/downloads, privacy presentation, safer WDS refinement, browser small-area preparation, and CLI handoff. |
 | `0.5.0` | Consolidated CLI and Python API, linked-population directory contracts, stronger typing and provenance, and documentation cleanup. |
 | `0.5.1` | Correctness-assurance suite and public claims matrix, audited integrity fixes, hardened release gates, permanent release evidence, and tag-constrained trusted publishing. |
+| `0.6.0` | Durable FastAPI/Uvicorn local runtime, shared backend workflows, controlled workspaces, isolated jobs, progress, cancellation, recovery, and bounded artifacts. |
+| `0.6.1` | Stable linked-population schema, explicit 2021 Census support and model catalogue, bounded model execution, browser sequencing, and expanded release coverage. |
 
 The original public baseline is achieved: users can install SynthPopCan, prepare
 StatCan inputs, generate and validate IPF or linked-model output, inspect
@@ -213,7 +219,8 @@ the release that introduces that behavior.
 - [x] **P1 — Keep supported large models out of whole-payload browser paths.**
   Registered packages above the 32 MiB uncompressed browser threshold are
   disabled in the web catalogue and rejected by the local API with an exact
-  CLI handoff. Backend generation remains the `0.6.1` replacement path.
+  CLI handoff. Durable backend generation replaced that browser path in
+  `0.6.1`.
 - [x] **P1 — Bound WDS and ZIP processing before allocation.** Cap request
   bodies, archive entries, compressed and aggregate uncompressed sizes, remote
   response bytes, CSV rows, and concurrent work; inflate only the selected
@@ -370,7 +377,7 @@ the [ecosystem enrichment plan](plans/2026-07-15-ecosystem-enrichment.md).
 
 | Release | Outcome |
 | --- | --- |
-| `0.7.0` | Versioned enrichment/source contract, complete private-source inventory, public-catalogue discovery, provenance/licensing controls, and reviewed fine-area placement foundation. |
+| `0.7.0` | Versioned enrichment/source contract with bilingual metadata foundations, complete private-source inventory, public-catalogue discovery, provenance/licensing controls, and reviewed fine-area placement foundation. |
 | `0.7.1` | Spatial and environmental layers, beginning with Can-FED as a first-class public food-environment source, profiled TOPO, MoNNET, and CANUE, plus suitable authoritative public geography, service, transport, built-environment, and environmental sources. |
 | `0.7.2` | Privacy-governed cohort attachment for MAVAN, CPTP, and other approved sources using documented harmonization, weighting or statistical matching, uncertainty, and representativeness checks. |
 | `0.7.3` | Modular school, workplace, healthcare, food-access, road/transport, contact-network, and reproducible scenario layers. |
@@ -395,6 +402,35 @@ local presence creates no commitment to use, redistribute, provide, or publish
 adapters or derived artifacts for them; dataset-specific work requires separate
 authority and should ordinarily run only against data supplied independently by
 an authorized user.
+
+### Bilingualism and localization
+
+English-only interfaces and English-only descriptive metadata are current
+limitations, not the intended permanent contract. Starting in `0.7.0`, treat
+English and French support as a cross-cutting requirement for new source,
+enrichment, interchange, CLI, web, and documentation work:
+
+- keep machine identifiers, schema keys, filenames, and code values stable and
+  language-neutral; attach `en` and `fr` labels, descriptions, units, category
+  text, citations, and usage notes where meaningful;
+- prefer authoritative bilingual metadata from Statistics Canada, federal,
+  Quebec, and other publishers; preserve the original source text and language,
+  and mark project-supplied translations so they are never mistaken for
+  official wording;
+- define explicit language availability, translation status, provenance, and
+  fallback rules instead of silently substituting English;
+- make CLI guidance and errors, the local web workbench, generated data
+  dictionaries/reports, and core user documentation progressively selectable
+  in English or French, while keeping reproducible commands and serialized
+  contracts independent of display language;
+- add paired English/French fixtures, terminology review, rendering and command
+  tests, and metadata-parity checks; and
+- allow a documented single-language fallback when an upstream source is
+  available in only one language, without blocking otherwise valid data use.
+
+The goal is practical bilingual parity, not automatic machine translation of
+scientific or legal text without review. Each release should state which
+surfaces and metadata fields are bilingual and which gaps remain.
 
 ## 0.8.x: Simulation Interoperability And Data Handoff
 
@@ -476,6 +512,7 @@ that static accessibility or counterfactual analysis is insufficient.
 | Data | Track code, docs, public-safe metadata, and tiny fixtures; ignore raw/restricted data, large caches, real generated populations, and unpublished private-data models. |
 | Testing | Prefer correctness evidence over defensive-branch coverage; keep default tests public and deterministic, with live StatCan/full-data checks opt-in. |
 | Documentation | Keep workflow examples synchronized with tested CLI help; add contributor internals only when useful. |
+| Bilingualism | Progressively provide English/French interfaces, documentation, data dictionaries, and descriptive metadata; preserve authoritative source language and translation provenance, stable language-neutral identifiers, explicit fallback, and tested parity. |
 | Releases | Align tags, PyPI, Read the Docs, release notes, checksums, model provenance, installed-wheel smoke tests, and model-fetch checks; later add automatic Zenodo publication for versioned archival releases and DOI metadata. |
 
 ## Open Decisions

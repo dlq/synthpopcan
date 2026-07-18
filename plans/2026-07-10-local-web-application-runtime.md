@@ -168,9 +168,9 @@ Input and artifact entries include a stable logical name, relative managed
 path, media type, byte size, and SHA-256 digest. Record row counts when they can
 be collected while reading or writing without another complete pass.
 
-The v1 run manifest must be able to reference a future linked-population schema
-and its data dictionary, but `0.6.0` does not freeze the complete linked CSV
-column set. The `0.6.1` contract will define required household/person
+The v1 run manifest was designed to reference a linked-population schema and
+its data dictionary without freezing the complete linked CSV column set in
+`0.6.0`. The released `0.6.1` contract defines required household/person
 identifiers and linkage, model-specific extension fields, geography metadata,
 types, missing-value conventions, code lists, and compatibility rules.
 
