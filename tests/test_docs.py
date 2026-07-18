@@ -149,6 +149,8 @@ def test_documented_commands_use_the_current_cli_surface() -> None:
         Path("README.md"),
         Path("CORRECTNESS.md"),
         Path("CONTRIBUTING.md"),
+        Path("NOTES.md"),
+        Path("RELEASING.md"),
         *Path("docs").glob("*.md"),
     )
     checked_commands = 0
@@ -156,7 +158,7 @@ def test_documented_commands_use_the_current_cli_surface() -> None:
 
     for path in documented_paths:
         bash_blocks = re.findall(
-            r"^```bash\n(.*?)^```$",
+            r"^[ \t]*```bash[ \t]*\n(.*?)^[ \t]*```[ \t]*$",
             path.read_text(),
             re.MULTILINE | re.DOTALL,
         )

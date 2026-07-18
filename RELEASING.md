@@ -86,7 +86,7 @@ Before publishing a model package:
 1. Inspect the package:
 
    ```bash
-   synthpopcan tree inspect-package MODEL_ID
+   synthpopcan models build inspect MODEL_ID
    ```
 
 1. Update documentation if the model becomes part of the supported public

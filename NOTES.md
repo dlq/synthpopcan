@@ -472,17 +472,17 @@ Design implications for SynthPopCan:
 - The current CLI makes this workflow explicit with audit and packaging gates:
 
 ```bash
-synthpopcan tree train training.csv \
+synthpopcan models build train training.csv \
   --level person \
   --target-columns AGEGRP,SEX \
   --conditioning-columns TENUR,household_size \
   --out person-model.json
 
-synthpopcan tree audit-model person-model.json \
+synthpopcan models build audit person-model.json \
   --min-support 50 \
   --max-purity 0.95
 
-synthpopcan tree prepare-model-release person-model.json \
+synthpopcan models build prepare-release person-model.json \
   --out person-model-publishable.json \
   --manifest-out person-model-release.manifest.json \
   --review-note "Reviewed for minimum support, purity, and raw-row metadata."
@@ -800,10 +800,10 @@ synthpopcan controls from-census-profile PROFILE.csv --mapping census-profile-ma
 synthpopcan microdata export-seed hierarchical.csv --input-format statcan-2016-hierarchical --columns AGEGRP,SEX --out seed.csv
 synthpopcan ipf fit --controls controls.csv --seed seed.csv --out weights.csv --report fit-report.json
 synthpopcan ipf expand --weights weights.csv --out synthetic.csv
-synthpopcan tree train-linked hierarchical.csv --suggested-blocks --household-model-out household-model.json --person-model-out person-model.json --manifest-out linked-training.manifest.json
-synthpopcan tree generate-from-package linked-model-package.json --households 1000 --households-out synthetic-households.csv --persons-out synthetic-persons.csv
-synthpopcan validate controls --population weights.csv --controls controls.csv --kind weights
-synthpopcan validate linked-output --households synthetic-households.csv --persons synthetic-persons.csv
+synthpopcan models build train-linked hierarchical.csv --input-format statcan-2016-hierarchical --household-model-out household-model.json --person-model-out person-model.json --manifest-out linked-training.manifest.json
+synthpopcan models generate linked-model-package.json --households 1000 --out synthetic-population
+synthpopcan validate ipf --population weights.csv --controls controls.csv --kind weights
+synthpopcan validate linked synthetic-population
 ```
 
 Future configuration-driven commands may still be useful, but they should be introduced after the explicit CSV/JSON workflow remains stable. The CLI should eventually treat configs as first-class artifacts so every run is reproducible.

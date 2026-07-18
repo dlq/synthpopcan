@@ -1,10 +1,10 @@
 # Local Web Application Runtime Implementation Plan
 
-Status: implementation complete; Stages 0–8 verified\
+Status: implementation complete; Stages 0–8 and the `0.6.1` follow-up verified\
 Created: 2026-07-10\
 Last updated: 2026-07-18\
-Target: `0.6.0`; stable linked schema follows in `0.6.1`\
-Next action: preserve the verified runtime while implementing the `0.6.1` schema\
+Target: `0.6.0` runtime; stable linked schema shipped in `0.6.1`\
+Next action: preserve the durable-run and browser-sequencing regression gates\
 Roadmap: [PLANS.md](../PLANS.md) | [Plan index](README.md)
 
 > **For agentic workers:** Execute this plan one stage at a time. Keep each
