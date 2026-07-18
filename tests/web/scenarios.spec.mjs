@@ -106,6 +106,38 @@ test("a new draft wins over a delayed initial run-history response", async ({
   await expect(page.getByRole("heading", { name: "Results" })).toBeHidden();
 });
 
+test("a new draft preserves a delayed initial model catalogue", async ({ page }) => {
+  let catalogueRequested;
+  let releaseCatalogue;
+  const requested = new Promise((resolve) => {
+    catalogueRequested = resolve;
+  });
+  const release = new Promise((resolve) => {
+    releaseCatalogue = resolve;
+  });
+  await page.route("**/api/models", async (route) => {
+    catalogueRequested();
+    await release;
+    await route.continue();
+  });
+
+  await page.goto("/");
+  await requested;
+  await page.getByRole("button", { name: "New run" }).click();
+  await page
+    .getByRole("button", { name: "Generate from a prepared model", exact: true })
+    .click();
+  releaseCatalogue();
+
+  await expect(
+    page.locator('#run-model-select option[value="demo-linked-household-person"]'),
+  ).toHaveCount(1);
+  await page.locator("#run-model-select").selectOption("demo-linked-household-person");
+  await expect(page.locator("#run-model-select")).toHaveValue(
+    "demo-linked-household-person",
+  );
+});
+
 test("edited IPF settings win over a delayed preflight response", async ({ page }) => {
   let preflightStarted;
   let releasePreflight;

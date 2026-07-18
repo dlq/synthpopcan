@@ -136,7 +136,7 @@ async function refreshRuns(state, selectNewest = false) {
 }
 
 function newDraft(state) {
-  state.operations.invalidateAll();
+  invalidateWorkbenchViewOperations(state);
   state.viewRevision += 1;
   showWorkbench();
   state.stopEvents?.();
@@ -155,6 +155,18 @@ function newDraft(state) {
   renderRunList(document.querySelector("#runs-list"), state.runs, null, (run) =>
     selectRun(state, run),
   );
+}
+
+function invalidateWorkbenchViewOperations(state) {
+  for (const name of [
+    "runs-list",
+    "follow-run",
+    "results",
+    "cancel-run",
+    "model-install",
+  ])
+    state.operations.invalidate(name);
+  invalidateDraftOperations(state);
 }
 
 function useDemoFiles(state) {
