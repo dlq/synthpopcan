@@ -4,6 +4,10 @@ All notable public changes to SynthPopCan are tracked here.
 
 ## Unreleased
 
+- Add year-aware Census Profile downloads for verified 2021 CT, ADA, and
+  national CSD products, national CSD cartographic boundaries for both
+  vintages, balance the local 2016/2021 small-area source coverage, and parse
+  both vintages' distinct characteristic and geography schemas.
 - Add explicit Statistics Canada 2021 hierarchical and individuals PUMF
   adapters, a year-specific linked-tree column profile, streaming inspection
   for full-size public microdata, and linked 2021 model-training support.

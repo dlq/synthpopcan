@@ -132,10 +132,15 @@ synthpopcan geo boundaries \
   --census-year 2021 \
   --geo-level ada \
   --out-dir data/derived/statcan/census/2021/boundaries/
+
+synthpopcan geo boundaries \
+  --census-year 2021 \
+  --geo-level csd \
+  --out-dir data/derived/statcan/census/2021/boundaries/
 ```
 
-These write national `2021-boundary-ct.geojson` and
-`2021-boundary-ada.geojson` files under
+These write national `2021-boundary-ct.geojson`, `2021-boundary-ada.geojson`,
+and `2021-boundary-csd.geojson` files under
 `data/derived/statcan/census/2021/boundaries/`. The CT product
 contains all tracts in Canada's tracted CMAs and CAs; smaller untracted CAs
 have no CTs. The ADA product covers all of Canada. Both retain StatCan's 2021
@@ -143,6 +148,31 @@ have no CTs. The ADA product covers all of Canada. Both retain StatCan's 2021
 province/territory code (`PRUID`) alongside the short geography identifier.
 Keep boundary and Census Profile/control vintages aligned; do not calibrate
 2021 controls against 2016 geography.
+
+CSDs are the municipal or municipal-equivalent layer used for local public
+health, service-access, and resource-allocation analysis. Fetch the national
+profile and extract a province or other identifier-prefix slice as follows:
+
+```bash
+synthpopcan statcan census-profile fetch \
+  --year 2021 \
+  --geo-level csd-all \
+  --out-dir data/raw/statcan/census/2021/profiles/csd/national/
+
+synthpopcan geo controls \
+  --profile data/raw/statcan/census/2021/profiles/csd/national/2021-census-profile-csd-all.csv \
+  --geo-column csd \
+  --geo-prefix 24 \
+  --target TARGET_HOUSEHOLDS \
+  --candidates candidates/
+```
+
+Here `24` selects Quebec CSD identifiers; use the corresponding two-digit
+province or territory code for another region. Every CSD returned by the
+current 2016 and 2021 control extraction joins to its vintage's national
+boundary file. Some boundary features lack a complete household-size and
+tenure vector because of empty geographies, suppression, or unavailable
+characteristics, and are therefore intentionally omitted from calibration.
 
 The national ADA geometry is detailed and much larger than the CT product. For
 countrywide overview maps, `--coord-precision 3` reduces conversion time and

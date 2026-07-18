@@ -35,6 +35,10 @@ Principles:
   machine-readable output.
 - Preserve source, geography, variables, filters, model version, seeds, and
   validation metrics with generated output.
+- Choose geography according to the research question rather than treating one
+  small-area level as universal: use CSDs for municipal or municipal-equivalent
+  policy and service-delivery analysis, and DAs when fine-grained national
+  placement or accessibility analysis is needed.
 - Distinguish software correctness, statistical fitness, disclosure-risk checks,
   and human review.
 
@@ -218,7 +222,7 @@ the release that introduces that behavior.
   Reject cyclic or invalid CART graphs, cap household/person output, and add
   worker cancellation, timeout, and stale-job handling in the backend model-run
   path before removing browser generation.
-- [ ] **P2 / `0.6.0` — Harden or replace the current local server.** Reject
+- [x] **P2 / `0.6.0` — Harden or replace the current local server.** Reject
   non-loopback hosts, validate `Host` and `Origin`, protect state-changing
   requests, require appropriate content types, cap `Content-Length`, and carry
   these requirements into the FastAPI replacement. Any network mode still
@@ -242,7 +246,7 @@ the release that introduces that behavior.
 - [x] **P2 — Make StatCan downloads bounded and atomic.** Add network timeouts,
   stream to a temporary file, verify completion, and preserve a valid cached
   file when a refresh fails partway through.
-- [ ] **P2 / `0.6.0`–`0.6.1` — Sequence asynchronous browser operations.**
+- [ ] **P2 / `0.6.1` — Sequence asynchronous browser operations.**
   Snapshot inputs when a job starts, abort or ignore stale model/WDS/estimate
   completions, and build CLI handoff commands from the completed durable run
   rather than the current mutable form.
@@ -286,7 +290,8 @@ the release that introduces that behavior.
 
 ## 0.6.x: Local Web Application Runtime
 
-Status: in progress; Stages 0–5 complete. See the
+Status: the `0.6.0` runtime implementation and Stages 0–8 are complete and
+verified; the `0.6.1` linked-schema follow-up is active. See the
 [staged implementation plan](plans/2026-07-10-local-web-application-runtime.md).
 
 Architecture decisions:
@@ -313,11 +318,38 @@ The `0.6.1` development line also accepts the corrected Statistics Canada 2021
 hierarchical and individuals PUMFs as explicit, year-specific input formats.
 The hierarchical adapter feeds linked household/person training; the individuals
 adapter remains person-level and must not imply household linkage. It also adds
-reproducible national 2021 census-tract and aggregate-dissemination-area
-cartographic boundary preparation, retaining DGUIDs and requiring boundary,
-control, and output geography vintages to agree. Sixteen audited 2021 linked
-model packages are published as checksum-pinned release assets and exposed
-through the shared CLI and web catalogue.
+reproducible national 2021 census-tract, aggregate-dissemination-area, and
+census-subdivision cartographic boundary preparation, retaining DGUIDs and
+requiring boundary, control, and output geography vintages to agree. Sixteen
+audited 2021 linked model packages are published as checksum-pinned release
+assets and exposed through the shared CLI and web catalogue.
+
+### Small-area geography strategy
+
+Do not make CT or ADA the permanent default for every workflow. Retain CT for
+detailed analysis inside tracted metropolitan areas and ADA for moderately
+local, population-balanced national coverage, while adding these deliberate
+paths where the research question requires them:
+
+- **CSD:** use the municipality or municipal-equivalent layer for public-health
+  policy, local government, healthcare, education, food availability, facility
+  capacity, and other service-delivery questions. The national 2016 and 2021
+  through-CSD profiles and cartographic boundaries are now available locally;
+  keep their controls, boundaries, and generated-population vintage aligned.
+- **DA:** add a verified national DA profile-and-boundary workflow for finer
+  placement and accessibility analysis where CSD or ADA aggregation would hide
+  important within-area variation, including rural areas where CTs do not
+  exist. Assess suppression, memory, runtime, map size, and output disclosure
+  risk before making full-country DA calibration a normal workflow.
+- **Cross-geography use:** record the selected level and rationale in run
+  provenance. Use official relationship files or validated spatial/coded
+  crosswalks when joining CSD, DA, ADA, CT, facility, environmental, or service
+  layers; never assume that CSD, ADA, and CT form one strictly nested hierarchy.
+
+The first DA implementation should prove bounded province-scale preparation,
+control extraction, calibration, validation, and mapping before attempting a
+national run. Ecosystem enrichment in `0.7.x` should then choose CSD or DA per
+layer and research purpose rather than forcing all sources onto one geography.
 
 Completion criteria:
 
@@ -450,6 +482,8 @@ that static accessibility or counterfactual analysis is insufficient.
 
 - Dependency posture beyond the current pure Python, NumPy, and pandas runtime;
   SciPy CSR and Polars remain benchmark probes.
-- Default small-area geography levels beyond current 2016 CT/ADA workflows.
+- User-facing defaults and automatic guidance for choosing among CT, ADA, CSD,
+  and DA after the CSD and DA workflows have representative performance and
+  correctness evidence.
 - Integerization alternatives beyond deterministic systematic expansion.
 - Boundary between automated model/privacy advice and required expert review.

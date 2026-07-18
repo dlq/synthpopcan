@@ -59,6 +59,8 @@ def inspect_local_data_layout(data_root: Path) -> list[DataLayoutCheck]:
             data_root / "work",
             missing_tip="Create data/work for disposable builds and experiments.",
         ),
+        _check_census_inventory(data_root, census_year=2016),
+        _check_census_inventory(data_root, census_year=2021),
         _check_variable_metadata(
             "2016 hierarchical metadata",
             _metadata_path(data_root, "hierarchical"),
@@ -132,6 +134,75 @@ def _check_file(name: str, path: Path, *, missing_tip: str = "") -> DataLayoutCh
     if path.is_file():
         return DataLayoutCheck(name, "found", "available", path)
     return DataLayoutCheck(name, "missing", "not found", path, missing_tip)
+
+
+def _check_census_inventory(
+    data_root: Path,
+    *,
+    census_year: int,
+) -> DataLayoutCheck:
+    path = data_root / "raw" / "statcan" / "census" / str(census_year) / "manifest.json"
+    tip = (
+        f"Expected a {census_year} vintage inventory here. Record the local "
+        "Statistics Canada products and their provenance in manifest.json."
+    )
+    if not path.is_file():
+        return DataLayoutCheck(
+            f"{census_year} Census inventory", "missing", "not found", path, tip
+        )
+    try:
+        payload: dict[str, Any] = json.loads(path.read_text())
+    except (json.JSONDecodeError, OSError):
+        return DataLayoutCheck(
+            f"{census_year} Census inventory",
+            "problem",
+            "invalid JSON",
+            path,
+            tip,
+        )
+    if payload.get("census_year") != census_year:
+        return DataLayoutCheck(
+            f"{census_year} Census inventory",
+            "problem",
+            "wrong census year",
+            path,
+            tip,
+        )
+    products = payload.get("products")
+    if not isinstance(products, list):
+        return DataLayoutCheck(
+            f"{census_year} Census inventory",
+            "problem",
+            "missing product inventory",
+            path,
+            tip,
+        )
+    for product in products:
+        if not isinstance(product, dict) or not isinstance(
+            product.get("data_path"), str
+        ):
+            return DataLayoutCheck(
+                f"{census_year} Census inventory",
+                "problem",
+                "invalid product entry",
+                path,
+                tip,
+            )
+        data_path = path.parent / product["data_path"]
+        if not data_path.is_file():
+            return DataLayoutCheck(
+                f"{census_year} Census inventory",
+                "problem",
+                f"missing product: {product['data_path']}",
+                path,
+                tip,
+            )
+    return DataLayoutCheck(
+        f"{census_year} Census inventory",
+        "found",
+        f"{len(products)} products",
+        path,
+    )
 
 
 def _check_variable_metadata(

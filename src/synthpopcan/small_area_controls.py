@@ -28,6 +28,19 @@ _TENURE_MEMBERS: dict[str, str] = {
     "1619": "2",  # Renter
 }
 
+# The 2021 profile renamed the member-id column and revised characteristic IDs.
+_HHSIZE_MEMBERS_2021: dict[str, str] = {
+    "51": "1",
+    "52": "2",
+    "53": "3",
+    "54": "4",
+    "55": "5",
+}
+_TENURE_MEMBERS_2021: dict[str, str] = {
+    "1415": "1",
+    "1416": "2",
+}
+
 # GEO_LEVEL value in each census profile that identifies the target geography rows.
 _GEO_LEVEL_FOR_COLUMN: dict[str, str] = {
     "ada": "3",
@@ -35,6 +48,13 @@ _GEO_LEVEL_FOR_COLUMN: dict[str, str] = {
     "csd": "3",
     "cd": "2",
     "da": "4",
+}
+_GEO_LEVEL_FOR_COLUMN_2021: dict[str, str] = {
+    "ada": "Aggregate dissemination area",
+    "ct": "Census tract",
+    "csd": "Census subdivision",
+    "cd": "Census division",
+    "da": "Dissemination area",
 }
 
 
@@ -77,28 +97,40 @@ def extract_controls_from_profile(
     dict
         ``{geo_id: {"hhsize": {cat: count}, "tenure": {cat: count}}}``
     """
-    target_level = geo_level_value or _GEO_LEVEL_FOR_COLUMN.get(
-        geography_column.lower()
-    )
-    if target_level is None:
-        raise ValueError(
-            f"Unknown geography column {geography_column!r}. "
-            f"Known values: {sorted(_GEO_LEVEL_FOR_COLUMN)}. "
-            "Use --geo-level-value to provide the GEO_LEVEL string explicitly."
-        )
-
     data: dict[str, dict[str, dict[str, float]]] = defaultdict(
         lambda: {"hhsize": {}, "tenure": {}}
     )
 
+    # StatCan profile ZIPs use a legacy single-byte encoding in both vintages;
+    # 2021 geography names can contain bytes that are not valid UTF-8.
     with profile_path.open(newline="", encoding="latin-1") as fh:
         reader = csv.DictReader(fh)
 
-        # Locate key columns by partial match (works across ADA, CT, DA profiles)
         raw_fields = reader.fieldnames or []
-        mem_col = _find_col(raw_fields, "Member ID: Profile")
-        val_col = _find_col(raw_fields, "[1]: Total")
-        geo_col = _find_col(raw_fields, "GEO_CODE")
+        is_2021 = "CHARACTERISTIC_ID" in raw_fields
+        if is_2021:
+            mem_col = "CHARACTERISTIC_ID"
+            val_col = "C1_COUNT_TOTAL"
+            geo_col = "ALT_GEO_CODE"
+            hhsize_members = _HHSIZE_MEMBERS_2021
+            tenure_members = _TENURE_MEMBERS_2021
+            levels = _GEO_LEVEL_FOR_COLUMN_2021
+        else:
+            # Locate 2016 columns by partial match across ADA, CT, and DA files.
+            mem_col = _find_col(raw_fields, "Member ID: Profile")
+            val_col = _find_col(raw_fields, "[1]: Total")
+            geo_col = _find_col(raw_fields, "GEO_CODE")
+            hhsize_members = _HHSIZE_MEMBERS
+            tenure_members = _TENURE_MEMBERS
+            levels = _GEO_LEVEL_FOR_COLUMN
+
+        target_level = geo_level_value or levels.get(geography_column.lower())
+        if target_level is None:
+            raise ValueError(
+                f"Unknown geography column {geography_column!r}. "
+                f"Known values: {sorted(levels)}. "
+                "Use --geo-level-value to provide the GEO_LEVEL string explicitly."
+            )
 
         for row in reader:
             if row.get("GEO_LEVEL", "").strip() != target_level:
@@ -112,10 +144,10 @@ def extract_controls_from_profile(
                 val = float(raw)
             except ValueError:
                 continue
-            if mid in _HHSIZE_MEMBERS:
-                data[geo]["hhsize"][_HHSIZE_MEMBERS[mid]] = val
-            elif mid in _TENURE_MEMBERS:
-                data[geo]["tenure"][_TENURE_MEMBERS[mid]] = val
+            if mid in hhsize_members:
+                data[geo]["hhsize"][hhsize_members[mid]] = val
+            elif mid in tenure_members:
+                data[geo]["tenure"][tenure_members[mid]] = val
 
     return dict(data)
 

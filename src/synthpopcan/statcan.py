@@ -16,6 +16,10 @@ _CENSUS_PROFILE_2016_BASE_URL = (
     "https://www12.statcan.gc.ca/census-recensement/2016/dp-pd/prof/"
     "details/download-telecharger/comp/GetFile.cfm"
 )
+_CENSUS_PROFILE_2021_BASE_URL = (
+    "https://www12.statcan.gc.ca/census-recensement/2021/dp-pd/prof/"
+    "details/download-telecharger/comp/getFile.cfm"
+)
 # StatCan hosts 2016 boundary files under the 2011 geo program path.
 _BOUNDARY_2016_BASE_URL = (
     "https://www12.statcan.gc.ca/census-recensement/2011/geo/bound-limit/"
@@ -40,6 +44,7 @@ __all__ = [
     "extract_wds_dimension_names",
     "extract_wds_dimension_previews",
     "fetch_boundary_zip",
+    "fetch_census_profile",
     "get_boundary_download",
     "fetch_census_profile_2016",
     "fetch_dgrf_2021",
@@ -57,7 +62,7 @@ __all__ = [
 
 @dataclass(frozen=True)
 class CensusProfileDownload:
-    """Metadata for one supported 2016 Census Profile bulk download.
+    """Metadata for one supported Census Profile bulk download.
 
     Instances describe the geography level, display label, download parameters,
     and local filename for a supported Census Profile CSV.
@@ -67,21 +72,25 @@ class CensusProfileDownload:
     label: str
     filetype: str
     geono: str
+    census_year: int = 2016
 
     @property
     def url(self) -> str:
         """Return the Statistics Canada download URL for this entry."""
 
-        return (
-            f"{_CENSUS_PROFILE_2016_BASE_URL}?FILETYPE={self.filetype}"
-            f"&GEONO={self.geono}&Lang=E"
-        )
+        base_url = {
+            2016: _CENSUS_PROFILE_2016_BASE_URL,
+            2021: _CENSUS_PROFILE_2021_BASE_URL,
+        }[self.census_year]
+        if self.census_year == 2021:
+            return f"{base_url}?LANG=E&GEONO={self.geono}&FILETYPE={self.filetype}"
+        return f"{base_url}?FILETYPE={self.filetype}&GEONO={self.geono}&Lang=E"
 
     @property
     def filename(self) -> str:
         """Return the local filename used for this download."""
 
-        return f"2016-census-profile-{self.geo_level}.csv"
+        return f"{self.census_year}-census-profile-{self.geo_level}.csv"
 
 
 @dataclass(frozen=True)
@@ -146,6 +155,15 @@ _BOUNDARY_2016_DOWNLOADS: dict[str, BoundaryDownload] = {
         zip_name="lcsd000b16a_e.zip",
         shp_name="lcsd000b16a_e.shp",
         id_field="CSDUID",
+        property_fields=(
+            "CSDNAME",
+            "CSDTYPE",
+            "PRUID",
+            "PRNAME",
+            "CDUID",
+            "CDNAME",
+            "CDTYPE",
+        ),
     ),
     "cd": BoundaryDownload(
         geo_level="cd",
@@ -181,6 +199,22 @@ _BOUNDARY_2021_DOWNLOADS: dict[str, BoundaryDownload] = {
         shp_name="lada000b21a_e.shp",
         id_field="ADAUID",
         property_fields=("DGUID", "LANDAREA", "PRUID"),
+        census_year=2021,
+        base_url=_BOUNDARY_2021_BASE_URL,
+    ),
+    "csd": BoundaryDownload(
+        geo_level="csd",
+        description="Census subdivisions (2021 cartographic)",
+        zip_name="lcsd000b21a_e.zip",
+        shp_name="lcsd000b21a_e.shp",
+        id_field="CSDUID",
+        property_fields=(
+            "DGUID",
+            "CSDNAME",
+            "CSDTYPE",
+            "LANDAREA",
+            "PRUID",
+        ),
         census_year=2021,
         base_url=_BOUNDARY_2021_BASE_URL,
     ),
@@ -359,7 +393,7 @@ _CENSUS_PROFILE_2016_DOWNLOADS: dict[str, CensusProfileDownload] = {
         "csd-all",
         "Canada, provinces, territories, census divisions and census subdivisions",
         "CSV",
-        "016",
+        "055",
     ),
     "da-all": CensusProfileDownload(
         "da-all",
@@ -385,6 +419,40 @@ _CENSUS_PROFILE_2016_DOWNLOADS: dict[str, CensusProfileDownload] = {
     "hr": CensusProfileDownload("hr", "Health regions", "CSV", "058"),
 }
 CENSUS_PROFILE_2016_GEO_LEVELS = tuple(_CENSUS_PROFILE_2016_DOWNLOADS)
+
+_CENSUS_PROFILE_2021_DOWNLOADS: dict[str, CensusProfileDownload] = {
+    "csd-all": CensusProfileDownload(
+        "csd-all",
+        "Canada, provinces, territories, census divisions and census subdivisions",
+        "CSV",
+        "005",
+        census_year=2021,
+    ),
+    "ct": CensusProfileDownload(
+        "ct",
+        "Census metropolitan areas, tracted census agglomerations and census tracts",
+        "CSV",
+        "007",
+        census_year=2021,
+    ),
+    "ada": CensusProfileDownload(
+        "ada",
+        "Aggregate dissemination areas",
+        "CSV",
+        "012",
+        census_year=2021,
+    ),
+}
+
+_CENSUS_PROFILE_DOWNLOADS = {
+    2016: _CENSUS_PROFILE_2016_DOWNLOADS,
+    2021: _CENSUS_PROFILE_2021_DOWNLOADS,
+}
+CENSUS_PROFILE_GEO_LEVELS = tuple(
+    sorted(
+        {key for downloads in _CENSUS_PROFILE_DOWNLOADS.values() for key in downloads}
+    )
+)
 
 
 def wds_download_url(product_id: str, lang: str = "en") -> str:
@@ -697,20 +765,32 @@ def fetch_wds_table(product_id: str, out_dir: Path, lang: str = "en") -> Path:
     return destination
 
 
-def fetch_census_profile_2016(geo_level: str, out_dir: Path) -> Path:
-    """Download a supported 2016 Census Profile CSV and manifest.
+def fetch_census_profile(
+    geo_level: str,
+    out_dir: Path,
+    *,
+    census_year: int = 2016,
+) -> Path:
+    """Download a supported Census Profile CSV and provenance manifest.
 
-    ``geo_level`` must be one of the supported keys in
-    ``_CENSUS_PROFILE_2016_DOWNLOADS``. The function returns the CSV path and
-    writes a JSON provenance manifest beside it.
+    The supported geography products depend on ``census_year``. The function
+    returns the extracted CSV path and writes a JSON manifest beside it.
     """
 
     try:
-        entry = _CENSUS_PROFILE_2016_DOWNLOADS[geo_level]
+        downloads = _CENSUS_PROFILE_DOWNLOADS[census_year]
     except KeyError as exc:
-        known = ", ".join(sorted(_CENSUS_PROFILE_2016_DOWNLOADS))
+        known_years = ", ".join(str(year) for year in sorted(_CENSUS_PROFILE_DOWNLOADS))
         raise ValueError(
-            f"Unknown 2016 Census Profile geography level {geo_level!r}. "
+            f"Unsupported Census Profile year {census_year!r}. "
+            f"Use one of: {known_years}."
+        ) from exc
+    try:
+        entry = downloads[geo_level]
+    except KeyError as exc:
+        known = ", ".join(sorted(downloads))
+        raise ValueError(
+            f"Unknown {census_year} Census Profile geography level {geo_level!r}. "
             f"Use one of: {known}."
         ) from exc
 
@@ -718,18 +798,26 @@ def fetch_census_profile_2016(geo_level: str, out_dir: Path) -> Path:
     destination = out_dir / entry.filename
     download_path = destination.with_suffix(destination.suffix + ".download")
     download_url(entry.url, download_path)
-    extract_census_profile_csv(download_path, destination)
-    download_path.unlink(missing_ok=True)
+    try:
+        extract_census_profile_csv(download_path, destination)
+    finally:
+        download_path.unlink(missing_ok=True)
     write_manifest(
-        out_dir / f"2016-census-profile-{entry.geo_level}.json",
+        out_dir / f"{census_year}-census-profile-{entry.geo_level}.json",
         {
-            "source": "Statistics Canada 2016 Census Profile bulk download",
+            "source": (f"Statistics Canada {census_year} Census Profile bulk download"),
             **asdict(entry),
             "source_url": entry.url,
             "path": str(destination),
         },
     )
     return destination
+
+
+def fetch_census_profile_2016(geo_level: str, out_dir: Path) -> Path:
+    """Backward-compatible wrapper for a 2016 Census Profile download."""
+
+    return fetch_census_profile(geo_level, out_dir, census_year=2016)
 
 
 def extract_census_profile_csv(download_path: Path, destination: Path) -> None:
@@ -751,6 +839,11 @@ def extract_census_profile_csv(download_path: Path, destination: Path) -> None:
                     max_bytes=_MAX_STATCAN_DOWNLOAD_BYTES,
                 )
     except BadZipFile:
+        prefix = download_path.read_bytes()[:512].lstrip().lower()
+        if prefix.startswith((b"<!doctype html", b"<html")):
+            raise ValueError(
+                "Census Profile download returned HTML instead of CSV or ZIP"
+            ) from None
         download_path.replace(destination)
 
 

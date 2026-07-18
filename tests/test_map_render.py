@@ -1632,6 +1632,7 @@ def test_cli_prepare_boundaries_success(tmp_path: Path) -> None:
     assert exit_code == 0
     mock_dl.assert_called_once()
     mock_conv.assert_called_once()
+    assert not shp_path.exists()
     assert mock_conv.call_args.kwargs["property_fields"] == (
         "CTNAME",
         "PRUID",

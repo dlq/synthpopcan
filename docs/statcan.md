@@ -92,10 +92,12 @@ app can create a reproducible `synthpopcan-wds-selection.json`; pass that file
 to `controls from-wds --selection` when continuing in the CLI.
 
 The Census Profile workflow is simpler: there is no search step, just choose
-the geography level. The command currently fetches the 2016 profile.
+the census year and geography product. The default year remains 2016 for
+backward compatibility.
 
 ```bash
 synthpopcan statcan census-profile fetch \
+  --year 2016 \
   --geo-level ct \
   --out-dir data/raw/statcan/census/2016/profiles/ct
 ```
@@ -181,9 +183,10 @@ year. The Census Profile contains several hundred demographic characteristics
 every geographic unit at the chosen level. It is the primary source for
 census-tract-level controls in small-area synthesis.
 
-Supported Census Profile downloads (`--geo-level`) are the keys below. These
-names identify **bulk download products**, so some use `-all` even though the
-geography itself is normally abbreviated without it:
+Supported Census Profile downloads depend on `--year`. The broader 2016
+registry includes the keys below. These names identify **bulk download
+products**, so some use `-all` even though the geography itself is normally
+abbreviated without it:
 
 | Key | Bulk download contents |
 | --- | --- |
@@ -202,6 +205,15 @@ geography itself is normally abbreviated without it:
 | `ada` | Aggregate dissemination areas |
 | `hr` | Health regions |
 
+The verified 2021 registry currently contains the products required to match
+the local 2016 small-area coverage:
+
+| Key | Bulk download contents |
+| --- | --- |
+| `csd-all` | Canada through census-subdivision level |
+| `ct` | CMAs, tracted CAs, and census tracts |
+| `ada` | Aggregate dissemination areas |
+
 Do not substitute `csd` for `csd-all` or `da` for `da-all` in this command.
 The separate `geo boundaries` command uses the shorter geography codes because
 it addresses boundary products rather than Census Profile bulk tables.
@@ -213,11 +225,16 @@ writing a mapping template.
 
 ```bash
 synthpopcan statcan census-profile fetch \
+  --year 2021 \
   --geo-level ct \
-  --out-dir data/raw/statcan/census/2016/profiles/ct
+  --out-dir data/raw/statcan/census/2021/profiles/ct
 ```
 
-Currently only the 2016 census year is supported.
+The command validates geography products against the selected year, extracts
+the official data CSV from the ZIP response, removes the temporary download,
+and records a provenance manifest beside the CSV. The 2016 and 2021 profile
+columns and characteristic identifiers differ; SynthPopCan's small-area
+reader detects both schemas.
 
 ## Troubleshooting
 

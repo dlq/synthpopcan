@@ -37,6 +37,8 @@ def test_inspects_expected_local_data_layout(tmp_path: Path) -> None:
     assert statuses["Raw data directory"] == "found"
     assert statuses["Derived data directory"] == "missing"
     assert statuses["Working data directory"] == "missing"
+    assert statuses["2016 Census inventory"] == "missing"
+    assert statuses["2021 Census inventory"] == "missing"
     assert statuses["2016 hierarchical metadata"] == "found"
     assert statuses["2016 individual metadata"] == "missing"
     assert statuses["2021 hierarchical metadata"] == "missing"
@@ -99,6 +101,36 @@ def test_inspects_2021_pumf_metadata(tmp_path: Path) -> None:
 
     assert checks["2021 hierarchical metadata"].detail == "122 variable labels"
     assert checks["2021 individual metadata"].detail == "144 variable labels"
+
+
+def test_inspects_census_vintage_inventories(tmp_path: Path) -> None:
+    data_root = tmp_path / "data"
+    census_root = data_root / "raw" / "statcan" / "census"
+    inventory_2016 = census_root / "2016" / "manifest.json"
+    inventory_2021 = census_root / "2021" / "manifest.json"
+    inventory_2016.parent.mkdir(parents=True)
+    inventory_2021.parent.mkdir(parents=True)
+    (inventory_2016.parent / "one.csv").write_text("value\n1\n")
+    (inventory_2016.parent / "two.csv").write_text("value\n2\n")
+    inventory_2016.write_text(
+        json.dumps(
+            {
+                "census_year": 2016,
+                "products": [
+                    {"data_path": "one.csv"},
+                    {"data_path": "two.csv"},
+                ],
+            }
+        )
+    )
+    inventory_2021.write_text(json.dumps({"census_year": 2016, "products": []}))
+
+    checks = {check.name: check for check in inspect_local_data_layout(data_root)}
+
+    assert checks["2016 Census inventory"].status == "found"
+    assert checks["2016 Census inventory"].detail == "2 products"
+    assert checks["2021 Census inventory"].status == "problem"
+    assert checks["2021 Census inventory"].detail == "wrong census year"
 
 
 def test_inspects_variable_metadata_missing_labels(tmp_path: Path) -> None:

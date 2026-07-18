@@ -80,8 +80,8 @@ from synthpopcan.sources import (
     read_source_schema,
 )
 from synthpopcan.statcan import (
-    CENSUS_PROFILE_2016_GEO_LEVELS,
-    fetch_census_profile_2016,
+    CENSUS_PROFILE_GEO_LEVELS,
+    fetch_census_profile,
     fetch_wds_metadata,
     fetch_wds_table,
     search_wds_tables,
@@ -1278,16 +1278,30 @@ def census_profile() -> None:
 
 @census_profile.command("fetch")
 @click.option(
+    "--year",
+    "census_year",
+    type=click.Choice(("2016", "2021")),
+    default="2016",
+    show_default=True,
+    help="Census vintage.",
+)
+@click.option(
     "--geo-level",
     required=True,
-    type=click.Choice(CENSUS_PROFILE_2016_GEO_LEVELS, case_sensitive=False),
+    type=click.Choice(CENSUS_PROFILE_GEO_LEVELS, case_sensitive=False),
     help="Census Profile bulk-download geography product.",
 )
 @click.option("--out-dir", required=True, type=_PATH)
-def run_statcan_census_profile_fetch(geo_level: str, out_dir: Path) -> None:
+def run_statcan_census_profile_fetch(
+    census_year: str, geo_level: str, out_dir: Path
+) -> None:
     """Download a known Census Profile bulk CSV."""
     try:
-        path = fetch_census_profile_2016(geo_level, out_dir)
+        path = fetch_census_profile(
+            geo_level,
+            out_dir,
+            census_year=int(census_year),
+        )
     except ValueError as exc:
         raise click_value_error(exc) from exc
     except OSError as exc:

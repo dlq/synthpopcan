@@ -16,12 +16,14 @@ from synthpopcan.statcan import (
     _BOUNDARY_2016_DOWNLOADS,
     _BOUNDARY_2021_DOWNLOADS,
     _CENSUS_PROFILE_2016_DOWNLOADS,
+    _CENSUS_PROFILE_2021_DOWNLOADS,
     WDSTableSearchResult,
     classify_wds_ipf_suitability,
     download_url,
     extract_wds_dimension_names,
     extract_wds_dimension_previews,
     fetch_boundary_zip,
+    fetch_census_profile,
     fetch_census_profile_2016,
     fetch_dgrf_2021,
     fetch_json,
@@ -147,6 +149,88 @@ def test_fetch_2016_census_profile_extracts_zip_payload(
 
     assert (tmp_path / "2016-census-profile-ada.csv").read_text() == "a,b\n1,2\n"
     assert not (tmp_path / "2016-census-profile-ada.csv.download").exists()
+
+
+def test_cli_fetches_2021_census_profile_by_registry_key(
+    tmp_path: Path, monkeypatch
+) -> None:
+    calls: list[tuple[str, Path]] = []
+
+    def fake_download(url: str, destination: Path) -> None:
+        calls.append((url, destination))
+        with ZipFile(destination, "w") as archive:
+            archive.writestr("98-401-X2021007_English_CSV_data.csv", "a,b\n1,2\n")
+
+    monkeypatch.setattr("synthpopcan.statcan.download_url", fake_download)
+
+    assert (
+        main(
+            [
+                "statcan",
+                "census-profile",
+                "fetch",
+                "--year",
+                "2021",
+                "--geo-level",
+                "ct",
+                "--out-dir",
+                str(tmp_path),
+            ]
+        )
+        == 0
+    )
+
+    entry = _CENSUS_PROFILE_2021_DOWNLOADS["ct"]
+    assert calls == [(entry.url, tmp_path / "2021-census-profile-ct.csv.download")]
+    assert (tmp_path / entry.filename).read_text() == "a,b\n1,2\n"
+    manifest = json.loads((tmp_path / "2021-census-profile-ct.json").read_text())
+    assert manifest["census_year"] == 2021
+    assert manifest["geono"] == "007"
+    assert manifest["source_url"] == entry.url
+
+
+def test_national_csd_sources_are_registered_for_both_vintages() -> None:
+    assert set(_CENSUS_PROFILE_2021_DOWNLOADS) == {"csd-all", "ct", "ada"}
+
+    profile_2016 = _CENSUS_PROFILE_2016_DOWNLOADS["csd-all"]
+    assert profile_2016.geono == "055"
+    assert profile_2016.filename == "2016-census-profile-csd-all.csv"
+
+    profile_2021 = _CENSUS_PROFILE_2021_DOWNLOADS["csd-all"]
+    assert profile_2021.geono == "005"
+    assert profile_2021.filename == "2021-census-profile-csd-all.csv"
+
+    boundary = _BOUNDARY_2021_DOWNLOADS["csd"]
+    assert boundary.zip_name == "lcsd000b21a_e.zip"
+    assert boundary.id_field == "CSDUID"
+    assert {"DGUID", "CSDNAME", "CSDTYPE", "LANDAREA", "PRUID"} == set(
+        boundary.property_fields
+    )
+
+
+def test_fetch_census_profile_rejects_year_specific_geo_level(
+    tmp_path: Path,
+) -> None:
+    with pytest.raises(ValueError, match="Unknown 2021 Census Profile"):
+        fetch_census_profile("da-all", tmp_path, census_year=2021)
+
+    with pytest.raises(ValueError, match="Unsupported Census Profile year"):
+        fetch_census_profile("ct", tmp_path, census_year=2026)
+
+
+def test_fetch_census_profile_rejects_html_download(
+    tmp_path: Path, monkeypatch
+) -> None:
+    def fake_download(_url: str, destination: Path) -> None:
+        destination.write_text("<!DOCTYPE html><title>Not found</title>")
+
+    monkeypatch.setattr("synthpopcan.statcan.download_url", fake_download)
+
+    with pytest.raises(ValueError, match="returned HTML"):
+        fetch_census_profile("csd-all", tmp_path, census_year=2016)
+
+    assert not (tmp_path / "2016-census-profile-csd-all.csv").exists()
+    assert not (tmp_path / "2016-census-profile-csd-all.csv.download").exists()
 
 
 def test_cli_fetch_census_profile_rejects_unknown_geo_level(tmp_path: Path) -> None:
@@ -894,21 +978,27 @@ def test_boundary_download_2016_ct_and_ada_preserve_all_source_attributes() -> N
     )
 
 
-def test_boundary_download_2021_national_ct_and_ada_products() -> None:
-    assert set(_BOUNDARY_2021_DOWNLOADS) == {"ct", "ada"}
+def test_boundary_download_2021_national_ct_ada_and_csd_products() -> None:
+    assert set(_BOUNDARY_2021_DOWNLOADS) == {"ct", "ada", "csd"}
     assert _BOUNDARY_2021_DOWNLOADS["ct"].url.endswith("lct_000b21a_e.zip")
     assert _BOUNDARY_2021_DOWNLOADS["ada"].url.endswith("lada000b21a_e.zip")
     assert all(entry.census_year == 2021 for entry in _BOUNDARY_2021_DOWNLOADS.values())
-    assert all(
-        entry.property_fields == ("DGUID", "LANDAREA", "PRUID")
-        for entry in _BOUNDARY_2021_DOWNLOADS.values()
+    assert _BOUNDARY_2021_DOWNLOADS["ct"].property_fields == (
+        "DGUID",
+        "LANDAREA",
+        "PRUID",
+    )
+    assert _BOUNDARY_2021_DOWNLOADS["ada"].property_fields == (
+        "DGUID",
+        "LANDAREA",
+        "PRUID",
     )
 
 
 def test_get_boundary_download_rejects_unsupported_year_and_level() -> None:
     with pytest.raises(ValueError, match="Unsupported census year"):
         get_boundary_download("ct", 2011)
-    with pytest.raises(ValueError, match="2021.*Supported: ada, ct"):
+    with pytest.raises(ValueError, match="2021.*Supported: ada, csd, ct"):
         get_boundary_download("da", 2021)
 
 

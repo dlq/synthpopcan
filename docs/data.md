@@ -30,8 +30,9 @@ Use `data/private/sources` only for
 separate properties: a generated artifact belongs under `derived`, even when it
 must remain local and uncommitted.
 
-The local Statistics Canada cache uses parallel product trees for each census
-vintage:
+The local Statistics Canada cache uses the same product-oriented layout for
+each census vintage, but the local inventories are not assumed to be complete
+or symmetrical:
 
 ```text
 data/
@@ -39,11 +40,11 @@ data/
     2016/
       pumf/{hierarchical,individual}/
       metadata/pumf/{hierarchical,individual}/
-      profiles/{ct,ada,da}/
-      reference/
+      profiles/{ct,ada,csd/national}/
     2021/
       pumf/{hierarchical,individual}/
       metadata/pumf/{hierarchical,individual}/
+      profiles/{ct,ada,csd/national}/
       geography/relationships/
   derived/statcan/census/
     2016/
@@ -58,12 +59,20 @@ data/
   private/sources/{canue,cptp,mavan,monnet,topo}/
 ```
 
+Each vintage root has a `manifest.json` inventory of the products actually
+present. At present, both vintages contain the national hierarchical and
+individual PUMFs plus CT, ADA, and national CSD Census Profiles. The 2021 cache
+additionally contains the national Dissemination Geographies Relationship
+File. Matching product coverage does not imply column-identical schemas:
+adapters must still account for the identifiers, characteristic codes, and
+count/rate columns used by each vintage.
+
 The national PUMFs, canonical Census Profile downloads, and official
 relationship files stay under `raw`. Regional extracts, flattened tables,
 notebook-produced reusable intermediates and prepared GeoJSON stay under
 `derived`. Disposable model builds and exploratory synthesis outputs stay under
 `work`. Each provider and product family is organized by census vintage before
-product type, so 2016 and 2021 have parallel paths.
+product type.
 
 `data doctor` checks whether the expected directories exist. `data inspect`,
 `data schema`, and `data sample` inspect the actual files within that layout —

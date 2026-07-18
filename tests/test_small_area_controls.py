@@ -78,6 +78,38 @@ def _minimal_profile(path: Path) -> None:
     _write_profile(path, rows)
 
 
+def _write_2021_profile(path: Path) -> None:
+    fieldnames = [
+        "GEO_LEVEL",
+        "DGUID",
+        "ALT_GEO_CODE",
+        "CHARACTERISTIC_ID",
+        "CHARACTERISTIC_NAME",
+        "C1_COUNT_TOTAL",
+    ]
+    rows = [
+        ["Aggregate dissemination area", "2021S0516G1", "G1", "51", "1 person", "10"],
+        ["Aggregate dissemination area", "2021S0516G1", "G1", "52", "2 persons", "20"],
+        ["Aggregate dissemination area", "2021S0516G1", "G1", "53", "3 persons", "30"],
+        ["Aggregate dissemination area", "2021S0516G1", "G1", "54", "4 persons", "15"],
+        [
+            "Aggregate dissemination area",
+            "2021S0516G1",
+            "G1",
+            "55",
+            "5 or more persons",
+            "5",
+        ],
+        ["Aggregate dissemination area", "2021S0516G1", "G1", "1415", "Owner", "50"],
+        ["Aggregate dissemination area", "2021S0516G1", "G1", "1416", "Renter", "30"],
+        ["Province", "2021A000224", "24", "51", "1 person", "999"],
+    ]
+    with path.open("w", newline="", encoding="utf-8") as fh:
+        writer = csv.writer(fh)
+        writer.writerow(fieldnames)
+        writer.writerows(rows)
+
+
 # ---------------------------------------------------------------------------
 # _find_col
 # ---------------------------------------------------------------------------
@@ -129,6 +161,23 @@ def test_extract_controls_reads_hhsize_and_tenure(tmp_path: Path) -> None:
     assert raw["G1"]["tenure"]["1"] == 50.0
     assert raw["G1"]["tenure"]["2"] == 30.0
     assert raw["G2"]["hhsize"]["1"] == 40.0
+
+
+def test_extract_controls_reads_2021_profile_schema(tmp_path: Path) -> None:
+    profile = tmp_path / "profile-2021.csv"
+    _write_2021_profile(profile)
+
+    raw = extract_controls_from_profile(profile, "ada")
+
+    assert set(raw) == {"G1"}
+    assert raw["G1"]["hhsize"] == {
+        "1": 10.0,
+        "2": 20.0,
+        "3": 30.0,
+        "4": 15.0,
+        "5": 5.0,
+    }
+    assert raw["G1"]["tenure"] == {"1": 50.0, "2": 30.0}
 
 
 def test_extract_controls_filters_by_geo_prefix(tmp_path: Path) -> None:

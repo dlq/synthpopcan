@@ -995,9 +995,7 @@ def test_cli_statcan_wds_explain_oserror() -> None:
 
 
 def test_cli_statcan_census_profile_fetch_oserror(tmp_path) -> None:
-    with patch(
-        "synthpopcan.cli.fetch_census_profile_2016", side_effect=OSError("boom")
-    ):
+    with patch("synthpopcan.cli.fetch_census_profile", side_effect=OSError("boom")):
         with pytest.raises(click.ClickException):
             main(
                 [
@@ -1013,9 +1011,7 @@ def test_cli_statcan_census_profile_fetch_oserror(tmp_path) -> None:
 
 
 def test_cli_statcan_census_profile_fetch_value_error(tmp_path) -> None:
-    with patch(
-        "synthpopcan.cli.fetch_census_profile_2016", side_effect=ValueError("bad")
-    ):
+    with patch("synthpopcan.cli.fetch_census_profile", side_effect=ValueError("bad")):
         with pytest.raises(click.ClickException) as exc_info:
             main(
                 [

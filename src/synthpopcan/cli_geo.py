@@ -799,14 +799,14 @@ _KNOWN_GEO_LEVELS = ("ct", "ada", "da", "csd", "cd", "pr")
     default="2016",
     type=click.Choice(("2016", "2021")),
     show_default=True,
-    help="Boundary vintage. The 2021 catalogue currently supports CT and ADA.",
+    help="Boundary vintage. CT, ADA, and CSD are supported for both years.",
 )
 @click.option(
     "--out-dir",
     "out_dir",
     required=True,
     type=_PATH,
-    help="Directory where the GeoJSON file (and temporary shapefile) will be saved.",
+    help="Directory where the GeoJSON file and provenance manifest will be saved.",
 )
 @click.option(
     "--coord-precision",
@@ -900,12 +900,15 @@ def boundaries_command(
                 "geo_level": entry.geo_level,
                 "description": entry.description,
                 "source_url": url or entry.url,
-                "shp_path": str(shp_path),
+                "source_shapefile": shp_path.name,
+                "source_components_retained": False,
                 "geojson_path": str(geojson_path),
                 "geojson_id_source_field": entry.id_field,
                 "geojson_properties": ["geo_id", *property_fields],
             },
         )
+        for suffix in (".shp", ".shx", ".dbf", ".prj", ".cpg"):
+            shp_path.with_suffix(suffix).unlink(missing_ok=True)
     except ImportError as exc:
         raise click.ClickException(
             f"Missing dependency: {exc}. Install pyshp: pip install pyshp"

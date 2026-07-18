@@ -203,7 +203,7 @@ Canonical local roots:
 - national PUMFs: `data/raw/statcan/census/2016/pumf/`
 - PUMF metadata: `data/raw/statcan/census/2016/metadata/pumf/`
 - Census Profiles: `data/raw/statcan/census/2016/profiles/`
-- CT/ADA boundaries: `data/derived/statcan/census/2016/boundaries/`
+- CT/ADA/CSD boundaries: `data/derived/statcan/census/2016/boundaries/`
 - regional subsets/intermediates: `data/derived/statcan/census/2016/`
 
 The converted CT and ADA GeoJSON files replace their source shapefile
@@ -212,11 +212,11 @@ removed; postal geography can be fetched again if it becomes a requirement.
 
 Inventory observed locally:
 
-- Census Profile Quebec CSD data:
-  - `data/raw/statcan/census/2016/profiles/csd/quebec/98-401-X2016065_English_CSV_data.csv`
-  - about 2,887,395 data rows
-  - 1,285 geographies
-  - 1,135 distinct profile characteristics observed in the local file
+- National Census Profile through CSD level:
+  - `data/raw/statcan/census/2016/profiles/csd/national/2016-census-profile-csd-all.csv`
+  - 12,288,843 data rows across province, census-division, and CSD records
+  - 5,162 national CSD boundaries; 4,552 CSDs have complete household-size and
+    tenure controls in the current extractor
 - Montreal Census Tract profile subset:
   - `data/derived/statcan/census/2016/profiles/ct/98-401-X2016043_English_montreal.csv`
   - about 2,181,837 data rows
@@ -237,6 +237,37 @@ Inventory observed locally:
   - includes `HH_ID`, `EF_ID`, `CF_ID`, and `PP_ID`, making it crucial for household/person relationship modeling.
 
 The 2016 hierarchical PUMF should be treated as the first real household/person microdata input shape: a single person-row file with household, economic-family, census-family, and person identifiers. Separate household/person CSVs are useful as normalized outputs or small fixtures, but they should not be the assumed StatCan input shape.
+
+### Local 2021 Census Data
+
+The 2021 raw cache is intentionally an inventory of acquired products rather
+than a mirror of the 2016 directory. Both years have hierarchical and
+individual PUMFs plus their codebooks. Both caches now have matching CT, ADA,
+and national CSD Census Profile coverage. The 2021 cache additionally has the
+national Dissemination Geographies Relationship File, which relates DGUIDs
+across geographic levels.
+
+Canonical local 2021 roots:
+
+- national PUMFs: `data/raw/statcan/census/2021/pumf/`
+- PUMF metadata: `data/raw/statcan/census/2021/metadata/pumf/`
+- Census Profiles: `data/raw/statcan/census/2021/profiles/`
+- geography relationships: `data/raw/statcan/census/2021/geography/relationships/`
+- prepared CT/ADA/CSD boundaries: `data/derived/statcan/census/2021/boundaries/`
+
+The national 2021 through-CSD profile contains 14,386,308 rows. Its 4,554 CSDs
+with requested controls all join to the 5,161-feature boundary file; 4,517 have
+complete household-size and tenure controls. Boundary-only CSDs should not be
+treated as join failures: empty geographies, suppression, and unavailable
+characteristics can prevent a complete control vector.
+
+Consult each vintage's `manifest.json` for the products actually present. Do
+not infer column compatibility from directory symmetry. The 2021 profiles use
+DGUIDs, `CHARACTERISTIC_ID`, and separate count/rate fields, while the 2016
+profiles use member-ID columns and sex-total fields. The small-area reader has
+explicit mappings for both vintages. A file previously labelled as a 2016
+DA-all profile was removed after its own header identified it as a Designated
+Places profile; future controls must use a verified DA product.
 
 The Census Profile CSVs are long tables. Each row is one geography-characteristic combination with total/male/female values. For general IPF, this is not automatically a ready-to-fit control table; the library needs a normalization step that maps profile rows to a small explicit control schema such as:
 
