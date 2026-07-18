@@ -1402,7 +1402,7 @@ def _write_minimal_linked_package(tmp_path: Path) -> Path:
             {
                 "schema_version": "synthpopcan-linked-tree-training-v1",
                 "source": {
-                    "path": "data/private/census.csv",
+                    "path": "data/private/sources/census.csv",
                     "source_format": "statcan-2016-hierarchical",
                     "records": 10,
                     "households": 5,

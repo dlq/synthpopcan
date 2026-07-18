@@ -10,13 +10,60 @@ should **not be committed to git**. The default local layout is:
 
 ```text
 data/
-  raw/
-    statcan/
+  raw/                  # authoritative public source downloads
+    statcan/census/
+  derived/
+    statcan/census/      # prepared public-data artifacts
+    models/              # durable release candidates
+  work/                  # disposable builds and experiments
   private/
+    sources/             # restricted or access-controlled inputs only
 ```
 
 Use `data/raw` for **public or redistributable files** in the project context.
-Use `data/private` for **restricted files**.
+Use `data/derived` for **reusable subsets, conversions, and durable model
+artifacts**; keep their source and transformation provenance and do not present
+them as raw official data. Use `data/work` for **disposable or restartable
+intermediates**, including model-build workspaces and development experiments.
+Use `data/private/sources` only for
+**restricted or access-controlled source files**. Privacy and derivation are
+separate properties: a generated artifact belongs under `derived`, even when it
+must remain local and uncommitted.
+
+The local Statistics Canada cache uses parallel product trees for each census
+vintage:
+
+```text
+data/
+  raw/statcan/census/
+    2016/
+      pumf/{hierarchical,individual}/
+      metadata/pumf/{hierarchical,individual}/
+      profiles/{ct,ada,da}/
+      reference/
+    2021/
+      pumf/{hierarchical,individual}/
+      metadata/pumf/{hierarchical,individual}/
+      geography/relationships/
+  derived/statcan/census/
+    2016/
+      boundaries/
+      profiles/
+      pumf/individual/subsets/
+    2021/
+      boundaries/
+  derived/models/release-assets/
+  work/models/builds/
+  work/small-area/experiments/
+  private/sources/{canue,cptp,mavan,monnet,topo}/
+```
+
+The national PUMFs, canonical Census Profile downloads, and official
+relationship files stay under `raw`. Regional extracts, flattened tables,
+notebook-produced reusable intermediates and prepared GeoJSON stay under
+`derived`. Disposable model builds and exploratory synthesis outputs stay under
+`work`. Each provider and product family is organized by census vintage before
+product type, so 2016 and 2021 have parallel paths.
 
 `data doctor` checks whether the expected directories exist. `data inspect`,
 `data schema`, and `data sample` inspect the actual files within that layout —
@@ -185,7 +232,7 @@ synthpopcan data sample data/raw/example.csv --rows 10
 ```
 
 ```bash
-synthpopcan data sample data/private/example.csv \
+synthpopcan data sample data/private/sources/example.csv \
   --rows 5 \
   --allow-private
 ```
@@ -203,8 +250,9 @@ output will not be shared or logged.
 guessed column names. Use `data schema` to read the exact headers, then write
 the appropriate `--dimensions` or `--columns` flags explicitly.
 
-**Private files appear in source paths:** keep them under `data/private` and do
-not paste private rows into docs, issues, or shared reports.
+**Private files appear in source paths:** keep source inputs under
+`data/private/sources` and do not paste private rows into docs, issues, or
+shared reports.
 
 ## Further Reading
 

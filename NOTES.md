@@ -198,34 +198,42 @@ Design implications:
 
 ### Canadian 2016 Census Data
 
-Reviewed source-bundle root:
+Canonical local roots:
 
-- `Canadian 2016 Census/`
+- national PUMFs: `data/raw/statcan/census/2016/pumf/`
+- PUMF metadata: `data/raw/statcan/census/2016/metadata/pumf/`
+- Census Profiles: `data/raw/statcan/census/2016/profiles/`
+- CT/ADA boundaries: `data/derived/statcan/census/2016/boundaries/`
+- regional subsets/intermediates: `data/derived/statcan/census/2016/`
+
+The converted CT and ADA GeoJSON files replace their source shapefile
+components locally. An unused exploratory 2016 FSA boundary download was
+removed; postal geography can be fetched again if it becomes a requirement.
 
 Inventory observed locally:
 
 - Census Profile Quebec CSD data:
-  - `Census Profile Quebec/98-401-X2016065_English_CSV_data.csv`
+  - `data/raw/statcan/census/2016/profiles/csd/quebec/98-401-X2016065_English_CSV_data.csv`
   - about 2,887,395 data rows
   - 1,285 geographies
   - 1,135 distinct profile characteristics observed in the local file
 - Montreal Census Tract profile subset:
-  - `Census Tract Summaries 2016/98-401-X2016043_eng_CSV/98-401-X2016043_English_montreal.csv`
+  - `data/derived/statcan/census/2016/profiles/ct/98-401-X2016043_English_montreal.csv`
   - about 2,181,837 data rows
   - 971 geographies, including the Montreal CMA row plus 970 census tracts
   - same profile characteristic structure
 - Flattened tract summary:
-  - `Census Tract Summaries 2016/98-401-X2016043_eng_CSV/2016_SummaryTables_Flattened.csv`
+  - `data/derived/statcan/census/2016/profiles/ct/2016_SummaryTables_Flattened.csv`
   - 5,770 rows
   - 6,749 columns
 - Individual PUMF:
-  - `PUMF Census 2016/pumf-98M0001-E-2016-individuals/`
-  - Montreal subset: `pumf-2016-Montreal-i.csv`, 108,580 rows, 141 columns
-  - Quebec subset: `pumf-2016-Quebec-i.csv`, 215,042 rows, 141 columns
-  - full individual file: `pumf-98M0001-E-2016-individuals_F1.csv`, 930,422 rows
+  - `data/raw/statcan/census/2016/pumf/individual/`
+  - Montreal subset: `data/derived/statcan/census/2016/pumf/individual/subsets/pumf-2016-Montreal-i.csv`, 108,580 rows, 141 columns
+  - Quebec subset: `data/derived/statcan/census/2016/pumf/individual/subsets/pumf-2016-Quebec-i.csv`, 215,042 rows, 141 columns
+  - full individual file: `data_donnees_2016_ind.csv`, 930,421 data records
 - Hierarchical PUMF:
-  - `PUMF Census 2016/pumf-98M0002-E-2016-hierarchical/`
-  - `pumf-98M0002-E-2016-hierarchical_F1.csv`, 343,330 rows, 116 columns
+  - `data/raw/statcan/census/2016/pumf/hierarchical/`
+  - `data_donnees_2016_hier.csv`, 343,330 rows, 116 columns
   - includes `HH_ID`, `EF_ID`, `CF_ID`, and `PP_ID`, making it crucial for household/person relationship modeling.
 
 The 2016 hierarchical PUMF should be treated as the first real household/person microdata input shape: a single person-row file with household, economic-family, census-family, and person identifiers. Separate household/person CSVs are useful as normalized outputs or small fixtures, but they should not be the assumed StatCan input shape.
@@ -755,7 +763,7 @@ Current implemented command families include:
 synthpopcan statcan wds search "population dwelling"
 synthpopcan statcan wds explain PRODUCT_ID
 synthpopcan statcan wds fetch PRODUCT_ID --out-dir data/raw/statcan/wds
-synthpopcan statcan census-profile fetch --year 2016 --geo-level pt --out-dir data/raw/statcan/census-profile/2016
+synthpopcan statcan census-profile fetch --year 2016 --geo-level pt --out-dir data/raw/statcan/census/2016/profiles/pt
 synthpopcan controls from-wds TABLE.zip --dimensions "GEO,Age group,Sex" --count-column VALUE --out controls.csv
 synthpopcan controls from-census-profile PROFILE.csv --mapping census-profile-mapping.json --out controls.csv
 synthpopcan microdata export-seed hierarchical.csv --input-format statcan-2016-hierarchical --columns AGEGRP,SEX --out seed.csv

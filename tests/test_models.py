@@ -55,6 +55,33 @@ def test_model_catalogue_marks_large_models_downloadable(
     assert "cache_path" not in montreal
 
 
+def test_model_catalogue_includes_complete_2021_set(
+    monkeypatch,
+    tmp_path,
+) -> None:
+    monkeypatch.setenv("SYNTHPOPCAN_MODEL_CACHE", str(tmp_path))
+
+    models_2021 = {
+        entry["id"]: entry
+        for entry in models.model_catalogue()
+        if entry["census_vintage"] == "2021 Census"
+    }
+
+    assert len(models_2021) == 16
+    assert "canada-2021-all-fields" in models_2021
+    assert "quebec-2021-all-fields" in models_2021
+    assert "montreal-cma-2021-all-fields" in models_2021
+    assert models_2021["canada-2021-all-fields"]["browser_compatible"] is False
+    assert models_2021["pei-2021-minimal"]["browser_compatible"] is True
+    assert all(entry["release_version"] == "v0.6.0" for entry in models_2021.values())
+    assert all(entry["distribution"] == "download" for entry in models_2021.values())
+
+    canada = models.model_registry_entry("canada-2021-all-fields")
+    assert canada["url"].endswith("/v0.6.0/canada-2021-all-fields-package.json.gz")
+    assert canada["size_bytes"] == 14_669_338
+    assert canada["uncompressed_size_bytes"] == 1_699_087_165
+
+
 def test_fetch_model_package_downloads_and_verifies(
     monkeypatch,
     tmp_path,

@@ -102,16 +102,23 @@ result across all maps.
 ```bash
 synthpopcan geo boundaries \
   --geo-level ct \
-  --out-dir data/boundaries/
+  --out-dir data/derived/statcan/census/2016/boundaries/
 ```
 
-This writes `data/boundaries/2016-boundary-ct.geojson`. Pass it directly to
-`geo map --boundaries`. An internet connection is required for the download
-(~10–50 MB depending on geography level).
+This writes
+`data/derived/statcan/census/2016/boundaries/2016-boundary-ct.geojson`. Pass it
+directly to `geo map --boundaries`. An internet connection is required for the
+download (~10–50 MB depending on geography level).
 
 Supported levels: `ct` (census tracts), `ada` (aggregate dissemination areas),
 `da` (dissemination areas), `csd` (census subdivisions), `cd` (census
 divisions), `pr` (provinces and territories).
+
+For 2016 CT and ADA products, the prepared GeoJSON retains every boundary-file
+attribute. CT features include tract name, province, and CMA/CA identifiers and
+names; ADA features include province and census-division identifiers and names.
+The 2016 files predate DGUID and do not contain `LANDAREA`, so those fields must
+not be inferred from the 2021 schema.
 
 For a 2021 workflow, select the matching census vintage explicitly:
 
@@ -119,20 +126,23 @@ For a 2021 workflow, select the matching census vintage explicitly:
 synthpopcan geo boundaries \
   --census-year 2021 \
   --geo-level ct \
-  --out-dir data/boundaries/
+  --out-dir data/derived/statcan/census/2021/boundaries/
 
 synthpopcan geo boundaries \
   --census-year 2021 \
   --geo-level ada \
-  --out-dir data/boundaries/
+  --out-dir data/derived/statcan/census/2021/boundaries/
 ```
 
 These write national `2021-boundary-ct.geojson` and
-`2021-boundary-ada.geojson` files. The CT product contains all tracts in
-Canada's tracted CMAs and CAs; smaller untracted CAs have no CTs. The ADA
-product covers all of Canada. Both retain StatCan's 2021 `DGUID` alongside the
-short geography identifier. Keep boundary and Census Profile/control vintages
-aligned; do not calibrate 2021 controls against 2016 geography.
+`2021-boundary-ada.geojson` files under
+`data/derived/statcan/census/2021/boundaries/`. The CT product
+contains all tracts in Canada's tracted CMAs and CAs; smaller untracted CAs
+have no CTs. The ADA product covers all of Canada. Both retain StatCan's 2021
+`DGUID`, authoritative land area in square kilometres (`LANDAREA`), and
+province/territory code (`PRUID`) alongside the short geography identifier.
+Keep boundary and Census Profile/control vintages aligned; do not calibrate
+2021 controls against 2016 geography.
 
 The national ADA geometry is detailed and much larger than the CT product. For
 countrywide overview maps, `--coord-precision 3` reduces conversion time and
@@ -144,7 +154,7 @@ Download its final 2021 CSV and provenance manifest with:
 
 ```bash
 synthpopcan geo relationship-file \
-  --out-dir data/boundaries/2021/
+  --out-dir data/raw/statcan/census/2021/geography/relationships/
 ```
 
 Download the matching CT Census Profile at the same time:
@@ -152,11 +162,11 @@ Download the matching CT Census Profile at the same time:
 ```bash
 synthpopcan statcan census-profile fetch \
   --geo-level ct \
-  --out-dir data/raw/statcan/census-profile/2016
+  --out-dir data/raw/statcan/census/2016/profiles/ct
 ```
 
 This writes
-`data/raw/statcan/census-profile/2016/2016-census-profile-ct.csv` and a
+`data/raw/statcan/census/2016/profiles/ct/2016-census-profile-ct.csv` and a
 provenance manifest beside it. Both commands in this step require a network
 connection.
 
@@ -201,7 +211,7 @@ dimension-mismatch error in `geo calibrate`.
 
 ```bash
 synthpopcan geo controls \
-  --profile data/raw/statcan/census-profile/2016/2016-census-profile-ct.csv \
+  --profile data/raw/statcan/census/2016/profiles/ct/2016-census-profile-ct.csv \
   --geo-column ct \
   --geo-prefix 421 \
   --target 338000 \
@@ -351,7 +361,7 @@ WGS-84 automatically; no external GIS tools are required.
 
 ```bash
 synthpopcan geo map quebec-city-population/ \
-  --boundaries data/boundaries/2016-boundary-ct.geojson \
+  --boundaries data/derived/statcan/census/2016/boundaries/2016-boundary-ct.geojson \
   --geo-column ct \
   --out quebec-city-ct-map.html \
   --title "Synthetic Quebec City Households"
@@ -384,7 +394,7 @@ shapefile, and writes a WGS-84 GeoJSON file for `geo map`.
 synthpopcan geo boundaries \
   --census-year 2021 \
   --geo-level ada \
-  --out-dir data/boundaries
+  --out-dir data/derived/statcan/census/2021/boundaries
 ```
 
 Important options:
@@ -410,7 +420,8 @@ and ADA boundaries to CMA/CA, province/territory, census division, census
 subdivision, and other supported parent geographies.
 
 ```bash
-synthpopcan geo relationship-file --out-dir data/boundaries/2021
+synthpopcan geo relationship-file \
+  --out-dir data/raw/statcan/census/2021/geography/relationships
 ```
 
 ### `geo controls`
@@ -547,7 +558,7 @@ Writes a self-contained HTML map from calibrated household/person outputs.
 
 ```bash
 synthpopcan geo map synthetic-population/ \
-  --boundaries data/boundaries/2016-boundary-ct.geojson \
+  --boundaries data/derived/statcan/census/2016/boundaries/2016-boundary-ct.geojson \
   --geo-column ct \
   --out synthetic-ct-map.html
 ```
@@ -596,7 +607,7 @@ map as `geo map`:
 ```python
 spc.render_small_area_map(
     households=result,
-    boundaries="data/boundaries/2016-boundary-ct.geojson",
+    boundaries="data/derived/statcan/census/2016/boundaries/2016-boundary-ct.geojson",
     geography_column="ct",
     geography_id_field="CTUID",
     out="quebec-city-api-map.html",

@@ -1,4 +1,4 @@
-# Local data and reference corpora copied from Downloads.
+# Local raw, derived, private-source, and reference data caches.
 /data/
 /references/
 

@@ -7,11 +7,23 @@ All notable public changes to SynthPopCan are tracked here.
 - Add explicit Statistics Canada 2021 hierarchical and individuals PUMF
   adapters, a year-specific linked-tree column profile, streaming inspection
   for full-size public microdata, and linked 2021 model-training support.
+- Add 16 checksum-verified 2021 linked household/person model packages covering
+  Canada, nine provinces, five PUMF-coded CMAs, and a minimal-profile Prince
+  Edward Island model to the shared CLI and web-app catalogue.
 - Add reproducible extraction of public-safe variable labels and fixed-width
   metadata from the official SPSS command files.
 - Add national 2021 CT and ADA cartographic-boundary preparation with retained
-  DGUIDs, streaming atomic GeoJSON output, and the final 2021 dissemination-
-  geographies relationship-file download.
+  DGUID, land-area, and province/territory attributes, streaming atomic GeoJSON
+  output, and the final 2021 dissemination-geographies relationship-file
+  download.
+- Rationalize the local 2016 layout to mirror 2021, preserve every source CT
+  and ADA boundary attribute, and separate authoritative raw inputs from
+  regional subsets and intermediate derived files.
+- Rationalize the complete ignored data cache into authoritative `raw`,
+  reusable `derived`, disposable `work`, and restricted `private/sources`
+  roots; relocate prepared boundaries, release candidates, model-build
+  workspaces, and experimental small-area outputs according to lifecycle and
+  provenance rather than sensitivity.
 
 ## 0.6.0 - 2026-07-17
 

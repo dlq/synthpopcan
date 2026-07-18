@@ -110,8 +110,8 @@ same work reproducibly at larger scale.
 ### Prepare a Small-Area Run
 
 1. Open **Small-area workflow**, then choose **Prepare a small-area synthesis**.
-1. Select a premade linked model, upload a reviewed local package, or upload
-   both existing linked candidate CSVs.
+1. Select a premade 2016 or 2021 linked model, upload a reviewed local package,
+   or upload both existing linked candidate CSVs.
 1. Upload normalized household controls and, when available, compatible person
    controls. Enter the geography dimension used by the controls, such as `ct`
    or `ada`.

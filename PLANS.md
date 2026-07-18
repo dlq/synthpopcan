@@ -1,7 +1,7 @@
 # SynthPopCan Plan
 
 Status: release-phased roadmap\
-Last updated: 2026-07-17\
+Last updated: 2026-07-18\
 Current release: `0.6.0`
 
 ## Current Focus
@@ -61,8 +61,9 @@ Implemented capabilities include:
   hierarchical microdata adapters;
 - linked frequency/CART training, audit, packaging, fetching, generation, and
   validation;
-- a 17-entry prepared-model registry covering Canada, all provinces, five major
-  CMAs, and a demo; territories and broader CMA coverage remain open;
+- a 33-entry prepared-model registry containing a demo plus parallel 2016 and
+  2021 packages for Canada, supported provinces, and five PUMF-coded CMAs;
+  territories and broader CMA coverage remain open;
 - `geo calibrate`, `geo synthesize`, joint person controls,
   scale estimation, residual reports, linked realization, and maps;
 - a packaged local web app for guided IPF, prepared models, WDS preparation,
@@ -314,7 +315,9 @@ The hierarchical adapter feeds linked household/person training; the individuals
 adapter remains person-level and must not imply household linkage. It also adds
 reproducible national 2021 census-tract and aggregate-dissemination-area
 cartographic boundary preparation, retaining DGUIDs and requiring boundary,
-control, and output geography vintages to agree.
+control, and output geography vintages to agree. Sixteen audited 2021 linked
+model packages are published as checksum-pinned release assets and exposed
+through the shared CLI and web catalogue.
 
 Completion criteria:
 
@@ -353,8 +356,9 @@ queried from authoritative sources with recorded metadata, licence, retrieval
 time, version, and checksum; they are not indiscriminately mirrored or bundled
 with the package.
 
-Restricted or access-controlled source data remain under `data/private` and
-never enter git, logs, fixtures, documentation, or release artifacts. Their
+Restricted or access-controlled source data remain under
+`data/private/sources` and never enter git, logs, fixtures, documentation, or
+release artifacts. Their
 local presence creates no commitment to use, redistribute, provide, or publish
 adapters or derived artifacts for them; dataset-specific work requires separate
 authority and should ordinarily run only against data supplied independently by

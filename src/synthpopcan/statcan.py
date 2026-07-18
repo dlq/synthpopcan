@@ -98,6 +98,7 @@ class BoundaryDownload:
     zip_name: str
     shp_name: str
     id_field: str
+    property_fields: tuple[str, ...] = ()
     census_year: int = 2016
     base_url: str = _BOUNDARY_2016_BASE_URL
 
@@ -114,6 +115,15 @@ _BOUNDARY_2016_DOWNLOADS: dict[str, BoundaryDownload] = {
         zip_name="lct_000b16a_e.zip",
         shp_name="lct_000b16a_e.shp",
         id_field="CTUID",
+        property_fields=(
+            "CTNAME",
+            "PRUID",
+            "PRNAME",
+            "CMAUID",
+            "CMAPUID",
+            "CMANAME",
+            "CMATYPE",
+        ),
     ),
     "ada": BoundaryDownload(
         geo_level="ada",
@@ -121,6 +131,7 @@ _BOUNDARY_2016_DOWNLOADS: dict[str, BoundaryDownload] = {
         zip_name="lada000b16a_e.zip",
         shp_name="lada000b16a_e.shp",
         id_field="ADAUID",
+        property_fields=("PRUID", "PRNAME", "CDUID", "CDNAME", "CDTYPE"),
     ),
     "da": BoundaryDownload(
         geo_level="da",
@@ -159,6 +170,7 @@ _BOUNDARY_2021_DOWNLOADS: dict[str, BoundaryDownload] = {
         zip_name="lct_000b21a_e.zip",
         shp_name="lct_000b21a_e.shp",
         id_field="CTUID",
+        property_fields=("DGUID", "LANDAREA", "PRUID"),
         census_year=2021,
         base_url=_BOUNDARY_2021_BASE_URL,
     ),
@@ -168,6 +180,7 @@ _BOUNDARY_2021_DOWNLOADS: dict[str, BoundaryDownload] = {
         zip_name="lada000b21a_e.zip",
         shp_name="lada000b21a_e.shp",
         id_field="ADAUID",
+        property_fields=("DGUID", "LANDAREA", "PRUID"),
         census_year=2021,
         base_url=_BOUNDARY_2021_BASE_URL,
     ),

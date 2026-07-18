@@ -87,6 +87,7 @@ province and PUMF-coded CMA targets currently declared in that script:
 
 ```bash
 uv run python scripts/build_all_model_packages.py
+uv run python scripts/build_all_model_packages.py --year 2021
 ```
 
 Pass `--only` to build a subset:
@@ -97,16 +98,21 @@ uv run python scripts/build_all_model_packages.py --only ontario-2016 toronto-cm
 
 The script uses library modules directly to:
 
-- read the local 2016 hierarchical PUMF once, then filter by geography;
+- read the selected 2016 or 2021 hierarchical PUMF once, then filter by
+  geography;
 - resolve all currently supported household and person column blocks;
-- train linked conditional-frequency household and person models;
+- prefer linked conditional-frequency models and fall back to CART leaves with
+  at least 50 contributing records when sparse condition cells would block
+  release;
 - audit private working models and stop on release-blocking issues;
 - write publishable-candidate model copies and release manifests;
-- write linked package JSON under `data/private/model-release-assets/`, ready
+- write linked package JSON under `data/derived/models/release-assets/`, ready
   for review before upload as GitHub Release assets.
 
-The script's `TARGETS` list is authoritative. It does not currently rebuild the
-published Quebec or Montreal packages, which were prepared separately.
+The script's target declarations are authoritative. The 2021 build creates the
+complete parallel catalogue, including Canada, Quebec, and Montreal. The 2016
+default retains its historical batch scope because its Canada, Quebec, and
+Montreal assets were prepared separately.
 
 Review every generated package under the **Data And Model Safety** policy above,
 then complete the **Model Package Release** checklist in `RELEASING.md`.

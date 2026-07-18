@@ -97,7 +97,7 @@ the geography level. The command currently fetches the 2016 profile.
 ```bash
 synthpopcan statcan census-profile fetch \
   --geo-level ct \
-  --out-dir data/raw/statcan/census-profile/2016
+  --out-dir data/raw/statcan/census/2016/profiles/ct
 ```
 
 Normalization for both source types is covered in {doc}`controls`.
@@ -214,7 +214,7 @@ writing a mapping template.
 ```bash
 synthpopcan statcan census-profile fetch \
   --geo-level ct \
-  --out-dir data/raw/statcan/census-profile/2016
+  --out-dir data/raw/statcan/census/2016/profiles/ct
 ```
 
 Currently only the 2016 census year is supported.

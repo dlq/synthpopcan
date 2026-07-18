@@ -35,10 +35,11 @@ to choose an appropriate distribution. The tree documentation explains the
 model risks in more detail, especially low support, high purity, and overfit
 geography-specific models.
 
-SynthPopCan currently exposes four adapter formats in the CLI:
+SynthPopCan currently exposes five adapter formats in the CLI:
 
 - `statcan-2016-hierarchical` for the [Statistics Canada 2016 hierarchical PUMF](https://www150.statcan.gc.ca/n1/en/catalogue/98M0002X2016001)
   shape used by the current local workflow;
+- `statcan-2016-individual` for the [Statistics Canada 2016 individuals PUMF](https://www150.statcan.gc.ca/n1/en/catalogue/98M0001X2016001), containing independent person records;
 - `statcan-2021-hierarchical` for the [Statistics Canada 2021 hierarchical PUMF](https://www150.statcan.gc.ca/n1/en/catalogue/98M0001X2021002)
   v2, including linked household, economic-family, census-family, and person
   identifiers;
@@ -49,9 +50,17 @@ SynthPopCan currently exposes four adapter formats in the CLI:
 The 2016 and 2021 hierarchical PUMFs are person-row files with household and family
 identifiers such as `HH_ID`, `EF_ID`, `CF_ID`, and `PP_ID`. Household-level
 exports are derived from that person-row file and are only valid when selected
-household columns are constant within each household. The 2021 individuals PUMF
-contains independent person records identified by `PPSORT`; it cannot reconstruct
-households or train a linked household/person package.
+household columns are constant within each household. The 2016 and 2021
+individuals PUMFs contain independent person records identified by `PPSORT`;
+they cannot reconstruct households or train a linked household/person package.
+
+The canonical local source files are
+`data/raw/statcan/census/2016/pumf/hierarchical/data_donnees_2016_hier.csv`
+and
+`data/raw/statcan/census/2016/pumf/individual/data_donnees_2016_ind.csv`.
+Québec and Montréal subsets belong under
+`data/derived/statcan/census/2016/pumf/individual/subsets/`, not beside the
+national raw files.
 
 Use the adapter matching the source year. The 2021 profile reflects renamed
 variables such as `GENDER`, `MARSTH`, and `LFACT`; it does not silently translate
@@ -165,7 +174,8 @@ synthpopcan microdata inspect hierarchical.csv \
 Important options:
 
 - `--input-format`: source adapter, currently `statcan-2016-hierarchical`,
-  `statcan-2021-hierarchical`, `statcan-2021-individual`, or `fixture-v1`.
+  `statcan-2016-individual`, `statcan-2021-hierarchical`,
+  `statcan-2021-individual`, or `fixture-v1`.
 - `--level`: required for `fixture-v1`, where the fixture must be declared as
   `household` or `person`.
 - `--weight-column`, `--geo-columns`, and `--id-columns`: fixture-oriented
@@ -320,8 +330,9 @@ question.
 
 **The command says the input format is unsupported:** check the adapter name.
 The current CLI accepts `statcan-2016-hierarchical`,
-`statcan-2021-hierarchical`, and `statcan-2021-individual` for Census PUMFs,
-plus `fixture-v1` for small local fixtures.
+`statcan-2016-individual`, `statcan-2021-hierarchical`, and
+`statcan-2021-individual` for Census PUMFs, plus `fixture-v1` for small local
+fixtures.
 
 **Household seed export fails:** run `microdata check-seed` and look for
 columns that vary within `HH_ID`. We should either remove those columns, derive

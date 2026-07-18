@@ -1574,7 +1574,7 @@ def _write_linked_training_manifest(
     payload = {
         "schema_version": "synthpopcan-linked-tree-training-v1",
         "source": {
-            "path": "data/private/census/hierarchical.csv",
+            "path": "data/private/sources/census/hierarchical.csv",
             "source_format": "statcan-2016-hierarchical",
             "records": 100,
             "households": 40,
@@ -2364,7 +2364,7 @@ def test_cli_reports_linked_model_release_readiness(tmp_path, capsys) -> None:
             {
                 "schema_version": "synthpopcan-linked-tree-training-v1",
                 "source": {
-                    "path": "data/private/census/hierarchical.csv",
+                    "path": "data/private/sources/census/hierarchical.csv",
                     "source_format": "statcan-2016-hierarchical",
                     "records": 100,
                     "households": 40,
@@ -2419,7 +2419,7 @@ def test_cli_reports_linked_model_release_readiness(tmp_path, capsys) -> None:
         "path": str(training_manifest_path),
         "schema_version": "synthpopcan-linked-tree-training-v1",
         "source": {
-            "path": "data/private/census/hierarchical.csv",
+            "path": "data/private/sources/census/hierarchical.csv",
             "source_format": "statcan-2016-hierarchical",
             "records": 100,
             "households": 40,

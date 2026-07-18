@@ -848,7 +848,7 @@ def boundaries_command(
     Example:
 
         synthpopcan geo boundaries --census-year 2021 --geo-level ct \
-          --out-dir data/boundaries/
+          --out-dir data/derived/statcan/census/2021/boundaries/
 
     Boundary ZIPs are sourced from Statistics Canada's geography program. An
     internet connection is required. The 2021 products are cartographic files;
@@ -859,6 +859,7 @@ def boundaries_command(
         BoundaryDownload,
         fetch_boundary_zip,
         get_boundary_download,
+        write_manifest,
     )
 
     year = int(census_year)
@@ -879,14 +880,31 @@ def boundaries_command(
     click.echo("Converting to WGS-84 GeoJSON…", err=True)
 
     geojson_path = out_dir / f"{year}-boundary-{geo_level.lower()}.geojson"
+    property_fields = entry.property_fields
     try:
         prepare_boundaries_geojson(
             shp_path,
             id_field=entry.id_field,
             out_path=geojson_path,
             coord_precision=coord_precision,
-            property_fields=("DGUID",) if year == 2021 else (),
+            property_fields=property_fields,
             trust_ring_winding=True,
+        )
+        write_manifest(
+            out_dir / f"{year}-boundary-{entry.geo_level}.json",
+            {
+                "source": (
+                    f"Statistics Canada {year} census cartographic boundary files"
+                ),
+                "census_year": year,
+                "geo_level": entry.geo_level,
+                "description": entry.description,
+                "source_url": url or entry.url,
+                "shp_path": str(shp_path),
+                "geojson_path": str(geojson_path),
+                "geojson_id_source_field": entry.id_field,
+                "geojson_properties": ["geo_id", *property_fields],
+            },
         )
     except ImportError as exc:
         raise click.ClickException(

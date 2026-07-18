@@ -305,6 +305,12 @@ def test_webapp_serves_demo_model_api_endpoints() -> None:
         assert catalogue["models"][2]["distribution"] == "download"
         assert catalogue["models"][2]["installed"] is False
         assert catalogue["models"][2]["browser_compatible"] is False
+        models_by_id = {model["id"]: model for model in catalogue["models"]}
+        assert models_by_id["canada-2021-all-fields"]["census_vintage"] == (
+            "2021 Census"
+        )
+        assert models_by_id["canada-2021-all-fields"]["browser_compatible"] is False
+        assert models_by_id["pei-2021-minimal"]["browser_compatible"] is True
         assert package["schema_version"] == "synthpopcan-linked-tree-package-v1"
         assert package["review"]["status"] == "safe demo"
         with pytest.raises(HTTPError) as exc_info:

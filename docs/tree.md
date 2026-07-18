@@ -564,6 +564,7 @@ model cache.
 synthpopcan models list
 synthpopcan models list --format json
 synthpopcan models fetch montreal-cma-2016-all-fields
+synthpopcan models fetch montreal-cma-2021-all-fields
 ```
 
 Use the package `ID` with `models build inspect` or
@@ -594,8 +595,8 @@ lookups and precomputed sampling weights. CSV remains the normal user-facing
 output; alternative columnar formats, if added later, should be treated as
 advanced or internal performance options.
 
-Generated rows preserve the source model's raw codes. For 2016 PUMF-derived
-packages, values such as `99999999`, `9999`, `99`, and `9` are usually
+Generated rows preserve the source model's raw codes. For 2016 and 2021
+PUMF-derived packages, values such as `99999999`, `9999`, `99`, and `9` are usually
 Statistics Canada special codes such as not applicable, not available, or valid
 skip, depending on the column. Do not treat these as ordinary numeric values
 without decoding the relevant field metadata.

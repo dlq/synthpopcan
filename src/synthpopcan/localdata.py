@@ -49,19 +49,29 @@ def inspect_local_data_layout(data_root: Path) -> list[DataLayoutCheck]:
             raw_root,
             missing_tip="Create data/raw or pass --data-root PATH.",
         ),
+        _check_directory(
+            "Derived data directory",
+            data_root / "derived",
+            missing_tip="Create data/derived before writing generated artifacts.",
+        ),
+        _check_directory(
+            "Working data directory",
+            data_root / "work",
+            missing_tip="Create data/work for disposable builds and experiments.",
+        ),
         _check_variable_metadata(
             "2016 hierarchical metadata",
-            _metadata_path(data_root, "statcan-2016-hierarchical-pumf"),
+            _metadata_path(data_root, "hierarchical"),
         ),
         _check_variable_metadata(
             "2016 individual metadata",
-            _metadata_path(data_root, "statcan-2016-individual-pumf"),
+            _metadata_path(data_root, "individual"),
         ),
         _check_variable_metadata(
             "2021 hierarchical metadata",
             _metadata_path(
                 data_root,
-                "statcan-2021-hierarchical-pumf",
+                "hierarchical",
                 census_year=2021,
             ),
             census_year=2021,
@@ -70,7 +80,7 @@ def inspect_local_data_layout(data_root: Path) -> list[DataLayoutCheck]:
             "2021 individual metadata",
             _metadata_path(
                 data_root,
-                "statcan-2021-individual-pumf",
+                "individual",
                 census_year=2021,
             ),
             census_year=2021,
@@ -80,11 +90,12 @@ def inspect_local_data_layout(data_root: Path) -> list[DataLayoutCheck]:
             data_root
             / "raw"
             / "statcan"
-            / "2016-census"
-            / "Census Tract Summaries 2016"
-            / "98-401-X2016043_eng_CSV"
-            / "98-401-X2016043_English_meta.txt",
-            missing_tip="Download or copy the 2016 Census Profile metadata file.",
+            / "census"
+            / "2016"
+            / "profiles"
+            / "ct"
+            / "2016-census-profile-ct.json",
+            missing_tip="Fetch the canonical 2016 CT Census Profile and manifest.",
         ),
     ]
     return checks
@@ -92,7 +103,7 @@ def inspect_local_data_layout(data_root: Path) -> list[DataLayoutCheck]:
 
 def _metadata_path(
     data_root: Path,
-    package_name: str,
+    pumf_kind: str,
     *,
     census_year: int = 2016,
 ) -> Path:
@@ -100,9 +111,11 @@ def _metadata_path(
         data_root
         / "raw"
         / "statcan"
-        / f"{census_year}-census"
+        / "census"
+        / str(census_year)
         / "metadata"
-        / package_name
+        / "pumf"
+        / pumf_kind
         / "variable-labels.json"
     )
 

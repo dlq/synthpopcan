@@ -148,6 +148,13 @@ def test_cli_models_list_marks_downloadable_models(
     quebec = models["quebec-2016-all-fields"]
     assert quebec["distribution"] == "download"
     assert quebec["installed"] is False
+    canada_2021 = models["canada-2021-all-fields"]
+    assert canada_2021["census_vintage"] == "2021 Census"
+    assert canada_2021["release_version"] == "v0.6.0"
+    assert canada_2021["distribution"] == "download"
+    assert canada_2021["browser_compatible"] is False
+    pei_2021 = models["pei-2021-minimal"]
+    assert pei_2021["browser_compatible"] is True
 
 
 def test_cli_models_list_table_stays_compact(capsys) -> None:
@@ -699,7 +706,7 @@ def test_format_model_availability_not_installed() -> None:
     result = _format_model_availability(
         {"distribution": "download", "installed": False}
     )
-    assert "Download with" in result
+    assert result == "Download"
 
 
 def test_cli_validate_linked_output_oserror(tmp_path) -> None:

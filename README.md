@@ -162,8 +162,15 @@ workflow, model, output size, and available machine resources.
 
 Large, raw, private, or access-controlled data are not tracked in git.
 
-- `data/raw/` is a local ignored cache for central raw inputs, including public Census Profile and WDS downloads.
-- `data/private/` is a local ignored cache for access-controlled or sensitive later-use datasets.
+- `data/raw/` is a local ignored cache for authoritative public inputs,
+  organized by provider, product family, and vintage.
+- `data/derived/` is a local ignored cache for reproducible conversions,
+  subsets, and durable model artifacts; it must not be mistaken for an
+  authoritative source.
+- `data/work/` is disposable project-local scratch space for model builds,
+  experiments, and other restartable intermediate files.
+- `data/private/sources/` is a local ignored cache for access-controlled or
+  sensitive source datasets; generated artifacts do not belong there.
 - `references/` is a local ignored cache for copied papers, proposals, and legacy code references.
 
 Public geography, school, healthcare, road, and environmental layers should generally be fetched from authoritative public sources such as Statistics Canada, open.canada.ca, donneesquebec.ca, and municipal/provincial open-data portals rather than stored in this repository.
@@ -176,6 +183,16 @@ Reviewed model packages may be distributed with the project when they are
 explicitly intended as public research artifacts. The installed package should
 stay small: only the tiny demo model is bundled. Larger published models are
 downloaded on demand with `synthpopcan models fetch MODEL_ID`.
+
+The public catalogue includes parallel 2016 and 2021 linked packages for
+Canada, supported provinces, and the five CMAs identified in the hierarchical
+PUMF. List the exact IDs with `synthpopcan models list`; for example:
+
+```bash
+synthpopcan models fetch quebec-2021-all-fields
+synthpopcan models generate quebec-2021-all-fields \
+  --households 1000 --out quebec-2021-population/
+```
 
 Release assets are gzip-compressed to keep downloads small. The CLI handles
 decompression and stores a normal JSON model package in the local cache.

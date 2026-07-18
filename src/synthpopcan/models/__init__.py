@@ -24,6 +24,9 @@ from urllib.request import urlopen
 ProgressCallback = Callable[[int, int | None], None]
 
 _RELEASE_BASE_URL = "https://github.com/dlq/synthpopcan/releases/download/v0.2.1"
+_PUMF_2021_RELEASE_BASE_URL = (
+    "https://github.com/dlq/synthpopcan/releases/download/v0.6.0"
+)
 _BROWSER_MODEL_MAX_UNCOMPRESSED_BYTES = 32 * 1024 * 1024
 _DEMO_CATALOGUE_METADATA = {
     "census_vintage": "Not applicable",
@@ -49,6 +52,27 @@ _PUMF_2016_CATALOGUE_METADATA = {
     "known_limitations": (
         "Broad 2016 PUMF model; not calibrated to current or small-area controls. "
         "Generated source codes require field metadata for interpretation."
+    ),
+    "safe_demo": False,
+    "distribution": "download",
+    "compression": "gzip",
+}
+_PUMF_2021_CATALOGUE_METADATA = {
+    "census_vintage": "2021 Census",
+    "release_status": "publishable_candidate",
+    "release_version": "v0.6.0",
+    "provenance": "Statistics Canada 2021 Census hierarchical PUMF.",
+    "privacy": "No raw rows or source identifiers.",
+    "privacy_review_status": "publishable candidate; human review still required",
+    "generation_limits": (
+        "Use durable Python-backed web runs or the CLI; review memory, disk, and "
+        "output scale before large generation."
+    ),
+    "known_limitations": (
+        "Broad 2021 PUMF model; not calibrated to small-area controls. Generated "
+        "source codes require field metadata for interpretation. Some sparse "
+        "geographies use privacy-safe CART models instead of direct conditional "
+        "frequencies."
     ),
     "safe_demo": False,
     "distribution": "download",
@@ -428,6 +452,178 @@ _MODEL_PACKAGES: dict[str, dict[str, Any]] = {
         "url": f"{_RELEASE_BASE_URL}/canada-2016-all-fields-package.json.gz",
     },
 }
+
+_PUMF_2021_MODEL_SPECS = {
+    "alberta-2021-all-fields": (
+        "Alberta",
+        "Alberta (PR 48)",
+        1_436_472,
+        "ac288bd8bbcaaa485709997793137faa3ef3c66422d246e4373c5508e0adddde",
+        67_520_274,
+        "494856a8c5ec501b6617da61ec967daaac4cc23511716eca91cb629f3bd1fca3",
+    ),
+    "bc-2021-all-fields": (
+        "British Columbia",
+        "British Columbia (PR 59)",
+        1_758_080,
+        "94c231604e8418ca357a62f35609e59096c3e00cf64604d4c19c34afd2636012",
+        83_473_790,
+        "b3714b8730e9a488f58747c00accb51f9bace53c5a5ccc7124b3115ba7e35c63",
+    ),
+    "calgary-cma-2021-all-fields": (
+        "Calgary CMA",
+        "Calgary CMA (CMA 825)",
+        567_498,
+        "2f03f4de785a6d383d7c828c5c72b52ed6e40bb0d9c7772f71cbf278872801ae",
+        24_561_713,
+        "5c3968a00eea53edb4f501d0f8dcf61674b586d3d40f4ffee8bd085fea3f21d2",
+    ),
+    "canada-2021-all-fields": (
+        "Canada",
+        "Canada",
+        14_669_338,
+        "3708009c4b5d5fc8a663f23e4c437756a441629e7fd03c68ed10748e4580667c",
+        1_699_087_165,
+        "d5117d688d0fad6789f6b41044d7c26634384cdc3e84c208d3f4252a8aa1d55c",
+    ),
+    "edmonton-cma-2021-all-fields": (
+        "Edmonton CMA",
+        "Edmonton CMA (CMA 835)",
+        535_389,
+        "44abe874115a4faeb52dfc03e3e752a333c29d1b609414ad5effcf372ada8574",
+        23_322_256,
+        "99d1664f63a627a6a77f5b1a1889eb8b8b54e31c6379b98fb4dac6944172c252",
+    ),
+    "manitoba-2021-all-fields": (
+        "Manitoba",
+        "Manitoba (PR 46)",
+        331_238,
+        "a56e0c80b468760b7a0790791c1667eed39746aac3e25ec65aad3d03441b8528",
+        17_606_961,
+        "0c77609d4ada13e0d0deb38f448a5470b04a1920c5416e9aa0f6665f39b630d5",
+    ),
+    "montreal-cma-2021-all-fields": (
+        "Montreal CMA",
+        "Montreal CMA (CMA 462)",
+        979_348,
+        "b5a2c023da4a0af36824259dfeb68213242271352a1b7a597b9700db38352eea",
+        55_582_858,
+        "f66bdd4e7f6140c9ba0bd43a2485c163cfec8afd8f2eda0daf047b0a501ad9ac",
+    ),
+    "new-brunswick-2021-all-fields": (
+        "New Brunswick",
+        "New Brunswick (PR 13)",
+        200_930,
+        "929859a2a5aa7c9eb6382a9b0f75f6568c15c73556bd340b95a4cead283745b1",
+        10_341_321,
+        "38ef27f345a432d23343c71eca5be2a7083b9ee97ce35f05c5dd009915a95d54",
+    ),
+    "newfoundland-2021-all-fields": (
+        "Newfoundland and Labrador",
+        "Newfoundland and Labrador (PR 10)",
+        129_820,
+        "4ef77ee62ccb30686ba3e0480c01ee54891561108a9d3a61181861e20871690a",
+        6_593_431,
+        "963efad475b7726db9d3f757dbf13957399371c1f55f194bad637aa257b7596f",
+    ),
+    "nova-scotia-2021-all-fields": (
+        "Nova Scotia",
+        "Nova Scotia (PR 12)",
+        351_876,
+        "20307e3bbcb1b50faa2225ca48ce61689878be24e68b27f15a43a33a05a50bb1",
+        16_637_149,
+        "ce931f2a193699b90b40431197eaa43008bfb13d78ba9b0e686d293bc345c1d7",
+    ),
+    "ontario-2021-all-fields": (
+        "Ontario",
+        "Ontario (PR 35)",
+        2_989_767,
+        "a799dc4b5b7af8d31464c82ccdb3862712b7938046a39f8e4059efb678d57d4f",
+        179_551_354,
+        "4ef6bbd567cfd099c8c81f76b566b6029bb33da7caac56e2297a1d4927cec299",
+    ),
+    "pei-2021-minimal": (
+        "Prince Edward Island",
+        "Prince Edward Island (PR 11)",
+        5_027,
+        "d47857c9b27e8c2fb4a37e8469fe6f4afc44a7fbc5673663d8909718a6e44b85",
+        29_488,
+        "280523e65f88801266d351a532dc9c94d2d270295699053660a320abd40b62b1",
+    ),
+    "quebec-2021-all-fields": (
+        "Quebec",
+        "Quebec (PR 24)",
+        1_746_083,
+        "39787ecc6449dff9ca0e99c4b6bc62d7b0eb7a45607a91f8cdadd70edcb3391f",
+        105_674_442,
+        "df75b07d25753a6a0e0a2d82a91ad17485f8cb4710fa5df9e3a45b27519aab48",
+    ),
+    "saskatchewan-2021-all-fields": (
+        "Saskatchewan",
+        "Saskatchewan (PR 47)",
+        274_952,
+        "a38bd3694d64d37e53f159aa35bd3b05b181192b353f818b6f98721a0a1c7d04",
+        14_733_221,
+        "e7023ed2e73258d0d5b9bb53ba5e4850b9f93dba63a0b57c2947e229157b9dc3",
+    ),
+    "toronto-cma-2021-all-fields": (
+        "Toronto CMA",
+        "Toronto CMA (CMA 535)",
+        2_151_498,
+        "1268594489a2c15c9b73efda6dd0cacfb28430c9302dbb4c3377c7139c384641",
+        100_647_328,
+        "5f545488c6fb20cc2a0189794abb372b347bd96b2f306c0aad7c99911a8e9a0e",
+    ),
+    "vancouver-cma-2021-all-fields": (
+        "Vancouver CMA",
+        "Vancouver CMA (CMA 933)",
+        1_009_699,
+        "66eec86662d7be2ad2f21bfc4cc836643a32d892a6c1837b15bbf67ad7f2ceed",
+        45_022_923,
+        "5b50eb14d29168f166c2b41299b9a399c0836793fd8de024d227d269d201d6ab",
+    ),
+}
+
+
+def _pumf_2021_registry_entry(
+    model_id: str,
+    spec: tuple[str, str, int, str, int, str],
+) -> dict[str, Any]:
+    label, geography, size, sha256, uncompressed_size, uncompressed_sha256 = spec
+    minimal = model_id.endswith("-minimal")
+    profile = "minimal" if minimal else "broad"
+    filename = f"{model_id}-package.json"
+    limitation = (
+        " Uses a minimal column profile due to small sample size." if minimal else ""
+    )
+    return {
+        "filename": filename,
+        "name": f"{label} 2021 {profile} linked package",
+        "description": (
+            "Publishable-candidate linked household/person model trained from "
+            f"the local 2021 hierarchical PUMF for {geography}.{limitation}"
+        ),
+        "geography": geography,
+        "conditions": ["PR", "household_size", "TENUR"],
+        "default_generation": {
+            "households": 100 if minimal else 1000,
+            "conditions": "",
+        },
+        **_PUMF_2021_CATALOGUE_METADATA,
+        "size_bytes": size,
+        "sha256": sha256,
+        "uncompressed_size_bytes": uncompressed_size,
+        "uncompressed_sha256": uncompressed_sha256,
+        "url": f"{_PUMF_2021_RELEASE_BASE_URL}/{filename}.gz",
+    }
+
+
+_MODEL_PACKAGES.update(
+    {
+        model_id: _pumf_2021_registry_entry(model_id, spec)
+        for model_id, spec in _PUMF_2021_MODEL_SPECS.items()
+    }
+)
 
 
 def model_catalogue() -> list[dict[str, Any]]:

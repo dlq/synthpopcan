@@ -31,6 +31,7 @@ from synthpopcan.microdata import (
     export_training_rows,
     inspect_statcan_microdata,
     read_fixture_seed_sample,
+    read_statcan_2016_individual_seed_sample,
     read_statcan_2021_individual_seed_sample,
     read_statcan_hierarchical_seed_sample,
     suggest_tree_column_blocks,
@@ -41,7 +42,8 @@ _HIERARCHICAL_FORMATS = [
     "statcan-2016-hierarchical",
     "statcan-2021-hierarchical",
 ]
-_STATCAN_FORMATS = [*_HIERARCHICAL_FORMATS, "statcan-2021-individual"]
+_INDIVIDUAL_FORMATS = ["statcan-2016-individual", "statcan-2021-individual"]
+_STATCAN_FORMATS = [*_HIERARCHICAL_FORMATS, *_INDIVIDUAL_FORMATS]
 
 
 def _read_fixture_sample(
@@ -91,6 +93,8 @@ def _read_statcan_sample(
     source_format: str,
     columns: tuple[str, ...] | None = None,
 ) -> SeedSample:
+    if source_format == "statcan-2016-individual":
+        return read_statcan_2016_individual_seed_sample(path, columns=columns)
     if source_format == "statcan-2021-individual":
         return read_statcan_2021_individual_seed_sample(path, columns=columns)
     return read_statcan_hierarchical_seed_sample(
@@ -441,9 +445,9 @@ def export_microdata_seed(
                 columns=selected_columns,
             )
             if level == "household":
-                if source_format == "statcan-2021-individual":
+                if source_format in _INDIVIDUAL_FORMATS:
                     raise ValueError(
-                        "statcan-2021-individual cannot produce household seed rows"
+                        f"{source_format} cannot produce household seed rows"
                     )
                 sample = derive_statcan_hierarchical_household_seed_sample(
                     sample,

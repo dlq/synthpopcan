@@ -30,6 +30,7 @@ __all__ = [
     "export_training_rows",
     "inspect_statcan_microdata",
     "read_fixture_seed_sample",
+    "read_statcan_2016_individual_seed_sample",
     "read_statcan_2021_hierarchical_seed_sample",
     "read_statcan_2021_individual_seed_sample",
     "read_statcan_hierarchical_seed_sample",
@@ -296,6 +297,9 @@ _TREE_COLUMN_SUGGESTION_PROFILES = {
 _STATCAN_HIERARCHICAL_FORMATS = frozenset(
     {"statcan-2016-hierarchical", "statcan-2021-hierarchical"}
 )
+_STATCAN_INDIVIDUAL_FORMATS = frozenset(
+    {"statcan-2016-individual", "statcan-2021-individual"}
+)
 
 
 def read_fixture_seed_sample(
@@ -341,7 +345,7 @@ def inspect_statcan_microdata(path: Path, *, source_format: str) -> dict[str, An
     """Stream a structural summary without retaining a full PUMF in memory."""
 
     hierarchical = source_format in _STATCAN_HIERARCHICAL_FORMATS
-    if not hierarchical and source_format != "statcan-2021-individual":
+    if not hierarchical and source_format not in _STATCAN_INDIVIDUAL_FORMATS:
         raise ValueError(f"unsupported StatCan source format: {source_format}")
     required = (
         ("HH_ID", "EF_ID", "CF_ID", "PP_ID", "WEIGHT")
@@ -400,9 +404,10 @@ def inspect_statcan_microdata(path: Path, *, source_format: str) -> dict[str, An
         if source_format == "statcan-2021-hierarchical":
             summary["census_year"] = 2021
     else:
+        census_year = 2016 if source_format == "statcan-2016-individual" else 2021
         summary.update(
             {
-                "census_year": 2021,
+                "census_year": census_year,
                 "record_id_column": "PPSORT",
                 "people": records,
                 "duplicate_record_ids": duplicate_record_ids,
@@ -528,16 +533,51 @@ def read_statcan_hierarchical_seed_sample(
     )
 
 
+def read_statcan_2016_individual_seed_sample(
+    path: Path,
+    *,
+    columns: tuple[str, ...] | None = None,
+) -> SeedSample:
+    """Read the Statistics Canada 2016 individuals PUMF CSV."""
+
+    return read_statcan_individual_seed_sample(
+        path,
+        source_format="statcan-2016-individual",
+        census_year=2016,
+        columns=columns,
+    )
+
+
 def read_statcan_2021_individual_seed_sample(
     path: Path,
     *,
     columns: tuple[str, ...] | None = None,
 ) -> SeedSample:
-    """Read the Statistics Canada 2021 individuals PUMF CSV.
+    """Read the Statistics Canada 2021 individuals PUMF CSV."""
+
+    return read_statcan_individual_seed_sample(
+        path,
+        source_format="statcan-2021-individual",
+        census_year=2021,
+        columns=columns,
+    )
+
+
+def read_statcan_individual_seed_sample(
+    path: Path,
+    *,
+    source_format: str,
+    census_year: int,
+    columns: tuple[str, ...] | None = None,
+) -> SeedSample:
+    """Read a supported Statistics Canada individuals PUMF CSV.
 
     This file contains independent person records. It is suitable for person-level
     seed and training exports but cannot be used to reconstruct linked households.
     """
+
+    if source_format not in _STATCAN_INDIVIDUAL_FORMATS:
+        raise ValueError(f"unsupported individual source format: {source_format}")
 
     with path.open(newline="", encoding="utf-8-sig") as handle:
         reader = csv.DictReader(handle)
@@ -564,7 +604,7 @@ def read_statcan_2021_individual_seed_sample(
         count - 1 for count in Counter(record_ids).values() if count > 1
     )
     metadata: dict[str, Any] = {
-        "census_year": 2021,
+        "census_year": census_year,
         "record_id_column": "PPSORT",
         "people": len(records),
         "duplicate_record_ids": duplicate_record_ids,
@@ -580,7 +620,7 @@ def read_statcan_2021_individual_seed_sample(
         )
     return SeedSample(
         level="person",
-        source_format="statcan-2021-individual",
+        source_format=source_format,
         records=records,
         columns=retained_columns,
         weight_column="WEIGHT",
@@ -653,12 +693,12 @@ def export_training_rows(
         raise ValueError("at least one target column is required")
     if not conditioning_columns:
         raise ValueError("at least one conditioning column is required")
-    if sample.source_format == "statcan-2021-individual":
+    if sample.source_format in _STATCAN_INDIVIDUAL_FORMATS:
         if level != "person":
             raise ValueError(
-                "statcan-2021-individual supports only person-level training export"
+                f"{sample.source_format} supports only person-level training export"
             )
-        return export_statcan_2021_individual_training_rows(
+        return export_statcan_individual_training_rows(
             sample,
             target_columns=target_columns,
             conditioning_columns=conditioning_columns,
@@ -677,13 +717,13 @@ def export_training_rows(
     )
 
 
-def export_statcan_2021_individual_training_rows(
+def export_statcan_individual_training_rows(
     sample: SeedSample,
     *,
     target_columns: tuple[str, ...],
     conditioning_columns: tuple[str, ...],
 ) -> tuple[list[dict[str, str]], dict[str, Any]]:
-    """Export person-level training rows from the 2021 individuals PUMF."""
+    """Export person-level training rows from a supported individuals PUMF."""
 
     validate_columns(sample.columns, required=("PPSORT", "WEIGHT"))
     selected_columns = unique_columns((*conditioning_columns, *target_columns))

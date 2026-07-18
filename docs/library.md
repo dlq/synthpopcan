@@ -420,13 +420,13 @@ from synthpopcan.map_render import (
 )
 from synthpopcan.statcan import fetch_boundary_zip
 
-boundary_dir = Path("data/boundaries")
+boundary_dir = Path("data/derived/statcan/census/2021/boundaries")
 shapefile = fetch_boundary_zip("ct", boundary_dir, census_year=2021)
 geojson = prepare_boundaries_geojson(
     shapefile,
     id_field="CTUID",
     out_path=boundary_dir / "2021-boundary-ct.geojson",
-    property_fields=("DGUID",),
+    property_fields=("DGUID", "LANDAREA", "PRUID"),
 )
 
 map_path = render_synthesis_map(

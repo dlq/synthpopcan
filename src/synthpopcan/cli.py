@@ -458,7 +458,7 @@ def _format_model_availability(model: dict[str, Any]) -> str:
         return "Bundled"
     if model.get("installed"):
         return "Downloaded"
-    return "Download with `synthpopcan models fetch`"
+    return "Download"
 
 
 def _format_model_size(model: dict[str, Any]) -> str:

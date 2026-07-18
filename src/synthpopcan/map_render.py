@@ -134,12 +134,9 @@ def _read_shapefile_geojson(
             coords = polygons if geom_type == "MultiPolygon" else polygons[0]
 
             properties = {"geo_id": geo_id}
-            properties.update(
-                {
-                    name: str(sr.record[index]).strip()
-                    for name, index in property_indices.items()
-                }
-            )
+            for name, index in property_indices.items():
+                value = sr.record[index]
+                properties[name] = value.strip() if isinstance(value, str) else value
             feature = {
                 "type": "Feature",
                 "properties": properties,

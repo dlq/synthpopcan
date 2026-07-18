@@ -310,7 +310,7 @@ The following cell continues the research-specific calibration template above:
 ```python
 map_path = spc.render_small_area_map(
     households=result,
-    boundaries="data/boundaries/2016-boundary-ct.geojson",
+    boundaries="data/derived/statcan/census/2016/boundaries/2016-boundary-ct.geojson",
     geography_column="ct",
     geography_id_field="CTUID",
     out="synthetic-ct-map.html",

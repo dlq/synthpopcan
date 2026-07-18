@@ -875,11 +875,34 @@ def test_boundary_download_all_levels_present() -> None:
         assert level in _BOUNDARY_2016_DOWNLOADS
 
 
+def test_boundary_download_2016_ct_and_ada_preserve_all_source_attributes() -> None:
+    assert _BOUNDARY_2016_DOWNLOADS["ct"].property_fields == (
+        "CTNAME",
+        "PRUID",
+        "PRNAME",
+        "CMAUID",
+        "CMAPUID",
+        "CMANAME",
+        "CMATYPE",
+    )
+    assert _BOUNDARY_2016_DOWNLOADS["ada"].property_fields == (
+        "PRUID",
+        "PRNAME",
+        "CDUID",
+        "CDNAME",
+        "CDTYPE",
+    )
+
+
 def test_boundary_download_2021_national_ct_and_ada_products() -> None:
     assert set(_BOUNDARY_2021_DOWNLOADS) == {"ct", "ada"}
     assert _BOUNDARY_2021_DOWNLOADS["ct"].url.endswith("lct_000b21a_e.zip")
     assert _BOUNDARY_2021_DOWNLOADS["ada"].url.endswith("lada000b21a_e.zip")
     assert all(entry.census_year == 2021 for entry in _BOUNDARY_2021_DOWNLOADS.values())
+    assert all(
+        entry.property_fields == ("DGUID", "LANDAREA", "PRUID")
+        for entry in _BOUNDARY_2021_DOWNLOADS.values()
+    )
 
 
 def test_get_boundary_download_rejects_unsupported_year_and_level() -> None:

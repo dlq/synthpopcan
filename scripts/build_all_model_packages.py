@@ -2,12 +2,13 @@
 
 Trains, audits, and packages a linked household/person model for every
 Canadian province (and PEI at minimal profile) and the five PUMF-coded CMAs.
-Output packages land in ``data/private/model-release-assets/`` ready for
+Output packages land in ``data/derived/models/release-assets/`` ready for
 upload as GitHub Release assets.
 
 Usage::
 
     uv run python scripts/build_all_model_packages.py
+    uv run python scripts/build_all_model_packages.py --year 2021
     uv run python scripts/build_all_model_packages.py --only ontario-2016 toronto-cma-2016
 """
 
@@ -35,6 +36,7 @@ from synthpopcan.cli_tree import (
 from synthpopcan.microdata import (
     export_training_rows,
     read_statcan_2016_hierarchical_seed_sample,
+    read_statcan_2021_hierarchical_seed_sample,
     resolve_tree_column_block_pair,
 )
 from synthpopcan.tree import (
@@ -44,13 +46,15 @@ from synthpopcan.tree import (
 )
 
 ROOT = Path(__file__).resolve().parents[1]
-SOURCE = (
-    ROOT
-    / "data/raw/statcan/2016-census/PUMF Census 2016"
-    / "pumf-98M0002-E-2016-hierarchical"
-    / "pumf-98M0002-E-2016-hierarchical_F1.csv"
-)
-ASSETS_DIR = ROOT / "data/private/model-release-assets"
+SOURCES = {
+    2016: ROOT
+    / "data/raw/statcan/census/2016/pumf/hierarchical"
+    / "data_donnees_2016_hier.csv",
+    2021: ROOT
+    / "data/raw/statcan/census/2021/pumf/hierarchical"
+    / "data_donnees_2021_hier_v2.csv",
+}
+ASSETS_DIR = ROOT / "data/derived/models/release-assets"
 
 # ---------------------------------------------------------------------------
 # Target definitions
@@ -186,19 +190,66 @@ TARGETS: list[dict] = [
 ]
 
 
+def targets_for_year(year: int) -> list[dict]:
+    """Return the established regional targets for one census vintage."""
+
+    targets = [
+        {
+            **target,
+            "id": target["id"].replace("-2016", f"-{year}"),
+            "package_file": target["package_file"].replace("-2016", f"-{year}"),
+            "review_note": target["review_note"].replace("2016", str(year)),
+        }
+        for target in TARGETS
+    ]
+    if year == 2021:
+        targets.extend(
+            [
+                dict(
+                    id="quebec-2021",
+                    geo_column="PR",
+                    geo_value="24",
+                    name="Quebec",
+                    profile="full",
+                    package_file="quebec-2021-all-fields-package.json",
+                    review_note="Quebec PR=24 all-fields linked package reviewed by SynthPopCan release-readiness checks.",
+                ),
+                dict(
+                    id="montreal-cma-2021",
+                    geo_column="CMA",
+                    geo_value="462",
+                    name="Montreal CMA",
+                    profile="full",
+                    package_file="montreal-cma-2021-all-fields-package.json",
+                    review_note="Montreal CMA=462 all-fields linked package reviewed by SynthPopCan release-readiness checks.",
+                ),
+                dict(
+                    id="canada-2021",
+                    geo_column=None,
+                    geo_value=None,
+                    name="Canada",
+                    profile="full",
+                    package_file="canada-2021-all-fields-package.json",
+                    review_note="Canada all-fields linked package reviewed by SynthPopCan release-readiness checks.",
+                ),
+            ]
+        )
+    return targets
+
+
 # ---------------------------------------------------------------------------
 # Build logic
 # ---------------------------------------------------------------------------
 
 
-def build_package(target: dict, sample_all) -> dict:
+def build_package(target: dict, sample_all, *, source: Path, year: int) -> dict:
     geo_column = target["geo_column"]
     geo_value = target["geo_value"]
     profile = target["profile"]
     package_id = target["id"]
     review_note = target["review_note"]
 
-    work_dir = ROOT / "data/private/benchmarks" / f"tree-release-2016-{package_id}"
+    work_dir = ROOT / "data/work/models/builds" / f"tree-release-{year}-{package_id}"
     work_dir.mkdir(parents=True, exist_ok=True)
 
     started = time.perf_counter()
@@ -244,21 +295,17 @@ def build_package(target: dict, sample_all) -> dict:
         conditioning_columns=person_conditions,
     )
 
-    household_model = train_tree_sample(
-        tree_training_sample_from_export(rows=household_rows, export=household_export),
-        method="conditional-frequency",
-        random_seed=7,
-        min_support=5,
-        min_samples_leaf=5,
-        max_depth=None,
+    household_model, household_method = _train_release_ready_model(
+        tree_training_sample_from_export(
+            rows=household_rows,
+            export=household_export,
+        )
     )
-    person_model = train_tree_sample(
-        tree_training_sample_from_export(rows=person_rows, export=person_export),
-        method="conditional-frequency",
-        random_seed=7,
-        min_support=5,
-        min_samples_leaf=5,
-        max_depth=None,
+    person_model, person_method = _train_release_ready_model(
+        tree_training_sample_from_export(
+            rows=person_rows,
+            export=person_export,
+        )
     )
 
     household_model_path = work_dir / "household-model.json"
@@ -272,7 +319,7 @@ def build_package(target: dict, sample_all) -> dict:
             "schema_version": "synthpopcan-linked-tree-training-v1",
             "command": "library workflow",
             "source": {
-                "path": str(SOURCE.relative_to(ROOT)),
+                "path": str(source.relative_to(ROOT)),
                 "source_format": sample.source_format,
                 "records": len(sample.records),
                 "households": households,
@@ -280,7 +327,13 @@ def build_package(target: dict, sample_all) -> dict:
             "column_source": column_source,
             "target_profile": profile,
             "geography_filter": geography_filter_manifest(geo_column, geo_value),
-            "method": "conditional-frequency",
+            "method": (
+                household_method if household_method == person_method else "mixed"
+            ),
+            "methods": {
+                "household": household_method,
+                "person": person_method,
+            },
             "random_seed": 7,
             "training": {
                 "household": household_export,
@@ -316,18 +369,18 @@ def build_package(target: dict, sample_all) -> dict:
         json.dumps(
             {
                 "schema_version": "synthpopcan-source-provenance-v1",
-                "title": "2016 Census Hierarchical Public Use Microdata File",
+                "title": f"{year} Census Hierarchical Public Use Microdata File",
                 "provider": "Statistics Canada",
                 "access_class": "local restricted/source-controlled data root",
                 "citation": (
-                    "Statistics Canada, 2016 Census Hierarchical Public Use "
+                    f"Statistics Canada, {year} Census Hierarchical Public Use "
                     "Microdata File."
                 ),
                 "redistribution_note": (
                     "Do not redistribute source microdata. Package contains "
                     "model artifacts only."
                 ),
-                "local_path": str(SOURCE.relative_to(ROOT)),
+                "local_path": str(source.relative_to(ROOT)),
             },
             indent=2,
             sort_keys=True,
@@ -388,6 +441,30 @@ def build_package(target: dict, sample_all) -> dict:
     return package
 
 
+def _train_release_ready_model(sample):
+    """Prefer frequency models, falling back to privacy-safe CART leaves."""
+
+    model = train_tree_sample(
+        sample,
+        method="conditional-frequency",
+        random_seed=7,
+        min_support=5,
+        min_samples_leaf=5,
+        max_depth=None,
+    )
+    if not release_blocking_issues(audit_tree_model(model)):
+        return model, "conditional-frequency"
+    model = train_tree_sample(
+        sample,
+        method="cart",
+        random_seed=7,
+        min_support=50,
+        min_samples_leaf=50,
+        max_depth=None,
+    )
+    return model, "cart"
+
+
 def _prepare_publishable_model(
     *,
     model_path: Path,
@@ -442,25 +519,37 @@ def _repo_path(path: Path) -> str:
 
 @click.command()
 @click.option(
+    "--year",
+    type=click.Choice(["2016", "2021"]),
+    default="2016",
+    show_default=True,
+    help="Census vintage to build.",
+)
+@click.option(
     "--only",
     multiple=True,
     metavar="ID",
     help="Build only these package IDs (e.g. ontario-2016 toronto-cma-2016). Repeat as needed.",
 )
-def main(only: tuple[str, ...]) -> None:
+def main(year: str, only: tuple[str, ...]) -> None:
     """Build all province- and CMA-level linked model packages."""
-    targets = TARGETS
+    census_year = int(year)
+    source = SOURCES[census_year]
+    targets = targets_for_year(census_year)
     if only:
         ids = set(only)
-        targets = [t for t in TARGETS if t["id"] in ids]
+        targets = [t for t in targets if t["id"] in ids]
         missing = ids - {t["id"] for t in targets}
         if missing:
             raise click.UsageError(f"Unknown package IDs: {sorted(missing)}")
 
     ASSETS_DIR.mkdir(parents=True, exist_ok=True)
 
-    print(f"Reading source microdata from {SOURCE.relative_to(ROOT)} …")
-    sample_all = read_statcan_2016_hierarchical_seed_sample(SOURCE)
+    print(f"Reading source microdata from {source.relative_to(ROOT)} …")
+    if census_year == 2016:
+        sample_all = read_statcan_2016_hierarchical_seed_sample(source)
+    else:
+        sample_all = read_statcan_2021_hierarchical_seed_sample(source)
     print(f"  {sample_all.metadata.get('households', 0):,} total households loaded\n")
 
     results = []
@@ -469,7 +558,12 @@ def main(only: tuple[str, ...]) -> None:
             f"Building {target['name']} ({target['id']}, profile={target['profile']}) …"
         )
         try:
-            package = build_package(target, sample_all)
+            package = build_package(
+                target,
+                sample_all,
+                source=source,
+                year=census_year,
+            )
             publishable = package["privacy"]["publishable_candidate"]
             hh_summary = package["audits"]["household"]["summary"]
             p_summary = package["audits"]["person"]["summary"]

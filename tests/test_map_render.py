@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import csv
+import json
 import math
 from pathlib import Path
 
@@ -679,7 +680,12 @@ def test_compute_geo_stats_pct_immigrant(tmp_path: Path) -> None:
 
 
 def _write_fake_shapefile(
-    shp_dir: Path, geo_id: str, *, dguid: str | None = None
+    shp_dir: Path,
+    geo_id: str,
+    *,
+    dguid: str | None = None,
+    landarea: float | None = None,
+    pruid: str | None = None,
 ) -> Path:
     """Write the simplest possible polygon shapefile using pyshp."""
     import shapefile
@@ -699,10 +705,18 @@ def _write_fake_shapefile(
         w.field("CTUID", "C", 20)
         if dguid is not None:
             w.field("DGUID", "C", 30)
+        if landarea is not None:
+            w.field("LANDAREA", "F", 18, 6)
+        if pruid is not None:
+            w.field("PRUID", "C", 2)
         w.poly([ring])
         record = {"CTUID": geo_id}
         if dguid is not None:
             record["DGUID"] = dguid
+        if landarea is not None:
+            record["LANDAREA"] = landarea
+        if pruid is not None:
+            record["PRUID"] = pruid
         w.record(**record)
     return shp_path
 
@@ -1473,21 +1487,34 @@ def test_prepare_boundaries_geojson_writes_geojson(tmp_path: Path) -> None:
     assert data["features"][0]["properties"]["geo_id"] == "4620001.00"
 
 
-def test_prepare_boundaries_geojson_preserves_requested_dguid(tmp_path: Path) -> None:
+def test_prepare_boundaries_geojson_preserves_requested_properties(
+    tmp_path: Path,
+) -> None:
     pytest.importorskip("shapefile")
     import json as _json
 
     shp_path = _write_fake_shapefile(
-        tmp_path, "4620001.00", dguid="2021S05074620001.00"
+        tmp_path,
+        "4620001.00",
+        dguid="2021S05074620001.00",
+        landarea=12.345678,
+        pruid="24",
     )
     out = tmp_path / "out.geojson"
 
-    prepare_boundaries_geojson(shp_path, "CTUID", out, property_fields=("DGUID",))
+    prepare_boundaries_geojson(
+        shp_path,
+        "CTUID",
+        out,
+        property_fields=("DGUID", "LANDAREA", "PRUID"),
+    )
 
     properties = _json.loads(out.read_text())["features"][0]["properties"]
     assert properties == {
         "geo_id": "4620001.00",
         "DGUID": "2021S05074620001.00",
+        "LANDAREA": 12.345678,
+        "PRUID": "24",
     }
 
 
@@ -1605,6 +1632,15 @@ def test_cli_prepare_boundaries_success(tmp_path: Path) -> None:
     assert exit_code == 0
     mock_dl.assert_called_once()
     mock_conv.assert_called_once()
+    assert mock_conv.call_args.kwargs["property_fields"] == (
+        "CTNAME",
+        "PRUID",
+        "PRNAME",
+        "CMAUID",
+        "CMAPUID",
+        "CMANAME",
+        "CMATYPE",
+    )
 
 
 def test_cli_prepare_boundaries_2021_preserves_dguid(tmp_path: Path) -> None:
@@ -1640,9 +1676,20 @@ def test_cli_prepare_boundaries_2021_preserves_dguid(tmp_path: Path) -> None:
 
     assert exit_code == 0
     mock_dl.assert_called_once_with("ct", tmp_path, census_year=2021, url=None)
-    assert mock_conv.call_args.kwargs["property_fields"] == ("DGUID",)
+    assert mock_conv.call_args.kwargs["property_fields"] == (
+        "DGUID",
+        "LANDAREA",
+        "PRUID",
+    )
     assert mock_conv.call_args.kwargs["trust_ring_winding"] is True
     assert mock_conv.call_args.kwargs["out_path"].name == "2021-boundary-ct.geojson"
+    manifest = json.loads((tmp_path / "2021-boundary-ct.json").read_text())
+    assert manifest["geojson_properties"] == [
+        "geo_id",
+        "DGUID",
+        "LANDAREA",
+        "PRUID",
+    ]
 
 
 def test_cli_downloads_2021_relationship_file(tmp_path: Path) -> None:

@@ -213,7 +213,10 @@ should stay out of git.
 ```text
 data/
   raw/
+  derived/
+  work/
   private/
+    sources/
 ```
 
 Check the expected local layout with:

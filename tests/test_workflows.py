@@ -771,7 +771,7 @@ def _write_linked_training_manifest(
             {
                 "schema_version": "synthpopcan-linked-tree-training-v1",
                 "source": {
-                    "path": "data/private/census/hierarchical.csv",
+                    "path": "data/private/sources/census/hierarchical.csv",
                     "source_format": "statcan-2016-hierarchical",
                     "records": 100,
                     "households": 40,

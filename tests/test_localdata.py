@@ -11,9 +11,11 @@ def test_inspects_expected_local_data_layout(tmp_path: Path) -> None:
         data_root
         / "raw"
         / "statcan"
-        / "2016-census"
+        / "census"
+        / "2016"
         / "metadata"
-        / "statcan-2016-hierarchical-pumf"
+        / "pumf"
+        / "hierarchical"
         / "variable-labels.json"
     )
     hierarchical_metadata.parent.mkdir(parents=True)
@@ -33,6 +35,8 @@ def test_inspects_expected_local_data_layout(tmp_path: Path) -> None:
 
     statuses = {check.name: check.status for check in checks}
     assert statuses["Raw data directory"] == "found"
+    assert statuses["Derived data directory"] == "missing"
+    assert statuses["Working data directory"] == "missing"
     assert statuses["2016 hierarchical metadata"] == "found"
     assert statuses["2016 individual metadata"] == "missing"
     assert statuses["2021 hierarchical metadata"] == "missing"
@@ -45,8 +49,8 @@ def test_inspects_expected_local_data_layout(tmp_path: Path) -> None:
 
 def test_inspects_variable_metadata_edge_cases(tmp_path: Path) -> None:
     data_root = tmp_path / "data"
-    hierarchical_path = _metadata_path(data_root, "statcan-2016-hierarchical-pumf")
-    individual_path = _metadata_path(data_root, "statcan-2016-individual-pumf")
+    hierarchical_path = _metadata_path(data_root, "hierarchical")
+    individual_path = _metadata_path(data_root, "individual")
     hierarchical_path.parent.mkdir(parents=True)
     individual_path.parent.mkdir(parents=True)
     hierarchical_path.write_text(
@@ -57,13 +61,14 @@ def test_inspects_variable_metadata_edge_cases(tmp_path: Path) -> None:
         data_root
         / "raw"
         / "statcan"
-        / "2016-census"
-        / "Census Tract Summaries 2016"
-        / "98-401-X2016043_eng_CSV"
-        / "98-401-X2016043_English_meta.txt"
+        / "census"
+        / "2016"
+        / "profiles"
+        / "ct"
+        / "2016-census-profile-ct.json"
     )
     profile_path.parent.mkdir(parents=True)
-    profile_path.write_text("metadata")
+    profile_path.write_text("{}")
 
     checks = {check.name: check for check in inspect_local_data_layout(data_root)}
 
@@ -77,12 +82,12 @@ def test_inspects_2021_pumf_metadata(tmp_path: Path) -> None:
     data_root = tmp_path / "data"
     hierarchical = _metadata_path(
         data_root,
-        "statcan-2021-hierarchical-pumf",
+        "hierarchical",
         census_year=2021,
     )
     individual = _metadata_path(
         data_root,
-        "statcan-2021-individual-pumf",
+        "individual",
         census_year=2021,
     )
     hierarchical.parent.mkdir(parents=True)
@@ -98,7 +103,7 @@ def test_inspects_2021_pumf_metadata(tmp_path: Path) -> None:
 
 def test_inspects_variable_metadata_missing_labels(tmp_path: Path) -> None:
     data_root = tmp_path / "data"
-    hierarchical_path = _metadata_path(data_root, "statcan-2016-hierarchical-pumf")
+    hierarchical_path = _metadata_path(data_root, "hierarchical")
     hierarchical_path.parent.mkdir(parents=True)
     hierarchical_path.write_text(json.dumps({"source": "metadata"}))
 

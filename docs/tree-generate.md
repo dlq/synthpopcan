@@ -60,8 +60,13 @@ synthpopcan models fetch montreal-cma-2016-all-fields
 For a Canada-wide package, use:
 
 ```bash
-synthpopcan models fetch canada-2016-all-fields
+synthpopcan models fetch canada-2021-all-fields
 ```
+
+Parallel 2016 and 2021 packages are available for Canada, supported provinces,
+and the five PUMF-coded CMAs. Prince Edward Island uses a reduced package
+because its PUMF sample is smaller. Use `models show MODEL_ID` to review the
+census vintage, model limitations, package size, and browser compatibility.
 
 Inspect a package before generating — confirms what geography, columns, and
 conditioning structure it contains:
@@ -117,8 +122,13 @@ local cache.
 
 ```bash
 synthpopcan models fetch montreal-cma-2016-all-fields
-synthpopcan models fetch canada-2016-all-fields
+synthpopcan models fetch canada-2021-all-fields
 ```
+
+Packages above the documented direct-payload browser-memory limit cannot be
+returned through the legacy whole-model API. They can still be downloaded and
+used by the Python-backed web run service or the CLI; review memory and disk
+estimates before starting a large run.
 
 ### `models remove`
 
