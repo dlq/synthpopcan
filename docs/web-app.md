@@ -169,6 +169,13 @@ browser memory. Generation stays disabled until preflight has checked package
 structure, publishability, provenance, privacy metadata, requested conditions,
 estimated scale, and available disk space.
 
+The local web workbench accepts at most 250,000 requested households and its
+isolated worker stops before writing more than 2,000,000 people. A worker that
+runs for six hours is terminated and retained as a failed durable run rather
+than remaining indefinitely active. These are local-app safety limits, not
+claims about the library's computational ceiling. Use the CLI for a deliberately
+reviewed larger run with appropriate storage, monitoring, and validation.
+
 For a linked household/person package, the durable worker writes household rows
 first and then person rows inside each household. The result panel shows:
 

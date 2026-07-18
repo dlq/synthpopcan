@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 __all__ = [
+    "LOCAL_RUN_MAX_HOUSEHOLDS",
+    "LOCAL_RUN_MAX_PERSONS",
     "PreparedModelRequest",
     "PreparedModelResult",
     "generate_prepared_model_files",
@@ -15,6 +17,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from synthpopcan.linked_schema import build_linked_population_contract
 from synthpopcan.tree import (
     CartTreeModel,
     FrequencyTreeModel,
@@ -29,6 +32,8 @@ from synthpopcan.workflows.types import (
 )
 
 TreeModel = FrequencyTreeModel | CartTreeModel
+LOCAL_RUN_MAX_HOUSEHOLDS = 250_000
+LOCAL_RUN_MAX_PERSONS = 2_000_000
 
 
 @dataclass(frozen=True)
@@ -45,6 +50,8 @@ class PreparedModelRequest:
     household_size_column: str | None = None
     package_reference: str | None = None
     chunk_size: int = 1000
+    max_households: int | None = None
+    max_persons: int | None = None
 
     def reproduction(self) -> WorkflowReproduction:
         reference = self.package_reference or str(self.package_path)
@@ -153,6 +160,13 @@ def generate_prepared_model_files(
     progress: ProgressReporter | None = None,
 ) -> PreparedModelResult:
     """Generate linked CSVs directly to disk and write validation diagnostics."""
+    if (
+        request.max_households is not None
+        and request.households > request.max_households
+    ):
+        raise ValueError(
+            f"generated household limit exceeded ({request.max_households:,})"
+        )
     package = read_prepared_model_package(request.package_path)
     inspection = inspect_prepared_model(package)
     models = _object(package["models"])
@@ -183,6 +197,7 @@ def generate_prepared_model_files(
         random_seed=request.random_seed,
         progress_callback=generation_progress,
         progress_interval=request.chunk_size,
+        max_persons=request.max_persons,
     )
     _emit(progress, "validating", "Validating household and person linkage")
     validation = validate_linked_population_files(
@@ -199,6 +214,10 @@ def generate_prepared_model_files(
         "random_seed": request.random_seed,
         "package": inspection,
         "validation": validation,
+        "linked_population": build_linked_population_contract(
+            request.households_path,
+            request.persons_path,
+        ),
     }
     request.report_path.write_text(json.dumps(report, indent=2) + "\n")
     _emit(progress, "completed", "Prepared-model generation completed")

@@ -43,6 +43,7 @@ from synthpopcan.web_wds import (
 )
 from synthpopcan.workflows.ipf import check_ipf_inputs
 from synthpopcan.workflows.models import (
+    LOCAL_RUN_MAX_HOUSEHOLDS,
     inspect_prepared_model,
     read_prepared_model_package,
 )
@@ -659,6 +660,11 @@ def _preflight_model_run(store: RunStore, payload: dict[str, Any]) -> dict[str, 
     households = int(options.get("households", 10))
     if households <= 0:
         raise ValueError("households must be positive")
+    if households > LOCAL_RUN_MAX_HOUSEHOLDS:
+        raise ValueError(
+            f"local web runs are limited to {LOCAL_RUN_MAX_HOUSEHOLDS:,} households; "
+            "use the CLI for a reviewed larger run"
+        )
     chunk_size = int(options.get("chunk_size", 1000))
     if chunk_size <= 0:
         raise ValueError("chunk size must be positive")
@@ -797,6 +803,13 @@ def _preflight_small_area_run(
     candidate_households = int(options.get("candidate_households", 0))
     if candidate_validation is not None:
         candidate_households = int(candidate_validation["summary"]["households"])
+    if candidate_households <= 0:
+        raise ValueError("candidate households must be positive")
+    if candidate_households > LOCAL_RUN_MAX_HOUSEHOLDS:
+        raise ValueError(
+            f"local web runs are limited to {LOCAL_RUN_MAX_HOUSEHOLDS:,} candidate "
+            "households; use the CLI for a reviewed larger run"
+        )
     pool_size = _optional_int(options.get("pool_size"))
     estimate = estimate_small_area_run(
         controls,

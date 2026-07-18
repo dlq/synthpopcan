@@ -401,8 +401,9 @@ def inspect_statcan_microdata(path: Path, *, source_format: str) -> dict[str, An
                 "duplicate_person_ids": duplicate_record_ids,
             }
         )
-        if source_format == "statcan-2021-hierarchical":
-            summary["census_year"] = 2021
+        summary["census_year"] = (
+            2016 if source_format == "statcan-2016-hierarchical" else 2021
+        )
     else:
         census_year = 2016 if source_format == "statcan-2016-individual" else 2021
         summary.update(
@@ -510,8 +511,9 @@ def read_statcan_hierarchical_seed_sample(
         "average_household_size": average_household_size,
         "duplicate_person_ids": duplicate_person_ids,
     }
-    if source_format == "statcan-2021-hierarchical":
-        metadata["census_year"] = 2021
+    metadata["census_year"] = (
+        2016 if source_format == "statcan-2016-hierarchical" else 2021
+    )
     if columns is not None:
         metadata.update(
             {

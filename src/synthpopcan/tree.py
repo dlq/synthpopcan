@@ -346,6 +346,11 @@ class CartTreeModel:
     release_class: str = "private_working"
     model_type: str = "cart"
 
+    def __post_init__(self) -> None:
+        """Reject malformed or cyclic serialized CART structures."""
+
+        _validate_cart_tree_structure(self)
+
     @property
     def feature_names(self) -> tuple[str, ...]:
         """Return one-hot encoded feature names in model order."""
@@ -470,6 +475,100 @@ class CartTreeModel:
 
 
 TreeModel = FrequencyTreeModel | CartTreeModel
+
+
+def _validate_cart_tree_structure(model: CartTreeModel) -> None:
+    node_count = len(model.children_left)
+    if node_count == 0:
+        raise ValueError("CART model must contain at least one node")
+    arrays = {
+        "children_right": model.children_right,
+        "feature": model.feature,
+        "threshold": model.threshold,
+        "value": model.value,
+        "n_node_samples": model.n_node_samples,
+        "weighted_n_node_samples": model.weighted_n_node_samples,
+    }
+    mismatched = [name for name, values in arrays.items() if len(values) != node_count]
+    if mismatched:
+        raise ValueError(
+            "CART node arrays must have equal lengths: " + ", ".join(mismatched)
+        )
+
+    expected_category_columns = set(model.spec.conditioning_columns)
+    if set(model.feature_categories) != expected_category_columns:
+        raise ValueError("CART feature categories must match conditioning columns")
+    if any(
+        not categories or len(categories) != len(set(categories))
+        for categories in model.feature_categories.values()
+    ):
+        raise ValueError("CART feature categories must be non-empty and unique")
+    expected_target_columns = set(model.spec.target_columns)
+    if not model.target_classes or any(
+        set(target_class) != expected_target_columns
+        for target_class in model.target_classes
+    ):
+        raise ValueError("CART target classes must match target columns")
+
+    feature_count = len(model.feature_names)
+    parent_counts = [0] * node_count
+    for node_id, (left, right) in enumerate(
+        zip(model.children_left, model.children_right, strict=True)
+    ):
+        is_leaf = left == right
+        if is_leaf:
+            if left != -1:
+                raise ValueError("CART leaf children must use the -1 sentinel")
+        else:
+            if not (0 <= left < node_count and 0 <= right < node_count):
+                raise ValueError("CART child index is outside the node array")
+            if left == node_id or right == node_id:
+                raise ValueError("CART graph contains a cycle")
+            parent_counts[left] += 1
+            parent_counts[right] += 1
+            if not 0 <= model.feature[node_id] < feature_count:
+                raise ValueError("CART internal node has an invalid feature index")
+            if not np.isfinite(model.threshold[node_id]):
+                raise ValueError("CART thresholds must be finite")
+        node_values = model.value[node_id]
+        if len(node_values) != len(model.target_classes):
+            raise ValueError("CART node values must match target classes")
+        if any(not np.isfinite(value) or value < 0 for value in node_values):
+            raise ValueError("CART node values must be finite and non-negative")
+        if model.n_node_samples[node_id] < 0:
+            raise ValueError("CART node sample counts must be non-negative")
+        weighted_samples = model.weighted_n_node_samples[node_id]
+        if not np.isfinite(weighted_samples) or weighted_samples < 0:
+            raise ValueError(
+                "CART weighted node samples must be finite and non-negative"
+            )
+
+    if parent_counts[0] != 0 or any(count != 1 for count in parent_counts[1:]):
+        raise ValueError("CART graph must be one rooted tree")
+    visited: set[int] = set()
+    active: set[int] = set()
+
+    def visit(node_id: int) -> None:
+        if node_id in active:
+            raise ValueError("CART graph contains a cycle")
+        if node_id in visited:
+            return
+        active.add(node_id)
+        left = model.children_left[node_id]
+        right = model.children_right[node_id]
+        if left != right:
+            visit(left)
+            visit(right)
+        active.remove(node_id)
+        visited.add(node_id)
+
+    visit(0)
+    if len(visited) != node_count:
+        raise ValueError("CART graph contains unreachable nodes")
+    if model.records_trained < 1 or model.min_samples_leaf < 1:
+        raise ValueError("CART training and leaf support counts must be positive")
+    if model.max_depth is not None and model.max_depth < 0:
+        raise ValueError("CART maximum depth must be non-negative")
 
 
 def read_tree_training_sample(
@@ -903,6 +1002,7 @@ def generate_linked_population(
     household_conditions: dict[str, str] | None = None,
     household_size_column: str = "household_size",
     random_seed: int | None = None,
+    max_persons: int | None = None,
 ) -> tuple[list[dict[str, str]], list[dict[str, str]]]:
     """Generate linked household and person records.
 
@@ -926,6 +1026,7 @@ def generate_linked_population(
         household_conditions=household_conditions,
         household_size_column=household_size_column,
         random_seed=random_seed,
+        max_persons=max_persons,
     ):
         linked_households.append(household_row)
         linked_persons.extend(person_rows)
@@ -945,6 +1046,7 @@ def generate_linked_population_to_csv(
     random_seed: int | None = None,
     progress_callback: Callable[[int, int], None] | None = None,
     progress_interval: int = 1000,
+    max_persons: int | None = None,
 ) -> tuple[int, int]:
     """Stream linked household and person records to CSV files.
 
@@ -990,6 +1092,7 @@ def generate_linked_population_to_csv(
                 household_conditions=household_conditions,
                 household_size_column=household_size_column,
                 random_seed=random_seed,
+                max_persons=max_persons,
             )
             for household_index, household_row, person_rows in linked_rows:
                 household_writer.writerow(
@@ -1036,8 +1139,11 @@ def _iter_linked_population_rows(
     household_conditions: dict[str, str] | None = None,
     household_size_column: str = "household_size",
     random_seed: int | None = None,
+    max_persons: int | None = None,
 ) -> Iterator[tuple[int, dict[str, str], list[dict[str, str]]]]:
     _validate_linked_population_request(household_model, person_model, households)
+    if max_persons is not None and max_persons < 1:
+        raise ValueError("maximum generated persons must be positive")
     effective_random_seed = (
         household_model.spec.random_seed if random_seed is None else random_seed
     )
@@ -1058,6 +1164,14 @@ def _iter_linked_population_rows(
             **strip_synthetic_id(generated_household),
         }
         household_size = read_household_size(household_row, household_size_column)
+        if (
+            max_persons is not None
+            and next_person_id - 1 + household_size > max_persons
+        ):
+            raise ValueError(
+                f"generated person limit exceeded ({max_persons:,}); reduce the "
+                "household request or use a bounded model"
+            )
         person_conditions = household_conditions_for_person_model(
             household_row,
             person_model,
@@ -1283,7 +1397,7 @@ def validate_linked_population_files(
     household_id_column: str = "synthetic_household_id",
     person_household_id_column: str = "synthetic_household_id",
     person_id_column: str = "synthetic_person_id",
-    household_size_column: str = "household_size",
+    household_size_column: str | None = "household_size",
     max_issue_details: int = 100,
 ) -> dict[str, Any]:
     """Validate linked CSV files without loading the population into memory.
@@ -1335,7 +1449,11 @@ def validate_linked_population_files(
             reader = csv.DictReader(handle)
             _require_csv_columns(
                 reader.fieldnames,
-                (household_id_column, household_size_column),
+                (
+                    (household_id_column, household_size_column)
+                    if household_size_column is not None
+                    else (household_id_column,)
+                ),
                 "household",
             )
             for household in reader:
@@ -1344,21 +1462,22 @@ def validate_linked_population_files(
                 if not identifier:
                     missing_household_ids += 1
                     continue
-                try:
-                    expected_persons = read_household_size(
-                        household, household_size_column
-                    )
-                except ValueError as exc:
-                    invalid_household_sizes += 1
-                    expected_persons = None
-                    add_issue(
-                        {
-                            "severity": "error",
-                            "kind": "invalid_household_size",
-                            "household_id": identifier,
-                            "message": str(exc),
-                        }
-                    )
+                expected_persons = None
+                if household_size_column is not None:
+                    try:
+                        expected_persons = read_household_size(
+                            household, household_size_column
+                        )
+                    except ValueError as exc:
+                        invalid_household_sizes += 1
+                        add_issue(
+                            {
+                                "severity": "error",
+                                "kind": "invalid_household_size",
+                                "household_id": identifier,
+                                "message": str(exc),
+                            }
+                        )
                 try:
                     connection.execute(
                         "INSERT INTO households VALUES (?, ?)",

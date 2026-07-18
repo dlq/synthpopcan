@@ -82,6 +82,14 @@ def test_small_area_workflow_generates_calibrates_and_reports(tmp_path: Path) ->
     assert {row["tract"] for row in households} == {"001", "002"}
     assert result.details["assigned_households"] == 6
     assert result.details["assigned_persons"] == len(persons)
+    assert (
+        result.details["linked_population"]["schema_version"]
+        == "synthpopcan-linked-population-v1"
+    )
+    assert result.details["linked_population"]["geography"] == {
+        "household_column": "tract",
+        "person_assignment": "inherited-via-household",
+    }
     assert result.details["summary"]["non_converged_count"] == 0
     assert result.map_path is not None
     assert "maplibregl" in result.map_path.read_text()

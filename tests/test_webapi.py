@@ -18,10 +18,12 @@ from synthpopcan.models import model_payload
 from synthpopcan.runs import RunStore
 from synthpopcan.webapi import (
     _model_category_support,
+    _preflight_model_run,
     _preflight_small_area_run,
     create_web_app,
 )
 from synthpopcan.webapp import get_webapp_root
+from synthpopcan.workflows.models import LOCAL_RUN_MAX_HOUSEHOLDS
 
 
 def test_ipf_api_upload_preflight_run_events_artifacts_and_reproduction(
@@ -431,6 +433,20 @@ def test_small_area_api_runs_generation_and_calibration_durably(tmp_path: Path) 
     assert "geo synthesize" in manifest["reproduction"]["shell"]
 
 
+def test_model_preflight_caps_local_household_output(tmp_path: Path) -> None:
+    store = RunStore(tmp_path)
+
+    with pytest.raises(ValueError, match="local web runs are limited"):
+        _preflight_model_run(
+            store,
+            {
+                "workflow": "model",
+                "inputs": {"model_id": "demo-linked-household-person"},
+                "options": {"households": LOCAL_RUN_MAX_HOUSEHOLDS + 1},
+            },
+        )
+
+
 def test_small_area_preflight_optional_inputs_and_validation(tmp_path: Path) -> None:
     store = RunStore(tmp_path)
     package = store_upload(
@@ -509,6 +525,17 @@ def test_small_area_preflight_optional_inputs_and_validation(tmp_path: Path) -> 
         _preflight_small_area_run(
             store,
             {**base, "options": {**base["options"], "max_household_size": 0}},
+        )
+    with pytest.raises(ValueError, match="local web runs are limited"):
+        _preflight_small_area_run(
+            store,
+            {
+                **base,
+                "options": {
+                    **base["options"],
+                    "candidate_households": LOCAL_RUN_MAX_HOUSEHOLDS + 1,
+                },
+            },
         )
 
     unsupported_controls = store_upload(

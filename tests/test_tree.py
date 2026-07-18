@@ -1,3 +1,4 @@
+import copy
 import csv
 import json
 import random
@@ -55,7 +56,6 @@ from synthpopcan.tree import (
     TreeTrainingSample,
     audit_tree_model,
     choose_group,
-    dominant_cart_outcome,
     dominant_frequency_outcome,
     encode_conditions,
     generate_cart_rows,
@@ -412,6 +412,21 @@ def test_tree_model_deserializers_reject_bad_payloads(tmp_path) -> None:
         CartTreeModel.from_dict({**cart_model.to_dict(), "privacy": "bad"})
     with pytest.raises(ValueError, match="feature categories must be an object"):
         CartTreeModel.from_dict({**cart_model.to_dict(), "feature_categories": "bad"})
+
+    cyclic = copy.deepcopy(cart_model.to_dict())
+    cyclic["cart"]["children_left"][0] = 0
+    with pytest.raises(ValueError, match="cycle"):
+        CartTreeModel.from_dict(cyclic)
+
+    unequal_arrays = copy.deepcopy(cart_model.to_dict())
+    unequal_arrays["cart"]["threshold"].pop()
+    with pytest.raises(ValueError, match="equal lengths"):
+        CartTreeModel.from_dict(unequal_arrays)
+
+    invalid_values = copy.deepcopy(cart_model.to_dict())
+    invalid_values["cart"]["value"][0][0] = -1
+    with pytest.raises(ValueError, match="finite and non-negative"):
+        CartTreeModel.from_dict(invalid_values)
 
 
 def test_tree_model_readers_validate_json_and_model_family(tmp_path) -> None:
@@ -968,7 +983,8 @@ def test_tree_low_level_validation_and_cart_edges(tmp_path) -> None:
     with pytest.raises(ValueError, match="missing weight column"):
         read_record_weight({"other": "1"}, "weight", 2)
     assert dominant_frequency_outcome(()) is None
-    assert dominant_cart_outcome(replace(cart_model, value=((),)), 0) is None
+    with pytest.raises(ValueError, match="equal lengths"):
+        replace(cart_model, value=((),))
 
     class HighUniform:
         def uniform(self, _start: float, total: float) -> float:

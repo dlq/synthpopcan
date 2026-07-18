@@ -114,7 +114,7 @@
                 <input id="run-model-file" type="file" accept=".json,application/json">
               </label>
               <label>Households
-                <input id="run-model-households" type="number" min="1" value="10">
+                <input id="run-model-households" type="number" min="1" max="250000" value="10">
               </label>
               <label>Conditions
                 <input id="run-model-conditions" placeholder="geo=Demo North">
@@ -294,7 +294,7 @@
                 class="help-label"
                 data-help="Number of candidate households generated from the model before calibration. This is not the final population count."
               >Candidate households</span>
-              <input id="small-area-candidate-households" type="number" min="1" value="10000" required>
+              <input id="small-area-candidate-households" type="number" min="1" max="250000" value="10000" required>
             </label>
             <label>
               <span

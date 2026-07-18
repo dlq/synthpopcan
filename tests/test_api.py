@@ -132,10 +132,14 @@ def test_top_level_api_generates_from_linked_model_package(tmp_path: Path) -> No
     assert isinstance(files, spc.LinkedPopulationFiles)
     assert files.households == output_dir / "households.csv"
     assert files.persons == output_dir / "persons.csv"
+    assert files.manifest == output_dir / "manifest.json"
     assert len(population.households) == 3
     assert len(population.persons) >= 3
     assert (output_dir / "households.csv").is_file()
     assert (output_dir / "persons.csv").is_file()
+    manifest = json.loads((output_dir / "manifest.json").read_text())
+    assert manifest["schema_version"] == "synthpopcan-linked-population-v1"
+    assert manifest["tables"]["households"]["rows"] == 3
 
 
 def test_top_level_api_fetches_bundled_demo_model() -> None:

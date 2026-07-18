@@ -60,6 +60,7 @@ from synthpopcan.cli_output import (
     write_output,
 )
 from synthpopcan.console import make_table, print_table, print_wrote
+from synthpopcan.linked_schema import build_linked_population_contract
 from synthpopcan.microdata import (
     SeedSample,
     export_training_rows,
@@ -744,6 +745,10 @@ def generate_model_population(
                     random_seed,
                 ),
                 "package": package_inspection,
+                "linked_population": build_linked_population_contract(
+                    households_out,
+                    persons_out,
+                ),
             },
         )
     except OSError as exc:

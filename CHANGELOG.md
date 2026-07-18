@@ -4,6 +4,14 @@ All notable public changes to SynthPopCan are tracked here.
 
 ## Unreleased
 
+- Add the versioned `synthpopcan-linked-population-v1` household/person artifact
+  contract, shared descriptors across library, CLI, prepared-model, and
+  small-area outputs, explicit geography inheritance, compatibility rules, and
+  a golden schema fixture. Exercise representative 2016 and 2021 hierarchical
+  Census inputs end to end against the shared contract.
+- Reject malformed, cyclic, multiply rooted, or inconsistent serialized CART
+  models; bound local-web generation to 250,000 households and 2,000,000
+  people; and terminate isolated workers that exceed the six-hour run limit.
 - Add year-aware Census Profile downloads for verified 2021 CT, ADA, and
   national CSD products, national CSD cartographic boundaries for both
   vintages, balance the local 2016/2021 small-area source coverage, and parse

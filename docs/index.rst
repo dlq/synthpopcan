@@ -94,6 +94,7 @@ beginner generation workflows.
    controls
    ipf
    tree-generate
+   linked-population
    small-area
    validate
    microdata

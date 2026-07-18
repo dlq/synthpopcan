@@ -37,6 +37,7 @@ from typing import Any
 from synthpopcan.controls import ControlTable, read_control_table, write_control_table
 from synthpopcan.ipf import IPFMargin, IPFResult, expand_records
 from synthpopcan.ipf import fit_ipf as fit_ipf_records
+from synthpopcan.linked_schema import write_linked_population_contract
 from synthpopcan.models import fetch_model_package
 from synthpopcan.small_area_synthesis import calibrate_linked_household_csvs
 from synthpopcan.tabular import format_csv_number
@@ -114,6 +115,7 @@ class LinkedPopulationFiles:
 
     households: Path
     persons: Path
+    manifest: Path | None = None
 
 
 @dataclass(frozen=True)
@@ -538,12 +540,19 @@ def write_linked_population(
         raise ValueError("cannot write a linked population without persons")
     output_directory = Path(directory)
     output_directory.mkdir(parents=True, exist_ok=True)
+    manifest_path = output_directory / "manifest.json"
     files = LinkedPopulationFiles(
         households=output_directory / "households.csv",
         persons=output_directory / "persons.csv",
+        manifest=manifest_path,
     )
     _write_rows(files.households, population.households)
     _write_rows(files.persons, population.persons)
+    write_linked_population_contract(
+        manifest_path,
+        files.households,
+        files.persons,
+    )
     return files
 
 
@@ -779,6 +788,11 @@ def _linked_population_files(
     return LinkedPopulationFiles(
         households=directory / "households.csv",
         persons=directory / "persons.csv",
+        manifest=(
+            directory / "manifest.json"
+            if (directory / "manifest.json").is_file()
+            else None
+        ),
     )
 
 

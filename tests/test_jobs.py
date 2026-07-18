@@ -137,6 +137,26 @@ def test_job_manager_cancels_running_worker(tmp_path: Path) -> None:
     assert stages[-1] == "cancelled"
 
 
+def test_job_manager_terminates_worker_after_run_timeout(tmp_path: Path) -> None:
+    store = RunStore(tmp_path)
+    run_id = create_valid_run(store)
+    manager = JobManager(
+        store,
+        worker_target=cooperative_slow_worker,
+        max_run_seconds=0.05,
+    )
+
+    try:
+        manager.enqueue(run_id)
+        manifest = wait_for_terminal(store, run_id)
+    finally:
+        manager.shutdown()
+
+    assert manifest["status"] == "failed"
+    assert manifest["error"]["kind"] == "WorkerTimeout"
+    assert store.read_events(run_id)[-1]["message"] == "Worker timed out"
+
+
 def test_job_manager_cancels_queued_run_without_starting_worker(tmp_path: Path) -> None:
     store = RunStore(tmp_path)
     run_id = create_valid_run(store)

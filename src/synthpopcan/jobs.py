@@ -8,6 +8,7 @@ import json
 import multiprocessing
 import queue
 import threading
+import time
 from pathlib import Path
 from typing import Any
 
@@ -15,6 +16,8 @@ from synthpopcan.models import model_payload
 from synthpopcan.runs import RunStore, publish_artifact
 from synthpopcan.workflows.ipf import fit_ipf_files
 from synthpopcan.workflows.models import (
+    LOCAL_RUN_MAX_HOUSEHOLDS,
+    LOCAL_RUN_MAX_PERSONS,
     PreparedModelRequest,
     generate_prepared_model_files,
 )
@@ -186,6 +189,8 @@ def _model_worker(
                 household_size_column=options.get("household_size_column"),
                 package_reference=package_reference,
                 chunk_size=int(options.get("chunk_size", 1000)),
+                max_households=LOCAL_RUN_MAX_HOUSEHOLDS,
+                max_persons=LOCAL_RUN_MAX_PERSONS,
             ),
             progress=progress,
         )
@@ -317,6 +322,8 @@ def _small_area_worker(
                 ),
                 geography_id_field=str(options.get("geography_id_field", "geo_id")),
                 map_title=str(options.get("map_title", "Synthetic Population")),
+                max_candidate_households=LOCAL_RUN_MAX_HOUSEHOLDS,
+                max_candidate_persons=LOCAL_RUN_MAX_PERSONS,
             ),
             progress=progress,
         )
@@ -410,10 +417,14 @@ class JobManager:
         *,
         worker_target=None,
         cancel_grace_seconds: float = 1.0,
+        max_run_seconds: float | None = 6 * 60 * 60,
     ) -> None:
         self.store = store
         self._worker_target = worker_target or _workflow_worker
         self._cancel_grace_seconds = cancel_grace_seconds
+        if max_run_seconds is not None and max_run_seconds <= 0:
+            raise ValueError("maximum run seconds must be positive")
+        self._max_run_seconds = max_run_seconds
         self._context = multiprocessing.get_context("spawn")
         self._pending: queue.Queue[str | None] = queue.Queue()
         self._lock = threading.RLock()
@@ -523,10 +534,24 @@ class JobManager:
             self._current_cancel = cancel_event
         process.start()
         terminal_message = False
+        timed_out = False
+        deadline = (
+            time.monotonic() + self._max_run_seconds
+            if self._max_run_seconds is not None
+            else None
+        )
         while process.is_alive():
             terminal_message = (
                 self._drain_messages(run_id, messages) or terminal_message
             )
+            if (
+                not terminal_message
+                and deadline is not None
+                and time.monotonic() >= deadline
+            ):
+                timed_out = True
+                process.terminate()
+                break
             process.join(timeout=0.05)
         process.join()
         terminal_message = (
@@ -534,7 +559,20 @@ class JobManager:
         )
         manifest = self.store.load_run(run_id)
         if not terminal_message:
-            if manifest["status"] == "cancelling":
+            if timed_out and manifest["status"] == "running":
+                self.store.transition_run(
+                    run_id,
+                    "failed",
+                    error={
+                        "kind": "WorkerTimeout",
+                        "message": (
+                            "Worker exceeded the local run time limit of "
+                            f"{self._max_run_seconds:g} seconds"
+                        ),
+                    },
+                )
+                self.store.append_event(run_id, "failed", "Worker timed out")
+            elif manifest["status"] == "cancelling":
                 self._finish_cancelled(run_id)
             elif manifest["status"] == "running":
                 self.store.transition_run(

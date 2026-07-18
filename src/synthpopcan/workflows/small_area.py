@@ -51,6 +51,8 @@ class SmallAreaRequest:
     map_path: Path | None = None
     geography_id_field: str = "geo_id"
     map_title: str = "Synthetic Population"
+    max_candidate_households: int | None = None
+    max_candidate_persons: int | None = None
 
     def reproduction(self) -> WorkflowReproduction:
         reference = self.package_reference or (
@@ -169,6 +171,8 @@ def synthesize_small_area_files(
                 random_seed=request.random_seed,
                 package_reference=request.package_reference,
                 chunk_size=request.chunk_size,
+                max_households=request.max_candidate_households,
+                max_persons=request.max_candidate_persons,
             ),
             progress=progress,
         )

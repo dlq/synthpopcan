@@ -1,0 +1,39 @@
+{
+  "format": "csv",
+  "geography": {
+    "household_column": "csd",
+    "person_assignment": "inherited-via-household"
+  },
+  "relationships": [
+    {
+      "cardinality": "many-to-one",
+      "from_column": "synthetic_household_id",
+      "from_table": "persons",
+      "to_column": "synthetic_household_id",
+      "to_table": "households"
+    }
+  ],
+  "schema_version": "synthpopcan-linked-population-v1",
+  "tables": {
+    "households": {
+      "columns": [
+        "synthetic_household_id",
+        "household_size",
+        "csd"
+      ],
+      "path": "households.csv",
+      "primary_key": "synthetic_household_id",
+      "rows": 2
+    },
+    "persons": {
+      "columns": [
+        "synthetic_person_id",
+        "synthetic_household_id",
+        "age_group"
+      ],
+      "path": "persons.csv",
+      "primary_key": "synthetic_person_id",
+      "rows": 3
+    }
+  }
+}

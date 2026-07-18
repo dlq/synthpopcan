@@ -41,6 +41,7 @@ from synthpopcan.ipf import (
     calculate_max_abs_error,
     integerize_weights,
 )
+from synthpopcan.linked_schema import build_linked_population_contract
 from synthpopcan.tabular import format_csv_number
 
 HouseholdRow = dict[str, str]
@@ -1356,6 +1357,11 @@ def calibrate_linked_household_csvs(
         "selected_households": len(households),
         "selected_persons": len(persons),
     }
+    summary["linked_population"] = build_linked_population_contract(
+        households_out,
+        persons_out,
+        geography_column=geography_column,
+    )
     if report_out:
         report_out.parent.mkdir(parents=True, exist_ok=True)
         report_out.write_text(json.dumps(summary, indent=2, sort_keys=True))

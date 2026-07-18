@@ -41,6 +41,11 @@ def test_prepared_model_workflow_writes_deterministic_linked_artifacts(
     assert len(households) == 8
     assert len(persons) == result.person_count
     assert result.report["validation"]["passed"] is True
+    assert (
+        result.report["linked_population"]["schema_version"]
+        == "synthpopcan-linked-population-v1"
+    )
+    assert result.report["linked_population"]["tables"]["households"]["rows"] == 8
     assert {event.stage for event in events} >= {
         "checking-model",
         "generating",
@@ -74,6 +79,28 @@ def test_prepared_model_inspection_rejects_unpublishable_package() -> None:
     package["privacy"] = {"publishable_candidate": False}
     with pytest.raises(ValueError, match="publishable candidate"):
         inspect_prepared_model(package)
+
+
+def test_prepared_model_workflow_enforces_explicit_output_bounds(
+    tmp_path: Path,
+) -> None:
+    package_path = tmp_path / "package.json"
+    package_path.write_text(json.dumps(model_payload("demo-linked-household-person")))
+    base = {
+        "package_path": package_path,
+        "households_path": tmp_path / "households.csv",
+        "persons_path": tmp_path / "persons.csv",
+        "report_path": tmp_path / "report.json",
+        "households": 2,
+        "conditions": {"geo": "Demo North"},
+        "random_seed": 13,
+    }
+
+    with pytest.raises(ValueError, match="household limit exceeded"):
+        generate_prepared_model_files(PreparedModelRequest(**base, max_households=1))
+
+    with pytest.raises(ValueError, match="person limit exceeded"):
+        generate_prepared_model_files(PreparedModelRequest(**base, max_persons=1))
 
 
 def test_file_backed_link_validation_reports_errors_and_cleans_scratch(

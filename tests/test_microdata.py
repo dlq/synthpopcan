@@ -179,6 +179,7 @@ def test_reads_statcan_2016_hierarchical_seed_sample(tmp_path) -> None:
         "people": 3,
         "average_household_size": 1.5,
         "duplicate_person_ids": 0,
+        "census_year": 2016,
     }
 
 
@@ -228,6 +229,7 @@ def test_cli_inspects_statcan_2016_hierarchical_microdata(tmp_path, capsys) -> N
 
     payload = json.loads(capsys.readouterr().out)
     assert payload["source_format"] == "statcan-2016-hierarchical"
+    assert payload["census_year"] == 2016
     assert payload["level"] == "person"
     assert payload["records"] == 3
     assert payload["households"] == 2

@@ -12,7 +12,7 @@ Start here. Open a linked implementation plan only when working on that area.
 | --- | --- | --- |
 | Released | `0.6.0` completes the durable local-runtime redesign while retaining the `0.5.1` correctness-assurance gate. | [GitHub Release](https://github.com/dlq/synthpopcan/releases/tag/v0.6.0) |
 | Correctness | Preserve and extend the correctness-assurance gate in priority order. | [Correctness plan](plans/2026-07-12-correctness-assurance.md) |
-| Next patch | Stabilize the public linked household/person/geography schema in `0.6.1` after all workflows use the durable runtime. | [Local runtime plan](plans/2026-07-10-local-web-application-runtime.md) |
+| Next patch | Implement and stabilize the public linked household/person/geography schema in `0.6.1`; the v1 contract and shared descriptors are underway. | [Linked schema plan](plans/2026-07-18-linked-population-schema.md) |
 | Later `0.7.x`–`0.8.x` | Add governed enrichment layers, then hand validated generated data to external simulation platforms without implementing population simulation in SynthPopCan. | [Plan index](plans/README.md) |
 | Far future, after `0.8.x` | Research optional, compositional public-health simulation only after the population, enrichment, and interchange contracts are stable; do not commit to one simulation platform. | [Far-future direction](#far-future-compositional-public-health-simulation) |
 
@@ -218,7 +218,7 @@ the release that introduces that behavior.
   bodies, archive entries, compressed and aggregate uncompressed sizes, remote
   response bytes, CSV rows, and concurrent work; inflate only the selected
   member rather than retaining every archive entry.
-- [ ] **P2 / `0.6.1` — Validate uploaded model structure and bound execution.**
+- [x] **P2 / `0.6.1` — Validate uploaded model structure and bound execution.**
   Reject cyclic or invalid CART graphs, cap household/person output, and add
   worker cancellation, timeout, and stale-job handling in the backend model-run
   path before removing browser generation.
