@@ -1,6 +1,6 @@
 <svg viewBox="0 0 1060 260" xmlns="http://www.w3.org/2000/svg" role="img" font-family="system-ui, sans-serif" font-size="13">
   <title>IPF diagram with integerization: seed weights, fitted weights, integer counts</title>
-  <desc>Three tables connected by arrows. Panel one shows seed weights of 4, 6, 3, 7 with margin targets of 20 and 15 in rows, 12 and 23 in columns. An arrow labelled IPF leads to panel two showing fitted weights 5.9, 14.1, 6.1, 8.9 whose row and column sums exactly match the targets. A second arrow labelled integerize leads to panel three showing integer counts 6, 14, 6, 9 with the original fractional weights shown in small grey text. The integer row and column totals still match the original targets.</desc>
+  <desc>Three tables connected by arrows. Panel one shows seed weights of 4, 6, 3, 7 with margin targets of 20 and 15 in rows, 12 and 23 in columns. An arrow labelled IPF leads to panel two showing fitted weights 7.7, 12.3, 4.3, 10.7 whose row and column sums exactly match the targets. A second arrow labelled integerize leads to panel three showing integer counts 8, 12, 4, 11 with the original fractional weights shown in small grey text. The integer row and column totals still match the original targets in this example.</desc>
 
   <!-- ── PANEL 1: Seed ──
        cell width 70, margin width 46, inter-column gap 12
@@ -65,14 +65,14 @@
   <text x="352" y="142" text-anchor="middle" font-size="12" fill="#555">Old</text>
 
   <rect x="375" y="53" width="66" height="44" rx="4" fill="#f1f5f9"/>
-  <text x="408" y="80" text-anchor="middle" font-size="15" fill="#1a1a2e">5.9</text>
+  <text x="408" y="80" text-anchor="middle" font-size="15" fill="#1a1a2e">7.7</text>
   <rect x="453" y="53" width="66" height="44" rx="4" fill="#f1f5f9"/>
-  <text x="486" y="80" text-anchor="middle" font-size="15" fill="#1a1a2e">14.1</text>
+  <text x="486" y="80" text-anchor="middle" font-size="15" fill="#1a1a2e">12.3</text>
 
   <rect x="375" y="110" width="66" height="44" rx="4" fill="#f1f5f9"/>
-  <text x="408" y="137" text-anchor="middle" font-size="15" fill="#1a1a2e">6.1</text>
+  <text x="408" y="137" text-anchor="middle" font-size="15" fill="#1a1a2e">4.3</text>
   <rect x="453" y="110" width="66" height="44" rx="4" fill="#f1f5f9"/>
-  <text x="486" y="137" text-anchor="middle" font-size="15" fill="#1a1a2e">8.9</text>
+  <text x="486" y="137" text-anchor="middle" font-size="15" fill="#1a1a2e">10.7</text>
 
   <rect x="531" y="53"  width="46" height="44" rx="4" fill="#dbeafe"/>
   <text x="554" y="77"  text-anchor="middle" font-size="14" font-weight="600" fill="#2563eb">20</text>
@@ -112,20 +112,20 @@
   <text x="677" y="142" text-anchor="middle" font-size="12" fill="#555">Old</text>
 
   <rect x="703" y="53" width="66" height="44" rx="4" fill="#dcfce7" stroke="#86efac" stroke-width="1"/>
-  <text x="736" y="79" text-anchor="middle" font-size="18" font-weight="700" fill="#166534">6</text>
-  <text x="764" y="63" text-anchor="end" font-size="9" fill="#aaa">5.9</text>
+  <text x="736" y="79" text-anchor="middle" font-size="18" font-weight="700" fill="#166534">8</text>
+  <text x="764" y="63" text-anchor="end" font-size="9" fill="#aaa">7.7</text>
 
   <rect x="781" y="53" width="66" height="44" rx="4" fill="#dcfce7" stroke="#86efac" stroke-width="1"/>
-  <text x="814" y="79" text-anchor="middle" font-size="18" font-weight="700" fill="#166534">14</text>
-  <text x="842" y="63" text-anchor="end" font-size="9" fill="#aaa">14.1</text>
+  <text x="814" y="79" text-anchor="middle" font-size="18" font-weight="700" fill="#166534">12</text>
+  <text x="842" y="63" text-anchor="end" font-size="9" fill="#aaa">12.3</text>
 
   <rect x="703" y="110" width="66" height="44" rx="4" fill="#dcfce7" stroke="#86efac" stroke-width="1"/>
-  <text x="736" y="136" text-anchor="middle" font-size="18" font-weight="700" fill="#166534">6</text>
-  <text x="764" y="120" text-anchor="end" font-size="9" fill="#aaa">6.1</text>
+  <text x="736" y="136" text-anchor="middle" font-size="18" font-weight="700" fill="#166534">4</text>
+  <text x="764" y="120" text-anchor="end" font-size="9" fill="#aaa">4.3</text>
 
   <rect x="781" y="110" width="66" height="44" rx="4" fill="#dcfce7" stroke="#86efac" stroke-width="1"/>
-  <text x="814" y="136" text-anchor="middle" font-size="18" font-weight="700" fill="#166534">9</text>
-  <text x="842" y="120" text-anchor="end" font-size="9" fill="#aaa">8.9</text>
+  <text x="814" y="136" text-anchor="middle" font-size="18" font-weight="700" fill="#166534">11</text>
+  <text x="842" y="120" text-anchor="end" font-size="9" fill="#aaa">10.7</text>
 
   <rect x="859" y="53"  width="46" height="44" rx="4" fill="#dbeafe"/>
   <text x="882" y="77"  text-anchor="middle" font-size="14" font-weight="600" fill="#2563eb">20</text>

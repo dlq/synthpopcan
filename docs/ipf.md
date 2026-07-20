@@ -40,13 +40,13 @@ similar distinction: first fit/calibrate sparse microdata rows to margins, then
 allocate or sample integer households and persons.
 
 ```{figure} _static/ipf-diagram.svg
-:alt: Three tables connected by arrows. The first shows seed weights (4, 6, 3, 7) with row targets of 20 and 15 and column targets of 12 and 23 highlighted in blue. An arrow labelled IPF leads to fitted weights (5.9, 14.1, 6.1, 8.9) whose row and column sums match the targets exactly. A second arrow labelled integerize leads to integer counts (6, 14, 6, 9) with fractional weights shown in small grey text. All margin totals are preserved.
+:alt: Three tables connected by arrows. The first shows seed weights (4, 6, 3, 7) with row targets of 20 and 15 and column targets of 12 and 23 highlighted in blue. An arrow labelled IPF leads to fitted weights (7.7, 12.3, 4.3, 10.7) whose row and column sums match the targets exactly. A second arrow labelled integerize leads to integer counts (8, 12, 4, 11) with fractional weights shown in small grey text. All margin totals remain exact in this example.
 :align: center
 
 The three stages of IPF. Fitting adjusts the seed weights (left table) until
 each margin matches its target. Integerization is a separate step that converts
-fractional fitted weights (centre) into whole counts (right) while keeping the
-margin totals exact.
+fractional fitted weights (centre) into whole counts (right). The margins remain
+exact in this example, but that is not guaranteed after integerization.
 ```
 
 This is powerful, but it has **limits**:
