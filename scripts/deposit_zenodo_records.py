@@ -157,6 +157,21 @@ def _load_depositions(only: tuple[str, ...]) -> list[dict[str, Any]]:
     return depositions
 
 
+def _existing_results(target: str) -> dict[str, dict[str, Any]]:
+    """Load prior deposit results for *target*, keyed by model ID.
+
+    Results from a different target are discarded: sandbox deposition IDs are
+    meaningless against production and must not be carried across.
+    """
+
+    if not RESULTS_PATH.exists():
+        return {}
+    stored = json.loads(RESULTS_PATH.read_text())
+    if stored.get("target") != target:
+        return {}
+    return {item["model_id"]: item for item in stored.get("results", [])}
+
+
 @click.command()
 @click.option(
     "--production",
@@ -210,7 +225,9 @@ def main(production: bool, publish: bool, dry_run: bool, only: tuple[str, ...]) 
     ):
         raise click.Abort
 
-    results: list[dict[str, Any]] = []
+    # Deposition IDs are the only handle for finding, editing, or deleting a
+    # draft, so results accumulate across partial runs instead of overwriting.
+    results = _existing_results(target)
     for item in depositions:
         model_id = item["synthpopcan"]["model_id"]
         click.echo(f"Depositing {model_id} to {target} …")
@@ -218,7 +235,7 @@ def main(production: bool, publish: bool, dry_run: bool, only: tuple[str, ...]) 
             f"  Publish {model_id}? This cannot be undone", default=False
         )
         result = deposit_one(item, api=api, token=token, publish=should_publish)
-        results.append(result)
+        results[model_id] = result
         click.echo(f"  {result['state']} id={result['deposition_id']}")
 
     RESULTS_PATH.write_text(
@@ -227,7 +244,7 @@ def main(production: bool, publish: bool, dry_run: bool, only: tuple[str, ...]) 
                 "schema_version": "synthpopcan-zenodo-deposit-results-v1",
                 "target": target,
                 "api": api,
-                "results": results,
+                "results": [results[key] for key in sorted(results)],
             },
             indent=2,
             sort_keys=True,

@@ -129,3 +129,35 @@ def test_load_depositions_skips_index_and_results_files(tmp_path, monkeypatch) -
 
     assert len(loaded) == 1
     assert loaded[0]["synthpopcan"]["model_id"] == "ontario-2021-all-fields"
+
+
+def test_results_accumulate_across_partial_runs(tmp_path, monkeypatch) -> None:
+    results = tmp_path / "deposited.json"
+    monkeypatch.setattr(MODULE, "RESULTS_PATH", results)
+    results.write_text(
+        json.dumps(
+            {
+                "target": "sandbox",
+                "results": [{"model_id": "first", "deposition_id": 1}],
+            }
+        )
+    )
+
+    existing = MODULE._existing_results("sandbox")
+
+    assert existing["first"]["deposition_id"] == 1
+
+
+def test_results_from_a_different_target_are_discarded(tmp_path, monkeypatch) -> None:
+    results = tmp_path / "deposited.json"
+    monkeypatch.setattr(MODULE, "RESULTS_PATH", results)
+    results.write_text(
+        json.dumps(
+            {
+                "target": "sandbox",
+                "results": [{"model_id": "first", "deposition_id": 1}],
+            }
+        )
+    )
+
+    assert MODULE._existing_results("PRODUCTION") == {}
