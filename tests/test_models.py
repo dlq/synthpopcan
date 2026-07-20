@@ -413,3 +413,31 @@ def test_model_payload_carries_attribution_into_generated_artifacts() -> None:
 
     assert "provenance" in catalogue_metadata
     assert "source_licence" in catalogue_metadata
+
+
+def test_archived_models_record_their_concept_doi() -> None:
+    """Every published package must carry the DOI users are asked to cite.
+
+    The DOIs live only on Zenodo otherwise, so recording them here keeps the
+    citation reachable from the CLI and under version control.
+    """
+
+    for entry in models.model_catalogue():
+        if entry["distribution"] == "bundled":
+            assert entry["doi"] is None, "bundled demo has no archived record"
+            continue
+        doi = entry["doi"]
+        assert doi, f"{entry['id']} must record its archival DOI"
+        assert doi.startswith("10.5281/zenodo."), f"{entry['id']} has a malformed DOI"
+
+
+def test_model_concept_dois_are_unique_and_cover_every_download() -> None:
+    downloads = {
+        entry["id"]
+        for entry in models.model_catalogue()
+        if entry["distribution"] == "download"
+    }
+    recorded = models._MODEL_CONCEPT_DOIS
+
+    assert set(recorded) == downloads, "DOI map must match the downloadable set"
+    assert len(set(recorded.values())) == len(recorded), "DOIs must be distinct"

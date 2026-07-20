@@ -453,6 +453,15 @@ def _format_model_size(model: dict[str, Any]) -> str:
     return "Bundled"
 
 
+def _format_model_doi(model: dict[str, Any]) -> str:
+    """Render the archival DOI, or say plainly that a package has none."""
+
+    doi = model.get("doi")
+    if not doi:
+        return "Not archived; bundled with the package"
+    return f"https://doi.org/{doi}"
+
+
 def _model_detail_rows(model: dict[str, Any]) -> list[tuple[str, str]]:
     return [
         ("Package ID", str(model["id"])),
@@ -462,6 +471,7 @@ def _model_detail_rows(model: dict[str, Any]) -> list[tuple[str, str]]:
         ("Compressed size", _format_model_size(model)),
         ("Release status", str(model["release_status"])),
         ("Asset release", str(model["release_version"])),
+        ("Cite as", _format_model_doi(model)),
         ("Source", str(model["provenance"])),
         ("Source licence", str(model["source_licence"])),
         ("Privacy", str(model["privacy_review_status"])),

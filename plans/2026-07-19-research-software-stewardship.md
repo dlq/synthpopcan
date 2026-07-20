@@ -36,8 +36,17 @@ actually needs them.
   gate without imposing a new runtime dependency.
 - Add author ORCID identifiers only when supplied and confirmed by their
   owners; never infer them.
-- State clearly how users should cite the software version, archived release,
-  prepared models, data sources, and any associated methods publication.
+- **Done (2026-07-20).** State clearly how users should cite the software
+  version, archived release, prepared models, data sources, and any associated
+  methods publication. The README "How To Cite" section distinguishes the
+  concept, version, and package DOIs, `CITATION.cff` records the concept and
+  version DOIs, and `synthpopcan models show` prints each package's DOI.
+- Retain the licence agreements shipped inside each Statistics Canada PUMF
+  download. The catalogue pages state the product bundle "contains ... all
+  licence agreements", but the local `data/raw` copies keep only the data and
+  variable metadata. Archived packages cite the Open Licence, so the agreement
+  actually distributed with the source should be retained beside it as
+  provenance rather than relied on from memory.
 - Follow the FORCE11 software citation principles: make software a first-class
   research output with importance, credit, unique identification, persistence,
   accessibility, and version specificity.

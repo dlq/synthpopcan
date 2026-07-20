@@ -56,6 +56,9 @@ jobs:
             correctness-report.xml
             coverage.xml
 
+      - name: Check Markdown formatting
+        run: uv run --group docs mdformat --check docs README.md
+
       - name: Build documentation
         run: uv run sphinx-build -W -b html docs docs/_build/html
 

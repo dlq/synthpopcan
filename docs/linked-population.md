@@ -74,11 +74,11 @@ contract.
 Readers of v1 must:
 
 1. reject unknown linked-population schema versions;
-2. require the stable identifier columns and relationship;
-3. allow additional attribute columns;
-4. treat household geography as optional and, when declared, inherit it for
+1. require the stable identifier columns and relationship;
+1. allow additional attribute columns;
+1. treat household geography as optional and, when declared, inherit it for
    people through the household relationship; and
-5. validate identifier uniqueness and foreign-key integrity before analysis.
+1. validate identifier uniqueness and foreign-key integrity before analysis.
 
 Legacy directories containing only `households.csv` and `persons.csv` are not
 automatically invalid. They can be inspected and validated using the v1 rules,

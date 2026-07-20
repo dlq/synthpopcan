@@ -644,6 +644,48 @@ _MODEL_PACKAGES.update(
     }
 )
 
+# Concept DOIs for the archived model packages on Zenodo. Each always
+# resolves to the newest archived version of that package.
+_MODEL_CONCEPT_DOIS: dict[str, str] = {
+    "alberta-2016-all-fields": "10.5281/zenodo.21461536",
+    "alberta-2021-all-fields": "10.5281/zenodo.21461540",
+    "bc-2016-all-fields": "10.5281/zenodo.21461542",
+    "bc-2021-all-fields": "10.5281/zenodo.21461544",
+    "calgary-cma-2016-all-fields": "10.5281/zenodo.21461553",
+    "calgary-cma-2021-all-fields": "10.5281/zenodo.21461555",
+    "canada-2016-all-fields": "10.5281/zenodo.21461558",
+    "canada-2021-all-fields": "10.5281/zenodo.21461577",
+    "edmonton-cma-2016-all-fields": "10.5281/zenodo.21461579",
+    "edmonton-cma-2021-all-fields": "10.5281/zenodo.21461581",
+    "manitoba-2016-all-fields": "10.5281/zenodo.21461583",
+    "manitoba-2021-all-fields": "10.5281/zenodo.21461586",
+    "montreal-cma-2016-all-fields": "10.5281/zenodo.21461589",
+    "montreal-cma-2021-all-fields": "10.5281/zenodo.21461592",
+    "new-brunswick-2016-all-fields": "10.5281/zenodo.21461595",
+    "new-brunswick-2021-all-fields": "10.5281/zenodo.21461597",
+    "newfoundland-2016-all-fields": "10.5281/zenodo.21461599",
+    "newfoundland-2021-all-fields": "10.5281/zenodo.21461601",
+    "nova-scotia-2016-all-fields": "10.5281/zenodo.21461603",
+    "nova-scotia-2021-all-fields": "10.5281/zenodo.21461605",
+    "ontario-2016-all-fields": "10.5281/zenodo.21461607",
+    "ontario-2021-all-fields": "10.5281/zenodo.21461609",
+    "pei-2016-minimal": "10.5281/zenodo.21461611",
+    "pei-2021-minimal": "10.5281/zenodo.21461526",
+    "quebec-2016-all-fields": "10.5281/zenodo.21461613",
+    "quebec-2021-all-fields": "10.5281/zenodo.21461615",
+    "saskatchewan-2016-all-fields": "10.5281/zenodo.21461617",
+    "saskatchewan-2021-all-fields": "10.5281/zenodo.21461619",
+    "toronto-cma-2016-all-fields": "10.5281/zenodo.21461621",
+    "toronto-cma-2021-all-fields": "10.5281/zenodo.21461623",
+    "vancouver-cma-2016-all-fields": "10.5281/zenodo.21461625",
+    "vancouver-cma-2021-all-fields": "10.5281/zenodo.21461629",
+}
+
+# Attach the archival identifier to every package that has one. The bundled
+# demo has no Zenodo record, so it simply has no DOI.
+for _model_id, _doi in _MODEL_CONCEPT_DOIS.items():
+    _MODEL_PACKAGES[_model_id]["doi"] = _doi
+
 
 def model_catalogue() -> list[dict[str, Any]]:
     """Return model packages known to SynthPopCan."""
@@ -666,6 +708,7 @@ def model_catalogue_entry(model_id: str) -> dict[str, Any]:
         "release_version": str(metadata["release_version"]),
         "provenance": str(metadata["provenance"]),
         "source_licence": str(metadata["source_licence"]),
+        "doi": metadata.get("doi"),
         "privacy": str(metadata["privacy"]),
         "privacy_review_status": str(metadata["privacy_review_status"]),
         "generation_limits": str(metadata["generation_limits"]),
