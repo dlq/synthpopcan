@@ -4,6 +4,40 @@ All notable public changes to SynthPopCan are tracked here.
 
 ## Unreleased
 
+## 0.6.2 - 2026-07-20
+
+Citation, licensing, and archival release.
+
+- Carry the Statistics Canada Open Licence attribution notice with every
+  Census-derived model package. Public use microdata files are "Information"
+  under that licence, which permits distributing derived "Value-added Products"
+  provided its prescribed notice travels with them. Each package's `provenance`
+  now states the exact product, catalogue number, and reference date, and adds
+  the required no-endorsement statement.
+- Add a `source_licence` field to the model catalogue, shown as a new
+  "Source licence" row by `synthpopcan models show`.
+- Include `provenance` and `source_licence` in a package payload's
+  `catalogue_metadata`, so generated populations and manifests inherit the
+  attribution rather than leaving it behind in the catalogue listing.
+- Reword prepared-model descriptions from "the local 2016 hierarchical PUMF" to
+  "the 2016 Census hierarchical PUMF"; "local" described the training machine
+  and meant nothing to a reader.
+- Add `.zenodo.json` so archived releases carry explicit metadata. Note that
+  Zenodo ignores `CITATION.cff` whenever this file is present; `CITATION.cff`
+  still drives GitHub's citation widget.
+- Sync `CITATION.cff` to the released version and guard it, along with
+  `.zenodo.json`, against drift from the package version and changelog date.
+- Add `scripts/build_zenodo_depositions.py` and
+  `scripts/deposit_zenodo_records.py` to generate and deposit archival records
+  for the prepared model catalogue, with full provenance, both checksums, and
+  links to the software record and upstream microdata file.
+- Correct the IPF diagram in the documentation. The fitted weights shown did
+  not match what `fit_ipf` produces for the illustrated seed, and the caption
+  claimed integerization preserves margin totals exactly, which holds for that
+  example but is not guaranteed.
+- Document source licensing and attribution obligations in the data guide, and
+  require a licence and attribution check before publishing a model package.
+
 ## 0.6.1 - 2026-07-18
 
 - Add the versioned `synthpopcan-linked-population-v1` household/person artifact
