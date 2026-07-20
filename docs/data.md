@@ -119,11 +119,12 @@ redistributing prepared model packages is permitted. The licence attaches
 conditions, which SynthPopCan meets as follows:
 
 - **Attribution.** Every Census-derived package carries the licence's prescribed
-  notice in its `provenance` metadata, for example: *"Adapted from Statistics
-  Canada, 2016 Census Hierarchical Public Use Microdata File (98M0002X2016001),
-  2016. This does not constitute an endorsement by Statistics Canada of this
-  product."* The notice travels with the package payload, so generated outputs
-  and manifests inherit it. View it with `synthpopcan models show MODEL_ID`.
+  notice in its `provenance` metadata. For the 2016 vintage that reads:
+  *"Adapted from Statistics Canada, 2016 Census Hierarchical Public Use
+  Microdata File (98M0002X2016001), 2016. This does not constitute an
+  endorsement by Statistics Canada of this product."* The notice travels with
+  the package payload, so generated outputs and manifests inherit it. View it
+  with `synthpopcan models show MODEL_ID`.
 - **No endorsement.** The notice states this explicitly, and SynthPopCan makes no
   claim of affiliation with Statistics Canada.
 - **No re-identification.** The licence forbids merging or linking the

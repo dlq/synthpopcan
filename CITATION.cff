@@ -5,8 +5,18 @@ version: "0.6.2"
 date-released: 2026-07-20
 type: software
 license: MIT
+doi: 10.5281/zenodo.21461463
 repository-code: "https://github.com/dlq/synthpopcan"
 url: "https://synthpopcan.readthedocs.io/"
+identifiers:
+  - type: doi
+    value: 10.5281/zenodo.21461463
+    description: >-
+      Concept DOI for SynthPopCan; always resolves to the most recent archived
+      release. Cite this unless a specific version is required.
+  - type: doi
+    value: 10.5281/zenodo.21461464
+    description: Version DOI for the archived 0.6.2 release.
 abstract: >-
   SynthPopCan is research software for Canadian synthetic population work,
   including Statistics Canada margin/control table workflows, iterative
@@ -32,6 +42,7 @@ preferred-citation:
       email: darcy.quesnel@gmail.com
   version: "0.6.2"
   date-released: 2026-07-20
+  doi: 10.5281/zenodo.21461463
   url: "https://github.com/dlq/synthpopcan"
 notes: >-
   This work began under a proposal led with Laurette Dube and Shawn Brown and is

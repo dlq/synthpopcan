@@ -29,6 +29,166 @@
       "relation": "isSupplementTo",
       "identifier": "https://github.com/dlq/synthpopcan",
       "resource_type": "software"
+    },
+    {
+      "relation": "hasPart",
+      "identifier": "10.5281/zenodo.21461536",
+      "resource_type": "dataset"
+    },
+    {
+      "relation": "hasPart",
+      "identifier": "10.5281/zenodo.21461540",
+      "resource_type": "dataset"
+    },
+    {
+      "relation": "hasPart",
+      "identifier": "10.5281/zenodo.21461542",
+      "resource_type": "dataset"
+    },
+    {
+      "relation": "hasPart",
+      "identifier": "10.5281/zenodo.21461544",
+      "resource_type": "dataset"
+    },
+    {
+      "relation": "hasPart",
+      "identifier": "10.5281/zenodo.21461553",
+      "resource_type": "dataset"
+    },
+    {
+      "relation": "hasPart",
+      "identifier": "10.5281/zenodo.21461555",
+      "resource_type": "dataset"
+    },
+    {
+      "relation": "hasPart",
+      "identifier": "10.5281/zenodo.21461558",
+      "resource_type": "dataset"
+    },
+    {
+      "relation": "hasPart",
+      "identifier": "10.5281/zenodo.21461577",
+      "resource_type": "dataset"
+    },
+    {
+      "relation": "hasPart",
+      "identifier": "10.5281/zenodo.21461579",
+      "resource_type": "dataset"
+    },
+    {
+      "relation": "hasPart",
+      "identifier": "10.5281/zenodo.21461581",
+      "resource_type": "dataset"
+    },
+    {
+      "relation": "hasPart",
+      "identifier": "10.5281/zenodo.21461583",
+      "resource_type": "dataset"
+    },
+    {
+      "relation": "hasPart",
+      "identifier": "10.5281/zenodo.21461586",
+      "resource_type": "dataset"
+    },
+    {
+      "relation": "hasPart",
+      "identifier": "10.5281/zenodo.21461589",
+      "resource_type": "dataset"
+    },
+    {
+      "relation": "hasPart",
+      "identifier": "10.5281/zenodo.21461592",
+      "resource_type": "dataset"
+    },
+    {
+      "relation": "hasPart",
+      "identifier": "10.5281/zenodo.21461595",
+      "resource_type": "dataset"
+    },
+    {
+      "relation": "hasPart",
+      "identifier": "10.5281/zenodo.21461597",
+      "resource_type": "dataset"
+    },
+    {
+      "relation": "hasPart",
+      "identifier": "10.5281/zenodo.21461599",
+      "resource_type": "dataset"
+    },
+    {
+      "relation": "hasPart",
+      "identifier": "10.5281/zenodo.21461601",
+      "resource_type": "dataset"
+    },
+    {
+      "relation": "hasPart",
+      "identifier": "10.5281/zenodo.21461603",
+      "resource_type": "dataset"
+    },
+    {
+      "relation": "hasPart",
+      "identifier": "10.5281/zenodo.21461605",
+      "resource_type": "dataset"
+    },
+    {
+      "relation": "hasPart",
+      "identifier": "10.5281/zenodo.21461607",
+      "resource_type": "dataset"
+    },
+    {
+      "relation": "hasPart",
+      "identifier": "10.5281/zenodo.21461609",
+      "resource_type": "dataset"
+    },
+    {
+      "relation": "hasPart",
+      "identifier": "10.5281/zenodo.21461611",
+      "resource_type": "dataset"
+    },
+    {
+      "relation": "hasPart",
+      "identifier": "10.5281/zenodo.21461526",
+      "resource_type": "dataset"
+    },
+    {
+      "relation": "hasPart",
+      "identifier": "10.5281/zenodo.21461613",
+      "resource_type": "dataset"
+    },
+    {
+      "relation": "hasPart",
+      "identifier": "10.5281/zenodo.21461615",
+      "resource_type": "dataset"
+    },
+    {
+      "relation": "hasPart",
+      "identifier": "10.5281/zenodo.21461617",
+      "resource_type": "dataset"
+    },
+    {
+      "relation": "hasPart",
+      "identifier": "10.5281/zenodo.21461619",
+      "resource_type": "dataset"
+    },
+    {
+      "relation": "hasPart",
+      "identifier": "10.5281/zenodo.21461621",
+      "resource_type": "dataset"
+    },
+    {
+      "relation": "hasPart",
+      "identifier": "10.5281/zenodo.21461623",
+      "resource_type": "dataset"
+    },
+    {
+      "relation": "hasPart",
+      "identifier": "10.5281/zenodo.21461625",
+      "resource_type": "dataset"
+    },
+    {
+      "relation": "hasPart",
+      "identifier": "10.5281/zenodo.21461629",
+      "resource_type": "dataset"
     }
   ]
 }

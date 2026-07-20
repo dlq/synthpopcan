@@ -4,6 +4,7 @@
 [![Extended correctness](https://github.com/dlq/synthpopcan/actions/workflows/correctness.yml/badge.svg)](https://github.com/dlq/synthpopcan/actions/workflows/correctness.yml)
 [![Documentation Status](https://readthedocs.org/projects/synthpopcan/badge/?version=latest)](https://synthpopcan.readthedocs.io/en/latest/)
 [![PyPI](https://img.shields.io/pypi/v/synthpopcan.svg)](https://pypi.org/project/synthpopcan/)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21461463.svg)](https://doi.org/10.5281/zenodo.21461463)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 <p align="center">
@@ -206,3 +207,29 @@ legal privacy certification, or fitness for every research use.
 Before publishing a new model package, review [`docs/data.md`](docs/data.md),
 [`docs/tree.md`](docs/tree.md), [`PLANS.md`](PLANS.md), and
 [`CONTRIBUTING.md`](CONTRIBUTING.md).
+
+## How To Cite
+
+Releases and prepared model packages are archived on Zenodo, so cite whichever
+matches what your work actually depended on.
+
+| You used | Cite | DOI |
+| --- | --- | --- |
+| SynthPopCan generally | The concept DOI, which always resolves to the newest release | [10.5281/zenodo.21461463](https://doi.org/10.5281/zenodo.21461463) |
+| A specific release | That release's version DOI | e.g. `10.5281/zenodo.21461464` for 0.6.2 |
+| A prepared model package | That package's own DOI, listed on its Zenodo record | one per package |
+
+For reproducibility, prefer the **version** DOI for the release and the model
+package DOI for each package you generated from: together they pin the exact
+code and the exact artifact, and every model record publishes the checksums
+needed to verify the file you downloaded.
+
+Citation metadata lives in [`CITATION.cff`](CITATION.cff), which GitHub renders
+as a ready-made citation from the sidebar.
+
+Prepared model packages are derived from Statistics Canada public use microdata
+files under the
+[Statistics Canada Open Licence](https://www.statcan.gc.ca/en/reference/licence).
+Each package carries the attribution notice that licence requires; keep it with
+the package and with anything you generate from it. See
+[`docs/data.md`](docs/data.md) for the full attribution and licensing terms.
