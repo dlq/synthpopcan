@@ -122,7 +122,7 @@ _MODEL_PACKAGES: dict[str, dict[str, Any]] = {
         "name": "Montreal CMA 2016 broad linked package",
         "description": (
             "Publishable-candidate linked household/person model trained from "
-            "the local 2016 hierarchical PUMF for CMA 462."
+            "the 2016 Census hierarchical PUMF for CMA 462."
         ),
         "geography": "Montreal CMA (CMA 462)",
         "conditions": ["PR", "household_size", "TENUR"],
@@ -144,7 +144,7 @@ _MODEL_PACKAGES: dict[str, dict[str, Any]] = {
         "name": "Quebec 2016 broad linked package",
         "description": (
             "Publishable-candidate linked household/person model trained from "
-            "the local 2016 hierarchical PUMF for Quebec (PR 24)."
+            "the 2016 Census hierarchical PUMF for Quebec (PR 24)."
         ),
         "geography": "Quebec (PR 24)",
         "conditions": ["PR", "household_size", "TENUR"],
@@ -166,7 +166,7 @@ _MODEL_PACKAGES: dict[str, dict[str, Any]] = {
         "name": "Ontario 2016 broad linked package",
         "description": (
             "Publishable-candidate linked household/person model trained from "
-            "the local 2016 hierarchical PUMF for Ontario (PR 35)."
+            "the 2016 Census hierarchical PUMF for Ontario (PR 35)."
         ),
         "geography": "Ontario (PR 35)",
         "conditions": ["PR", "household_size", "TENUR"],
@@ -188,7 +188,7 @@ _MODEL_PACKAGES: dict[str, dict[str, Any]] = {
         "name": "British Columbia 2016 broad linked package",
         "description": (
             "Publishable-candidate linked household/person model trained from "
-            "the local 2016 hierarchical PUMF for British Columbia (PR 59)."
+            "the 2016 Census hierarchical PUMF for British Columbia (PR 59)."
         ),
         "geography": "British Columbia (PR 59)",
         "conditions": ["PR", "household_size", "TENUR"],
@@ -210,7 +210,7 @@ _MODEL_PACKAGES: dict[str, dict[str, Any]] = {
         "name": "Alberta 2016 broad linked package",
         "description": (
             "Publishable-candidate linked household/person model trained from "
-            "the local 2016 hierarchical PUMF for Alberta (PR 48)."
+            "the 2016 Census hierarchical PUMF for Alberta (PR 48)."
         ),
         "geography": "Alberta (PR 48)",
         "conditions": ["PR", "household_size", "TENUR"],
@@ -232,7 +232,7 @@ _MODEL_PACKAGES: dict[str, dict[str, Any]] = {
         "name": "Toronto CMA 2016 broad linked package",
         "description": (
             "Publishable-candidate linked household/person model trained from "
-            "the local 2016 hierarchical PUMF for Toronto CMA (CMA 535)."
+            "the 2016 Census hierarchical PUMF for Toronto CMA (CMA 535)."
         ),
         "geography": "Toronto CMA (CMA 535)",
         "conditions": ["CMA", "household_size", "TENUR"],
@@ -254,7 +254,7 @@ _MODEL_PACKAGES: dict[str, dict[str, Any]] = {
         "name": "Vancouver CMA 2016 broad linked package",
         "description": (
             "Publishable-candidate linked household/person model trained from "
-            "the local 2016 hierarchical PUMF for Vancouver CMA (CMA 933)."
+            "the 2016 Census hierarchical PUMF for Vancouver CMA (CMA 933)."
         ),
         "geography": "Vancouver CMA (CMA 933)",
         "conditions": ["CMA", "household_size", "TENUR"],
@@ -276,7 +276,7 @@ _MODEL_PACKAGES: dict[str, dict[str, Any]] = {
         "name": "Manitoba 2016 broad linked package",
         "description": (
             "Publishable-candidate linked household/person model trained from "
-            "the local 2016 hierarchical PUMF for Manitoba (PR 46)."
+            "the 2016 Census hierarchical PUMF for Manitoba (PR 46)."
         ),
         "geography": "Manitoba (PR 46)",
         "conditions": ["PR", "household_size", "TENUR"],
@@ -298,7 +298,7 @@ _MODEL_PACKAGES: dict[str, dict[str, Any]] = {
         "name": "Calgary CMA 2016 broad linked package",
         "description": (
             "Publishable-candidate linked household/person model trained from "
-            "the local 2016 hierarchical PUMF for Calgary CMA (CMA 825)."
+            "the 2016 Census hierarchical PUMF for Calgary CMA (CMA 825)."
         ),
         "geography": "Calgary CMA (CMA 825)",
         "conditions": ["CMA", "household_size", "TENUR"],
@@ -320,7 +320,7 @@ _MODEL_PACKAGES: dict[str, dict[str, Any]] = {
         "name": "Edmonton CMA 2016 broad linked package",
         "description": (
             "Publishable-candidate linked household/person model trained from "
-            "the local 2016 hierarchical PUMF for Edmonton CMA (CMA 835)."
+            "the 2016 Census hierarchical PUMF for Edmonton CMA (CMA 835)."
         ),
         "geography": "Edmonton CMA (CMA 835)",
         "conditions": ["CMA", "household_size", "TENUR"],
@@ -342,7 +342,7 @@ _MODEL_PACKAGES: dict[str, dict[str, Any]] = {
         "name": "Saskatchewan 2016 broad linked package",
         "description": (
             "Publishable-candidate linked household/person model trained from "
-            "the local 2016 hierarchical PUMF for Saskatchewan (PR 47)."
+            "the 2016 Census hierarchical PUMF for Saskatchewan (PR 47)."
         ),
         "geography": "Saskatchewan (PR 47)",
         "conditions": ["PR", "household_size", "TENUR"],
@@ -364,7 +364,7 @@ _MODEL_PACKAGES: dict[str, dict[str, Any]] = {
         "name": "Nova Scotia 2016 broad linked package",
         "description": (
             "Publishable-candidate linked household/person model trained from "
-            "the local 2016 hierarchical PUMF for Nova Scotia (PR 12)."
+            "the 2016 Census hierarchical PUMF for Nova Scotia (PR 12)."
         ),
         "geography": "Nova Scotia (PR 12)",
         "conditions": ["PR", "household_size", "TENUR"],
@@ -386,7 +386,7 @@ _MODEL_PACKAGES: dict[str, dict[str, Any]] = {
         "name": "New Brunswick 2016 broad linked package",
         "description": (
             "Publishable-candidate linked household/person model trained from "
-            "the local 2016 hierarchical PUMF for New Brunswick (PR 13)."
+            "the 2016 Census hierarchical PUMF for New Brunswick (PR 13)."
         ),
         "geography": "New Brunswick (PR 13)",
         "conditions": ["PR", "household_size", "TENUR"],
@@ -408,7 +408,7 @@ _MODEL_PACKAGES: dict[str, dict[str, Any]] = {
         "name": "Newfoundland and Labrador 2016 broad linked package",
         "description": (
             "Publishable-candidate linked household/person model trained from "
-            "the local 2016 hierarchical PUMF for Newfoundland and Labrador (PR 10)."
+            "the 2016 Census hierarchical PUMF for Newfoundland and Labrador (PR 10)."
         ),
         "geography": "Newfoundland and Labrador (PR 10)",
         "conditions": ["PR", "household_size", "TENUR"],
@@ -430,7 +430,7 @@ _MODEL_PACKAGES: dict[str, dict[str, Any]] = {
         "name": "Prince Edward Island 2016 minimal linked package",
         "description": (
             "Publishable-candidate linked household/person model trained from "
-            "the local 2016 hierarchical PUMF for Prince Edward Island (PR 11). "
+            "the 2016 Census hierarchical PUMF for Prince Edward Island (PR 11). "
             "Uses a minimal column profile due to small sample size."
         ),
         "geography": "Prince Edward Island (PR 11)",
@@ -453,7 +453,7 @@ _MODEL_PACKAGES: dict[str, dict[str, Any]] = {
         "name": "Canada 2016 broad linked package",
         "description": (
             "Publishable-candidate linked household/person model trained from "
-            "the local 2016 hierarchical PUMF for all Canada."
+            "the 2016 Census hierarchical PUMF for all Canada."
         ),
         "geography": "Canada",
         "conditions": ["PR", "household_size", "TENUR"],
@@ -620,7 +620,7 @@ def _pumf_2021_registry_entry(
         "name": f"{label} 2021 {profile} linked package",
         "description": (
             "Publishable-candidate linked household/person model trained from "
-            f"the local 2021 hierarchical PUMF for {geography}.{limitation}"
+            f"the 2021 Census hierarchical PUMF for {geography}.{limitation}"
         ),
         "geography": geography,
         "conditions": ["PR", "household_size", "TENUR"],

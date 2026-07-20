@@ -57,6 +57,10 @@ _LICENSE = "cc-by-4.0"
 
 _SOFTWARE_REPOSITORY = "https://github.com/dlq/synthpopcan"
 
+# Authorship for the archived model records, kept in step with CITATION.cff.
+# ORCIDs are only ever added when supplied by their owner, never inferred.
+_CREATORS = [{"name": "Quesnel, Darcy"}]
+
 
 def _description(entry: dict[str, Any], metadata: dict[str, Any]) -> str:
     """Build the human-readable record description carrying full provenance."""
@@ -72,12 +76,11 @@ def _description(entry: dict[str, Any], metadata: dict[str, Any]) -> str:
             f"<strong>Conditioning columns:</strong> {conditions}<br>"
             f"<strong>Package version:</strong> {entry['release_version']}</p>",
             f"<p><strong>Source attribution.</strong> {entry['provenance']}</p>",
-            "<p><strong>Source licence.</strong> Derived from "
-            f'<a href="{source["url"]}">{source["title"]}</a> '
-            f"({source['catalogue']}), released under the "
+            "<p><strong>Source licence.</strong> The "
+            f'<a href="{source["url"]}">source file</a> is released under the '
             f'<a href="{entry["source_licence"]}">Statistics Canada Open '
-            "Licence</a>, which permits distribution of value-added products "
-            "carrying the attribution notice above.</p>",
+            "Licence</a>, which permits distributing value-added products that "
+            "carry the attribution above.</p>",
             "<p><strong>Disclosure review.</strong> "
             f"{entry['privacy']} Review status: "
             f"{entry['privacy_review_status']}. Passing SynthPopCan's "
@@ -139,6 +142,7 @@ def build_deposition(model_id: str, *, concept_doi: str | None) -> dict[str, Any
         "metadata": {
             "upload_type": "dataset",
             "title": f"SynthPopCan prepared model: {entry['name']}",
+            "creators": _CREATORS,
             "version": str(entry["release_version"]),
             "description": _description(entry, metadata),
             "license": _LICENSE,

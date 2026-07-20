@@ -60,3 +60,33 @@ def test_deposition_uses_an_attribution_preserving_licence() -> None:
 
     assert deposition["metadata"]["license"] == "cc-by-4.0"
     assert deposition["metadata"]["access_right"] == "open"
+
+
+def test_deposition_credits_the_same_authors_as_citation_metadata() -> None:
+    """Archived model records must credit the same authors as CITATION.cff."""
+    import re
+    from pathlib import Path
+
+    deposition = build_deposition("ontario-2021-all-fields", concept_doi=None)
+    creators = deposition["metadata"]["creators"]
+
+    assert creators, "model records must name their creators"
+    for creator in creators:
+        # Never infer an ORCID; only record one supplied by its owner.
+        assert set(creator) <= {"name", "affiliation", "orcid"}
+
+    citation = Path("CITATION.cff").read_text()
+    families = set(re.findall(r"family-names:\s*(\S+)", citation))
+    assert {name["name"].split(",")[0] for name in creators} <= families
+
+
+def test_deposition_description_does_not_repeat_the_source_title() -> None:
+    """The licence paragraph should not restate what attribution already said."""
+    deposition = build_deposition("montreal-cma-2016-all-fields", concept_doi=None)
+    description = deposition["metadata"]["description"]
+
+    # The product title belongs in the attribution notice only; the licence
+    # paragraph links to the source rather than restating it. The catalogue
+    # number legitimately recurs inside the link href.
+    assert description.count("2016 Census Hierarchical Public Use Microdata File") == 1
+    assert "local 2016" not in description
