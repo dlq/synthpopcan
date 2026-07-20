@@ -137,10 +137,11 @@ conditions, which SynthPopCan meets as follows:
 When you redistribute a package or an output derived from one, carry the
 `provenance` notice with it.
 
-**Other sources are not covered by this licence.** Material under its own
-agreement — such as the CANUE environmental data used for planned enrichment
-layers — carries separate redistribution terms that must be checked
-independently before anything derived from it is published.
+**This clearance covers Census PUMF-derived packages only.** Published model
+packages are trained from Statistics Canada public use microdata files and
+nothing else. Access-controlled sources are used locally, if at all, and are
+never redistributed through SynthPopCan — neither the source material nor any
+artifact derived from it.
 
 ## Getting Started
 
