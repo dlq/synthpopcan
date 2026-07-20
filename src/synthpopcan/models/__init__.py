@@ -28,10 +28,19 @@ _PUMF_2021_RELEASE_BASE_URL = (
     "https://github.com/dlq/synthpopcan/releases/download/v0.6.0"
 )
 _BROWSER_MODEL_MAX_UNCOMPRESSED_BYTES = 32 * 1024 * 1024
+
+# Statistics Canada public use microdata files are "Information" under the
+# Statistics Canada Open Licence, which grants the right to distribute
+# "Value-added Products" derived from them. Models trained on a PUMF are such a
+# product, so every downloadable package carries the licence's prescribed
+# "Adapted from ... does not constitute an endorsement" attribution notice.
+_STATCAN_OPEN_LICENCE = "https://www.statcan.gc.ca/en/reference/licence"
+
 _DEMO_CATALOGUE_METADATA = {
     "census_vintage": "Not applicable",
     "release_status": "publishable_candidate",
     "release_version": "v0.4.0",
+    "source_licence": "Not applicable; synthetic demonstration rows.",
     "privacy": "No raw rows or source identifiers.",
     "privacy_review_status": "safe synthetic demo",
     "generation_limits": "Small exploratory browser runs.",
@@ -43,7 +52,12 @@ _PUMF_2016_CATALOGUE_METADATA = {
     "census_vintage": "2016 Census",
     "release_status": "publishable_candidate",
     "release_version": "v0.2.1",
-    "provenance": "Statistics Canada 2016 Census hierarchical PUMF.",
+    "provenance": (
+        "Adapted from Statistics Canada, 2016 Census Hierarchical Public Use "
+        "Microdata File (98M0002X2016001), 2016. This does not constitute an "
+        "endorsement by Statistics Canada of this product."
+    ),
+    "source_licence": _STATCAN_OPEN_LICENCE,
     "privacy": "No raw rows or source identifiers.",
     "privacy_review_status": "publishable candidate; human review still required",
     "generation_limits": (
@@ -61,7 +75,12 @@ _PUMF_2021_CATALOGUE_METADATA = {
     "census_vintage": "2021 Census",
     "release_status": "publishable_candidate",
     "release_version": "v0.6.0",
-    "provenance": "Statistics Canada 2021 Census hierarchical PUMF.",
+    "provenance": (
+        "Adapted from Statistics Canada, 2021 Census Hierarchical Public Use "
+        "Microdata File, version 2 (98M0001X2021002), 2021. This does not "
+        "constitute an endorsement by Statistics Canada of this product."
+    ),
+    "source_licence": _STATCAN_OPEN_LICENCE,
     "privacy": "No raw rows or source identifiers.",
     "privacy_review_status": "publishable candidate; human review still required",
     "generation_limits": (
@@ -646,6 +665,7 @@ def model_catalogue_entry(model_id: str) -> dict[str, Any]:
         "release_status": str(metadata["release_status"]),
         "release_version": str(metadata["release_version"]),
         "provenance": str(metadata["provenance"]),
+        "source_licence": str(metadata["source_licence"]),
         "privacy": str(metadata["privacy"]),
         "privacy_review_status": str(metadata["privacy_review_status"]),
         "generation_limits": str(metadata["generation_limits"]),
@@ -695,6 +715,11 @@ def model_payload(model_id: str) -> dict[str, Any]:
             for key in (
                 "census_vintage",
                 "release_version",
+                # provenance and source_licence carry the Statistics Canada
+                # attribution notice into every loaded payload, so generated
+                # artifacts and manifests inherit the required credit.
+                "provenance",
+                "source_licence",
                 "privacy_review_status",
                 "generation_limits",
                 "known_limitations",

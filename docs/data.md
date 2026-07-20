@@ -105,6 +105,43 @@ also follow the model-safety and release-asset procedures in
 SynthPopCan is independent research software. It is not affiliated with or
 endorsed by Statistics Canada or the Government of Canada.
 
+## Source Licensing And Attribution
+
+Statistics Canada public use microdata files (PUMFs) are released under the
+[Statistics Canada Open Licence](https://www.statcan.gc.ca/en/reference/licence).
+That licence defines "Information" to include public use microdata files, and
+grants a worldwide, royalty-free, non-exclusive right to reproduce, publish, and
+freely distribute both the Information and **Value-added Products** — products
+made by adapting or incorporating it.
+
+A trained SynthPopCan model package is a Value-added Product, so publishing and
+redistributing prepared model packages is permitted. The licence attaches
+conditions, which SynthPopCan meets as follows:
+
+- **Attribution.** Every Census-derived package carries the licence's prescribed
+  notice in its `provenance` metadata, for example: *"Adapted from Statistics
+  Canada, 2016 Census Hierarchical Public Use Microdata File (98M0002X2016001),
+  2016. This does not constitute an endorsement by Statistics Canada of this
+  product."* The notice travels with the package payload, so generated outputs
+  and manifests inherit it. View it with `synthpopcan models show MODEL_ID`.
+- **No endorsement.** The notice states this explicitly, and SynthPopCan makes no
+  claim of affiliation with Statistics Canada.
+- **No re-identification.** The licence forbids merging or linking the
+  Information with other databases to attempt to identify a person, business, or
+  organization. Do not use SynthPopCan outputs for that purpose.
+- **No misrepresentation.** Generated populations are synthetic artifacts. They
+  must not be presented as real Census records, as confidential Statistics Canada
+  information, or as legally anonymized data. Passing SynthPopCan's
+  disclosure-risk checks is a project-level screen, not certification.
+
+When you redistribute a package or an output derived from one, carry the
+`provenance` notice with it.
+
+**Other sources are not covered by this licence.** Material under its own
+agreement — such as the CANUE environmental data used for planned enrichment
+layers — carries separate redistribution terms that must be checked
+independently before anything derived from it is published.
+
 ## Getting Started
 
 **Mixed runnable and template commands.** `data doctor` is safe to run as shown.

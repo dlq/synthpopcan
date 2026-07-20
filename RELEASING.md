@@ -68,6 +68,15 @@ Before publishing a model package:
 
 1. Review provenance, citation, access, and redistribution notes.
 
+1. Confirm the source licence permits redistributing the derived package, and
+   that the package carries the required attribution. Statistics Canada PUMFs
+   are covered by the [Open Licence](https://www.statcan.gc.ca/en/reference/licence),
+   which permits distributing derived "Value-added Products" with its
+   prescribed notice; `tests/test_models.py` enforces that every Census-derived
+   entry carries it. A package derived from any other source — for example
+   material under its own data-sharing agreement — needs its terms checked
+   separately before publication.
+
 1. Run the relevant SynthPopCan audit and release-readiness checks.
 
 1. Record the package size and SHA-256 checksum.

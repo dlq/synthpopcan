@@ -954,7 +954,7 @@ def test_webapp_demo_model_catalogue_serves_safe_linked_package() -> None:
     assert bundled["geography"] == "Montreal CMA (CMA 462)"
     assert bundled["safe_demo"] is False
     assert bundled["release_status"] == "publishable_candidate"
-    assert bundled["provenance"] == "Statistics Canada 2016 Census hierarchical PUMF."
+    assert bundled["provenance"].startswith("Adapted from Statistics Canada,")
     assert bundled["distribution"] == "download"
     quebec = catalogue[2]
     assert quebec["id"] == "quebec-2016-all-fields"
@@ -962,7 +962,7 @@ def test_webapp_demo_model_catalogue_serves_safe_linked_package() -> None:
     assert quebec["geography"] == "Quebec (PR 24)"
     assert quebec["safe_demo"] is False
     assert quebec["release_status"] == "publishable_candidate"
-    assert quebec["provenance"] == "Statistics Canada 2016 Census hierarchical PUMF."
+    assert quebec["provenance"].startswith("Adapted from Statistics Canada,")
     assert quebec["distribution"] == "download"
 
     payload = model_payload("demo-linked-household-person")

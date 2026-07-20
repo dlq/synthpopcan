@@ -374,3 +374,42 @@ def test_download_size_ignores_bad_header_and_missing_size_bytes() -> None:
         headers = {"Content-Length": "bad"}
 
     assert _download_size(_FakeResponse(), {}) is None
+
+
+def test_census_derived_models_carry_the_required_statcan_attribution() -> None:
+    """Every Census-derived package must ship the Open Licence attribution.
+
+    The Statistics Canada Open Licence permits redistributing PUMF-derived
+    "Value-added Products" only with its prescribed notice, so a package that
+    omits it would not be redistributable.
+    """
+
+    census_entries = [
+        entry
+        for entry in models.model_catalogue()
+        if entry["census_vintage"] != "Not applicable"
+    ]
+
+    assert census_entries, "expected at least one Census-derived model package"
+    for entry in census_entries:
+        provenance = entry["provenance"]
+        assert provenance.startswith("Adapted from Statistics Canada,"), (
+            f"{entry['id']} provenance must open with the prescribed "
+            f"attribution wording, got: {provenance!r}"
+        )
+        assert (
+            "does not constitute an endorsement by Statistics Canada" in provenance
+        ), f"{entry['id']} provenance must carry the no-endorsement statement"
+        assert entry["source_licence"] == (
+            "https://www.statcan.gc.ca/en/reference/licence"
+        ), f"{entry['id']} must cite the Statistics Canada Open Licence"
+
+
+def test_model_payload_carries_attribution_into_generated_artifacts() -> None:
+    """The attribution must travel with the payload, not just the catalogue."""
+
+    payload = models.model_payload("demo-linked-household-person")
+    catalogue_metadata = payload["catalogue_metadata"]
+
+    assert "provenance" in catalogue_metadata
+    assert "source_licence" in catalogue_metadata

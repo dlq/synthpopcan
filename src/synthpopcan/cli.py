@@ -463,6 +463,7 @@ def _model_detail_rows(model: dict[str, Any]) -> list[tuple[str, str]]:
         ("Release status", str(model["release_status"])),
         ("Asset release", str(model["release_version"])),
         ("Source", str(model["provenance"])),
+        ("Source licence", str(model["source_licence"])),
         ("Privacy", str(model["privacy_review_status"])),
         ("Generation guidance", str(model["generation_limits"])),
         ("Known limitations", str(model["known_limitations"])),
