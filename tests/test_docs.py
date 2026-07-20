@@ -17,8 +17,9 @@ from synthpopcan.cli import cli
 def test_citation_metadata_matches_release() -> None:
     """Keep CITATION.cff in step with the package version and changelog date.
 
-    Zenodo builds its archived record from this file, so any drift here is
-    baked into the citation metadata for that release's DOI.
+    GitHub's citation widget reads this file, so drift here misstates how to
+    cite the release. Note that Zenodo ignores CITATION.cff whenever
+    .zenodo.json is present, which is the case here.
     """
 
     citation = Path("CITATION.cff").read_text()
@@ -45,6 +46,33 @@ def test_citation_metadata_matches_release() -> None:
         f"CITATION.cff date-released {dates[0]} does not match the CHANGELOG "
         f"date {entry.group(1)} for {synthpopcan.__version__}"
     )
+
+
+def test_zenodo_metadata_is_valid_and_drift_free() -> None:
+    """Guard the archive record metadata Zenodo actually uses.
+
+    Because .zenodo.json is present, Zenodo ignores CITATION.cff entirely and
+    builds the archived record from this file. It deliberately omits a version
+    field so the GitHub release tag remains the single source of the version;
+    if one is ever added it must track the package.
+    """
+
+    zenodo = json.loads(Path(".zenodo.json").read_text())
+
+    assert zenodo["upload_type"] == "software"
+    assert zenodo["title"]
+    assert zenodo["license"]
+    assert zenodo["creators"], ".zenodo.json must credit at least one creator"
+    for creator in zenodo["creators"]:
+        assert creator.get("name"), "each creator needs a name"
+        # Never infer an ORCID; only record one supplied by its owner.
+        assert set(creator) <= {"name", "affiliation", "orcid"}
+
+    assert "version" not in zenodo or zenodo["version"] == synthpopcan.__version__
+
+    description = zenodo["description"]
+    assert "not affiliated with or endorsed by Statistics Canada" in description
+    assert "synthetic artifacts" in description
 
 
 def test_helper_modules_declare_public_exports() -> None:

@@ -21,8 +21,15 @@ artifact.
 1. Confirm `pyproject.toml` has the intended version.
 
 1. Update `CITATION.cff` so both `version` fields and both `date-released`
-   fields match the release. Zenodo builds its archived record from this file,
-   so drift here is baked into the citation metadata for that DOI.
+   fields match the release. This is what GitHub's citation widget shows.
+   `tests/test_docs.py` checks it against the package version and changelog
+   date.
+
+1. Leave the version out of `.zenodo.json`. Zenodo takes the version from the
+   release tag, so adding one here would create a second place to drift.
+   Because `.zenodo.json` exists, Zenodo **ignores `CITATION.cff` entirely**
+   and builds the archived record from `.zenodo.json` alone — keep both files
+   accurate, but remember only the latter reaches the DOI record.
 
 1. Commit the release changes.
 
@@ -86,6 +93,18 @@ Before publishing a model package:
    same change that moves them.
 
 1. Update the model registry with the release URL, size, and checksum.
+
+1. Regenerate the archive metadata from the registry, passing the software
+   concept DOI so each model record links back to it:
+
+   ```bash
+   uv run python scripts/build_zenodo_depositions.py --concept-doi DOI
+   ```
+
+   Review the emitted metadata, deposit it with the Zenodo REST API, then add a
+   `hasPart` related identifier on the software record for each new model
+   concept DOI. Zenodo's GitHub integration archives only the source tarball,
+   so model assets are never captured automatically.
 
 1. Test the fetch path:
 
