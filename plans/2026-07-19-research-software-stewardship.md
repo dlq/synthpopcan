@@ -2,11 +2,11 @@
 
 Status: planned and ongoing\
 Created: 2026-07-19\
-Last updated: 2026-07-19\
+Last updated: 2026-07-20\
 Target: immediate maintenance, `0.7.x`, `0.8.x`, and maturity follow-ons\
-Next action: add full CFF schema validation to a documentation or release gate,
-then connect Zenodo archiving so the next release mints version and concept
-DOIs\
+Next action: add full CFF schema validation, review the licence representation
+and safe automation of model archives, then register important releases with
+Software Heritage\
 Roadmap: [PLANS.md](../PLANS.md) | [Plan index](README.md)
 
 ## Purpose
@@ -30,7 +30,7 @@ actually needs them.
 
 - **Done (2026-07-20).** Update `CITATION.cff` for every release and test that
   its version and release date agree with package and changelog metadata. The
-  file now tracks `0.6.1`, `RELEASING.md` covers it, and
+  file now tracks `0.6.2`, `RELEASING.md` covers it, and
   `tests/test_docs.py::test_citation_metadata_matches_release` guards it.
 - Add full CFF validation to an appropriate local or CI documentation/release
   gate without imposing a new runtime dependency.
@@ -53,8 +53,13 @@ actually needs them.
 
 ### Persistent preservation and releases
 
-- Connect GitHub releases to Zenodo, archive each versioned release, and expose
-  both the release DOI and the concept DOI in release metadata and docs.
+- **Done (2026-07-20).** Connect GitHub releases to Zenodo, archive the `0.6.2`
+  release and prepared model packages, and expose release, concept, and model
+  DOIs in metadata, docs, and the CLI.
+- Before further model publication, obtain an informed review of how the
+  licence on SynthPopCan-authored model material should be represented beside
+  the continuing Statistics Canada Open Licence conditions. Update the live
+  Zenodo records if that review changes the current representation.
 - Verify archival metadata, authors, licence, related identifiers, checksums,
   and bilingual title/description capability before making publication fully
   automatic.

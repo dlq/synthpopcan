@@ -5,7 +5,7 @@ version: "0.6.2"
 date-released: 2026-07-20
 type: software
 license: MIT
-doi: 10.5281/zenodo.21461463
+doi: 10.5281/zenodo.21461464
 repository-code: "https://github.com/dlq/synthpopcan"
 url: "https://synthpopcan.readthedocs.io/"
 identifiers:
@@ -42,7 +42,7 @@ preferred-citation:
       email: darcy.quesnel@gmail.com
   version: "0.6.2"
   date-released: 2026-07-20
-  doi: 10.5281/zenodo.21461463
+  doi: 10.5281/zenodo.21461464
   url: "https://github.com/dlq/synthpopcan"
 notes: >-
   This work began under a proposal led with Laurette Dube and Shawn Brown and is

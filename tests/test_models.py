@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import gzip
 import hashlib
+import json
 import sys
 import time
 from concurrent.futures import ThreadPoolExecutor
@@ -441,3 +442,13 @@ def test_model_concept_dois_are_unique_and_cover_every_download() -> None:
 
     assert set(recorded) == downloads, "DOI map must match the downloadable set"
     assert len(set(recorded.values())) == len(recorded), "DOIs must be distinct"
+
+    zenodo = json.loads(Path(".zenodo.json").read_text())
+    has_parts = {
+        item["identifier"]
+        for item in zenodo["related_identifiers"]
+        if item["relation"] == "hasPart"
+    }
+    assert has_parts == set(recorded.values()), (
+        "software archive metadata must link every model concept DOI exactly once"
+    )

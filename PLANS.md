@@ -1,8 +1,8 @@
 # SynthPopCan Plan
 
 Status: release-phased roadmap\
-Last updated: 2026-07-19\
-Current release: `0.6.1`
+Last updated: 2026-07-20\
+Current release: `0.6.2`
 
 ## Current Focus
 
@@ -10,7 +10,7 @@ Start here. Open a linked implementation plan only when working on that area.
 
 | Horizon | Focus | Detail |
 | --- | --- | --- |
-| Released | `0.6.1` stabilizes the linked household/person/geography contract, adds explicit 2021 Census support, and hardens durable model generation and browser sequencing. | [GitHub Release](https://github.com/dlq/synthpopcan/releases/tag/v0.6.1) |
+| Released | `0.6.2` adds citation, licensing, and Zenodo archival metadata on top of the `0.6.1` linked-schema and 2021 Census work. | [GitHub Release](https://github.com/dlq/synthpopcan/releases/tag/v0.6.2) |
 | Correctness | Preserve and extend the correctness-assurance gate in priority order. | [Correctness plan](plans/2026-07-12-correctness-assurance.md) |
 | Research-software stewardship | Make releases citable, persistently archived, reproducible, governed, and legible to scientific-software and digital-humanities communities. | [Research-software stewardship plan](plans/2026-07-19-research-software-stewardship.md) |
 | Later `0.7.x`–`0.8.x` | Add governed enrichment layers, then hand validated generated data to external simulation platforms without implementing population simulation in SynthPopCan. | [Plan index](plans/README.md) |
@@ -56,7 +56,10 @@ owned by a linked implementation plan with a current status and next action.
 
 ## Current Product State
 
-`0.6.1` adds the versioned linked household/person/geography output contract,
+`0.6.2` adds Statistics Canada source attribution throughout prepared-model
+packages, explicit citation metadata, Zenodo software/model records, archival
+DOIs, and guarded deposition tooling. It retains the `0.6.1` versioned linked
+household/person/geography output contract,
 explicit 2016/2021 Census adapters and fixtures, a parallel 2021 prepared-model
 catalogue, bounded model execution, and stale-operation protection throughout
 the local web workbench. It retains the durable `0.6.0` runtime and the `0.5.1`
@@ -103,6 +106,7 @@ scenarios, and bounded scale smokes are complete.
 | `0.5.1` | Correctness-assurance suite and public claims matrix, audited integrity fixes, hardened release gates, permanent release evidence, and tag-constrained trusted publishing. |
 | `0.6.0` | Durable FastAPI/Uvicorn local runtime, shared backend workflows, controlled workspaces, isolated jobs, progress, cancellation, recovery, and bounded artifacts. |
 | `0.6.1` | Stable linked-population schema, explicit 2021 Census support and model catalogue, bounded model execution, browser sequencing, and expanded release coverage. |
+| `0.6.2` | Statistics Canada attribution, citation and archival metadata, prepared-model DOIs, Zenodo deposition tooling, and corrected IPF documentation. |
 
 The original public baseline is achieved: users can install SynthPopCan, prepare
 StatCan inputs, generate and validate IPF or linked-model output, inspect
@@ -518,7 +522,7 @@ that static accessibility or counterfactual analysis is insufficient.
 | Documentation | Keep workflow examples synchronized with tested CLI help; add contributor internals only when useful. |
 | Bilingualism | Progressively provide English/French interfaces, documentation, data dictionaries, and descriptive metadata; preserve authoritative source language and translation provenance, stable language-neutral identifiers, explicit fallback, and tested parity. |
 | Research software | Apply the linked stewardship plan: FAIR4RS self-assessment, software citation, archival identifiers, a software management plan, community engagement, and appropriate data governance. |
-| Releases | Align tags, PyPI, Read the Docs, release notes, checksums, model provenance, installed-wheel smoke tests, and model-fetch checks; add automatic Zenodo publication, version/concept DOI metadata, and Software Heritage archival identifiers. |
+| Releases | Align tags, PyPI, Read the Docs, release notes, checksums, model provenance, installed-wheel smoke tests, and model-fetch checks; preserve GitHub-to-Zenodo archiving and DOI metadata, harden/automate model deposits after review, and add Software Heritage archival identifiers. |
 
 ## Open Decisions
 

@@ -25,10 +25,12 @@ Usage::
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import urllib.error
 import urllib.request
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
@@ -74,7 +76,7 @@ def _request(
     return json.loads(raw) if raw else {}
 
 
-def _asset_bytes(deposition: dict[str, Any], *, token: str) -> bytes:
+def _asset_bytes(deposition: dict[str, Any]) -> bytes:
     """Fetch the release asset this deposition describes."""
 
     url = str(deposition["synthpopcan"]["asset_url"])
@@ -83,23 +85,82 @@ def _asset_bytes(deposition: dict[str, Any], *, token: str) -> bytes:
         return response.read()
 
 
+def _verify_asset(payload: bytes, deposition: dict[str, Any]) -> None:
+    """Reject an asset that differs from the registry-backed metadata."""
+
+    metadata = deposition["synthpopcan"]
+    expected_size = metadata.get("size_bytes")
+    if not isinstance(expected_size, int) or expected_size < 0:
+        raise ZenodoError("deposition metadata must declare a non-negative size_bytes")
+    if len(payload) != expected_size:
+        raise ZenodoError(
+            f"asset size mismatch: expected {expected_size:,} bytes, "
+            f"downloaded {len(payload):,}"
+        )
+
+    expected_sha256 = metadata.get("sha256")
+    if not isinstance(expected_sha256, str) or len(expected_sha256) != 64:
+        raise ZenodoError("deposition metadata must declare a SHA-256 checksum")
+    actual_sha256 = hashlib.sha256(payload).hexdigest()
+    if actual_sha256 != expected_sha256.lower():
+        raise ZenodoError(
+            f"asset SHA-256 mismatch: expected {expected_sha256}, "
+            f"downloaded {actual_sha256}"
+        )
+
+
+def _verify_upload_response(uploaded: dict[str, Any], payload: bytes) -> None:
+    """Check the file metadata returned by Zenodo when it is available."""
+
+    uploaded_size = uploaded.get("size")
+    if uploaded_size is not None and uploaded_size != len(payload):
+        raise ZenodoError(
+            f"Zenodo reports {uploaded_size:,} uploaded bytes; sent {len(payload):,}"
+        )
+    checksum = uploaded.get("checksum")
+    if isinstance(checksum, str) and checksum.startswith("md5:"):
+        actual = hashlib.md5(payload, usedforsecurity=False).hexdigest()
+        if checksum != f"md5:{actual}":
+            raise ZenodoError(
+                f"Zenodo upload checksum mismatch: expected md5:{actual}, got {checksum}"
+            )
+
+
 def deposit_one(
     deposition: dict[str, Any],
     *,
     api: str,
     token: str,
     publish: bool,
+    checkpoint: Callable[[dict[str, Any]], None] | None = None,
 ) -> dict[str, Any]:
     """Create one Zenodo deposition, upload its asset, and set its metadata."""
 
     model_id = str(deposition["synthpopcan"]["model_id"])
+    payload = _asset_bytes(deposition)
+    _verify_asset(payload, deposition)
+
     created = _request("POST", f"{api}/deposit/depositions", token=token, payload={})
     deposition_id = created["id"]
+    result = {
+        "model_id": model_id,
+        "deposition_id": deposition_id,
+        "state": "created",
+        "doi": None,
+        "html_url": created["links"].get("html"),
+        "uploaded_bytes": 0,
+    }
+    if checkpoint:
+        checkpoint(result.copy())
 
     bucket = created["links"]["bucket"]
     filename = f"{model_id}-package.json.gz"
-    payload = _asset_bytes(deposition, token=token)
-    _request("PUT", f"{bucket}/{filename}", token=token, data=payload)
+    uploaded = _request("PUT", f"{bucket}/{filename}", token=token, data=payload)
+    _verify_upload_response(uploaded, payload)
+    result["state"] = "uploaded"
+    result["uploaded_bytes"] = len(payload)
+    if checkpoint:
+        checkpoint(result.copy())
 
     updated = _request(
         "PUT",
@@ -108,14 +169,10 @@ def deposit_one(
         payload={"metadata": deposition["metadata"]},
     )
 
-    result = {
-        "model_id": model_id,
-        "deposition_id": deposition_id,
-        "state": "draft",
-        "doi": updated.get("metadata", {}).get("prereserve_doi", {}).get("doi"),
-        "html_url": created["links"].get("html"),
-        "uploaded_bytes": len(payload),
-    }
+    result["state"] = "draft"
+    result["doi"] = updated.get("metadata", {}).get("prereserve_doi", {}).get("doi")
+    if checkpoint:
+        checkpoint(result.copy())
 
     if publish:
         published = _request(
@@ -126,6 +183,8 @@ def deposit_one(
         result["state"] = "published"
         result["doi"] = published.get("doi", result["doi"])
         result["concept_doi"] = published.get("conceptdoi")
+        if checkpoint:
+            checkpoint(result.copy())
 
     return result
 
@@ -157,19 +216,52 @@ def _load_depositions(only: tuple[str, ...]) -> list[dict[str, Any]]:
     return depositions
 
 
-def _existing_results(target: str) -> dict[str, dict[str, Any]]:
-    """Load prior deposit results for *target*, keyed by model ID.
-
-    Results from a different target are discarded: sandbox deposition IDs are
-    meaningless against production and must not be carried across.
-    """
+def _stored_targets() -> dict[str, dict[str, Any]]:
+    """Load all saved targets, migrating the original single-target format."""
 
     if not RESULTS_PATH.exists():
         return {}
     stored = json.loads(RESULTS_PATH.read_text())
-    if stored.get("target") != target:
-        return {}
-    return {item["model_id"]: item for item in stored.get("results", [])}
+    targets = stored.get("targets")
+    if isinstance(targets, dict):
+        return targets
+    target = stored.get("target")
+    if isinstance(target, str):
+        return {
+            target: {
+                "api": stored.get("api"),
+                "results": stored.get("results", []),
+            }
+        }
+    return {}
+
+
+def _existing_results(target: str) -> dict[str, dict[str, Any]]:
+    """Load prior deposit results for *target*, keyed by model ID.
+
+    Results from a different target are not returned: sandbox deposition IDs
+    are meaningless against production. They remain preserved in the file.
+    """
+
+    target_data = _stored_targets().get(target, {})
+    return {item["model_id"]: item for item in target_data.get("results", [])}
+
+
+def _write_results(target: str, api: str, results: dict[str, dict[str, Any]]) -> None:
+    """Atomically checkpoint one target without discarding the other target."""
+
+    targets = _stored_targets()
+    targets[target] = {
+        "api": api,
+        "results": [results[key] for key in sorted(results)],
+    }
+    document = {
+        "schema_version": "synthpopcan-zenodo-deposit-results-v2",
+        "targets": targets,
+    }
+    temporary = RESULTS_PATH.with_suffix(".json.tmp")
+    temporary.write_text(json.dumps(document, indent=2, sort_keys=True) + "\n")
+    temporary.replace(RESULTS_PATH)
 
 
 @click.command()
@@ -230,27 +322,36 @@ def main(production: bool, publish: bool, dry_run: bool, only: tuple[str, ...]) 
     results = _existing_results(target)
     for item in depositions:
         model_id = item["synthpopcan"]["model_id"]
+        if model_id in results:
+            existing = results[model_id]
+            click.echo(
+                f"Skipping {model_id}: already recorded as "
+                f"{existing.get('state', 'unknown')} id="
+                f"{existing.get('deposition_id', 'unknown')}."
+            )
+            continue
         click.echo(f"Depositing {model_id} to {target} …")
         should_publish = publish and click.confirm(
             f"  Publish {model_id}? This cannot be undone", default=False
         )
-        result = deposit_one(item, api=api, token=token, publish=should_publish)
+
+        def checkpoint(
+            result: dict[str, Any], checkpoint_model_id: str = model_id
+        ) -> None:
+            results[checkpoint_model_id] = result
+            _write_results(target, api, results)
+
+        result = deposit_one(
+            item,
+            api=api,
+            token=token,
+            publish=should_publish,
+            checkpoint=checkpoint,
+        )
         results[model_id] = result
         click.echo(f"  {result['state']} id={result['deposition_id']}")
 
-    RESULTS_PATH.write_text(
-        json.dumps(
-            {
-                "schema_version": "synthpopcan-zenodo-deposit-results-v1",
-                "target": target,
-                "api": api,
-                "results": [results[key] for key in sorted(results)],
-            },
-            indent=2,
-            sort_keys=True,
-        )
-        + "\n"
-    )
+    _write_results(target, api, results)
     click.echo(f"\nWrote {RESULTS_PATH.relative_to(ROOT)}")
     click.echo(
         "Add a hasPart related identifier on the software record for each "

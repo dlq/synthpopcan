@@ -60,6 +60,10 @@ def test_deposition_uses_an_attribution_preserving_licence() -> None:
 
     assert deposition["metadata"]["license"] == "cc-by-4.0"
     assert deposition["metadata"]["access_right"] == "open"
+    description = deposition["metadata"]["description"]
+    assert "SynthPopCan-authored model material" in description
+    assert "does not replace conditions" in description
+    assert "Statistics Canada Open Licence" in description
 
 
 def test_deposition_credits_the_same_authors_as_citation_metadata() -> None:

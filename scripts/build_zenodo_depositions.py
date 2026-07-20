@@ -50,9 +50,10 @@ _PUMF_SOURCES = {
     },
 }
 
-# The Open Licence permits sublicensing "under terms consistent with this
-# licence". CC-BY-4.0 preserves the attribution requirement; the Statistics
-# Canada notice itself is carried verbatim in the description.
+# CC BY 4.0 describes the SynthPopCan-authored model package. It does not replace
+# the continuing Statistics Canada Open Licence conditions on any incorporated
+# source Information; the record carries both the required notice and that
+# distinction. Revisit the controlled-vocabulary choice after informed review.
 _LICENSE = "cc-by-4.0"
 
 _SOFTWARE_REPOSITORY = "https://github.com/dlq/synthpopcan"
@@ -76,11 +77,15 @@ def _description(entry: dict[str, Any], metadata: dict[str, Any]) -> str:
             f"<strong>Conditioning columns:</strong> {conditions}<br>"
             f"<strong>Package version:</strong> {entry['release_version']}</p>",
             f"<p><strong>Source attribution.</strong> {entry['provenance']}</p>",
-            "<p><strong>Source licence.</strong> The "
+            "<p><strong>Licences.</strong> SynthPopCan-authored model material "
+            "is offered under the Creative Commons Attribution 4.0 licence. The "
+            "licence does not replace conditions that continue to apply to any "
+            "incorporated Statistics Canada Information. The "
             f'<a href="{source["url"]}">source file</a> is released under the '
             f'<a href="{entry["source_licence"]}">Statistics Canada Open '
-            "Licence</a>, which permits distributing value-added products that "
-            "carry the attribution above.</p>",
+            "Licence</a>; retain its required attribution above and comply with "
+            "its accuracy, non-identification, non-misrepresentation, and "
+            "no-endorsement conditions.</p>",
             "<p><strong>Disclosure review.</strong> "
             f"{entry['privacy']} Review status: "
             f"{entry['privacy_review_status']}. Passing SynthPopCan's "

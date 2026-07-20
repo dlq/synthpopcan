@@ -47,6 +47,17 @@ def test_citation_metadata_matches_release() -> None:
         f"date {entry.group(1)} for {synthpopcan.__version__}"
     )
 
+    version_identifier = re.search(
+        rf"value:\s*(\S+)\n\s+description: Version DOI for the archived "
+        rf"{re.escape(synthpopcan.__version__)} release\.",
+        citation,
+    )
+    assert version_identifier, "CITATION.cff should identify this release's DOI"
+    primary_dois = re.findall(r"^\s*doi:\s*(\S+)", citation, re.MULTILINE)
+    assert primary_dois == [version_identifier.group(1)] * 2, (
+        "the versioned software and preferred citation should use the version DOI"
+    )
+
 
 def test_zenodo_metadata_is_valid_and_drift_free() -> None:
     """Guard the archive record metadata Zenodo actually uses.
