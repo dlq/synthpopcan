@@ -2,7 +2,7 @@
 
 Status: planned\
 Created: 2026-07-15\
-Last updated: 2026-07-15\
+Last updated: 2026-07-19\
 Target: `0.7.0`–`0.7.3`\
 Next action: complete safe source-level profiles for every private and public
 candidate source before designing adapters or inspecting private records\
@@ -173,6 +173,10 @@ synthetic identifiers and versioned geography/location identifiers.
 - Define aggregate, spatial, probabilistic, and record-level linkage classes.
 - Add reviewed fine-area placement primitives and boundary concordance reports.
 - Prove through tests that enrichment cannot mutate the base population.
+- Apply CARE principles and, where First Nations data or knowledge are in
+  scope, OCAP-informed review alongside FAIR practice; record authority,
+  collective benefit, control, responsibility, ethics, community expectations,
+  and limits on reuse rather than treating open licensing as sufficient.
 
 ### 0.7.1: Spatial and environmental layers
 

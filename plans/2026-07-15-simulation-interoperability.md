@@ -257,6 +257,10 @@ stacks do not become mandatory SynthPopCan runtime dependencies.
 - Publish small synthetic bundles covering person/household only; geography and
   locations; activities; and multilayer networks.
 - Provide generic Python/pandas loading examples without simulator dependencies.
+- Map each interchange/run bundle to an RO-Crate profile so its people,
+  software version, inputs, outputs, licences, checksums, provenance, and
+  validation evidence can travel as one standards-based research object; keep
+  the native SynthPopCan manifest authoritative until the mapping is validated.
 
 ### 0.8.1: Initial table and Python adapters
 

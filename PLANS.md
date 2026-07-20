@@ -1,7 +1,7 @@
 # SynthPopCan Plan
 
 Status: release-phased roadmap\
-Last updated: 2026-07-18\
+Last updated: 2026-07-19\
 Current release: `0.6.1`
 
 ## Current Focus
@@ -12,6 +12,7 @@ Start here. Open a linked implementation plan only when working on that area.
 | --- | --- | --- |
 | Released | `0.6.1` stabilizes the linked household/person/geography contract, adds explicit 2021 Census support, and hardens durable model generation and browser sequencing. | [GitHub Release](https://github.com/dlq/synthpopcan/releases/tag/v0.6.1) |
 | Correctness | Preserve and extend the correctness-assurance gate in priority order. | [Correctness plan](plans/2026-07-12-correctness-assurance.md) |
+| Research-software stewardship | Make releases citable, persistently archived, reproducible, governed, and legible to scientific-software and digital-humanities communities. | [Research-software stewardship plan](plans/2026-07-19-research-software-stewardship.md) |
 | Later `0.7.x`–`0.8.x` | Add governed enrichment layers, then hand validated generated data to external simulation platforms without implementing population simulation in SynthPopCan. | [Plan index](plans/README.md) |
 | Far future, after `0.8.x` | Research optional, compositional public-health simulation only after the population, enrichment, and interchange contracts are stable; do not commit to one simulation platform. | [Far-future direction](#far-future-compositional-public-health-simulation) |
 
@@ -44,6 +45,9 @@ Principles:
   placement or accessibility analysis is needed.
 - Distinguish software correctness, statistical fitness, disclosure-risk checks,
   and human review.
+- Treat the software, its versioned methods, and its generated research objects
+  as citable scholarly outputs with persistent identifiers, reproducible
+  provenance, and explicit stewardship and governance.
 
 Completed release notes belong in [CHANGELOG.md](CHANGELOG.md), research
 background in [NOTES.md](NOTES.md), and detailed tasks in [`plans/`](plans/).
@@ -513,7 +517,8 @@ that static accessibility or counterfactual analysis is insufficient.
 | Testing | Prefer correctness evidence over defensive-branch coverage; keep default tests public and deterministic, with live StatCan/full-data checks opt-in. |
 | Documentation | Keep workflow examples synchronized with tested CLI help; add contributor internals only when useful. |
 | Bilingualism | Progressively provide English/French interfaces, documentation, data dictionaries, and descriptive metadata; preserve authoritative source language and translation provenance, stable language-neutral identifiers, explicit fallback, and tested parity. |
-| Releases | Align tags, PyPI, Read the Docs, release notes, checksums, model provenance, installed-wheel smoke tests, and model-fetch checks; later add automatic Zenodo publication for versioned archival releases and DOI metadata. |
+| Research software | Apply the linked stewardship plan: FAIR4RS self-assessment, software citation, archival identifiers, a software management plan, community engagement, and appropriate data governance. |
+| Releases | Align tags, PyPI, Read the Docs, release notes, checksums, model provenance, installed-wheel smoke tests, and model-fetch checks; add automatic Zenodo publication, version/concept DOI metadata, and Software Heritage archival identifiers. |
 
 ## Open Decisions
 
