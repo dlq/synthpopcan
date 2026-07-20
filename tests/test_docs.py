@@ -10,7 +10,41 @@ from pathlib import Path
 
 import click
 
+import synthpopcan
 from synthpopcan.cli import cli
+
+
+def test_citation_metadata_matches_release() -> None:
+    """Keep CITATION.cff in step with the package version and changelog date.
+
+    Zenodo builds its archived record from this file, so any drift here is
+    baked into the citation metadata for that release's DOI.
+    """
+
+    citation = Path("CITATION.cff").read_text()
+    versions = re.findall(r'^\s*version:\s*"([^"]+)"', citation, re.MULTILINE)
+    dates = re.findall(r"^\s*date-released:\s*(\S+)", citation, re.MULTILINE)
+
+    assert versions, "CITATION.cff should declare a version"
+    for version in versions:
+        assert version == synthpopcan.__version__, (
+            f"CITATION.cff version {version} does not match package version "
+            f"{synthpopcan.__version__}"
+        )
+
+    assert len(set(dates)) == 1, f"CITATION.cff release dates disagree: {dates}"
+
+    changelog = Path("CHANGELOG.md").read_text()
+    entry = re.search(
+        rf"^## {re.escape(synthpopcan.__version__)} - (\S+)",
+        changelog,
+        re.MULTILINE,
+    )
+    assert entry, f"CHANGELOG.md has no entry for {synthpopcan.__version__}"
+    assert dates[0] == entry.group(1), (
+        f"CITATION.cff date-released {dates[0]} does not match the CHANGELOG "
+        f"date {entry.group(1)} for {synthpopcan.__version__}"
+    )
 
 
 def test_helper_modules_declare_public_exports() -> None:

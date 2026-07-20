@@ -20,6 +20,10 @@ artifact.
 
 1. Confirm `pyproject.toml` has the intended version.
 
+1. Update `CITATION.cff` so both `version` fields and both `date-released`
+   fields match the release. Zenodo builds its archived record from this file,
+   so drift here is baked into the citation metadata for that DOI.
+
 1. Commit the release changes.
 
 1. Create an annotated release tag from the verified release commit.
