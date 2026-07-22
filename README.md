@@ -20,10 +20,15 @@ Canada.
 Near-term goals:
 
 1. Provide a Python library and CLI that can create synthetic populations through IPF from Statistics Canada margin/control tables.
-1. Build census microdata workflows for household- and person-level synthetic populations using a tree-based synthetic population generator plus calibration. The local 2016 Census material is the first available microdata source, but the tooling should be census-year agnostic.
+1. Maintain explicit 2016 and 2021 Census microdata workflows for household-
+   and person-level synthetic populations using tree-based generation plus
+   calibration, while keeping source adapters and metadata appropriately
+   census-vintage-specific.
 1. Maintain a local web app for configuring runs, inspecting controls, generating from prepared models, validating outputs, and downloading results.
 
-Broader SynthEco-style enrichment with cohort, environmental, school, healthcare, and food-access layers is intentionally deferred until the base population synthesis workflow is stable.
+Broader SynthEco-style enrichment with cohort, environmental, school,
+healthcare, and food-access layers is planned for the `0.7.x` line, building on
+the released population-synthesis, correctness, runtime, and schema foundation.
 
 Detailed documentation is published at
 <https://synthpopcan.readthedocs.io/>. The source files live under

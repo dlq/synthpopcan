@@ -1,7 +1,7 @@
 # SynthPopCan Plan
 
 Status: release-phased roadmap\
-Last updated: 2026-07-20\
+Last updated: 2026-07-22\
 Current release: `0.6.2`
 
 ## Current Focus
@@ -13,6 +13,7 @@ Start here. Open a linked implementation plan only when working on that area.
 | Released | `0.6.2` adds citation, licensing, and Zenodo archival metadata on top of the `0.6.1` linked-schema and 2021 Census work. | [GitHub Release](https://github.com/dlq/synthpopcan/releases/tag/v0.6.2) |
 | Correctness | Preserve and extend the correctness-assurance gate in priority order. | [Correctness plan](plans/2026-07-12-correctness-assurance.md) |
 | Research-software stewardship | Make releases citable, persistently archived, reproducible, governed, and legible to scientific-software and digital-humanities communities. | [Research-software stewardship plan](plans/2026-07-19-research-software-stewardship.md) |
+| Dissemination and publication | Introduce the project through a small number of well-matched Canadian open-data, research-software, digital-humanities, Python, and public-health communities; prepare for a JOSS submission as the software demonstrates independent scholarly use. | [Community and JOSS track](plans/2026-07-19-research-software-stewardship.md#discoverability-community-engagement-and-scholarly-publication) |
 | Later `0.7.x`–`0.8.x` | Add governed enrichment layers, then hand validated generated data to external simulation platforms without implementing population simulation in SynthPopCan. | [Plan index](plans/README.md) |
 | Far future, after `0.8.x` | Research optional, compositional public-health simulation only after the population, enrichment, and interchange contracts are stable; do not commit to one simulation platform. | [Far-future direction](#far-future-compositional-public-health-simulation) |
 
@@ -521,7 +522,7 @@ that static accessibility or counterfactual analysis is insufficient.
 | Testing | Prefer correctness evidence over defensive-branch coverage; keep default tests public and deterministic, with live StatCan/full-data checks opt-in. |
 | Documentation | Keep workflow examples synchronized with tested CLI help; add contributor internals only when useful. |
 | Bilingualism | Progressively provide English/French interfaces, documentation, data dictionaries, and descriptive metadata; preserve authoritative source language and translation provenance, stable language-neutral identifiers, explicit fallback, and tested parity. |
-| Research software | Apply the linked stewardship plan: FAIR4RS self-assessment, software citation, archival identifiers, a software management plan, community engagement, and appropriate data governance. |
+| Research software | Apply the linked stewardship plan: FAIR4RS self-assessment, software citation, archival identifiers, a software management plan, focused community engagement, JOSS readiness, and appropriate data governance. |
 | Releases | Align tags, PyPI, Read the Docs, release notes, checksums, model provenance, installed-wheel smoke tests, and model-fetch checks; preserve GitHub-to-Zenodo archiving and DOI metadata, harden/automate model deposits after review, and add Software Heritage archival identifiers. |
 
 ## Open Decisions

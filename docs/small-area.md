@@ -431,7 +431,7 @@ Important options:
 
 - `--geo-level`: boundary geography to prepare. Supported values include `ct`,
   `ada`, `da`, `csd`, `cd`, and `pr` for 2016. The current 2021 catalogue
-  supports the national `ct` and `ada` products.
+  supports the national `ct`, `ada`, and `csd` products.
 - `--census-year`: boundary vintage, either `2016` (the default for backward
   compatibility) or `2021`.
 - `--out-dir`: directory for the prepared GeoJSON file.

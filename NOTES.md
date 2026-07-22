@@ -8,38 +8,46 @@ This note synthesizes project source material reviewed locally, along with
 recent external work relevant to a narrower near-term goal:
 
 1. Build a Python library, CLI, and web app that can create a synthetic population through IPF from arbitrary Statistics Canada margin/control tables.
-1. Build a second workflow that creates household- and person-level synthetic populations with a tree-based synthetic population generator for geographic subregions using Canadian 2016 Census data.
+1. Build a second workflow that creates household- and person-level synthetic
+   populations with a tree-based synthetic population generator for geographic
+   subregions using explicit Canadian 2016 and 2021 Census source profiles.
 1. Leave broader SynthEco ecosystem enrichment, cohort attachment, and simulation work for later.
 
-Current codebase status, 2026-07-14:
+Current codebase status, 2026-07-22:
 
 - The active roadmap is now `PLANS.md`; this file is the research and design
   notes companion.
-- The Python library, Click CLI, local web app, Sphinx docs, and fixture tests
-  are implemented; the consolidated CLI and API are released as v0.5.0.
+- The Python library, Click CLI, durable FastAPI/Uvicorn local web app, Sphinx
+  docs, and correctness suite are implemented; the current release is v0.6.2.
 - IPF from normalized controls, StatCan WDS source discovery/normalization,
   microdata adapters, linked household/person model generation, validation,
-  prepared-model web generation, and small-area linked synthesis all have
-  working surfaces.
+  prepared-model generation, and small-area linked synthesis all share working
+  Python-backed CLI, library, or local-web surfaces as appropriate.
 - The small-area linked synthesis MVP can assign linked
   household/person candidates to census tracts and aggregate dissemination
-  areas using Census Profile controls, with a prepared model catalogue covering
-  all provinces, territories, and major CMAs.
+  areas using Census Profile controls. The 33-entry prepared-model catalogue
+  contains a fictional demo plus parallel 2016 and 2021 packages for Canada,
+  nine provinces, five PUMF-coded CMAs, and minimal Prince Edward Island
+  packages; territorial and broader CMA packages remain open work.
 - Small-area fitting can optionally refine household weights against linked
   person controls while preserving whole-household assignment, with diagnostics
   that separate fractional fit from integerized residuals.
-- The local web app now guides IPF, prepared-model generation, and small-area
-  preflight. Large small-area execution remains CLI-first until the durable job
-  runtime planned for 0.6.x exists.
+- The local web app guides durable backend IPF, prepared-model, and small-area
+  runs with streamed uploads, progress, cancellation, recovery, bounded
+  previews, and reproducible CLI handoff. Large results remain on disk rather
+  than being loaded into browser memory.
+- The linked household/person/geography output contract is versioned, explicit
+  2016 and 2021 PUMF adapters and prepared models are available, and releases
+  and model packages have citation metadata and archival DOIs.
 - The older phase sketch near the end of this file should be read as research
   background, not the live implementation checklist.
 
 Research questions tracked by this note:
 
-- Add a source-access note for newer Canadian census/public-use microdata
-  products, especially 2021 and later formats, so future adapters are based on
-  documented product differences rather than assumptions from the local 2016
-  files.
+- Keep the source-access and correction notes for 2016 and 2021 Canadian
+  census/public-use microdata current, and research later vintages before
+  implementing them so adapters follow documented product differences rather
+  than assumptions carried forward from either supported year.
 - Add Canadian disclosure-control and dissemination guidance to the privacy
   section before calling any restricted-source model package publicly
   publishable. The current notes cover model privacy literature, but the release
@@ -47,10 +55,11 @@ Research questions tracked by this note:
 - Add a focused note on calibration controls for generated household/person
   model outputs: which StatCan tables are appropriate, which universes must not
   be mixed, and when a control implies an enrichment step rather than IPF.
-- Keep watching for maintained Python/browser-side population-synthesis or
-  tabular-synthesis implementations, especially ones that publish reusable
-  JavaScript/WebAssembly modules, because the web app is intended to remain as
-  frontend-first as practical.
+- Keep watching for maintained population- and tabular-synthesis
+  implementations that could improve correctness, performance, or
+  interoperability. The browser is now a guided client over shared Python
+  workflows, so a browser-side implementation would need a concrete benefit
+  and parity evidence rather than being an architectural goal by itself.
 
 Recent research findings, 2026-06-24:
 
@@ -65,9 +74,10 @@ Recent research findings, 2026-06-24:
 - The 2021 individuals PUMF page says the file is a 2.7% anonymous-response
   sample with 144 variables, restricted geography at provinces/territories and
   metropolitan areas, and both ASCII and CSV data plus SAS/SPSS/Stata source
-  code. It also has a correction notice for the `IMMCAT5` metadata labels. Any
-  future 2021 adapter should record product corrections in provenance metadata
-  and should not assume that metadata labels are immutable.
+  code. It also has a correction notice for the `IMMCAT5` metadata labels. The
+  implemented 2021 adapter and prepared-model provenance therefore treat the
+  corrected v2 product as a distinct source and do not assume metadata labels
+  are immutable.
 - The 2021 hierarchical PUMF is listed as released after the 2021 individuals
   file, and the main PUMF page has a correction notice for `STIR_GRP` in the
   hierarchical file. That is a practical warning for SynthPopCan: model
@@ -95,12 +105,13 @@ Recent research findings, 2026-06-24:
   SynthPopCan should not treat rounded/suppressed/public table cells as if they
   are exact confidential truth, and should avoid combining many overlapping
   rounded tables in a way that invites reconstruction claims.
-- Browser-first Python is more plausible than it looked earlier. Pyodide's
+- Browser-first Python is technically plausible. Pyodide's
   built package list currently includes relevant scientific packages such as
   NumPy, pandas, Polars, SciPy, scikit-learn, PyArrow, DuckDB, and XGBoost. That
-  does not make full model training in-browser a good default, but it means a
-  later Pyodide proof-of-concept for small IPF, validation, and prepared-model
-  generation is worth testing against the current pure-JavaScript worker.
+  does not make full model training in-browser a good default. SynthPopCan has
+  since selected durable Python backend workflows and removed the duplicate
+  JavaScript synthesis tier; revisit Pyodide only for a concrete offline or
+  distribution use case, measured against the shared backend contract.
 
 Sources for this follow-up:
 
@@ -117,7 +128,11 @@ Sources for this follow-up:
 The main conclusion is that these should be treated as two related but distinct engines:
 
 - A **general margin-table IPF engine** for arbitrary StatCan tables, where the user supplies or selects a margin table and the system constructs a fitted joint distribution against a seed sample or prior.
-- A **2016 Census household/person engine** that uses the Canadian 2016 PUMF individual and hierarchical files, Census Profile controls, and geography-specific constraints. Tree models should generate realistic conditional household/person records, but they should be followed by calibration or constrained sampling so outputs match census controls.
+- A **census-vintage household/person engine** with explicit 2016 and 2021 PUMF
+  adapters, Census Profile controls, and geography-specific constraints. Tree
+  models generate plausible conditional household/person records and can be
+  followed by calibration or constrained sampling so compatible outputs match
+  selected census controls.
 
 ## Local Source Material Reviewed
 
@@ -236,7 +251,12 @@ Inventory observed locally:
   - `data_donnees_2016_hier.csv`, 343,330 rows, 116 columns
   - includes `HH_ID`, `EF_ID`, `CF_ID`, and `PP_ID`, making it crucial for household/person relationship modeling.
 
-The 2016 hierarchical PUMF should be treated as the first real household/person microdata input shape: a single person-row file with household, economic-family, census-family, and person identifiers. Separate household/person CSVs are useful as normalized outputs or small fixtures, but they should not be the assumed StatCan input shape.
+The 2016 and 2021 hierarchical PUMFs are the supported real
+household/person microdata input shapes: person-row files with household,
+economic-family, census-family, and person identifiers, interpreted through
+separate vintage-specific adapters. Separate household/person CSVs are useful
+as normalized outputs or small fixtures, but they should not be assumed to be
+the native Statistics Canada input shape.
 
 ### Local 2021 Census Data
 

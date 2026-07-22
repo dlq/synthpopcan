@@ -4,6 +4,12 @@ All notable public changes to SynthPopCan are tracked here.
 
 ## Unreleased
 
+- Refresh the research notes and public documentation for the released durable
+  Python runtime, explicit 2016/2021 Census support, current 33-entry model
+  catalogue, and national 2021 CSD boundaries.
+- Add a focused bilingual community-introduction and JOSS-readiness track to
+  the research-software stewardship roadmap.
+
 ## 0.6.2 - 2026-07-20
 
 Citation, licensing, and archival release.

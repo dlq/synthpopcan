@@ -2,11 +2,11 @@
 
 Status: planned and ongoing\
 Created: 2026-07-19\
-Last updated: 2026-07-20\
+Last updated: 2026-07-22\
 Target: immediate maintenance, `0.7.x`, `0.8.x`, and maturity follow-ons\
 Next action: add full CFF schema validation, review the licence representation
-and safe automation of model archives, then register important releases with
-Software Heritage\
+and safe automation of model archives, prepare the focused bilingual community
+introduction, and register important releases with Software Heritage\
 Roadmap: [PLANS.md](../PLANS.md) | [Plan index](README.md)
 
 ## Purpose
@@ -95,6 +95,69 @@ actually needs them.
   Software Association of Canada where their training, preservation,
   sustainability, or community practices would materially help the project.
 
+## Discoverability, Community Engagement, And Scholarly Publication
+
+Treat dissemination as a staged effort to find users, reviewers, and research
+collaborators rather than a one-time publicity campaign. Do not imply that
+SynthPopCan simulates health outcomes: it generates and validates synthetic
+populations that can support downstream public-health, social-science,
+accessibility, and service-planning research.
+
+### Focused community introduction
+
+- Prepare one concise English/French project introduction with the repository,
+  documentation, PyPI installation, Zenodo DOI, current limitations, a concrete
+  reproducible Census 2021 example, and a specific request for feedback.
+- Introduce the project first through a small number of well-matched venues:
+  Canadian civic/open-data communities such as Civic Tech Toronto, Code the
+  North or Code for Montreal, and the Canadian Open Data Society; Canadian and
+  international research-software communities including RSCAN and ReSA;
+  CSDH/SCHN and related computational social-science or digital-humanities
+  networks; and PyData Montreal or Montreal Python for a technical demo.
+- Seek direct feedback from Canadian public-health, health-geography,
+  accessibility, food-environment, education, and health-services researchers
+  once a use case speaks to their work. Prefer targeted conversations and
+  demonstrations to undifferentiated promotion.
+- Use the maintainer's professional channels and an appropriate Python project
+  showcase to make the initial release discoverable, but avoid posting the same
+  bare repository link across many communities.
+- Record which audiences respond, what they try, and what blocks independent
+  use. Convert repeated findings into documentation, interoperability, data,
+  or correctness tasks rather than optimizing for raw traffic.
+
+### JOSS preparation
+
+Treat a Journal of Open Source Software paper as a serious near-to-medium-term
+scholarly publication goal, with submission timing determined by readiness
+rather than an arbitrary release number. Before submitting:
+
+- confirm that the software meets JOSS scope and substantial-scholarly-effort
+  expectations, and that the paper makes a clear claim about the research
+  problem solved rather than repeating the user documentation;
+- demonstrate credible research use, preferably including an independent user,
+  collaborator, citation, application, or reproducible case study beyond the
+  maintainer's own development examples;
+- keep the public repository, OSI-compatible software licence, contributor and
+  governance guidance, issue history, tests, correctness claims, documentation,
+  examples, citation metadata, releases, and archived DOI in reviewable shape;
+- prepare a compact JOSS paper describing purpose, domain context, method,
+  architecture, validation and correctness evidence, limitations, related
+  software, and research impact, with claims carefully separated from domain
+  validation, privacy assurance, and causal inference;
+- ensure a reviewer can install a released package, reproduce a representative
+  2016/2021 workflow from public-safe inputs, inspect its provenance and
+  validation evidence, and understand any data-access or licensing boundary;
+  and
+- conduct a pre-submission review against the current JOSS author guidelines
+  and checklist, resolve avoidable documentation or packaging gaps, and identify
+  appropriate domain expertise for peer review without attempting to select or
+  influence reviewers improperly.
+
+Community introduction and JOSS preparation reinforce each other: early users
+provide evidence of usability and scholarly relevance, while publication
+readiness improves the materials those users need. Neither substitutes for
+method-specific validation or responsible review of generated populations.
+
 ## 0.7.x: Data And Knowledge Governance
 
 - Integrate bilingual source metadata and terminology provenance with the
@@ -132,13 +195,10 @@ Detailed implementation belongs in the
 
 ## Maturity Follow-ons
 
-- Consider a Journal of Open Source Software submission once the API and
-  methods are stable, research use and contribution are demonstrable, tests and
-  documentation support independent use, and the paper can make a clear
-  scholarly contribution claim.
-- Treat a JOSS paper as peer review and discoverability for the software, not
-  as a substitute for domain validation or papers supporting individual
-  scientific results.
+- Submit to JOSS when the preparation criteria above are met and the software
+  has a defensible scholarly-use story; treat peer review and discoverability
+  as complements to, not substitutes for, domain validation or papers
+  supporting individual scientific results.
 - Establish sustainable maintainer succession, documented release authority,
   and an archival/end-of-life path before institutional or community reliance
   grows.
@@ -159,6 +219,9 @@ Detailed implementation belongs in the
   interchange contract.
 - Any future JOSS submission reflects an independently usable, documented,
   tested, archived, and adopted research-software contribution.
+- A focused bilingual project introduction and reproducible demonstration have
+  been shared with relevant communities, and substantive feedback has been
+  captured as issues, documentation changes, or roadmap decisions.
 
 ## References
 
