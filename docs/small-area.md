@@ -748,3 +748,8 @@ guarantees a good result.
 - Chapuis, Taillandier, and Drogoul's [review of synthetic-population methods and
   practices](https://doi.org/10.18564/jasss.4762) surveys later approaches and
   their use in social simulation.
+- Prédhumeau and Manley's [Canadian national synthetic-population
+  study](https://doi.org/10.1038/s41597-023-02030-4) demonstrates province-by-province
+  DA synthesis and validates a projected 2021 population at DA, city, and
+  national scales; its [dataset record](https://doi.org/10.5281/zenodo.7572117)
+  documents the released years, scenarios, files, and licence.

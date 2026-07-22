@@ -295,6 +295,23 @@ the release that introduces that behavior.
 - Expand independent public reference workflows beyond the initial Yukon WDS
   fixture, including multi-dimensional controls and a linked household/person
   example reviewed separately from the implementation.
+- Add an opt-in external reference workflow for the
+  [Prédhumeau–Manley national Canadian synthetic population](https://doi.org/10.1038/s41597-023-02030-4).
+  Begin with versioned metadata, checksums, a documented schema crosswalk, and
+  a small reviewed slice; do not make the full 9.6 GB dataset a routine test
+  dependency. Treat the published population as a comparison artifact rather
+  than observed truth.
+- Define an explicit zero-cell policy that distinguishes structural zeros from
+  sampling zeros. Require any support repair to be selected deliberately,
+  recorded in provenance, and checked for impossible combinations.
+- Add multi-scale validation summaries at target geography, CSD/CMA where
+  applicable, province/territory, and national levels. Report error
+  distributions and rare-category results alongside aggregate correlations and
+  residuals.
+- Compare deterministic systematic integerization with QISI on public,
+  reviewable fixtures. Measure requested and realized margin residuals,
+  reproducibility, runtime, memory, and sparse-candidate behaviour before
+  considering another production backend.
 - Add macOS and Windows compatibility evidence for supported workflows, while
   retaining Linux/Python 3.11 and 3.12 as required pull-request checks.
 - Permanently attach correctness reports, checksums, dependency provenance, and
@@ -364,8 +381,11 @@ paths where the research question requires them:
 
 The first DA implementation should prove bounded province-scale preparation,
 control extraction, calibration, validation, and mapping before attempting a
-national run. Ecosystem enrichment in `0.7.x` should then choose CSD or DA per
-layer and research purpose rather than forcing all sources onto one geography.
+national run. Build national execution as restartable province/territory
+batches with per-batch manifests, checkpoints, and diagnostics, followed by an
+aggregate national validation report; do not implement it as one monolithic
+fit. Ecosystem enrichment in `0.7.x` should then choose CSD or DA per layer and
+research purpose rather than forcing all sources onto one geography.
 
 Completion criteria:
 

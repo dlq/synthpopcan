@@ -89,6 +89,67 @@ notes, quality flags, different universes, and different geography levels. These
 are not annoyances around the edge. They shape what a synthetic population can
 honestly claim.
 
+### A Nationwide Canadian Case Study
+
+Manon Prédhumeau and Ed Manley's 2023 study, [*A synthetic population for
+agent-based modelling in Canada*](https://doi.org/10.1038/s41597-023-02030-4),
+is an important comparison for SynthPopCan. Its accompanying [open dataset on
+Zenodo](https://doi.org/10.5281/zenodo.7572117) contains DA-level synthetic
+people linked into households for 2016 and for nine projection scenarios in
+2021, 2023, and 2030. Version 2.1.0 is a 9.6 GB archive organized into 364 CSV
+files by province or territory.
+
+The workflow is instructive because it makes the stages of national population
+synthesis visible. It builds a 2016 person population province by province and
+DA by DA from the Individual PUMF and Census Profile controls. It combines IPF
+with **Quasirandom Integer Sampling** (QISI) to obtain whole people while
+preserving selected margins. It then projects age-by-sex populations using
+provincial scenarios, assigns people to households, and infers simplified
+household types.
+
+Several findings matter beyond this particular dataset:
+
+- **National DA-level synthesis is feasible, but it is not one fit.** The
+  national result is assembled from many local fits and later construction
+  stages. We therefore need diagnostics by geography and stage, not only a
+  national total.
+- **Controls require interpretation before fitting.** The study harmonizes
+  categories between PUMF and Census Profile sources and adjusts rounded or
+  incomplete subtotals to a common DA total. It also assigns children to broad
+  education, labour-force, and income categories so margins cover the same
+  population. Those are methodological decisions about category meaning and
+  population universes, not neutral file cleaning.
+- **Empty cells require a declared policy.** The workflow gives zero seed
+  states a small probability so positive controls can be fitted. That can be a
+  practical treatment of sampling zeros, but it would be inappropriate for a
+  true structural zero. SynthPopCan should keep such repairs explicit and
+  reviewable.
+- **Linked households are another model layer.** People are synthesized first;
+  household membership and household type are assigned afterward using
+  household-size information and simplified age rules. Some people can remain
+  unassigned. A plausible person distribution therefore does not, by itself,
+  establish plausible household relationships.
+- **Projection can preserve yesterday's geography too strongly.** Provincial
+  age-and-sex resampling can update broad demographic totals while missing new
+  construction, demolition, institutional populations, seasonal change, and
+  local redistribution. The authors found large DA errors in places affected
+  by land-use change, and they identify stale income as another limitation.
+- **Validation needs several scales and several questions.** Their 2021
+  comparison uses correlation, normalized RMSE, and relative absolute error at
+  DA, city, and national levels. The paper reports strong aggregate results for
+  most categories, but weaker DA results for rare older age groups, low income,
+  large households, and less common household types. It also reports that 95.7%
+  of national synthetic attribute combinations exactly match a 2016 PUMF
+  combination. That is useful evidence of donor-like plausibility, but it is
+  not proof that each synthetic person, household, or local relationship is
+  historically true.
+
+This dataset is therefore a **valuable precedent and potential benchmark**, not
+a ground truth or a drop-in replacement for SynthPopCan. Its method differs
+from SynthPopCan's linked-candidate and calibration workflow, but its published
+schema, national scale, DA outputs, validation design, and documented failure
+cases give us concrete questions against which to test our own work.
+
 ## Two Families of Methods
 
 SynthPopCan currently separates two method families.
@@ -105,14 +166,16 @@ IPF cannot invent a missing variable, create a missing joint category, or fix
 controls that describe incompatible populations.
 
 ```{figure} _static/ipf-diagram.svg
-:alt: Three tables connected by arrows. The first table shows seed weights (4, 6, 3, 7) with row targets of 20 and 15 and column targets of 12 and 23 highlighted in blue. An arrow labelled IPF leads to the second table of fitted weights (5.9, 14.1, 6.1, 8.9) whose row and column sums match the targets exactly. A second arrow labelled integerize leads to the third table of integer counts (6, 14, 6, 9), with the fractional weights shown in small grey text. All margin totals are preserved.
+:alt: Three tables connected by arrows. The first table shows seed weights (4, 6, 3, 7) with row targets of 20 and 15 and column targets of 12 and 23 highlighted in blue. An arrow labelled IPF leads to the second table of fitted weights (7.7, 12.3, 4.3, 10.7) whose row and column sums match the targets exactly. A second arrow labelled integerize leads to the third table of integer counts (8, 12, 4, 11), with the fractional weights shown in small grey text. All margin totals remain exact in this example.
 :align: center
 
 IPF adjusts the seed weights (left) until each row sum and column sum matches
-the corresponding margin target (blue). The seed's proportional structure is
-preserved; only the scale of each cell changes. The final step converts
-fractional fitted weights into integer counts — a rounding decision that is
-separate from the fitting itself, but one that must preserve the margin totals.
+the corresponding margin target (blue). The same supported cells remain in the
+table, but their weights and proportions change; structural zeros remain zero.
+The final step converts fractional fitted weights into integer counts — a
+rounding decision that is separate from the fitting itself. This example
+preserves the margins, but integerization does not guarantee that result
+generally.
 ```
 
 The most important conceptual distinction is between fitting and realization.
@@ -310,6 +373,10 @@ commands, options, examples, and troubleshooting.
 - Robin Lovelace and Dimitris Ballas,
   [Truncate, replicate, sample](https://arxiv.org/abs/1303.5228),
   for integerizing spatial microsimulation weights.
+- Manon Prédhumeau and Ed Manley,
+  [A synthetic population for agent-based modelling in Canada](https://doi.org/10.1038/s41597-023-02030-4),
+  with the [versioned dataset](https://doi.org/10.5281/zenodo.7572117), for a
+  national DA-level Canadian case study and later-Census validation.
 - Floriana Gargiulo, Sonia Ternes, Sylvie Huet, and Guillaume Deffuant,
   [An iterative approach for generating statistically realistic populations of households](https://arxiv.org/abs/0912.2826).
 - The `synthpop` project,

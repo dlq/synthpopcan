@@ -507,3 +507,7 @@ rows.
 - Robin Lovelace and Dimitris Ballas,
   [Truncate, replicate, sample](https://arxiv.org/abs/1303.5228),
   for why integerizing IPF weights is a separate step with its own choices.
+- Manon Prédhumeau and Ed Manley,
+  [A synthetic population for agent-based modelling in Canada](https://doi.org/10.1038/s41597-023-02030-4),
+  for a Canadian national workflow that combines IPF with Quasirandom Integer
+  Sampling and documents category, total-reconciliation, and zero-cell choices.

@@ -60,6 +60,9 @@ Research questions tracked by this note:
   interoperability. The browser is now a guided client over shared Python
   workflows, so a browser-side implementation would need a concrete benefit
   and parity evidence rather than being an architectural goal by itself.
+- Evaluate the Prédhumeau-Manley national Canadian dataset as an external
+  schema, validation, and performance benchmark. Do not make its 9.6 GB archive
+  a default download or silently treat its generated records as observed truth.
 
 Recent research findings, 2026-06-24:
 
@@ -343,6 +346,117 @@ These should not drive the first population synthesis engine, but they are valua
 
 ## Recent External Work, 2021-2026
 
+### A National DA-Level Synthetic Population For Canada
+
+Prédhumeau and Manley (2023) provide the most directly comparable public
+Canadian result found so far: a national synthetic population of people linked
+to households, localized at the dissemination-area level. The paper is a
+*Scientific Data* data descriptor, the versioned 2.1.0 dataset is archived on
+Zenodo under CC BY 4.0, and the generation code has its own Zenodo archive.
+
+Sources:
+
+- Paper: https://doi.org/10.1038/s41597-023-02030-4
+- Dataset v2.1.0: https://doi.org/10.5281/zenodo.7572117
+- Generation code v2.0.0: https://doi.org/10.5281/zenodo.7569219
+
+Published artifact:
+
+- The dataset archive is 9.6 GB and contains 364 CSV files in 13
+  province/territory folders.
+- It includes a 2016 base population and nine projection scenarios for 2021,
+  2023, and 2030.
+- Each person row includes a household ID, sex, primary-household-maintainer
+  status, age group and age, DA code, education, labour-force status, household
+  size, income, and inferred household type.
+- The authors describe extraction by geographic hierarchy and downstream use
+  for agent-based modelling, policy scenarios, local-data enrichment, and
+  placement into residential geography.
+
+Method:
+
+1. Build a 2016 base population province by province and DA by DA from the
+   weighted Individual PUMF and Census Profile marginals.
+1. Use QISI, combining IPF with Quasirandom Integer Sampling, to generate whole
+   people while retaining the selected margins.
+1. Reconcile source categories and DA subtotals before fitting. The workflow
+   adjusts rounded or missing subtotals to the DA population and assigns ages
+   0-14 to broad education, labour-force, and income categories so those
+   variable totals cover the same population.
+1. Project the 2016 population to later years by province, scenario, age, and
+   sex, duplicating or deleting sampled people within age-sex groups.
+1. Create households around people identified as primary maintainers, complete
+   them using household-size and broad age information, and infer one of five
+   simplified household types from household size and member ages.
+
+Validation findings:
+
+- The 2021 projection is compared with the 2021 Census at DA, city, and national
+  levels using Pearson correlation, normalized RMSE, and relative absolute
+  error, as well as an exact-PUMF-combination plausibility check.
+- For almost all evaluated DA categories, the paper reports correlation above
+  0.9 and normalized RMSE below 1%. Half of DAs are within 9% relative absolute
+  error and 75% are within 14.55%, according to the paper's summary.
+- The national comparison reports that 95.7% of synthetic people have an
+  attribute combination exactly observed in the 2016 Individual PUMF. This is
+  evidence that the generated combinations are donor-like; it is not an
+  independent test of household linkage, local historical truth, or novelty.
+- Rare older age groups, income below $20,000, households with five or more
+  people, one-parent families, and the residual household-type category are
+  less reliable at DA level.
+- Large local errors can reflect land-use and institutional change between
+  censuses. The paper discusses a student-housing DA where 2016 counts,
+  projected 2021 counts, and observed 2021 dwelling counts differ sharply.
+- Income is carried forward from 2016 without a salary update, so age-sex
+  projection does not make every attribute current. The authors similarly note
+  changing education patterns and increasing uncertainty for longer horizons.
+- Household construction is explicitly approximate. Some people may retain
+  `HID=-1`, and simplified household-type rules do not fully represent shared
+  accommodation, complex families, large age-gap couples, institutions, or
+  relationships among all members.
+
+Implications for SynthPopCan:
+
+- **Geographic architecture:** this is strong evidence that province-batched,
+  DA-level national synthesis is a practical architecture. A country-wide run
+  should be an orchestrated collection of small-area fits with restartable
+  artifacts and aggregate diagnostics, not one monolithic fit.
+- **Control semantics:** category harmonization and total reconciliation need
+  provenance. SynthPopCan should report when it broadens a category, borrows a
+  provincial distribution, changes a subtotal, or changes the represented
+  population universe; it should not silently reproduce another study's
+  under-15 recodes.
+- **Zero cells:** assigning a small probability to empty seed states is a useful
+  sampling-zero strategy but can violate a structural zero. Any comparable
+  support-repair feature needs an explicit policy, audit trail, and validation.
+- **Integer realization:** QISI is a relevant comparison for SynthPopCan's
+  deterministic systematic integerization. Benchmark total and margin
+  residuals, reproducibility, runtime, memory, and sparse-candidate behaviour
+  before considering an alternative backend.
+- **Household modelling:** person-first heuristic household assignment provides
+  a useful contrast with SynthPopCan's linked-candidate approach. Benchmark
+  unassigned people, household-size fit, inferred type fit, age relationships,
+  and rare household signatures rather than comparing person margins alone.
+- **Projection:** future-year support should separate demographic projection
+  from local spatial redistribution and attribute updating. Age-sex totals at
+  province level do not establish current DA geography, income, education,
+  housing, or institutional composition.
+- **Validation:** add multi-scale summaries and relative-error distributions,
+  but do not reduce quality to one correlation. Rare-category, household-link,
+  integerized-residual, structural-zero, temporal-drift, and geography-change
+  checks remain necessary.
+- **Interoperability:** evaluate a metadata-first reader or schema crosswalk for
+  the published CSV columns and DA identifiers. Any full-data benchmark should
+  be opt-in, cached outside git, checksum-verified, and attributed under CC BY
+  4.0.
+
+This work narrows an earlier research claim in these notes: there *is* a recent,
+open, national Canadian synthetic-population dataset and generation workflow.
+The remaining gap is not simply national coverage. SynthPopCan's distinctive
+work is an inspectable general-purpose toolchain, explicit 2016/2021 source
+profiles, linked-candidate generation, control and provenance diagnostics,
+CLI/library/web parity, and reproducible user-owned workflows.
+
 ### Production IPF And Calibration Tools
 
 PopulationSim is the closest production-grade Python reference for an open population synthesis CLI. Its documentation frames population synthesis as expanding seed/reference samples to match marginal controls, producing household and person tables, and supporting controls at multiple geographic levels. It also notes limitations of simple IPF for simultaneous household/person fitting and describes entropy/list-balancing and integerization steps.
@@ -601,8 +715,15 @@ What does exist is a set of adjacent implementation families:
 
 Design implications for SynthPopCan:
 
-- There is room for a Canadian-focused library; the search did not reveal an obvious maintained competitor that solves the same StatCan/PUMF problem.
-- The first deliverable should stay focused on the hard missing piece: Canadian data ingestion, margin normalization, household/person synthesis, calibration, validation, and export.
+- Prédhumeau and Manley provide a recent national Canadian dataset and archived
+  generation scripts. The remaining opportunity is not to claim that no
+  Canadian synthesis exists; it is to provide a maintained, reusable toolchain
+  with explicit source profiles, general control ingestion, linked-candidate
+  workflows, provenance, validation, and library/CLI/web interfaces.
+- Keep the first deliverable focused on Canadian data ingestion, margin
+  normalization, household/person synthesis, calibration, validation, and
+  export, while treating the published national dataset as a related method and
+  possible interoperability benchmark.
 - Later ecosystem layers should be modular rather than embedded in the core synthesis engine. Useful future modules are `schools`, `workplaces`, `healthcare`, `food_environment`, `road_network`, and `contacts`.
 - Output schemas should anticipate downstream simulation consumers: stable person and household IDs, optional location/activity tables, deterministic run metadata, and validation artifacts.
 - The web app should expose data mapping and validation first. Rich ecosystem/contact-network visualization can wait until the core population is reproducible.
