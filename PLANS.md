@@ -543,6 +543,7 @@ that static accessibility or counterfactual analysis is insufficient.
 | Documentation | Keep workflow examples synchronized with tested CLI help; add contributor internals only when useful. |
 | Bilingualism | Progressively provide English/French interfaces, documentation, data dictionaries, and descriptive metadata; preserve authoritative source language and translation provenance, stable language-neutral identifiers, explicit fallback, and tested parity. |
 | Research software | Apply the linked stewardship plan: FAIR4RS self-assessment, software citation, archival identifiers, a software management plan, focused community engagement, JOSS readiness, and appropriate data governance. |
+| Projection experiments | After the province-scale DA workflow is validated, test a future cross-sectional population workflow driven by official Statistics Canada province/territory age-sex scenarios. Begin with a 2016-to-2021 backcast against observed Census controls; distinguish projected values from attributes merely carried forward, treat ADA/DA allocation as modelled, and do not claim longitudinal people, household trajectories, or a general demographic forecasting system. |
 | Releases | Align tags, PyPI, Read the Docs, release notes, checksums, model provenance, installed-wheel smoke tests, and model-fetch checks; preserve GitHub-to-Zenodo archiving and DOI metadata, harden/automate model deposits after review, and add Software Heritage archival identifiers. |
 
 ## Open Decisions
