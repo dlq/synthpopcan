@@ -6,23 +6,25 @@ Current release: `0.6.2`
 
 ## Current Focus
 
-Start here. Open a linked implementation plan only when working on that area.
+Start here, then open a linked implementation plan only when working in that
+area. Completed release detail belongs in [CHANGELOG.md](CHANGELOG.md) and
+completed implementation plans belong in [`plans/archive/`](plans/archive/).
 
 | Horizon | Focus | Detail |
 | --- | --- | --- |
-| Released | `0.6.2` adds citation, licensing, and Zenodo archival metadata on top of the `0.6.1` linked-schema and 2021 Census work. | [GitHub Release](https://github.com/dlq/synthpopcan/releases/tag/v0.6.2) |
-| Correctness | Preserve and extend the correctness-assurance gate in priority order. | [Correctness plan](plans/2026-07-12-correctness-assurance.md) |
-| Research-software stewardship | Make releases citable, persistently archived, reproducible, governed, and legible to scientific-software and digital-humanities communities. | [Research-software stewardship plan](plans/2026-07-19-research-software-stewardship.md) |
-| Dissemination and publication | Introduce the project through a small number of well-matched Canadian open-data, research-software, digital-humanities, Python, and public-health communities; prepare for a JOSS submission as the software demonstrates independent scholarly use. | [Community and JOSS track](plans/2026-07-19-research-software-stewardship.md#discoverability-community-engagement-and-scholarly-publication) |
-| Later `0.7.x`–`0.8.x` | Add governed enrichment layers, then hand validated generated data to external simulation platforms without implementing population simulation in SynthPopCan. | [Plan index](plans/README.md) |
-| Far future, after `0.8.x` | Research optional, compositional public-health simulation only after the population, enrichment, and interchange contracts are stable; do not commit to one simulation platform. | [Far-future direction](#far-future-compositional-public-health-simulation) |
+| Released | `0.6.2` adds citation, licensing, and Zenodo archival metadata on top of the `0.6.1` linked schema and 2021 Census work. | [GitHub Release](https://github.com/dlq/synthpopcan/releases/tag/v0.6.2) |
+| Correctness | Preserve the released assurance gate and extend public benchmarks, model audits, and durable evidence. | [Correctness plan](plans/2026-07-12-correctness-assurance.md) |
+| Small-area geography | Prove a bounded province-scale DA workflow, structured geography selection, and authoritative relationship indexing. | [Small-area geography plan](plans/2026-07-22-small-area-geography.md) |
+| Research-software stewardship | Keep releases citable, archived, reproducible, governed, and legible to scientific-software and digital-humanities communities. | [Stewardship and publication plan](plans/2026-07-19-research-software-stewardship.md) |
+| `0.7.x` | Establish governed source metadata and enrichment, then add reviewed spatial, environmental, cohort, service, activity, and network layers. | [Ecosystem enrichment plan](plans/2026-07-15-ecosystem-enrichment.md) |
+| `0.8.x` | Hand validated populations and enrichment layers to external simulation platforms through a simulator-neutral interchange contract. | [Simulation interoperability plan](plans/2026-07-15-simulation-interoperability.md) |
 
 ## Goal And Principles
 
 Build a Python library, CLI, and local web application for Canadian synthetic
 population generation through:
 
-1. iterative proportional fitting from StatCan controls; and
+1. iterative proportional fitting from Statistics Canada controls; and
 1. tree-based linked household/person generation followed, where needed, by
    small-area calibration.
 
@@ -30,545 +32,168 @@ Principles:
 
 - Keep raw, restricted, large, and generated data out of git.
 - Share Python workflow and domain layers across the API, CLI, and web app.
-- Treat `synthpopcan serve` as a local guided workbench, not a hosted frontend.
-- Keep standalone artifacts such as `geo map` independent from the app runtime.
-- Use approachable defaults and language for humanities users while preserving
-  machine-readable output.
-- Make public-facing interfaces, documentation, and descriptive metadata as
-  bilingual in English and French as practicable, with stable language-neutral
-  identifiers and explicit provenance for official versus project-supplied
-  translations.
+- Treat `synthpopcan serve` as a local guided workbench, not a hosted service.
+- Use approachable language and defaults for humanities researchers while
+  preserving machine-readable output and expert controls.
+- Make public interfaces, documentation, and descriptive metadata bilingual in
+  English and French as practicable, with stable language-neutral identifiers
+  and explicit translation provenance.
 - Preserve source, geography, variables, filters, model version, seeds, and
   validation metrics with generated output.
-- Choose geography according to the research question rather than treating one
-  small-area level as universal: use CSDs for municipal or municipal-equivalent
-  policy and service-delivery analysis, and DAs when fine-grained national
-  placement or accessibility analysis is needed.
-- Distinguish software correctness, statistical fitness, disclosure-risk checks,
-  and human review.
-- Treat the software, its versioned methods, and its generated research objects
-  as citable scholarly outputs with persistent identifiers, reproducible
-  provenance, and explicit stewardship and governance.
+- Choose geography for the research question rather than treating one level as
+  universal.
+- Distinguish software correctness, statistical fitness, disclosure-risk
+  checks, and human review.
+- Treat the software, its methods, and generated research objects as citable
+  scholarly outputs with persistent identifiers and reproducible provenance.
 
-Completed release notes belong in [CHANGELOG.md](CHANGELOG.md), research
-background in [NOTES.md](NOTES.md), and detailed tasks in [`plans/`](plans/).
-Every unfinished roadmap item must either appear directly in this file or be
-owned by a linked implementation plan with a current status and next action.
+Research background belongs in [NOTES.md](NOTES.md). Every unfinished roadmap
+item must appear here or be owned by a linked plan with a current status and
+next action. The [plan index](plans/README.md) records active and archived plans.
 
 ## Current Product State
 
-`0.6.2` adds Statistics Canada source attribution throughout prepared-model
-packages, explicit citation metadata, Zenodo software/model records, archival
-DOIs, and guarded deposition tooling. It retains the `0.6.1` versioned linked
-household/person/geography output contract,
-explicit 2016/2021 Census adapters and fixtures, a parallel 2021 prepared-model
-catalogue, bounded model execution, and stale-operation protection throughout
-the local web workbench. It retains the durable `0.6.0` runtime and the `0.5.1`
-correctness-assurance gate: independent and differential numerical checks,
-generated invariants, statistical model oracles, linked-record integrity
-checks, small-area artifact reconciliation, known-truth reference workflows,
-permanent release evidence, and tag-constrained trusted publishing.
+`0.6.2` provides a stable public package, CLI, Python API, and local web
+workbench. It supports:
 
-Implemented capabilities include:
-
-- seed/control IPF with diagnostics, compact weights, expanded records, reports,
-  and validation;
-- StatCan WDS discovery and reproducible input preparation plus 2016 Census
-  hierarchical microdata adapters;
+- seed/control IPF with diagnostics, compact weights, integerized records,
+  reports, and validation;
+- Statistics Canada WDS discovery, Census Profile preparation, 2016 and 2021
+  microdata adapters, matching boundaries, and geographic relationship inputs;
 - linked frequency/CART training, audit, packaging, fetching, generation, and
   validation;
-- a 33-entry prepared-model registry containing a demo plus parallel 2016 and
+- a 33-entry prepared-model registry covering a demo plus parallel 2016 and
   2021 packages for Canada, supported provinces, and five PUMF-coded CMAs;
-  territories and broader CMA coverage remain open;
-- `geo calibrate`, `geo synthesize`, joint person controls,
-  scale estimation, residual reports, linked realization, and maps;
-- a packaged local web app for guided IPF, prepared models, WDS preparation,
-  small-area preflight, downloads, and exact CLI handoff.
+- linked small-area calibration, joint person controls, scale estimation,
+  residual reports, realization, and standalone maps; and
+- durable local runs with bounded uploads and previews, progress, cancellation,
+  recovery, provenance, downloadable artifacts, and exact CLI handoff.
 
-The current app retains the FastAPI/Uvicorn runtime introduced in `0.6.0`: a
-controlled workspace, durable manifests and events, isolated Python jobs,
-progress, cancellation, restart recovery, bounded previews, incremental
-artifact publication, and backend IPF, prepared-model, and guided small-area
-workflows. Existing linked candidates can enter the same small-area path, and
-model catalogue installation and removal stay bounded in the browser. Browser
-IPF and tree generation are removed. The implementation, cleanup,
-documentation, clean-wheel smoke, full correctness/coverage gate, browser
-scenarios, and bounded scale smokes are complete.
+The versioned linked household/person/geography schema and local runtime are
+released. Preserve their regression gates and review any schema change
+explicitly. Completed architecture and acceptance detail remains in the
+[archived runtime plan](plans/archive/2026-07-10-local-web-application-runtime.md)
+and [archived linked-schema plan](plans/archive/2026-07-18-linked-population-schema.md).
+
+Territory and broader CMA model coverage, a verified DA workflow, stronger
+public correctness evidence, bilingual metadata, enrichment, and external
+simulation interchange remain active or future work.
 
 ## Release History
 
 | Line | Outcome |
 | --- | --- |
-| `0.1.x` | Public package, CLI/API/web surfaces, IPF, StatCan and microdata adapters, tree generation, docs, and release automation. |
+| `0.1.x` | Public package, CLI/API/web surfaces, IPF, Statistics Canada and microdata adapters, tree generation, documentation, and release automation. |
 | `0.2.x` | Linked small-area MVP, Census Profile controls, NumPy/threaded calibration, maps, and catalogue expansion. |
-| `0.3.x` | Joint person calibration, diagnostics, grouped household size, performance/memory work, validation, and stable scenarios. |
-| `0.4.0` | Model metadata/downloads, privacy presentation, safer WDS refinement, browser small-area preparation, and CLI handoff. |
+| `0.3.x` | Joint person calibration, diagnostics, grouped household size, performance work, validation, and stable scenarios. |
+| `0.4.0` | Model metadata and downloads, privacy presentation, safer WDS refinement, browser small-area preparation, and CLI handoff. |
 | `0.5.0` | Consolidated CLI and Python API, linked-population directory contracts, stronger typing and provenance, and documentation cleanup. |
-| `0.5.1` | Correctness-assurance suite and public claims matrix, audited integrity fixes, hardened release gates, permanent release evidence, and tag-constrained trusted publishing. |
-| `0.6.0` | Durable FastAPI/Uvicorn local runtime, shared backend workflows, controlled workspaces, isolated jobs, progress, cancellation, recovery, and bounded artifacts. |
-| `0.6.1` | Stable linked-population schema, explicit 2021 Census support and model catalogue, bounded model execution, browser sequencing, and expanded release coverage. |
-| `0.6.2` | Statistics Canada attribution, citation and archival metadata, prepared-model DOIs, Zenodo deposition tooling, and corrected IPF documentation. |
+| `0.5.1` | Correctness-assurance suite and claims matrix, audited integrity fixes, hardened release gates, permanent evidence, and tag-constrained publishing. |
+| `0.6.0` | Durable FastAPI/Uvicorn local runtime, shared workflows, controlled workspaces, isolated jobs, progress, cancellation, recovery, and bounded artifacts. |
+| `0.6.1` | Stable linked-population schema, explicit 2021 Census support and model catalogue, bounded execution, and browser sequencing. |
+| `0.6.2` | Statistics Canada attribution, citation and archival metadata, prepared-model DOIs, Zenodo tooling, and corrected IPF documentation. |
 
-The original public baseline is achieved: users can install SynthPopCan, prepare
-StatCan inputs, generate and validate IPF or linked-model output, inspect
-provenance, and reproduce work through the CLI.
+## Active Plans
 
-## 0.5.x: Interface Stabilization And Correctness Hardening
+### Correctness and model quality
 
-Status: complete; preserve its regression and release gates while `0.6.x`
-changes the runtime architecture.
+The [correctness-assurance plan](plans/2026-07-12-correctness-assurance.md) owns
+the post-`0.5.1` evidence backlog. Current priorities include:
 
-### 0.5.0 release
+- per-run assurance manifests and permanent release evidence;
+- additional public reference workflows, including a bounded external Canadian
+  synthetic-population comparison;
+- explicit structural-zero and sampling-zero policy;
+- multi-scale and rare-category validation;
+- QISI and systematic-integerization comparison;
+- linked-model support, privacy, and rare-combination audits; and
+- external methods review and broader platform evidence.
 
-- independent `--random-seed` and `--subsample-seed` controls;
-- report provenance for input and selected household/person counts;
-- composable beginner API results and separate flat and linked output writers;
-- an explicit stable top-level API contract and inline typing marker;
-- clearer small-area CLI, API, notebook, and web-app documentation;
-- a coherent CLI command tree with one linked-population directory contract;
-- correctness roadmap and planning rationalization.
+Correctness claims remain scoped: passing tests does not establish statistical
+fitness, disclosure safety, or substantive validity for a particular study.
 
-For follow-up patches, run the release gate, installed-wheel and model-fetch
-smoke tests, public docs build, and the correctness checks available at that
-point.
+### Small-area geography
 
-### 0.5.1 release (completed 2026-07-15)
+The [small-area geography plan](plans/2026-07-22-small-area-geography.md) owns
+the next geography work. Retain CT for tracted metropolitan analysis, ADA for
+moderately local wall-to-wall coverage, and CSD for municipal or
+municipal-equivalent questions. Add DA only where finer placement materially
+supports the research question and the controls, runtime, suppression, map
+size, and disclosure risks are acceptable.
 
-The correctness implementation, selected release-safety P2 tranche, and public
-release are complete:
+The first DA proof is province-scale. National execution must be restartable by
+province or territory and produce aggregate diagnostics rather than one
+monolithic fit. Structured geography requests and an authoritative relationship
+index should replace undocumented prefix knowledge in beginner workflows.
 
-- [x] Commit and push the complete correctness-assurance change set.
-- [x] Set the package version to `0.5.1`, refresh locked metadata, and finalize
-  the changelog and release notes for the versioned commit.
-- [x] Run the normal, extended-correctness, documentation, browser, model-fetch,
-  build, and isolated-wheel gates from the versioned commit; retain the commit
-  SHA and machine-readable reports.
-- [x] Create and push the annotated `v0.5.1` tag, then create the
-  GitHub Release with scoped correctness claims, known limitations, checksums,
-  and links to the tested commit and evidence.
-- [x] Run the tag-constrained trusted-publishing workflow and verify `0.5.1` on
-  PyPI, the GitHub Release, installation from PyPI, and rendered documentation.
+### Research-software stewardship
 
-Release evidence: commit `71b326b9ef97fd674546b68b3f1d80dac96cff2f`,
-annotated tag `v0.5.1`, [GitHub Release](https://github.com/dlq/synthpopcan/releases/tag/v0.5.1),
-[trusted-publishing run](https://github.com/dlq/synthpopcan/actions/runs/29438201657),
-and [PyPI 0.5.1](https://pypi.org/project/synthpopcan/0.5.1/). The GitHub
-distribution assets are byte-for-byte identical to the files published on
-PyPI; the Release also permanently carries their checksums and the retained
-correctness JUnit report.
+The [research-software stewardship plan](plans/2026-07-19-research-software-stewardship.md)
+owns FAIR4RS review, software citation, archival identifiers, governance,
+community engagement, research-object preservation, and eventual JOSS
+readiness. Publication should follow independent scholarly use and durable
+evidence rather than a calendar deadline.
 
-### 0.5.1 code-audit backlog
+## Future Releases
 
-The 2026-07-14 audit found no P0 issue. Its P1 items and selected release-safety
-P2 items are complete with focused regression tests. The three remaining P2
-items below are explicitly owned by the `0.6.x` runtime migration.
+### `0.7.x`: Ecosystem enrichment
 
-`0.5.1` is also the correctness-assurance release for every algorithm and
-artifact path present in the current architecture. Complete all six workstreams
-in the [correctness plan](plans/2026-07-12-correctness-assurance.md), run their
-deterministic checks on every pull request, and run the larger reference and
-distribution tiers before release. Do not defer a current-code correctness
-check merely because the affected workflow will later move behind the `0.6.x`
-runtime. Tests for genuinely new `0.6.x` behavior remain acceptance gates for
-the release that introduces that behavior.
-
-#### Correctness, data integrity, and privacy
-
-- [x] **P1 — Prevent in-place candidate data loss.** Reject
-  `--candidates-out` paths that alias `--candidates`, or recode atomically
-  through a distinct temporary file before replacement.
-- [x] **P1 — Give scalar and NumPy IPF identical sparse-control semantics.** Do
-  not turn represented but omitted target cells into explicit zero targets;
-  add sparse-margin differential tests.
-- [x] **P1 — Validate every reused NumPy IPF index against ordered margin
-  dimensions and categories.** Do not reuse the first geography's encoding for
-  an incompatible later geography, and independently reconcile reported
-  residuals.
-- [x] **P1 — Replace browser largest-remainder expansion with the Python
-  systematic integerizer.** Cover highly fractional weights, row-order bias,
-  aggregate preservation, and Python/browser parity.
-- [x] **P1 — Enforce finite, non-negative numeric invariants at every boundary.**
-  Reject Python control counts and weights containing `NaN` or infinity,
-  browser negative control targets, and negative/non-finite frequency-model
-  weights; ensure fit and validation can never swallow a non-finite residual as
-  zero error.
-- [x] **P1 — Detect category collisions after WDS mapping.** When distinct
-  source labels map to one canonical category, aggregate them deliberately or
-  reject the mapping instead of silently keeping the last count.
-- [x] **P1 — Enforce linked-person integrity whenever person rows are present.**
-  Reject orphan people and duplicate household/person identifiers before merge
-  realization so joins cannot silently drop or multiply people.
-- [x] **P1 — Reserve generated identifier columns.** Prevent seed or model
-  fields from overwriting `synthetic_id`, `synthetic_household_id`, or
-  `synthetic_person_id`, and make linked validation check identifier uniqueness.
-- [x] **P1 — Base disclosure support on contributing source-row counts.** Do
-  not let survey-weight totals satisfy frequency-model or geography minimum
-  support thresholds; keep weighted totals as separate statistical metadata.
-- [x] **P1 — Preserve complete seed profiles in browser compact-weight output.**
-  Retain all seed dimensions and add a collision-safe fitted-weight column so
-  the artifact is self-contained for analysis, validation, and expansion.
-- [x] **P2 — Preserve the exact requested total when scaling controls.** Use a
-  globally reconciled integer allocation rather than independent rounding by
-  geography/category.
-- [x] **P2 — Require every declared normalized-control dimension to exist in
-  the CSV header.** Do not silently create an empty-string category or an empty
-  `ControlTable.dimensions` result.
-- [x] **P2 — Apply the same model-package schema validation to mappings and
-  files.** Reject unsupported schema versions before generation regardless of
-  how the package entered the API.
-- [x] **P2 — Make browser and CLI prepared-model reproduction claims exact.**
-  Share backend generation or a bit-identical RNG and seed schedule; until then,
-  do not claim that the same seed reproduces the same population.
-- [x] **P2 — Align browser WDS snapshot selection with Python.** Exclude
-  `REF_DATE` from suggested dimensions and consistently select the latest
-  reference period.
-
-#### Web security and resource bounds
-
-- [x] **P1 — Keep supported large models out of whole-payload browser paths.**
-  Registered packages above the 32 MiB uncompressed browser threshold are
-  disabled in the web catalogue and rejected by the local API with an exact
-  CLI handoff. Durable backend generation replaced that browser path in
-  `0.6.1`.
-- [x] **P1 — Bound WDS and ZIP processing before allocation.** Cap request
-  bodies, archive entries, compressed and aggregate uncompressed sizes, remote
-  response bytes, CSV rows, and concurrent work; inflate only the selected
-  member rather than retaining every archive entry.
-- [x] **P2 / `0.6.1` — Validate uploaded model structure and bound execution.**
-  Reject cyclic or invalid CART graphs, cap household/person output, and add
-  worker cancellation, timeout, and stale-job handling in the backend model-run
-  path before removing browser generation.
-- [x] **P2 / `0.6.0` — Harden or replace the current local server.** Reject
-  non-loopback hosts, validate `Host` and `Origin`, protect state-changing
-  requests, require appropriate content types, cap `Content-Length`, and carry
-  these requirements into the FastAPI replacement. Any network mode still
-  requires a separate security design.
-- [x] **P2 — Escape standalone map content for its HTML and JavaScript
-  contexts.** HTML-escape titles, safely encode inline JSON including
-  `</script>`, and build tooltip content with text nodes rather than
-  `innerHTML`.
-- [x] **P2 — Resolve paths before applying private-data safeguards.** Cover
-  symlinks and `..` traversal so a path into `data/private` cannot bypass the
-  sampling/release guard.
-- [x] **P2 — Return structured 4xx errors for all invalid JSON shapes.** A
-  valid non-object JSON request must not escape as `AttributeError` and close
-  the connection.
-
-#### Filesystem, network, maps, and releases
-
-- [x] **P2 — Serialize or lock model-cache fetches.** Use request-unique
-  temporary files plus atomic replacement so concurrent threads/processes do
-  not truncate, unlink, or replace one another's downloads.
-- [x] **P2 — Make StatCan downloads bounded and atomic.** Add network timeouts,
-  stream to a temporary file, verify completion, and preserve a valid cached
-  file when a refresh fails partway through.
-- [x] **P2 / `0.6.1` — Sequence asynchronous browser operations.**
-  Snapshot inputs when a job starts, abort or ignore stale model/WDS/estimate
-  completions, and build CLI handoff commands from the completed durable run
-  rather than the current mutable form.
-- [x] **P2 — Fail map generation when no population geography matches the
-  boundaries.** Do not emit HTML with empty variables or invalid infinite
-  bounds.
-- [x] **P2 — Preserve shapefile polygon topology.** Classify exterior and
-  interior rings correctly so holes are not rendered as filled polygons.
-- [x] **P2 — Constrain PyPI publishing to tested release tags.** A manual
-  workflow dispatch must verify tag/version agreement and pass the release gate
-  before trusted publishing.
-
-### Remaining work
-
-- Complete reviewed catalogue coverage for territories and selected large CMAs,
-  using a repeatable release workflow rather than ad hoc registry entries.
-- Add model-design advice for full, reduced, or minimal profiles by geography,
-  sparsity, size, and privacy risk.
-- Derive raw-row and identifier findings from model contents instead of trusting
-  serializer booleans.
-- Audit linked models jointly for rare cross-level combinations and reconcile
-  training/audit support thresholds with category-coarsening guidance.
-- Keep automated disclosure checks explicitly subordinate to human review.
-- Add a machine-readable assurance manifest to every generated run, containing
-  version, input checksums, seeds, algorithm settings, convergence, requested
-  and realized residuals, structural-zero findings, and linkage findings.
-- Add Hypothesis-based shrinking for generated numerical cases, frozen
-  cross-version output fixtures, and mutation testing for the numerical and
-  reconciliation kernels.
-- Expand independent public reference workflows beyond the initial Yukon WDS
-  fixture, including multi-dimensional controls and a linked household/person
-  example reviewed separately from the implementation.
-- Add an opt-in external reference workflow for the
-  [Prédhumeau–Manley national Canadian synthetic population](https://doi.org/10.1038/s41597-023-02030-4).
-  Begin with versioned metadata, checksums, a documented schema crosswalk, and
-  a small reviewed slice; do not make the full 9.6 GB dataset a routine test
-  dependency. Treat the published population as a comparison artifact rather
-  than observed truth.
-- Define an explicit zero-cell policy that distinguishes structural zeros from
-  sampling zeros. Require any support repair to be selected deliberately,
-  recorded in provenance, and checked for impossible combinations.
-- Add multi-scale validation summaries at target geography, CSD/CMA where
-  applicable, province/territory, and national levels. Report error
-  distributions and rare-category results alongside aggregate correlations and
-  residuals.
-- Compare deterministic systematic integerization with QISI on public,
-  reviewable fixtures. Measure requested and realized margin residuals,
-  reproducibility, runtime, memory, and sparse-candidate behaviour before
-  considering another production backend.
-- Add macOS and Windows compatibility evidence for supported workflows, while
-  retaining Linux/Python 3.11 and 3.12 as required pull-request checks.
-- Permanently attach correctness reports, checksums, dependency provenance, and
-  build attestations to GitHub Releases instead of relying only on expiring
-  Actions artifacts.
-- Seek an external methods/code review of the algorithms, fixtures, tolerances,
-  assurance claims, and stated limitations; record review scope and responses
-  in a durable public artifact.
-
-## 0.6.x: Local Web Application Runtime
-
-Status: the `0.6.0` runtime implementation, Stages 0–8, and the `0.6.1`
-linked-schema follow-up are complete and verified. See the
-[staged implementation plan](plans/2026-07-10-local-web-application-runtime.md).
-
-Architecture decisions:
-
-- Python performs synthesis, validation, and file writing; the browser guides
-  setup, jobs, diagnostics, and artifacts.
-- CLI and HTTP adapters call shared application services; HTTP never shells out
-  to Click or parses terminal text.
-- Remove browser synthesis only after backend parity and replacement scenarios.
-- Keep packaged HTML/CSS/ES modules unless measured complexity justifies a
-  framework.
-- Remain loopback-only with controlled workspace access; network serving needs a
-  separate security design.
-- The `0.6.0` run manifest remained extensible for linked artifacts; `0.6.1`
-  stabilizes the public household/person/geography output contract now that
-  backend prepared-model and small-area workflows own those artifacts.
+The [ecosystem enrichment plan](plans/2026-07-15-ecosystem-enrichment.md) owns
+source contracts and optional layers added to a validated base population.
 
 | Release | Outcome |
 | --- | --- |
-| `0.6.0` | Complete the local-runtime redesign: controlled workspace, durable backend IPF/prepared-model/small-area runs, bounded artifacts, selected utilities, removal of browser synthesis, cleanup, and release proof. |
-| `0.6.1` | Stabilize and version the public linked household/person/geography schema, with explicit compatibility and migration rules. |
+| `0.7.0` | Versioned source/enrichment contracts, bilingual metadata foundations, source inventory and discovery, Census metadata and recall-aware cache foundations, and reviewed fine-area placement. |
+| `0.7.1` | Reviewed spatial and environmental layers, beginning with Can-FED and suitable public geography, service, transport, built-environment, and environmental sources. |
+| `0.7.2` | Privacy-governed cohort attachment for approved sources using documented harmonization, weighting or matching, uncertainty, and representativeness checks. |
+| `0.7.3` | Modular school, workplace, healthcare, food-access, transport, activity, contact-network, and reproducible scenario layers. |
 
-The `0.6.1` release also accepts the corrected Statistics Canada 2021
-hierarchical and individuals PUMFs as explicit, year-specific input formats.
-The hierarchical adapter feeds linked household/person training; the individuals
-adapter remains person-level and must not imply household linkage. It also adds
-reproducible national 2021 census-tract, aggregate-dissemination-area, and
-census-subdivision cartographic boundary preparation, retaining DGUIDs and
-requiring boundary, control, and output geography vintages to agree. Sixteen
-audited 2021 linked model packages are published as checksum-pinned release
-assets and exposed through the shared CLI and web catalogue.
+Use [CanCensus](https://mountainmath.github.io/cancensus/) as a design reference
+for metadata-first Census discovery, variable hierarchies, geography selection,
+and cache management, not as a runtime dependency. Prefer authoritative
+Statistics Canada products, checksums, official relationships, and no required
+third-party account.
 
-### Small-area geography strategy
+### `0.8.x`: Simulation interoperability
 
-Do not make CT or ADA the permanent default for every workflow. Retain CT for
-detailed analysis inside tracted metropolitan areas and ADA for moderately
-local, population-balanced national coverage, while adding these deliberate
-paths where the research question requires them:
-
-- **CSD:** use the municipality or municipal-equivalent layer for public-health
-  policy, local government, healthcare, education, food availability, facility
-  capacity, and other service-delivery questions. The national 2016 and 2021
-  through-CSD profiles and cartographic boundaries are now available locally;
-  keep their controls, boundaries, and generated-population vintage aligned.
-- **DA:** add a verified national DA profile-and-boundary workflow for finer
-  placement and accessibility analysis where CSD or ADA aggregation would hide
-  important within-area variation, including rural areas where CTs do not
-  exist. Assess suppression, memory, runtime, map size, and output disclosure
-  risk before making full-country DA calibration a normal workflow.
-- **Cross-geography use:** record the selected level and rationale in run
-  provenance. Use official relationship files or validated spatial/coded
-  crosswalks when joining CSD, DA, ADA, CT, facility, environmental, or service
-  layers; never assume that CSD, ADA, and CT form one strictly nested hierarchy.
-- **Geography selection:** replace prefix knowledge as the primary interface
-  with a structured request containing Census vintage, parent region level and
-  identifier, and output geography level. Retain explicit identifiers and
-  DGUIDs in the resulting controls and provenance.
-- **Relationship index:** turn official geographic attribute and relationship
-  files into a versioned, validated local index for traversing supported levels.
-  Keep direct identifier selection available, and investigate local polygon
-  intersection only after coded relationships are reliable.
-
-The first DA implementation should prove bounded province-scale preparation,
-control extraction, calibration, validation, and mapping before attempting a
-national run. Build national execution as restartable province/territory
-batches with per-batch manifests, checkpoints, and diagnostics, followed by an
-aggregate national validation report; do not implement it as one monolithic
-fit. Ecosystem enrichment in `0.7.x` should then choose CSD or DA per layer and
-research purpose rather than forcing all sources onto one geography.
-
-Completion criteria:
-
-- CLI and HTTP share services for IPF, prepared-model, and small-area workflows.
-- Runs can be launched, monitored, cancelled, revisited, and reproduced without
-  loading complete populations into browser memory.
-- Run directories preserve parameters, provenance, diagnostics, artifacts, and
-  executable reproduction commands.
-- The standard-library server and browser synthesis implementations are removed
-  after acceptance tests pass.
-- Local security, lifecycle, interruption, failure, and download scenarios have
-  deterministic automated coverage.
-
-## 0.7.x: Ecosystem Enrichment
-
-Status: planned after the stable local runtime and linked-population schema. See
-the [ecosystem enrichment plan](plans/2026-07-15-ecosystem-enrichment.md).
+The [simulation interoperability plan](plans/2026-07-15-simulation-interoperability.md)
+owns external handoff. SynthPopCan should produce validated, documented data;
+downstream platforms should own simulation behaviour and outcomes.
 
 | Release | Outcome |
 | --- | --- |
-| `0.7.0` | Versioned enrichment/source contract with bilingual metadata foundations, complete private-source inventory, public-catalogue discovery, Census metadata and cache foundations, provenance/licensing controls, and reviewed fine-area placement foundation. |
-| `0.7.1` | Spatial and environmental layers, beginning with Can-FED as a first-class public food-environment source, profiled TOPO, MoNNET, and CANUE, plus suitable authoritative public geography, service, transport, built-environment, and environmental sources. |
-| `0.7.2` | Privacy-governed cohort attachment for MAVAN, CPTP, and other approved sources using documented harmonization, weighting or statistical matching, uncertainty, and representativeness checks. |
-| `0.7.3` | Modular school, workplace, healthcare, food-access, road/transport, contact-network, and reproducible scenario layers. |
+| `0.8.0` | Simulator-neutral exchange contract, manifest, validation, provenance, uncertainty, and example bundle. |
+| `0.8.1` | Initial table/Python adapters for selected ActivitySim, Starsim, Mesa, and GAMA workflows after fixture validation. |
+| `0.8.2` | Transport adapters for MATSim and SUMO only after the necessary activities, locations, schedules, memberships, and networks exist. |
 
-Public-source discovery begins with the
-[Open Government Canada open-data catalogue](https://search.open.canada.ca/opendata/)
-and the [Données Québec CKAN catalogue](https://www.donneesquebec.ca/), while
-remaining open to relevant datasets from authoritative Canadian federal,
-provincial, territorial, Indigenous-government, municipal, public-health,
-education, and other public-agency catalogues. Every public dataset is a
-candidate for evaluation rather than automatic inclusion: verify relevance,
-licensing and attribution, quality, geographic and temporal alignment,
-versioning, and reproducible access first. Selected public data are fetched or
-queried from authoritative sources with recorded metadata, licence, retrieval
-time, version, and checksum; they are not indiscriminately mirrored or bundled
-with the package.
+## Far Future
 
-For Statistics Canada Census products, use
-[CanCensus](https://mountainmath.github.io/cancensus/) as a design reference,
-not a runtime dependency. Add metadata-first discovery for datasets, regions,
-and variables; preserve characteristic hierarchy, population universe, units,
-and aggregation semantics; and make downloaded products checksum-verified and
-explicitly current, superseded, or recalled. Prefer authoritative Statistics
-Canada bulk products and official relationship files over a required
-third-party API or account.
-
-Restricted or access-controlled source data remain under
-`data/private/sources` and never enter git, logs, fixtures, documentation, or
-release artifacts. Their
-local presence creates no commitment to use, redistribute, provide, or publish
-adapters or derived artifacts for them; dataset-specific work requires separate
-authority and should ordinarily run only against data supplied independently by
-an authorized user.
-
-### Bilingualism and localization
-
-English-only interfaces and English-only descriptive metadata are current
-limitations, not the intended permanent contract. Starting in `0.7.0`, treat
-English and French support as a cross-cutting requirement for new source,
-enrichment, interchange, CLI, web, and documentation work:
-
-- keep machine identifiers, schema keys, filenames, and code values stable and
-  language-neutral; attach `en` and `fr` labels, descriptions, units, category
-  text, citations, and usage notes where meaningful;
-- prefer authoritative bilingual metadata from Statistics Canada, federal,
-  Quebec, and other publishers; preserve the original source text and language,
-  and mark project-supplied translations so they are never mistaken for
-  official wording;
-- define explicit language availability, translation status, provenance, and
-  fallback rules instead of silently substituting English;
-- make CLI guidance and errors, the local web workbench, generated data
-  dictionaries/reports, and core user documentation progressively selectable
-  in English or French, while keeping reproducible commands and serialized
-  contracts independent of display language;
-- add paired English/French fixtures, terminology review, rendering and command
-  tests, and metadata-parity checks; and
-- allow a documented single-language fallback when an upstream source is
-  available in only one language, without blocking otherwise valid data use.
-
-The goal is practical bilingual parity, not automatic machine translation of
-scientific or legal text without review. Each release should state which
-surfaces and metadata fields are bilingual and which gaps remain.
-
-## 0.8.x: Simulation Interoperability And Data Handoff
-
-Status: planned after the stable linked-population schema; individual adapters
-also depend on the location, activity, and network layers they require. See the
-[simulation interoperability plan](plans/2026-07-15-simulation-interoperability.md).
-
-SynthPopCan will construct, validate, document, and export synthetic population
-data for external models. It will not become a population-simulation engine in
-this track. A versioned simulator-neutral interchange bundle is the boundary;
-target-specific adapters translate that bundle and reject exports whose required
-activities, locations, schedules, networks, or model configuration are absent.
-
-| Release | Outcome |
-| --- | --- |
-| `0.8.0` | Versioned interchange bundle with stable identifiers, Parquet/CSV/GIS tables, manifest, data dictionary, provenance, checksums, and validation evidence. |
-| `0.8.1` | Initial table/Python-oriented adapters and examples for ActivitySim, Starsim, Mesa, and GAMA, selected only after contract research and fixture validation. |
-| `0.8.2` | Transport-demand adapters for MATSim and SUMO after `0.7.3` can supply the required activities, locations, times, memberships, and networks. |
-
-FRED, Vivarium, AnyLogic, and other platforms remain researched candidate
-targets rather than commitments. Promote them only when their supported custom
-population contract is verified and real user demand justifies maintenance.
-
-## Far Future: Compositional Public-Health Simulation
-
-Status: deliberately deferred until after the `0.8.x` data-handoff work; no
-release number or implementation platform is committed.
-
-The broader SynthEco public-health direction may eventually evaluate changes
-to food, healthcare, education, housing, transport, environmental exposure,
-and other public infrastructure. This is a different and much larger problem
-than generating a synthetic population or exporting it to an external model.
-A runnable simulation also needs documented behavioural, institutional,
-capacity, transition, outcome, and feedback rules, with calibration and
-validation evidence appropriate to the jurisdiction and period.
-
-Do not select a universal engine prematurely. Starsim and JUNE are important
-specialist candidates for disease, health-state, contact, and epidemiological
-work, but their disease orientation should not define the overall simulated
-world. OpenM++ remains a technical reference for Canadian-style longitudinal
-microsimulation rather than a platform commitment. GAMA or Mesa may support
-spatial, institutional, or exploratory models, while transport, accessibility,
-queueing, and health-transition components may remain separate tools connected
-through versioned data contracts.
-
-Before implementing dynamic simulation, prefer the least complicated method
-that answers the research question. Many useful public-health analyses require
-only a validated synthetic population plus facility, capacity, network, or
-environmental layers and static counterfactual comparison. Introduce dynamic
-simulation only when time, behaviour, interaction, constraints, or feedback
-materially affect the answer.
-
-If this track becomes justified, begin with research and small reference cases:
-
-- define a platform-neutral, readable intervention manifest covering timing,
-  targets, resource changes, eligibility, coverage, assumptions, outcomes, and
-  provenance without pretending that YAML supplies causal behaviour;
-- catalogue candidate Canadian and Quebec transition rules with jurisdiction,
-  population, observation period, source, estimation method, uncertainty,
-  access/licence restrictions, and validation status;
-- separate population, environment, accessibility, service/capacity,
-  transport, health-transition, disease/contact, and outcome components;
-- compare specialist adapters or coupled tools against concrete public-health
-  questions rather than ranking platforms in the abstract;
-- require baseline and intervention scenarios, repeated stochastic runs,
-  calibration targets, external validation, sensitivity analysis, and explicit
-  limits on causal claims; and
-- keep simulation behaviour and outcome validity outside SynthPopCan's core
-  population-generation correctness claims.
-
-Activation requires a concrete research question, suitable evidence for the
-necessary rules, a maintainable implementation owner or partner, and proof
-that static accessibility or counterfactual analysis is insufficient.
+Optional compositional public-health simulation remains a research direction,
+not a committed release. Activate it only for a concrete question where time,
+behaviour, interaction, constraints, or feedback make static population and
+accessibility analysis insufficient. It requires suitable evidence, an
+implementation owner or partner, baseline and intervention scenarios,
+calibration, external validation, sensitivity analysis, and explicit limits on
+causal claims. Simulation validity remains outside core population-generation
+correctness claims.
 
 ## Ongoing Tracks
 
 | Track | Policy / next work |
 | --- | --- |
-| Data | Track code, docs, public-safe metadata, and tiny fixtures; ignore raw/restricted data, large caches, real generated populations, and unpublished private-data models. |
-| Testing | Prefer correctness evidence over defensive-branch coverage; keep default tests public and deterministic, with live StatCan/full-data checks opt-in. |
-| Documentation | Keep workflow examples synchronized with tested CLI help; add contributor internals only when useful. |
-| Bilingualism | Progressively provide English/French interfaces, documentation, data dictionaries, and descriptive metadata; preserve authoritative source language and translation provenance, stable language-neutral identifiers, explicit fallback, and tested parity. |
-| Research software | Apply the linked stewardship plan: FAIR4RS self-assessment, software citation, archival identifiers, a software management plan, focused community engagement, JOSS readiness, and appropriate data governance. |
-| Projection experiments | After the province-scale DA workflow is validated, test a future cross-sectional population workflow driven by official Statistics Canada province/territory age-sex scenarios. Begin with a 2016-to-2021 backcast against observed Census controls; distinguish projected values from attributes merely carried forward, treat ADA/DA allocation as modelled, and do not claim longitudinal people, household trajectories, or a general demographic forecasting system. |
-| Releases | Align tags, PyPI, Read the Docs, release notes, checksums, model provenance, installed-wheel smoke tests, and model-fetch checks; preserve GitHub-to-Zenodo archiving and DOI metadata, harden/automate model deposits after review, and add Software Heritage archival identifiers. |
+| Data | Track code, documentation, public-safe metadata, and tiny fixtures; ignore raw or restricted data, large caches, real generated populations, and unpublished private-data models. |
+| Testing | Prefer correctness evidence over defensive-branch coverage; keep default tests public and deterministic, with live Statistics Canada and full-data checks opt-in. |
+| Documentation | Keep examples synchronized with tested CLI help and the public API; add contributor internals only when useful. |
+| Bilingualism | Progressively provide English/French interfaces, documentation, data dictionaries, and metadata while preserving authoritative language and translation provenance. |
+| Projection experiments | After province-scale DA validation, test future cross-sectional populations driven by official province/territory age-sex scenarios. Begin with a 2016-to-2021 backcast; distinguish projected values from attributes carried forward, treat ADA/DA allocation as modelled, and do not claim longitudinal people or household trajectories. |
+| Releases | Align tags, PyPI, Read the Docs, release notes, checksums, model provenance, installed-wheel tests, Zenodo archiving, and durable evidence. |
 
 ## Open Decisions
 
 - Dependency posture beyond the current pure Python, NumPy, and pandas runtime;
   SciPy CSR and Polars remain benchmark probes.
-- User-facing defaults and automatic guidance for choosing among CT, ADA, CSD,
-  and DA after the CSD and DA workflows have representative performance and
-  correctness evidence.
-- Integerization alternatives beyond deterministic systematic expansion.
+- User-facing defaults for CT, ADA, CSD, and DA after representative CSD and DA
+  performance and correctness evidence exists.
+- Integerization alternatives beyond deterministic systematic expansion after
+  the planned QISI comparison.
 - Boundary between automated model/privacy advice and required expert review.

@@ -5,7 +5,7 @@ Created: 2026-07-10\
 Last updated: 2026-07-18\
 Target: `0.6.0` runtime; stable linked schema shipped in `0.6.1`\
 Next action: preserve the durable-run and browser-sequencing regression gates\
-Roadmap: [PLANS.md](../PLANS.md) | [Plan index](README.md)
+Roadmap: [PLANS.md](../../PLANS.md) | [Plan index](../README.md)
 
 > **For agentic workers:** Execute this plan one stage at a time. Keep each
 > patch reviewable, preserve existing CLI behavior while a workflow is being

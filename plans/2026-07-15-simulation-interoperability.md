@@ -7,7 +7,7 @@ Target: `0.8.0`–`0.8.2`\
 Next action: validate a simulator-neutral exchange contract against small,
 officially documented input examples before implementing any adapter\
 Roadmap: [PLANS.md](../PLANS.md) | [Plan index](README.md) | Prerequisites:
-[local runtime](2026-07-10-local-web-application-runtime.md) and
+[archived local runtime](archive/2026-07-10-local-web-application-runtime.md) and
 [ecosystem enrichment](2026-07-15-ecosystem-enrichment.md)
 
 ## Purpose And Boundary

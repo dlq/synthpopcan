@@ -5,7 +5,7 @@ Created: 2026-07-18\
 Last updated: 2026-07-18\
 Target: `0.6.1`\
 Next action: preserve v1 compatibility and review future schema changes explicitly\
-Roadmap: [PLANS.md](../PLANS.md) | [Plan index](README.md)
+Roadmap: [PLANS.md](../../PLANS.md) | [Plan index](../README.md)
 
 ## Objective
 

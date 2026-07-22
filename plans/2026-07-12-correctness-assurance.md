@@ -2,10 +2,10 @@
 
 Status: `0.5.1` gate complete; post-release evidence improvements active\
 Created: 2026-07-12\
-Last updated: 2026-07-15\
+Last updated: 2026-07-22\
 Target: preserve the `0.5.1` gate and extend public assurance evidence\
-Next action: prioritize the planned evidence improvements against the `0.6.x`
-runtime work\
+Next action: prioritize public reference benchmarks, assurance manifests, and
+model-audit evidence while preserving the released correctness gate\
 Roadmap: [PLANS.md](../PLANS.md) | [Plan index](README.md)
 
 ## Purpose
@@ -118,6 +118,31 @@ Planned evidence improvements:
   Actions artifacts.
 - [ ] Commission or invite an external methods/code review and publish its
   scope, findings, limitations, and project responses.
+
+Planned method and model improvements:
+
+- [ ] Complete reviewed prepared-model coverage for territories and selected
+  large CMAs through a repeatable release workflow.
+- [ ] Add model-design guidance for full, reduced, and minimal profiles by
+  geography, sparsity, size, and privacy risk.
+- [ ] Derive raw-row and identifier findings from model contents rather than
+  trusting serializer declarations.
+- [ ] Audit linked models jointly for rare cross-level combinations and align
+  support thresholds with category-coarsening guidance. Keep automated
+  disclosure checks subordinate to human review.
+- [ ] Add an opt-in reference workflow for the
+  [Prédhumeau–Manley national Canadian synthetic population](https://doi.org/10.1038/s41597-023-02030-4),
+  beginning with metadata, checksums, a schema crosswalk, and a small reviewed
+  slice rather than the complete 9.6 GB dataset. Treat it as a comparison
+  artifact, not observed truth.
+- [ ] Define a zero-cell policy that distinguishes structural zeros from
+  sampling zeros and records every deliberate support repair in provenance.
+- [ ] Add multi-scale validation at target geography, CSD/CMA where applicable,
+  province/territory, and national levels, including error distributions and
+  rare-category results.
+- [ ] Compare deterministic systematic integerization with QISI on public
+  fixtures, measuring residuals, reproducibility, runtime, memory, and
+  sparse-candidate behaviour before selecting another production backend.
 
 ## Workstream 1: IPF Numerical Correctness
 
