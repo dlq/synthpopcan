@@ -2,7 +2,7 @@
 
 Status: planned\
 Created: 2026-07-15\
-Last updated: 2026-07-19\
+Last updated: 2026-07-22\
 Target: `0.7.0`–`0.7.3`\
 Next action: complete safe source-level profiles for every private and public
 candidate source before designing adapters or inspecting private records\
@@ -127,6 +127,39 @@ DA-level measures from more detailed restricted material, record outlet and
 access-measure definitions, and prevent users from interpreting the layer as a
 current inventory of individual establishments.
 
+### Statistics Canada Census source handling
+
+Use [CanCensus](https://mountainmath.github.io/cancensus/) as a design reference
+for approachable Canadian Census discovery and geography handling without
+making CensusMapper, an API key, or another third-party service a runtime
+requirement. Continue to prefer authoritative Statistics Canada bulk downloads,
+WDS metadata where appropriate, and official geographic relationship files.
+
+Add these Census-specific foundations to the `0.7.0` source contract:
+
+- a versioned catalogue for supported Census datasets, vintages, regions,
+  geography levels, and variables, with reproducible list, search, and inspect
+  operations before download;
+- characteristic metadata that preserves stable source identifiers, English
+  and French labels, parent and child relationships, population universe,
+  units, count/rate/percentage semantics, and additive or non-additive
+  behaviour so control preparation can reject invalid combinations;
+- an immutable local source cache whose manifests record retrieval time,
+  canonical product and resource identifiers, source version, response
+  metadata, file size, and SHA-256 checksum, with explicit refresh and removal
+  operations and visible current, superseded, or recalled status;
+- structured geography requests that separate Census vintage, parent region
+  level and identifier, and requested output level instead of requiring users
+  to infer selections from identifier prefixes; and
+- a versioned, validated local relationship index derived from official
+  geographic attribute or relationship files, retaining short identifiers and
+  DGUIDs and supporting auditable traversal among available levels.
+
+After coded relationships and vintage checks are reliable, investigate a local
+operation that selects Census geographies intersecting user-supplied GeoJSON.
+Treat cross-vintage boundary harmonization as a separate reviewed method rather
+than assuming that identifiers or polygons are stable between censuses.
+
 ## Enrichment Contract
 
 Each enrichment runs against an immutable identified base-population artifact
@@ -170,6 +203,9 @@ synthetic identifiers and versioned geography/location identifiers.
   provider-specific code behind a generic catalogue interface and registry.
 - Implement bounded, atomic, checksum-verified public-resource retrieval using
   the existing download safety posture.
+- Add the Census dataset/region/variable catalogue, hierarchy-aware
+  characteristic metadata, recall-aware cache manifests, structured geography
+  requests, and official relationship index described above.
 - Define aggregate, spatial, probabilistic, and record-level linkage classes.
 - Add reviewed fine-area placement primitives and boundary concordance reports.
 - Prove through tests that enrichment cannot mutate the base population.

@@ -378,6 +378,14 @@ paths where the research question requires them:
   provenance. Use official relationship files or validated spatial/coded
   crosswalks when joining CSD, DA, ADA, CT, facility, environmental, or service
   layers; never assume that CSD, ADA, and CT form one strictly nested hierarchy.
+- **Geography selection:** replace prefix knowledge as the primary interface
+  with a structured request containing Census vintage, parent region level and
+  identifier, and output geography level. Retain explicit identifiers and
+  DGUIDs in the resulting controls and provenance.
+- **Relationship index:** turn official geographic attribute and relationship
+  files into a versioned, validated local index for traversing supported levels.
+  Keep direct identifier selection available, and investigate local polygon
+  intersection only after coded relationships are reliable.
 
 The first DA implementation should prove bounded province-scale preparation,
 control extraction, calibration, validation, and mapping before attempting a
@@ -406,7 +414,7 @@ the [ecosystem enrichment plan](plans/2026-07-15-ecosystem-enrichment.md).
 
 | Release | Outcome |
 | --- | --- |
-| `0.7.0` | Versioned enrichment/source contract with bilingual metadata foundations, complete private-source inventory, public-catalogue discovery, provenance/licensing controls, and reviewed fine-area placement foundation. |
+| `0.7.0` | Versioned enrichment/source contract with bilingual metadata foundations, complete private-source inventory, public-catalogue discovery, Census metadata and cache foundations, provenance/licensing controls, and reviewed fine-area placement foundation. |
 | `0.7.1` | Spatial and environmental layers, beginning with Can-FED as a first-class public food-environment source, profiled TOPO, MoNNET, and CANUE, plus suitable authoritative public geography, service, transport, built-environment, and environmental sources. |
 | `0.7.2` | Privacy-governed cohort attachment for MAVAN, CPTP, and other approved sources using documented harmonization, weighting or statistical matching, uncertainty, and representativeness checks. |
 | `0.7.3` | Modular school, workplace, healthcare, food-access, road/transport, contact-network, and reproducible scenario layers. |
@@ -423,6 +431,15 @@ versioning, and reproducible access first. Selected public data are fetched or
 queried from authoritative sources with recorded metadata, licence, retrieval
 time, version, and checksum; they are not indiscriminately mirrored or bundled
 with the package.
+
+For Statistics Canada Census products, use
+[CanCensus](https://mountainmath.github.io/cancensus/) as a design reference,
+not a runtime dependency. Add metadata-first discovery for datasets, regions,
+and variables; preserve characteristic hierarchy, population universe, units,
+and aggregation semantics; and make downloaded products checksum-verified and
+explicitly current, superseded, or recalled. Prefer authoritative Statistics
+Canada bulk products and official relationship files over a required
+third-party API or account.
 
 Restricted or access-controlled source data remain under
 `data/private/sources` and never enter git, logs, fixtures, documentation, or
