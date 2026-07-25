@@ -1,10 +1,12 @@
 # Linked Population Schema Implementation Plan
 
-Status: released in `0.6.1`\
+Status: archived; completed and released in `0.6.1`\
 Created: 2026-07-18\
-Last updated: 2026-07-18\
+Completed: 2026-07-18\
+Last updated: 2026-07-25\
 Target: `0.6.1`\
-Next action: preserve v1 compatibility and review future schema changes explicitly\
+Maintenance: governed by ADR-0003, the linked-schema documentation, and
+regression tests; this archived plan owns no new work\
 Roadmap: [PLANS.md](../../PLANS.md) | [Plan index](../README.md)
 
 ## Objective
@@ -50,16 +52,23 @@ calibration, future enrichment, and later simulator interchange.
 - [x] Run the complete correctness, documentation, browser, packaging, and
   installed-wheel gates before release.
 
-## Acceptance criteria
+## Completion evidence
 
-- All supported linked-output paths declare the same schema version and key
-  relationship.
-- Additional demographic columns remain valid and round-trip unchanged.
-- Missing keys, invalid geography declarations, unknown schema versions, and
-  broken household relationships fail clearly.
-- Golden fixtures make intentional schema changes reviewable.
-- Both supported hierarchical Census vintages enter the same stable key and
-  relationship contract while retaining their vintage-specific extension
-  columns.
-- Public documentation distinguishes schema conformance from statistical
-  validity, provenance quality, and disclosure safety.
+- [`linked_schema.py`](../../src/synthpopcan/linked_schema.py) defines the v1
+  version, keys, relationship, optional household geography, legacy adoption,
+  and structural validation.
+- [`test_linked_schema.py`](../../tests/test_linked_schema.py) covers descriptor
+  construction and round trips, extension columns, invalid schemas and
+  relationships, legacy adoption, and representative 2016/2021 generation.
+- The
+  [golden v1 descriptor](../../tests/fixtures/schemas/linked-population-v1.json)
+  makes intentional contract changes reviewable.
+- The [linked-population documentation](../../docs/linked-population.md)
+  describes compatibility, migration, geography inheritance, and the
+  distinction between schema conformance and statistical validity.
+- The [`0.6.1` changelog entry](../../CHANGELOG.md#061---2026-07-18) records
+  the released outcome.
+
+Future compatible additions remain ordinary maintenance. Renaming stable keys,
+changing relationship semantics, or requiring another table needs a new schema
+version, migration path, and explicit review outside this archived plan.

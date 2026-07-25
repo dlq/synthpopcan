@@ -2,273 +2,226 @@
 
 Status: planned\
 Created: 2026-07-15\
-Last updated: 2026-07-22\
-Target: `0.7.0`–`0.7.3`\
-Next action: complete safe source-level profiles for every private and public
-candidate source before designing adapters or inspecting private records\
-Roadmap: [PLANS.md](../PLANS.md) | [Plan index](README.md)
+Last updated: 2026-07-25\
+Target: `0.7.0`–`0.7.2`\
+Next action: define the source-resource and enrichment manifest contracts, then
+prove them with public synthetic fixtures\
+Roadmap: [PLANS.md](../PLANS.md) | [Plan index](README.md) | Geography
+prerequisite: [small-area geography](2026-07-22-small-area-geography.md)
 
-## Purpose
+## Purpose And Boundary
 
-Extend a validated, geographically placed synthetic household/person
-population with modular cohort, environmental, built-environment,
-public-service, accessibility, activity, and network layers. Enrichment must
-remain distinguishable from census calibration: it adds modeled attributes or
-linked context without silently changing the already validated base population.
+Add governed contextual layers to a validated household/person population
+without silently changing the population itself. The first releases cover
+source provenance, reproducible resource acquisition, geography-keyed
+enrichment, Can-FED, and one bounded public-service pilot.
 
-This work starts only after `0.6.x` provides durable runs, a stable versioned
-linked-population schema, reproducible artifacts, and shared CLI/HTTP workflow
-services.
+Enrichment is distinct from Census calibration. A layer may describe the
+environment or services associated with a synthetic geography, household, or
+person, but it must not alter base rows, identifiers, controls, or validation
+evidence. Cohort attachment, activities, schedules, contact networks,
+interventions, and simulation behaviour are not committed `0.7.x` outcomes.
 
-## Source Inventory
+The [small-area geography plan](2026-07-22-small-area-geography.md) owns
+structured geography requests, relationship indexing, DA synthesis, and
+cross-vintage concordance. This plan consumes those contracts; it does not
+reimplement them.
 
-### Private or access-controlled sources
+## Source And Resource Contract
 
-The local ignored `data/private` cache currently contains these third-party
-source families, all of which must be represented in the source inventory even
-if later review concludes that a source cannot or should not be integrated:
+### Source profiles
 
-Their presence is not evidence that SynthPopCan owns them, may use them for a
-new purpose, may redistribute them, or will make them available to users. The
-project makes no availability commitment for any third-party private source.
-Any future support should normally operate on data independently supplied by an
-authorized user in their own environment. Dataset-specific code, documentation,
-fixtures, models, or derived outputs require separate written authority where
-applicable.
+A versioned source profile describes a dataset independently of any local copy.
+It records:
 
-| Source family | Initial role to investigate | Required gate before use |
-| --- | --- | --- |
-| CANUE | Postal-code-linked environmental and urban exposure measures | Data-use agreement, redistribution limits, temporal/geographic coverage, and linkage-risk review. |
-| CPTP | Cohort/access-request family; usable analysis tables may require separate approval | Confirm available data, approved purpose, access status, variable dictionary, cohort universe, and publication constraints. |
-| MAVAN | Maternal/child cohort attributes and outcomes | Ethics/access authority, representativeness, harmonization, weighting/matching, uncertainty, and disclosure review. |
-| MoNNET | Neighbourhood/cohort measures, questionnaires, and location-bearing extracts | Data dictionary, coordinate sensitivity, permitted geography, cohort universe, temporal alignment, and disclosure review. |
-| TOPO | Montréal youth and neighbourhood indicators plus health-service geographies | Methodology, aggregation level, boundary concordance, licence/access status, temporal alignment, and suppression rules. |
+- stable project and authoritative publisher identifiers;
+- canonical resource and documentation URLs;
+- authoritative English and French titles and descriptions where available,
+  with language availability, fallback, and translation provenance;
+- licence, attribution, access, redistribution, and retention conditions;
+- source version, publication date, observation period, and update policy;
+- unit of observation, variables, units, code lists, missingness, suppression,
+  and known limitations;
+- geographic level, identifier namespace, vintage, coverage, and CRS where
+  applicable; and
+- the intended linkage role and the review decision that permits support.
 
-Generated benchmarks, model release assets, and small-area outputs also live
-under `data/private`, but they are project artifacts rather than third-party
-source families. Keep that distinction explicit in inventory reports.
+Open-data catalogues such as
+[Open Government Canada](https://search.open.canada.ca/opendata/) and
+[Données Québec](https://www.donneesquebec.ca/) are discovery sources, not
+runtime dependencies. Add a catalogue-specific client only when a selected
+supported resource requires it for reproducible acquisition. SynthPopCan is
+not intended to mirror or become a general browser for open-data catalogues.
 
-Private-source rules:
+### Resource records
 
-- Never commit source files, record-level samples, exact private paths, secrets,
-  access correspondence, or derived disclosure-sensitive values.
-- Keep safe local-only manifests beside private sources; commit only generic
-  adapter specifications, synthetic fixtures, and non-sensitive source labels.
-- Record the authority, approved purpose, steward, access expiry, permitted
-  transformations, publication rules, and destruction/retention obligations.
-- Do not infer permission from a file being present locally.
-- Do not advertise, package, upload, mirror, sublicense, or provide access to a
-  third-party private source through SynthPopCan.
-- Do not promise that an adapter, model, example, or derived public artifact
-  will be delivered for any named private source.
-- Require an explicit review before using coordinates, small cells, genetics,
-  health outcomes, or other high-risk attributes.
+Each acquired public resource receives an immutable resource record containing:
 
-### Public and authoritative sources
+- its source-profile ID and source version;
+- resolved URL, retrieval time, response metadata, media type, and byte size;
+- observed SHA-256, plus comparison with a publisher checksum when one exists;
+- local cache identity and current, superseded, withdrawn, or rejected status;
+  and
+- extraction or conversion lineage for every retained derivative.
 
-Maintain a discovery lane for any relevant public dataset available through
-authoritative catalogues, including:
+Retrieval must be bounded and atomic. Reacquiring identical bytes reuses the
+recorded object; different bytes create an explicit new resource revision
+rather than overwriting the prior one. Default tests use public synthetic
+fixtures, while live retrieval checks remain opt-in.
 
-- [Open Government Canada](https://search.open.canada.ca/opendata/) as a primary
-  federal catalogue that also indexes some provincial and territorial records;
-- [Données Québec](https://www.donneesquebec.ca/) and its CKAN catalogue/API as
-  a primary Québec and municipal discovery source;
-- Statistics Canada and other authoritative federal sources;
-- other Canadian provincial, territorial, Indigenous-government, municipal,
-  public-health, education, and public-agency open-data portals;
-- authoritative school, healthcare, public-service, food-environment,
-  land-use/built-environment, road, transit, environmental, boundary, and
-  accessibility resources.
+Existing Statistics Canada inventories and download manifests are migration
+inputs for this contract. Preserve their product IDs, URLs, and local files,
+and add missing retrieval or integrity metadata without presenting a local
+inventory as a complete public catalogue.
 
-Do not maintain a supposedly exhaustive hard-coded list of portals: it will
-become stale and may exclude useful local or specialist authorities. Catalogue
-providers belong in a versioned, extensible registry. “Public” and “open” mean
-eligible for evaluation, not automatically suitable or automatically included.
-Every candidate receives a source profile covering:
+### Access-controlled research candidates
 
-- authoritative publisher and canonical dataset/resource identifier;
-- title, description, variables, unit of observation, and data dictionary,
-  retaining authoritative English and French forms when available;
-- source language availability plus translation status and provenance for each
-  descriptive field, distinguishing official text from reviewed
-  project-supplied translations;
-- licence and attribution requirements, including modification and
-  redistribution permissions;
-- formats, API/resource URLs, update frequency, version, and temporal coverage;
-- spatial coverage, geometry/geography, coordinate reference system, and
-  concordance requirements;
-- missingness, suppression, quality indicators, and known limitations;
-- intended enrichment role and whether linkage is aggregate, spatial,
-  probabilistic, or record-level;
-- retrieval timestamp, response metadata, file size, and SHA-256 checksum.
+CANUE, CPTP, MAVAN, MoNNET, and TOPO remain possible research sources, not
+promised project inputs. Their presence in an authorized research environment
+does not establish ownership, permission for a new purpose, or permission to
+redistribute source data, derived values, fixtures, models, or examples.
 
-A candidate advances to supported-source work only when its research relevance,
-licence and attribution obligations, quality, geographic and temporal
-alignment, version/update behaviour, and reproducible access have been reviewed.
+No numbered release depends on access to these sources. Dataset-specific work
+requires current written authority for the purpose, an identified steward and
+methods/privacy reviewer, applicable ethics approval, and documented
+publication, retention, and destruction conditions. Public code may contain
+only generic contracts and synthetic fixtures unless separate authority permits
+more.
 
-Use catalogue APIs for reproducible discovery and metadata refresh. Download
-or query selected resources on demand into ignored local caches such as
-`data/raw`; do not mirror the whole catalogue. Package only tiny synthetic or
-clearly redistributable test fixtures.
-
-The initial public-source backlog must include the public/reconstructable
-families previously kept out of `data/private`: Montréal school layers, food
-environment layers, derived/rebuildable geography layers, and relevant health,
-transport, road, land-use, and environmental datasets discoverable through
-Données Québec or their authoritative publishers.
-
-Treat Statistics Canada's
-[Canadian Food Environment Dataset (Can-FED)](https://www150.statcan.gc.ca/n1/pub/13-20-0001/132000012022001-eng.htm)
-as a first-class `0.7.1` public source rather than an unnamed example. Its
-public dissemination-area measures are based on 2018 food-outlet data and are
-intended for research on local food environments, dietary intake, and health
-outcomes. The source profile must preserve that vintage, distinguish public
-DA-level measures from more detailed restricted material, record outlet and
-access-measure definitions, and prevent users from interpreting the layer as a
-current inventory of individual establishments.
-
-### Statistics Canada Census source handling
-
-Use [CanCensus](https://mountainmath.github.io/cancensus/) as a design reference
-for approachable Canadian Census discovery and geography handling without
-making CensusMapper, an API key, or another third-party service a runtime
-requirement. Continue to prefer authoritative Statistics Canada bulk downloads,
-WDS metadata where appropriate, and official geographic relationship files.
-
-Add these Census-specific foundations to the `0.7.0` source contract:
-
-- a versioned catalogue for supported Census datasets, vintages, regions,
-  geography levels, and variables, with reproducible list, search, and inspect
-  operations before download;
-- characteristic metadata that preserves stable source identifiers, English
-  and French labels, parent and child relationships, population universe,
-  units, count/rate/percentage semantics, and additive or non-additive
-  behaviour so control preparation can reject invalid combinations;
-- an immutable local source cache whose manifests record retrieval time,
-  canonical product and resource identifiers, source version, response
-  metadata, file size, and SHA-256 checksum, with explicit refresh and removal
-  operations and visible current, superseded, or recalled status;
-- structured geography requests that separate Census vintage, parent region
-  level and identifier, and requested output level instead of requiring users
-  to infer selections from identifier prefixes; and
-- a versioned, validated local relationship index derived from official
-  geographic attribute or relationship files, retaining short identifiers and
-  DGUIDs and supporting auditable traversal among available levels.
-
-After coded relationships and vintage checks are reliable, investigate a local
-operation that selects Census geographies intersecting user-supplied GeoJSON.
-Treat cross-vintage boundary harmonization as a separate reviewed method rather
-than assuming that identifiers or polygons are stable between censuses.
+Never expose private records, samples, exact local paths, access
+correspondence, secrets, coordinates, small cells, or disclosure-sensitive
+derived values through git, CI, documentation, logs, releases, or telemetry.
+CARE practice and rights-holder engagement apply when Indigenous data or
+knowledge are in scope; an open licence alone is not sufficient authority.
 
 ## Enrichment Contract
 
-Each enrichment runs against an immutable identified base-population artifact
-and writes a separate versioned layer or a new derived population with explicit
-lineage. It must not overwrite the source population.
+An enrichment manifest composes, rather than replaces:
 
-Every layer records:
+- the existing linked-population v1 descriptor;
+- the durable run record and published-artifact hashes when a run produced the
+  population; and
+- one or more source profiles and immutable resource records.
 
-- enrichment schema version and source-profile version;
-- base-population run ID and checksums;
-- person, household, geography, location, or network key roles;
-- variable definitions, types, units, code lists, and missing-value rules;
-- linkage method, parameters, random seeds, eligibility rules, and tie-breaking;
-- matched, unmatched, multiply matched, and out-of-scope counts;
-- weighting, calibration, uncertainty, and representativeness diagnostics;
-- source licence/access classification and permitted output classification;
-- validation results and an exact reproduction request.
+It records the base table hashes, layer schema version, key roles, source
+lineage, variables, units, code lists, observed-versus-modeled status, linkage
+method, parameters, seeds where relevant, access classification, validation,
+and exact reproduction request.
 
-Use stable language-neutral keys for machines and paired English/French display
-metadata for people. A single-language upstream source may use an explicit
-fallback, but missing French or English metadata must remain visible rather than
-being silently treated as bilingual.
+Initial enrichment is geography-keyed. Every geography key includes its Census
+vintage, level, and authoritative identifier namespace; a matching text value
+alone is insufficient. Joins reject unknown, duplicate, ambiguous, or
+cross-vintage keys unless a separately reviewed concordance is supplied.
 
-Prefer normalized linked tables over continually widening household/person
-CSVs. Candidate table families include `locations`, `environment`, `services`,
-`activities`, `cohort_attributes`, and `contacts`, keyed through stable public
-synthetic identifiers and versioned geography/location identifiers.
+Each layer is a normalized table rather than an automatic widening of
+`households.csv` or `persons.csv`. The manifest reports matched, unmatched,
+multiply matched, and out-of-scope records. Weighting, uncertainty,
+representativeness, and privacy diagnostics are required only when the linkage
+method makes them relevant.
 
 ## Release Slices
 
-### 0.7.0: Source and enrichment foundation
+### `0.7.0`: Source and enrichment foundation
 
-- Complete safe profiles for every private source family and the first public
-  catalogue candidates.
-- Implement versioned source-profile and enrichment-manifest schemas.
-- Define bilingual descriptive-metadata fields, language availability,
-  authoritative-versus-project translation provenance, and deterministic
-  fallback rules without localizing stable schema identifiers.
-- Add CKAN catalogue discovery and metadata capture, beginning with Données
-  Québec, plus Open Government Canada catalogue discovery; keep
-  provider-specific code behind a generic catalogue interface and registry.
-- Implement bounded, atomic, checksum-verified public-resource retrieval using
-  the existing download safety posture.
-- Add the Census dataset/region/variable catalogue, hierarchy-aware
-  characteristic metadata, recall-aware cache manifests, structured geography
-  requests, and official relationship index described above.
-- Define aggregate, spatial, probabilistic, and record-level linkage classes.
-- Add reviewed fine-area placement primitives and boundary concordance reports.
-- Prove through tests that enrichment cannot mutate the base population.
-- Apply CARE principles and, where First Nations data or knowledge are in
-  scope, OCAP-informed review alongside FAIR practice; record authority,
-  collective benefit, control, responsibility, ethics, community expectations,
-  and limits on reuse rather than treating open licensing as sufficient.
+Implement:
 
-### 0.7.1: Spatial and environmental layers
+- source-profile, resource-record, and enrichment-manifest validators;
+- bilingual descriptive-metadata fields with explicit authoritative and
+  project-supplied translation provenance;
+- bounded, atomic acquisition with recorded checksums and explicit resource
+  revisions;
+- migration/inspection of the currently supported Statistics Canada source
+  metadata;
+- composition with linked-population v1 and durable-run artifacts without
+  modifying either schema; and
+- a geography-keyed synthetic enrichment fixture that proves the base
+  population remains byte-for-byte unchanged.
 
-- Profile and integrate the public Can-FED dissemination-area food-environment
-  measures, including its 2018 source vintage, category/access definitions,
-  geography linkage, missingness, and documented usage limits.
-- Record safe source-level profiles for TOPO, MoNNET, and CANUE; implement
-  dataset-specific support only if separately authorized and useful, without
-  distributing their data.
-- Add selected authoritative public geography, schools, healthcare/services,
-  food, transport/roads, built-environment, and environmental sources.
-- Produce normalized location/environment/service tables plus exposure and
-  accessibility measures with uncertainty and unmatched-area reporting.
-- Validate geography, temporal alignment, units, topology, and aggregation
-  independently of the production join code.
+The library owns the contracts and validation. CLI and local-workbench
+surfaces, if provided, call the shared Python workflow rather than implementing
+separate source or linkage logic.
 
-### 0.7.2: Cohort attachment
+`0.7.0` does not include a general catalogue client, private cohort adapter,
+cross-vintage concordance, arbitrary-polygon selection, or national DA
+orchestration.
 
-- Record safe source-level profiles for MAVAN, CPTP, MoNNET, and other cohorts;
-  implement dataset-specific support only under separate data-use, ethics,
-  methods, and privacy authority, without distributing their data.
-- Define variable harmonization, cohort eligibility, weighting, statistical
-  matching/modeling, and extrapolation procedures.
-- Preserve observed-versus-modeled status and never present attached values as
-  census-observed facts.
-- Publish aggregate utility, representativeness, uncertainty, privacy, and
-  disclosure evidence without publishing restricted records.
-- Require human methods/privacy approval before any cohort-derived public
-  artifact or model is released.
+### `0.7.1`: Can-FED vertical slice
 
-### 0.7.3: Networks and scenarios
+Integrate Statistics Canada's public general-use
+[Canadian Food Environment Dataset (Can-FED)](https://www150.statcan.gc.ca/n1/pub/13-20-0001/132000012022001-eng.htm)
+as the first real enrichment:
 
-- Add modular schools, workplaces, healthcare, food-access, road/transport,
-  activity, and contact-network layers.
-- Represent interventions and scenarios as derived runs that preserve the
-  original population and enrichment layers.
-- Support reproducible comparisons, provenance, validation, and exports for
-  downstream research/simulation tools.
+- acquire and profile the public 1 km and 3 km categorical files;
+- preserve the July 2018 food-outlet observation period and 2016 DA geography;
+- key the normalized environment layer by the explicit 2016 DA namespace;
+- validate buffer variants, fields, duplicate keys, source coverage, and all
+  unmatched source and base DAs;
+- reject an unreviewed join to a 2021 DA population; and
+- keep detailed Research Data Centre measures outside the public integration.
+
+The result is historical, area-level food-environment context. It is not a
+current inventory of establishments, a person-level exposure measurement, or
+evidence that the food environment caused an outcome.
+
+### `0.7.2`: One public service/location pilot
+
+Select exactly one public school, healthcare, food-access, or other
+public-service resource after documenting:
+
+- the research question and intended users;
+- canonical publisher, licence, version, and reproducible acquisition;
+- service definition, observation period, geography, and quality limitations;
+- the one supported area-level presence, capacity, or proximity measure; and
+- why its benefit justifies its maintenance and dependency cost.
+
+Publish one normalized service/location layer with source and geography
+lineage, unmatched reporting, synthetic fixtures, and an end-to-end
+reproduction. Do not claim route or travel-time accessibility without an
+independently validated transport network, routing method, and temporal model.
+
+## Deferred Decisions
+
+No `0.7.3` outcome is committed. After `0.7.1` and `0.7.2`, use actual research
+demand and data authority to decide whether another public layer is warranted.
+
+Private cohort attachment remains a conditional research project. It would
+require a concrete study, current source authority, harmonization and
+eligibility rules, a reviewed weighting or statistical-matching method,
+representativeness and uncertainty evidence, and human methods/privacy
+approval. Activities, schedules, memberships, contact networks, and
+intervention scenarios likewise require their own evidence and behavioral
+assumptions; they are not implied by the enrichment contract.
 
 ## Acceptance Criteria
 
-- Every third-party family currently under `data/private` has a safe source
-  profile and an explicit locally support, defer, or reject decision with
-  rationale; no decision implies redistribution or public availability.
-- Public-source discovery is reproducible from catalogue metadata and does not
-  depend on undocumented manual downloads.
-- Every selected public resource has verified licensing, attribution,
-  provenance, version, retrieval evidence, and geography/temporal coverage.
-- Supported source profiles, data dictionaries, and user-facing enrichment
-  metadata expose reviewed English and French text where available, declare
-  single-language gaps explicitly, and pass metadata-parity tests.
-- No private record or restricted derived value enters git, CI logs, public
-  fixtures, documentation, releases, or telemetry.
-- Enrichment layers retain stable linkage to the validated base population and
-  cannot silently change its row counts, controls, identifiers, or provenance.
-- Linkage, weighting, uncertainty, representativeness, and unmatched cases are
-  independently validated and visible to users.
-- Each release includes synthetic public fixtures and end-to-end reproduction
-  tests for every supported enrichment class.
+### `0.7.0`
+
+- Unknown contract versions, invalid access classifications, unsafe paths, and
+  incomplete geography namespaces are rejected.
+- A repeated retrieval of identical bytes is reused; changed bytes create a
+  visible resource revision without replacing prior provenance.
+- Public fixtures reproduce without network access, and live-source tests are
+  explicitly opt-in.
+- Enrichment preserves the exact base file hashes, row counts, identifiers,
+  controls, and linked-population descriptor.
+- User-facing metadata exposes reviewed English/French text where available
+  and clearly marks single-language or project-translated fields.
+
+### `0.7.1`
+
+- Both public Can-FED buffer products are reproducibly acquired and profiled.
+- Duplicate or malformed DA keys and any 2021-to-2016 join attempt fail
+  clearly.
+- Source coverage, base coverage, and unmatched records reconcile exactly.
+- A synthetic end-to-end example reproduces the normalized layer and
+  validation report without redistributing restricted Can-FED material.
+
+### `0.7.2`
+
+- One named source, research question, jurisdiction, vintage, geography, and
+  metric define the supported scope.
+- The source profile, acquisition, normalization, linkage, validation,
+  limitations, and exact reproduction are independently testable.
+- Documentation distinguishes source observations, project-derived measures,
+  missing services, and unmatched areas without implying unsupported
+  accessibility or causal conclusions.

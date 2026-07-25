@@ -1,29 +1,30 @@
 # Local Web Application Runtime Implementation Plan
 
-Status: implementation complete; Stages 0–8 and the `0.6.1` follow-up verified\
+Status: archived implementation record; runtime shipped in `0.6.0` and linked
+schema follow-up shipped in `0.6.1`\
 Created: 2026-07-10\
-Last updated: 2026-07-18\
+Last updated: 2026-07-25\
 Target: `0.6.0` runtime; stable linked schema shipped in `0.6.1`\
-Next action: preserve the durable-run and browser-sequencing regression gates\
 Roadmap: [PLANS.md](../../PLANS.md) | [Plan index](../README.md)
 
-> **For agentic workers:** Execute this plan one stage at a time. Keep each
-> patch reviewable, preserve existing CLI behavior while a workflow is being
-> migrated, and do not remove browser-side computation until parity tests and
-> replacement browser scenarios pass.
+This file preserves the completed implementation sequence and its architectural
+decisions. It does not own new work. The active
+[correctness plan](../2026-07-12-correctness-assurance.md) owns the remaining
+small-area reproduction and adapter-parity gap.
 
 **Goal:** Turn `synthpopcan serve` into a local research workbench that uses the
-same Python workflows as the CLI and beginner API, supports durable and
-potentially large synthesis runs, and keeps enough provenance and validation
-evidence to reproduce each run outside the browser.
+same Python domain algorithms as the CLI and beginner API, supports durable and
+potentially large synthesis runs, and keeps provenance and validation evidence
+with each run.
 
 **Architecture:** Keep synthesis algorithms in the existing domain modules.
 Add a UI-independent application-workflow layer for file-backed orchestration,
-reports, provenance, and artifacts. Both Click commands and a loopback HTTP API
-call that layer. The HTTP adapter owns request validation and local job control;
-the packaged HTML/CSS/ES-module frontend owns interaction, progress display,
-previews, and artifact navigation. Long-running work executes in a separate
-local process and writes directly into a durable run directory.
+reports, provenance, and artifacts. The durable HTTP runtime calls that layer;
+CLI adapters call it where migrated and otherwise call the same domain
+algorithms directly. The HTTP adapter owns request validation and local job
+control; the packaged HTML/CSS/ES-module frontend owns interaction, progress
+display, previews, and artifact navigation. Long-running work executes in a
+separate local process and writes directly into a durable run directory.
 
 **Tech stack:** Python dataclasses for domain and workflow types; FastAPI and
 Uvicorn at the HTTP adapter boundary; one spawned Python worker process at a
@@ -41,12 +42,13 @@ These decisions are settled for the 0.6.x implementation:
 1. Python owns synthesis, validation, provenance, and artifact writing. The
    browser does not maintain parallel IPF or tree-generation algorithms.
 1. The web API does not shell out to Click commands and does not parse terminal
-   output. CLI and HTTP adapters call shared Python workflow functions.
+   output. CLI and HTTP adapters share Python domain algorithms; exact
+   orchestration parity is enforced where claimed.
 1. The frontend remains packaged HTML, CSS, and ES modules. Moving computation
    to Python is not, by itself, a reason to add React or another UI framework.
 1. A run is a durable research object, not an ephemeral browser promise. Its
    manifest, inputs or input references, parameters, random seed, status,
-   diagnostics, artifacts, and reproducible command survive browser refreshes.
+   diagnostics, artifacts, and reproduction metadata survive browser refreshes.
 1. `0.6.0` keeps the run manifest extensible for linked artifacts without
    declaring their complete column contract stable. `0.6.1`, alongside backend
    prepared-model generation, defines and ships the versioned stable public
@@ -55,7 +57,7 @@ These decisions are settled for the 0.6.x implementation:
    CPU and memory use predictable and avoids introducing a database, Redis,
    Celery, or a general distributed queue.
 1. Browser memory must not scale with output population size. Large artifacts
-   are written in chunks and downloaded or inspected by reference.
+   are streamed incrementally and downloaded or inspected by reference.
 1. `geo map` remains a standalone exported HTML artifact using MapLibre GL JS
    and OpenFreeMap. The local app may create or open that artifact, but the map
    exporter is not absorbed into the application frontend.
@@ -99,8 +101,8 @@ Every synthesis workflow uses the same sequence:
 1. **Run:** show the current stage, elapsed time, concise messages, and a cancel
    action without streaming terminal output into the page.
 1. **Results:** show validation first, then sampled previews and named artifacts.
-   Include the exact CLI reproduction command and actions to run again or open
-   the run directory.
+   Include CLI reproduction metadata and actions to run again or open the run
+   directory. Exact multi-step small-area reproduction remains `0.6.3` work.
 
 The UI must not display every capability on every screen. Training, privacy
 review, and release tooling remain discoverable through documentation and the
@@ -174,9 +176,11 @@ its data dictionary without freezing the complete linked CSV column set in
 identifiers and linkage, model-specific extension fields, geography metadata,
 types, missing-value conventions, code lists, and compatibility rules.
 
-`reproduction` contains both the canonical structured workflow request and a
-shell-safe CLI command rendered with `shlex.join`. Tests must execute the
-rendered command against fixtures so command drift is detected.
+`reproduction` contains the canonical structured workflow request and shell-safe
+CLI metadata rendered with `shlex.join`. Released IPF and prepared-model tests
+execute that command against fixtures. Small-area conditions and optional map
+creation require an ordered executable recipe; that follow-up is tracked for
+`0.6.3` rather than claimed complete here.
 
 ### Run States
 
@@ -202,9 +206,8 @@ queued -> running -> succeeded
 Workers append compact events to `events.ndjson`:
 
 ```text
-event_id
+id
 timestamp
-level
 stage
 message
 completed
@@ -219,12 +222,16 @@ fine-grained progress.
 
 ### HTTP Surface
 
-Keep the API private to the packaged frontend, but make its contract explicit:
+The released API remains private to the packaged frontend. Its `0.6.2` surface
+is:
 
 ```text
 GET  /api/app
 GET  /api/models
 GET  /api/models/{model_id}
+POST /api/models/{model_id}/fetch
+POST /api/models/{model_id}/install
+DELETE /api/models/{model_id}
 POST /api/uploads
 POST /api/preflight
 GET  /api/runs
@@ -233,6 +240,9 @@ GET  /api/runs/{run_id}
 GET  /api/runs/{run_id}/events
 POST /api/runs/{run_id}/cancel
 GET  /api/runs/{run_id}/artifacts/{artifact_id}
+GET  /api/runs/{run_id}/artifacts/{artifact_id}/preview
+POST /api/wds/seed-controls
+POST /api/small-area/estimate
 ```
 
 - `POST /api/uploads` streams the request body to disk and returns an opaque
@@ -247,9 +257,8 @@ GET  /api/runs/{run_id}/artifacts/{artifact_id}
   received event ID.
 - Artifact responses use manifest-owned paths and `Content-Disposition`; a URL
   path can never be translated directly into a filesystem path.
-- Existing model and WDS helpers remain available during migration, but move
-  behind the FastAPI application before the standard-library handler is
-  removed.
+- Model, WDS, and small-area estimate helpers are served by FastAPI; the former
+  standard-library handler has been removed.
 
 ### Local Security
 
@@ -504,7 +513,7 @@ from the Runs list.
 generation behavior. No production browser module contains tree traversal,
 frequency sampling, or linked-population generation logic.
 
-### Stage 5: Chunked Generation And Scale Guardrails
+### Stage 5: Streamed Generation And Scale Guardrails
 
 **Files:**
 
@@ -516,18 +525,20 @@ frequency sampling, or linked-population generation logic.
 
 - Modify: model, workflow, benchmark, and browser tests
 
-- [x] Add an iterator or chunk callback for linked generation while retaining the
-  current collecting API for compatibility.
+- [x] Add an iterator and progress callback for linked generation while retaining
+  the current collecting API for compatibility.
 
-- [x] Preserve deterministic fixed-seed output regardless of configured write
-  chunk size.
+- [x] Preserve deterministic fixed-seed output regardless of configured progress
+  interval.
 
-- [x] Keep household/person identifiers and link validation correct across chunk
-  boundaries.
+- [x] Keep household/person identifiers and link validation correct throughout
+  streamed generation.
 
-- [x] Write CSV rows, hashes, byte counts, and row counts incrementally.
+- [x] Stream CSV rows, return row counts during generation, and collect hashes
+  and byte counts while atomically publishing completed artifacts.
 
-- [x] Add cancellation checks between chunks and before artifact finalization.
+- [x] Add cancellation checks at progress intervals and before artifact
+  finalization.
 
 - [x] Add preflight estimates and explicit disk headroom for prepared-model runs.
 
@@ -538,7 +549,7 @@ frequency sampling, or linked-population generation logic.
 **Acceptance:** The browser receives bounded status and preview payloads while a
 large file-backed generation run proceeds. Increasing output rows does not
 increase browser-side CSV memory, and backend peak memory is governed by the
-model plus configured chunk size rather than complete generated output.
+model plus bounded streaming state rather than complete generated output.
 
 ### Stage 6: Guided Small-Area Workflow
 
@@ -621,8 +632,8 @@ instead of becoming a second menu that mirrors every CLI command.
 - [x] Document workspace location, run lifecycle, privacy, cancellation,
   recovery, scale expectations, and CLI reproduction.
 
-- [x] Update performance guidance so the web app and CLI are alternate adapters
-  over the same runtime rather than different computational tiers.
+- [x] Update performance guidance so the web app and CLI use the same Python
+  domain algorithms rather than different computational tiers.
 
 - [x] Build a wheel and sdist, install the wheel in a clean environment, launch
   `synthpopcan serve`, complete demo IPF and prepared-model runs, and verify
@@ -644,8 +655,8 @@ depends on static hosting or browser-side synthesis.
 | Run manifests and paths | State/path tests | Restart and artifact tests | Recent-runs view | - |
 | Uploads | Chunked writer tests | Large streamed fixture | File selection | Large local file |
 | IPF | Existing algorithm tests | CLI/API artifact parity | `SCN-WEB-001` | Expanded output |
-| Prepared models | Existing model tests | Fixed-seed CLI/API parity | `SCN-WEB-002` | Chunked generation |
-| Small area | Existing calibration tests | Shared workflow artifacts | Small-area scenario | Province profile |
+| Prepared models | Existing model tests | Fixed-seed CLI/API parity | `SCN-WEB-002` | Streamed generation |
+| Small area | Existing calibration tests | Durable workflow artifacts; exact CLI recipe deferred to `0.6.3` | Small-area scenario | Province profile |
 | Progress/cancel | Job state tests | Worker termination/recovery | Progress and cancel UI | Long-running job |
 | Security | Origin/session/path tests | Symlink and traversal tests | Session expiry | - |
 | Packaging | - | Clean installed wheel | Packaged app smoke | - |
@@ -660,7 +671,7 @@ obsolete test-only modules must never be retained merely to raise coverage.
   runs, bounded artifacts, guided small-area synthesis, selected utilities,
   removal of browser synthesis, cleanup, and release proof.
 - **0.6.1:** Stabilize and version the public linked household/person/geography
-  schema after the local runtime owns all three workflows.
+  schema after the local runtime supports all three workflows.
 
 Do not make the release split a reason to leave two synthesis implementations
 indefinitely. Every migrated workflow has a named cleanup gate in the same
@@ -668,19 +679,19 @@ minor release slice.
 
 ## Definition Of Done
 
-The local-runtime redesign is complete when:
+The shipped local-runtime redesign established:
 
 1. A new user can start `synthpopcan serve`, choose a research task, pass
    preflight, run it, understand validation, and retrieve artifacts without
    learning command syntax first.
-1. The same structured workflow functions are exercised by CLI and HTTP
-   adapters, with parity tests for supported options and fixed seeds.
+1. CLI and HTTP adapters use the same Python domain algorithms; structured
+   workflow consolidation is used where migrated.
 1. Runs survive browser refresh and server restart as succeeded, failed,
    cancelled, or interrupted research records.
 1. Large outputs are written to disk incrementally and never serialized into a
    browser message or JSON response.
-1. Each completed run records sufficient provenance and an executable CLI
-   reproduction command.
+1. Each completed run records provenance and structured reproduction metadata.
+   Exact multi-step small-area reproduction is tracked separately for `0.6.3`.
 1. Browser-side synthesis algorithms and the old standard-library API handler
    have been removed.
 1. Loopback, workspace, session, path, upload, cancellation, and partial-output

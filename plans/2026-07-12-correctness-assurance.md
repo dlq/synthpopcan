@@ -1,397 +1,224 @@
-# Correctness Assurance Implementation Plan
+# Correctness Assurance Plan
 
-Status: `0.5.1` gate complete; post-release evidence improvements active\
+Status: active\
 Created: 2026-07-12\
-Last updated: 2026-07-22\
-Target: preserve the `0.5.1` gate and extend public assurance evidence\
-Next action: prioritize public reference benchmarks, assurance manifests, and
-model-audit evidence while preserving the released correctness gate\
+Last updated: 2026-07-25\
+Target: `0.6.3` reproduction and durable evidence, followed by ongoing assurance\
+Next action: make every durable small-area run exactly reproducible outside the
+browser and preserve release evidence permanently\
 Roadmap: [PLANS.md](../PLANS.md) | [Plan index](README.md)
 
-## Purpose
-
-Build evidence that SynthPopCan's numerical results, generated distributions,
-linked records, and small-area artifacts are correct. Coverage, branch tests,
-schema checks, reproducibility, and successful command execution remain useful,
-but they do not by themselves demonstrate mathematical, statistical, or
-structural correctness.
-
-The correctness suite should combine:
-
-- independently calculated reference fixtures;
-- mathematical and structural invariants;
-- differential checks between equivalent implementations;
-- metamorphic checks under transformations that should preserve results;
-- statistical acceptance tests for generated distributions;
-- end-to-end reconciliation of artifacts read back from disk.
-
-Production report builders must not be the sole validators of production
-output. Tests should independently aggregate emitted artifacts wherever
-practical so that a defect in calculation and reporting cannot validate itself.
-
-## Scope
-
-This plan covers:
-
-- pure-Python and NumPy IPF;
-- deterministic integerization and expanded rows;
-- frequency and CART model training and generation;
-- linked household/person generation;
-- household-only and joint small-area calibration;
-- realized household/person CSVs and reports;
-- versioned public reference workflows.
-
-It does not replace:
-
-- unit tests for parsing, validation, and error handling;
-- architecture and module-boundary tests;
-- performance benchmarks;
-- browser interaction tests;
-- opt-in live tests for external API drift;
-- privacy and disclosure-risk review.
-
-## Release Allocation
-
-`0.5.1` owns all six workstreams in this plan for code and artifact paths that
-exist today. Its release gate includes:
-
-- independent or differential evidence for the current numerical kernels;
-- generated invariant and metamorphic tests for IPF and integerization;
-- probability oracles and fixed-seed semantic round trips for current frequency
-  and CART models;
-- linked-record integrity across current in-memory and CSV paths;
-- independent reconciliation of current small-area CSV and report artifacts;
-- tiny known-truth workflows, one public versioned StatCan-derived fixture, and
-  installed-wheel correctness smoke tests;
-- deterministic pull-request checks plus the larger scheduled and pre-release
-  tiers defined below.
-
-Later releases must add regression evidence for behavior introduced by their
-own architecture. The `0.6.x` runtime therefore retains acceptance checks for
-durable job cancellation and recovery, new CLI/HTTP service parity, incremental
-artifact writing, and chunk-size independence. Those checks cannot run against
-`0.5.1` because those execution paths do not exist yet; they do not justify
-deferring checks of the current algorithms or artifacts.
-
-### `0.5.1` correctness dashboard
-
-| Workstream | State | Remaining release work |
-| --- | --- | --- |
-| 1. IPF numerical correctness | Core complete | Retain differential, metamorphic, and known-truth regression coverage as kernels evolve. |
-| 2. Integerization correctness | Core complete | Generated Python properties, finite-weight checks, realized residuals, and Python/browser parity are implemented. Retain regression coverage as output paths evolve. |
-| 3. Prepared-model correctness | Core complete | Analytical frequency probabilities, multi-seed thresholds, CART leaf/probability comparison, invalid weights, and semantic round trips are implemented. |
-| 4. Linked-population invariants | Core complete | Both model families now have deterministic identifier, relationship, inherited-condition, privacy-column, validation, and in-memory/CSV equivalence checks. |
-| 5. Small-area reconciliation | Core complete | Household-only, joint, multi-geography, subsampled, non-converged, serial/parallel, geography-isolation, and realized-residual oracles are implemented; structural-zero preflight remains covered as a blocking input case. |
-| 6. Reference workflows | Core complete | Tracked microdata/WDS tutorial fixtures, tiny known-truth workflows, a pinned and independently documented public StatCan WDS fixture, isolated installed-wheel proof, and retained JUnit reports are implemented. |
-
-## Public Assurance And Evidence Publication
-
-Status: first public assurance layer implemented for `0.5.1`.
-
-Completed:
-
-- [x] Publish a bounded claims-to-evidence matrix in `CORRECTNESS.md`, with
-  direct links to tests and fixtures and a limitation beside every claim.
-- [x] Link correctness evidence from the README and rendered documentation and
-  expose the scheduled workflow status through a public badge.
-- [x] Test the normal Python gate on Python 3.11 and 3.12 and retain
-  commit-specific JUnit reports for both versions.
-- [x] Run larger generated-case/model ensembles weekly and before package
-  publishing, with a separate scheduled live StatCan interface-drift check.
-- [x] Require an isolated installed-wheel correctness smoke test before trusted
-  publishing and document scoped release-note language.
-
-Planned evidence improvements:
-
-- [ ] Emit a machine-readable per-run assurance manifest with the SynthPopCan
-  version, input checksums, seeds, settings, convergence, requested/fitted/
-  realized residuals, unsupported cells, and linked-integrity findings.
-- [ ] Add Hypothesis-generated cases with failure shrinking and mutation
-  testing to measure whether the suite detects deliberately introduced kernel
-  and report defects.
-- [ ] Add frozen cross-version semantic fixtures and more independently
-  reviewed public reference workflows, including multi-dimensional and linked
-  household/person cases.
-- [ ] Add macOS and Windows compatibility jobs for supported workflows.
-- [ ] Attach permanent correctness reports, checksums, dependency provenance,
-  and build attestations to each GitHub Release rather than relying on expiring
-  Actions artifacts.
-- [ ] Commission or invite an external methods/code review and publish its
-  scope, findings, limitations, and project responses.
-
-Planned method and model improvements:
-
-- [ ] Complete reviewed prepared-model coverage for territories and selected
-  large CMAs through a repeatable release workflow.
-- [ ] Add model-design guidance for full, reduced, and minimal profiles by
-  geography, sparsity, size, and privacy risk.
-- [ ] Derive raw-row and identifier findings from model contents rather than
-  trusting serializer declarations.
-- [ ] Audit linked models jointly for rare cross-level combinations and align
-  support thresholds with category-coarsening guidance. Keep automated
-  disclosure checks subordinate to human review.
-- [ ] Add an opt-in reference workflow for the
-  [Prédhumeau–Manley national Canadian synthetic population](https://doi.org/10.1038/s41597-023-02030-4),
-  beginning with metadata, checksums, a schema crosswalk, and a small reviewed
-  slice rather than the complete 9.6 GB dataset. Treat it as a comparison
-  artifact, not observed truth.
-- [ ] Define a zero-cell policy that distinguishes structural zeros from
-  sampling zeros and records every deliberate support repair in provenance.
-- [ ] Add multi-scale validation at target geography, CSD/CMA where applicable,
-  province/territory, and national levels, including error distributions and
-  rare-category results.
-- [ ] Compare deterministic systematic integerization with QISI on public
-  fixtures, measuring residuals, reproducibility, runtime, memory, and
-  sparse-candidate behaviour before selecting another production backend.
-
-## Workstream 1: IPF Numerical Correctness
-
-Status: core differential and metamorphic suite implemented for `0.5.1`;
-known-truth consolidation remains under Workstream 6.
-
-Add differential tests that generate many small feasible tables, run both
-`fit_ipf` and `fit_ipf_numpy`, and compare:
-
-- fitted weights;
-- fitted totals for every control cell;
-- maximum absolute residual;
-- convergence state;
-- iteration count where both contracts require the same behavior.
-
-Test the intentional unsupported-cell behavior difference separately: the
-general fitter raises when a positive cell has no remaining support, while the
-repeated-geography NumPy fitter currently reports non-convergence so one bad
-geography does not abort all fits.
-
-For every converged result, assert these invariants:
-
-- all weights are finite and non-negative;
-- every fitted control cell is within the requested tolerance;
-- each margin total reconciles with its target total;
-- multiplying every control by a positive constant multiplies fitted weights by
-  the same constant;
-- reordering seed records does not change aggregate fitted results;
-- renaming categories consistently does not change numerical results;
-- equivalent duplicated records preserve aggregate fitted totals.
-
-Include independently solved fixtures for:
-
-- balanced 2x2 one-way margins;
-- a sparse but feasible table;
-- zero-valued target cells;
-- incompatible totals;
-- a positive target with no seed support;
-- non-convergence under a deliberately small iteration limit;
-- non-uniform starting weights.
-
-## Workstream 2: Integerization Correctness
-
-Status: core complete for current `0.5.1` paths; deterministic generated Python
-properties, finite-weight rejection, realized residual checks, and browser
-parity fixtures are implemented.
-
-Use generated non-negative weight vectors to assert:
-
-- every returned count is a non-negative integer;
-- `sum(counts) == round(sum(weights))`;
-- zero-weight records are never selected;
-- results are deterministic;
-- cumulative systematic-sampling discrepancy remains within its mathematical
-  bound;
-- expanded records reproduce the integer counts exactly;
-- source and synthetic identifiers remain unique and traceable;
-- empty, all-zero, highly fractional, and very large weights behave correctly.
-
-Reaggregate integerized output separately from fractional fitted weights. Verify
-that reports present both sets of residuals correctly and do not describe a
-fractionally converged fit as an exact realized match.
-
-## Workstream 3: Prepared-Model Correctness
-
-Status: core complete for current `0.5.1` frequency and CART paths.
-
-### Frequency models
-
-Train from weighted fixtures with analytically known conditional probabilities.
-Assert that the serialized groups, support values, global fallback, and outcome
-probabilities match the independent calculations exactly.
-
-Generate sufficiently large fixed-seed samples and require category proportions
-to remain within predefined statistical bounds. Use several fixed seeds or a
-seed ensemble rather than accepting one favorable draw.
-
-Exercise:
-
-- exact, partial, unknown, and empty conditions;
-- group fallback and global fallback;
-- weighted training rows;
-- multiple target columns;
-- zero and sparse outcome support.
-
-### CART models
-
-For a matrix of conditioning values, compare the serialized model's traversal,
-selected leaf, and class probabilities with the original scikit-learn estimator.
-This independently checks the custom serializer and runtime traversal.
-
-### Round trips
-
-For both model families, require write/read round trips to preserve model
-semantics and generated rows for a fixed seed. Semantic checks should be primary;
-avoid brittle byte snapshots for harmless formatting or dependency metadata.
-
-## Workstream 4: Linked-Population Invariants
-
-Status: core complete for current `0.5.1` in-memory and CSV generation across
-both model families. Add incremental and chunk-size equivalence when those
-paths are introduced in `0.6.x`.
-
-Exercise mixed household sizes, multiple conditions, fallback groups, both model
-families, and streamed generation. Assert:
-
-- household and person identifiers are unique;
-- every person references exactly one emitted household;
-- every household receives exactly the number of people named by its household
-  size;
-- person rows inherit the relevant household conditions consistently;
-- no source identifiers or raw training rows appear in generated artifacts;
-- in-memory and streamed CSV generation produce equivalent rows and summaries;
-- generation remains deterministic for a fixed seed.
-
-Test invalid sizes, orphaned people, duplicate identifiers, unknown households,
-missing conditioning values, and incompatible household/person model packages.
-
-## Workstream 5: Small-Area Reconciliation
-
-Status: core complete for current `0.5.1` paths; independent household-only,
-joint, multi-geography, subsampled, non-converged, serial/parallel,
-geography-isolation, and realized-residual checks are implemented, with
-structural zeros blocked during preflight. Add durable-job and
-incremental-writing failure semantics when those paths are introduced in
-`0.6.x`.
-
-Independently read emitted household and person CSVs and aggregate them without
-calling SynthPopCan report helpers. Compare the resulting totals with:
-
-- household controls;
-- optional person controls;
-- assigned counts by geography;
-- fractional fit residuals;
-- integerized realization residuals;
-- the values written to the JSON report.
-
-Verify geography isolation:
-
-- no household or person leaks between target geographies;
-- each person references a household in the same geography;
-- household member counts remain correct after replication;
-- inherited household attributes remain consistent on person rows;
-- generated identifiers remain unique across all geographies.
-
-Exercise:
-
-- household-only and joint household/person calibration;
-- full-pool and subsampled calibration;
-- independent generation and subsample seeds;
-- one and many target geographies;
-- structural zeros and sparse support;
-- incompatible control totals and missing categories;
-- explicit non-convergence;
-- non-uniform candidate starting weights;
-- household-size grouping;
-- candidate pools with and without person rows.
-
-Require single-worker and parallel calibration to produce equivalent artifacts.
-Require in-memory, streaming, and CSV realization paths to produce equivalent
-rows and summaries. Failed or non-converged runs must not expose partial files as
-successful output.
-
-## Workstream 6: Reference Workflows
-
-Status: core complete for the `0.5.1` pre-release gate.
-
-Track tiny public "known truth" fixtures with independently calculated expected
-results for:
-
-- balanced and sparse IPF;
-- incompatible IPF controls;
-- household-only small-area calibration;
-- joint household/person calibration;
-- two-geography linked realization;
-- frequency-model conditional generation;
-- CART serialization and generation.
-
-Add one public, versioned StatCan-derived fixture whose transformations, selected
-categories, reconciled totals, and expected outputs were calculated
-independently. Use live StatCan tests to detect endpoint or schema drift, not as
-the numerical oracle.
-
-Keep semantic golden outputs for stable reference workflows. Record the fixture
-source, independent calculation method, expected invariants, and acceptable
-tolerances next to each fixture.
-
-## Proposed Test Organization
-
-```text
-tests/correctness/test_ipf_properties.py
-tests/correctness/test_integerization_properties.py
-tests/correctness/test_tree_distributions.py
-tests/correctness/test_linked_invariants.py
-tests/correctness/test_small_area_reconciliation.py
-tests/correctness/test_reference_workflows.py
-tests/fixtures/correctness/
-```
-
-Use Hypothesis or an equivalent property-testing tool for generated feasible
-tables, record permutations, category renaming, target scaling, and weight
-vectors. Strategies should construct valid inputs directly rather than discard
-large numbers of invalid examples.
+## Purpose And Boundaries
+
+Maintain an auditable assurance case for SynthPopCan's numerical results,
+generated distributions, linked records, and emitted artifacts. The released
+baseline is summarized in [CORRECTNESS.md](../CORRECTNESS.md); completed
+`0.5.1` implementation history belongs in the changelog rather than this active
+plan.
+
+The assurance case combines independent reference calculations, mathematical
+and structural invariants, differential and metamorphic tests, statistical
+acceptance tests, and artifact read-back reconciliation. Production report
+builders must not be the sole validators of production output.
+
+Passing the project gate establishes behavior only under the tested conditions.
+It does not certify source-data accuracy, statistical fitness for a particular
+study, disclosure safety, causal validity, or substantive interpretation.
+
+## `0.6.3`: Exact Reproduction And Durable Evidence
+
+`0.6.3` is a maintenance release. It must not change the linked-population v1
+contract.
+
+### 1. Reproduction and adapter parity
+
+Current IPF and prepared-model durable runs have executable CLI checks.
+Small-area reproduction metadata is incomplete: model conditions and optional
+map creation are not represented, and the CLI and durable workflow orchestrate
+the shared domain algorithms differently.
+
+Implement an executable reproduction recipe that can contain an ordered command
+sequence when one command cannot recreate every artifact. The recipe must:
+
+- preserve the normalized workflow request and every result-affecting option;
+- represent catalogue models and uploaded model packages without substituting an
+  unverified input;
+- include model conditions, random and subsampling seeds, household-size
+  grouping, person controls, fitted-weight output, geography fields, and optional
+  map creation;
+- use managed relative input references or documented user-supplied replacements
+  rather than workspace-internal opaque upload IDs; and
+- remain shell-safe while retaining a structured, machine-readable form.
+
+Consolidate model and small-area orchestration where practical. Where two
+adapters still call shared domain functions separately, require explicit parity
+tests so defaults and option translation cannot drift silently.
+
+Acceptance:
+
+- execute generated IPF, prepared-model, small-area calibration, and small-area
+  generation recipes against public fixtures;
+- compare fixed-seed rows, identifiers, reports, validation summaries, and
+  requested optional artifacts, excluding only documented path or timestamp
+  fields;
+- cover catalogue and uploaded packages plus generated and uploaded linked
+  candidates;
+- fail a test when a result-affecting request field is not represented; and
+- remove the documented small-area reproduction limitation only after these
+  tests pass.
+
+### 2. Versioned per-run assurance
+
+Extend the existing workflow reports and durable `run.json` record rather than
+creating a parallel provenance system. Define one versioned assurance object
+whose fields have a single documented owner and can be embedded in or referenced
+by those existing records.
+
+The assurance object must cover, where applicable:
+
+- SynthPopCan and assurance-schema versions;
+- normalized request, model identity and checksum, random seeds, and settings;
+- input and artifact SHA-256 digests, media types, byte sizes, and row counts;
+- convergence, iteration count, tolerances, and fitted and realized residuals;
+- unsupported or structurally impossible cells and deliberate support repairs;
+- linked household/person integrity findings;
+- validation status, warnings, and explicit limitations; and
+- terminal run state without presenting failed, cancelled, or interrupted work
+  as successful output.
+
+Acceptance:
+
+- validate complete, failed, cancelled, and interrupted fixture records against
+  the versioned contract;
+- independently recompute a representative subset of digests, row counts,
+  residuals, and linkage findings from emitted artifacts;
+- reject or clearly report missing required evidence and tampered artifacts;
+- keep restricted inputs and raw training records out of the assurance payload;
+  and
+- document additive compatibility and the migration rule for any future schema
+  version.
+
+### 3. Permanent release evidence
+
+Actions artifacts are useful commit evidence but are not a permanent archive.
+For every release, preserve:
+
+- the tested tag and commit;
+- distribution and evidence-file checksums;
+- correctness and coverage reports;
+- dependency/build provenance and available attestations;
+- installed-wheel smoke results; and
+- a concise statement of tests run, known limitations, and any waived checks.
+
+Acceptance:
+
+- a release workflow verifies that evidence names the exact tag commit and built
+  distributions;
+- evidence remains downloadable from the GitHub Release, Zenodo record, or
+  another documented permanent record after Actions retention expires; and
+- a clean verifier can match the published distributions and evidence manifest
+  by checksum.
+
+## Evidence Hardening After `0.6.3`
+
+### Generated and mutation evidence
+
+- Add Hypothesis strategies that construct feasible IPF tables, record
+  permutations, category renamings, target scaling, and finite weight vectors
+  directly, with deterministic CI profiles and useful shrinking.
+- Add targeted mutation testing for IPF, integerization, calibration, model
+  traversal, artifact reconciliation, and report construction.
+- Record a reviewed baseline and triage every surviving mutation; do not adopt an
+  arbitrary project-wide mutation percentage.
+
+Acceptance: minimized failures are reproducible from recorded seeds, the normal
+profile remains suitable for pull requests, a larger profile runs on schedule,
+and surviving critical-kernel mutations are fixed or explicitly justified.
+
+### Cross-version and platform evidence
+
+- Freeze semantic fixtures for stable public contracts, including
+  multi-dimensional IPF, linked household/person generation, and small-area
+  realization. Avoid snapshots of harmless formatting or timestamps.
+- Declare the supported operating-system policy before promising compatibility.
+  Add macOS and Windows wheel-install, filesystem, CLI, and spawned-job smoke
+  checks, then expand only where failures justify a larger matrix.
+
+Acceptance: the current release reads supported older artifacts or emits a
+documented migration error, and each declared platform runs the named installed
+workflows without relying on a source checkout.
+
+## Statistical And Model Quality
+
+### Zero-cell and support policy
+
+Define a policy that distinguishes structural zeros, sampling zeros, suppressed
+values, missing categories, and genuine absence. Never repair support silently.
+
+Acceptance: every repair or category coarsening is represented in provenance;
+blocking and repairable cases have independent fixtures; reports distinguish
+fitted feasibility from realized integer output.
+
+### Multi-scale and rare-category validation
+
+Validate emitted populations at target geography and, where authoritative
+relationships exist, at CSD/CMA, province or territory, and national scales.
+Report error distributions and rare-category behavior rather than only a single
+maximum residual. The [small-area geography plan](2026-07-22-small-area-geography.md)
+owns relationship indexing and representative DA workflows.
+
+Acceptance: aggregation uses version- and namespace-matched relationships,
+reconciles independently from output rows, and reports unmatched geographies,
+suppression, denominators, and tail errors.
+
+### Integerization alternatives
+
+Compare deterministic systematic integerization with QISI on public fixtures
+before adding another production backend. Measure residuals, reproducibility,
+runtime, memory, and sparse-candidate behavior.
+
+Acceptance: publish the benchmark method and decision; retain the current
+backend unless another method provides a material, reviewed benefit without
+weakening determinism or traceability.
+
+### Prepared-model assurance
+
+- Derive raw-row and likely source-identifier findings from serialized model
+  contents rather than trusting declarations alone. Treat detection as evidence,
+  not proof of absence.
+- Audit linked household and person models jointly for rare cross-level
+  combinations and align thresholds with category-coarsening guidance.
+- Define full, reduced, and minimal profile guidance by geography, sample
+  support, size, model quality, and disclosure risk.
+- Treat territory and broader-CMA packages as feasibility candidates. Publish
+  only packages that pass support, rare-category, privacy, provenance,
+  reproducible-build, checksum, generation, and archival gates.
+
+Automated privacy findings remain subordinate to documented human review.
+
+### External comparison and review
+
+- Add an opt-in comparison with a small, checksum-pinned, schema-crosswalked
+  slice of the Prédhumeau–Manley national Canadian synthetic population. Treat
+  it as a comparison artifact, not observed truth.
+- Invite an external methods/code review and publish its scope, findings,
+  limitations, and project responses.
+
+Acceptance: external data is not downloaded by the default test gate, source
+version and licence are recorded, comparison metrics and denominators are
+explicit, and review findings remain publicly traceable.
 
 ## Execution Tiers
 
-Every pull request:
+- **Pull request and push:** deterministic unit, invariant, differential,
+  reference, artifact-reconciliation, architecture, documentation, browser
+  integration, and installed-wheel smoke checks on supported Python versions.
+- **Scheduled:** larger generated and multi-seed suites plus live Statistics
+  Canada interface-drift checks.
+- **Release:** the complete extended suite against the release tag, exact
+  reproduction fixtures, installed distributions, and permanent evidence
+  publication.
 
-- deterministic mathematical and structural invariants;
-- Python/NumPy differential IPF checks;
-- tiny known-truth fixtures;
-- artifact reconciliation on small workflows;
-- fixed-seed model round trips.
-
-Nightly or scheduled:
-
-- larger property-test example counts;
-- multi-seed distributional acceptance tests;
-- public-data reference benchmarks;
-- opt-in live StatCan drift checks;
-- medium-scale single-worker/parallel equivalence.
-
-Before a release:
-
-- the complete reference workflow set;
-- larger fixed-seed distribution ensembles;
-- installed-wheel correctness smoke tests;
-- a machine-readable correctness report retained with normal test and coverage
-  results.
-
-## Implementation Order
-
-1. Differential Python/NumPy IPF tests and converged-fit invariants.
-1. Independent small-area output reconciliation.
-1. Integerization properties and realized-output residual checks.
-1. Frequency and CART probability oracles plus distributional acceptance tests.
-1. Linked-generation invariants and execution-path equivalence.
-1. Versioned known-truth and public StatCan-derived reference workflows.
-
-## Completion Criteria
-
-- Every numerical kernel has at least one independent oracle or equivalent
-  differential implementation.
-- Core algorithms have generated invariant and metamorphic tests, not only
-  example-based branch coverage.
-- Emitted small-area artifacts are reconciled independently against controls and
-  report values.
-- Model generation has explicit, reviewed statistical acceptance thresholds.
-- Linked outputs are checked for structural integrity across both model families
-  and all execution paths.
-- Pull-request, scheduled, and release correctness tiers run in CI with clear
-  ownership and failure output.
+Default tests must remain public and deterministic. Live external-service,
+large-data, restricted-data, performance, and external-comparison checks remain
+opt-in unless a bounded public fixture replaces them.

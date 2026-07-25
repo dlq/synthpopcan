@@ -13,7 +13,7 @@ recent external work relevant to a narrower near-term goal:
    subregions using explicit Canadian 2016 and 2021 Census source profiles.
 1. Leave broader SynthEco ecosystem enrichment, cohort attachment, and simulation work for later.
 
-Current codebase status, 2026-07-22:
+Current codebase status, 2026-07-25:
 
 - The active roadmap is now `PLANS.md`; this file is the research and design
   notes companion.
@@ -34,8 +34,9 @@ Current codebase status, 2026-07-22:
   that separate fractional fit from integerized residuals.
 - The local web app guides durable backend IPF, prepared-model, and small-area
   runs with streamed uploads, progress, cancellation, recovery, bounded
-  previews, and reproducible CLI handoff. Large results remain on disk rather
-  than being loaded into browser memory.
+  previews, and CLI reproduction metadata. Large results remain on disk rather
+  than being loaded into browser memory. Exact executable reproduction of
+  every small-area condition and optional map remains `0.6.3` work.
 - The linked household/person/geography output contract is versioned, explicit
   2016 and 2021 PUMF adapters and prepared models are available, and releases
   and model packages have citation metadata and archival DOIs.

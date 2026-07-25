@@ -7,8 +7,20 @@ All notable public changes to SynthPopCan are tracked here.
 - Refresh the research notes and public documentation for the released durable
   Python runtime, explicit 2016/2021 Census support, current 33-entry model
   catalogue, and national 2021 CSD boundaries.
-- Add a focused bilingual community-introduction and JOSS-readiness track to
-  the research-software stewardship roadmap.
+- Reset the forward roadmap against the `0.6.2` codebase: reserve `0.6.3` for
+  exact reproduction and durable release evidence; sequence the geography and
+  enrichment foundation, Can-FED, and one research-driven public-service pilot
+  through `0.7.x`; and defer simulator-specific work until after a neutral
+  `0.8.0` exchange bundle.
+- Prune completed, duplicated, speculative, and obsolete implementation-plan
+  work; make national DA synthesis, private cohort integration, catalogue-wide
+  source browsing, optional spatial formats, and multiple simulator adapters
+  explicitly gated rather than promised.
+- Correct stale browser-numerics evidence links and narrow small-area
+  reproduction claims to the options the current command actually records.
+- Add a bounded bilingual case-study, preservation, FAIR4RS, governance,
+  community-introduction, and JOSS-maturation track to the research-software
+  stewardship roadmap.
 
 ## 0.6.2 - 2026-07-20
 
@@ -92,7 +104,8 @@ Citation, licensing, and archival release.
   workflows as the CLI and beginner API.
 - Added a controlled run workspace with streamed uploads, versioned manifests,
   persisted progress, cancellation and restart recovery, bounded previews,
-  atomic artifacts, and exact CLI reproduction commands.
+  atomic artifacts, and recorded CLI reproduction metadata. Exact executable
+  parity for every small-area option remains follow-up correctness work.
 - Added Python-backed small-area generation and calibration from either a
   reviewed model/package or existing linked candidate CSVs, with scale,
   linkage, dimension, category, disk, convergence, residual, and map checks.

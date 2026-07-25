@@ -26,9 +26,10 @@ Near-term goals:
    census-vintage-specific.
 1. Maintain a local web app for configuring runs, inspecting controls, generating from prepared models, validating outputs, and downloading results.
 
-Broader SynthEco-style enrichment with cohort, environmental, school,
-healthcare, and food-access layers is planned for the `0.7.x` line, building on
-the released population-synthesis, correctness, runtime, and schema foundation.
+The `0.7.x` roadmap begins with explicit geography and governed enrichment
+contracts, then a Can-FED vertical slice and one research-driven public-service
+layer. Private cohort work and broader enrichment remain conditional rather
+than promised.
 
 Detailed documentation is published at
 <https://synthpopcan.readthedocs.io/>. The source files live under
@@ -159,10 +160,11 @@ Use `--seed-records` for smaller or larger IPF runs. The province-scale
 small-area timing check is opt-in because it depends on the machine. Optional
 SciPy CSR and Polars comparisons remain benchmark probes rather than runtime
 backends, and full-data tree-model smoke tests remain outside the default suite.
-The CLI, beginner Python API, and local web app call the same Python workflow
-and domain implementations. Browser guidance and durable artifacts do not
-define a separate computational tier; scale limits come from the selected
-workflow, model, output size, and available machine resources.
+The CLI, beginner Python API, and local web app call the same Python domain
+implementations; IPF also shares its file-backed workflow orchestration.
+Browser guidance and durable artifacts do not define a separate computational
+tier. Scale limits come from the selected workflow, model, output size, and
+available machine resources.
 
 ## Data Policy
 

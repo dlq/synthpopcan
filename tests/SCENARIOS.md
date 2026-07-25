@@ -94,8 +94,9 @@ passes Python-backed preflight before starting a durable synthesis.
 
 Acceptance evidence: target geography and output-row estimates, workspace
 capacity, durable progress, residual and convergence diagnostics, linked
-artifacts, an optional map, and an exact `geo synthesize` or `geo calibrate`
-reproduction command.
+artifacts, an optional map, and recorded `geo synthesize` or `geo calibrate`
+reproduction metadata. Exact reproduction of model conditions and optional map
+creation is tracked for `0.6.3`.
 
 ## Test Ownership
 
