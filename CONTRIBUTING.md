@@ -55,6 +55,19 @@ Rich, `synthpopcan.cli*`, `synthpopcan.console`, `synthpopcan.web`, or
 `synthpopcan.webapp`. The architecture checks in `tests/test_architecture.py`
 enforce these boundaries as part of the normal `uv run pytest` gate.
 
+## Architecture Decisions
+
+Repository-wide decisions and their rationale live in
+[`adr/`](adr/README.md). Read the relevant records before changing a public
+schema, dependency direction, execution model, data boundary, or publication
+authority.
+
+Add an ADR when a proposed choice will constrain several interfaces or future
+implementations, would be costly to reverse, or establishes an important
+compatibility, data, privacy, or distribution boundary. Use
+[`adr/template.md`](adr/template.md), and supersede an accepted decision with a
+new record rather than rewriting its original rationale.
+
 ## Data And Model Safety
 
 Do not commit raw Census microdata, downloaded bulk data caches, generated CSV
@@ -123,6 +136,7 @@ User-facing behavior should be documented where readers will look for it:
 
 - `README.md` for project orientation and public-repo expectations;
 - `docs/` for workflow and API documentation;
+- `adr/` for durable architectural decisions and their rationale;
 - `PLANS.md` for open roadmap items;
 - `NOTES.md` for research notes.
 

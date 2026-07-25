@@ -2,11 +2,12 @@
 
 Status: planned and ongoing\
 Created: 2026-07-19\
-Last updated: 2026-07-22\
+Last updated: 2026-07-25\
 Target: immediate maintenance, `0.7.x`, `0.8.x`, and maturity follow-ons\
 Next action: add full CFF schema validation, review the licence representation
-and safe automation of model archives, prepare the focused bilingual community
-introduction, and register important releases with Software Heritage\
+and safe automation of model archives, define the Hugging Face distribution
+pilot, prepare the focused bilingual community introduction, and register
+important releases with Software Heritage\
 Roadmap: [PLANS.md](../PLANS.md) | [Plan index](README.md)
 
 ## Purpose
@@ -67,6 +68,54 @@ actually needs them.
   releases so cited source trees remain independently identifiable.
 - Keep Git tags, GitHub Releases, PyPI artifacts, documentation, Zenodo records,
   and archival identifiers mutually consistent and test what can be tested.
+
+### Hugging Face model-distribution pilot
+
+Evaluate Hugging Face as a **secondary discovery and download surface** for
+prepared models, not as the project's archival authority. Zenodo should remain
+the canonical citable archive, and GitHub Releases should remain the source of
+the release artifacts. A Hugging Face copy must point readers back to the
+corresponding DOI, release, documentation, source licence, and provenance.
+
+Keep the first experiment deliberately small:
+
+- Create a SynthPopCan organization or namespace and one collection for
+  prepared Census 2021 models.
+- Publish one model repository for each of
+  `canada-2021-all-fields`, `quebec-2021-all-fields`, and
+  `montreal-cma-2021-all-fields`. Copy the exact existing compressed package
+  bytes rather than rebuilding or transforming them for Hugging Face.
+- Generate each model card from the model registry so its identifier, compatible
+  SynthPopCan version, Census vintage, geography, source PUMF, frequency/CART
+  method, intended and unsuitable uses, limitations, privacy review, DOI,
+  validation summary, checksum, and CLI and Python examples do not drift from
+  the package and public documentation.
+- Represent Statistics Canada Open Licence conditions explicitly. If the Hub
+  cannot name that licence directly, use its custom-licence metadata fields and
+  link to the authoritative licence text. Complete the broader model-archive
+  licence review before treating this representation as settled.
+- Tag or otherwise record the published Hub revision, verify its SHA-256 digest
+  against the GitHub/Zenodo artifact, and use a pinned revision in any
+  reproducible download example rather than relying on a moving default branch.
+- Keep Hub access optional during the pilot. Do not add
+  `huggingface_hub` as a required runtime dependency or silently change the
+  existing model-fetch path. Assess an explicit mirror or fallback only after
+  the pilot establishes a useful maintenance and integrity model.
+- Treat generated synthetic populations as **datasets**, not models. Publishing
+  them would require a separate methodological, disclosure, provenance,
+  licensing, and dataset-card review.
+
+The pilot succeeds only if all three repositories are publicly understandable
+without private context, model-card metadata can be regenerated from maintained
+project records, downloaded bytes match the canonical checksums, DOI and
+licence relationships are unambiguous, and an unauthenticated clean environment
+can retrieve a pinned artifact. Before expanding to the full catalogue, review
+whether the Hub materially improves discovery, citation, reuse, or community
+feedback relative to its maintenance burden.
+
+Stop or redesign the experiment if publication requires manual duplicate
+metadata, produces version ambiguity, obscures the canonical archive, or cannot
+represent attribution and licence conditions responsibly.
 
 ### FAIR4RS and reproducibility
 
@@ -211,6 +260,9 @@ Detailed implementation belongs in the
   metadata.
 - Versioned releases have verified Zenodo records and DOIs, and important
   source trees have recorded Software Heritage identifiers.
+- Any Hugging Face pilot preserves exact archived bytes, checksums, DOI links,
+  licence and provenance metadata, pinned revisions, and optional installation
+  semantics.
 - A dated FAIR4RS assessment and Software Management Plan are public and linked
   from contributor/release documentation.
 - `0.7.x` source governance records language, authority, licence/access,
@@ -229,6 +281,9 @@ Detailed implementation belongs in the
 - [Citation File Format](https://citation-file-format.github.io/)
 - [FORCE11 Software Citation Principles](https://force11.org/info/software-citation-principles-published-2016/)
 - [Zenodo GitHub integration](https://help.zenodo.org/docs/github/)
+- [Hugging Face model cards](https://huggingface.co/docs/hub/model-cards)
+- [Hugging Face repositories](https://huggingface.co/docs/hub/en/repositories)
+- [Hugging Face collections](https://huggingface.co/docs/hub/en/collections)
 - [Software Heritage](https://www.softwareheritage.org/)
 - [RO-Crate specification](https://www.researchobject.org/ro-crate/specification.html)
 - [Software Sustainability Institute: Software Management Plans](https://www.software.ac.uk/guide/writing-and-using-software-management-plan)
