@@ -2,10 +2,10 @@
 
 Status: active\
 Created: 2026-07-22\
-Last updated: 2026-07-25\
+Last updated: 2026-07-27\
 Target: `0.7.0`, with later expansion gated by evidence\
 Next action: define the geography identity contract and prove one bounded
-Québec 2016 DA workflow\
+Québec 2021 DA workflow while retaining 2016 compatibility evidence\
 Roadmap: [PLANS.md](../PLANS.md) | [Plan index](README.md)
 
 ## Purpose
@@ -13,12 +13,12 @@ Roadmap: [PLANS.md](../PLANS.md) | [Plan index](README.md)
 Make Census geography an explicit data and research contract rather than a
 filename, identifier prefix, or incidental column. Preserve the current CT,
 ADA, and CSD workflows while adding only the DA support needed for a reviewed
-small-area proof and the first geography-keyed enrichment.
+small-area proof and the reusable geography-keyed external-data framework.
 
 This plan owns geography identity, authoritative relationships, selection, and
 small-area execution. The
-[enrichment plan](2026-07-15-ecosystem-enrichment.md) consumes that contract;
-it does not redefine it.
+[external-data enrichment framework](2026-07-15-ecosystem-enrichment.md)
+consumes that contract; it does not redefine it.
 
 ## Current Baseline
 
@@ -71,16 +71,18 @@ interfaces, but beginner interfaces should use structured selections.
 - Add it to small-area requests, run manifests, outputs, validation reports,
   maps, and the source/enrichment contracts.
 - Preserve DGUIDs and source short identifiers without synthesizing either.
-- Build only the relationship records required by the Québec 2016 DA proof
+- Build only the relationship records required by the Québec 2021 DA proof
   from authoritative Statistics Canada files.
 - Emit explicit unmatched, ambiguous, and vintage-mismatch reports.
 - Add migrations or compatibility handling for current manifests where
   necessary; do not silently reinterpret an old identifier.
 
-### 2. Prove a bounded Québec 2016 DA workflow
+### 2. Prove a bounded Québec 2021 DA workflow
 
 Use public, release-pinned inputs and include at least one metropolitan and one
-rural study area. Exercise:
+rural study area. Add the missing registered 2021 DA profile/boundary path
+needed to attach Can-FED v2, while keeping the current 2016 DA resources
+recognized and covered by a compact compatibility regression. Exercise:
 
 1. profile, boundary, and relationship retrieval with hashes;
 1. universe and category reconciliation;
@@ -127,7 +129,6 @@ present CT, ADA, CSD, DA, and DB as a universally simple nesting hierarchy.
 The following are not `0.7.0` commitments:
 
 - country-wide DA synthesis;
-- 2021 DA profile/boundary parity merely for symmetry;
 - automatic 2016/2021 DA concordance;
 - arbitrary-polygon selection;
 - a complete cross-product relationship graph among all Census geographies;
@@ -144,8 +145,10 @@ user-supplied polygon intersection each require separately reviewed methods.
 - The canonical identity is present and validated wherever geography affects a
   `0.7.0` result.
 - Unsupported and cross-vintage joins fail with actionable diagnostics.
-- The public Québec 2016 DA proof passes control, linkage, geography, resource,
+- The public Québec 2021 DA proof passes control, linkage, geography, resource,
   mapping, and reproducibility checks for metropolitan and rural cases.
+- Existing 2016 DA resources remain recognized, and cross-vintage joins fail
+  rather than being interpreted as concordant.
 - The enrichment layer can consume the identity contract without duplicating
   geography logic.
 - Documentation states supported coverage and limitations without implying

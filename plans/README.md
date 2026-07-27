@@ -6,9 +6,9 @@ current task matches its scope.
 | Plan | Status | Target | Next action |
 | --- | --- | --- | --- |
 | [Correctness assurance](2026-07-12-correctness-assurance.md) | Active | `0.6.3` and ongoing evidence | Correct small-area reproduction parity, retain durable release evidence, and keep linked-population v1 unchanged. |
-| [Small-area geography](2026-07-22-small-area-geography.md) | Active prerequisite | `0.7.0` | Make geography identity explicit and prove one bounded Québec 2016 DA workflow with matching controls, relationships, validation, and resource evidence. |
+| [Small-area geography](2026-07-22-small-area-geography.md) | Active prerequisite | `0.7.0` | Make geography identity explicit and prove one bounded Québec 2021 DA workflow with matching controls, relationships, validation, resource evidence, and a compact 2016 compatibility regression. |
 | [Research-software stewardship](2026-07-19-research-software-stewardship.md) | Active baseline; ongoing release policy | Before another model publication or mirror; JOSS only after maturity gates | Settle model licensing, add full CFF validation, capture Software Heritage identifiers, publish dated FAIR4RS/management records, and release a tested bilingual 2021 case study for focused community introduction. |
-| [Ecosystem enrichment](2026-07-15-ecosystem-enrichment.md) | Planned | `0.7.0`–`0.7.2` | Co-design the `0.7.0` source/enrichment foundation, integrate Can-FED in `0.7.1`, then select one demand-backed public service/location pilot. |
+| [External-data enrichment framework](2026-07-15-ecosystem-enrichment.md) | Planned | `0.7.0` framework with `0.7.1`–`0.7.2` reference implementations | Co-design the reusable framework, demonstrate it with Can-FED v2 and ODEF v3, then select from the ranked health, education, built, social, and environmental candidate queue when evidence justifies an adapter. |
 | [Simulation interoperability](2026-07-15-simulation-interoperability.md) | Planned and conditional | `0.8.0`–`0.8.1` | Define a simulator-neutral exchange bundle, then validate one demand-backed target adapter against a pinned input contract. |
 
 ## Archived Plans

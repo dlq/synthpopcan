@@ -2,7 +2,7 @@
 
 Status: active, with a bounded stewardship baseline and gated publication work\
 Created: 2026-07-19\
-Last updated: 2026-07-25\
+Last updated: 2026-07-27\
 Target: complete the stewardship baseline before another model publication or
 mirror; mature toward JOSS only after its public-development and research-use
 gates are met\
@@ -22,7 +22,7 @@ This plan owns the bounded stewardship baseline, ongoing release policy,
 community introduction, and JOSS maturation gates. It does not duplicate:
 
 - source, language, access, CARE, or OCAP implementation, which belongs in the
-  [ecosystem enrichment plan](2026-07-15-ecosystem-enrichment.md); or
+  [external-data enrichment framework](2026-07-15-ecosystem-enrichment.md); or
 - exchange bundles, RO-Crate experiments, or simulator adapters, which belong
   in the
   [simulation interoperability plan](2026-07-15-simulation-interoperability.md).

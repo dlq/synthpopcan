@@ -8,19 +8,25 @@ All notable public changes to SynthPopCan are tracked here.
   Python runtime, explicit 2016/2021 Census support, current 33-entry model
   catalogue, and national 2021 CSD boundaries.
 - Reset the forward roadmap against the `0.6.2` codebase: reserve `0.6.3` for
-  exact reproduction and durable release evidence; sequence the geography and
-  enrichment foundation, Can-FED, and one research-driven public-service pilot
-  through `0.7.x`; and defer simulator-specific work until after a neutral
-  `0.8.0` exchange bundle.
+  exact reproduction and durable release evidence; define `0.7.x` as a
+  reusable external-data enrichment framework demonstrated by Can-FED v2 and
+  ODEF v3; rank later health, education, built, social, and environmental
+  candidates; and defer simulator-specific work until after a neutral `0.8.0`
+  exchange bundle.
 - Prune completed, duplicated, speculative, and obsolete implementation-plan
-  work; make national DA synthesis, private cohort integration, catalogue-wide
-  source browsing, optional spatial formats, and multiple simulator adapters
-  explicitly gated rather than promised.
+  work; make national DA synthesis, individual source adapters,
+  catalogue-wide source browsing, optional spatial formats, and multiple
+  simulator adapters explicitly gated rather than promised.
 - Correct stale browser-numerics evidence links and narrow small-area
   reproduction claims to the options the current command actually records.
 - Add a bounded bilingual case-study, preservation, FAIR4RS, governance,
   community-introduction, and JOSS-maturation track to the research-software
   stewardship roadmap.
+- Record a speculative independent refresh path for aging Statistics Canada
+  LODE facility inventories; assess the public CSBP-CPSE source registries,
+  OpenTabulate descriptors, workflows, and ontologies as prior art; and frame
+  OpenStreetMap and Overture as separately licensed corroboration, candidate,
+  building, address, and network sources rather than automatic authority.
 
 ## 0.6.2 - 2026-07-20
 

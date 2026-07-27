@@ -2,13 +2,13 @@
 
 Status: planned\
 Created: 2026-07-15\
-Last updated: 2026-07-25\
+Last updated: 2026-07-27\
 Target: `0.8.0`–`0.8.1`\
 Next action: validate a CSV/JSON exchange contract that composes the existing
 linked-population and durable-run records\
 Roadmap: [PLANS.md](../PLANS.md) | [Plan index](README.md) | Foundations:
 [linked-population schema](archive/2026-07-18-linked-population-schema.md) and
-[ecosystem enrichment](2026-07-15-ecosystem-enrichment.md)
+[external-data enrichment](2026-07-15-ecosystem-enrichment.md)
 
 ## Purpose And Boundary
 

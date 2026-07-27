@@ -26,10 +26,12 @@ Near-term goals:
    census-vintage-specific.
 1. Maintain a local web app for configuring runs, inspecting controls, generating from prepared models, validating outputs, and downloading results.
 
-The `0.7.x` roadmap begins with explicit geography and governed enrichment
-contracts, then a Can-FED vertical slice and one research-driven public-service
-layer. Private cohort work and broader enrichment remain conditional rather
-than promised.
+The `0.7.x` roadmap builds a reusable external-data enrichment framework for
+public, locally supplied, licensed, and restricted sources. Can-FED v2 and
+ODEF v3 serve as contrasting area-attribute and facility reference adapters;
+later health, education, built, social, and environmental integrations remain
+demand-, authority-, and validation-gated rather than being limited to those
+examples.
 
 Detailed documentation is published at
 <https://synthpopcan.readthedocs.io/>. The source files live under

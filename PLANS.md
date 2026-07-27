@@ -1,7 +1,7 @@
 # SynthPopCan Plan
 
 Status: release-phased roadmap\
-Last updated: 2026-07-25\
+Last updated: 2026-07-27\
 Current release: `0.6.2`
 
 ## Current Focus
@@ -13,9 +13,9 @@ completed implementation plans belong in [`plans/archive/`](plans/archive/).
 | Order | Focus | Owner |
 | --- | --- | --- |
 | 1 | `0.6.3`: correct small-area reproduction parity and make release evidence durable. | [Correctness assurance](plans/2026-07-12-correctness-assurance.md) |
-| 2 | `0.7.0`: establish explicit geography identity, prove a bounded 2016 DA workflow, and add the minimum governed source/enrichment contracts needed for safe layers. | [Small-area geography](plans/2026-07-22-small-area-geography.md) and [ecosystem enrichment](plans/2026-07-15-ecosystem-enrichment.md) |
-| 3 | `0.7.1`: integrate public general-use Can-FED as the first real enrichment, preserving its 2018 measures and 2016 DA geography. | [Ecosystem enrichment](plans/2026-07-15-ecosystem-enrichment.md) |
-| 4 | `0.7.2`: add one public service or location layer selected from a concrete research question—not an omnibus data catalogue. | [Ecosystem enrichment](plans/2026-07-15-ecosystem-enrichment.md) |
+| 2 | `0.7.0`: establish explicit geography identity and a reusable external-data enrichment framework, then prove both with a bounded 2021 DA workflow and synthetic fixtures while retaining 2016 compatibility evidence. | [Small-area geography](plans/2026-07-22-small-area-geography.md) and [external-data enrichment](plans/2026-07-15-ecosystem-enrichment.md) |
+| 3 | `0.7.1`: use public general-use Can-FED v2 as the first reference implementation, preserving its August 2024 measures and 2021 DA geography. | [External-data enrichment](plans/2026-07-15-ecosystem-enrichment.md) |
+| 4 | `0.7.2`: use ODEF v3 as the contrasting national facility/location reference implementation. | [External-data enrichment](plans/2026-07-15-ecosystem-enrichment.md) |
 | 5 | `0.8.0`–`0.8.1`: publish a simulator-neutral exchange bundle, then validate one demand-backed target adapter. | [Simulation interoperability](plans/2026-07-15-simulation-interoperability.md) |
 | Ongoing | Licensing, citation, preservation, FAIR4RS, community introduction, and JOSS maturation. | [Research-software stewardship](plans/2026-07-19-research-software-stewardship.md) |
 
@@ -45,6 +45,11 @@ Principles:
   language-neutral identifiers and explicit translation provenance.
 - Preserve source, geography, variables, filters, model version, seeds,
   validation evidence, and artifact checksums.
+- Build enrichment around reusable source, resource, layer, and validation
+  contracts rather than around a fixed catalogue. Treat datasets currently
+  represented under `data/private/sources`, public portal resources, and
+  future sources as possible consumers of those contracts—not as separate or
+  exhaustive categories.
 - Treat Census vintage and geography level as part of an identifier's meaning;
   never join matching-looking codes across vintages implicitly.
 - Distinguish software correctness, statistical fitness, disclosure-risk
@@ -118,53 +123,74 @@ This is a maintenance release, not another feature expansion.
   expiring Actions artifacts.
 - Keep the linked-population v1 contract unchanged.
 
-### `0.7.0`: Geography, source, and enrichment foundation
+### `0.7.0`: Geography and reusable external-data enrichment framework
 
 Two prerequisites ship together because neither is useful for safe
 geography-keyed enrichment alone:
 
 - make `(census_vintage, geography_level, identifier_namespace, identifier)`
   explicit in requests, manifests, joins, and errors;
-- prove one bounded Québec 2016 DA workflow with metropolitan and rural areas,
+- prove one bounded Québec 2021 DA workflow with metropolitan and rural areas,
   matching controls, boundaries, authoritative relationships, resource
-  estimates, validation, and map-size evidence;
+  estimates, validation, and map-size evidence, while retaining a compact 2016
+  DA compatibility regression;
 - add versioned source-resource and enrichment manifests that compose the
   existing source provenance, linked-population v1, and durable-run records;
 - implement immutable, bounded, checksum-recorded resource retrieval and
   explicit source revisions;
+- support reusable, source-independent enrichment layers and validators for
+  geography-keyed attributes, point/service locations, and governed
+  household/person relationships without mutating the base population;
+- let a researcher import a conforming normalized layer without waiting for a
+  project-maintained adapter for that source;
+- record each integration's authority, licence and access class, temporal and
+  geographic semantics, variables, linkage method, limitations, and
+  redistribution status;
 - support English/French labels and translation provenance in the metadata
   contract; and
 - prove with synthetic fixtures that enrichment leaves the base population and
   its identifiers byte-for-byte unchanged.
 
 This release does not include national DA orchestration, 2021-to-2016 DA
-concordance, arbitrary-polygon selection, a general CKAN browser, or a private
-cohort adapter.
+concordance, arbitrary-polygon selection, a general CKAN browser, or an
+automatic compatibility promise for every candidate source.
 
-### `0.7.1`: Can-FED vertical slice
+Once the framework ships, another dataset may be integrated whenever a
+research question, access and redistribution authority, geographic and
+temporal fit, validation strategy, and maintenance case justify it. A source
+need not appear in the current repository examples or wait for every planned
+reference implementation.
+
+### `0.7.1`: Can-FED v2 reference implementation
 
 - Integrate the public general-use 1 km and 3 km Can-FED categorical measures
   as a normalized geography/environment layer.
-- Preserve July 2018 outlet-measure vintage and the 2016 DA identifier
-  namespace.
-- Reject an unreviewed join to a 2021 DA population.
+- Preserve the August 2024 observation period, 2024 Business Register basis,
+  and 2021 DA identifier namespace.
+- Reject an unreviewed join to a 2016 DA population.
 - Report duplicate keys, unknown fields, missing source/base DAs, the
   publisher-documented incomplete DA coverage, and all unmatched records.
 - Keep detailed Research Data Centre measures out of the public integration.
 - Describe the output as area-level historical food-environment context, not a
   current outlet inventory or person-level exposure.
 
-### `0.7.2`: One public service/location pilot
+### `0.7.2`: ODEF v3 facility reference implementation
 
-Choose one school, healthcare, food-access, or other public-service source only
-after recording the research question, canonical publisher, licence, vintage,
-geography, and intended metric. Start with transparent area-level presence,
-capacity, or proximity. Do not claim travel-time accessibility without an
-independently validated transport network and routing method.
+Integrate Statistics Canada's national Open Database of Educational Facilities
+v3 as the contrasting facility/point adapter. Preserve its 2024 collection
+period, source identifiers, coordinates, facility type, authority, ISCED
+level, official-language-minority status, and CSD/CMA lineage. Validate
+duplicates, missingness, geocoding, coverage, and unmatched geographies.
+Treat the result as a facility inventory, not evidence of capacity, catchment,
+quality, eligibility, or accessibility.
 
-No `0.7.3` outcome is committed yet. After `0.7.1` and `0.7.2`, decide from
-real use and authority whether the next work is another public layer, a
-restricted cohort research pilot, or no additional enrichment release.
+Can-FED and ODEF demonstrate that the framework is reusable; they do not
+define or limit its scope. The enrichment plan ranks PMD 2021, Québec
+health-service geography, Can-ALE 2.0, CANUE, ODHF, Québec education layers,
+and CanSET as later candidates. No `0.7.3` outcome is committed. Further
+integrations may land in an appropriate maintenance or feature release when
+they pass the same demand, authority, semantics, validation, and stewardship
+gates.
 
 ### `0.8.0`: Simulator-neutral exchange
 
@@ -216,7 +242,8 @@ deadline or promise.
 
 - Hosted, authenticated, multi-user, or distributed web operation.
 - Redistribution or implied availability of third-party private data.
-- Blanket adapters for every dataset in `data/private`.
+- Blanket adapters for repository examples, open-data portals, or any other
+  catalogue without a justified research use and maintainable contract.
 - Automatic 2016/2021 geography concordance.
 - A monolithic national DA fit.
 - Generic activity, schedule, contact-network, or intervention generation
@@ -236,16 +263,29 @@ deadline or promise.
   coded relationships and vintage checks are reliable.
 - Investigate cross-vintage boundary harmonization as a separately reviewed
   method.
-- Consider private cohort attachment only with current written data-use,
-  ethics, purpose, methods, and privacy authority.
+- Consider household-, person-, or cohort-level attachment—including
+  restricted sources—only with current written data-use, ethics, purpose,
+  methods, privacy, and redistribution authority.
+- Periodically audit the full Statistics Canada LODE catalogue and investigate
+  whether a separately governed, reproducible refresh of aging national
+  facility inventories—starting with healthcare—would merit an independent
+  open-data product. Use the CSBP-CPSE source registries, OpenTabulate
+  descriptors, and processing repositories as revalidated prior art, not as
+  current source truth or automatic dependencies.
+- For any facility refresh, test authoritative jurisdictional records against
+  OpenStreetMap and Overture Maps as separately licensed corroboration,
+  candidate-discovery, building, address, and transport-network layers. Begin
+  with a bounded Québec metropolitan/rural comparison, preserve conflicts and
+  source-level lineage, and never treat an open-map feature as proof of
+  capacity, service availability, or official status.
 
 ## Open Decisions
 
 - Exact schema relationship between the current model-specific
   `synthpopcan-source-provenance-v1` record and the general `0.7.0` source
   profile.
-- Which public service/location source and research question should define
-  `0.7.2`.
+- Which candidate after ODEF has the strongest concrete research demand and
+  maintenance case.
 - Supported operating-system claim and the minimum Windows/macOS evidence
   needed to make it.
 - Whether optional columnar or spatial export merits new dependencies after the
