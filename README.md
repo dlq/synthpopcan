@@ -242,3 +242,11 @@ files under the
 Each package carries the attribution notice that licence requires; keep it with
 the package and with anything you generate from it. See
 [`docs/data.md`](docs/data.md) for the full attribution and licensing terms.
+
+## Development Acknowledgement
+
+Development of SynthPopCan has been supplemented by the use of large language
+models for tasks including code generation, review, testing, documentation, and
+research assistance. All resulting contributions remain subject to human review
+and the project's automated correctness and quality checks. Responsibility for
+the project and its releases rests with its maintainer.
