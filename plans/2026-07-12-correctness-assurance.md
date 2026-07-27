@@ -3,9 +3,10 @@
 Status: active\
 Created: 2026-07-12\
 Last updated: 2026-07-27\
-Target: `0.6.3` reproduction and durable evidence, followed by ongoing assurance\
-Next action: prepare the `0.6.3` version/citation metadata, commit and tag the
-verified release, and preserve its generated evidence on the GitHub Release\
+Target: ongoing correctness and release evidence\
+Next action: maintain the released reproduction, assurance-schema, permanent
+evidence, and linked-population v1 gates; add stronger generated or mutation
+evidence when prioritized\
 Roadmap: [PLANS.md](../PLANS.md) | [Plan index](README.md)
 
 ## Purpose And Boundaries
@@ -25,7 +26,7 @@ Passing the project gate establishes behavior only under the tested conditions.
 It does not certify source-data accuracy, statistical fitness for a particular
 study, disclosure safety, causal validity, or substantive interpretation.
 
-## `0.6.3`: Exact Reproduction And Durable Evidence
+## Released In `0.6.3`: Exact Reproduction And Durable Evidence
 
 `0.6.3` is a maintenance release. It must not change the linked-population v1
 contract.

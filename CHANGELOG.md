@@ -4,6 +4,9 @@ All notable public changes to SynthPopCan are tracked here.
 
 ## Unreleased
 
+- Fix permanent evidence attachment by giving the checkout-free release job an
+  explicit GitHub repository target.
+
 ## 0.6.3 - 2026-07-27
 
 Reproduction and durable correctness evidence.
