@@ -112,7 +112,7 @@ jobs:
           test "$(jq -r .release.tag release-evidence/manifest.json)" = "$RELEASE_TAG"
           cd release-evidence
           sha256sum --check SHA256SUMS
-          gh release upload "$RELEASE_TAG" * --clobber
+          gh release upload "$RELEASE_TAG" * --clobber --repo "$GITHUB_REPOSITORY"
 
   publish-to-pypi:
     name: Publish to PyPI
