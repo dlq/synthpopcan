@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import json
+from copy import deepcopy
 from pathlib import Path
 
 import pytest
 
+from synthpopcan.assurance import verify_run_assurance
 from synthpopcan.runs import RUN_SCHEMA_VERSION, RunStore, publish_artifact
 
 
@@ -110,6 +112,9 @@ def test_run_store_recovers_unfinished_runs_as_interrupted(tmp_path: Path) -> No
     assert recovered["status"] == "interrupted"
     assert recovered["finished_at"] is not None
     assert recovered["error"]["kind"] == "interrupted"
+    assert recovered["assurance"]["successful"] is False
+    assert recovered["assurance"]["terminal_status"] == "interrupted"
+    assert RunStore(workspace).verify_assurance(run_id)["passed"] is True
     assert RunStore(workspace).read_events(run_id)[-1]["stage"] == "interrupted"
 
 
@@ -132,6 +137,128 @@ def test_manifest_updates_are_valid_json_and_transitions_are_checked(
     assert json.loads((store.run_dir(run_id) / "run.json").read_text()) == updated
     with pytest.raises(ValueError, match="invalid run transition"):
         store.transition_run(run_id, "succeeded")
+
+
+@pytest.mark.parametrize("status", ["failed", "cancelled"])
+def test_terminal_unsuccessful_runs_have_non_success_assurance(
+    tmp_path: Path,
+    status: str,
+) -> None:
+    store = RunStore(tmp_path)
+    seed = write_upload(store, "seed.csv", b"id,age\n1,young\n")
+    controls = write_upload(
+        store,
+        "controls.csv",
+        b"margin,dimensions,age,count\nage,age,young,1\n",
+    )
+    manifest = store.create_ipf_run(ipf_request(seed, controls))
+    run_id = str(manifest["run_id"])
+    terminal = store.transition_run(
+        run_id,
+        status,
+        error={"kind": status, "message": f"run {status}"},
+    )
+
+    assert terminal["assurance"]["terminal_status"] == status
+    assert terminal["assurance"]["successful"] is False
+    assert store.verify_assurance(run_id) == {"passed": True, "issues": []}
+
+
+def test_success_assurance_recomputes_evidence_and_detects_tampering(
+    tmp_path: Path,
+) -> None:
+    store = RunStore(tmp_path)
+    seed = write_upload(store, "seed.csv", b"id,age\n1,young\n")
+    controls = write_upload(
+        store,
+        "controls.csv",
+        b"margin,dimensions,age,count\nage,age,young,1\n",
+    )
+    manifest = store.create_ipf_run(ipf_request(seed, controls))
+    run_id = str(manifest["run_id"])
+    store.transition_run(run_id, "running")
+    source = store.run_dir(run_id) / "work" / "weights.csv"
+    source.write_text("id,age,weight\n1,young,1\n")
+    artifact = publish_artifact(
+        store.root,
+        source,
+        store.run_dir(run_id) / "artifacts" / "weights.csv",
+        logical_name="weights",
+        media_type="text/csv",
+        row_count=1,
+    )
+    terminal = store.transition_run(
+        run_id,
+        "succeeded",
+        artifacts=[artifact],
+        summary={"converged": True, "iterations": 1},
+    )
+
+    assurance = terminal["assurance"]
+    assert assurance["schema_version"] == "synthpopcan-assurance-v1"
+    assert assurance["successful"] is True
+    assert assurance["artifacts"][0]["row_count"] == 1
+    assert store.verify_assurance(run_id) == {"passed": True, "issues": []}
+
+    store.resolve_managed_path(artifact["path"]).write_text(
+        "id,age,weight\n1,young,2\n"
+    )
+    verification = store.verify_assurance(run_id)
+    assert verification["passed"] is False
+    assert any("sha256 does not match" in issue for issue in verification["issues"])
+
+
+def test_assurance_verifier_reports_contract_mismatches(tmp_path: Path) -> None:
+    store = RunStore(tmp_path)
+    seed = write_upload(store, "seed.csv", b"id,age\n1,young\n")
+    controls = write_upload(
+        store,
+        "controls.csv",
+        b"margin,dimensions,age,count\nage,age,young,1\n",
+    )
+    manifest = store.create_ipf_run(ipf_request(seed, controls))
+    terminal = store.transition_run(str(manifest["run_id"]), "cancelled")
+
+    assert verify_run_assurance(
+        {**terminal, "assurance": None},
+        store.resolve_managed_path,
+    ) == {"passed": False, "issues": ["run has no assurance evidence"]}
+
+    malformed = deepcopy(terminal)
+    malformed["status"] = "running"
+    malformed["request"]["options"]["subsample_seed"] = 99
+    malformed["assurance"].update(
+        {
+            "schema_version": "unknown",
+            "run_schema_version": "unknown",
+            "synthpopcan_version": "unknown",
+            "terminal_status": "failed",
+            "successful": True,
+            "normalized_request": {},
+            "settings": {},
+            "random_seeds": {},
+            "model": {},
+            "inputs": [],
+            "artifacts": {},
+        }
+    )
+    verification = verify_run_assurance(malformed, store.resolve_managed_path)
+
+    assert verification["passed"] is False
+    assert set(verification["issues"]) >= {
+        "unsupported assurance schema",
+        "run schema version does not match the run manifest",
+        "SynthPopCan version does not match the run manifest",
+        "run is not terminal",
+        "terminal status does not match the run manifest",
+        "successful flag does not match the terminal status",
+        "normalized request does not match the run manifest",
+        "settings do not match the normalized request",
+        "random seeds do not match the normalized request",
+        "missing inputs evidence for seed",
+        "artifacts evidence is malformed",
+        "model identity or checksum does not match",
+    }
 
 
 def test_run_creation_rolls_back_partially_claimed_uploads(

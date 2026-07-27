@@ -28,6 +28,7 @@ from synthpopcan.workflows.models import LOCAL_RUN_MAX_HOUSEHOLDS
 
 def test_ipf_api_upload_preflight_run_events_artifacts_and_reproduction(
     tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     app = create_web_app(
         static_root=get_webapp_root(),
@@ -105,6 +106,9 @@ def test_ipf_api_upload_preflight_run_events_artifacts_and_reproduction(
     assert preview["limit"] == 2
     rendered = shlex.split(manifest["reproduction"]["shell"])
     assert rendered[0] == "synthpopcan"
+    assert rendered[rendered.index("--seed") + 1] == "inputs/seed.csv"
+    assert rendered[rendered.index("--controls") + 1] == "inputs/controls.csv"
+    monkeypatch.chdir(app.state.run_store.run_dir(str(manifest["run_id"])))
     assert main(rendered[1:]) == 0
 
 
@@ -230,6 +234,7 @@ def test_upload_is_streamed_hashed_sanitized_and_session_protected(
 
 def test_prepared_model_api_preflight_run_preview_and_reproduction(
     tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     app = create_web_app(
         static_root=get_webapp_root(),
@@ -290,6 +295,13 @@ def test_prepared_model_api_preflight_run_preview_and_reproduction(
     assert manifest["status"] == "succeeded"
     assert manifest["summary"]["generated_households"] == 6
     assert manifest["summary"]["linked_validation_passed"] is True
+    assert manifest["assurance"]["model"]["identity"] == (
+        "demo-linked-household-person"
+    )
+    assert app.state.run_store.verify_assurance(str(manifest["run_id"])) == {
+        "passed": True,
+        "issues": [],
+    }
     rendered = shlex.split(manifest["reproduction"]["shell"])
     assert rendered[:4] == [
         "synthpopcan",
@@ -297,6 +309,8 @@ def test_prepared_model_api_preflight_run_preview_and_reproduction(
         "generate",
         "demo-linked-household-person",
     ]
+    assert rendered[rendered.index("--out") + 1] == "reproduced"
+    monkeypatch.chdir(app.state.run_store.run_dir(str(manifest["run_id"])))
     assert main(rendered[1:]) == 0
 
 
@@ -431,6 +445,13 @@ def test_small_area_api_runs_generation_and_calibration_durably(tmp_path: Path) 
         "small_area_report",
     }
     assert "geo synthesize" in manifest["reproduction"]["shell"]
+    assert "inputs/controls.csv" in manifest["reproduction"]["shell"]
+    assert "reproduced" in manifest["reproduction"]["shell"]
+    assert manifest["assurance"]["diagnostics"]["linked_population"]["passed"] is True
+    assert app.state.run_store.verify_assurance(str(manifest["run_id"])) == {
+        "passed": True,
+        "issues": [],
+    }
 
 
 def test_model_preflight_caps_local_household_output(tmp_path: Path) -> None:

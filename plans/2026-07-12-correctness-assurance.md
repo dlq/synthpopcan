@@ -2,10 +2,10 @@
 
 Status: active\
 Created: 2026-07-12\
-Last updated: 2026-07-25\
+Last updated: 2026-07-27\
 Target: `0.6.3` reproduction and durable evidence, followed by ongoing assurance\
-Next action: make every durable small-area run exactly reproducible outside the
-browser and preserve release evidence permanently\
+Next action: prepare the `0.6.3` version/citation metadata, commit and tag the
+verified release, and preserve its generated evidence on the GitHub Release\
 Roadmap: [PLANS.md](../PLANS.md) | [Plan index](README.md)
 
 ## Purpose And Boundaries
@@ -30,12 +30,19 @@ study, disclosure safety, causal validity, or substantive interpretation.
 `0.6.3` is a maintenance release. It must not change the linked-population v1
 contract.
 
+Implementation is complete and passes the local full release gate.
+Reproduction recipes now support tested ordered command sequences; terminal durable runs embed
+`synthpopcan-assurance-v1`; and the release workflow builds, attests, checksums,
+retains, and attaches evidence to the matching GitHub Release. The assurance
+schema is additive within `run.json`: readers must ignore unknown fields.
+A future incompatible assurance change requires a new schema identifier and an
+explicit migration reader; existing evidence is never rewritten in place.
+
 ### 1. Reproduction and adapter parity
 
-Current IPF and prepared-model durable runs have executable CLI checks.
-Small-area reproduction metadata is incomplete: model conditions and optional
-map creation are not represented, and the CLI and durable workflow orchestrate
-the shared domain algorithms differently.
+IPF and prepared-model durable runs have executable CLI checks. Small-area
+recipes now preserve model conditions and optional map creation, and parity
+tests execute both generated and uploaded-candidate forms.
 
 Implement an executable reproduction recipe that can contain an ordered command
 sequence when one command cannot recreate every artifact. The recipe must:

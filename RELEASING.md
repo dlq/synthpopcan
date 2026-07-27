@@ -23,7 +23,10 @@ artifact.
 1. Update `CITATION.cff` so both `version` fields and both `date-released`
    fields match the release. This is what GitHub's citation widget shows.
    `tests/test_docs.py` checks it against the package version and changelog
-   date.
+   date. Remove the preceding release's version DOI while the new archive is
+   pending; retain the stable concept DOI. After Zenodo mints the new version
+   DOI, add it to both citation blocks and identify it as that archived release
+   in a follow-up documentation commit.
 
 1. Leave the version out of `.zenodo.json`. Zenodo takes the version from the
    release tag, so adding one here would create a second place to drift.
@@ -52,7 +55,15 @@ artifact.
    privacy certification, or correctness for every possible input.
 
 1. Run the manual **Publish Python package** workflow from the release commit.
+   The workflow must attach the distributions, correctness and coverage XML,
+   wheel-smoke log, lock/build inputs, release evidence manifest, and
+   `SHA256SUMS` to the matching GitHub Release before the PyPI job starts. It
+   also publishes a GitHub build-provenance attestation for the distributions.
    Confirm the workflow succeeds and PyPI reports the intended version.
+
+1. Download `SHA256SUMS` and the release assets into one directory, then run
+   `sha256sum --check SHA256SUMS`. Confirm `manifest.json` names the release tag
+   and its full commit.
 
 1. Install the published wheel in a clean environment and smoke test the version,
    CLI entry point, guide commands, bundled demo generation, and model catalogue.

@@ -26,6 +26,8 @@ for every inference, or that disclosure risk has been eliminated.
 | Browser-facing WDS, upload, and registered-model paths reject inputs outside documented resource bounds. | Download, request, archive, decompression, row-count, concurrency, selected-member, upload, catalogue, and API regression tests in [`test_webapp.py`](https://github.com/dlq/synthpopcan/blob/main/tests/test_webapp.py), [`test_webapi.py`](https://github.com/dlq/synthpopcan/blob/main/tests/test_webapi.py), [`test_models.py`](https://github.com/dlq/synthpopcan/blob/main/tests/test_models.py), and [`test_statcan.py`](https://github.com/dlq/synthpopcan/blob/main/tests/test_statcan.py). | Resource limits reduce accidental exhaustion; they do not make the current loopback server suitable for network deployment. |
 | Standalone maps preserve tested polygon topology and cannot embed supplied labels as executable HTML. | Hole/island classification, unmatched-geography, inline JSON, title escaping, and text-node tooltip tests in [`test_map_render.py`](https://github.com/dlq/synthpopcan/blob/main/tests/test_map_render.py). | Projection and topology checks cover current StatCan polygon inputs, not every malformed or non-polygon geospatial source. |
 | Published external artifacts replace valid local files only after a bounded, verified transfer. | Concurrent model-cache and interrupted, oversized, or truncated StatCan transfer tests in [`test_models.py`](https://github.com/dlq/synthpopcan/blob/main/tests/test_models.py) and [`test_statcan.py`](https://github.com/dlq/synthpopcan/blob/main/tests/test_statcan.py). | A successful transfer does not independently establish the accuracy or continued availability of the upstream source. |
+| Durable-run evidence identifies terminal state and detects changed inputs or artifacts. | Complete, failed, cancelled, interrupted, row-recount, digest-tamper, and linked-integrity checks in [`test_runs.py`](https://github.com/dlq/synthpopcan/blob/main/tests/test_runs.py). | The evidence verifies recorded bytes and implemented checks; it is not a privacy certification or substantive-validity finding. |
+| Recorded workflow recipes reproduce the represented fixed-seed artifacts. | Executed IPF, prepared-model, generated small-area, uploaded-candidate, and mapped small-area recipe tests in the workflow test modules. | Reproduction still requires access to the recorded inputs or documented replacements; restricted source data are not embedded. |
 
 ## How the evidence runs
 
@@ -38,23 +40,31 @@ for every inference, or that disclosure risk has been eliminated.
   also checks the live Statistics Canada WDS interface for external drift.
 - The [package publishing workflow](https://github.com/dlq/synthpopcan/actions/workflows/publish.yml)
   checks out an existing release tag, verifies that it exactly matches the
-  package version, reruns the extended correctness suite, and tests the built
-  wheel before PyPI publishing can proceed.
+  package version, runs the full coverage gate and extended correctness suite,
+  tests the built wheel, attests the distributions, and attaches checksummed
+  reports and build evidence to the matching GitHub Release before PyPI
+  publishing can proceed.
 - Browser unit tests and real Chromium workflow scenarios check presentation,
   sequencing, and integration with the shared Python backend. The browser does
   not contain an independent numerical implementation.
 
-GitHub Actions artifacts are evidence for a particular commit, not a permanent
-archive. Release notes should identify the tested commit and summarize the
-checks that passed. Permanently attaching reports or attestations to releases
-remains planned.
+GitHub Actions artifacts remain useful commit evidence but expire. The release
+workflow therefore also uploads distributions, XML reports, wheel-smoke output,
+the dependency lock and build metadata, a tag-and-commit-bound evidence
+manifest, and SHA-256 sums to the permanent GitHub Release.
 
-Durable runs currently retain structured requests, input and artifact metadata,
-diagnostics, and CLI reproduction metadata. IPF and prepared-model reproduction
-commands are executed in tests. Small-area model conditions and optional map
-creation are not yet represented by an exact executable recipe; this is planned
-for `0.6.3`, so current small-area metadata must not be described as an exact
-handoff.
+Every terminal durable run embeds `synthpopcan-assurance-v1` in `run.json`.
+It records the normalized request, settings and seeds, model identity where
+applicable, independently observed input and artifact metadata, diagnostics,
+linked integrity, warnings, limitations, and terminal state. Failed, cancelled,
+and interrupted work is mechanically marked unsuccessful. Readers must ignore
+unknown additive fields; an incompatible future format requires a new schema
+identifier and migration reader rather than rewriting old evidence.
+
+Reproduction metadata retains a primary command for compatibility and an
+ordered command sequence for multi-step output. Small-area recipes preserve
+model conditions and optional map creation and are executed against both
+generated and uploaded candidate fixtures.
 
 ## Reproduce the checks
 
@@ -95,8 +105,7 @@ retain and inspect:
 - warnings about statistical fitness, source limitations, and disclosure risk.
 
 See the [validation documentation](https://synthpopcan.readthedocs.io/en/latest/validate.html)
-for current commands and reports. The roadmap tracks a versioned assurance
-object within the existing run/report contracts and the remaining evidence work.
+for current commands and reports.
 
 ## Reporting a suspected correctness problem
 

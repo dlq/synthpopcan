@@ -12,7 +12,7 @@ completed implementation plans belong in [`plans/archive/`](plans/archive/).
 
 | Order | Focus | Owner |
 | --- | --- | --- |
-| 1 | `0.6.3`: correct small-area reproduction parity and make release evidence durable. | [Correctness assurance](plans/2026-07-12-correctness-assurance.md) |
+| 1 | Prepare and publish `0.6.3` from the verified reproduction-parity, per-run-assurance, and permanent-evidence implementation. | [Correctness assurance](plans/2026-07-12-correctness-assurance.md) |
 | 2 | `0.7.0`: establish explicit geography identity and a reusable external-data enrichment framework, then prove both with a bounded 2021 DA workflow and synthetic fixtures while retaining 2016 compatibility evidence. | [Small-area geography](plans/2026-07-22-small-area-geography.md) and [external-data enrichment](plans/2026-07-15-ecosystem-enrichment.md) |
 | 3 | `0.7.1`: use public general-use Can-FED v2 as the first reference implementation, preserving its August 2024 measures and 2021 DA geography. | [External-data enrichment](plans/2026-07-15-ecosystem-enrichment.md) |
 | 4 | `0.7.2`: use ODEF v3 as the contrasting national facility/location reference implementation. | [External-data enrichment](plans/2026-07-15-ecosystem-enrichment.md) |
@@ -110,7 +110,8 @@ The completed runtime and linked-schema implementation records are archived:
 
 ### `0.6.3`: Reproduction and durable assurance
 
-This is a maintenance release, not another feature expansion.
+This maintenance release is implemented and passes the local full release
+gate; version/citation metadata, commit, tag, and publication remain.
 
 - Represent every result-affecting small-area web option in an executable
   reproduction recipe, including model conditions and optional map creation.

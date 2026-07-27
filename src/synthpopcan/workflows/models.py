@@ -52,6 +52,7 @@ class PreparedModelRequest:
     chunk_size: int = 1000
     max_households: int | None = None
     max_persons: int | None = None
+    output_dir_reference: str | None = None
 
     def reproduction(self) -> WorkflowReproduction:
         reference = self.package_reference or str(self.package_path)
@@ -68,7 +69,21 @@ class PreparedModelRequest:
             arguments.extend(("--random-seed", str(self.random_seed)))
         if self.household_size_column is not None:
             arguments.extend(("--household-size-column", self.household_size_column))
-        arguments.extend(("--out", str(self.households_path.parent)))
+        output_dir = self.output_dir_reference or str(self.households_path.parent)
+        arguments.extend(("--out", output_dir))
+        output_paths = (
+            {
+                "households": str(Path(output_dir) / "households.csv"),
+                "persons": str(Path(output_dir) / "persons.csv"),
+                "report": str(Path(output_dir) / "generation-report.json"),
+            }
+            if self.output_dir_reference is not None
+            else {
+                "households": str(self.households_path),
+                "persons": str(self.persons_path),
+                "report": str(self.report_path),
+            }
+        )
         return WorkflowReproduction(
             request={
                 "workflow": "model",
@@ -79,11 +94,7 @@ class PreparedModelRequest:
                     "random_seed": self.random_seed,
                     "household_size_column": self.household_size_column,
                 },
-                "outputs": {
-                    "households": str(self.households_path),
-                    "persons": str(self.persons_path),
-                    "report": str(self.report_path),
-                },
+                "outputs": output_paths,
             },
             command=ReproductionCommand("synthpopcan", tuple(arguments)),
         )

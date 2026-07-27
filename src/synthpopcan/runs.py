@@ -22,6 +22,7 @@ from pathlib import Path
 from typing import Any, BinaryIO
 
 from synthpopcan import __version__
+from synthpopcan.assurance import build_run_assurance, verify_run_assurance
 
 RUN_SCHEMA_VERSION = "synthpopcan-run-v1"
 _OPAQUE_ID = re.compile(r"^[a-f0-9]{32}$")
@@ -208,6 +209,7 @@ class RunStore:
                     "summary": {},
                     "error": None,
                     "reproduction": None,
+                    "assurance": None,
                 }
                 self._write_json_atomic(run_dir / "run.json", manifest)
                 (run_dir / "events.ndjson").touch(exist_ok=False)
@@ -270,6 +272,7 @@ class RunStore:
                     "summary": {},
                     "error": None,
                     "reproduction": None,
+                    "assurance": None,
                 }
                 self._write_json_atomic(run_dir / "run.json", manifest)
                 (run_dir / "events.ndjson").touch(exist_ok=False)
@@ -401,6 +404,7 @@ class RunStore:
                     "summary": {},
                     "error": None,
                     "reproduction": None,
+                    "assurance": None,
                 }
                 self._write_json_atomic(run_dir / "run.json", manifest)
                 (run_dir / "events.ndjson").touch(exist_ok=False)
@@ -459,8 +463,20 @@ class RunStore:
                 manifest["finished_at"] = now
             manifest["status"] = status
             manifest.update(changes)
+            if status in _TERMINAL_STATES:
+                manifest["assurance"] = build_run_assurance(
+                    manifest,
+                    self.resolve_managed_path,
+                )
             self._write_json_atomic(self.run_dir(run_id) / "run.json", manifest)
             return manifest
+
+    def verify_assurance(self, run_id: str) -> dict[str, Any]:
+        """Independently recompute and compare one terminal run's evidence."""
+        return verify_run_assurance(
+            self.load_run(run_id),
+            self.resolve_managed_path,
+        )
 
     def append_event(
         self,
@@ -547,6 +563,10 @@ class RunStore:
                     "kind": "interrupted",
                     "message": "Run was interrupted before the local app restarted.",
                 }
+                manifest["assurance"] = build_run_assurance(
+                    manifest,
+                    self.resolve_managed_path,
+                )
                 self._write_json_atomic(manifest_path, manifest)
                 events_path = path / "events.ndjson"
                 events_path.touch(exist_ok=True)

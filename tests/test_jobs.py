@@ -83,6 +83,9 @@ def test_job_manager_runs_ipf_and_publishes_only_completed_artifacts(
     assert len(rows) == 4
     assert not any((store.run_dir(run_id) / "work").iterdir())
     assert store.read_events(run_id)[-1]["stage"] == "succeeded"
+    assert manifest["assurance"]["successful"] is True
+    assert manifest["assurance"]["diagnostics"]["report_summary"]["converged"] is True
+    assert store.verify_assurance(run_id) == {"passed": True, "issues": []}
 
 
 def test_job_manager_records_worker_failure_without_artifacts(tmp_path: Path) -> None:
@@ -100,6 +103,8 @@ def test_job_manager_records_worker_failure_without_artifacts(tmp_path: Path) ->
     assert manifest["status"] == "failed"
     assert manifest["artifacts"] == []
     assert manifest["error"]["message"]
+    assert manifest["assurance"]["successful"] is False
+    assert store.verify_assurance(run_id) == {"passed": True, "issues": []}
 
 
 def test_job_manager_records_failure_after_work_starts(tmp_path: Path) -> None:
@@ -528,6 +533,8 @@ def test_small_area_worker_contract_is_covered_in_process(tmp_path: Path) -> Non
         "map",
     }
     assert "geo synthesize" in succeeded["reproduction"]["shell"]
+    assert "inputs/controls.csv" in succeeded["reproduction"]["shell"]
+    assert len(succeeded["reproduction"]["commands"]) == 2
 
 
 def test_small_area_worker_accepts_existing_linked_candidates(tmp_path: Path) -> None:
@@ -585,7 +592,8 @@ def test_small_area_worker_accepts_existing_linked_candidates(tmp_path: Path) ->
     assert succeeded["summary"]["assigned_households"] == 2
     assert succeeded["summary"]["assigned_persons"] == 2
     assert "geo calibrate" in succeeded["reproduction"]["shell"]
-    assert "inputs" in succeeded["reproduction"]["shell"]
+    assert "inputs/households.csv" in succeeded["reproduction"]["shell"]
+    assert "inputs/persons.csv" in succeeded["reproduction"]["shell"]
 
 
 def create_valid_run(store: RunStore) -> str:

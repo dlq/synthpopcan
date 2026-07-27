@@ -72,6 +72,14 @@ class WorkflowReproduction:
 
     request: dict[str, object]
     command: ReproductionCommand
+    commands: tuple[ReproductionCommand, ...] = ()
+
+    def __post_init__(self) -> None:
+        """Keep the legacy primary command and ordered sequence consistent."""
+        if not self.commands:
+            object.__setattr__(self, "commands", (self.command,))
+        elif self.commands[0] != self.command:
+            raise ValueError("the primary reproduction command must be first")
 
     def as_dict(self) -> dict[str, object]:
         """Return the representation stored in a durable run manifest."""
@@ -79,6 +87,8 @@ class WorkflowReproduction:
             "request": self.request,
             "command": self.command.as_dict(),
             "shell": self.command.render(),
+            "commands": [command.as_dict() for command in self.commands],
+            "shell_commands": [command.render() for command in self.commands],
         }
 
 
@@ -94,6 +104,10 @@ class IPFFitRequest:
     tolerance: float = 1e-6
     allow_nonconverged: bool = False
     report_path: Path | None = None
+    seed_reference: str | None = None
+    controls_reference: str | None = None
+    output_reference: str | None = None
+    report_reference: str | None = None
 
     def as_dict(self) -> dict[str, object]:
         """Return the canonical structured file-backed workflow request."""
@@ -101,8 +115,8 @@ class IPFFitRequest:
             "workflow": "ipf",
             "operation": "fit",
             "inputs": {
-                "seed": str(self.seed_path),
-                "controls": str(self.controls_path),
+                "seed": self.seed_reference or str(self.seed_path),
+                "controls": self.controls_reference or str(self.controls_path),
             },
             "options": {
                 "weight_column": self.weight_column,
@@ -111,8 +125,11 @@ class IPFFitRequest:
                 "allow_nonconverged": self.allow_nonconverged,
             },
             "outputs": {
-                "weights": str(self.output_path),
-                "report": str(self.report_path) if self.report_path else None,
+                "weights": self.output_reference or str(self.output_path),
+                "report": (
+                    self.report_reference
+                    or (str(self.report_path) if self.report_path else None)
+                ),
             },
         }
 
@@ -122,11 +139,11 @@ class IPFFitRequest:
             "ipf",
             "fit",
             "--seed",
-            str(self.seed_path),
+            self.seed_reference or str(self.seed_path),
             "--controls",
-            str(self.controls_path),
+            self.controls_reference or str(self.controls_path),
             "--out",
-            str(self.output_path),
+            self.output_reference or str(self.output_path),
         ]
         if self.weight_column is not None:
             arguments.extend(("--weight-column", self.weight_column))
@@ -137,7 +154,9 @@ class IPFFitRequest:
         if self.allow_nonconverged:
             arguments.append("--allow-nonconverged")
         if self.report_path is not None:
-            arguments.extend(("--report", str(self.report_path)))
+            arguments.extend(
+                ("--report", self.report_reference or str(self.report_path))
+            )
         command = ReproductionCommand("synthpopcan", tuple(arguments))
         return WorkflowReproduction(request=self.as_dict(), command=command)
 

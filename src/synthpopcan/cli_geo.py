@@ -192,7 +192,13 @@ def _format_surface_recommendation(recommendation: str) -> str:
 
 
 @small_area.command("calibrate")
-@click.argument("population_dir", metavar="POPULATION", type=_PATH)
+@click.argument("population_path", metavar="POPULATION", type=_PATH)
+@click.option(
+    "--persons",
+    "persons_path",
+    type=_PATH,
+    help="Person CSV when POPULATION is a household CSV.",
+)
 @click.option(
     "--controls",
     "controls_path",
@@ -278,7 +284,8 @@ def _format_surface_recommendation(recommendation: str) -> str:
     help="Print a short summary or the full machine-readable report.",
 )
 def calibrate_command(
-    population_dir: Path,
+    population_path: Path,
+    persons_path: Path | None,
     controls_path: Path,
     person_controls_path: Path | None,
     geo_dimension: str,
@@ -293,7 +300,16 @@ def calibrate_command(
 ) -> None:
     """Calibrate linked household/person candidates to geography controls."""
 
-    households_path, persons_path = _linked_population_paths(population_dir)
+    if population_path.is_dir():
+        households_path, inferred_persons = _linked_population_paths(population_path)
+        if persons_path is None:
+            persons_path = inferred_persons
+    else:
+        households_path = population_path
+        if persons_path is None:
+            raise click.UsageError(
+                "--persons is required when POPULATION is a household CSV"
+            )
     output_dir.mkdir(parents=True, exist_ok=True)
     households_out, persons_out = _linked_population_paths(output_dir)
     report_out = output_dir / "report.json"
@@ -1008,6 +1024,13 @@ def relationship_file_command(out_dir: Path, url: str | None) -> None:
     help="Random seed for generation.",
 )
 @click.option(
+    "--condition",
+    "condition_values",
+    multiple=True,
+    metavar="COLUMN=VALUE",
+    help="Condition candidate household generation; repeat for multiple columns.",
+)
+@click.option(
     "--pool-size",
     type=int,
     default=None,
@@ -1043,6 +1066,20 @@ def relationship_file_command(out_dir: Path, url: str | None) -> None:
     ),
 )
 @click.option(
+    "--max-iterations",
+    default=100,
+    type=int,
+    show_default=True,
+    help="Maximum IPF iterations per target geography.",
+)
+@click.option(
+    "--tolerance",
+    default=1e-6,
+    type=float,
+    show_default=True,
+    help="Convergence tolerance per target geography.",
+)
+@click.option(
     "--format",
     "output_format",
     default="summary",
@@ -1060,10 +1097,13 @@ def synthesize_command(
     output_dir: Path,
     include_weights: bool,
     random_seed: int | None,
+    condition_values: tuple[str, ...],
     pool_size: int | None,
     subsample_seed: int,
     max_household_size: int | None,
     household_size_group_column: str,
+    max_iterations: int,
+    tolerance: float,
     output_format: str,
 ) -> None:
     """Generate linked candidates from a package and calibrate to small-area controls.
@@ -1078,6 +1118,7 @@ def synthesize_command(
     from synthpopcan.cli_tree import (
         _read_package_path_or_id,
         package_models,
+        parse_conditions,
         validate_package_allows_generation,
     )
     from synthpopcan.tree import generate_linked_population_to_csv
@@ -1097,6 +1138,7 @@ def synthesize_command(
 
     try:
         validate_package_allows_generation(package)
+        conditions = parse_conditions(condition_values)
     except ValueError as exc:
         raise click_value_error(exc) from exc
 
@@ -1116,6 +1158,7 @@ def synthesize_command(
                 households_path=candidates_households,
                 persons_path=candidates_persons,
                 household_size_column=household_size_column,
+                household_conditions=conditions,
                 random_seed=random_seed,
             )
         except OSError as exc:
@@ -1150,6 +1193,8 @@ def synthesize_command(
                 report_out=report_out,
                 pool_size=pool_size,
                 subsample_seed=subsample_seed,
+                max_iterations=max_iterations,
+                tolerance=tolerance,
             )
         except OSError as exc:
             raise click_file_access_error(

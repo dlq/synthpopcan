@@ -4,6 +4,22 @@ All notable public changes to SynthPopCan are tracked here.
 
 ## Unreleased
 
+## 0.6.3 - 2026-07-27
+
+Reproduction and durable correctness evidence.
+
+- Add exact, structured small-area reproduction sequences covering model
+  conditions, uploaded candidates, calibration settings, optional fitted
+  weights, and optional map creation; execute generated and uploaded-candidate
+  recipes in parity tests.
+- Embed versioned `synthpopcan-assurance-v1` evidence in every terminal durable
+  run, including lifecycle-safe success status, normalized requests, model and
+  file checksums, row counts, diagnostics, warnings, limitations, and
+  independently recomputed tamper and linkage checks.
+- Preserve permanent release evidence: full coverage and correctness reports,
+  installed-wheel smoke output, build inputs, SHA-256 manifests tied to the
+  exact tag and commit, GitHub build-provenance attestations, and attachment to
+  the matching GitHub Release.
 - Refresh the research notes and public documentation for the released durable
   Python runtime, explicit 2016/2021 Census support, current 33-entry model
   catalogue, and national 2021 CSD boundaries.

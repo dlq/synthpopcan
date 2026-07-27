@@ -52,11 +52,15 @@ def test_citation_metadata_matches_release() -> None:
         rf"{re.escape(synthpopcan.__version__)} release\.",
         citation,
     )
-    assert version_identifier, "CITATION.cff should identify this release's DOI"
     primary_dois = re.findall(r"^\s*doi:\s*(\S+)", citation, re.MULTILINE)
-    assert primary_dois == [version_identifier.group(1)] * 2, (
-        "the versioned software and preferred citation should use the version DOI"
-    )
+    if version_identifier is None:
+        assert not primary_dois, (
+            "a release awaiting its Zenodo archive must not retain an older version DOI"
+        )
+    else:
+        assert primary_dois == [version_identifier.group(1)] * 2, (
+            "the versioned software and preferred citation should use the version DOI"
+        )
 
 
 def test_zenodo_metadata_is_valid_and_drift_free() -> None:

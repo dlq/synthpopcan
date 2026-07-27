@@ -61,10 +61,20 @@ bounded; complete CSVs are downloaded directly rather than embedded in JSON.
 
 The app records package provenance and privacy-review metadata where available,
 but a successful run is not a privacy certification or a fitness-for-purpose
-finding. Every completed synthesis also records shell-safe CLI reproduction
-metadata. IPF and prepared-model commands are executed in tests. Current
-small-area metadata does not yet preserve model conditions or optional map
-creation as an exact executable recipe; that gap is tracked for `0.6.3`.
+finding. Every terminal run records a versioned assurance object with its
+normalized request, settings, model identity where applicable, input and
+artifact hashes and row counts, diagnostics, lifecycle state, warnings, and
+limitations. `RunStore.verify_assurance(run_id)` independently re-hashes and
+recounts files and reruns linked household/person integrity checks.
+
+Every completed synthesis also records a structured, shell-safe CLI
+reproduction recipe. A recipe retains the legacy primary `command` and `shell`
+fields and adds ordered `commands` and `shell_commands` arrays when multiple
+steps are required. Managed paths such as `inputs/controls.csv` are relative to
+the run directory; run the recorded commands from that directory and they write
+new `reproduced...` output without replacing published artifacts. IPF,
+prepared-model, generated small-area, uploaded-candidate, and mapped small-area
+recipes are executed in tests.
 
 The web app, CLI, and Python API use the same Python domain algorithms. IPF
 also shares file-backed workflow orchestration; prepared-model and small-area
@@ -129,12 +139,9 @@ same work reproducibly at larger scale.
    then start the durable small-area run.
 1. Review convergence and residual diagnostics, inspect bounded household and
    person previews, download the linked CSVs and report, and retain the
-   recorded `geo synthesize` or `geo calibrate` reproduction metadata.
+   recorded `geo synthesize` or `geo calibrate` reproduction recipe.
    Optionally upload prepared boundary GeoJSON to receive a standalone map
-   artifact.
-
-Until `0.6.3`, separately retain any model conditions and the map request: the
-current small-area command does not reproduce those two choices exactly.
+   artifact and a following `geo map` reproduction step.
 
 Generation and calibration execute in Python; complete populations are not
 serialized into the browser. Building appropriate controls and interpreting
@@ -237,9 +244,9 @@ The local app runs generation and calibration in an isolated Python worker and
 publishes bounded previews plus downloadable artifacts. The result retains
 `geo synthesize` reproduction metadata for model-based runs or `geo calibrate`
 metadata for existing candidates. This keeps province-scale output out of
-browser memory while preserving the represented choices. Model conditions and
-optional map creation remain outside the exact executable recipe until
-`0.6.3`. When the controls use the Census Profile `household_size_group`
+browser memory while preserving model conditions, seeds, candidate settings,
+person controls, fitted-weight output, geography fields, and optional map
+creation. When the controls use the Census Profile `household_size_group`
 dimension, the generated command automatically adds `--max-household-size 5`
 and the matching grouped-column option. See {doc}`small-area` for
 control-building, validation, and mapping steps.

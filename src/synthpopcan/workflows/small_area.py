@@ -45,6 +45,8 @@ class SmallAreaRequest:
     household_size_group_column: str = "household_size_group"
     include_weights: bool = False
     chunk_size: int = 1000
+    max_iterations: int = 100
+    tolerance: float = 1e-6
     candidate_households_path: Path | None = None
     candidate_persons_path: Path | None = None
     boundaries_path: Path | None = None
@@ -53,8 +55,39 @@ class SmallAreaRequest:
     map_title: str = "Synthetic Population"
     max_candidate_households: int | None = None
     max_candidate_persons: int | None = None
+    controls_reference: str | None = None
+    person_controls_reference: str | None = None
+    candidate_households_reference: str | None = None
+    candidate_persons_reference: str | None = None
+    boundaries_reference: str | None = None
+    output_dir_reference: str | None = None
 
     def reproduction(self) -> WorkflowReproduction:
+        controls_reference = self.controls_reference or str(self.controls_path)
+        person_controls_reference = self.person_controls_reference or (
+            str(self.person_controls_path)
+            if self.person_controls_path is not None
+            else None
+        )
+        candidate_households_reference = self.candidate_households_reference or (
+            str(self.candidate_households_path)
+            if self.candidate_households_path is not None
+            else None
+        )
+        candidate_persons_reference = self.candidate_persons_reference or (
+            str(self.candidate_persons_path)
+            if self.candidate_persons_path is not None
+            else None
+        )
+        boundaries_reference = self.boundaries_reference or (
+            str(self.boundaries_path) if self.boundaries_path is not None else None
+        )
+        output_dir_reference = self.output_dir_reference or str(self.output_dir)
+        map_reference = (
+            str(Path(output_dir_reference) / self.map_path.name)
+            if self.map_path is not None
+            else None
+        )
         reference = self.package_reference or (
             str(self.package_path) if self.package_path is not None else None
         )
@@ -67,29 +100,35 @@ class SmallAreaRequest:
                 str(self.candidate_households),
             ]
         else:
-            if self.candidate_households_path is None:
+            if candidate_households_reference is None:
                 raise ValueError("candidate household path is required")
             arguments = [
                 "geo",
                 "calibrate",
-                str(self.candidate_households_path.parent),
+                candidate_households_reference,
             ]
+            if candidate_persons_reference is None:
+                raise ValueError("candidate person path is required")
+            arguments.extend(("--persons", candidate_persons_reference))
         arguments.extend(
             (
                 "--controls",
-                str(self.controls_path),
+                controls_reference,
                 "--geo-dimension",
                 self.geography_dimension,
                 "--geo-column",
                 self.geography_column,
                 "--out",
-                str(self.output_dir),
+                output_dir_reference,
                 "--subsample-seed",
                 str(self.subsample_seed),
             )
         )
-        if self.person_controls_path is not None:
-            arguments.extend(("--person-controls", str(self.person_controls_path)))
+        if person_controls_reference is not None:
+            arguments.extend(("--person-controls", person_controls_reference))
+        for column, value in sorted(self.conditions.items()):
+            if reference is not None:
+                arguments.extend(("--condition", f"{column}={value}"))
         if reference is not None and self.random_seed is not None:
             arguments.extend(("--random-seed", str(self.random_seed)))
         if self.pool_size is not None:
@@ -101,27 +140,41 @@ class SmallAreaRequest:
             )
         if self.include_weights:
             arguments.append("--include-weights")
+        if self.max_iterations != 100:
+            arguments.extend(("--max-iterations", str(self.max_iterations)))
+        if self.tolerance != 1e-6:
+            arguments.extend(("--tolerance", str(self.tolerance)))
+        commands = [ReproductionCommand("synthpopcan", tuple(arguments))]
+        if boundaries_reference is not None and map_reference is not None:
+            commands.append(
+                ReproductionCommand(
+                    "synthpopcan",
+                    (
+                        "geo",
+                        "map",
+                        output_dir_reference,
+                        "--boundaries",
+                        boundaries_reference,
+                        "--geo-column",
+                        self.geography_column,
+                        "--geo-id-field",
+                        self.geography_id_field,
+                        "--out",
+                        map_reference,
+                        "--title",
+                        self.map_title,
+                    ),
+                )
+            )
         return WorkflowReproduction(
             request={
                 "workflow": "small_area",
                 "inputs": {
                     "package": reference,
-                    "candidate_households": (
-                        str(self.candidate_households_path)
-                        if self.candidate_households_path is not None
-                        else None
-                    ),
-                    "candidate_persons": (
-                        str(self.candidate_persons_path)
-                        if self.candidate_persons_path is not None
-                        else None
-                    ),
-                    "controls": str(self.controls_path),
-                    "person_controls": (
-                        str(self.person_controls_path)
-                        if self.person_controls_path is not None
-                        else None
-                    ),
+                    "candidate_households": (candidate_households_reference),
+                    "candidate_persons": candidate_persons_reference,
+                    "controls": controls_reference,
+                    "person_controls": person_controls_reference,
                 },
                 "options": {
                     "candidate_households": self.candidate_households,
@@ -132,9 +185,24 @@ class SmallAreaRequest:
                     "pool_size": self.pool_size,
                     "subsample_seed": self.subsample_seed,
                     "max_household_size": self.max_household_size,
+                    "household_size_group_column": self.household_size_group_column,
+                    "include_weights": self.include_weights,
+                    "chunk_size": self.chunk_size,
+                    "max_iterations": self.max_iterations,
+                    "tolerance": self.tolerance,
+                },
+                "outputs": {
+                    "directory": output_dir_reference,
+                    "map": map_reference,
+                },
+                "map": {
+                    "boundaries": boundaries_reference,
+                    "geography_id_field": self.geography_id_field,
+                    "title": self.map_title,
                 },
             },
-            command=ReproductionCommand("synthpopcan", tuple(arguments)),
+            command=commands[0],
+            commands=tuple(commands),
         )
 
 
@@ -227,6 +295,8 @@ def synthesize_small_area_files(
         weights_out=weights_path,
         pool_size=request.pool_size,
         subsample_seed=request.subsample_seed,
+        max_iterations=request.max_iterations,
+        tolerance=request.tolerance,
     )
     map_path = None
     if request.boundaries_path is not None and request.map_path is not None:

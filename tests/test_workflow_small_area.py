@@ -3,8 +3,12 @@ from __future__ import annotations
 import csv
 import json
 import shlex
+import shutil
 from pathlib import Path
 
+from click.testing import CliRunner
+
+from synthpopcan.cli import cli
 from synthpopcan.models import model_payload
 from synthpopcan.workflows.small_area import (
     SmallAreaRequest,
@@ -106,6 +110,44 @@ def test_small_area_workflow_generates_calibrates_and_reports(tmp_path: Path) ->
         "synthesize",
         "demo-linked-household-person",
     ]
+    assert len(result.reproduction.commands) == 2
+    represented = result.reproduction.as_dict()
+    assert represented["request"]["options"] == {
+        "candidate_households": 20,
+        "geography_dimension": "tract",
+        "geography_column": "tract",
+        "conditions": {"geo": "Demo North"},
+        "random_seed": 13,
+        "pool_size": 20,
+        "subsample_seed": 7,
+        "max_household_size": 5,
+        "household_size_group_column": "household_size_group",
+        "include_weights": True,
+        "chunk_size": 3,
+        "max_iterations": 100,
+        "tolerance": 1e-6,
+    }
+
+    expected = {
+        path.name: path.read_bytes()
+        for path in (
+            result.households_path,
+            result.persons_path,
+            result.report_path,
+            result.weights_path,
+            result.map_path,
+        )
+        if path is not None
+    }
+    shutil.rmtree(tmp_path / "output")
+    shutil.rmtree(tmp_path / "candidates")
+    runner = CliRunner()
+    for command in result.reproduction.commands:
+        replay = runner.invoke(cli, list(command.arguments))
+        assert replay.exit_code == 0, replay.output
+    assert {
+        path.name: path.read_bytes() for path in (tmp_path / "output").iterdir()
+    } == expected
 
 
 def test_small_area_workflow_accepts_existing_linked_candidates(tmp_path: Path) -> None:
@@ -147,3 +189,23 @@ def test_small_area_workflow_accepts_existing_linked_candidates(tmp_path: Path) 
         "geo",
         "calibrate",
     ]
+    replay_dir = tmp_path / "replayed"
+    request = SmallAreaRequest(
+        package_path=None,
+        controls_path=controls_path,
+        candidates_dir=tmp_path / "unused",
+        output_dir=replay_dir,
+        candidate_households=2,
+        geography_dimension="tract",
+        geography_column="tract",
+        conditions={},
+        candidate_households_path=households_path,
+        candidate_persons_path=persons_path,
+        pool_size=2,
+    )
+    replay = CliRunner().invoke(cli, list(request.reproduction().command.arguments))
+    assert replay.exit_code == 0, replay.output
+    assert (
+        replay_dir / "households.csv"
+    ).read_bytes() == result.households_path.read_bytes()
+    assert (replay_dir / "persons.csv").read_bytes() == result.persons_path.read_bytes()

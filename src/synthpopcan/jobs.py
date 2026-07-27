@@ -94,6 +94,10 @@ def _ipf_worker(
                 tolerance=float(options.get("tolerance", 1e-6)),
                 allow_nonconverged=bool(options.get("allow_nonconverged", False)),
                 report_path=work_report,
+                seed_reference="inputs/seed.csv",
+                controls_reference="inputs/controls.csv",
+                output_reference="reproduced-weights.csv",
+                report_reference="reproduced-fit-report.json",
             ),
             progress=progress,
         )
@@ -191,6 +195,7 @@ def _model_worker(
                 chunk_size=int(options.get("chunk_size", 1000)),
                 max_households=LOCAL_RUN_MAX_HOUSEHOLDS,
                 max_persons=LOCAL_RUN_MAX_PERSONS,
+                output_dir_reference="reproduced",
             ),
             progress=progress,
         )
@@ -324,6 +329,24 @@ def _small_area_worker(
                 map_title=str(options.get("map_title", "Synthetic Population")),
                 max_candidate_households=LOCAL_RUN_MAX_HOUSEHOLDS,
                 max_candidate_persons=LOCAL_RUN_MAX_PERSONS,
+                controls_reference="inputs/controls.csv",
+                person_controls_reference=(
+                    "inputs/person-controls.csv"
+                    if "person_controls" in input_paths
+                    else None
+                ),
+                candidate_households_reference=(
+                    "inputs/households.csv"
+                    if "candidate_households" in input_paths
+                    else None
+                ),
+                candidate_persons_reference=(
+                    "inputs/persons.csv" if "candidate_persons" in input_paths else None
+                ),
+                boundaries_reference=(
+                    "inputs/boundaries.geojson" if "boundaries" in input_paths else None
+                ),
+                output_dir_reference="reproduced",
             ),
             progress=progress,
         )

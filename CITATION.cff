@@ -1,11 +1,10 @@
 cff-version: 1.2.0
 message: "If you use SynthPopCan in research, please cite it using this metadata."
 title: "SynthPopCan"
-version: "0.6.2"
-date-released: 2026-07-20
+version: "0.6.3"
+date-released: 2026-07-27
 type: software
 license: MIT
-doi: 10.5281/zenodo.21461464
 repository-code: "https://github.com/dlq/synthpopcan"
 url: "https://synthpopcan.readthedocs.io/"
 identifiers:
@@ -14,9 +13,6 @@ identifiers:
     description: >-
       Concept DOI for SynthPopCan; always resolves to the most recent archived
       release. Cite this unless a specific version is required.
-  - type: doi
-    value: 10.5281/zenodo.21461464
-    description: Version DOI for the archived 0.6.2 release.
 abstract: >-
   SynthPopCan is research software for Canadian synthetic population work,
   including Statistics Canada margin/control table workflows, iterative
@@ -40,9 +36,8 @@ preferred-citation:
     - family-names: Quesnel
       given-names: Darcy
       email: darcy.quesnel@gmail.com
-  version: "0.6.2"
-  date-released: 2026-07-20
-  doi: 10.5281/zenodo.21461464
+  version: "0.6.3"
+  date-released: 2026-07-27
   url: "https://github.com/dlq/synthpopcan"
 notes: >-
   This work began under a proposal led with Laurette Dube and Shawn Brown and is
