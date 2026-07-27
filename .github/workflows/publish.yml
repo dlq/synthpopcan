@@ -19,7 +19,7 @@ jobs:
       id-token: write
       attestations: write
     steps:
-      - uses: actions/checkout@v7.0.0
+      - uses: actions/checkout@v7.0.1
         with:
           ref: ${{ inputs.tag }}
           fetch-depth: 0
