@@ -1133,6 +1133,19 @@ def test_geo_map_cli_accepts_completed_national_plan(
         }
     ]
     assert str(tmp_path / "map.html") in capsys.readouterr().out
+    assert (
+        main(
+            [
+                "geo",
+                "map",
+                str(plan_path),
+                "--jurisdiction",
+                "qc",
+            ]
+        )
+        == 0
+    )
+    assert calls[-1]["jurisdiction_pruids"] == ("24",)
     with pytest.raises(UsageError, match="--persons must be omitted"):
         main(
             [

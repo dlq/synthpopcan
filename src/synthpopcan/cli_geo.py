@@ -536,6 +536,20 @@ def _coerce_float(value: object) -> float:
 @click.option("--geo-namespace", default=None)
 @click.option("--geo-dguid-column", default=None)
 @click.option(
+    "--jurisdiction",
+    "jurisdiction_values",
+    multiple=True,
+    type=click.Choice(
+        [item.pruid for item in CANADA_SMALL_AREA_JURISDICTIONS]
+        + [item.abbreviation.lower() for item in CANADA_SMALL_AREA_JURISDICTIONS],
+        case_sensitive=False,
+    ),
+    help=(
+        "Render one or more completed province/territory subsets of a partial "
+        "national plan."
+    ),
+)
+@click.option(
     "--out",
     "out_path",
     default=None,
@@ -569,6 +583,7 @@ def map_command(
     geo_level: str | None,
     geo_namespace: str | None,
     geo_dguid_column: str | None,
+    jurisdiction_values: tuple[str, ...],
     out_path: Path | None,
     title: str | None,
     coord_precision: int | None,
@@ -608,13 +623,33 @@ def map_command(
             )
         from synthpopcan.api import render_small_area_map
 
+        selector_lookup = {
+            selector.casefold(): item.pruid
+            for item in CANADA_SMALL_AREA_JURISDICTIONS
+            for selector in (item.pruid, item.abbreviation)
+        }
+        jurisdiction_pruids = (
+            tuple(selector_lookup[value.casefold()] for value in jurisdiction_values)
+            if jurisdiction_values
+            else None
+        )
+
         try:
-            destination = render_small_area_map(
-                households=national_plan_path,
-                out=out_path,
-                title=title,
-                coord_precision=coord_precision,
-            )
+            if jurisdiction_pruids is not None:
+                destination = render_small_area_map(
+                    households=national_plan_path,
+                    out=out_path,
+                    title=title,
+                    coord_precision=coord_precision,
+                    jurisdiction_pruids=jurisdiction_pruids,
+                )
+            else:
+                destination = render_small_area_map(
+                    households=national_plan_path,
+                    out=out_path,
+                    title=title,
+                    coord_precision=coord_precision,
+                )
         except OSError as exc:
             raise click_file_access_error(
                 national_plan_path,

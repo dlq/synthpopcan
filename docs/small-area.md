@@ -381,6 +381,18 @@ household size, median household income, median shelter cost, homeownership,
 detached dwellings, major repairs, children, seniors, immigrants, and visible
 minorities. A repeat invocation reuses the statistics when batch hashes match.
 
+When only one province or territory has finished, render that completed subset
+explicitly instead of presenting it as a Canada-wide result. For example, a
+completed Québec DA subset can be mapped from an otherwise partial plan:
+
+```console
+synthpopcan geo map data/work/canada-da-2021 --jurisdiction QC \
+  --out data/work/canada-da-2021/quebec-da-map.html
+```
+
+The map includes only the requested completed jurisdictions; it does not
+impute or draw pending batches as if they had been synthesized.
+
 The beginner Python API uses the same path:
 
 ```python
@@ -850,6 +862,8 @@ Important options:
 - `--out`: destination HTML file.
 - `--title`: title shown in the map panel.
 - `--coord-precision`: output coordinate precision.
+- `--jurisdiction`: one or more completed province/territory codes when
+  `POPULATION` is a partial national DA or ADA plan.
 
 ## Beginner API Shape
 

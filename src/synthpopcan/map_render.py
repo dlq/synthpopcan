@@ -1483,13 +1483,16 @@ def prepare_national_map_statistics(
     plan_path: Path,
     geography_column: str,
     out_path: Path | None = None,
+    jurisdiction_pruids: frozenset[str] | None = None,
 ) -> dict[str, object]:
-    """Aggregate the standard map statistics from every completed plan batch."""
+    """Aggregate standard map statistics from completed national-plan batches."""
 
     from synthpopcan.statcan import file_integrity
 
     plan = json.loads(plan_path.read_text())
-    if not isinstance(plan, Mapping) or plan.get("status") != "completed":
+    if not isinstance(plan, Mapping):
+        raise ValueError("national small-area plan must be completed")
+    if plan.get("status") != "completed" and jurisdiction_pruids is None:
         raise ValueError("national small-area plan must be completed")
     records = plan.get("batches")
     if not isinstance(records, list):
@@ -1502,6 +1505,11 @@ def prepare_national_map_statistics(
     for record in records:
         if not isinstance(record, Mapping):
             raise ValueError("national small-area batch record must be an object")
+        if (
+            jurisdiction_pruids is not None
+            and record.get("jurisdiction_pruid") not in jurisdiction_pruids
+        ):
+            continue
         manifest_value = record.get("manifest")
         if not isinstance(manifest_value, str):
             raise ValueError("national small-area batch manifest is invalid")
@@ -1580,7 +1588,12 @@ def prepare_national_map_statistics(
                 **geography_statistics,
             }
     if not rows:
-        raise ValueError("national small-area batches contain no map geographies")
+        scope = (
+            "selected national small-area batches"
+            if jurisdiction_pruids
+            else "national small-area batches"
+        )
+        raise ValueError(f"{scope} contain no map geographies")
     fieldnames = [
         geography_column,
         "jurisdiction",
@@ -1599,6 +1612,7 @@ def prepare_national_map_statistics(
         "schema_version": "synthpopcan-national-map-statistics-v1",
         "source_digest": source_digest,
         "geography_column": geography_column,
+        "jurisdiction_pruids": sorted(jurisdiction_pruids or ()),
         "geographies": len(rows),
         "batches": len(batches),
         "artifact": {
@@ -1620,13 +1634,16 @@ def render_national_plan_map(
     out_path: Path | None = None,
     coord_precision: int = 3,
     title: str = "National Synthetic Population",
+    jurisdiction_pruids: frozenset[str] | None = None,
 ) -> dict[str, object]:
-    """Render the standard full-variable map from a completed national plan."""
+    """Render a completed national plan or completed jurisdiction subset."""
 
     from synthpopcan.geography import statcan_geography_universe
 
     plan = json.loads(plan_path.read_text())
-    if not isinstance(plan, Mapping) or plan.get("status") != "completed":
+    if not isinstance(plan, Mapping):
+        raise ValueError("national small-area plan must be completed")
+    if plan.get("status") != "completed" and jurisdiction_pruids is None:
         raise ValueError("national small-area plan must be completed")
     inputs = plan.get("inputs")
     boundaries = inputs.get("boundaries") if isinstance(inputs, Mapping) else None
@@ -1636,11 +1653,17 @@ def render_national_plan_map(
     root = plan_path.parent
     boundary_path = _resolve_plan_path(root, boundary_value)
     out_path = out_path or root / "national-map.html"
-    statistics_path = root / "national-map-statistics.csv"
+    scope = "-".join(sorted(jurisdiction_pruids or ()))
+    statistics_path = root / (
+        f"national-map-statistics-{scope}.csv"
+        if scope
+        else "national-map-statistics.csv"
+    )
     statistics = prepare_national_map_statistics(
         plan_path=plan_path,
         geography_column=geography_column,
         out_path=statistics_path,
+        jurisdiction_pruids=jurisdiction_pruids,
     )
     report = render_geography_summary_polygon_map(
         summary_path=statistics_path,

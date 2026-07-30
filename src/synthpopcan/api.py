@@ -774,6 +774,7 @@ def render_small_area_map(
     out: str | Path | None = None,
     title: str | None = None,
     coord_precision: int | None = None,
+    jurisdiction_pruids: Sequence[str] | None = None,
     geography_universe: GeographyUniverse | Mapping[str, object] | None = None,
 ) -> Path:
     """Generate a MapLibre GL JS choropleth HTML file from synthesis output.
@@ -868,14 +869,25 @@ def render_small_area_map(
             if out is not None
             else national_plan_path.parent / "national-map.html"
         )
-        render_national_plan_map(
-            plan_path=national_plan_path,
-            geography_level=geography_level,
-            geography_column=identifier_column,
-            out_path=out_path,
-            coord_precision=3 if coord_precision is None else coord_precision,
-            title=title or "National Synthetic Population",
-        )
+        if jurisdiction_pruids is not None:
+            render_national_plan_map(
+                plan_path=national_plan_path,
+                geography_level=geography_level,
+                geography_column=identifier_column,
+                out_path=out_path,
+                coord_precision=3 if coord_precision is None else coord_precision,
+                title=title or "National Synthetic Population",
+                jurisdiction_pruids=frozenset(jurisdiction_pruids),
+            )
+        else:
+            render_national_plan_map(
+                plan_path=national_plan_path,
+                geography_level=geography_level,
+                geography_column=identifier_column,
+                out_path=out_path,
+                coord_precision=3 if coord_precision is None else coord_precision,
+                title=title or "National Synthetic Population",
+            )
         return out_path
 
     if isinstance(households, SmallAreaResult):

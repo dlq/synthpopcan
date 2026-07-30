@@ -338,6 +338,77 @@ def test_national_plan_map_aggregates_and_reuses_full_standard_statistics(
         assert label in html
 
 
+def test_national_plan_map_accepts_completed_jurisdiction_subset(
+    tmp_path: Path,
+) -> None:
+    population = tmp_path / "population"
+    population.mkdir()
+    (population / "households.csv").write_text(
+        "synthetic_household_id,DAUID,household_size,TENUR\nh1,24010001,1,1\n"
+    )
+    (population / "persons.csv").write_text(
+        "synthetic_person_id,synthetic_household_id,DAUID,AGEGRP,IMMSTAT,VISMIN,TOTINC\n"
+        "p1,h1,24010001,2,1,1,10000\n"
+    )
+    (tmp_path / "boundaries.geojson").write_text(
+        json.dumps(
+            {
+                "type": "FeatureCollection",
+                "features": [
+                    {
+                        "type": "Feature",
+                        "properties": {"geo_id": "24010001"},
+                        "geometry": {
+                            "type": "Polygon",
+                            "coordinates": [[[0, 0], [1, 0], [0, 1], [0, 0]]],
+                        },
+                    }
+                ],
+            }
+        )
+    )
+    (tmp_path / "completed.json").write_text(
+        json.dumps(
+            {
+                "batch_id": "24-0001",
+                "status": "completed",
+                "jurisdiction": {"abbreviation": "QC"},
+                "result": {
+                    "artifacts": {
+                        "households": {"path": "population/households.csv"},
+                        "persons": {"path": "population/persons.csv"},
+                    }
+                },
+            }
+        )
+    )
+    (tmp_path / "pending.json").write_text(json.dumps({"status": "planned"}))
+    plan_path = tmp_path / "plan.json"
+    plan_path.write_text(
+        json.dumps(
+            {
+                "status": "partial",
+                "inputs": {"boundaries": {"path": "boundaries.geojson"}},
+                "batches": [
+                    {"jurisdiction_pruid": "24", "manifest": "completed.json"},
+                    {"jurisdiction_pruid": "35", "manifest": "pending.json"},
+                ],
+            }
+        )
+    )
+
+    report = render_national_plan_map(
+        plan_path=plan_path,
+        geography_level="da",
+        geography_column="DAUID",
+        jurisdiction_pruids=frozenset({"24"}),
+    )
+
+    assert report["matched_geographies"] == 1
+    assert report["statistics"]["jurisdiction_pruids"] == ["24"]
+    assert (tmp_path / "national-map-statistics-24.csv").is_file()
+
+
 def test_national_map_statistics_rejects_invalid_plan_and_batches(
     tmp_path: Path,
 ) -> None:

@@ -262,6 +262,18 @@ both ADA and DA level. The audit must record, per field and PUMF category:
 - an explicit `unavailable` or `uncontrolled` classification where no valid
   public small-area control exists.
 
+This is primarily an extraction, category-crosswalk, and calibration task—not
+an assumption that the source controls are absent. Statistics Canada publishes
+one national 2021 ADA Census Profile resource and six regional 2021 DA Profile
+resources (including Québec). They contain many potential household and person
+margins, including age/sex, immigration and citizenship, visible-minority
+status, language, education, labour force, income distributions, household
+composition, dwelling type, bedrooms/rooms, shelter costs, repairs, and
+construction period. Availability of a Profile characteristic does not itself
+establish a valid direct control: the audit must still document its universe,
+category correspondence, disclosure/suppression status, and fitting
+feasibility.
+
 Use the audit to build level-specific, evidence-checked household and linked
 person control resources. Start with high-value, suitably supported person
 margins such as age/sex, immigration status, citizenship, generation status,

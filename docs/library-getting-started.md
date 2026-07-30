@@ -338,6 +338,18 @@ map_path = spc.render_small_area_map(
 )
 ```
 
+For a completed jurisdiction within a partial national plan, pass its PRUID
+explicitly. The resulting map is scoped to that jurisdiction rather than being
+presented as national coverage:
+
+```python
+map_path = spc.render_small_area_map(
+    households="data/work/canada-da-2021/plan.json",
+    jurisdiction_pruids=["24"],  # Québec
+    out="data/work/canada-da-2021/quebec-da-map.html",
+)
+```
+
 ## Reproducible Generation
 
 Use a fixed random seed when generating from a model package so notebook runs

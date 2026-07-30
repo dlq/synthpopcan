@@ -570,6 +570,32 @@ def test_render_small_area_map_infers_national_plan_geography(tmp_path: Path) ->
     ]
 
 
+def test_render_small_area_map_passes_national_jurisdiction_scope(
+    tmp_path: Path,
+) -> None:
+    plan = tmp_path / "plan.json"
+    plan.write_text(
+        json.dumps(
+            {
+                "geography": {
+                    "geography_level": "da",
+                    "identifier_column": "DAUID",
+                }
+            }
+        )
+    )
+    calls: list[dict] = []
+
+    def _fake_render(**options):
+        calls.append(options)
+        return {}
+
+    with patch("synthpopcan.map_render.render_national_plan_map", _fake_render):
+        api.render_small_area_map(households=plan, jurisdiction_pruids=["24"])
+
+    assert calls[0]["jurisdiction_pruids"] == frozenset({"24"})
+
+
 def test_render_small_area_map_rejects_invalid_national_geography(
     tmp_path: Path,
 ) -> None:
