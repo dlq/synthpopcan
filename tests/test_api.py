@@ -17,12 +17,14 @@ from synthpopcan.tree import read_tree_training_sample, train_cart_model
 
 STABLE_API_NAMES = (
     "ControlTable",
+    "EnrichmentResult",
     "IPFResult",
     "LinkedPopulation",
     "LinkedPopulationFiles",
     "PopulationRows",
     "SmallAreaResult",
     "calibrate_small_area",
+    "enrich_population",
     "expand_population",
     "fetch_model",
     "fit_ipf",
@@ -40,9 +42,9 @@ STABLE_API_NAMES = (
 def test_stable_api_contract_is_explicit() -> None:
     assert tuple(api.__all__) == STABLE_API_NAMES
     assert tuple(spc.__all__) == (
-        *STABLE_API_NAMES[:6],
+        *STABLE_API_NAMES[:7],
         "__version__",
-        *STABLE_API_NAMES[6:],
+        *STABLE_API_NAMES[7:],
     )
     expected_parameters = {
         "fit_ipf": ("seed", "controls", "weight_field", "max_iterations", "tolerance"),
@@ -61,11 +63,26 @@ def test_stable_api_contract_is_explicit() -> None:
             "output_dir",
             "person_controls",
             "geography_column",
+            "geography_universe",
             "max_iterations",
             "tolerance",
             "pool_size",
             "subsample_seed",
             "include_weights",
+        ),
+        "enrich_population": (
+            "population",
+            "layer",
+            "source_profile",
+            "resource_record",
+            "layer_id",
+            "layer_class",
+            "key_columns",
+            "variables",
+            "base_geography",
+            "output_dir",
+            "observed_status",
+            "limitations",
         ),
     }
     for name, parameters in expected_parameters.items():
@@ -517,6 +534,97 @@ def test_render_small_area_map_delegates_to_render_synthesis_map(tmp_path) -> No
     assert calls[0]["geography_column"] == "ct"
     assert calls[0]["geography_id_field"] == "CTUID"
     assert result == tmp_path / "out.html"
+
+
+def test_render_small_area_map_infers_national_plan_geography(tmp_path: Path) -> None:
+    plan = tmp_path / "plan.json"
+    plan.write_text(
+        json.dumps(
+            {
+                "geography": {
+                    "geography_level": "ada",
+                    "identifier_column": "ADAUID",
+                }
+            }
+        )
+    )
+    calls: list[dict] = []
+
+    def _fake_render(**options):
+        calls.append(options)
+        return {}
+
+    with patch("synthpopcan.map_render.render_national_plan_map", _fake_render):
+        result = api.render_small_area_map(households=plan, coord_precision=4)
+
+    assert result == tmp_path / "national-map.html"
+    assert calls == [
+        {
+            "plan_path": plan,
+            "geography_level": "ada",
+            "geography_column": "ADAUID",
+            "out_path": tmp_path / "national-map.html",
+            "coord_precision": 4,
+            "title": "National Synthetic Population",
+        }
+    ]
+
+
+def test_render_small_area_map_rejects_invalid_national_geography(
+    tmp_path: Path,
+) -> None:
+    plan = tmp_path / "plan.json"
+    for geography, message in (
+        (None, "geography is invalid"),
+        ({"identifier_column": "ADAUID"}, "geography level is invalid"),
+        ({"geography_level": "ada"}, "identifier column is invalid"),
+    ):
+        plan.write_text(json.dumps({"geography": geography}))
+        with pytest.raises(ValueError, match=message):
+            api.render_small_area_map(households=plan)
+
+
+def test_render_small_area_map_rejects_conflicting_national_arguments(
+    tmp_path: Path,
+) -> None:
+    plan = tmp_path / "plan.json"
+    plan.write_text(
+        json.dumps(
+            {
+                "geography": {
+                    "geography_level": "ada",
+                    "identifier_column": "ADAUID",
+                }
+            }
+        )
+    )
+    with pytest.raises(ValueError, match="persons must be omitted"):
+        api.render_small_area_map(
+            households=plan,
+            persons=tmp_path / "persons.csv",
+        )
+    with pytest.raises(ValueError, match="arguments are inferred"):
+        api.render_small_area_map(
+            households=plan,
+            boundaries=tmp_path / "boundaries.geojson",
+        )
+
+
+def test_render_small_area_map_requires_ordinary_map_inputs(tmp_path: Path) -> None:
+    households = tmp_path / "households.csv"
+    with pytest.raises(ValueError, match="boundaries is required"):
+        api.render_small_area_map(households=households)
+    with pytest.raises(ValueError, match="geography_column is required"):
+        api.render_small_area_map(
+            households=households,
+            boundaries=tmp_path / "boundaries.geojson",
+        )
+    with pytest.raises(ValueError, match="geography_id_field is required"):
+        api.render_small_area_map(
+            households=households,
+            boundaries=tmp_path / "boundaries.geojson",
+            geography_column="ADAUID",
+        )
 
 
 def test_render_small_area_map_accepts_paired_files_and_explicit_paths(

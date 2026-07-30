@@ -15,14 +15,16 @@ __all__ = [
 ]
 
 import csv
+import hashlib
 import json
 import os
+import time
 from collections import Counter, defaultdict
 from collections.abc import Callable, Iterable, Sequence
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, TypeVar
+from typing import Any, TypeVar, cast
 
 import numpy as np
 import pandas as pd
@@ -34,6 +36,7 @@ from synthpopcan.controls import (
     read_control_table,
 )
 from synthpopcan.diagnostics import build_ipf_fit_report, relative_error
+from synthpopcan.geography import GeographyUniverse
 from synthpopcan.ipf import (
     IPFResult,
     NumpyIPFIndex,
@@ -403,10 +406,12 @@ def _check_calibration_inputs(
             )
             missing_dimensions.add(dimension)
             continue
-        candidate_categories = {
+        candidate_category_counts = Counter(
             str(candidate.get(dimension, "")) for candidate in candidates
-        }
-        for category in sorted(controls.categories_for(dimension)):
+        )
+        candidate_categories = set(candidate_category_counts)
+        control_categories = controls.categories_for(dimension)
+        for category in sorted(control_categories):
             if category not in candidate_categories:
                 missing_categories.add((dimension, category))
                 issues.append(
@@ -422,6 +427,24 @@ def _check_calibration_inputs(
                         "tip": _missing_category_tip(candidate_unit),
                     }
                 )
+        for category in sorted(candidate_categories - control_categories):
+            issues.append(
+                {
+                    "severity": "error",
+                    "kind": "uncontrolled_candidate_category",
+                    "dimension": dimension,
+                    "category": category,
+                    "candidate_rows": candidate_category_counts[category],
+                    "message": (
+                        f"For dimension '{dimension}', {candidate_label} include "
+                        f"'{category}', but no control cell constrains it."
+                    ),
+                    "tip": (
+                        "Exclude or explicitly recode missing/inapplicable candidate "
+                        "values, or add a scientifically compatible control category."
+                    ),
+                }
+            )
 
     issues.extend(
         _inconsistent_margin_total_issues(
@@ -1198,6 +1221,7 @@ def calibrate_linked_household_csvs(
     person_controls_path: Path | None = None,
     geography_dimension: str,
     geography_column: str,
+    geography_universe: GeographyUniverse | None = None,
     households_out: Path,
     persons_out: Path,
     weights_out: Path | None = None,
@@ -1210,6 +1234,7 @@ def calibrate_linked_household_csvs(
     pool_size: int | None = None,
     subsample_seed: int = 42,
     n_workers: int | None = None,
+    record_timing: bool = False,
 ) -> dict[str, Any]:
     """Calibrate linked household/person CSVs to geography controls.
 
@@ -1230,10 +1255,25 @@ def calibrate_linked_household_csvs(
     n_workers:
         Number of threads for parallel geography fitting.  Defaults to
         ``min(os.cpu_count(), 8)`` when ``None``.
+    record_timing:
+        Include non-deterministic wall-clock phase timings in the report.
+        Disabled by default so otherwise identical reports remain byte stable.
     """
+
+    started = time.perf_counter()
+    timing_seconds: dict[str, float] = {}
+
+    if (
+        geography_universe is not None
+        and geography_universe.identifier_column != geography_column
+    ):
+        raise ValueError(
+            "geography universe identifier column must match geography_column"
+        )
 
     # Read independent inputs concurrently; CSV parsing and control loading are
     # I/O-bound at this stage.
+    phase_started = time.perf_counter()
     with ThreadPoolExecutor(max_workers=4) as _io_ex:
         _hh_f = _io_ex.submit(_read_csv_rows, households_path)
         _p_f = _io_ex.submit(_read_csv_rows, persons_path)
@@ -1249,6 +1289,7 @@ def calibrate_linked_household_csvs(
         person_controls = (
             _person_ctrl_f.result() if _person_ctrl_f is not None else None
         )
+    timing_seconds["input_loading"] = time.perf_counter() - phase_started
 
     if not households:
         raise ValueError(f"candidate household CSV has no data rows: {households_path}")
@@ -1265,6 +1306,7 @@ def calibrate_linked_household_csvs(
             seed=subsample_seed,
         )
 
+    phase_started = time.perf_counter()
     household_input_report = check_small_area_calibration_inputs(
         households,
         controls,
@@ -1284,6 +1326,8 @@ def calibrate_linked_household_csvs(
         )
         if not person_input_report["passed"]:
             raise ValueError(_format_preflight_error(person_input_report))
+        timing_seconds["input_validation"] = time.perf_counter() - phase_started
+        phase_started = time.perf_counter()
         fit = fit_linked_by_geography(
             households,
             persons,
@@ -1297,6 +1341,8 @@ def calibrate_linked_household_csvs(
             n_workers=n_workers,
         )
     else:
+        timing_seconds["input_validation"] = time.perf_counter() - phase_started
+        phase_started = time.perf_counter()
         fit = fit_households_by_geography(
             households,
             controls,
@@ -1307,6 +1353,8 @@ def calibrate_linked_household_csvs(
             tolerance=tolerance,
             n_workers=n_workers,
         )
+    timing_seconds["calibration"] = time.perf_counter() - phase_started
+    phase_started = time.perf_counter()
     realization = _write_realized_population_to_csv(
         households_out,
         persons_out,
@@ -1317,6 +1365,8 @@ def calibrate_linked_household_csvs(
         household_id_column=household_id_column,
         person_id_column=person_id_column,
     )
+    timing_seconds["realization_and_output"] = time.perf_counter() - phase_started
+    phase_started = time.perf_counter()
     if person_controls is None:
         _attach_household_realization_reports(
             fit,
@@ -1326,8 +1376,10 @@ def calibrate_linked_household_csvs(
             integer_weights_by_geography=realization["integer_weights"],
             tolerance=tolerance,
         )
+    timing_seconds["realized_residuals"] = time.perf_counter() - phase_started
 
     if weights_out:
+        phase_started = time.perf_counter()
         _write_weights_csv(
             weights_out,
             households,
@@ -1335,13 +1387,16 @@ def calibrate_linked_household_csvs(
             household_id_column=household_id_column,
             integer_weights_by_geography=realization["integer_weights"],
         )
+        timing_seconds["weights_output"] = time.perf_counter() - phase_started
 
+    phase_started = time.perf_counter()
     summary = _small_area_report(
         households=households,
         persons=persons,
         assigned_household_count=realization["assigned_households"],
         assigned_person_count=realization["assigned_persons"],
         assigned_households_by_geography=realization["geographies"],
+        assigned_persons_by_geography=realization["persons_by_geography"],
         fit=fit,
         geography_dimension=geography_dimension,
         geography_column=geography_column,
@@ -1362,6 +1417,14 @@ def calibrate_linked_household_csvs(
         persons_out,
         geography_column=geography_column,
     )
+    summary["geography_universe"] = (
+        geography_universe.as_dict() if geography_universe is not None else None
+    )
+    summary["output_integrity"] = realization["output_integrity"]
+    timing_seconds["report_construction"] = time.perf_counter() - phase_started
+    timing_seconds["total_before_report_write"] = time.perf_counter() - started
+    if record_timing:
+        summary["timing_seconds"] = timing_seconds
     if report_out:
         report_out.parent.mkdir(parents=True, exist_ok=True)
         report_out.write_text(json.dumps(summary, indent=2, sort_keys=True))
@@ -1454,6 +1517,7 @@ class _RealizedPopulation:
     person_frame: pd.DataFrame | None
     integer_weights: dict[str, list[int]]
     assigned_by_geography: dict[str, int]
+    assigned_persons_by_geography: dict[str, int]
     assigned_households: int
     assigned_persons: int
 
@@ -1567,12 +1631,18 @@ def _expand_realized_population(
         person_frame = pd.DataFrame(df_p_exp[p_cols])
 
     assigned_by_geography = df_hh_exp[geography_column].value_counts().to_dict()
+    assigned_persons_by_geography = (
+        person_frame[geography_column].value_counts().to_dict()
+        if person_frame is not None
+        else {}
+    )
 
     return _RealizedPopulation(
         household_frame=household_frame,
         person_frame=person_frame,
         integer_weights=integer_weights,
         assigned_by_geography=assigned_by_geography,
+        assigned_persons_by_geography=assigned_persons_by_geography,
         assigned_households=n_hh,
         assigned_persons=n_p,
     )
@@ -1608,19 +1678,69 @@ def _write_realized_population_to_csv(
     )
 
     households_path.parent.mkdir(parents=True, exist_ok=True)
-    realized.household_frame.to_csv(households_path, index=False)
+    household_integrity = _write_frame_with_integrity(
+        realized.household_frame,
+        households_path,
+    )
 
     persons_path.parent.mkdir(parents=True, exist_ok=True)
     if realized.person_frame is not None:
-        realized.person_frame.to_csv(persons_path, index=False)
+        person_integrity = _write_frame_with_integrity(
+            realized.person_frame,
+            persons_path,
+        )
     else:
         persons_path.write_text("")
+        person_integrity = {
+            "sha256": hashlib.sha256(b"").hexdigest(),
+            "byte_size": 0,
+        }
 
     return {
         "assigned_households": realized.assigned_households,
         "assigned_persons": realized.assigned_persons,
         "geographies": realized.assigned_by_geography,
+        "persons_by_geography": realized.assigned_persons_by_geography,
         "integer_weights": realized.integer_weights,
+        "output_integrity": {
+            "households": household_integrity,
+            "persons": person_integrity,
+        },
+    }
+
+
+class _HashingTextWriter:
+    """Record UTF-8 integrity while forwarding text to a file handle."""
+
+    def __init__(self, handle: Any) -> None:
+        self._handle = handle
+        self._digest = hashlib.sha256()
+        self.byte_size = 0
+
+    def write(self, value: str) -> int:
+        encoded = value.encode("utf-8")
+        self._digest.update(encoded)
+        self.byte_size += len(encoded)
+        return self._handle.write(value)
+
+    def flush(self) -> None:
+        self._handle.flush()
+
+    @property
+    def sha256(self) -> str:
+        return self._digest.hexdigest()
+
+
+def _write_frame_with_integrity(
+    frame: pd.DataFrame,
+    path: Path,
+) -> dict[str, object]:
+    with path.open("w", encoding="utf-8", newline="") as handle:
+        hashing_handle = _HashingTextWriter(handle)
+        frame.to_csv(cast(Any, hashing_handle), index=False)
+    return {
+        "sha256": hashing_handle.sha256,
+        "byte_size": hashing_handle.byte_size,
     }
 
 
@@ -1673,6 +1793,7 @@ def _small_area_report(
     assigned_household_count: int,
     assigned_person_count: int,
     assigned_households_by_geography: dict[str, int],
+    assigned_persons_by_geography: dict[str, int],
     fit: GeographyHouseholdFit,
     geography_dimension: str,
     geography_column: str,
@@ -1732,6 +1853,10 @@ def _small_area_report(
                 "iterations": report["iterations"],
                 "max_abs_error": report["max_abs_error"],
                 "assigned_households": assigned_households_by_geography.get(
+                    geography,
+                    0,
+                ),
+                "assigned_persons": assigned_persons_by_geography.get(
                     geography,
                     0,
                 ),

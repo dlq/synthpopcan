@@ -53,6 +53,11 @@ Most new readers should start with one of these generation workflows:
    :doc:`Small-Area Linked Synthesis <small-area>` for the current
    household-first workflow.
 
+**Attach external context as sidecar layers**
+   Use :doc:`External-Data Enrichment <enrichment>` after generating a linked
+   population when a research question needs geography, environment, service,
+   facility, or other governed external context.
+
 If we want to work in a notebook or teaching script, start with
 :doc:`Getting Started With the Beginner API <library-getting-started>`. That
 page uses ``import synthpopcan as spc`` and keeps **advanced training**,
@@ -96,6 +101,7 @@ beginner generation workflows.
    tree-generate
    linked-population
    small-area
+   enrichment
    validate
    microdata
    tree

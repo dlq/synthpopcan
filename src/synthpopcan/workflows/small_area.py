@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from synthpopcan.geography import GeographyUniverse
 from synthpopcan.map_render import render_synthesis_map
 from synthpopcan.small_area_controls import write_recoded_candidates
 from synthpopcan.small_area_synthesis import calibrate_linked_household_csvs
@@ -36,6 +37,7 @@ class SmallAreaRequest:
     geography_dimension: str
     geography_column: str
     conditions: dict[str, str]
+    geography_universe: GeographyUniverse | None = None
     person_controls_path: Path | None = None
     package_reference: str | None = None
     random_seed: int | None = None
@@ -61,6 +63,15 @@ class SmallAreaRequest:
     candidate_persons_reference: str | None = None
     boundaries_reference: str | None = None
     output_dir_reference: str | None = None
+
+    def __post_init__(self) -> None:
+        if (
+            self.geography_universe is not None
+            and self.geography_universe.identifier_column != self.geography_column
+        ):
+            raise ValueError(
+                "geography universe identifier column must match geography_column"
+            )
 
     def reproduction(self) -> WorkflowReproduction:
         controls_reference = self.controls_reference or str(self.controls_path)
@@ -144,6 +155,21 @@ class SmallAreaRequest:
             arguments.extend(("--max-iterations", str(self.max_iterations)))
         if self.tolerance != 1e-6:
             arguments.extend(("--tolerance", str(self.tolerance)))
+        if self.geography_universe is not None:
+            arguments.extend(
+                (
+                    "--census-vintage",
+                    str(self.geography_universe.census_vintage),
+                    "--geo-level",
+                    self.geography_universe.geography_level,
+                    "--geo-namespace",
+                    self.geography_universe.identifier_namespace,
+                )
+            )
+            if self.geography_universe.dguid_column is not None:
+                arguments.extend(
+                    ("--geo-dguid-column", self.geography_universe.dguid_column)
+                )
         commands = [ReproductionCommand("synthpopcan", tuple(arguments))]
         if boundaries_reference is not None and map_reference is not None:
             commands.append(
@@ -200,6 +226,11 @@ class SmallAreaRequest:
                     "geography_id_field": self.geography_id_field,
                     "title": self.map_title,
                 },
+                "geography_universe": (
+                    self.geography_universe.as_dict()
+                    if self.geography_universe is not None
+                    else None
+                ),
             },
             command=commands[0],
             commands=tuple(commands),
@@ -289,6 +320,7 @@ def synthesize_small_area_files(
         person_controls_path=request.person_controls_path,
         geography_dimension=request.geography_dimension,
         geography_column=request.geography_column,
+        geography_universe=request.geography_universe,
         households_out=households_path,
         persons_out=persons_path,
         report_out=report_path,

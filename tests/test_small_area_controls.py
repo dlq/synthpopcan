@@ -100,8 +100,16 @@ def _write_2021_profile(path: Path) -> None:
             "5 or more persons",
             "5",
         ],
-        ["Aggregate dissemination area", "2021S0516G1", "G1", "1415", "Owner", "50"],
+        ["Aggregate dissemination area", "2021S0516G1", "G1", "1415", "Owner", "45"],
         ["Aggregate dissemination area", "2021S0516G1", "G1", "1416", "Renter", "30"],
+        [
+            "Aggregate dissemination area",
+            "2021S0516G1",
+            "G1",
+            "1417",
+            "Local government, First Nation or Indian band",
+            "5",
+        ],
         ["Province", "2021A000224", "24", "51", "1 person", "999"],
     ]
     with path.open("w", newline="", encoding="utf-8") as fh:
@@ -177,7 +185,7 @@ def test_extract_controls_reads_2021_profile_schema(tmp_path: Path) -> None:
         "4": 15.0,
         "5": 5.0,
     }
-    assert raw["G1"]["tenure"] == {"1": 50.0, "2": 30.0}
+    assert raw["G1"]["tenure"] == {"1": 45.0, "2": 35.0}
 
 
 def test_extract_controls_filters_by_geo_prefix(tmp_path: Path) -> None:
@@ -187,6 +195,41 @@ def test_extract_controls_filters_by_geo_prefix(tmp_path: Path) -> None:
     raw = extract_controls_from_profile(profile, "ada", geo_prefix="G1")
 
     assert set(raw) == {"G1"}
+
+
+def test_extract_controls_filters_exact_geography_identifiers(tmp_path: Path) -> None:
+    profile = tmp_path / "profile.csv"
+    _minimal_profile(profile)
+
+    raw = extract_controls_from_profile(profile, "ada", geo_ids={"G2", "missing"})
+
+    assert set(raw) == {"G2"}
+
+
+def test_2016_da_control_fixture_remains_compatible(tmp_path: Path) -> None:
+    profile = tmp_path / "profile.csv"
+    rows = [
+        _profile_row("4", "24660244", member, str(value))
+        for member, value in (
+            ("52", 10),
+            ("53", 20),
+            ("54", 5),
+            ("55", 3),
+            ("56", 2),
+            ("1618", 25),
+            ("1619", 10),
+            ("1620", 5),
+        )
+    ]
+    _write_profile(profile, rows)
+
+    raw = extract_controls_from_profile(profile, "da")
+    scaled, dropped = scale_and_validate_controls(raw, 40)
+
+    assert dropped == []
+    assert raw["24660244"]["tenure"] == {"1": 25.0, "2": 15.0}
+    assert sum(scaled["24660244"]["hhsize"].values()) == 40
+    assert sum(scaled["24660244"]["tenure"].values()) == 40
 
 
 def test_extract_controls_ignores_wrong_geo_level(tmp_path: Path) -> None:

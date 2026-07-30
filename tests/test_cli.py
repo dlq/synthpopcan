@@ -31,6 +31,7 @@ def test_cli_command_tree_is_coherent() -> None:
     assert set(cli.commands) == {
         "controls",
         "data",
+        "enrich",
         "geo",
         "guide",
         "ipf",

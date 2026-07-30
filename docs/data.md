@@ -62,17 +62,22 @@ data/
 Each vintage root has a `manifest.json` inventory of the products actually
 present. At present, both vintages contain the national hierarchical and
 individual PUMFs plus CT, ADA, and national CSD Census Profiles. The 2021 cache
-additionally contains the national Dissemination Geographies Relationship
-File. Matching product coverage does not imply column-identical schemas:
+additionally contains all six regional DA Census Profiles, the national DA
+boundary, and the national Dissemination Geographies Relationship File.
+Matching product coverage does not imply column-identical schemas:
 adapters must still account for the identifiers, characteristic codes, and
 count/rate columns used by each vintage.
 
-The national PUMFs, canonical Census Profile downloads, and official
-relationship files stay under `raw`. Regional extracts, flattened tables,
-notebook-produced reusable intermediates and prepared GeoJSON stay under
-`derived`. Disposable model builds and exploratory synthesis outputs stay under
-`work`. Each provider and product family is organized by census vintage before
-product type.
+The national PUMFs, publisher-issued national or regional Census Profile
+downloads, and official relationship files stay under `raw`. The shared 2021
+national small-area planner reads the six regional DA Profile products or the
+single national ADA Profile product through level-specific adapters; these
+source-layout differences do not change its batching and execution contract.
+Project-created
+regional extracts, flattened tables, notebook-produced reusable intermediates,
+and prepared GeoJSON stay under `derived`. Disposable model builds and
+exploratory synthesis outputs stay under `work`. Each provider and product
+family is organized by census vintage before product type.
 
 `data doctor` checks whether the expected directories exist. `data inspect`,
 `data schema`, and `data sample` inspect the actual files within that layout —

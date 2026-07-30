@@ -24,9 +24,10 @@ For example:
 synthpopcan data doctor
 synthpopcan statcan wds search "population age sex"
 synthpopcan ipf fit --help
+synthpopcan enrich import --help
 ```
 
-Here, `data`, `statcan`, and `ipf` are **command groups**. A group usually
+Here, `data`, `statcan`, `ipf`, and `enrich` are **command groups**. A group usually
 contains more specific **subcommands**, such as `doctor`, `search`, or `fit`.
 Named options such as `--seed`, `--controls`, and `--out` tell that subcommand
 which files to read, what choices to apply, and where to write its result.
@@ -113,6 +114,23 @@ Use this path when a suitable linked household/person package already exists:
 
 Small-area assignment is optional. A project that does not need local geography
 can validate the generated household/person files directly.
+
+For restartable national 2021 execution, `synthpopcan geo national-da` and
+`synthpopcan geo national-ada` provide matching `fetch-profiles`, `prepare`,
+and `run` interfaces. They share planning and execution contracts while
+retaining the different official source layouts and identifiers for each
+geography level. Their runners reuse conditioned candidate pools, checkpoint
+atomic batches, support bounded process and fitting parallelism, and produce
+aggregate national evidence. Detailed batch maps are opt-in; one compact
+national overview is produced after completion. See {doc}`small-area` before
+attempting a national run.
+
+### External Context
+
+After creating a linked population, use {doc}`enrichment` to register an
+immutable source revision and attach a normalized geography, facility, or
+other governed sidecar layer. Enrichment keeps the base household/person files
+unchanged and rejects implicit cross-vintage geography joins.
 
 ### Developing a Model
 

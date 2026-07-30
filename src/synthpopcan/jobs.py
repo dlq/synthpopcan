@@ -12,6 +12,7 @@ import time
 from pathlib import Path
 from typing import Any
 
+from synthpopcan.geography import GeographyUniverse
 from synthpopcan.models import model_payload
 from synthpopcan.runs import RunStore, publish_artifact
 from synthpopcan.workflows.ipf import fit_ipf_files
@@ -294,6 +295,12 @@ def _small_area_worker(
             raise _WorkerCancelled
 
     try:
+        geography_payload = options.get("geography_universe")
+        geography_universe = (
+            GeographyUniverse.from_dict(geography_payload)
+            if isinstance(geography_payload, dict)
+            else None
+        )
         result = synthesize_small_area_files(
             SmallAreaRequest(
                 package_path=package_path,
@@ -306,6 +313,7 @@ def _small_area_worker(
                 geography_column=str(
                     options.get("geography_column") or options["geography_dimension"]
                 ),
+                geography_universe=geography_universe,
                 conditions=dict(options.get("conditions", {})),
                 package_reference=package_reference,
                 candidate_households_path=input_paths.get("candidate_households"),

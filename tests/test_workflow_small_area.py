@@ -9,6 +9,7 @@ from pathlib import Path
 from click.testing import CliRunner
 
 from synthpopcan.cli import cli
+from synthpopcan.geography import statcan_geography_universe
 from synthpopcan.models import model_payload
 from synthpopcan.workflows.small_area import (
     SmallAreaRequest,
@@ -65,6 +66,11 @@ def test_small_area_workflow_generates_calibrates_and_reports(tmp_path: Path) ->
             candidate_households=20,
             geography_dimension="tract",
             geography_column="tract",
+            geography_universe=statcan_geography_universe(
+                2021,
+                "ct",
+                "tract",
+            ),
             conditions={"geo": "Demo North"},
             package_reference="demo-linked-household-person",
             random_seed=13,
@@ -95,6 +101,14 @@ def test_small_area_workflow_generates_calibrates_and_reports(tmp_path: Path) ->
         "person_assignment": "inherited-via-household",
     }
     assert result.details["summary"]["non_converged_count"] == 0
+    assert result.details["geography_universe"] == {
+        "schema_version": "synthpopcan-geography-universe-v1",
+        "census_vintage": 2021,
+        "geography_level": "ct",
+        "identifier_namespace": "statcan:census:2021:ct",
+        "identifier_column": "tract",
+        "dguid_column": None,
+    }
     assert result.map_path is not None
     assert "maplibregl" in result.map_path.read_text()
     assert result.weights_path is not None
@@ -127,6 +141,10 @@ def test_small_area_workflow_generates_calibrates_and_reports(tmp_path: Path) ->
         "max_iterations": 100,
         "tolerance": 1e-6,
     }
+    assert (
+        represented["request"]["geography_universe"]
+        == result.details["geography_universe"]
+    )
 
     expected = {
         path.name: path.read_bytes()

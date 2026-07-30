@@ -5,6 +5,7 @@ from __future__ import annotations
 __all__ = ["small_area"]
 
 import json
+from collections.abc import Mapping
 from pathlib import Path
 
 import click
@@ -12,6 +13,8 @@ import click
 from synthpopcan.cli_output import click_file_access_error, click_value_error
 from synthpopcan.console import print_wrote
 from synthpopcan.diagnostics import format_categories, format_number
+from synthpopcan.geography import GeographyUniverse, statcan_geography_universe
+from synthpopcan.national_small_area import CANADA_SMALL_AREA_JURISDICTIONS
 from synthpopcan.small_area_synthesis import (
     calibrate_linked_household_csvs,
     estimate_small_area_run,
@@ -34,6 +37,11 @@ _GEO_DEFAULTS: dict[str, tuple[str, str]] = {
     "cd": ("lcd", "CDUID"),
     "pr": ("lpr", "PRUID"),
 }
+_NATIONAL_SMALL_AREA_JURISDICTION_CHOICES = tuple(
+    value
+    for item in CANADA_SMALL_AREA_JURISDICTIONS
+    for value in (item.pruid, item.abbreviation)
+)
 
 
 def _resolve_boundaries(boundaries_path: Path, geo_column: str) -> Path:
@@ -89,6 +97,38 @@ def _linked_population_paths(directory: Path) -> tuple[Path, Path]:
     """Return the conventional household and person paths in an artifact directory."""
 
     return directory / "households.csv", directory / "persons.csv"
+
+
+def _optional_geography_universe(
+    *,
+    census_vintage: int | None,
+    geography_level: str | None,
+    identifier_namespace: str | None,
+    identifier_column: str,
+    dguid_column: str | None,
+) -> GeographyUniverse | None:
+    supplied = (census_vintage, geography_level, identifier_namespace)
+    if all(value is None for value in supplied):
+        if dguid_column is not None:
+            raise click.UsageError(
+                "--geo-dguid-column requires the geography identity options"
+            )
+        return None
+    if any(value is None for value in supplied):
+        raise click.UsageError(
+            "--census-vintage, --geo-level, and --geo-namespace must be "
+            "provided together"
+        )
+    try:
+        return GeographyUniverse(
+            census_vintage=census_vintage,  # type: ignore[arg-type]
+            geography_level=geography_level,  # type: ignore[arg-type]
+            identifier_namespace=identifier_namespace,  # type: ignore[arg-type]
+            identifier_column=identifier_column,
+            dguid_column=dguid_column,
+        )
+    except ValueError as exc:
+        raise click_value_error(exc) from exc
 
 
 @click.group("geo")
@@ -226,6 +266,27 @@ def _format_surface_recommendation(recommendation: str) -> str:
     help="Output geography column. Defaults to --geo-dimension.",
 )
 @click.option(
+    "--census-vintage",
+    type=int,
+    default=None,
+    help="Census year defining the target geography identifiers.",
+)
+@click.option(
+    "--geo-level",
+    default=None,
+    help="Explicit geography level such as da, ada, ct, or csd.",
+)
+@click.option(
+    "--geo-namespace",
+    default=None,
+    help="Stable identifier namespace, such as statcan:census:2021:da.",
+)
+@click.option(
+    "--geo-dguid-column",
+    default=None,
+    help="Optional DGUID column carried by the same geography resource.",
+)
+@click.option(
     "--out",
     "output_dir",
     required=True,
@@ -290,6 +351,10 @@ def calibrate_command(
     person_controls_path: Path | None,
     geo_dimension: str,
     geo_column: str | None,
+    census_vintage: int | None,
+    geo_level: str | None,
+    geo_namespace: str | None,
+    geo_dguid_column: str | None,
     output_dir: Path,
     include_weights: bool,
     max_iterations: int,
@@ -315,6 +380,13 @@ def calibrate_command(
     report_out = output_dir / "report.json"
     weights_out = output_dir / "weights.csv" if include_weights else None
     output_geo_column = geo_column or geo_dimension
+    geography_universe = _optional_geography_universe(
+        census_vintage=census_vintage,
+        geography_level=geo_level,
+        identifier_namespace=geo_namespace,
+        identifier_column=output_geo_column,
+        dguid_column=geo_dguid_column,
+    )
 
     try:
         summary = calibrate_linked_household_csvs(
@@ -324,6 +396,7 @@ def calibrate_command(
             person_controls_path=person_controls_path,
             geography_dimension=geo_dimension,
             geography_column=output_geo_column,
+            geography_universe=geography_universe,
             households_out=households_out,
             persons_out=persons_out,
             weights_out=weights_out,
@@ -434,14 +507,20 @@ def _coerce_float(value: object) -> float:
 @click.option(
     "--boundaries",
     "boundaries_path",
-    required=True,
+    default=None,
     type=_PATH,
-    help=_BOUNDARIES_HELP,
+    help=(
+        f"{_BOUNDARIES_HELP} Inferred from a completed national plan when "
+        "POPULATION is plan.json or its directory."
+    ),
 )
 @click.option(
     "--geo-column",
-    required=True,
-    help="Column in the household CSV that holds the geography ID (e.g. ct or ada).",
+    default=None,
+    help=(
+        "Column in the household CSV that holds the geography ID (e.g. ct or ada). "
+        "Inferred from a completed national plan."
+    ),
 )
 @click.option(
     "--geo-id-field",
@@ -452,14 +531,18 @@ def _coerce_float(value: object) -> float:
         "(ct→CTUID, ada→ADAUID, da→DAUID, …)."
     ),
 )
+@click.option("--census-vintage", type=int, default=None)
+@click.option("--geo-level", default=None)
+@click.option("--geo-namespace", default=None)
+@click.option("--geo-dguid-column", default=None)
 @click.option(
     "--out",
     "out_path",
     default=None,
     type=_PATH,
     help=(
-        "Destination HTML file. "
-        "Defaults to <households-stem>-map.html in the same directory."
+        "Destination HTML file. Defaults to <households-stem>-map.html for a "
+        "CSV and national-map.html beside a national plan."
     ),
 )
 @click.option(
@@ -469,20 +552,26 @@ def _coerce_float(value: object) -> float:
 )
 @click.option(
     "--coord-precision",
-    default=5,
-    type=int,
-    show_default=True,
-    help="Decimal places kept in WGS-84 coordinates (5 ≈ 1 m; 3 halves file size).",
+    default=None,
+    type=click.IntRange(min=0, max=6),
+    help=(
+        "Decimal places kept in WGS-84 coordinates. Defaults to 5 for a single "
+        "population and 3 for a national plan."
+    ),
 )
 def map_command(
     population_path: Path,
     persons_path: Path | None,
-    boundaries_path: Path,
-    geo_column: str,
+    boundaries_path: Path | None,
+    geo_column: str | None,
     geo_id_field: str | None,
+    census_vintage: int | None,
+    geo_level: str | None,
+    geo_namespace: str | None,
+    geo_dguid_column: str | None,
     out_path: Path | None,
     title: str | None,
-    coord_precision: int,
+    coord_precision: int | None,
 ) -> None:
     """Generate a MapLibre GL JS choropleth map from synthesis output.
 
@@ -497,7 +586,57 @@ def map_command(
             synthetic-households.csv \\
             --boundaries /path/to/statcan-boundaries/ \\
             --geo-column ct
+
+    A completed national run needs no repeated boundary or geography options:
+
+    \b
+        synthpopcan geo map data/work/canada-ada-2021
     """
+    national_plan_path = (
+        population_path / "plan.json"
+        if population_path.is_dir() and (population_path / "plan.json").is_file()
+        else (
+            population_path
+            if population_path.is_file() and population_path.name == "plan.json"
+            else None
+        )
+    )
+    if national_plan_path is not None:
+        if persons_path is not None:
+            raise click.UsageError(
+                "--persons must be omitted when POPULATION is a national plan"
+            )
+        from synthpopcan.api import render_small_area_map
+
+        try:
+            destination = render_small_area_map(
+                households=national_plan_path,
+                out=out_path,
+                title=title,
+                coord_precision=coord_precision,
+            )
+        except OSError as exc:
+            raise click_file_access_error(
+                national_plan_path,
+                "process",
+                exc,
+            ) from exc
+        except ValueError as exc:
+            raise click_value_error(exc) from exc
+        print_wrote(destination)
+        click.echo(
+            f"Open {destination} in a browser to explore the synthesis results.",
+            err=True,
+        )
+        click.echo(destination)
+        return
+
+    if boundaries_path is None:
+        raise click.UsageError("--boundaries is required for a population CSV")
+    if geo_column is None:
+        raise click.UsageError("--geo-column is required for a population CSV")
+    coord_precision = 5 if coord_precision is None else coord_precision
+
     from synthpopcan.map_render import render_synthesis_map
 
     if population_path.is_dir():
@@ -517,6 +656,13 @@ def map_command(
             out_path = households_path.parent / (households_path.stem + "-map.html")
     if title is None:
         title = out_path.stem.replace("-", " ").replace("_", " ").title()
+    geography_universe = _optional_geography_universe(
+        census_vintage=census_vintage,
+        geography_level=geo_level,
+        identifier_namespace=geo_namespace,
+        identifier_column=geo_column,
+        dguid_column=geo_dguid_column,
+    )
 
     try:
         render_synthesis_map(
@@ -528,6 +674,9 @@ def map_command(
             out_path=out_path,
             title=title,
             coord_precision=coord_precision,
+            geography_context=(
+                geography_universe.as_dict() if geography_universe is not None else None
+            ),
         )
     except ImportError as exc:
         raise click.ClickException(
@@ -815,7 +964,7 @@ _KNOWN_GEO_LEVELS = ("ct", "ada", "da", "csd", "cd", "pr")
     default="2016",
     type=click.Choice(("2016", "2021")),
     show_default=True,
-    help="Boundary vintage. CT, ADA, and CSD are supported for both years.",
+    help="Boundary vintage. CT, ADA, DA, and CSD are supported for both years.",
 )
 @click.option(
     "--out-dir",
@@ -874,6 +1023,7 @@ def boundaries_command(
     from synthpopcan.statcan import (
         BoundaryDownload,
         fetch_boundary_zip,
+        file_integrity,
         get_boundary_download,
         write_manifest,
     )
@@ -892,6 +1042,7 @@ def boundaries_command(
     except ValueError as exc:
         raise click_value_error(exc) from exc
 
+    source_manifest_path = out_dir / f"{year}-boundary-{entry.geo_level}.json"
     click.echo(f"  Shapefile: {shp_path}", err=True)
     click.echo("Converting to WGS-84 GeoJSON…", err=True)
 
@@ -906,21 +1057,37 @@ def boundaries_command(
             property_fields=property_fields,
             trust_ring_winding=True,
         )
+        source_manifest = json.loads(source_manifest_path.read_text())
         write_manifest(
-            out_dir / f"{year}-boundary-{entry.geo_level}.json",
+            source_manifest_path,
             {
+                "schema_version": "synthpopcan-statcan-resource-v1",
                 "source": (
                     f"Statistics Canada {year} census cartographic boundary files"
                 ),
+                "source_revision": entry.zip_name,
                 "census_year": year,
                 "geo_level": entry.geo_level,
                 "description": entry.description,
                 "source_url": url or entry.url,
                 "source_shapefile": shp_path.name,
                 "source_components_retained": False,
+                "source_resources": source_manifest["resources"],
                 "geojson_path": str(geojson_path),
                 "geojson_id_source_field": entry.id_field,
                 "geojson_properties": ["geo_id", *property_fields],
+                "geography": statcan_geography_universe(
+                    year,
+                    entry.geo_level,
+                    "geo_id",
+                    dguid_column=(
+                        "DGUID" if "DGUID" in entry.property_fields else None
+                    ),
+                ).as_dict(),
+                "resource": {
+                    "path": str(geojson_path),
+                    **file_integrity(geojson_path),
+                },
             },
         )
         for suffix in (".shp", ".shx", ".dbf", ".prj", ".cpg"):
@@ -973,6 +1140,941 @@ def relationship_file_command(out_dir: Path, url: str | None) -> None:
     click.echo(csv_path)
 
 
+@small_area.group("national-da")
+def national_da_group() -> None:
+    """Plan and execute restartable 2021 DA synthesis across Canada."""
+
+
+@small_area.group("national-ada")
+def national_ada_group() -> None:
+    """Plan and execute restartable 2021 ADA synthesis across Canada."""
+
+
+@national_da_group.command("fetch-profiles")
+@click.option(
+    "--out-dir",
+    required=True,
+    type=_PATH,
+    help="Directory for the six official regional DA profile files.",
+)
+@click.option(
+    "--force",
+    is_flag=True,
+    help="Download a regional profile again even when its CSV already exists.",
+)
+def national_da_fetch_profiles_command(out_dir: Path, force: bool) -> None:
+    """Download the six regional Census Profiles covering all of Canada."""
+
+    _national_fetch_profiles(out_dir, force, "da")
+
+
+@national_ada_group.command("fetch-profiles")
+@click.option(
+    "--out-dir",
+    required=True,
+    type=_PATH,
+    help="Directory for the official national ADA profile file.",
+)
+@click.option(
+    "--force",
+    is_flag=True,
+    help="Download the ADA profile again even when its CSV already exists.",
+)
+def national_ada_fetch_profiles_command(out_dir: Path, force: bool) -> None:
+    """Download the national Census Profile covering all Canadian ADAs."""
+
+    _national_fetch_profiles(out_dir, force, "ada")
+
+
+def _national_fetch_profiles(
+    out_dir: Path,
+    force: bool,
+    geography_level: str,
+) -> None:
+    from synthpopcan.national_small_area import (
+        national_2021_profile_paths,
+        required_2021_profile_keys,
+    )
+    from synthpopcan.statcan import fetch_census_profile
+
+    existing_paths = national_2021_profile_paths(out_dir, geography_level)
+    for profile_key in required_2021_profile_keys(geography_level):
+        destination = existing_paths[profile_key]
+        if destination.is_file() and not force:
+            click.echo(f"Using existing {destination}", err=True)
+            continue
+        click.echo(f"Downloading {profile_key}…", err=True)
+        try:
+            destination = fetch_census_profile(
+                profile_key,
+                destination.parent,
+                census_year=2021,
+            )
+        except OSError as exc:
+            raise click.ClickException(
+                f"Could not download {profile_key}: {exc}"
+            ) from exc
+        print_wrote(destination)
+    click.echo(out_dir)
+
+
+@national_da_group.command("prepare")
+@click.option(
+    "--profiles-dir",
+    required=True,
+    type=_PATH,
+    help="Directory containing all six regional 2021 DA profile CSVs.",
+)
+@click.option(
+    "--boundaries",
+    "boundary_path",
+    required=True,
+    type=_PATH,
+    help="National 2021 DA GeoJSON boundary file.",
+)
+@click.option(
+    "--relationships",
+    "relationship_path",
+    required=True,
+    type=_PATH,
+    help="Final 2021 Dissemination Geographies Relationship CSV.",
+)
+@click.option(
+    "--out",
+    "output_directory",
+    required=True,
+    type=_PATH,
+    help="Destination for the national plan and restartable batch inputs.",
+)
+@click.option(
+    "--max-households-per-batch",
+    default=100_000,
+    type=click.IntRange(min=1),
+    show_default=True,
+    help="Maximum target households in one synthesis batch.",
+)
+def national_da_prepare_command(
+    profiles_dir: Path,
+    boundary_path: Path,
+    relationship_path: Path,
+    output_directory: Path,
+    max_households_per_batch: int,
+) -> None:
+    """Prepare controls and jurisdiction boundaries for every Canadian DA."""
+
+    _national_prepare_command(
+        profiles_dir,
+        boundary_path,
+        relationship_path,
+        output_directory,
+        max_households_per_batch,
+        "da",
+    )
+
+
+@national_ada_group.command("prepare")
+@click.option(
+    "--profiles-dir",
+    required=True,
+    type=_PATH,
+    help="Directory containing the national 2021 ADA profile CSV.",
+)
+@click.option(
+    "--boundaries",
+    "boundary_path",
+    required=True,
+    type=_PATH,
+    help="National 2021 ADA GeoJSON boundary file.",
+)
+@click.option(
+    "--relationships",
+    "relationship_path",
+    required=True,
+    type=_PATH,
+    help="Final 2021 Dissemination Geographies Relationship CSV.",
+)
+@click.option(
+    "--out",
+    "output_directory",
+    required=True,
+    type=_PATH,
+    help="Destination for the national plan and restartable batch inputs.",
+)
+@click.option(
+    "--max-households-per-batch",
+    default=100_000,
+    type=click.IntRange(min=1),
+    show_default=True,
+    help="Maximum target households in one synthesis batch.",
+)
+def national_ada_prepare_command(
+    profiles_dir: Path,
+    boundary_path: Path,
+    relationship_path: Path,
+    output_directory: Path,
+    max_households_per_batch: int,
+) -> None:
+    """Prepare controls and jurisdiction boundaries for every Canadian ADA."""
+
+    _national_prepare_command(
+        profiles_dir,
+        boundary_path,
+        relationship_path,
+        output_directory,
+        max_households_per_batch,
+        "ada",
+    )
+
+
+def _national_prepare_command(
+    profiles_dir: Path,
+    boundary_path: Path,
+    relationship_path: Path,
+    output_directory: Path,
+    max_households_per_batch: int,
+    geography_level: str,
+) -> None:
+    from synthpopcan.national_small_area import (
+        national_2021_profile_paths,
+        prepare_canada_small_area_plan,
+    )
+
+    profile_paths = national_2021_profile_paths(profiles_dir, geography_level)
+    missing = [str(path) for path in profile_paths.values() if not path.is_file()]
+    if missing:
+        raise click.UsageError(
+            "Missing required profile files:\n  " + "\n  ".join(missing)
+        )
+    try:
+        manifest = prepare_canada_small_area_plan(
+            profile_paths,
+            boundary_path,
+            relationship_path,
+            output_directory,
+            geography_level=geography_level,
+            max_households_per_batch=max_households_per_batch,
+            progress=lambda message: click.echo(message, err=True),
+        )
+    except OSError as exc:
+        raise click_file_access_error(output_directory, "read or write", exc) from exc
+    except ValueError as exc:
+        raise click_value_error(exc) from exc
+    coverage = manifest["coverage"]
+    assert isinstance(coverage, dict)
+    batches = manifest["batches"]
+    assert isinstance(batches, list)
+    click.echo(
+        f"Planned {len(batches):,} restartable batches across "
+        f"{coverage['jurisdictions']} provinces and territories; "
+        f"{coverage['usable_geographies']:,} of "
+        f"{coverage['expected_geographies']:,} "
+        f"{geography_level.upper()}s have usable controls."
+    )
+    print_wrote(output_directory / "plan.json")
+    click.echo(output_directory / "plan.json")
+
+
+@national_da_group.command("run")
+@click.argument("package_path", metavar="MODEL")
+@click.option(
+    "--plan",
+    "plan_path",
+    required=True,
+    type=_PATH,
+    help="National DA plan.json produced by national-da prepare.",
+)
+@click.option(
+    "--limit",
+    type=click.IntRange(min=1),
+    default=None,
+    help="Run at most this many unfinished batches, useful for validation.",
+)
+@click.option(
+    "--jurisdiction",
+    "jurisdiction_values",
+    multiple=True,
+    type=click.Choice(
+        _NATIONAL_SMALL_AREA_JURISDICTION_CHOICES,
+        case_sensitive=False,
+    ),
+    help="Run only one province/territory PRUID or abbreviation; repeatable.",
+)
+@click.option(
+    "--random-seed",
+    type=int,
+    default=42,
+    show_default=True,
+    help="Base seed; each batch receives a deterministic distinct seed.",
+)
+@click.option(
+    "--condition-by-jurisdiction/--no-condition-by-jurisdiction",
+    default=True,
+    show_default=True,
+    help=(
+        "Condition a national model on the batch's PUMF province or combined "
+        "northern category before generation."
+    ),
+)
+@click.option(
+    "--continue-on-error",
+    is_flag=True,
+    help="Record a failed batch and continue with the remaining plan.",
+)
+@click.option(
+    "--candidate-pool-size",
+    type=click.IntRange(min=1),
+    default=10_000,
+    show_default=True,
+    help="Reusable candidate households per PUMF condition.",
+)
+@click.option(
+    "--workers",
+    type=click.IntRange(min=1, max=8),
+    default=1,
+    show_default=True,
+    help="Independent batch processes to run concurrently.",
+)
+@click.option(
+    "--fit-workers",
+    type=click.IntRange(min=1, max=8),
+    default=4,
+    show_default=True,
+    help="Geography-fitting threads used inside each batch process.",
+)
+@click.option(
+    "--force-candidate-pools",
+    is_flag=True,
+    help="Regenerate conditioned candidate pools even when their evidence matches.",
+)
+@click.option(
+    "--maps/--no-maps",
+    default=False,
+    show_default=True,
+    help="Create a detailed self-contained map for each completed batch.",
+)
+@click.option(
+    "--national-map/--no-national-map",
+    default=True,
+    show_default=True,
+    help="Create a national polygon choropleth after the plan completes.",
+)
+@click.option(
+    "--allow-low-disk",
+    is_flag=True,
+    help="Run even when free space is below the plan's conservative estimate.",
+)
+def national_da_run_command(
+    package_path: str,
+    plan_path: Path,
+    limit: int | None,
+    jurisdiction_values: tuple[str, ...],
+    random_seed: int,
+    condition_by_jurisdiction: bool,
+    continue_on_error: bool,
+    candidate_pool_size: int,
+    workers: int,
+    fit_workers: int,
+    force_candidate_pools: bool,
+    maps: bool,
+    national_map: bool,
+    allow_low_disk: bool,
+) -> None:
+    """Execute or resume every unfinished batch in a national DA plan."""
+
+    _run_national_small_area_command(
+        package_path=package_path,
+        plan_path=plan_path,
+        limit=limit,
+        jurisdiction_values=jurisdiction_values,
+        random_seed=random_seed,
+        condition_by_jurisdiction=condition_by_jurisdiction,
+        continue_on_error=continue_on_error,
+        candidate_pool_size=candidate_pool_size,
+        workers=workers,
+        fit_workers=fit_workers,
+        force_candidate_pools=force_candidate_pools,
+        maps=maps,
+        national_map=national_map,
+        allow_low_disk=allow_low_disk,
+        expected_geography_level="da",
+    )
+
+
+@national_ada_group.command("run")
+@click.argument("package_path", metavar="MODEL")
+@click.option(
+    "--plan",
+    "plan_path",
+    required=True,
+    type=_PATH,
+    help="National ADA plan.json produced by national-ada prepare.",
+)
+@click.option(
+    "--limit",
+    type=click.IntRange(min=1),
+    default=None,
+    help="Run at most this many unfinished batches, useful for validation.",
+)
+@click.option(
+    "--jurisdiction",
+    "jurisdiction_values",
+    multiple=True,
+    type=click.Choice(
+        _NATIONAL_SMALL_AREA_JURISDICTION_CHOICES,
+        case_sensitive=False,
+    ),
+    help="Run only one province/territory PRUID or abbreviation; repeatable.",
+)
+@click.option(
+    "--random-seed",
+    type=int,
+    default=42,
+    show_default=True,
+    help="Base seed; each batch receives a deterministic distinct seed.",
+)
+@click.option(
+    "--condition-by-jurisdiction/--no-condition-by-jurisdiction",
+    default=True,
+    show_default=True,
+    help=(
+        "Condition a national model on the batch's PUMF province or combined "
+        "northern category before generation."
+    ),
+)
+@click.option(
+    "--continue-on-error",
+    is_flag=True,
+    help="Record a failed batch and continue with the remaining plan.",
+)
+@click.option(
+    "--candidate-pool-size",
+    type=click.IntRange(min=1),
+    default=10_000,
+    show_default=True,
+    help="Reusable candidate households per PUMF condition.",
+)
+@click.option(
+    "--workers",
+    type=click.IntRange(min=1, max=8),
+    default=1,
+    show_default=True,
+    help="Independent batch processes to run concurrently.",
+)
+@click.option(
+    "--fit-workers",
+    type=click.IntRange(min=1, max=8),
+    default=4,
+    show_default=True,
+    help="Geography-fitting threads used inside each batch process.",
+)
+@click.option(
+    "--force-candidate-pools",
+    is_flag=True,
+    help="Regenerate conditioned candidate pools even when their evidence matches.",
+)
+@click.option(
+    "--maps/--no-maps",
+    default=False,
+    show_default=True,
+    help="Create a detailed self-contained map for each completed batch.",
+)
+@click.option(
+    "--national-map/--no-national-map",
+    default=True,
+    show_default=True,
+    help="Create a national polygon choropleth after the plan completes.",
+)
+@click.option(
+    "--allow-low-disk",
+    is_flag=True,
+    help="Run even when free space is below the plan's conservative estimate.",
+)
+def national_ada_run_command(
+    package_path: str,
+    plan_path: Path,
+    limit: int | None,
+    jurisdiction_values: tuple[str, ...],
+    random_seed: int,
+    condition_by_jurisdiction: bool,
+    continue_on_error: bool,
+    candidate_pool_size: int,
+    workers: int,
+    fit_workers: int,
+    force_candidate_pools: bool,
+    maps: bool,
+    national_map: bool,
+    allow_low_disk: bool,
+) -> None:
+    """Execute or resume every unfinished batch in a national ADA plan."""
+
+    _run_national_small_area_command(
+        package_path=package_path,
+        plan_path=plan_path,
+        limit=limit,
+        jurisdiction_values=jurisdiction_values,
+        random_seed=random_seed,
+        condition_by_jurisdiction=condition_by_jurisdiction,
+        continue_on_error=continue_on_error,
+        candidate_pool_size=candidate_pool_size,
+        workers=workers,
+        fit_workers=fit_workers,
+        force_candidate_pools=force_candidate_pools,
+        maps=maps,
+        national_map=national_map,
+        allow_low_disk=allow_low_disk,
+        expected_geography_level="ada",
+    )
+
+
+def _run_national_small_area_command(
+    *,
+    package_path: str,
+    plan_path: Path,
+    limit: int | None,
+    jurisdiction_values: tuple[str, ...],
+    random_seed: int,
+    condition_by_jurisdiction: bool,
+    continue_on_error: bool,
+    candidate_pool_size: int,
+    workers: int,
+    fit_workers: int,
+    force_candidate_pools: bool,
+    maps: bool,
+    national_map: bool,
+    allow_low_disk: bool,
+    expected_geography_level: str,
+) -> None:
+    """Execute one shared DA/ADA national plan."""
+
+    import hashlib
+    import shutil
+    import time
+    from functools import partial
+
+    from synthpopcan.cli_tree import (
+        _read_package_path_or_id,
+        package_models,
+        validate_package_allows_generation,
+    )
+    from synthpopcan.national_execution import (
+        NationalBatchRunConfiguration,
+        build_national_geography_summary,
+        find_cached_national_candidate_pools,
+        prepare_national_candidate_pools,
+        run_national_cached_batch,
+    )
+    from synthpopcan.national_small_area import execute_canada_small_area_plan
+    from synthpopcan.statcan import file_integrity
+
+    selector_lookup = {
+        selector.casefold(): item.pruid
+        for item in CANADA_SMALL_AREA_JURISDICTIONS
+        for selector in (item.pruid, item.abbreviation)
+    }
+    jurisdiction_pruids = (
+        {selector_lookup[value.casefold()] for value in jurisdiction_values}
+        if jurisdiction_values
+        else None
+    )
+
+    try:
+        plan_payload = json.loads(plan_path.read_text())
+    except OSError as exc:
+        raise click_file_access_error(plan_path, "read", exc) from exc
+    storage = (
+        plan_payload.get("storage_estimate") if isinstance(plan_payload, dict) else None
+    )
+    geography = (
+        plan_payload.get("geography") if isinstance(plan_payload, dict) else None
+    )
+    if not isinstance(geography, Mapping):
+        raise click.UsageError("The national plan has no geography identity.")
+    geography_level = geography.get("geography_level")
+    identifier_column = geography.get("identifier_column")
+    identifier_namespace = geography.get("identifier_namespace")
+    if geography_level != expected_geography_level:
+        raise click.UsageError(
+            f"This command requires a {expected_geography_level.upper()} plan, "
+            f"not {geography_level!r}."
+        )
+    if not isinstance(identifier_column, str) or not isinstance(
+        identifier_namespace, str
+    ):
+        raise click.UsageError("The national plan geography identity is incomplete.")
+    if isinstance(storage, dict):
+        required = storage.get("recommended_free_space_bytes")
+        if isinstance(required, int):
+            free = shutil.disk_usage(plan_path.parent).free
+            if free < required and not allow_low_disk:
+                raise click.UsageError(
+                    "The national plan conservatively recommends "
+                    f"{required / 1024**3:.1f} GiB free, but only "
+                    f"{free / 1024**3:.1f} GiB is available. Free space, reduce "
+                    "the plan, or pass --allow-low-disk after reviewing the risk."
+                )
+
+    pumf_pr_values = (
+        {
+            item.pumf_pr
+            for item in CANADA_SMALL_AREA_JURISDICTIONS
+            if item.pruid in jurisdiction_pruids
+        }
+        if jurisdiction_pruids is not None
+        else None
+    )
+    local_package_path = Path(package_path)
+    model_evidence: dict[str, object] | None = None
+    if local_package_path.is_file():
+        model_evidence = {
+            "label": package_path,
+            "path": str(local_package_path),
+            **file_integrity(local_package_path),
+        }
+    pool_reports = (
+        find_cached_national_candidate_pools(
+            plan_path,
+            model_evidence=model_evidence,
+            requested_pool_size=candidate_pool_size,
+            base_seed=random_seed,
+            condition_by_jurisdiction=condition_by_jurisdiction,
+            pumf_pr_values=pumf_pr_values,
+        )
+        if model_evidence is not None and not force_candidate_pools
+        else None
+    )
+    if pool_reports is not None:
+        click.echo(
+            "Verified reusable candidate pools without loading the model", err=True
+        )
+    else:
+        package_started = time.perf_counter()
+        try:
+            package, package_label, package_source_path = _read_package_path_or_id(
+                package_path
+            )
+            validate_package_allows_generation(package)
+            household_model, person_model = package_models(package)
+        except OSError as exc:
+            raise click_file_access_error(Path(package_path), "read", exc) from exc
+        except ValueError as exc:
+            raise click_value_error(exc) from exc
+        if package_source_path is not None:
+            model_evidence = {
+                "label": package_label,
+                "path": str(package_source_path),
+                **file_integrity(package_source_path),
+            }
+        else:
+            canonical = json.dumps(
+                package,
+                sort_keys=True,
+                separators=(",", ":"),
+            ).encode()
+            model_evidence = {
+                "label": package_label,
+                "schema_version": package.get("schema_version"),
+                "sha256": hashlib.sha256(canonical).hexdigest(),
+                "byte_size": len(canonical),
+            }
+        package_seconds = time.perf_counter() - package_started
+        click.echo(f"Loaded model package once in {package_seconds:.1f}s", err=True)
+
+        try:
+            pool_reports = prepare_national_candidate_pools(
+                plan_path,
+                household_model=household_model,
+                person_model=person_model,
+                household_size_column=str(
+                    package.get("household_size_column", "household_size")
+                ),
+                model_evidence=model_evidence,
+                requested_pool_size=candidate_pool_size,
+                base_seed=random_seed,
+                condition_by_jurisdiction=condition_by_jurisdiction,
+                pumf_pr_values=pumf_pr_values,
+                force=force_candidate_pools,
+                progress=lambda message: click.echo(message, err=True),
+            )
+        except OSError as exc:
+            raise click_file_access_error(
+                plan_path.parent,
+                "read or write",
+                exc,
+            ) from exc
+        except ValueError as exc:
+            raise click_value_error(exc) from exc
+
+    if condition_by_jurisdiction:
+        pool_manifests = {
+            pumf_pr: str(
+                (
+                    plan_path.parent
+                    / "candidate-pools"
+                    / f"pr-{pumf_pr}"
+                    / "manifest.json"
+                ).relative_to(plan_path.parent)
+            )
+            for pumf_pr in pool_reports
+        }
+    else:
+        all_manifest = str(
+            (
+                plan_path.parent / "candidate-pools" / "all" / "manifest.json"
+            ).relative_to(plan_path.parent)
+        )
+        pool_manifests = {
+            item.pumf_pr: all_manifest for item in CANADA_SMALL_AREA_JURISDICTIONS
+        }
+    configuration = NationalBatchRunConfiguration(
+        pool_manifests=pool_manifests,
+        geography_level=expected_geography_level,
+        identifier_column=identifier_column,
+        identifier_namespace=identifier_namespace,
+        fit_workers=fit_workers,
+    )
+    run_batch = partial(
+        run_national_cached_batch,
+        configuration=configuration,
+    )
+
+    try:
+        plan = execute_canada_small_area_plan(
+            plan_path,
+            run_batch,
+            limit=limit,
+            continue_on_error=continue_on_error,
+            jurisdiction_pruids=jurisdiction_pruids,
+            workers=workers,
+        )
+    except OSError as exc:
+        raise click_file_access_error(plan_path, "read or write", exc) from exc
+    except ValueError as exc:
+        raise click_value_error(exc) from exc
+    if maps:
+        _render_deferred_national_maps(
+            plan_path,
+            plan,
+            jurisdiction_pruids=jurisdiction_pruids,
+            geography_level=expected_geography_level,
+            identifier_column=identifier_column,
+        )
+    national_summary = build_national_geography_summary(plan_path)
+    if national_map and _national_plan_is_complete(plan):
+        national_summary = _render_national_summary_map(
+            plan_path,
+            plan,
+            national_summary,
+            geography_level=expected_geography_level,
+            identifier_column=identifier_column,
+        )
+    last_execution = plan.get("last_execution")
+    click.echo(json.dumps(last_execution, indent=2, sort_keys=True))
+    summary_geographies = _required_summary_int(national_summary, "geographies")
+    summary_households = _required_summary_int(
+        national_summary,
+        "assigned_households",
+    )
+    summary_persons = _required_summary_int(national_summary, "assigned_persons")
+    click.echo(
+        f"National summary: {summary_geographies:,} geographies, "
+        f"{summary_households:,} households, "
+        f"{summary_persons:,} persons.",
+        err=True,
+    )
+
+
+def _required_batch_text(payload: Mapping[str, object], key: str) -> str:
+    value = payload.get(key)
+    if not isinstance(value, str) or not value:
+        raise ValueError(f"{key} must be a non-empty string")
+    return value
+
+
+def _required_summary_int(payload: Mapping[str, object], key: str) -> int:
+    value = payload.get(key)
+    if not isinstance(value, int):
+        raise ValueError(f"{key} must be an integer")
+    return value
+
+
+def _national_plan_is_complete(plan: Mapping[str, object]) -> bool:
+    return plan.get("status") == "completed"
+
+
+def _render_national_summary_map(
+    plan_path: Path,
+    plan: Mapping[str, object],
+    national_summary: dict[str, object],
+    *,
+    geography_level: str,
+    identifier_column: str,
+) -> dict[str, object]:
+    """Render and record completed-plan polygon and point overviews."""
+
+    from synthpopcan.map_render import (
+        render_geography_summary_point_map,
+        render_national_plan_map,
+    )
+    from synthpopcan.statcan import file_integrity
+
+    inputs = plan.get("inputs")
+    boundaries = inputs.get("boundaries") if isinstance(inputs, Mapping) else None
+    boundary_value = boundaries.get("path") if isinstance(boundaries, Mapping) else None
+    if not isinstance(boundary_value, str):
+        raise ValueError("national plan boundary input path is invalid")
+    output = plan_path.parent
+    boundary_path = Path(boundary_value)
+    if not boundary_path.is_absolute() and not boundary_path.is_file():
+        boundary_path = output / boundary_path
+    map_path = output / "national-map.html"
+    display_boundaries_path = output / "national-map.geojson"
+    point_map_path = output / "national-points-map.html"
+    points_path = output / "national-points.geojson"
+    point_report = render_geography_summary_point_map(
+        summary_path=output / "national-geography-summary.csv",
+        boundaries_path=boundary_path,
+        geography_column=identifier_column,
+        out_path=point_map_path,
+        points_path=points_path,
+        geography_context=statcan_geography_universe(
+            2021,
+            geography_level,
+            identifier_column,
+            dguid_column="DGUID",
+        ).as_dict(),
+    )
+    report = render_national_plan_map(
+        plan_path=plan_path,
+        geography_level=geography_level,
+        geography_column=identifier_column,
+        out_path=map_path,
+    )
+    report["point_overview"] = point_report
+    artifacts = national_summary.setdefault("artifacts", {})
+    if not isinstance(artifacts, dict):
+        raise ValueError("national summary artifacts must be an object")
+    artifacts["map"] = {
+        "path": map_path.name,
+        **file_integrity(map_path),
+    }
+    artifacts["map_boundaries"] = {
+        "path": display_boundaries_path.name,
+        **file_integrity(display_boundaries_path),
+    }
+    statistics = report.get("statistics")
+    statistics_artifact = (
+        statistics.get("artifact") if isinstance(statistics, Mapping) else None
+    )
+    if not isinstance(statistics_artifact, Mapping):
+        raise ValueError("national map statistics artifact is invalid")
+    artifacts["map_statistics"] = dict(statistics_artifact)
+    statistics_manifest_path = output / "national-map-statistics.json"
+    artifacts["map_statistics_manifest"] = {
+        "path": statistics_manifest_path.name,
+        **file_integrity(statistics_manifest_path),
+    }
+    artifacts["point_map"] = {
+        "path": point_map_path.name,
+        **file_integrity(point_map_path),
+    }
+    artifacts["map_points"] = {
+        "path": points_path.name,
+        **file_integrity(points_path),
+    }
+    national_summary["map"] = report
+    summary_path = output / "national-summary.json"
+    temporary = summary_path.with_name(f".{summary_path.name}.tmp")
+    temporary.write_text(json.dumps(national_summary, indent=2, sort_keys=True) + "\n")
+    temporary.replace(summary_path)
+    return national_summary
+
+
+def _render_deferred_national_maps(
+    plan_path: Path,
+    plan: Mapping[str, object],
+    *,
+    jurisdiction_pruids: set[str] | None,
+    geography_level: str,
+    identifier_column: str,
+) -> None:
+    """Render missing batch maps only after population checkpoints exist."""
+
+    import os
+    import time
+
+    from synthpopcan.map_render import render_synthesis_map
+    from synthpopcan.statcan import file_integrity
+
+    records = plan.get("batches")
+    if not isinstance(records, list):
+        raise ValueError("national small-area plan batches must be a list")
+    for record in records:
+        if not isinstance(record, Mapping):
+            continue
+        if (
+            jurisdiction_pruids is not None
+            and record.get("jurisdiction_pruid") not in jurisdiction_pruids
+        ):
+            continue
+        manifest_value = record.get("manifest")
+        if not isinstance(manifest_value, str):
+            continue
+        batch_path = plan_path.parent / manifest_value
+        batch = json.loads(batch_path.read_text())
+        if not isinstance(batch, dict) or batch.get("status") != "completed":
+            continue
+        result = batch.get("result")
+        if not isinstance(result, dict):
+            continue
+        artifacts = result.setdefault("artifacts", {})
+        if not isinstance(artifacts, dict):
+            continue
+        existing = artifacts.get("map")
+        if isinstance(existing, Mapping):
+            existing_path = existing.get("path")
+            if (
+                isinstance(existing_path, str)
+                and (plan_path.parent / existing_path).is_file()
+            ):
+                continue
+
+        output = plan_path.parent / _required_batch_text(
+            batch,
+            "output_directory",
+        )
+        households, persons = _linked_population_paths(output)
+        boundaries = plan_path.parent / _required_batch_text(batch, "boundaries")
+        map_path = output / "map.html"
+        batch_id = _required_batch_text(batch, "batch_id")
+        click.echo(f"Rendering deferred map for {batch_id}", err=True)
+        started = time.perf_counter()
+        render_synthesis_map(
+            households_path=households,
+            persons_path=persons,
+            boundaries_path=boundaries,
+            geography_column=identifier_column,
+            geography_id_field="geo_id",
+            out_path=map_path,
+            title=f"Synthetic population — batch {batch_id}",
+            geography_context=statcan_geography_universe(
+                2021,
+                geography_level,
+                identifier_column,
+                dguid_column="DGUID",
+            ).as_dict(),
+        )
+        artifacts["map"] = {
+            "path": str(map_path.relative_to(plan_path.parent)),
+            **file_integrity(map_path),
+        }
+        timing = result.setdefault("timing_seconds", {})
+        if isinstance(timing, dict):
+            timing["deferred_map"] = time.perf_counter() - started
+        temporary = batch_path.with_name(f".{batch_path.name}.{os.getpid()}.tmp")
+        temporary.write_text(json.dumps(batch, indent=2, sort_keys=True) + "\n")
+        temporary.replace(batch_path)
+
+
 @small_area.command("synthesize")
 @click.argument("package_path", metavar="MODEL")
 @click.option(
@@ -1004,6 +2106,27 @@ def relationship_file_command(out_dir: Path, url: str | None) -> None:
     "--geo-column",
     default=None,
     help="Output geography column. Defaults to --geo-dimension.",
+)
+@click.option(
+    "--census-vintage",
+    type=int,
+    default=None,
+    help="Census year defining the target geography identifiers.",
+)
+@click.option(
+    "--geo-level",
+    default=None,
+    help="Explicit geography level such as da, ada, ct, or csd.",
+)
+@click.option(
+    "--geo-namespace",
+    default=None,
+    help="Stable identifier namespace, such as statcan:census:2021:da.",
+)
+@click.option(
+    "--geo-dguid-column",
+    default=None,
+    help="Optional DGUID column carried by the same geography resource.",
 )
 @click.option(
     "--out",
@@ -1094,6 +2217,10 @@ def synthesize_command(
     person_controls_path: Path | None,
     geo_dimension: str,
     geo_column: str | None,
+    census_vintage: int | None,
+    geo_level: str | None,
+    geo_namespace: str | None,
+    geo_dguid_column: str | None,
     output_dir: Path,
     include_weights: bool,
     random_seed: int | None,
@@ -1128,6 +2255,13 @@ def synthesize_command(
     report_out = output_dir / "report.json"
     weights_out = output_dir / "weights.csv" if include_weights else None
     output_geo_column = geo_column or geo_dimension
+    geography_universe = _optional_geography_universe(
+        census_vintage=census_vintage,
+        geography_level=geo_level,
+        identifier_namespace=geo_namespace,
+        identifier_column=output_geo_column,
+        dguid_column=geo_dguid_column,
+    )
 
     try:
         package, _, _ = _read_package_path_or_id(package_path)
@@ -1187,6 +2321,7 @@ def synthesize_command(
                 person_controls_path=person_controls_path,
                 geography_dimension=geo_dimension,
                 geography_column=output_geo_column,
+                geography_universe=geography_universe,
                 households_out=households_out,
                 persons_out=persons_out,
                 weights_out=weights_out,

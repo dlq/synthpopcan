@@ -23,6 +23,7 @@ from starlette.concurrency import run_in_threadpool
 
 from synthpopcan import __version__
 from synthpopcan.controls import parse_control_table, read_control_table
+from synthpopcan.geography import GeographyUniverse
 from synthpopcan.jobs import JobManager
 from synthpopcan.models import (
     fetch_model_package,
@@ -925,10 +926,25 @@ def _preflight_small_area_run(
     estimated_bytes = max(8192, int(estimate["estimated_total_output_rows"]) * 256)
     disk_free = shutil.disk_usage(store.root).free
     enough_disk = disk_free >= estimated_bytes * 2
+    geography_column = str(options.get("geography_column") or geography_dimension)
+    geography_payload = options.get("geography_universe")
+    if geography_payload is not None:
+        if not isinstance(geography_payload, dict):
+            raise ValueError("geography_universe must be an object")
+        geography_universe = GeographyUniverse.from_dict(geography_payload)
+        if geography_universe.identifier_column != geography_column:
+            raise ValueError(
+                "geography universe identifier column must match geography_column"
+            )
+    else:
+        geography_universe = None
     normalized_options = {
         "candidate_households": candidate_households,
         "geography_dimension": geography_dimension,
-        "geography_column": str(options.get("geography_column") or geography_dimension),
+        "geography_column": geography_column,
+        "geography_universe": (
+            geography_universe.as_dict() if geography_universe is not None else None
+        ),
         "conditions": conditions,
         "random_seed": _optional_int(options.get("random_seed")),
         "pool_size": pool_size,

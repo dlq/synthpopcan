@@ -7,12 +7,14 @@ notebooks and short scripts. Import from modules such as ``synthpopcan.ipf`` or
 
 from synthpopcan.api import (
     ControlTable,
+    EnrichmentResult,
     IPFResult,
     LinkedPopulation,
     LinkedPopulationFiles,
     PopulationRows,
     SmallAreaResult,
     calibrate_small_area,
+    enrich_population,
     expand_population,
     fetch_model,
     fit_ipf,
@@ -28,6 +30,7 @@ from synthpopcan.api import (
 
 __all__ = [
     "ControlTable",
+    "EnrichmentResult",
     "IPFResult",
     "LinkedPopulation",
     "LinkedPopulationFiles",
@@ -35,6 +38,7 @@ __all__ = [
     "SmallAreaResult",
     "__version__",
     "calibrate_small_area",
+    "enrich_population",
     "expand_population",
     "fetch_model",
     "fit_ipf",

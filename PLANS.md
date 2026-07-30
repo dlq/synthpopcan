@@ -1,7 +1,7 @@
 # SynthPopCan Plan
 
 Status: release-phased roadmap\
-Last updated: 2026-07-27\
+Last updated: 2026-07-29\
 Current release: `0.6.3`
 
 ## Current Focus
@@ -120,6 +120,19 @@ geography-keyed enrichment alone:
   matching controls, boundaries, authoritative relationships, resource
   estimates, validation, and map-size evidence, while retaining a compact 2016
   DA compatibility regression;
+- add restartable national 2021 DA/ADA orchestration using level-specific
+  official profile adapters, shared province/territory manifests, bounded
+  batches, one-pass boundary partitioning, reusable evidence-checked
+  condition-specific candidate pools, atomic/checkpointed resumable execution,
+  bounded parallel workers, national aggregate evidence, and disk safeguards;
+- follow that proof with a separately validated **full-field ADA/DA control
+  expansion**: audit every generated household and person field against the
+  relevant Census Profile universe, publish a versioned field/category
+  crosswalk, and classify each field as directly controlled, controlled through
+  an explicitly documented coarser margin, or unavailable/uncontrolled. Add
+  compatible linked-person controls to national planning and batch calibration,
+  then regenerate and validate affected populations. Do not imply that an
+  uncontrolled carried-through PUMF attribute is an ADA- or DA-local estimate;
 - add versioned source-resource and enrichment manifests that compose the
   existing source provenance, linked-population v1, and durable-run records;
 - implement immutable, bounded, checksum-recorded resource retrieval and
@@ -137,9 +150,11 @@ geography-keyed enrichment alone:
 - prove with synthetic fixtures that enrichment leaves the base population and
   its identifiers byte-for-byte unchanged.
 
-This release does not include national DA orchestration, 2021-to-2016 DA
-concordance, arbitrary-polygon selection, a general CKAN browser, or an
-automatic compatibility promise for every candidate source.
+This release does not include a monolithic national fit, an automatic claim
+that the broad Canada PUMF model is fit for every provincial, territorial, or
+small-area research question, 2021-to-2016 DA concordance,
+arbitrary-polygon selection, a general CKAN browser, or an automatic
+compatibility promise for every candidate source.
 
 Once the framework ships, another dataset may be integrated whenever a
 research question, access and redistribution authority, geographic and

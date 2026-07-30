@@ -13,6 +13,7 @@ __all__ = [
 import csv
 from collections import defaultdict
 from collections.abc import Sequence
+from itertools import chain
 from pathlib import Path
 
 # Member IDs are consistent across 2016 Census Profiles (2247-variable form).
@@ -26,6 +27,7 @@ _HHSIZE_MEMBERS: dict[str, str] = {
 _TENURE_MEMBERS: dict[str, str] = {
     "1618": "1",  # Owner
     "1619": "2",  # Renter
+    "1620": "2",  # Band housing (combined with renter in the hierarchical PUMF)
 }
 
 # The 2021 profile renamed the member-id column and revised characteristic IDs.
@@ -39,6 +41,7 @@ _HHSIZE_MEMBERS_2021: dict[str, str] = {
 _TENURE_MEMBERS_2021: dict[str, str] = {
     "1415": "1",
     "1416": "2",
+    "1417": "2",  # Local government / First Nation / Indian band dwelling
 }
 
 # GEO_LEVEL value in each census profile that identifies the target geography rows.
@@ -73,6 +76,7 @@ def extract_controls_from_profile(
     geography_column: str,
     *,
     geo_prefix: str | None = None,
+    geo_ids: set[str] | None = None,
     geo_level_value: str | None = None,
 ) -> dict[str, dict[str, dict[str, float]]]:
     """Read a StatCan Census Profile CSV and return raw hhsize + tenure counts.
@@ -88,6 +92,9 @@ def extract_controls_from_profile(
     geo_prefix:
         Optional prefix to filter geo codes (e.g. ``"35"`` for Ontario ADAs,
         ``"462"`` for Montreal CTs).  When omitted all geographies are included.
+    geo_ids:
+        Optional exact identifier set for bounded, reviewed selections. This
+        may be combined with ``geo_prefix``; both filters must then match.
     geo_level_value:
         Override the GEO_LEVEL filter value.  Inferred from *geography_column*
         when not provided.
@@ -104,10 +111,22 @@ def extract_controls_from_profile(
     # StatCan profile ZIPs use a legacy single-byte encoding in both vintages;
     # 2021 geography names can contain bytes that are not valid UTF-8.
     with profile_path.open(newline="", encoding="latin-1") as fh:
-        reader = csv.DictReader(fh)
-
-        raw_fields = reader.fieldnames or []
+        header_line = fh.readline()
+        raw_fields = next(csv.reader([header_line]), [])
         is_2021 = "CHARACTERISTIC_ID" in raw_fields
+        if is_2021 and geo_ids is not None:
+            # The official 2021 bulk profile is many gigabytes. Its first three
+            # fields are fixed and comma-free (year, DGUID, ALT_GEO_CODE), so
+            # discard unselected geography rows before constructing dictionaries.
+            selected_lines = (
+                line
+                for line in fh
+                if len(parts := line.split(",", 3)) >= 3
+                and parts[2].strip().strip('"') in geo_ids
+            )
+            reader = csv.DictReader(chain((header_line,), selected_lines))
+        else:
+            reader = csv.DictReader(chain((header_line,), fh))
         if is_2021:
             mem_col = "CHARACTERISTIC_ID"
             val_col = "C1_COUNT_TOTAL"
@@ -138,6 +157,8 @@ def extract_controls_from_profile(
             geo = row[geo_col].strip()
             if geo_prefix and not geo.startswith(geo_prefix):
                 continue
+            if geo_ids is not None and geo not in geo_ids:
+                continue
             mid = row[mem_col].strip()
             raw = row[val_col].strip().replace(",", "")
             try:
@@ -147,7 +168,10 @@ def extract_controls_from_profile(
             if mid in hhsize_members:
                 data[geo]["hhsize"][hhsize_members[mid]] = val
             elif mid in tenure_members:
-                data[geo]["tenure"][tenure_members[mid]] = val
+                category = tenure_members[mid]
+                data[geo]["tenure"][category] = (
+                    data[geo]["tenure"].get(category, 0.0) + val
+                )
 
     return dict(data)
 

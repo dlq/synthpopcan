@@ -205,20 +205,30 @@ abbreviated without it:
 | `ada` | Aggregate dissemination areas |
 | `hr` | Health regions |
 
-The verified 2021 registry currently contains the products required to match
-the local 2016 small-area coverage:
+The verified 2021 registry contains the products required for CT, ADA, CSD,
+and national DA workflows:
 
 | Key | Bulk download contents |
 | --- | --- |
 | `csd-all` | Canada through census-subdivision level |
 | `ct` | CMAs, tracted CAs, and census tracts |
 | `ada` | Aggregate dissemination areas |
+| `da-all` | Canada through dissemination-area level in one very large file |
+| `da-atlantic` | Atlantic provinces through dissemination-area level |
+| `da-quebec` | Quebec through dissemination-area level |
+| `da-ontario` | Ontario through dissemination-area level |
+| `da-prairies` | Manitoba, Saskatchewan, and Alberta through DA level |
+| `da-british-columbia` | British Columbia through DA level |
+| `da-territories` | Yukon, Northwest Territories, and Nunavut through DA level |
 
-Do not substitute `csd` for `csd-all` or `da` for `da-all` in this command.
+The six regional DA products are preferred for restartable national work; they
+cover the same 13 jurisdictions without requiring the single national profile
+to be downloaded and expanded as one object. Do not substitute `csd` for
+`csd-all` or `da` for these registered DA product keys in this command.
 The separate `geo boundaries` command uses the shorter geography codes because
 it addresses boundary products rather than Census Profile bulk tables.
 
-The downloaded file is large and uses Statistics Canada's characteristic-row
+These downloaded files are large and use Statistics Canada's characteristic-row
 format, where each row is a named demographic characteristic rather than a
 column. Use `controls census-profile inspect` to search it by keyword before
 writing a mapping template.

@@ -2,14 +2,24 @@
 
 from __future__ import annotations
 
-__all__ = ["prepare_boundaries_geojson", "render_synthesis_map"]
+__all__ = [
+    "filter_boundaries_geojson",
+    "partition_boundaries_geojson",
+    "prepare_national_map_statistics",
+    "prepare_boundaries_geojson",
+    "render_geography_summary_polygon_map",
+    "render_geography_summary_point_map",
+    "render_national_plan_map",
+    "render_synthesis_map",
+]
 
 import csv
+import hashlib
 import json
 import math
 import statistics
 import tempfile
-from collections.abc import Callable
+from collections.abc import Callable, Iterator, Mapping
 from html import escape as html_escape
 from pathlib import Path
 from typing import Any
@@ -215,6 +225,349 @@ def prepare_boundaries_geojson(
             temp_path.unlink(missing_ok=True)
         raise
     return out_path
+
+
+def filter_boundaries_geojson(
+    source_path: Path,
+    out_path: Path,
+    keep_ids: set[str],
+    *,
+    id_property: str = "geo_id",
+) -> dict[str, Any]:
+    """Stream a small reviewed boundary subset from a large FeatureCollection.
+
+    The source is decoded one feature at a time, so filtering a national DA
+    file does not require loading the complete GeoJSON document into memory.
+    The returned report names missing identifiers and records input/output
+    sizes for resource-planning evidence.
+    """
+
+    if not keep_ids:
+        raise ValueError("keep_ids must contain at least one geography identifier")
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    matched: set[str] = set()
+    source_features = 0
+    temporary: Path | None = None
+    try:
+        with tempfile.NamedTemporaryFile(
+            "w",
+            encoding="utf-8",
+            dir=out_path.parent,
+            prefix=f".{out_path.name}.",
+            suffix=".tmp",
+            delete=False,
+        ) as output:
+            temporary = Path(output.name)
+            output.write('{"type":"FeatureCollection","features":[')
+            first = True
+            features = _iter_selected_geojson_features(
+                source_path,
+                keep_ids,
+                id_property,
+            )
+            for feature in features:
+                source_features += 1
+                if feature is None:
+                    continue
+                properties = feature.get("properties")
+                if not isinstance(properties, dict):
+                    continue
+                identifier = str(properties.get(id_property, "")).strip()
+                if identifier not in keep_ids:
+                    continue
+                if not first:
+                    output.write(",")
+                json.dump(feature, output, separators=(",", ":"))
+                first = False
+                matched.add(identifier)
+            output.write("]}")
+        temporary.replace(out_path)
+    except BaseException:
+        if temporary is not None:
+            temporary.unlink(missing_ok=True)
+        raise
+    return {
+        "schema_version": "synthpopcan-boundary-subset-v1",
+        "source_features": source_features,
+        "requested_identifiers": len(keep_ids),
+        "matched_identifiers": len(matched),
+        "missing_identifiers": sorted(keep_ids - matched),
+        "source_bytes": source_path.stat().st_size,
+        "output_bytes": out_path.stat().st_size,
+    }
+
+
+def partition_boundaries_geojson(
+    source_path: Path,
+    output_paths: Mapping[str, Path],
+    identifier_partitions: Mapping[str, str],
+    *,
+    id_property: str = "geo_id",
+) -> dict[str, Any]:
+    """Partition national boundaries in one pass using an explicit ID mapping.
+
+    Each requested identifier must map to a key in ``output_paths``. Outputs
+    are compact FeatureCollections written atomically. The report records
+    missing identifiers independently for each partition.
+    """
+
+    if not output_paths:
+        raise ValueError("output_paths must contain at least one partition")
+    unknown_partitions = sorted(set(identifier_partitions.values()) - set(output_paths))
+    if unknown_partitions:
+        raise ValueError(
+            "identifier mapping references unknown partitions: "
+            + ", ".join(unknown_partitions)
+        )
+    handles: dict[str, Any] = {}
+    temporary_paths: dict[str, Path] = {}
+    first = dict.fromkeys(output_paths, True)
+    matched: dict[str, set[str]] = {key: set() for key in output_paths}
+    source_features = 0
+    try:
+        for key, output_path in output_paths.items():
+            output_path.parent.mkdir(parents=True, exist_ok=True)
+            handle = tempfile.NamedTemporaryFile(
+                "w",
+                encoding="utf-8",
+                dir=output_path.parent,
+                prefix=f".{output_path.name}.",
+                suffix=".tmp",
+                delete=False,
+            )
+            handles[key] = handle
+            temporary_paths[key] = Path(handle.name)
+            handle.write('{"type":"FeatureCollection","features":[')
+
+        for feature in _iter_geojson_features_for_partition(source_path):
+            source_features += 1
+            if not isinstance(feature, dict):
+                raise ValueError("GeoJSON features must be objects")
+            properties = feature.get("properties")
+            if not isinstance(properties, dict):
+                continue
+            identifier = str(properties.get(id_property, "")).strip()
+            partition = identifier_partitions.get(identifier)
+            if partition is None:
+                continue
+            handle = handles[partition]
+            if not first[partition]:
+                handle.write(",")
+            json.dump(feature, handle, separators=(",", ":"))
+            first[partition] = False
+            matched[partition].add(identifier)
+
+        for handle in handles.values():
+            handle.write("]}")
+            handle.close()
+        handles.clear()
+        for key, output_path in output_paths.items():
+            temporary_paths[key].replace(output_path)
+    except BaseException:
+        for handle in handles.values():
+            handle.close()
+        for temporary in temporary_paths.values():
+            temporary.unlink(missing_ok=True)
+        raise
+
+    partitions: dict[str, dict[str, Any]] = {}
+    for key, output_path in output_paths.items():
+        requested = {
+            identifier
+            for identifier, partition in identifier_partitions.items()
+            if partition == key
+        }
+        partitions[key] = {
+            "requested_identifiers": len(requested),
+            "matched_identifiers": len(matched[key]),
+            "missing_identifiers": sorted(requested - matched[key]),
+            "output_bytes": output_path.stat().st_size,
+        }
+    return {
+        "schema_version": "synthpopcan-boundary-partition-v1",
+        "source_features": source_features,
+        "source_bytes": source_path.stat().st_size,
+        "partitions": partitions,
+    }
+
+
+def _iter_geojson_features_for_partition(path: Path) -> Iterator[Any]:
+    """Yield every feature from compact or general FeatureCollection JSON."""
+
+    compact_prefix = b'{"type":"FeatureCollection","features":['
+    pretty_prefix = (
+        b'{\n  "type": "FeatureCollection",\n  "features": [\n'
+        b'    {\n      "type": "Feature",'
+    )
+    with path.open("rb") as source:
+        prefix = source.read(max(len(compact_prefix), len(pretty_prefix)))
+    if prefix.startswith(compact_prefix):
+        for raw_feature in _iter_compact_geojson_feature_bytes(path, compact_prefix):
+            yield json.loads(raw_feature)
+        return
+    if prefix.startswith(pretty_prefix):
+        marker = b'\n    {\n      "type": "Feature",'
+        yield from _iter_marker_delimited_geojson_features(path, marker)
+        return
+    yield from _iter_geojson_features(path)
+
+
+def _iter_marker_delimited_geojson_features(
+    path: Path,
+    marker: bytes,
+) -> Iterator[Any]:
+    """Split a consistently indented FeatureCollection without decode retries."""
+
+    end_marker = b"\n  ]\n}"
+    buffer = bytearray()
+    started = False
+    with path.open("rb") as source:
+        while chunk := source.read(4 * 1024 * 1024):
+            buffer.extend(chunk)
+            if not started:
+                index = buffer.find(marker)
+                if index < 0:
+                    if len(buffer) > 1024 * 1024:
+                        raise ValueError(
+                            "formatted GeoJSON feature marker was not found"
+                        )
+                    continue
+                del buffer[: index + 1]
+                started = True
+            while (index := buffer.find(marker, 1)) >= 0:
+                raw_feature = bytes(buffer[:index]).rstrip()
+                if raw_feature.endswith(b","):
+                    raw_feature = raw_feature[:-1].rstrip()
+                if raw_feature:
+                    yield json.loads(raw_feature)
+                del buffer[: index + 1]
+    if not started:
+        raise ValueError("formatted GeoJSON does not contain features")
+    end = buffer.rfind(end_marker)
+    if end < 0:
+        raise ValueError("formatted GeoJSON features array is incomplete")
+    final_feature = bytes(buffer[:end]).rstrip()
+    if final_feature.endswith(b","):
+        final_feature = final_feature[:-1].rstrip()
+    if final_feature:
+        yield json.loads(final_feature)
+
+
+def _iter_selected_geojson_features(
+    path: Path,
+    keep_ids: set[str],
+    id_property: str,
+) -> Iterator[dict[str, Any] | None]:
+    """Yield selected compact features and ``None`` for each skipped feature."""
+
+    compact_prefix = b'{"type":"FeatureCollection","features":['
+    with path.open("rb") as source:
+        is_compact = source.read(len(compact_prefix)) == compact_prefix
+    if not is_compact:
+        for feature in _iter_geojson_features(path):
+            if not isinstance(feature, dict):
+                raise ValueError("GeoJSON features must be objects")
+            properties = feature.get("properties")
+            if not isinstance(properties, dict):
+                yield None
+                continue
+            identifier = str(properties.get(id_property, "")).strip()
+            yield feature if identifier in keep_ids else None
+        return
+
+    tokens = {
+        identifier: (
+            json.dumps(id_property, separators=(",", ":")).encode()
+            + b":"
+            + json.dumps(identifier, separators=(",", ":")).encode()
+        )
+        for identifier in keep_ids
+    }
+    for raw_feature in _iter_compact_geojson_feature_bytes(path, compact_prefix):
+        identifier = next(
+            (candidate for candidate, token in tokens.items() if token in raw_feature),
+            None,
+        )
+        if identifier is None:
+            yield None
+            continue
+        feature = json.loads(raw_feature)
+        if not isinstance(feature, dict):
+            raise ValueError("GeoJSON features must be objects")
+        yield feature
+
+
+def _iter_compact_geojson_feature_bytes(
+    path: Path,
+    prefix: bytes,
+) -> Iterator[bytes]:
+    """Split the compact FeatureCollection emitted by this module in C-speed."""
+
+    marker = b',{"type":"Feature","properties":'
+    with path.open("rb") as source:
+        if source.read(len(prefix)) != prefix:
+            raise ValueError("GeoJSON is not a compact SynthPopCan FeatureCollection")
+        buffer = b""
+        while chunk := source.read(4 * 1024 * 1024):
+            buffer += chunk
+            while (index := buffer.find(marker)) >= 0:
+                feature = buffer[:index]
+                if feature:
+                    yield feature
+                buffer = buffer[index + 1 :]
+        if not buffer.endswith(b"]}"):
+            raise ValueError("compact GeoJSON features array is incomplete")
+        final_feature = buffer[:-2]
+        if final_feature:
+            yield final_feature
+
+
+def _iter_geojson_features(path: Path) -> Iterator[Any]:
+    """Yield top-level FeatureCollection members with bounded buffering."""
+
+    decoder = json.JSONDecoder()
+    with path.open(encoding="utf-8") as source:
+        buffer = ""
+        marker = '"features"'
+        while marker not in buffer:
+            chunk = source.read(64 * 1024)
+            if not chunk:
+                raise ValueError("GeoJSON does not contain a features array")
+            buffer += chunk
+            if len(buffer) > 1024 * 1024:
+                raise ValueError("GeoJSON features array was not found in its header")
+        marker_index = buffer.index(marker) + len(marker)
+        array_index = buffer.find("[", marker_index)
+        while array_index < 0:
+            chunk = source.read(64 * 1024)
+            if not chunk:
+                raise ValueError("GeoJSON features value is not an array")
+            buffer += chunk
+            array_index = buffer.find("[", marker_index)
+        buffer = buffer[array_index + 1 :]
+
+        while True:
+            buffer = buffer.lstrip()
+            if buffer.startswith(","):
+                buffer = buffer[1:].lstrip()
+            while not buffer:
+                chunk = source.read(64 * 1024)
+                if not chunk:
+                    raise ValueError("GeoJSON features array is incomplete")
+                buffer += chunk
+                buffer = buffer.lstrip()
+            if buffer.startswith("]"):
+                return
+            try:
+                feature, end = decoder.raw_decode(buffer)
+            except json.JSONDecodeError as exc:
+                chunk = source.read(64 * 1024)
+                if not chunk:
+                    raise ValueError("GeoJSON contains an invalid feature") from exc
+                buffer += chunk
+                continue
+            yield feature
+            buffer = buffer[end:]
 
 
 def _read_geojson_file(
@@ -674,6 +1027,7 @@ _TEMPLATE = """\
 <script>
 const GEOJSON = {geojson};
 const VARIABLES = {variables};
+const GEOGRAPHY = {geography};
 
 const COLORS = [
   '#f7fbff','#deebf7','#c6dbef','#9ecae1',
@@ -851,6 +1205,7 @@ def render_synthesis_map(
     out_path: Path,
     title: str = "Synthetic Population",
     coord_precision: int = 5,
+    geography_context: Mapping[str, object] | None = None,
 ) -> Path:
     """Generate a MapLibre GL JS choropleth HTML file from synthesis output.
 
@@ -875,6 +1230,8 @@ def render_synthesis_map(
         Map title shown in the panel and browser tab.
     coord_precision:
         Decimal places to keep in WGS-84 coordinates (5 ≈ 1 m accuracy).
+    geography_context:
+        Optional versioned geography-universe payload embedded in the HTML.
     """
 
     # 1. Compute per-geography stats
@@ -904,54 +1261,12 @@ def render_synthesis_map(
         feature["properties"].update(stats.get(geo_id, {}))
 
     # 4. Build variable specs for the UI
-    def _vals(field: str) -> list[float]:
-        return [
-            f["properties"][field]
-            for f in geojson["features"]
-            if f["properties"].get(field) is not None
-        ]
-
-    variables: list[dict[str, Any]] = []
-
-    # --- household variables ---
-    for field, label, fmt in [
-        ("n_households", "Households", _FMT_INT),
-        ("n_persons", "Persons", _FMT_INT),
-        ("avg_hh_size", "Avg Household Size", _FMT_F2),
-        ("median_hh_income", "Median HH Income", _FMT_DOLLAR),
-        ("median_shelter_cost", "Median Shelter Cost", _FMT_DOLLAR),
-    ]:
-        vals = _vals(field)
-        if not vals:
-            continue
-        lo, hi = min(vals), max(vals)
-        if fmt == _FMT_INT:
-            lo_s, hi_s = f"{lo:,.0f}", f"{hi:,.0f}"
-        elif fmt == _FMT_DOLLAR:
-            lo_s, hi_s = f"${lo:,.0f}", f"${hi:,.0f}"
-        else:
-            lo_s, hi_s = f"{lo:.2f}", f"{hi:.2f}"
-        variables.append(
-            _variable_spec(field, label, vals, fmt, fmt_lo=lo_s, fmt_hi=hi_s)
-        )
-
-    # --- percentage variables ---
-    for field, label in [
-        ("pct_owner", "% Homeowners"),
-        ("pct_detached", "% Detached Dwellings"),
-        ("pct_major_repairs", "% Needing Major Repairs"),
-        ("pct_child", "% Children (under 20)"),
-        ("pct_senior", "% Seniors (65+)"),
-        ("pct_immigrant", "% Immigrants"),
-        ("pct_vismin", "% Visible Minority"),
-    ]:
-        vals = _vals(field)
-        if vals:
-            variables.append(_pct_spec(field, label, vals))
+    variables = _map_variable_specs(stats)
 
     # 5. Serialise — compact JSON (no whitespace) keeps file small
     geojson_js = _json_for_inline_script(geojson)
     variables_js = _json_for_inline_script(variables)
+    geography_js = _json_for_inline_script(geography_context)
 
     # JS formatter functions must be raw JS, not JSON strings — splice them in
     for fn in _JS_FUNCS:
@@ -963,12 +1278,653 @@ def render_synthesis_map(
         title=html_escape(title, quote=True),
         geojson=geojson_js,
         variables=variables_js,
+        geography=geography_js,
         bounds=bounds_js,
     )
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(html, encoding="utf-8")
     return out_path
+
+
+def render_geography_summary_point_map(
+    *,
+    summary_path: Path,
+    boundaries_path: Path,
+    geography_column: str,
+    out_path: Path,
+    points_path: Path | None = None,
+    geography_id_field: str = "geo_id",
+    title: str = "National Synthetic Population",
+    geography_context: Mapping[str, object] | None = None,
+) -> dict[str, object]:
+    """Render a compact national point overview without altering boundaries.
+
+    Each marker is placed at the centre of its canonical feature's bounding
+    box. The result is explicitly a display index, not a simplified analytical
+    boundary. The source boundary remains unchanged.
+    """
+
+    summaries = _read_geography_summaries(summary_path, geography_column)
+
+    features: list[dict[str, object]] = []
+    extent = [math.inf, math.inf, -math.inf, -math.inf]
+    matched: set[str] = set()
+    for feature in _iter_geojson_features_for_partition(boundaries_path):
+        if not isinstance(feature, Mapping):
+            continue
+        properties = feature.get("properties")
+        geometry = feature.get("geometry")
+        if not isinstance(properties, Mapping) or not isinstance(geometry, Mapping):
+            continue
+        identifier = str(properties.get(geography_id_field, "")).strip()
+        if identifier not in summaries:
+            continue
+        bounds = _geometry_coordinate_bounds(geometry.get("coordinates"))
+        if bounds is None:
+            continue
+        west, south, east, north = bounds
+        longitude = (west + east) / 2
+        latitude = (south + north) / 2
+        extent[0] = min(extent[0], longitude)
+        extent[1] = min(extent[1], latitude)
+        extent[2] = max(extent[2], longitude)
+        extent[3] = max(extent[3], latitude)
+        features.append(
+            {
+                "type": "Feature",
+                "properties": summaries[identifier],
+                "geometry": {
+                    "type": "Point",
+                    "coordinates": [round(longitude, 5), round(latitude, 5)],
+                },
+            }
+        )
+        matched.add(identifier)
+    if not features:
+        raise ValueError("no geography summaries matched canonical boundaries")
+
+    point_collection = {"type": "FeatureCollection", "features": features}
+    points_path = points_path or out_path.with_suffix(".geojson")
+    points_path.parent.mkdir(parents=True, exist_ok=True)
+    points_path.write_text(
+        json.dumps(point_collection, separators=(",", ":")),
+        encoding="utf-8",
+    )
+    html = _POINT_SUMMARY_TEMPLATE.format(
+        title=html_escape(title, quote=True),
+        geojson=_json_for_inline_script(point_collection),
+        geography=_json_for_inline_script(geography_context),
+        bounds=f"[[{extent[0]},{extent[1]}],[{extent[2]},{extent[3]}]]",
+    )
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text(html, encoding="utf-8")
+    return {
+        "representation": "canonical-feature-bounding-box-centre",
+        "requested_geographies": len(summaries),
+        "matched_geographies": len(matched),
+        "missing_geographies": sorted(set(summaries) - matched),
+        "map_path": str(out_path),
+        "points_path": str(points_path),
+    }
+
+
+def render_geography_summary_polygon_map(
+    *,
+    summary_path: Path,
+    boundaries_path: Path,
+    geography_column: str,
+    out_path: Path,
+    display_boundaries_path: Path | None = None,
+    geography_id_field: str = "geo_id",
+    title: str = "National Synthetic Population",
+    coord_precision: int = 3,
+    geography_context: Mapping[str, object] | None = None,
+) -> dict[str, object]:
+    """Render an aggregate choropleth from display-only quantized boundaries.
+
+    Coordinates are snapped to one fixed decimal grid before consecutive
+    duplicates are removed. Because every feature uses the same grid, shared
+    boundary vertices remain shared. The canonical source is never modified,
+    and the derived geometry must not be used for analysis.
+    """
+
+    if coord_precision < 0:
+        raise ValueError("coord_precision must be non-negative")
+    summaries = _read_geography_summaries(summary_path, geography_column)
+    features: list[dict[str, object]] = []
+    extent = [math.inf, math.inf, -math.inf, -math.inf]
+    matched: set[str] = set()
+    collapsed_rings = 0
+    for feature in _iter_geojson_features_for_partition(boundaries_path):
+        if not isinstance(feature, Mapping):
+            continue
+        properties = feature.get("properties")
+        geometry = feature.get("geometry")
+        if not isinstance(properties, Mapping) or not isinstance(geometry, Mapping):
+            continue
+        identifier = str(properties.get(geography_id_field, "")).strip()
+        if identifier not in summaries:
+            continue
+        simplified, dropped = _quantize_display_geometry(geometry, coord_precision)
+        collapsed_rings += dropped
+        if simplified is None:
+            continue
+        bounds = _geometry_coordinate_bounds(simplified["coordinates"])
+        if bounds is None:
+            continue
+        extent[0] = min(extent[0], bounds[0])
+        extent[1] = min(extent[1], bounds[1])
+        extent[2] = max(extent[2], bounds[2])
+        extent[3] = max(extent[3], bounds[3])
+        features.append(
+            {
+                "type": "Feature",
+                "properties": summaries[identifier],
+                "geometry": simplified,
+            }
+        )
+        matched.add(identifier)
+    if not features:
+        raise ValueError("no geography summaries matched canonical boundaries")
+
+    collection = {"type": "FeatureCollection", "features": features}
+    display_boundaries_path = display_boundaries_path or out_path.with_suffix(
+        ".geojson"
+    )
+    display_boundaries_path.parent.mkdir(parents=True, exist_ok=True)
+    display_boundaries_path.write_text(
+        json.dumps(collection, separators=(",", ":")),
+        encoding="utf-8",
+    )
+    variables = _map_variable_specs(summaries)
+    variables_json = _json_for_inline_script(variables)
+    for formatter in _JS_FUNCS:
+        variables_json = variables_json.replace(f'"{formatter}"', formatter)
+    html = _TEMPLATE.format(
+        title=html_escape(title, quote=True),
+        geojson=_json_for_inline_script(collection),
+        variables=variables_json,
+        geography=_json_for_inline_script(geography_context),
+        bounds=f"[[{extent[0]},{extent[1]}],[{extent[2]},{extent[3]}]]",
+    )
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text(html, encoding="utf-8")
+    return {
+        "representation": "display-only-fixed-grid-quantized-polygons",
+        "coordinate_precision": coord_precision,
+        "requested_geographies": len(summaries),
+        "matched_geographies": len(matched),
+        "missing_geographies": sorted(set(summaries) - matched),
+        "collapsed_rings": collapsed_rings,
+        "map_path": str(out_path),
+        "display_boundaries_path": str(display_boundaries_path),
+    }
+
+
+_NATIONAL_MAP_STATISTIC_FIELDS = (
+    "n_households",
+    "n_persons",
+    "avg_hh_size",
+    "median_hh_income",
+    "median_shelter_cost",
+    "pct_owner",
+    "pct_detached",
+    "pct_major_repairs",
+    "pct_child",
+    "pct_senior",
+    "pct_immigrant",
+    "pct_vismin",
+)
+
+
+def prepare_national_map_statistics(
+    *,
+    plan_path: Path,
+    geography_column: str,
+    out_path: Path | None = None,
+) -> dict[str, object]:
+    """Aggregate the standard map statistics from every completed plan batch."""
+
+    from synthpopcan.statcan import file_integrity
+
+    plan = json.loads(plan_path.read_text())
+    if not isinstance(plan, Mapping) or plan.get("status") != "completed":
+        raise ValueError("national small-area plan must be completed")
+    records = plan.get("batches")
+    if not isinstance(records, list):
+        raise ValueError("national small-area plan batches must be a list")
+    root = plan_path.parent
+    out_path = out_path or root / "national-map-statistics.csv"
+    manifest_path = out_path.with_suffix(".json")
+    sources: list[dict[str, object]] = []
+    batches: list[tuple[str, str, Path, Path]] = []
+    for record in records:
+        if not isinstance(record, Mapping):
+            raise ValueError("national small-area batch record must be an object")
+        manifest_value = record.get("manifest")
+        if not isinstance(manifest_value, str):
+            raise ValueError("national small-area batch manifest is invalid")
+        batch_path = _resolve_plan_path(root, manifest_value)
+        batch = json.loads(batch_path.read_text())
+        if not isinstance(batch, Mapping) or batch.get("status") != "completed":
+            raise ValueError(
+                f"national small-area batch is not completed: {batch_path}"
+            )
+        result = batch.get("result")
+        artifacts = result.get("artifacts") if isinstance(result, Mapping) else None
+        if not isinstance(artifacts, Mapping):
+            raise ValueError(
+                f"national small-area batch artifacts are invalid: {batch_path}"
+            )
+        paths: dict[str, Path] = {}
+        evidence: dict[str, object] = {"batch_id": batch.get("batch_id")}
+        for name in ("households", "persons"):
+            artifact = artifacts.get(name)
+            if not isinstance(artifact, Mapping):
+                raise ValueError(
+                    f"national batch {name} artifact is invalid: {batch_path}"
+                )
+            path_value = artifact.get("path")
+            if not isinstance(path_value, str):
+                raise ValueError(
+                    f"national batch {name} artifact is invalid: {batch_path}"
+                )
+            paths[name] = _resolve_plan_path(root, path_value)
+            evidence[name] = {
+                key: artifact.get(key) for key in ("path", "byte_size", "sha256")
+            }
+        jurisdiction = batch.get("jurisdiction")
+        abbreviation = (
+            str(jurisdiction.get("abbreviation", ""))
+            if isinstance(jurisdiction, Mapping)
+            else ""
+        )
+        batch_id = str(batch.get("batch_id", ""))
+        batches.append((batch_id, abbreviation, paths["households"], paths["persons"]))
+        sources.append(evidence)
+    source_digest = hashlib.sha256(
+        json.dumps(sources, separators=(",", ":"), sort_keys=True).encode()
+    ).hexdigest()
+    if out_path.is_file() and manifest_path.is_file():
+        cached = json.loads(manifest_path.read_text())
+        if (
+            isinstance(cached, Mapping)
+            and cached.get("schema_version") == "synthpopcan-national-map-statistics-v1"
+            and cached.get("source_digest") == source_digest
+            and cached.get("geography_column") == geography_column
+        ):
+            artifact = cached.get("artifact")
+            integrity = file_integrity(out_path)
+            if isinstance(artifact, Mapping) and all(
+                artifact.get(key) == integrity[key] for key in ("byte_size", "sha256")
+            ):
+                return dict(cached)
+
+    rows: dict[str, dict[str, object]] = {}
+    for batch_id, jurisdiction, households_path, persons_path in batches:
+        statistics_by_geography = _compute_geo_stats(
+            households_path,
+            geography_column,
+            persons_path,
+        )
+        for identifier, geography_statistics in statistics_by_geography.items():
+            if identifier in rows:
+                raise ValueError(
+                    f"national map geography appears in multiple batches: {identifier}"
+                )
+            rows[identifier] = {
+                geography_column: identifier,
+                "jurisdiction": jurisdiction,
+                "batch_id": batch_id,
+                **geography_statistics,
+            }
+    if not rows:
+        raise ValueError("national small-area batches contain no map geographies")
+    fieldnames = [
+        geography_column,
+        "jurisdiction",
+        "batch_id",
+        *_NATIONAL_MAP_STATISTIC_FIELDS,
+    ]
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = out_path.with_name(f".{out_path.name}.tmp")
+    with temporary.open("w", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=fieldnames)
+        writer.writeheader()
+        for identifier in sorted(rows):
+            writer.writerow(rows[identifier])
+    temporary.replace(out_path)
+    report: dict[str, object] = {
+        "schema_version": "synthpopcan-national-map-statistics-v1",
+        "source_digest": source_digest,
+        "geography_column": geography_column,
+        "geographies": len(rows),
+        "batches": len(batches),
+        "artifact": {
+            "path": out_path.name,
+            **file_integrity(out_path),
+        },
+    }
+    manifest_temporary = manifest_path.with_name(f".{manifest_path.name}.tmp")
+    manifest_temporary.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n")
+    manifest_temporary.replace(manifest_path)
+    return report
+
+
+def render_national_plan_map(
+    *,
+    plan_path: Path,
+    geography_level: str,
+    geography_column: str,
+    out_path: Path | None = None,
+    coord_precision: int = 3,
+    title: str = "National Synthetic Population",
+) -> dict[str, object]:
+    """Render the standard full-variable map from a completed national plan."""
+
+    from synthpopcan.geography import statcan_geography_universe
+
+    plan = json.loads(plan_path.read_text())
+    if not isinstance(plan, Mapping) or plan.get("status") != "completed":
+        raise ValueError("national small-area plan must be completed")
+    inputs = plan.get("inputs")
+    boundaries = inputs.get("boundaries") if isinstance(inputs, Mapping) else None
+    boundary_value = boundaries.get("path") if isinstance(boundaries, Mapping) else None
+    if not isinstance(boundary_value, str):
+        raise ValueError("national plan boundary input path is invalid")
+    root = plan_path.parent
+    boundary_path = _resolve_plan_path(root, boundary_value)
+    out_path = out_path or root / "national-map.html"
+    statistics_path = root / "national-map-statistics.csv"
+    statistics = prepare_national_map_statistics(
+        plan_path=plan_path,
+        geography_column=geography_column,
+        out_path=statistics_path,
+    )
+    report = render_geography_summary_polygon_map(
+        summary_path=statistics_path,
+        boundaries_path=boundary_path,
+        geography_column=geography_column,
+        out_path=out_path,
+        display_boundaries_path=out_path.with_suffix(".geojson"),
+        coord_precision=coord_precision,
+        title=title,
+        geography_context=statcan_geography_universe(
+            2021,
+            geography_level,
+            geography_column,
+            dguid_column="DGUID",
+        ).as_dict(),
+    )
+    report["statistics"] = statistics
+    return report
+
+
+def _resolve_plan_path(root: Path, value: str) -> Path:
+    path = Path(value)
+    if path.is_absolute():
+        return path
+    if path.is_file():
+        return path
+    for parent in (root, *root.parents):
+        candidate = parent / path
+        if candidate.is_file():
+            return candidate
+    return root / path
+
+
+def _read_geography_summaries(
+    summary_path: Path,
+    geography_column: str,
+) -> dict[str, dict[str, object]]:
+    summaries: dict[str, dict[str, object]] = {}
+    with summary_path.open(newline="") as handle:
+        for row in csv.DictReader(handle):
+            identifier = str(row.get(geography_column, "")).strip()
+            if not identifier:
+                continue
+            households = int(row.get("n_households", row.get("households", 0)) or 0)
+            persons = int(row.get("n_persons", row.get("persons", 0)) or 0)
+            summary: dict[str, object] = {
+                "geo_id": identifier,
+                "jurisdiction": str(row.get("jurisdiction", "")),
+                "n_households": households,
+                "n_persons": persons,
+            }
+            for field in (
+                "avg_hh_size",
+                "median_hh_income",
+                "median_shelter_cost",
+                "pct_owner",
+                "pct_detached",
+                "pct_major_repairs",
+                "pct_child",
+                "pct_senior",
+                "pct_immigrant",
+                "pct_vismin",
+            ):
+                raw_value = row.get(field)
+                if raw_value not in (None, ""):
+                    summary[field] = float(raw_value)
+            summary.setdefault(
+                "avg_hh_size",
+                persons / households if households else 0.0,
+            )
+            summaries[identifier] = summary
+    if not summaries:
+        raise ValueError("geography summary contains no identifiers")
+    return summaries
+
+
+def _map_variable_specs(
+    summaries: Mapping[str, Mapping[str, object]],
+) -> list[dict[str, Any]]:
+    scalar_definitions = (
+        ("n_households", "Households", _FMT_INT),
+        ("n_persons", "Persons", _FMT_INT),
+        ("avg_hh_size", "Avg Household Size", _FMT_F2),
+        ("median_hh_income", "Median HH Income", _FMT_DOLLAR),
+        ("median_shelter_cost", "Median Shelter Cost", _FMT_DOLLAR),
+    )
+    variables: list[dict[str, Any]] = []
+    for field, label, formatter in scalar_definitions:
+        values: list[float] = []
+        for summary in summaries.values():
+            value = summary.get(field)
+            if isinstance(value, (int, float)):
+                values.append(float(value))
+        if not values:
+            continue
+        if formatter == _FMT_INT:
+            low, high = f"{min(values):,.0f}", f"{max(values):,.0f}"
+        elif formatter == _FMT_DOLLAR:
+            low, high = f"${min(values):,.0f}", f"${max(values):,.0f}"
+        else:
+            low, high = f"{min(values):.2f}", f"{max(values):.2f}"
+        variables.append(
+            _variable_spec(field, label, values, formatter, fmt_lo=low, fmt_hi=high)
+        )
+    for field, label in (
+        ("pct_owner", "% Homeowners"),
+        ("pct_detached", "% Detached Dwellings"),
+        ("pct_major_repairs", "% Needing Major Repairs"),
+        ("pct_child", "% Children (under 20)"),
+        ("pct_senior", "% Seniors (65+)"),
+        ("pct_immigrant", "% Immigrants"),
+        ("pct_vismin", "% Visible Minority"),
+    ):
+        values = [
+            float(value)
+            for summary in summaries.values()
+            if isinstance((value := summary.get(field)), (int, float))
+        ]
+        if values:
+            variables.append(_pct_spec(field, label, values))
+    return variables
+
+
+def _quantize_display_geometry(
+    geometry: Mapping[str, object],
+    precision: int,
+) -> tuple[dict[str, object] | None, int]:
+    geometry_type = geometry.get("type")
+    coordinates = geometry.get("coordinates")
+    if not isinstance(coordinates, list):
+        return None, 0
+    polygons = coordinates if geometry_type == "MultiPolygon" else [coordinates]
+    if geometry_type not in {"Polygon", "MultiPolygon"}:
+        return None, 0
+    simplified_polygons: list[list[list[list[float]]]] = []
+    collapsed = 0
+    for polygon in polygons:
+        if not isinstance(polygon, list):
+            continue
+        rings: list[list[list[float]]] = []
+        exterior_collapsed = False
+        for index, ring in enumerate(polygon):
+            simplified = _quantize_display_ring(ring, precision)
+            if simplified is None:
+                collapsed += 1
+                if index == 0:
+                    exterior_collapsed = True
+                    break
+                continue
+            rings.append(simplified)
+        if rings and not exterior_collapsed:
+            simplified_polygons.append(rings)
+    if not simplified_polygons:
+        return None, collapsed
+    if geometry_type == "Polygon" and len(simplified_polygons) == 1:
+        return {
+            "type": "Polygon",
+            "coordinates": simplified_polygons[0],
+        }, collapsed
+    return {
+        "type": "MultiPolygon",
+        "coordinates": simplified_polygons,
+    }, collapsed
+
+
+def _quantize_display_ring(
+    value: object,
+    precision: int,
+) -> list[list[float]] | None:
+    if not isinstance(value, list):
+        return None
+    ring: list[list[float]] = []
+    for position in value:
+        if (
+            not isinstance(position, list)
+            or len(position) < 2
+            or not isinstance(position[0], (int, float))
+            or not isinstance(position[1], (int, float))
+        ):
+            continue
+        point = [
+            round(float(position[0]), precision),
+            round(float(position[1]), precision),
+        ]
+        if not ring or point != ring[-1]:
+            ring.append(point)
+    if ring and ring[0] != ring[-1]:
+        ring.append(ring[0])
+    if len(ring) < 4 or len({tuple(point) for point in ring[:-1]}) < 3:
+        return None
+    return ring
+
+
+def _geometry_coordinate_bounds(
+    value: object,
+) -> tuple[float, float, float, float] | None:
+    if (
+        isinstance(value, list)
+        and len(value) >= 2
+        and isinstance(value[0], (int, float))
+        and isinstance(value[1], (int, float))
+    ):
+        x = float(value[0])
+        y = float(value[1])
+        return x, y, x, y
+    if not isinstance(value, list):
+        return None
+    children = [
+        bounds
+        for child in value
+        if (bounds := _geometry_coordinate_bounds(child)) is not None
+    ]
+    if not children:
+        return None
+    return (
+        min(bounds[0] for bounds in children),
+        min(bounds[1] for bounds in children),
+        max(bounds[2] for bounds in children),
+        max(bounds[3] for bounds in children),
+    )
+
+
+_POINT_SUMMARY_TEMPLATE = """\
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>{title}</title>
+  <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <style>
+    html,body,#map{{height:100%;margin:0}}
+    body{{font-family:system-ui,sans-serif}}
+    #panel{{position:absolute;z-index:2;left:12px;top:12px;background:#fffffff2;
+      border-radius:9px;padding:10px 13px;box-shadow:0 2px 12px #0004}}
+    #panel strong{{display:block;font-size:13px}}
+    #panel span{{font-size:11px;color:#555}}
+    #tip{{position:absolute;display:none;z-index:3;pointer-events:none;
+      background:#111e;color:white;padding:8px 11px;border-radius:7px;font-size:12px}}
+  </style>
+</head>
+<body>
+<div id="map"></div>
+<div id="panel"><strong>{title}</strong>
+  <span>Markers use canonical-feature bounding-box centres;
+    boundaries are unchanged.</span>
+</div>
+<div id="tip"></div>
+<script>
+const DATA={geojson};
+const GEOGRAPHY={geography};
+const map=new maplibregl.Map({{
+  container:'map',style:'https://tiles.openfreemap.org/styles/liberty',
+  bounds:{bounds},fitBoundsOptions:{{padding:35}}
+}});
+map.addControl(new maplibregl.NavigationControl(),'top-right');
+map.on('load',()=>{{
+  map.addSource('areas',{{type:'geojson',data:DATA}});
+  map.addLayer({{
+    id:'areas',type:'circle',source:'areas',
+    paint:{{
+      'circle-radius':['interpolate',['linear'],['sqrt',['get','n_households']],
+        0,2,350,6,1200,11],
+      'circle-color':['interpolate',['linear'],['get','n_persons'],
+        0,'#deebf7',1000,'#6baed6',5000,'#08519c'],
+      'circle-opacity':0.72,'circle-stroke-color':'#fff','circle-stroke-width':0.5
+    }}
+  }});
+  const tip=document.getElementById('tip');
+  map.on('mousemove','areas',e=>{{
+    const p=e.features[0].properties;
+    const households=Number(p.n_households).toLocaleString();
+    const persons=Number(p.n_persons).toLocaleString();
+    tip.textContent=`${{p.geo_id}} · ${{households}} households ·
+      ${{persons}} persons`;
+    tip.style.display='block';tip.style.left=(e.point.x+14)+'px';tip.style.top=(e.point.y-8)+'px';
+  }});
+  map.on('mouseleave','areas',()=>{{tip.style.display='none'}});
+}});
+</script>
+</body>
+</html>
+"""
 
 
 def _json_for_inline_script(value: object) -> str:

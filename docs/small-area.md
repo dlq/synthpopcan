@@ -135,12 +135,17 @@ synthpopcan geo boundaries \
 
 synthpopcan geo boundaries \
   --census-year 2021 \
+  --geo-level da \
+  --out-dir data/derived/statcan/census/2021/boundaries/
+
+synthpopcan geo boundaries \
+  --census-year 2021 \
   --geo-level csd \
   --out-dir data/derived/statcan/census/2021/boundaries/
 ```
 
 These write national `2021-boundary-ct.geojson`, `2021-boundary-ada.geojson`,
-and `2021-boundary-csd.geojson` files under
+`2021-boundary-da.geojson`, and `2021-boundary-csd.geojson` files under
 `data/derived/statcan/census/2021/boundaries/`. The CT product
 contains all tracts in Canada's tracted CMAs and CAs; smaller untracted CAs
 have no CTs. The ADA product covers all of Canada. Both retain StatCan's 2021
@@ -187,6 +192,227 @@ synthpopcan geo relationship-file \
   --out-dir data/raw/statcan/census/2021/geography/relationships/
 ```
 
+### Bounded Québec 2021 DA proof
+
+The release evidence intentionally uses eight DAs rather than attempting a
+province-wide fit: four in Montréal CSD and four in a non-CMA/CA Québec CSD.
+The selections come from the final 2021 DGRF, not code prefixes or spatial
+guessing. Prepare the official inputs once:
+
+```bash
+synthpopcan statcan census-profile fetch \
+  --year 2021 \
+  --geo-level da-quebec \
+  --out-dir data/raw/statcan/census/2021/profiles/da/quebec/
+
+synthpopcan geo boundaries \
+  --census-year 2021 \
+  --geo-level da \
+  --out-dir data/derived/statcan/census/2021/boundaries/
+
+synthpopcan geo relationship-file \
+  --out-dir data/raw/statcan/census/2021/geography/relationships/
+```
+
+Then prepare the bounded controls, boundary subset, relationship records, and
+checksummed evidence manifest:
+
+```bash
+uv run python scripts/prove_quebec_da_2021.py \
+  --profile data/raw/statcan/census/2021/profiles/da/quebec/2021-census-profile-da-quebec.csv \
+  --boundaries data/derived/statcan/census/2021/boundaries/2021-boundary-da.geojson \
+  --relationships data/raw/statcan/census/2021/geography/relationships/2021_98260004.csv \
+  --out data/work/proofs/quebec-da-2021 \
+  --target-households 800
+```
+
+The preparer streams the selected features from the national GeoJSON instead
+of loading its hundreds of megabytes into memory. Preparation alone is not a
+correctness claim: the next release-evidence step must generate and calibrate
+the linked population, validate identifiers and household/person linkage,
+review convergence and residuals, and render the bounded map.
+
+```bash
+synthpopcan models fetch quebec-2021-all-fields
+
+synthpopcan geo synthesize quebec-2021-all-fields \
+  --households 800 \
+  --controls data/work/proofs/quebec-da-2021/controls.csv \
+  --geo-dimension da \
+  --geo-column DAUID \
+  --census-vintage 2021 \
+  --geo-level da \
+  --geo-namespace statcan:census:2021:da \
+  --max-household-size 5 \
+  --random-seed 202107 \
+  --subsample-seed 42 \
+  --out data/work/proofs/quebec-da-2021/population
+
+synthpopcan geo map data/work/proofs/quebec-da-2021/population \
+  --boundaries data/work/proofs/quebec-da-2021/boundaries.geojson \
+  --geo-column DAUID \
+  --geo-id-field geo_id \
+  --census-vintage 2021 \
+  --geo-level da \
+  --geo-namespace statcan:census:2021:da \
+  --out data/work/proofs/quebec-da-2021/population/map.html
+
+uv run python scripts/finalize_quebec_da_2021.py \
+  --proof data/work/proofs/quebec-da-2021
+```
+
+Finalization independently rechecks the linked household/person files, the
+exact selected DA universe, fractional and realized residuals, convergence,
+parent-CSD summaries, artifact hashes, and map size before changing the proof
+manifest status from `prepared` to `completed`.
+
+### National 2021 DA and ADA execution
+
+The same geography contract supports every province and territory. National
+DA execution uses StatCan's six official regional profile products; ADA uses
+the single national ADA profile. Both source adapters feed the same planner,
+which divides work into the 13 provinces and territories and further bounded
+household batches. They share plan and batch schemas, checksums, resource
+estimates, resume state, model conditioning, linked validation, and optional
+maps. Neither attempts one monolithic national fit.
+
+Fetch or reuse the regional profiles:
+
+```bash
+synthpopcan geo national-da fetch-profiles \
+  --out-dir data/raw/statcan/census/2021/profiles/da/
+
+synthpopcan geo national-ada fetch-profiles \
+  --out-dir data/raw/statcan/census/2021/profiles/ada/
+```
+
+Prepare the national plan. This scans every regional profile, uses the final
+DGRF for authoritative DA-to-province/territory relationships, partitions the
+national boundary file in one pass, excludes and reports incomplete controls,
+and writes an atomic manifest for each restartable batch:
+
+```bash
+synthpopcan geo national-da prepare \
+  --profiles-dir data/raw/statcan/census/2021/profiles/da/ \
+  --boundaries data/derived/statcan/census/2021/boundaries/2021-boundary-da.geojson \
+  --relationships data/raw/statcan/census/2021/geography/relationships/2021_98260004.csv \
+  --max-households-per-batch 100000 \
+  --out data/work/canada-da-2021/
+
+synthpopcan geo national-ada prepare \
+  --profiles-dir data/raw/statcan/census/2021/profiles/ada/ \
+  --boundaries data/derived/statcan/census/2021/boundaries/2021-boundary-ada.geojson \
+  --relationships data/raw/statcan/census/2021/geography/relationships/2021_98260004.csv \
+  --max-households-per-batch 100000 \
+  --out data/work/canada-ada-2021/
+```
+
+Run or resume the plan with a reviewed 2021 model:
+
+```bash
+synthpopcan models fetch canada-2021-all-fields
+
+synthpopcan geo national-da run canada-2021-all-fields \
+  --plan data/work/canada-da-2021/plan.json
+
+synthpopcan geo national-ada run canada-2021-all-fields \
+  --plan data/work/canada-ada-2021/plan.json
+```
+
+The Canada 2021 package is the appropriate broad national candidate model; the
+province-specific packages remain available when a study requires separately
+reviewed provincial candidate pools. Neither choice removes the need to review
+PUMF coverage, sparse categories, calibration residuals, and fitness for the
+research question. By default, each batch conditions the national model on its
+province code before calibration. Generation happens once per PUMF condition,
+not once per batch: the runner creates an evidence-checked reusable pool of
+10,000 linked candidate households for each province or combined northern
+condition and records its model hash, seed, category support, row counts, file
+hashes, and phase timings. A resumed run verifies those files before use and
+can skip loading the large model package entirely. Use
+`--candidate-pool-size` for a documented sensitivity analysis or
+`--force-candidate-pools` after intentionally changing generation assumptions.
+Pool preparation excludes generated PUMF households with `TENUR=8`, which the
+official 2021 hierarchical PUMF metadata defines as “Not available,” together
+with their linked persons. The pool manifest records every exclusion. Those
+rows must not remain outside the owner/renter control universe or be
+misclassified as renters.
+
+The hierarchical PUMF exposes Yukon,
+Northwest Territories, and Nunavut only as the combined northern category
+`PR=70`; their batches therefore share that candidate pool while retaining
+separate territory-specific DA controls. This is an explicit source limitation,
+not evidence of territory-specific microdata. Unsupported categories fail
+instead of falling back to an unconditioned national mixture. Use `--limit 1`
+for a first batch and inspect convergence, realized residuals, linkage, output
+size, and the report before resuming. Completed batches are skipped; running
+and failed batches are safe to retry. Batch results are staged and atomically
+installed, and the plan is checkpointed after every result. `--workers`
+controls bounded batch-process parallelism while `--fit-workers` controls
+geography fitting within each process. Start conservatively because every
+process reads candidates and realizes a population independently.
+
+Detailed per-batch maps are deferred and opt-in with `--maps`. After a complete
+plan, the default `--national-map` writes the familiar polygon choropleth as
+`national-map.html` alongside `national-geography-summary.csv` and
+`national-summary.json`. The embedded polygons are a display-only derivative:
+all coordinates are snapped to one fixed grid so shared boundary vertices stay
+aligned, then consecutive duplicates are removed. The 1.64 GB canonical
+StatCan boundary source is unchanged and remains the analytical geometry.
+
+The lighter `national-points-map.html` is retained as a secondary overview.
+Its markers are the bounding-box centres of the unchanged canonical features;
+the point layer is a display index, not an analytical geography. Partial runs
+still update the CSV and JSON summaries but do not rescan the national boundary
+file for either map.
+
+The normal map command accepts either the completed `plan.json` or its
+directory; boundaries, geography identity, and the 161 household/person batch
+pairs are inferred:
+
+```console
+synthpopcan geo map data/work/canada-ada-2021
+```
+
+This is the same supported map product used for a single linked-population
+pair. It streams each batch once and caches `national-map-statistics.csv` with
+source-artifact evidence. The selector includes households, persons, average
+household size, median household income, median shelter cost, homeownership,
+detached dwellings, major repairs, children, seniors, immigrants, and visible
+minorities. A repeat invocation reuses the statistics when batch hashes match.
+
+The beginner Python API uses the same path:
+
+```python
+import synthpopcan as spc
+
+map_path = spc.render_small_area_map(
+    households="data/work/canada-ada-2021/plan.json",
+)
+```
+
+The command
+checks the plan's conservative disk estimate before starting and requires an
+explicit `--allow-low-disk` override when available space is below it.
+Use `--jurisdiction ON` or `--jurisdiction 35` to run only one jurisdiction;
+this also permits a separately reviewed province-specific model to execute its
+own batches before the shared plan is resumed with another model.
+
+The national plan is a collection of independently validated outputs, not a
+claim that every DA or ADA has publishable controls. Empty, suppressed, zero, or
+incomplete household-size and tenure vectors remain visible in the coverage
+report and are never silently imputed.
+Preparation fails if any DA or ADA with usable controls lacks a boundary. The
+four DA records in the 2021 DGRF that are absent from the DA cartographic
+boundary product have zero-area, unavailable profile values and are reported
+among the excluded DAs.
+
+DA and ADA now have operational parity. Their only intentional differences are
+their StatCan source adapters: DA selects six regional profile products and the
+DGRF's DA relationship column, while ADA selects one national profile and the
+ADA relationship column. A plan is bound to one explicit geography identity;
+`national-da run` rejects an ADA plan and `national-ada run` rejects a DA plan.
+
 Download the matching CT Census Profile at the same time:
 
 ```bash
@@ -227,7 +453,9 @@ verified package in the local model cache. Candidate generation writes
 
 The `geo controls` command reads a StatCan 2247-variable Census Profile bulk
 CSV, extracts household-size (members 52–56: 1, 2, 3, 4, 5-or-more persons) and
-tenure (members 1618–1619: owner, renter) margins per geography, scales both to
+tenure (members 1618–1620: owner, renter, and band housing) margins per
+geography, combines renter and band housing to match the hierarchical PUMF
+`TENUR=2` category, scales both to
 the target household count, and writes:
 
 - a long-format controls CSV ready for `geo calibrate`;
@@ -238,6 +466,9 @@ the target household count, and writes:
 
 Geographies missing either margin are dropped automatically, preventing the IPF
 dimension-mismatch error in `geo calibrate`.
+Calibration preflight also rejects candidate category values absent from a
+control margin. Otherwise those rows would retain unconstrained weights and
+could prevent the fitted margin total from reaching its target.
 
 ```bash
 synthpopcan geo controls \
@@ -431,7 +662,7 @@ Important options:
 
 - `--geo-level`: boundary geography to prepare. Supported values include `ct`,
   `ada`, `da`, `csd`, `cd`, and `pr` for 2016. The current 2021 catalogue
-  supports the national `ct`, `ada`, and `csd` products.
+  supports the national `ct`, `ada`, `da`, and `csd` products.
 - `--census-year`: boundary vintage, either `2016` (the default for backward
   compatibility) or `2021`.
 - `--out-dir`: directory for the prepared GeoJSON file.
@@ -453,6 +684,21 @@ subdivision, and other supported parent geographies.
 synthpopcan geo relationship-file \
   --out-dir data/raw/statcan/census/2021/geography/relationships
 ```
+
+### `geo national-da` and `geo national-ada`
+
+Coordinate 2021 DA or ADA preparation and synthesis across all 13 provinces
+and territories:
+
+- `fetch-profiles` retrieves the level's official profile product or products;
+- `prepare` reconciles profiles, DGRF relationships, and national boundaries,
+  then writes bounded restartable batches and storage estimates; and
+- `run` executes unfinished batches, validates linked outputs, records hashes,
+  and optionally creates maps.
+
+This interface supplies national execution mechanics. Scientific suitability
+of the selected model outside its training population remains a separate
+review decision.
 
 ### `geo controls`
 

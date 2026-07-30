@@ -66,6 +66,37 @@ Local Data and Sources
    :members: inspect_source_root, read_source_schema, read_source_sample
    :show-inheritance:
 
+Geography and Enrichment
+------------------------
+
+.. automodule:: synthpopcan.geography
+   :members: GeographyUniverse, GeographyIdentity, GeographyRelationship,
+             statcan_geography_universe, statcan_geography_identity,
+             ensure_geography_compatible, validate_geography_identifiers
+   :show-inheritance:
+
+.. automodule:: synthpopcan.enrichment
+   :members: SourceProfile, ResourceRecord, EnrichmentLayer,
+             EnrichmentManifest, SourceAdapter, acquire_public_resource,
+             register_resource, import_normalized_layer,
+             validate_normalized_layer, verify_enrichment_manifest
+
+.. automodule:: synthpopcan.da_proof
+   :members: finalize_quebec_da_proof, prepare_quebec_da_proof,
+             select_quebec_da_relationships
+   :show-inheritance:
+
+.. automodule:: synthpopcan.national_small_area
+   :members: NationalSmallAreaJurisdiction,
+             CANADA_SMALL_AREA_JURISDICTIONS,
+             NationalSmallAreaSpecification, small_area_specification,
+             required_2021_profile_keys, national_2021_profile_paths,
+             load_2021_small_area_jurisdictions,
+             prepare_canada_small_area_plan,
+             estimate_national_small_area_storage,
+             execute_canada_small_area_plan
+   :show-inheritance:
+
 Controls
 --------
 

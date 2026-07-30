@@ -8,7 +8,7 @@ functions that map directly to common beginner work:
 * fit seed rows to margin/control totals with IPF;
 * generate linked household/person rows from a prepared model package;
 * calibrate generated linked rows to small-area household controls;
-* render a browser map from calibrated small-area output.
+* render browser maps from calibrated small-area or national-plan output.
 
 Most users should import the top-level package and call these functions from
 there::
@@ -35,6 +35,14 @@ from tempfile import TemporaryDirectory
 from typing import Any
 
 from synthpopcan.controls import ControlTable, read_control_table, write_control_table
+from synthpopcan.enrichment import (
+    ResourceRecord,
+    SourceProfile,
+    import_normalized_layer,
+    read_resource_record,
+    read_source_profile,
+)
+from synthpopcan.geography import GeographyUniverse
 from synthpopcan.ipf import IPFMargin, IPFResult, expand_records
 from synthpopcan.ipf import fit_ipf as fit_ipf_records
 from synthpopcan.linked_schema import write_linked_population_contract
@@ -55,12 +63,14 @@ PopulationRows = list[dict[str, str]]
 
 __all__ = [
     "ControlTable",
+    "EnrichmentResult",
     "IPFResult",
     "LinkedPopulation",
     "LinkedPopulationFiles",
     "PopulationRows",
     "SmallAreaResult",
     "calibrate_small_area",
+    "enrich_population",
     "expand_population",
     "fetch_model",
     "fit_ipf",
@@ -137,6 +147,15 @@ class SmallAreaResult:
     max_abs_error: float
     calibration_mode: str
     details: Mapping[str, Any]
+
+
+@dataclass(frozen=True)
+class EnrichmentResult:
+    """Published sidecar layer, manifest, and source-independent validation."""
+
+    layer: Path
+    manifest: Path
+    validation: Mapping[str, object]
 
 
 def read_seed(path: str | Path) -> PopulationRows:
@@ -564,6 +583,7 @@ def calibrate_small_area(
     output_dir: str | Path,
     person_controls: str | Path | ControlTable | None = None,
     geography_column: str | None = None,
+    geography_universe: GeographyUniverse | Mapping[str, object] | None = None,
     max_iterations: int = 100,
     tolerance: float = 1e-6,
     pool_size: int | None = None,
@@ -592,6 +612,9 @@ def calibrate_small_area(
         Optional linked-person controls as a path or :class:`ControlTable`.
     geography_column:
         Output geography column. Defaults to ``geography_dimension``.
+    geography_universe:
+        Versioned Census vintage, level, namespace, and identifier-column
+        context. Omit only for legacy or non-Census workflows.
     max_iterations, tolerance:
         IPF convergence settings for each geography.
     pool_size, subsample_seed:
@@ -637,6 +660,11 @@ def calibrate_small_area(
             if person_controls is not None
             else None
         )
+        normalized_geography = (
+            GeographyUniverse.from_dict(geography_universe)
+            if isinstance(geography_universe, Mapping)
+            else geography_universe
+        )
         details = calibrate_linked_household_csvs(
             households_path=candidate_files.households,
             persons_path=candidate_files.persons,
@@ -644,6 +672,7 @@ def calibrate_small_area(
             person_controls_path=person_controls_path,
             geography_dimension=geography_dimension,
             geography_column=geography_column or geography_dimension,
+            geography_universe=normalized_geography,
             households_out=output_population.households,
             persons_out=output_population.persons,
             report_out=report_path,
@@ -672,29 +701,97 @@ def calibrate_small_area(
     )
 
 
+def enrich_population(
+    population: LinkedPopulationFiles | str | Path,
+    layer: str | Path,
+    *,
+    source_profile: SourceProfile | str | Path,
+    resource_record: ResourceRecord | str | Path,
+    layer_id: str,
+    layer_class: str,
+    key_columns: Sequence[str],
+    variables: Sequence[str],
+    base_geography: GeographyUniverse | Mapping[str, object] | None = None,
+    output_dir: str | Path,
+    observed_status: str = "observed",
+    limitations: Sequence[str] = (),
+) -> EnrichmentResult:
+    """Attach a validated normalized sidecar without changing base population files."""
+    if isinstance(population, LinkedPopulationFiles):
+        population_directory = population.households.parent
+    else:
+        population_directory = Path(population)
+    source = (
+        source_profile
+        if isinstance(source_profile, SourceProfile)
+        else read_source_profile(Path(source_profile))
+    )
+    resource = (
+        resource_record
+        if isinstance(resource_record, ResourceRecord)
+        else read_resource_record(Path(resource_record))
+    )
+    output_directory = Path(output_dir)
+    normalized_base_geography = (
+        GeographyUniverse.from_dict(base_geography)
+        if isinstance(base_geography, Mapping)
+        else base_geography
+    )
+    _, validation = import_normalized_layer(
+        population_directory,
+        Path(layer),
+        output_directory,
+        source=source,
+        resource=resource,
+        layer_id=layer_id,
+        layer_class=layer_class,
+        key_columns=key_columns,
+        variables=variables,
+        base_geography=normalized_base_geography,
+        observed_status=observed_status,
+        reproduction_request={
+            "workflow": "enrichment",
+            "operation": "import-normalized-layer",
+            "population": str(population_directory),
+            "layer": str(layer),
+        },
+        limitations=limitations,
+    )
+    return EnrichmentResult(
+        layer=output_directory / Path(layer).name,
+        manifest=output_directory / "manifest.json",
+        validation=validation,
+    )
+
+
 def render_small_area_map(
     *,
     households: str | Path | LinkedPopulationFiles | SmallAreaResult,
     persons: str | Path | None = None,
-    boundaries: str | Path,
-    geography_column: str,
-    geography_id_field: str,
-    out: str | Path,
-    title: str = "Synthetic Population",
-    coord_precision: int = 5,
+    boundaries: str | Path | None = None,
+    geography_column: str | None = None,
+    geography_id_field: str | None = None,
+    out: str | Path | None = None,
+    title: str | None = None,
+    coord_precision: int | None = None,
+    geography_universe: GeographyUniverse | Mapping[str, object] | None = None,
 ) -> Path:
     """Generate a MapLibre GL JS choropleth HTML file from synthesis output.
 
-    The resulting file is self-contained (~3–10 MB) and opens directly in any
-    modern browser. It uses WebGL for fast rendering and fetches base-map tiles
-    from OpenFreeMap (requires an internet connection when viewing).
+    The resulting file is self-contained and opens directly in any modern
+    browser. A bounded study-area map is commonly ~3–10 MB; national size
+    depends on display-boundary complexity. It uses WebGL for fast rendering
+    and fetches base-map tiles from OpenFreeMap (requires an internet
+    connection when viewing).
 
     Parameters
     ----------
     households:
         A :class:`SmallAreaResult`, paired :class:`LinkedPopulationFiles`, or a
-        synthesis household CSV. Passing a result or paired paths automatically
-        supplies the person CSV too.
+        synthesis household CSV. A completed national ``plan.json`` or its
+        containing directory is also accepted and automatically aggregates all
+        batch household/person outputs. Passing a result or paired paths
+        automatically supplies the person CSV too.
     persons:
         Optional synthesis person CSV when ``households`` is a household path.
     boundaries:
@@ -702,20 +799,23 @@ def render_small_area_map(
         target geography level. For census tracts, a source shapefile may be
         named ``lct_000b16a_e.shp``; for ADAs, ``lada000b16a_e.shp``. Source
         shapefiles may stay in their original Lambert Conformal Conic projection
-        because reprojection to WGS-84 is automatic.
+        because reprojection to WGS-84 is automatic. Inferred from a national
+        plan.
     geography_column:
         Column in ``households`` that holds the geography ID (e.g. ``ct``).
     geography_id_field:
         Attribute field in the shapefile matching that column (e.g. ``CTUID``
         or ``ADAUID``).
     out:
-        Destination HTML file path.
+        Destination HTML file path. Defaults beside the input population.
     title:
         Map title shown in the side panel and browser tab.
     coord_precision:
-        Decimal places kept in WGS-84 coordinates.  5 gives ≈ 1 m accuracy
-        (default); 3 reduces file size ~50 % with ≈ 110 m accuracy, adequate
-        for province-wide ADA maps.
+        Decimal places kept in WGS-84 coordinates. Defaults to 5 for a single
+        population and 3 for a national plan.
+    geography_universe:
+        Optional explicit Census vintage, level, namespace, and identifier
+        column embedded in the self-contained map.
 
     Returns
     -------
@@ -733,7 +833,50 @@ def render_small_area_map(
     ...     title="Montreal Census Tracts",
     ... )
     """
-    from synthpopcan.map_render import render_synthesis_map
+    from synthpopcan.map_render import render_national_plan_map, render_synthesis_map
+
+    national_plan_path: Path | None = None
+    if isinstance(households, str | Path):
+        input_path = Path(households)
+        candidate = input_path / "plan.json" if input_path.is_dir() else input_path
+        if candidate.is_file() and candidate.name == "plan.json":
+            national_plan_path = candidate
+    if national_plan_path is not None:
+        if persons is not None:
+            raise ValueError(
+                "persons must be omitted when households is a national plan"
+            )
+        if any(
+            value is not None
+            for value in (boundaries, geography_column, geography_id_field)
+        ):
+            raise ValueError(
+                "boundaries and geography arguments are inferred from a national plan"
+            )
+        payload = json.loads(national_plan_path.read_text())
+        geography = payload.get("geography") if isinstance(payload, Mapping) else None
+        if not isinstance(geography, Mapping):
+            raise ValueError("national small-area plan geography is invalid")
+        geography_level = geography.get("geography_level")
+        identifier_column = geography.get("identifier_column")
+        if not isinstance(geography_level, str) or not geography_level:
+            raise ValueError("national small-area plan geography level is invalid")
+        if not isinstance(identifier_column, str) or not identifier_column:
+            raise ValueError("national small-area plan identifier column is invalid")
+        out_path = (
+            Path(out)
+            if out is not None
+            else national_plan_path.parent / "national-map.html"
+        )
+        render_national_plan_map(
+            plan_path=national_plan_path,
+            geography_level=geography_level,
+            geography_column=identifier_column,
+            out_path=out_path,
+            coord_precision=3 if coord_precision is None else coord_precision,
+            title=title or "National Synthetic Population",
+        )
+        return out_path
 
     if isinstance(households, SmallAreaResult):
         if persons is not None:
@@ -755,15 +898,34 @@ def render_small_area_map(
     else:  # pragma: no cover - guarded by the public type annotation
         raise TypeError("households must be a result, paired files, or a CSV path")
 
+    if boundaries is None:
+        raise ValueError("boundaries is required for a household CSV")
+    if geography_column is None:
+        raise ValueError("geography_column is required for a household CSV")
+    if geography_id_field is None:
+        raise ValueError("geography_id_field is required for a household CSV")
+    out_path = (
+        Path(out)
+        if out is not None
+        else household_path.parent / f"{household_path.stem}-map.html"
+    )
+
     return render_synthesis_map(
         households_path=household_path,
         persons_path=person_path,
         boundaries_path=Path(boundaries),
         geography_column=geography_column,
         geography_id_field=geography_id_field,
-        out_path=Path(out),
-        title=title,
-        coord_precision=coord_precision,
+        out_path=out_path,
+        title=title or "Synthetic Population",
+        coord_precision=5 if coord_precision is None else coord_precision,
+        geography_context=(
+            GeographyUniverse.from_dict(geography_universe).as_dict()
+            if isinstance(geography_universe, Mapping)
+            else (
+                geography_universe.as_dict() if geography_universe is not None else None
+            )
+        ),
     )
 
 

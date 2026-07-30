@@ -6,6 +6,48 @@ All notable public changes to SynthPopCan are tracked here.
 
 - Fix permanent evidence attachment by giving the checkout-free release job an
   explicit GitHub repository target.
+- Add explicit versioned Census geography universe, identity, and relationship
+  contracts; reject cross-vintage and namespace mismatches; and carry the
+  geography universe through small-area library, CLI, durable-run, and local
+  API requests.
+- Add a reusable external-data enrichment foundation with bilingual source
+  profiles, immutable resource revisions, bounded content-addressed public
+  retrieval, governed local/restricted registration, sidecar layers,
+  researcher-supplied normalized-layer import, validation, and manifests that
+  prove the linked base population remains byte-for-byte unchanged.
+- Register the official 2021 national DA cartographic boundary and Québec DA
+  Census Profile products, tolerate their differing official archive names,
+  and add a bounded metropolitan/rural Québec DA evidence preparer with
+  authoritative DGRF relationships, exact controls, streaming boundary
+  subsetting, hashes, resource measurements, and a compact 2016 DA regression.
+- Register all six official regional 2021 DA Census Profile products and
+  generalize restartable national orchestration across DA and ADA for all 13
+  provinces and territories. Level-specific profile and DGRF adapters share
+  plan and batch schemas, one-pass boundary partitioning, explicit exclusions,
+  storage estimates, resumable state, model conditioning, linked validation,
+  artifact hashes, and optional maps; the PUMF's combined northern `PR=70`
+  candidate pool remains explicit with separate territorial controls.
+- Accelerate national DA/ADA execution by generating one evidence-checked
+  linked candidate pool per PUMF condition, verifying caches without reopening
+  the model, atomically checkpointing batches, supporting bounded process and
+  fit parallelism, recording phase timings and in-write artifact hashes, and
+  deferring opt-in batch maps in favour of a compact completed-plan national
+  summary. The existing `geo map` CLI and `render_small_area_map` API now accept
+  a completed national plan or its directory, stream and cache the standard
+  household/person map statistics across every batch, and render the familiar
+  12-variable polygon choropleth from display-only fixed-grid-quantized
+  boundaries. The compact point overview remains separate and canonical
+  StatCan geometry is unchanged.
+- Exclude hierarchical-PUMF `TENUR=8` (“Not available”) households and their
+  linked persons from national tenure-calibration pools, record the exclusions,
+  invalidate incompatible caches, and reject any uncontrolled candidate
+  category during general small-area preflight.
+- Align 2016 and 2021 Census Profile tenure controls with the hierarchical PUMF
+  by combining the published band/local-government dwelling count with renter
+  rather than omitting it and proportionally rescaling the remaining classes.
+- Version StatCan resource manifests with explicit source revisions, SHA-256
+  digests, byte sizes, and geography identity for single-universe boundary
+  products.
 
 ## 0.6.3 - 2026-07-27
 

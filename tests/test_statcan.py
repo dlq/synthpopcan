@@ -20,6 +20,7 @@ from synthpopcan.statcan import (
     WDSTableSearchResult,
     classify_wds_ipf_suitability,
     download_url,
+    extract_census_profile_csv,
     extract_wds_dimension_names,
     extract_wds_dimension_previews,
     fetch_boundary_zip,
@@ -29,6 +30,7 @@ from synthpopcan.statcan import (
     fetch_json,
     fetch_wds_metadata,
     fetch_wds_table,
+    file_integrity,
     get_boundary_download,
     normalize_language,
     normalize_product_id,
@@ -151,6 +153,41 @@ def test_fetch_2016_census_profile_extracts_zip_payload(
     assert not (tmp_path / "2016-census-profile-ada.csv.download").exists()
 
 
+def test_fetch_census_profile_accepts_regional_archive_csv_name(
+    tmp_path: Path, monkeypatch
+) -> None:
+    def fake_download(_url: str, destination: Path) -> None:
+        with ZipFile(destination, "w") as archive:
+            archive.writestr("README_meta.txt", "metadata")
+            archive.writestr("regional-profile-data.CSV", "a,b\n1,2\n")
+
+    monkeypatch.setattr("synthpopcan.statcan.download_url", fake_download)
+
+    result = fetch_census_profile("da-quebec", tmp_path, census_year=2021)
+
+    assert result.read_text() == "a,b\n1,2\n"
+    manifest = json.loads((tmp_path / "2021-census-profile-da-quebec.json").read_text())
+    assert manifest["schema_version"] == "synthpopcan-statcan-resource-v1"
+    assert manifest["source_revision"] == "census-profile-2021-006_Quebec-english"
+    assert manifest["geography_scope"]["census_vintage"] == 2021
+    assert manifest["resource"] == {
+        "path": str(result),
+        **file_integrity(result),
+    }
+
+
+def test_fetch_census_profile_rejects_ambiguous_archive_csvs(
+    tmp_path: Path,
+) -> None:
+    zip_path = tmp_path / "profile.zip"
+    with ZipFile(zip_path, "w") as archive:
+        archive.writestr("first.csv", "a\n1\n")
+        archive.writestr("second.csv", "a\n2\n")
+
+    with pytest.raises(ValueError, match="did not contain a data CSV"):
+        extract_census_profile_csv(zip_path, tmp_path / "out.csv")
+
+
 def test_cli_fetches_2021_census_profile_by_registry_key(
     tmp_path: Path, monkeypatch
 ) -> None:
@@ -190,7 +227,18 @@ def test_cli_fetches_2021_census_profile_by_registry_key(
 
 
 def test_national_csd_sources_are_registered_for_both_vintages() -> None:
-    assert set(_CENSUS_PROFILE_2021_DOWNLOADS) == {"csd-all", "ct", "ada"}
+    assert set(_CENSUS_PROFILE_2021_DOWNLOADS) == {
+        "csd-all",
+        "ct",
+        "ada",
+        "da-all",
+        "da-atlantic",
+        "da-quebec",
+        "da-ontario",
+        "da-prairies",
+        "da-british-columbia",
+        "da-territories",
+    }
 
     profile_2016 = _CENSUS_PROFILE_2016_DOWNLOADS["csd-all"]
     assert profile_2016.geono == "055"
@@ -199,6 +247,26 @@ def test_national_csd_sources_are_registered_for_both_vintages() -> None:
     profile_2021 = _CENSUS_PROFILE_2021_DOWNLOADS["csd-all"]
     assert profile_2021.geono == "005"
     assert profile_2021.filename == "2021-census-profile-csd-all.csv"
+    assert {
+        key: _CENSUS_PROFILE_2021_DOWNLOADS[key].geono
+        for key in (
+            "da-all",
+            "da-atlantic",
+            "da-quebec",
+            "da-ontario",
+            "da-prairies",
+            "da-british-columbia",
+            "da-territories",
+        )
+    } == {
+        "da-all": "006",
+        "da-atlantic": "006_Atlantic_Atlantique",
+        "da-quebec": "006_Quebec",
+        "da-ontario": "006_Ontario",
+        "da-prairies": "006_Prairies",
+        "da-british-columbia": "006_BC_CB",
+        "da-territories": "006_Territories_Territoires",
+    }
 
     boundary = _BOUNDARY_2021_DOWNLOADS["csd"]
     assert boundary.zip_name == "lcsd000b21a_e.zip"
@@ -212,7 +280,7 @@ def test_fetch_census_profile_rejects_year_specific_geo_level(
     tmp_path: Path,
 ) -> None:
     with pytest.raises(ValueError, match="Unknown 2021 Census Profile"):
-        fetch_census_profile("da-all", tmp_path, census_year=2021)
+        fetch_census_profile("fsa", tmp_path, census_year=2021)
 
     with pytest.raises(ValueError, match="Unsupported Census Profile year"):
         fetch_census_profile("ct", tmp_path, census_year=2026)
@@ -978,10 +1046,11 @@ def test_boundary_download_2016_ct_and_ada_preserve_all_source_attributes() -> N
     )
 
 
-def test_boundary_download_2021_national_ct_ada_and_csd_products() -> None:
-    assert set(_BOUNDARY_2021_DOWNLOADS) == {"ct", "ada", "csd"}
+def test_boundary_download_2021_national_ct_ada_da_and_csd_products() -> None:
+    assert set(_BOUNDARY_2021_DOWNLOADS) == {"ct", "ada", "da", "csd"}
     assert _BOUNDARY_2021_DOWNLOADS["ct"].url.endswith("lct_000b21a_e.zip")
     assert _BOUNDARY_2021_DOWNLOADS["ada"].url.endswith("lada000b21a_e.zip")
+    assert _BOUNDARY_2021_DOWNLOADS["da"].url.endswith("lda_000b21a_e.zip")
     assert all(entry.census_year == 2021 for entry in _BOUNDARY_2021_DOWNLOADS.values())
     assert _BOUNDARY_2021_DOWNLOADS["ct"].property_fields == (
         "DGUID",
@@ -998,8 +1067,8 @@ def test_boundary_download_2021_national_ct_ada_and_csd_products() -> None:
 def test_get_boundary_download_rejects_unsupported_year_and_level() -> None:
     with pytest.raises(ValueError, match="Unsupported census year"):
         get_boundary_download("ct", 2011)
-    with pytest.raises(ValueError, match="2021.*Supported: ada, csd, ct"):
-        get_boundary_download("da", 2021)
+    with pytest.raises(ValueError, match="2021.*Supported: ada, csd, ct, da"):
+        get_boundary_download("cd", 2021)
 
 
 def test_fetch_boundary_zip_rejects_unknown_level(tmp_path: Path) -> None:
@@ -1060,6 +1129,11 @@ def test_fetch_boundary_zip_2021_writes_vintage_manifest(
     manifest = json.loads((tmp_path / "2021-boundary-ct.json").read_text())
     assert manifest["census_year"] == 2021
     assert manifest["source_url"] == entry.url
+    assert manifest["schema_version"] == "synthpopcan-statcan-resource-v1"
+    assert manifest["source_revision"] == entry.zip_name
+    assert manifest["geography"]["identifier_column"] == "CTUID"
+    assert manifest["geography"]["dguid_column"] == "DGUID"
+    assert manifest["resources"][0]["sha256"] == file_integrity(shp_path)["sha256"]
 
 
 def test_fetch_dgrf_2021_extracts_csv_and_writes_manifest(
@@ -1085,6 +1159,11 @@ def test_fetch_dgrf_2021_extracts_csv_and_writes_manifest(
     )
     assert manifest["census_year"] == 2021
     assert manifest["catalogue_number"] == "98-26-0004"
+    assert manifest["source_revision"] == "98-26-0004-2021-final"
+    assert manifest["resource"] == {
+        "path": str(csv_path),
+        **file_integrity(csv_path),
+    }
 
 
 def test_fetch_dgrf_2021_rejects_archive_without_expected_csv(

@@ -416,6 +416,43 @@ def test_check_small_area_calibration_inputs_reports_missing_category() -> None:
     assert "candidate households do not" in report["issues"][0]["message"]
 
 
+def test_check_small_area_inputs_rejects_uncontrolled_candidate_category() -> None:
+    households = [
+        {"synthetic_household_id": "h1", "TENUR": "1"},
+        {"synthetic_household_id": "h2", "TENUR": "2"},
+        {"synthetic_household_id": "h3", "TENUR": "8"},
+    ]
+    controls = ControlTable(
+        margins=(
+            ControlMargin(
+                name="tenure",
+                dimensions=("ada", "TENUR"),
+                cells=(
+                    ControlCell({"ada": "10010001", "TENUR": "1"}, 2),
+                    ControlCell({"ada": "10010001", "TENUR": "2"}, 1),
+                ),
+            ),
+        ),
+        dimensions=("ada", "TENUR"),
+    )
+
+    report = check_small_area_calibration_inputs(
+        households,
+        controls,
+        geography_dimension="ada",
+    )
+
+    issue = next(
+        issue
+        for issue in report["issues"]
+        if issue["kind"] == "uncontrolled_candidate_category"
+    )
+    assert report["passed"] is False
+    assert issue["dimension"] == "TENUR"
+    assert issue["category"] == "8"
+    assert issue["candidate_rows"] == 1
+
+
 def test_check_small_area_inputs_reports_structural_zero_cross_category() -> None:
     households = [
         {
@@ -452,12 +489,14 @@ def test_check_small_area_inputs_reports_structural_zero_cross_category() -> Non
     )
 
     assert report["passed"] is False
-    assert report["issues"][0]["kind"] == "structural_zero"
-    assert report["issues"][0]["categories"] == {
+    issue = next(
+        issue for issue in report["issues"] if issue["kind"] == "structural_zero"
+    )
+    assert issue["categories"] == {
         "household_size": "1",
         "TENUR": "renter",
     }
-    assert report["issues"][0]["geographies"] == ["G1"]
+    assert issue["geographies"] == ["G1"]
 
 
 def test_check_small_area_inputs_reports_inconsistent_totals() -> None:

@@ -327,6 +327,17 @@ Keep the calibration report with the map so readers can distinguish controlled
 geographic patterns from variables that were only carried through from the
 candidate population.
 
+For a completed national DA or ADA run, pass its plan or output directory
+directly. The same function infers the registered boundaries and geography,
+streams all restartable household/person batches, and caches the standard map
+statistics:
+
+```python
+map_path = spc.render_small_area_map(
+    households="data/work/canada-ada-2021/plan.json",
+)
+```
+
 ## Reproducible Generation
 
 Use a fixed random seed when generating from a model package so notebook runs
@@ -386,6 +397,10 @@ The beginner API groups a small set of names around common tasks.
 - {py:func}`~synthpopcan.api.calibrate_small_area`
 - {py:func}`~synthpopcan.api.render_small_area_map`
 
+**Attach validated external context:**
+
+- {py:func}`~synthpopcan.api.enrich_population`
+
 **Inspect returned results:**
 
 - {py:class}`~synthpopcan.controls.ControlTable`
@@ -393,6 +408,7 @@ The beginner API groups a small set of names around common tasks.
 - {py:class}`~synthpopcan.api.LinkedPopulation`
 - {py:class}`~synthpopcan.api.LinkedPopulationFiles`
 - {py:class}`~synthpopcan.api.SmallAreaResult`
+- {py:class}`~synthpopcan.api.EnrichmentResult`
 
 ## Where To Go Next
 

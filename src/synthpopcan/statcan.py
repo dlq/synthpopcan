@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import tempfile
@@ -35,6 +36,7 @@ _DGRF_2021_URL = (
 )
 _STATCAN_TIMEOUT_SECONDS = 60
 _MAX_STATCAN_DOWNLOAD_BYTES = 8 * 1024 * 1024 * 1024
+_MAX_CENSUS_PROFILE_EXTRACTED_BYTES = 32 * 1024 * 1024 * 1024
 
 __all__ = [
     "BoundaryDownload",
@@ -50,6 +52,7 @@ __all__ = [
     "fetch_dgrf_2021",
     "fetch_wds_metadata",
     "fetch_wds_table",
+    "file_integrity",
     "normalize_language",
     "normalize_product_id",
     "search_wds_tables",
@@ -58,6 +61,8 @@ __all__ = [
     "wds_download_url",
     "wds_metadata_url",
 ]
+
+_STATCAN_RESOURCE_SCHEMA_VERSION = "synthpopcan-statcan-resource-v1"
 
 
 @dataclass(frozen=True)
@@ -202,6 +207,16 @@ _BOUNDARY_2021_DOWNLOADS: dict[str, BoundaryDownload] = {
         census_year=2021,
         base_url=_BOUNDARY_2021_BASE_URL,
     ),
+    "da": BoundaryDownload(
+        geo_level="da",
+        description="Dissemination areas (2021 cartographic)",
+        zip_name="lda_000b21a_e.zip",
+        shp_name="lda_000b21a_e.shp",
+        id_field="DAUID",
+        property_fields=("DGUID", "LANDAREA", "PRUID"),
+        census_year=2021,
+        base_url=_BOUNDARY_2021_BASE_URL,
+    ),
     "csd": BoundaryDownload(
         geo_level="csd",
         description="Census subdivisions (2021 cartographic)",
@@ -296,18 +311,40 @@ def fetch_boundary_zip(
             )
         shp_path = candidates[0]
 
+    resources = []
+    for suffix in (".shp", ".dbf", ".shx", ".prj", ".cpg"):
+        component = shp_path.with_suffix(suffix)
+        if component.exists():
+            resources.append(
+                {
+                    "component": suffix.removeprefix("."),
+                    "path": str(component),
+                    **file_integrity(component),
+                }
+            )
+    from synthpopcan.geography import statcan_geography_universe
+
     write_manifest(
         out_dir / f"{entry.census_year}-boundary-{entry.geo_level}.json",
         {
+            "schema_version": _STATCAN_RESOURCE_SCHEMA_VERSION,
             "source": (
                 f"Statistics Canada {entry.census_year} census cartographic "
                 "boundary files"
             ),
+            "source_revision": entry.zip_name,
             "census_year": entry.census_year,
             "geo_level": entry.geo_level,
             "description": entry.description,
             "source_url": download_url_,
             "shp_path": str(shp_path),
+            "geography": statcan_geography_universe(
+                entry.census_year,
+                entry.geo_level,
+                entry.id_field,
+                dguid_column="DGUID" if "DGUID" in entry.property_fields else None,
+            ).as_dict(),
+            "resources": resources,
         },
     )
     return shp_path
@@ -344,12 +381,18 @@ def fetch_dgrf_2021(out_dir: Path, *, url: str | None = None) -> Path:
     write_manifest(
         out_dir / "2021-dissemination-geographies-relationship.json",
         {
+            "schema_version": _STATCAN_RESOURCE_SCHEMA_VERSION,
             "source": "Statistics Canada 2021 Census",
+            "source_revision": "98-26-0004-2021-final",
             "census_year": 2021,
             "product": "Dissemination Geographies Relationship File",
             "catalogue_number": "98-26-0004",
             "source_url": download_url_,
             "csv_path": str(csv_path),
+            "resource": {
+                "path": str(csv_path),
+                **file_integrity(csv_path),
+            },
         },
     )
     return csv_path
@@ -440,6 +483,62 @@ _CENSUS_PROFILE_2021_DOWNLOADS: dict[str, CensusProfileDownload] = {
         "Aggregate dissemination areas",
         "CSV",
         "012",
+        census_year=2021,
+    ),
+    "da-all": CensusProfileDownload(
+        "da-all",
+        "Canada, provinces, territories, census divisions, census subdivisions "
+        "and dissemination areas",
+        "CSV",
+        "006",
+        census_year=2021,
+    ),
+    "da-atlantic": CensusProfileDownload(
+        "da-atlantic",
+        "Canada, provinces, territories, census divisions, census subdivisions "
+        "and dissemination areas - Atlantic only",
+        "CSV",
+        "006_Atlantic_Atlantique",
+        census_year=2021,
+    ),
+    "da-quebec": CensusProfileDownload(
+        "da-quebec",
+        "Canada, provinces, territories, census divisions, census subdivisions "
+        "and dissemination areas - Quebec only",
+        "CSV",
+        "006_Quebec",
+        census_year=2021,
+    ),
+    "da-ontario": CensusProfileDownload(
+        "da-ontario",
+        "Canada, provinces, territories, census divisions, census subdivisions "
+        "and dissemination areas - Ontario only",
+        "CSV",
+        "006_Ontario",
+        census_year=2021,
+    ),
+    "da-prairies": CensusProfileDownload(
+        "da-prairies",
+        "Canada, provinces, territories, census divisions, census subdivisions "
+        "and dissemination areas - Prairies only",
+        "CSV",
+        "006_Prairies",
+        census_year=2021,
+    ),
+    "da-british-columbia": CensusProfileDownload(
+        "da-british-columbia",
+        "Canada, provinces, territories, census divisions, census subdivisions "
+        "and dissemination areas - British Columbia only",
+        "CSV",
+        "006_BC_CB",
+        census_year=2021,
+    ),
+    "da-territories": CensusProfileDownload(
+        "da-territories",
+        "Canada, provinces, territories, census divisions, census subdivisions "
+        "and dissemination areas - Territories only",
+        "CSV",
+        "006_Territories_Territoires",
         census_year=2021,
     ),
 }
@@ -805,10 +904,24 @@ def fetch_census_profile(
     write_manifest(
         out_dir / f"{census_year}-census-profile-{entry.geo_level}.json",
         {
+            "schema_version": _STATCAN_RESOURCE_SCHEMA_VERSION,
             "source": (f"Statistics Canada {census_year} Census Profile bulk download"),
+            "source_revision": (f"census-profile-{census_year}-{entry.geono}-english"),
             **asdict(entry),
             "source_url": entry.url,
             "path": str(destination),
+            "geography_scope": {
+                "census_vintage": census_year,
+                "requested_product": entry.geo_level,
+                "note": (
+                    "Census Profile products may contain parent geography rows; "
+                    "row-level GEO_LEVEL and identifiers remain authoritative."
+                ),
+            },
+            "resource": {
+                "path": str(destination),
+                **file_integrity(destination),
+            },
         },
     )
     return destination
@@ -825,18 +938,14 @@ def extract_census_profile_csv(download_path: Path, destination: Path) -> None:
 
     try:
         with ZipFile(download_path) as archive:
-            csv_members = [
-                name
-                for name in archive.namelist()
-                if name.endswith("_English_CSV_data.csv")
-            ]
+            csv_members = _census_profile_csv_members(archive.namelist())
             if not csv_members:
                 raise ValueError("Census Profile ZIP did not contain a data CSV")
             with archive.open(csv_members[0]) as source:
                 _atomic_copy_stream(
                     source,
                     destination,
-                    max_bytes=_MAX_STATCAN_DOWNLOAD_BYTES,
+                    max_bytes=_MAX_CENSUS_PROFILE_EXTRACTED_BYTES,
                 )
     except BadZipFile:
         prefix = download_path.read_bytes()[:512].lstrip().lower()
@@ -845,6 +954,39 @@ def extract_census_profile_csv(download_path: Path, destination: Path) -> None:
                 "Census Profile download returned HTML instead of CSV or ZIP"
             ) from None
         download_path.replace(destination)
+
+
+def _census_profile_csv_members(names: list[str]) -> list[str]:
+    """Return Census Profile data members in deterministic preference order.
+
+    StatCan's bulk archives do not use one uniform filename across products.
+    Prefer the established English data suffix, but accept a single CSV (or a
+    clearly named English data CSV) when a regional archive uses another name.
+    """
+
+    csv_members = sorted(
+        name
+        for name in names
+        if not name.endswith("/") and Path(name).suffix.casefold() == ".csv"
+    )
+    preferred = [
+        name
+        for name in csv_members
+        if name.casefold().endswith("_english_csv_data.csv")
+    ]
+    if preferred:
+        return preferred
+    english_data = [
+        name
+        for name in csv_members
+        if "english" in Path(name).name.casefold()
+        and "data" in Path(name).name.casefold()
+    ]
+    if english_data:
+        return english_data
+    if len(csv_members) == 1:
+        return csv_members
+    return []
 
 
 def fetch_json(url: str) -> Any:
@@ -938,6 +1080,18 @@ def _atomic_copy_stream(source: Any, destination: Path, *, max_bytes: int) -> No
         temporary.replace(destination)
     finally:
         temporary.unlink(missing_ok=True)
+
+
+def file_integrity(path: Path) -> dict[str, str | int]:
+    """Return the byte length and lowercase SHA-256 digest of one file."""
+
+    digest = hashlib.sha256()
+    byte_size = 0
+    with path.open("rb") as source:
+        while chunk := source.read(1024 * 1024):
+            digest.update(chunk)
+            byte_size += len(chunk)
+    return {"byte_size": byte_size, "sha256": digest.hexdigest()}
 
 
 def write_manifest(path: Path, data: dict[str, Any]) -> None:

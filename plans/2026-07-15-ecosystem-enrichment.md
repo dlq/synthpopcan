@@ -1,11 +1,11 @@
 # Reusable External-Data Enrichment Framework Plan
 
-Status: planned\
+Status: active; `0.7.0` foundation implemented and validated\
 Created: 2026-07-15\
-Last updated: 2026-07-27\
+Last updated: 2026-07-29\
 Target: `0.7.0`–`0.7.2`\
-Next action: define the source-agnostic acquisition, normalization, linkage,
-and enrichment contracts, then prove them with public synthetic fixtures\
+Next action: preserve the shared contracts through the `0.7.0` release, then
+begin the separately scoped `0.7.1` Can-FED reference adapter\
 Roadmap: [PLANS.md](../PLANS.md) | [Plan index](README.md) | Geography
 prerequisite: [small-area geography](2026-07-22-small-area-geography.md)
 
