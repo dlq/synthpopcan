@@ -13,7 +13,7 @@ jobs:
     name: Extended numerical and artifact oracles
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7.0.0
+      - uses: actions/checkout@v7.0.1
       - uses: astral-sh/setup-uv@v8.3.2
       - uses: actions/setup-python@v7.0.0
         with:
@@ -32,7 +32,7 @@ jobs:
     name: Live Statistics Canada interface drift
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7.0.0
+      - uses: actions/checkout@v7.0.1
       - uses: astral-sh/setup-uv@v8.3.2
       - uses: actions/setup-python@v7.0.0
         with:
