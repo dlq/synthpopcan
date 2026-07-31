@@ -108,6 +108,7 @@ beginner generation workflows.
    tree-generate
    linked-population
    small-area
+   geodata
    enrichment
    validate
    microdata

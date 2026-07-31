@@ -14,6 +14,7 @@ data/
     statcan/census/
   derived/
     statcan/census/      # prepared public-data artifacts
+    geodata/             # maintainer-built display-boundary release assets
     models/              # durable release candidates
   work/                  # disposable builds and experiments
   private/
@@ -80,6 +81,12 @@ regional extracts, flattened tables, notebook-produced reusable intermediates,
 and prepared GeoJSON stay under `derived`. Disposable model builds and
 exploratory synthesis outputs stay under `work`. Each provider and product
 family is organized by census vintage before product type.
+
+The end-user cache managed by {doc}`geodata` is separate from this repository
+layout. It stores verified published display assets under the platform's user
+cache directory (or `SYNTHPOPCAN_GEODATA_CACHE`), not under `data/raw`. Those
+files are derived visualization geometry, not canonical Statistics Canada
+source boundaries.
 
 `data doctor` checks whether the expected directories exist. `data inspect`,
 `data schema`, and `data sample` inspect the actual files within that layout —

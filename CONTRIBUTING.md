@@ -45,7 +45,7 @@ Keep dependency direction easy to reason about:
   adapters;
 - core workflow modules such as `ipf`, `controls`, `tree`, `microdata`,
   `validation`, `diagnostics`, `small_area_synthesis`, `small_area_controls`,
-  `calibration`, `statcan`, `sources`, `localdata`, `map_render`, and
+  `calibration`, `statcan`, `geodata`, `sources`, `localdata`, `map_render`, and
   `benchmarks` should stay independent of CLI and UI code;
 - `webapp.py`, `web_wds.py`, and `src/synthpopcan/web/*.mjs` are local web app
   and browser-side adapters.
@@ -129,6 +129,39 @@ Montreal assets were prepared separately.
 
 Review every generated package under the **Data And Model Safety** policy above,
 then complete the **Model Package Release** checklist in `RELEASING.md`.
+
+## Building Prepared Geodata
+
+Prepared geodata is display-only derived geometry published separately from the
+Python wheel. Building it requires the canonical local Statistics Canada
+boundary inputs documented by the scripts; those large inputs and generated
+release files remain ignored.
+
+Install the Node dependencies, then create topology-preserving display copies:
+
+```bash
+npm ci
+npm run simplify:all-boundaries
+```
+
+For a bounded rebuild, use the level-specific scripts declared in
+`package.json`. After reviewing the outputs, build compressed assets and the
+versioned catalogue with an immutable release base URL:
+
+```bash
+SYNTHPOPCAN_GEODATA_RELEASE_BASE_URL="https://github.com/dlq/synthpopcan/releases/download/geodata-v1" \
+  npm run build:geodata-release
+```
+
+The builder writes `data/derived/geodata/release-assets/v1/`. It records Census
+year, geography level, optional PRUID, representation, byte sizes, and separate
+compressed and unpacked SHA-256 values. Review the complete catalogue rather
+than trusting filenames, then follow the **Prepared Geodata Release** checklist
+in `RELEASING.md`.
+
+Never use a prepared display file to replace the canonical analytical boundary.
+See [ADR-0009](adr/0009-separate-display-and-analytical-geodata.md) for the
+architectural boundary.
 
 ## Documentation
 

@@ -24,6 +24,7 @@ It complements, rather than replaces, the other project records:
 | [0006](0006-canonical-release-and-archive-authorities.md) | Accepted (retrospective) | Give each publication surface a defined authority. |
 | [0007](0007-explicit-census-geography-identity.md) | Accepted (retrospective) | Identify Census geography by vintage, level, namespace, and identifier. |
 | [0008](0008-immutable-enrichment-sidecars.md) | Accepted (retrospective) | Add external context through governed, immutable sidecars. |
+| [0009](0009-separate-display-and-analytical-geodata.md) | Accepted (retrospective) | Distribute verified display geometry separately from canonical analytical boundaries. |
 
 ## Recording A Decision
 

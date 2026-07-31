@@ -61,6 +61,17 @@ SynthPopCan has **two tree-family model types**:
   or split patterns more flexibly than exact frequency groups, but it still
   needs support, purity, and validation checks.
 
+Reading a portable CART model and generating from it do not import
+scikit-learn. In the unreleased `0.7.0` package, only **training** a CART model
+requires the optional dependency:
+
+```bash
+python -m pip install "synthpopcan[model-build]"
+```
+
+Source-checkout development environments already include this dependency. See
+{doc}`installation` before adding it to a separate environment.
+
 The [scikit-learn decision-tree guide](https://scikit-learn.org/stable/modules/tree.html) explains **CART-style** decision trees as
 models that split records by feature values to predict a target class. In
 SynthPopCan, the point is not prediction for its own sake. The point is to
@@ -394,6 +405,10 @@ between conditioning columns and generated target outcomes. Use `cart` when exac
 conditioning groups are too sparse and a decision tree can pool similar cases.
 Neither method removes the need for validation.
 
+`--method cart` requires the `model-build` installation extra described above.
+The default `conditional-frequency` method remains available in the base
+installation.
+
 ### `models build train-linked`
 
 Trains household and person models from mixed hierarchical microdata.
@@ -660,6 +675,11 @@ The argument can be a local package JSON path or a packaged model ID from
 **Audit reports low support:** reduce the number of conditioning columns, use a
 larger geography, combine categories, or switch from an exact
 `conditional-frequency` model to a CART model with sensible leaf-size settings.
+
+**CART training says the model-build extra is missing:** install it in the same
+Python environment that runs `synthpopcan` with
+`python -m pip install "synthpopcan[model-build]"`. We do not need the extra to
+generate from an existing portable CART model.
 
 **Audit reports high purity:** inspect the conditioning columns. Remove
 identifier-like columns, overly detailed geography, or columns that effectively

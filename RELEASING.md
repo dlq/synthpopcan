@@ -136,3 +136,40 @@ Before publishing a model package:
 Passing SynthPopCan's checks means the artifact passed the project's current
 release-readiness criteria. It is not a claim of official approval, legal
 privacy certification, or suitability for every research use.
+
+## Prepared Geodata Release
+
+Prepared display boundaries use their own release line and are not Python-wheel
+or model-package assets. Before publishing them:
+
+1. Confirm every source is a canonical Statistics Canada boundary with recorded
+   Census vintage, product provenance, and licence attribution.
+
+1. Run the simplification tests and build the intended display files as
+   described in `CONTRIBUTING.md`.
+
+1. Build the compressed assets with
+   `SYNTHPOPCAN_GEODATA_RELEASE_BASE_URL` pinned to the final immutable release
+   tag URL.
+
+1. Audit `geodata-catalogue.json`: expected year/level/PRUID coverage, unique
+   IDs and filenames, exact release URLs, non-empty sizes, representation, and
+   both SHA-256 fields must be present.
+
+1. Independently recompute the compressed checksums, decompress representative
+   and edge-case assets, and verify their unpacked checksums and GeoJSON shape.
+
+1. Create the dedicated GitHub Release, upload every catalogue asset and the
+   catalogue itself, then confirm the release is not marked as the latest
+   Python software release.
+
+1. Run a bounded remote smoke test through both the CLI and library using a
+   fresh `SYNTHPOPCAN_GEODATA_CACHE`. Check exact national and regional matches,
+   cache reuse, and one expected refusal for a mismatched scope.
+
+1. Record the geodata tag, catalogue digest, source commit, audit result, and
+   smoke-test command in the release notes.
+
+Publishing verifies the identity and integrity of display derivatives. It does
+not make them suitable for spatial measurement, geographic reconciliation, or
+other analytical uses reserved for canonical boundaries.

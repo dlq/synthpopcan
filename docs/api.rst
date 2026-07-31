@@ -27,9 +27,9 @@ page are supported advanced APIs, but may still evolve before version 1.0. Other
 module attributes and ``__all__`` declarations are implementation details unless
 they are listed here.
 
-The geography, enrichment, Québec DA proof, and national small-area APIs are
-implemented on the development branch for the unreleased ``0.7.0`` line. They
-are not present in the published PyPI ``0.6.3`` package.
+The geography, geodata, enrichment, Québec DA proof, and national small-area
+APIs are implemented on the development branch for the unreleased ``0.7.0``
+line. They are not present in the published PyPI ``0.6.3`` package.
 
 Top-Level Beginner API
 ----------------------
@@ -112,6 +112,10 @@ Geography and Enrichment
              run_national_cached_batch,
              build_national_geography_summary
    :show-inheritance:
+
+.. automodule:: synthpopcan.geodata
+   :members: load_geodata_catalogue, fetch_display_boundaries,
+             geodata_cache_dir
 
 Controls
 --------

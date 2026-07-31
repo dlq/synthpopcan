@@ -2,7 +2,7 @@
 
 Status: implementation complete; awaiting the `0.7.0` release\
 Created: 2026-07-22\
-Last updated: 2026-07-29\
+Last updated: 2026-07-31\
 Target: `0.7.0`, with later expansion gated by evidence\
 Next action: preserve the reviewed proof evidence through the `0.7.0` release\
 Roadmap: [PLANS.md](../PLANS.md) | [Plan index](README.md)
@@ -75,9 +75,11 @@ PUMF condition, records the source-model evidence, seed, category support,
 integrity, and timings, and verifies that cache on resume. Batches stage output
 atomically, checkpoint after every result, can run in bounded parallel
 processes, and defer optional detailed maps. Completed plans receive aggregate
-CSV/JSON evidence, a polygon choropleth using display-only fixed-grid-quantized
-geometry, and a separate compact point overview derived from canonical feature
-extents. Neither display product alters the analytical boundaries.
+CSV/JSON evidence, a polygon choropleth that prefers checksummed,
+topology-preserving `geodata-v1` display geometry and retains a fixed-grid
+canonical-boundary fallback, and a separate compact point overview derived from
+canonical feature extents. Neither display product alters the analytical
+boundaries.
 
 The first real Newfoundland and Labrador ADA timing exercise used a 10,000
 household `PR=10` pool. Model loading took 41.5 seconds and the one-time pool

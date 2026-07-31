@@ -99,6 +99,24 @@ This is the best path when we want to run **command-line examples**, use the
 **beginner API in a notebook**, or build small teaching workflows without
 editing SynthPopCan itself.
 
+````{admonition} Optional CART model training in 0.7.0
+:class: note
+
+The unreleased `0.7.0` package keeps scikit-learn out of the ordinary runtime
+installation. Reading portable model JSON, generating populations, and training
+`conditional-frequency` models do not require it. Install the model-building
+extra only when we need to **train CART models**:
+
+```bash
+python -m pip install "synthpopcan[model-build]"
+```
+
+The published `0.6.3` package still installs scikit-learn as a regular
+dependency. A source checkout's development environment includes it through
+`uv sync`.
+
+````
+
 For notebook work, install SynthPopCan into the same Python environment that
 [Jupyter](https://jupyter.org/) uses. A minimal notebook smoke test is:
 

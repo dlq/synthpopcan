@@ -4,6 +4,13 @@ All notable public changes to SynthPopCan are tracked here.
 
 ## Unreleased
 
+- Publish the independently versioned `geodata-v1` display-boundary catalogue
+  and checksummed 2016 national and 2021 national/regional assets; add verified,
+  atomic runtime retrieval and caching; and prefer topology-preserving prepared
+  geometry for national maps without replacing canonical analytical boundaries.
+- Make scikit-learn an optional `model-build` dependency for CART training.
+  Portable frequency/CART model reading and population generation remain in the
+  base runtime, as does conditional-frequency training.
 - Fix permanent evidence attachment by giving the checkout-free release job an
   explicit GitHub repository target.
 - Add explicit versioned Census geography universe, identity, and relationship
@@ -35,9 +42,10 @@ All notable public changes to SynthPopCan are tracked here.
   summary. The existing `geo map` CLI and `render_small_area_map` API now accept
   a completed national plan or its directory, stream and cache the standard
   household/person map statistics across every batch, and render the familiar
-  12-variable polygon choropleth from display-only fixed-grid-quantized
-  boundaries. The compact point overview remains separate and canonical
-  StatCan geometry is unchanged.
+  12-variable polygon choropleth. It prefers separately published,
+  topology-preserving display geometry when available and retains the
+  fixed-grid canonical-boundary fallback. The compact point overview remains
+  separate and canonical StatCan geometry is unchanged.
 - Exclude hierarchical-PUMF `TENUR=8` (“Not available”) households and their
   linked persons from national tenure-calibration pools, record the exclusions,
   invalidate incompatible caches, and reject any uncontrolled candidate

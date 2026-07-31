@@ -15,7 +15,13 @@ __all__ = ["fetch_display_boundaries", "geodata_cache_dir", "load_geodata_catalo
 
 
 def geodata_cache_dir() -> Path:
-    """Return the user cache directory for downloaded display boundaries."""
+    """Return the effective cache directory for prepared display boundaries.
+
+    ``SYNTHPOPCAN_GEODATA_CACHE`` takes precedence. Without an override, macOS
+    uses its conventional user cache tree and other platforms use
+    ``XDG_CACHE_HOME`` or ``~/.cache``. The directory is not created until an
+    asset is fetched.
+    """
 
     override = os.environ.get("SYNTHPOPCAN_GEODATA_CACHE")
     if override:
@@ -27,7 +33,13 @@ def geodata_cache_dir() -> Path:
 
 
 def load_geodata_catalogue(catalogue: str | Path | None = None) -> dict[str, object]:
-    """Load a local or HTTPS geodata release catalogue."""
+    """Load and validate a local or HTTP(S) geodata release catalogue.
+
+    ``catalogue`` overrides ``SYNTHPOPCAN_GEODATA_CATALOGUE``. The returned
+    mapping must use ``synthpopcan-geodata-catalogue-v1``; asset-level identity
+    and checksums are validated when :func:`fetch_display_boundaries` selects a
+    file.
+    """
 
     source = catalogue or os.environ.get("SYNTHPOPCAN_GEODATA_CATALOGUE")
     if source is None:
@@ -55,7 +67,14 @@ def fetch_display_boundaries(
     pruid: str | None = None,
     catalogue: str | Path | None = None,
 ) -> Path:
-    """Fetch and checksum-verify a prepared display GeoJSON into the cache."""
+    """Fetch one exact prepared display GeoJSON into the verified user cache.
+
+    Selection requires a unique Census year, geography level, and optional
+    PRUID match. The compressed download and unpacked GeoJSON are checked
+    against their separate catalogue SHA-256 values before an atomic install.
+    A valid existing unpacked file is reused. These display boundaries are not
+    substitutes for canonical analytical geometry.
+    """
 
     payload = load_geodata_catalogue(catalogue)
     assets = payload.get("assets")

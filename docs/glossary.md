@@ -174,6 +174,16 @@ or DA.
 wall-to-wall because they exist only in tracted urban areas; ADAs and DAs are
 wall-to-wall.
 
+**Canonical analytical boundary**
+: The authoritative publisher-derived geometry retained for geographic
+selection, relationships, reconciliation, and measurement. A simplified map
+copy does not replace it.
+
+**Prepared display boundary**
+: A versioned, checksummed derivative with reduced geometric detail for maps.
+It can improve display size and speed, but it should not be used for analytical
+spatial operations.
+
 ## Statistics Canada and Source Terms
 
 **Statistics Canada**

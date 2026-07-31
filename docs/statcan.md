@@ -232,6 +232,12 @@ to be downloaded and expanded as one object. Do not substitute `csd` for
 The separate `geo boundaries` command uses the shorter geography codes because
 it addresses boundary products rather than Census Profile bulk tables.
 
+Use `geo boundaries` when the workflow needs a canonical publisher-derived
+boundary prepared from a Statistics Canada product. Use {doc}`geodata` only
+when a map can use a smaller, separately published **display derivative**. A
+prepared display asset is not a replacement for the canonical boundary in
+selection, reconciliation, or measurement.
+
 These downloaded files are large and use Statistics Canada's characteristic-row
 format, where each row is a named demographic characteristic rather than a
 column. Use `controls census-profile inspect` to search it by keyword before

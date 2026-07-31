@@ -18,6 +18,8 @@ corresponding command-line page first:
   discovery.
 - [Small-Area Linked Synthesis](small-area.md) explains household-first
   calibration, geography controls, integerization, and mapping.
+- [Prepared Display Boundaries](geodata.md) explains verified display-only
+  geometry and why it remains separate from canonical analytical boundaries.
 - [External-Data Enrichment](enrichment.md) explains source authority,
   immutable resource revisions, geography-safe sidecars, and the limits of a
   successful join.
@@ -579,6 +581,45 @@ the report. Use `verify_enrichment_manifest` after copying or restoring the
 bundle. Start with {doc}`enrichment` before using these objects; a technically
 valid sidecar is not evidence that its variables support a substantive claim.
 
+## Prepared Display Boundaries
+
+**Unreleased 0.7.0 API; network required for an HTTPS catalogue.** The geodata
+library retrieves the same display-only assets as the `geodata` command group:
+
+```python
+from synthpopcan.geodata import (
+    fetch_display_boundaries,
+    geodata_cache_dir,
+    load_geodata_catalogue,
+)
+
+catalogue_url = (
+    "https://github.com/dlq/synthpopcan/releases/download/"
+    "geodata-v1/geodata-catalogue.json"
+)
+
+catalogue = load_geodata_catalogue(catalogue_url)
+boundaries = fetch_display_boundaries(
+    2021,
+    "da",
+    pruid="24",
+    catalogue=catalogue_url,
+)
+
+print(catalogue["release_version"], boundaries, geodata_cache_dir())
+```
+
+The fetcher requires one exact year, geography level, and regional scope; it
+does not choose a merely similar asset. It validates the compressed archive and
+the unpacked GeoJSON against separate SHA-256 values, then installs the file
+atomically in the cache.
+
+Keep the catalogue metadata with the map provenance. These functions establish
+which published display bytes we used; they do not establish that the geometry
+matches a population's Census vintage, identifier namespace, or control
+universe. Start with {doc}`geodata` for the coverage table and the distinction
+between display and analytical geometry.
+
 ## Tree Models
 
 The tree library exposes two model families: `FrequencyTreeModel`, which stores
@@ -586,6 +627,12 @@ conditional aggregate outcomes, and `CartTreeModel`, which stores a serialized
 scikit-learn CART classifier. The command-line [Tree Models](tree.md) chapter
 discusses the methodological risks; the library API gives us the objects needed
 to train, audit, serialize, and generate from those models.
+
+Portable frequency and CART models can be read and used for generation with the
+base installation. In the unreleased `0.7.0` package, calling
+`train_cart_model` requires the optional `model-build` extra; frequency-model
+training does not. See [Installation](installation.md) for the environment
+command.
 
 When we are ready to train from a file, the training CSV should contain the
 same target and conditioning columns chosen in the microdata step above. The

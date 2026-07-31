@@ -6,6 +6,7 @@ import inspect
 import json
 import re
 import shlex
+import tomllib
 from pathlib import Path
 
 import click
@@ -213,6 +214,7 @@ def test_command_line_navigation_follows_workflow_dependencies() -> None:
         "ipf",
         "tree-generate",
         "small-area",
+        "geodata",
         "validate",
         "microdata",
         "tree",
@@ -356,6 +358,31 @@ def test_enrichment_source_profile_example_uses_the_current_schema() -> None:
     assert profile.geography is not None
     assert profile.geography.census_vintage == 2021
     assert profile.geography.geography_level == "da"
+
+
+def test_geodata_and_optional_cart_dependencies_are_documented() -> None:
+    """Keep new distribution boundaries visible in user-facing guidance."""
+
+    pyproject = tomllib.loads(Path("pyproject.toml").read_text())
+    dependencies = pyproject["project"]["dependencies"]
+    extras = pyproject["project"]["optional-dependencies"]
+    assert not any(value.startswith("scikit-learn") for value in dependencies)
+    assert any(value.startswith("scikit-learn") for value in extras["model-build"])
+
+    installation = Path("docs/installation.md").read_text()
+    tree = Path("docs/tree.md").read_text()
+    geodata = Path("docs/geodata.md").read_text()
+    docs_index = Path("docs/index.rst").read_text()
+    for text in (installation, tree):
+        assert "synthpopcan[model-build]" in text
+    for required in (
+        "SYNTHPOPCAN_GEODATA_CATALOGUE",
+        "synthpopcan geodata fetch 2021 da --pruid 24",
+        "synthpopcan geodata cache-dir",
+        "display-only",
+    ):
+        assert required in geodata
+    assert re.search(r"^\s+geodata$", docs_index, re.MULTILINE)
 
 
 def test_beginner_notebook_code_cells_execute(tmp_path: Path, monkeypatch) -> None:

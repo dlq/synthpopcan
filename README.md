@@ -27,11 +27,11 @@ Near-term goals:
 1. Maintain a local web app for configuring runs, inspecting controls, generating from prepared models, validating outputs, and downloading results.
 
 The development branch now contains the unreleased `0.7.0` geography contracts,
-national DA/ADA orchestration, and reusable external-data enrichment framework
-for public, locally supplied, licensed, and restricted sources. The published
-`0.6.3` package does not yet contain those commands. Can-FED v2 and ODEF v3 are
-planned as contrasting area-attribute and facility reference adapters for
-`0.7.1` and `0.7.2`; later health, education, built, social, and environmental
+national DA/ADA orchestration, verified prepared-display-boundary retrieval,
+and reusable external-data enrichment framework for public, locally supplied,
+licensed, and restricted sources. The published `0.6.3` package does not yet
+contain those commands. Can-FED v2 and ODEF v3 are planned as contrasting
+area-attribute and facility reference adapters for `0.7.1` and `0.7.2`; later
 integrations remain demand-, authority-, and validation-gated.
 
 Detailed documentation is published at
@@ -66,6 +66,10 @@ Install the published package from PyPI:
 ```bash
 python3 -m pip install synthpopcan
 ```
+
+The base installation is enough to generate from portable frequency or CART
+models. On the unreleased `0.7.0` development line, only researchers training
+new CART models need `python3 -m pip install "synthpopcan[model-build]"`.
 
 Then inspect the command line:
 
@@ -128,6 +132,7 @@ README:
 | Use the local browser app | [`docs/web-app.md`](docs/web-app.md) |
 | Generate with IPF from margin/control tables | [`docs/ipf.md`](docs/ipf.md), [`docs/controls.md`](docs/controls.md), [`docs/statcan.md`](docs/statcan.md) |
 | Assign linked households and people to small areas | [`docs/small-area.md`](docs/small-area.md) |
+| Fetch verified display-only map boundaries | [`docs/geodata.md`](docs/geodata.md) |
 | Attach governed external context as a sidecar layer | [`docs/enrichment.md`](docs/enrichment.md) |
 | Use the beginner Python API | [`docs/library-getting-started.md`](docs/library-getting-started.md) |
 | Work with local data layout and `data doctor` | [`docs/data.md`](docs/data.md) |

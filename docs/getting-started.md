@@ -48,6 +48,7 @@ steps.
 | We have a reviewed model package | {doc}`tree-generate` |
 | We need to train or audit a model | {doc}`tree` |
 | We need CT, CSD, ADA, or DA assignment | {doc}`small-area` |
+| We need smaller verified map geometry | {doc}`geodata` |
 | We need to attach external context | {doc}`enrichment` |
 | We need to inspect data first | {doc}`data` |
 | We need to check results | {doc}`validate` |
@@ -176,6 +177,31 @@ Use this path when:
 Dissemination blocks belong later in the workflow. They are better understood
 as a **placement geography** after households have been calibrated to CTs,
 CSDs, ADAs, or DAs.
+
+(if-we-need-map-geometry)=
+
+```{rubric} If We Need Smaller Map Geometry
+:class: workflow-step
+```
+
+Start with {doc}`geodata` after reading {doc}`small-area`.
+
+Prepared geodata is a **presentation layer**, not another calibration step. It
+downloads a versioned, checksummed display copy of a canonical Census boundary
+so a map can be smaller and faster. It does not select places, create controls,
+or change the geography assigned to synthetic households and people.
+
+Use this path when:
+
+- the population already has an explicit Census geography;
+- a canonical boundary is too large for convenient interactive display;
+- the `geodata-v1` catalogue contains the exact year, level, and regional scope
+  we need; and
+- we will retain the canonical analytical-boundary provenance separately.
+
+The `geodata` commands are an **unreleased 0.7.0 development feature**. The
+display assets themselves are already published in the separately versioned
+`geodata-v1` release.
 
 (if-we-need-external-context)=
 

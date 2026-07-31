@@ -24,13 +24,15 @@ For example:
 synthpopcan data doctor
 synthpopcan statcan wds search "population age sex"
 synthpopcan ipf fit --help
+synthpopcan geodata fetch --help
 synthpopcan enrich import --help
 ```
 
-Here, `data`, `statcan`, `ipf`, and `enrich` are **command groups**. A group usually
-contains more specific **subcommands**, such as `doctor`, `search`, or `fit`.
-Named options such as `--seed`, `--controls`, and `--out` tell that subcommand
-which files to read, what choices to apply, and where to write its result.
+Here, `data`, `statcan`, `ipf`, `geodata`, and `enrich` are **command groups**. A
+group usually contains more specific **subcommands**, such as `doctor`, `search`,
+or `fit`. Named options such as `--seed`, `--controls`, and `--out` tell that
+subcommand which files to read, what choices to apply, and where to write its
+result.
 
 The examples in these docs omit the shell prompt, so we enter the command
 beginning with `synthpopcan`. A backslash (`\`) at the end of a line means that
@@ -132,6 +134,19 @@ The national DA/ADA commands are implemented on the development branch but are
 not included in the published `0.6.3` package. Use a source checkout until
 `0.7.0` is published.
 ```
+
+### Prepared Display Boundaries
+
+Use {doc}`geodata` when a map needs smaller, prepared display geometry rather
+than a new conversion from the canonical Statistics Canada boundary product.
+The `geodata-v1` release contains checksummed 2016 national and 2021 national or
+province/territory assets. These files are for **visualization only**: they do
+not replace canonical boundaries for geographic selection, measurement, or
+reconciliation.
+
+The `geodata` command group is an unreleased `0.7.0` development feature. The
+separately versioned `geodata-v1` assets are already published so their bytes
+and checksums remain stable while the CLI proceeds toward the software release.
 
 ### External Context
 

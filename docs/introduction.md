@@ -187,9 +187,10 @@ aggregate totals, [IPF](ipf.md) when we are fitting seed rows to controls,
 conditional model, [Tree Models](tree.md) when we are training, auditing, or
 packaging a new model,
 [Small-Area Linked Synthesis](small-area.md) when assigning linked outputs to
-CTs, CSDs, ADAs, or DAs, [External-Data Enrichment](enrichment.md) when adding
-governed context as a sidecar, and [Validate](validate.md) when we are checking
-outputs.
+CTs, CSDs, ADAs, or DAs, [Prepared Display Boundaries](geodata.md) when a map
+needs verified display-only geometry, [External-Data Enrichment](enrichment.md)
+when adding governed context as a sidecar, and [Validate](validate.md) when we
+are checking outputs.
 If we prefer Python notebooks to command-line workflows, start with
 [Getting Started With the Beginner API](library-getting-started.md).
 

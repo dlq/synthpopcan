@@ -1,7 +1,7 @@
 # SynthPopCan Plan
 
 Status: release-phased roadmap\
-Last updated: 2026-07-29\
+Last updated: 2026-07-31\
 Current release: `0.6.3`
 
 ## Current Focus
@@ -86,6 +86,13 @@ IPF also shares structured workflow orchestration. Model and small-area CLI
 orchestration still differs in places from the durable web workflow, so parity
 tests execute the recorded fixed-seed recipes, including model conditions,
 uploaded candidates, fitted weights, and optional map creation.
+
+The development branch additionally publishes a separately versioned
+`geodata-v1` catalogue of checksummed display-only boundaries and implements
+verified runtime retrieval. Canonical Statistics Canada geometry remains the
+analytical input. The branch also moves scikit-learn behind the optional
+`model-build` extra: CART training needs it, while portable model reading,
+generation, and conditional-frequency training do not.
 
 The completed runtime and linked-schema implementation records are archived:
 

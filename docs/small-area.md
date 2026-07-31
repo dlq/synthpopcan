@@ -366,10 +366,12 @@ process reads candidates and realizes a population independently.
 Detailed per-batch maps are deferred and opt-in with `--maps`. After a complete
 plan, the default `--national-map` writes the familiar polygon choropleth as
 `national-map.html` alongside `national-geography-summary.csv` and
-`national-summary.json`. The embedded polygons are a display-only derivative:
-all coordinates are snapped to one fixed grid so shared boundary vertices stay
-aligned, then consecutive duplicates are removed. The 1.64 GB canonical
-StatCan boundary source is unchanged and remains the analytical geometry.
+`national-summary.json`. The embedded polygons are a display-only derivative.
+The renderer prefers topology-preserving prepared boundaries found in the
+plan; a jurisdiction-scoped map can retrieve the matching `geodata-v1` asset
+when its catalogue is configured. Otherwise, the renderer falls back to a
+fixed-grid display conversion of the canonical boundary. In every route, the
+canonical StatCan source is unchanged and remains the analytical geometry.
 
 The lighter `national-points-map.html` is retained as a secondary overview.
 Its markers are the bounding-box centres of the unchanged canonical features;
@@ -643,6 +645,11 @@ The `map` command generates a self-contained MapLibre GL JS choropleth HTML file
 from the synthesis output. It reprojects StatCan LCC boundary shapefiles to
 WGS-84 automatically; no external GIS tools are required.
 
+For repeated or large maps, {doc}`geodata` can fetch a smaller, checksummed
+display-only boundary from the published `geodata-v1` catalogue. Use canonical
+Statistics Canada boundaries for analytical selection and reconciliation; use
+the prepared copy only for presentation.
+
 ```bash
 synthpopcan geo map quebec-city-population/ \
   --boundaries data/derived/statcan/census/2016/boundaries/2016-boundary-ct.geojson \
@@ -653,7 +660,9 @@ synthpopcan geo map quebec-city-population/ \
 
 Pass `--boundaries` either as a `.geojson` produced by `geo boundaries`
 or as a path to the original StatCan `.shp` file (reprojection is automatic in
-both cases).
+both cases). It may also be the verified `.geojson` path printed by
+`synthpopcan geodata fetch` when the map uses the same Census vintage and
+geography universe.
 
 The resulting file opens directly in any browser. It requires an internet
 connection to fetch base-map tiles from [OpenFreeMap](https://openfreemap.org/) but otherwise embeds all
@@ -1046,6 +1055,12 @@ actual output.
 **A partial national map is refused or misleading:** pass one or more completed
 `--jurisdiction` values. A national map is produced automatically only when the
 whole plan is complete.
+
+**A prepared national-map boundary is unavailable:** configure the published
+geodata catalogue as described in {doc}`geodata`, place a matching
+`*-display-topo.geojson` in the plan's `boundaries/` directory, or retain the
+canonical-boundary fallback. Do not substitute a display asset from another
+Census vintage, level, or jurisdiction.
 
 **One or more fits do not converge:** inspect candidate category support,
 control universes, largest residuals, and the realized integer result. More

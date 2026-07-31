@@ -1,6 +1,6 @@
 # SynthPopCan Research Notes
 
-Date: 2026-07-30
+Date: 2026-07-31
 
 ## Purpose
 
@@ -49,6 +49,14 @@ Current codebase status, 2026-07-30:
   external-data enrichment contracts, immutable resource records, governed
   normalized sidecars, and manifests that verify the base population remains
   unchanged. Can-FED and ODEF source-specific adapters remain later work.
+- The separately versioned `geodata-v1` release distributes checksummed,
+  display-only 2016 and 2021 boundary assets outside the Python wheel. The
+  development CLI and library select exact year/level/PRUID catalogue entries,
+  verify compressed and unpacked hashes, and cache them without treating
+  simplified geometry as the analytical boundary authority.
+- CART model training now owns the optional scikit-learn dependency. Portable
+  model reading and generation, along with conditional-frequency training,
+  remain in the base runtime.
 - The older phase sketch near the end of this file should be read as research
   background, not the live implementation checklist.
 
