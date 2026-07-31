@@ -67,6 +67,7 @@ from synthpopcan.controls import (
     read_wds_selection,
     write_control_table,
 )
+from synthpopcan.geodata import fetch_display_boundaries, geodata_cache_dir
 from synthpopcan.localdata import inspect_local_data_layout
 from synthpopcan.models import (
     fetch_model_package,
@@ -119,6 +120,56 @@ cli.add_command(microdata)
 cli.add_command(ipf)
 cli.add_command(small_area)
 cli.add_command(enrich)
+
+
+@cli.group()
+def geodata() -> None:
+    """Fetch and inspect prepared display-boundary assets."""
+
+
+@geodata.command("fetch")
+@click.argument("census_year", type=int)
+@click.argument(
+    "geography_level",
+    type=click.Choice(["ct", "da", "ada", "csd"]),
+)
+@click.option(
+    "--pruid",
+    default=None,
+    help="Province/territory PRUID for regional assets.",
+)
+@click.option(
+    "--catalogue",
+    type=_PATH,
+    default=None,
+    help="Local geodata catalogue JSON.",
+)
+def fetch_geodata(
+    census_year: int,
+    geography_level: str,
+    pruid: str | None,
+    catalogue: Path | None,
+) -> None:
+    """Download and verify a prepared display-boundary GeoJSON."""
+
+    try:
+        path = fetch_display_boundaries(
+            census_year,
+            geography_level,
+            pruid=pruid,
+            catalogue=catalogue,
+        )
+    except (OSError, ValueError) as exc:
+        raise click.ClickException(str(exc)) from exc
+    print_success(f"Prepared display boundaries ready: {path}")
+    click.echo(path)
+
+
+@geodata.command("cache-dir")
+def geodata_cache_directory() -> None:
+    """Print the local cache directory for prepared display boundaries."""
+
+    click.echo(geodata_cache_dir())
 
 
 @cli.group()

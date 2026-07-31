@@ -5,6 +5,10 @@
   "scripts": {
     "check:web": "biome check src/synthpopcan/web tests/web playwright.config.mjs",
     "format:web": "biome format --write src/synthpopcan/web tests/web",
+    "simplify:all-boundaries": "node --max-old-space-size=12288 scripts/simplify_all_boundaries.mjs",
+    "simplify:boundaries": "node scripts/simplify_boundaries.mjs",
+    "simplify:csd-partitions": "node --max-old-space-size=12288 scripts/simplify_csd_partitions.mjs",
+    "build:geodata-release": "node scripts/build_geodata_release.mjs",
     "test:web": "node --test tests/web/*.test.mjs",
     "test:web:coverage": "c8 --all --include='src/synthpopcan/web/*.mjs' --exclude='src/synthpopcan/web/app.mjs' --exclude='src/synthpopcan/web/form-utils.mjs' --exclude='src/synthpopcan/web/result-ui.mjs' --exclude='src/synthpopcan/web/run-list.mjs' --exclude='src/synthpopcan/web/runs-workbench.mjs' --exclude='src/synthpopcan/web/small-area-workflow.mjs' --check-coverage --lines=40 --branches=60 --functions=75 --reporter=text --reporter=json-summary node --test tests/web/*.test.mjs",
     "test:web:e2e": "playwright test"
@@ -12,6 +16,9 @@
   "devDependencies": {
     "@biomejs/biome": "^2.5.5",
     "@playwright/test": "^1.62.0",
-    "c8": "^12.0.0"
+    "c8": "^12.0.0",
+    "topojson-client": "^3.1.0",
+    "topojson-server": "^3.0.1",
+    "topojson-simplify": "^3.0.3"
   }
 }

@@ -19,7 +19,7 @@ import json
 import math
 import statistics
 import tempfile
-from collections.abc import Callable, Iterator, Mapping
+from collections.abc import Callable, Iterator, Mapping, Sequence
 from html import escape as html_escape
 from pathlib import Path
 from typing import Any
@@ -1376,12 +1376,13 @@ def render_geography_summary_polygon_map(
     geography_column: str,
     out_path: Path,
     display_boundaries_path: Path | None = None,
+    prepared_display_boundary_paths: Sequence[Path] | None = None,
     geography_id_field: str = "geo_id",
     title: str = "National Synthetic Population",
     coord_precision: int = 3,
     geography_context: Mapping[str, object] | None = None,
 ) -> dict[str, object]:
-    """Render an aggregate choropleth from display-only quantized boundaries.
+    """Render an aggregate choropleth from prepared or fallback boundaries.
 
     Coordinates are snapped to one fixed decimal grid before consecutive
     duplicates are removed. Because every feature uses the same grid, shared
@@ -1392,39 +1393,48 @@ def render_geography_summary_polygon_map(
     if coord_precision < 0:
         raise ValueError("coord_precision must be non-negative")
     summaries = _read_geography_summaries(summary_path, geography_column)
+    boundary_paths = tuple(prepared_display_boundary_paths or (boundaries_path,))
+    uses_prepared_display = prepared_display_boundary_paths is not None
     features: list[dict[str, object]] = []
     extent = [math.inf, math.inf, -math.inf, -math.inf]
     matched: set[str] = set()
     collapsed_rings = 0
-    for feature in _iter_geojson_features_for_partition(boundaries_path):
-        if not isinstance(feature, Mapping):
-            continue
-        properties = feature.get("properties")
-        geometry = feature.get("geometry")
-        if not isinstance(properties, Mapping) or not isinstance(geometry, Mapping):
-            continue
-        identifier = str(properties.get(geography_id_field, "")).strip()
-        if identifier not in summaries:
-            continue
-        simplified, dropped = _quantize_display_geometry(geometry, coord_precision)
-        collapsed_rings += dropped
-        if simplified is None:
-            continue
-        bounds = _geometry_coordinate_bounds(simplified["coordinates"])
-        if bounds is None:
-            continue
-        extent[0] = min(extent[0], bounds[0])
-        extent[1] = min(extent[1], bounds[1])
-        extent[2] = max(extent[2], bounds[2])
-        extent[3] = max(extent[3], bounds[3])
-        features.append(
-            {
-                "type": "Feature",
-                "properties": summaries[identifier],
-                "geometry": simplified,
-            }
-        )
-        matched.add(identifier)
+    for boundary_path in boundary_paths:
+        for feature in _iter_geojson_features_for_partition(boundary_path):
+            if not isinstance(feature, Mapping):
+                continue
+            properties = feature.get("properties")
+            geometry = feature.get("geometry")
+            if not isinstance(properties, Mapping) or not isinstance(geometry, Mapping):
+                continue
+            identifier = str(properties.get(geography_id_field, "")).strip()
+            if identifier not in summaries:
+                continue
+            if uses_prepared_display:
+                simplified, dropped = dict(geometry), 0
+            else:
+                simplified, dropped = _quantize_display_geometry(
+                    geometry,
+                    coord_precision,
+                )
+            collapsed_rings += dropped
+            if simplified is None:
+                continue
+            bounds = _geometry_coordinate_bounds(simplified["coordinates"])
+            if bounds is None:
+                continue
+            extent[0] = min(extent[0], bounds[0])
+            extent[1] = min(extent[1], bounds[1])
+            extent[2] = max(extent[2], bounds[2])
+            extent[3] = max(extent[3], bounds[3])
+            features.append(
+                {
+                    "type": "Feature",
+                    "properties": summaries[identifier],
+                    "geometry": simplified,
+                }
+            )
+            matched.add(identifier)
     if not features:
         raise ValueError("no geography summaries matched canonical boundaries")
 
@@ -1451,12 +1461,19 @@ def render_geography_summary_polygon_map(
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(html, encoding="utf-8")
     return {
-        "representation": "display-only-fixed-grid-quantized-polygons",
+        "representation": (
+            "display-only-topology-preserving-polygons"
+            if uses_prepared_display
+            else "display-only-fixed-grid-quantized-polygons"
+        ),
         "coordinate_precision": coord_precision,
         "requested_geographies": len(summaries),
         "matched_geographies": len(matched),
         "missing_geographies": sorted(set(summaries) - matched),
         "collapsed_rings": collapsed_rings,
+        "prepared_display_boundary_paths": (
+            [str(path) for path in boundary_paths] if uses_prepared_display else []
+        ),
         "map_path": str(out_path),
         "display_boundaries_path": str(display_boundaries_path),
     }
@@ -1666,6 +1683,42 @@ def render_national_plan_map(
         raise ValueError("national plan boundary input path is invalid")
     root = plan_path.parent
     boundary_path = _resolve_plan_path(root, boundary_value)
+    prepared_display_boundary_paths = sorted(
+        (root / "boundaries").glob(
+            f"*-boundary-{geography_level.lower()}-*-display-topo.geojson"
+        )
+    )
+    if jurisdiction_pruids is not None:
+        prepared_display_boundary_paths = [
+            path
+            for path in prepared_display_boundary_paths
+            if any(
+                path.name.endswith(f"-{pruid}-display-topo.geojson")
+                for pruid in jurisdiction_pruids
+            )
+        ]
+    if not prepared_display_boundary_paths:
+        sibling_display = boundary_path.with_name(
+            f"{boundary_path.stem}-display-topo.geojson"
+        )
+        if sibling_display.is_file():
+            prepared_display_boundary_paths = [sibling_display]
+    if not prepared_display_boundary_paths and jurisdiction_pruids is not None:
+        from synthpopcan.geodata import fetch_display_boundaries
+
+        try:
+            prepared_display_boundary_paths = [
+                fetch_display_boundaries(
+                    2021,
+                    geography_level,
+                    pruid=pruid,
+                )
+                for pruid in sorted(jurisdiction_pruids)
+            ]
+        except FileNotFoundError:
+            # A release catalogue is optional until the geodata release is
+            # published; retain the canonical-boundary fallback in that case.
+            prepared_display_boundary_paths = []
     out_path = out_path or root / "national-map.html"
     scope = "-".join(sorted(jurisdiction_pruids or ()))
     statistics_path = root / (
@@ -1685,6 +1738,7 @@ def render_national_plan_map(
         geography_column=geography_column,
         out_path=out_path,
         display_boundaries_path=out_path.with_suffix(".geojson"),
+        prepared_display_boundary_paths=(prepared_display_boundary_paths or None),
         coord_precision=coord_precision,
         title=title,
         geography_context=statcan_geography_universe(

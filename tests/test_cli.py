@@ -32,6 +32,7 @@ def test_cli_command_tree_is_coherent() -> None:
         "controls",
         "data",
         "enrich",
+        "geodata",
         "geo",
         "guide",
         "ipf",
