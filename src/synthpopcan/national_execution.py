@@ -39,7 +39,12 @@ _EXCLUDED_CANDIDATE_VALUES = {"TENUR": ["8"]}
 
 @dataclass(frozen=True)
 class NationalBatchRunConfiguration:
-    """Serializable settings shared by cached-pool batch workers."""
+    """Serializable settings shared by national cached-pool batch workers.
+
+    It maps each PUMF condition to a verified pool manifest and carries the
+    geography identity, fitting concurrency, convergence limit, and tolerance
+    needed by independently spawned batch processes.
+    """
 
     pool_manifests: dict[str, str]
     geography_level: str
@@ -64,7 +69,13 @@ def prepare_national_candidate_pools(
     force: bool = False,
     progress: Callable[[str], None] | None = None,
 ) -> dict[str, dict[str, object]]:
-    """Create or reuse one linked candidate pool per PUMF condition value."""
+    """Create or reuse one evidence-checked linked pool per PUMF condition.
+
+    Pool generation is bounded by the requested size and target households,
+    uses deterministic condition-specific seeds, excludes recorded uncontrolled
+    candidate categories, recodes household size, validates linkage, and writes
+    hashes and timing evidence. Matching cached pools are verified before reuse.
+    """
 
     if requested_pool_size < 1:
         raise ValueError("requested_pool_size must be at least 1")
@@ -257,7 +268,13 @@ def find_cached_national_candidate_pools(
     condition_by_jurisdiction: bool = True,
     pumf_pr_values: set[str] | None = None,
 ) -> dict[str, dict[str, object]] | None:
-    """Return matching verified pools without loading the model package."""
+    """Return matching verified pools without loading the model package.
+
+    Every expected condition, model hash, generation setting, exclusion policy,
+    row count, and artifact checksum must match. The function returns ``None``
+    as soon as any required pool is absent or stale, allowing the caller to
+    regenerate the complete required set safely.
+    """
 
     plan = _read_json(plan_path)
     targets = _targets_by_condition(
@@ -305,7 +322,12 @@ def reset_nonconverged_national_batches(
     *,
     jurisdiction_pruids: set[str] | None = None,
 ) -> list[str]:
-    """Reset completed batches whose geography fits did not all converge."""
+    """Reset completed batches whose recorded geography fits did not converge.
+
+    Prior results are retained under ``superseded_results`` with the correction
+    reason, while selected batch status returns to ``planned`` and the national
+    plan becomes partial. The return value lists reset batch IDs.
+    """
 
     plan = _read_json(plan_path)
     records = plan.get("batches")
@@ -377,7 +399,13 @@ def run_national_cached_batch(
     *,
     configuration: NationalBatchRunConfiguration,
 ) -> Mapping[str, object]:
-    """Calibrate one national batch from its reusable conditioned pool."""
+    """Calibrate one national batch from a verified reusable candidate pool.
+
+    Outputs are written into a temporary sibling directory, linked structure is
+    validated, artifacts are hashed, and the completed directory is installed
+    atomically. The returned mapping contains pool lineage, validation,
+    aggregate residual evidence, artifact records, and phase timings.
+    """
 
     started = time.perf_counter()
     batch_id = _required_text(batch, "batch_id")
@@ -513,7 +541,13 @@ def run_national_cached_batch(
 
 
 def build_national_geography_summary(plan_path: Path) -> dict[str, object]:
-    """Write aggregate completed-batch and per-geography national evidence."""
+    """Write national summaries from every completed batch in a plan.
+
+    The function gathers assigned household/person counts, convergence, and
+    maximum residuals into a geography-level CSV and a compact JSON summary.
+    Pending or failed batches remain visible through completion counts; they
+    are not imputed as successful geographies.
+    """
 
     plan = _read_json(plan_path)
     geography = plan.get("geography")

@@ -63,7 +63,14 @@ _LAYER_CLASSES = frozenset(
 
 @dataclass(frozen=True)
 class SourceProfile:
-    """Dataset identity, authority, semantics, access, and stewardship metadata."""
+    """Versioned metadata describing the meaning and governance of one source.
+
+    A profile separates stable project and publisher identities from bilingual
+    titles, observation dates, licence and redistribution status, acquisition
+    mode, unit of observation, optional Census geography, translation
+    provenance, and known limitations. It describes a dataset concept or
+    release; :class:`ResourceRecord` identifies the exact bytes acquired.
+    """
 
     source_id: str
     publisher_id: str
@@ -195,7 +202,14 @@ class SourceProfile:
 
 @dataclass(frozen=True)
 class ResourceRecord:
-    """Immutable identity and integrity metadata for one source revision."""
+    """Immutable identity and integrity evidence for one acquired resource.
+
+    The SHA-256 digest and byte count identify exact bytes from a source
+    version. Public resources retain an authoritative locator. Local, licensed,
+    and restricted resources instead use a non-sensitive opaque identity so a
+    shared manifest does not disclose workstation paths or imply
+    redistribution permission.
+    """
 
     resource_id: str
     source_id: str
@@ -303,7 +317,13 @@ class ResourceRecord:
 
 @dataclass(frozen=True)
 class EnrichmentLayer:
-    """One normalized sidecar layer linked without widening the base tables."""
+    """Descriptor for one normalized CSV published beside a population.
+
+    The descriptor records the copied filename, checksum, row count, linkage
+    keys, value columns, source/resource lineage, observed or modelled status,
+    and optional geography universe. It contains structural metadata, not the
+    source transformation or a claim that the linkage is substantively valid.
+    """
 
     layer_id: str
     layer_class: str
@@ -391,7 +411,13 @@ class EnrichmentLayer:
 
 @dataclass(frozen=True)
 class EnrichmentManifest:
-    """Composition record for immutable base tables and sidecar layers."""
+    """Composition record for immutable base population and sidecar layers.
+
+    A manifest binds the hashes of a linked-population v1 artifact to its source
+    profiles, exact resource revisions, normalized layer descriptors,
+    reproduction request, and reader-facing limitations. Construction rejects
+    duplicate IDs or broken source-resource-layer lineage.
+    """
 
     base_population: Mapping[str, object]
     sources: tuple[SourceProfile, ...]
@@ -474,7 +500,13 @@ class EnrichmentManifest:
 
 
 class SourceAdapter(Protocol):
-    """Common workflow stages implemented by maintained source-specific adapters."""
+    """Protocol for a maintained source-specific enrichment adapter.
+
+    An adapter describes source meaning, acquires or references an exact
+    resource, normalizes it into a supported sidecar shape, and validates the
+    source-specific result. Implementing this protocol does not grant data
+    access or establish permission to redistribute a source.
+    """
 
     def describe(self) -> SourceProfile: ...
 
@@ -509,7 +541,13 @@ def acquire_public_resource(
     timeout: float = 60.0,
     publisher_sha256: str | None = None,
 ) -> tuple[Path, ResourceRecord]:
-    """Retrieve one public HTTPS resource into an immutable addressed cache."""
+    """Retrieve one bounded public HTTPS resource into an addressed cache.
+
+    The function requires a public source profile and HTTPS locator, enforces a
+    byte limit while downloading, computes integrity metadata, and stores the
+    resource under its content identity. It returns the cached path and a
+    :class:`ResourceRecord`; it does not normalize or join the resource.
+    """
     if source.acquisition_mode not in {"public-download", "public-api"}:
         raise ValueError("only public acquisition modes may retrieve a URL")
     if max_bytes <= 0:
@@ -590,7 +628,13 @@ def register_resource(
     publisher_checksum: str | None = None,
     derived_from: Sequence[str] = (),
 ) -> ResourceRecord:
-    """Hash a resource and create a path-safe immutable revision record."""
+    """Hash local bytes and create a path-safe immutable resource record.
+
+    Public acquisition modes require ``public_locator``. Local, licensed, and
+    restricted modes forbid that locator and use ``opaque_local_id`` instead,
+    generating one when omitted. The local input path is never serialized into
+    the returned record.
+    """
     digest, byte_size = _file_digest(path)
     if source.acquisition_mode in {"local-provided", "licensed", "restricted"}:
         public_locator = None
@@ -619,7 +663,14 @@ def validate_normalized_layer(
     base_geography: GeographyUniverse | None = None,
     base_identifiers: Sequence[str] = (),
 ) -> dict[str, object]:
-    """Validate normalized CSV structure, keys, lineage, and geography coverage."""
+    """Validate normalized CSV structure, lineage, keys, and coverage.
+
+    Validation checks required columns, duplicate composite keys, observed
+    checksum and row count, and source/resource identity. For a
+    geography-bearing layer it also checks the declared universe and reports
+    unmatched source and base identifiers. It reports incomplete coverage
+    rather than silently dropping rows.
+    """
     digest, _ = _file_digest(path)
     issues: list[dict[str, object]] = []
     if digest != layer.sha256:
@@ -699,7 +750,13 @@ def build_enrichment_layer(
     geography: GeographyUniverse | None = None,
     table_name: str | None = None,
 ) -> EnrichmentLayer:
-    """Describe one normalized CSV sidecar using observed bytes and row count."""
+    """Build a layer descriptor from an observed normalized CSV.
+
+    The file is read to count rows and calculate its SHA-256 digest. The
+    returned descriptor binds those bytes to explicit keys, variables,
+    source/resource lineage, layer class, observed status, and optional
+    geography. Validation against a population is a separate step.
+    """
     with path.open(newline="") as handle:
         reader = csv.reader(handle)
         columns = next(reader, [])
@@ -746,7 +803,14 @@ def import_normalized_layer(
     reproduction_request: Mapping[str, object] | None = None,
     limitations: Sequence[str] = (),
 ) -> tuple[EnrichmentManifest, dict[str, object]]:
-    """Validate and atomically publish a normalized sidecar and its manifest."""
+    """Validate and atomically publish a normalized sidecar and manifest.
+
+    ``population_directory`` must contain a linked-population v1 household,
+    person, and manifest set. The normalized layer is validated, copied into
+    ``output_directory``, and composed with source, resource, geography,
+    reproduction, and limitation metadata. Base file hashes are checked before
+    and after publication to prove that enrichment did not rewrite them.
+    """
     households_path = population_directory / "households.csv"
     persons_path = population_directory / "persons.csv"
     linked_manifest_path = population_directory / "manifest.json"
@@ -843,7 +907,13 @@ def build_enrichment_manifest(
     reproduction_request: Mapping[str, object],
     limitations: Sequence[str] = (),
 ) -> EnrichmentManifest:
-    """Compose base-table hashes with source, resource, and sidecar records."""
+    """Compose base hashes with source, resource, and sidecar records.
+
+    The linked-population manifest and both CSVs are hashed as the immutable
+    base. The constructor then validates unique identifiers and complete
+    source-resource-layer lineage. This function builds an in-memory record;
+    use :func:`write_enrichment_manifest` to serialize it.
+    """
     households_sha256, households_size = _file_digest(households_path)
     persons_sha256, persons_size = _file_digest(persons_path)
     manifest_sha256, manifest_size = _file_digest(linked_population_manifest_path)
@@ -872,7 +942,11 @@ def build_enrichment_manifest(
 
 
 def write_enrichment_manifest(path: Path, manifest: EnrichmentManifest) -> None:
-    """Atomically write a validated enrichment manifest."""
+    """Atomically write a validated enrichment manifest as formatted JSON.
+
+    Parent directories are created as needed, and a temporary file is replaced
+    only after the complete versioned representation has been written.
+    """
     payload = manifest.as_dict()
     EnrichmentManifest.from_dict(payload)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -887,7 +961,13 @@ def verify_enrichment_manifest(
     *,
     base_directory: Path | None = None,
 ) -> dict[str, object]:
-    """Verify that base tables and sidecars still match the manifest bytes."""
+    """Recompute and compare every base-population and sidecar file record.
+
+    ``population_directory`` supplies the linked household, person, and
+    manifest files; sidecars are resolved relative to the enrichment manifest.
+    The returned report names missing or changed artifacts. Integrity success
+    does not repeat source-governance or substantive fitness review.
+    """
     issues: list[str] = []
     base = manifest.base_population
     base_root = base_directory or directory
@@ -914,17 +994,32 @@ def verify_enrichment_manifest(
 
 
 def read_source_profile(path: Path) -> SourceProfile:
-    """Read and validate a source-profile JSON document."""
+    """Read and validate a versioned source-profile JSON document.
+
+    Unsupported schemas, malformed language mappings, invalid acquisition and
+    access combinations, and incomplete geography records raise
+    :class:`ValueError`.
+    """
     return SourceProfile.from_dict(_read_json_object(path, "source profile"))
 
 
 def read_resource_record(path: Path) -> ResourceRecord:
-    """Read and validate a resource-record JSON document."""
+    """Read and validate an immutable resource-record JSON document.
+
+    The parser verifies its schema, checksum shape, byte count, status,
+    acquisition-specific locator rules, and source identity metadata.
+    """
     return ResourceRecord.from_dict(_read_json_object(path, "resource record"))
 
 
 def read_enrichment_manifest(path: Path) -> EnrichmentManifest:
-    """Read and validate an enrichment-manifest JSON document."""
+    """Read and validate a composed enrichment-manifest JSON document.
+
+    Parsing checks schema version, unchanged-base declaration, unique
+    identifiers, and source-resource-layer lineage before returning the typed
+    manifest. File integrity is checked separately with
+    :func:`verify_enrichment_manifest`.
+    """
     return EnrichmentManifest.from_dict(_read_json_object(path, "enrichment manifest"))
 
 

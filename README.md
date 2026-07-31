@@ -26,12 +26,13 @@ Near-term goals:
    census-vintage-specific.
 1. Maintain a local web app for configuring runs, inspecting controls, generating from prepared models, validating outputs, and downloading results.
 
-The `0.7.x` roadmap builds a reusable external-data enrichment framework for
-public, locally supplied, licensed, and restricted sources. Can-FED v2 and
-ODEF v3 serve as contrasting area-attribute and facility reference adapters;
-later health, education, built, social, and environmental integrations remain
-demand-, authority-, and validation-gated rather than being limited to those
-examples.
+The development branch now contains the unreleased `0.7.0` geography contracts,
+national DA/ADA orchestration, and reusable external-data enrichment framework
+for public, locally supplied, licensed, and restricted sources. The published
+`0.6.3` package does not yet contain those commands. Can-FED v2 and ODEF v3 are
+planned as contrasting area-attribute and facility reference adapters for
+`0.7.1` and `0.7.2`; later health, education, built, social, and environmental
+integrations remain demand-, authority-, and validation-gated.
 
 Detailed documentation is published at
 <https://synthpopcan.readthedocs.io/>. The source files live under
@@ -42,8 +43,9 @@ microdata/model-training material.
 
 Project planning and research notes are tracked separately:
 
-- [`PLANS.md`](PLANS.md): current roadmap, open work, sequencing, and design
-  decisions.
+- [`PLANS.md`](PLANS.md): current roadmap, open work, and release sequencing.
+- [`adr/`](adr/README.md): accepted architecture decisions, alternatives, and
+  consequences.
 - [`NOTES.md`](NOTES.md): research synthesis from local materials and external
   literature.
 - [`CHANGELOG.md`](CHANGELOG.md): public release notes and completed release
@@ -126,6 +128,7 @@ README:
 | Use the local browser app | [`docs/web-app.md`](docs/web-app.md) |
 | Generate with IPF from margin/control tables | [`docs/ipf.md`](docs/ipf.md), [`docs/controls.md`](docs/controls.md), [`docs/statcan.md`](docs/statcan.md) |
 | Assign linked households and people to small areas | [`docs/small-area.md`](docs/small-area.md) |
+| Attach governed external context as a sidecar layer | [`docs/enrichment.md`](docs/enrichment.md) |
 | Use the beginner Python API | [`docs/library-getting-started.md`](docs/library-getting-started.md) |
 | Work with local data layout and `data doctor` | [`docs/data.md`](docs/data.md) |
 | Inspect source files safely | [`docs/data.md`](docs/data.md), [`docs/statcan.md`](docs/statcan.md), [`docs/microdata.md`](docs/microdata.md) |

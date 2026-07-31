@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc" viewBox="0 0 980 470">
   <title id="title">Canadian census geography ladder for SynthPopCan</title>
-  <desc id="desc">A ladder from Canada to province or territory, census division, census subdivision, CT or ADA or DA calibration geographies, and dissemination block placement geography.</desc>
+  <desc id="desc">A ladder from Canada to province or territory, census division, census subdivision, CT or ADA or DA calibration geographies, and dissemination block placement geography. CSD can itself be a municipal calibration target.</desc>
   <defs>
     <style>
       .bg { fill: #f8fafc; }
@@ -32,9 +32,9 @@
   <text class="text label" x="545" y="92" text-anchor="middle">CD</text>
   <text class="text small" x="545" y="116" text-anchor="middle">regional unit</text>
 
-  <rect class="box local" x="670" y="60" width="150" height="80" rx="8"/>
+  <rect class="box cal" x="670" y="60" width="150" height="80" rx="8"/>
   <text class="text label" x="745" y="92" text-anchor="middle">CSD</text>
-  <text class="text small" x="745" y="116" text-anchor="middle">municipality-like</text>
+  <text class="text small" x="745" y="116" text-anchor="middle">municipal calibration</text>
 
   <path class="arrow" d="M 200 100 H 250"/>
   <path class="arrow" d="M 420 100 H 470"/>

@@ -1,6 +1,6 @@
 # SynthPopCan Research Notes
 
-Date: 2026-06-21
+Date: 2026-07-30
 
 ## Purpose
 
@@ -11,21 +11,27 @@ recent external work relevant to a narrower near-term goal:
 1. Build a second workflow that creates household- and person-level synthetic
    populations with a tree-based synthetic population generator for geographic
    subregions using explicit Canadian 2016 and 2021 Census source profiles.
-1. Leave broader SynthEco ecosystem enrichment, cohort attachment, and simulation work for later.
+1. Add external context only as provenance-rich sidecars after the base
+   population is stable, while leaving cohort attachment and simulation work
+   for later evidence-gated phases.
 
-Current codebase status, 2026-07-25:
+Current codebase status, 2026-07-30:
 
 - The active roadmap is now `PLANS.md`; this file is the research and design
   notes companion.
 - The Python library, Click CLI, durable FastAPI/Uvicorn local web app, Sphinx
-  docs, and correctness suite are implemented; the current release is v0.6.2.
+  docs, and correctness suite are implemented; the current published release is
+  v0.6.3.
 - IPF from normalized controls, StatCan WDS source discovery/normalization,
   microdata adapters, linked household/person model generation, validation,
   prepared-model generation, and small-area linked synthesis all share working
   Python-backed CLI, library, or local-web surfaces as appropriate.
-- The small-area linked synthesis MVP can assign linked
-  household/person candidates to census tracts and aggregate dissemination
-  areas using Census Profile controls. The 33-entry prepared-model catalogue
+- Small-area linked synthesis can assign linked household/person candidates to
+  CT, CSD, ADA, and DA geographies using Census Profile controls. The
+  development branch includes explicit geography-universe contracts, a bounded
+  Québec 2021 DA proof, and restartable national 2021 DA/ADA planning and
+  execution across all 13 provinces and territories. The 33-entry
+  prepared-model catalogue
   contains a fictional demo plus parallel 2016 and 2021 packages for Canada,
   nine provinces, five PUMF-coded CMAs, and minimal Prince Edward Island
   packages; territorial and broader CMA packages remain open work.
@@ -34,12 +40,15 @@ Current codebase status, 2026-07-25:
   that separate fractional fit from integerized residuals.
 - The local web app guides durable backend IPF, prepared-model, and small-area
   runs with streamed uploads, progress, cancellation, recovery, bounded
-  previews, and CLI reproduction metadata. Large results remain on disk rather
-  than being loaded into browser memory. Exact executable reproduction of
-  every small-area condition and optional map remains `0.6.3` work.
+  previews, and exact structured CLI reproduction metadata. Large results
+  remain on disk rather than being loaded into browser memory.
 - The linked household/person/geography output contract is versioned, explicit
   2016 and 2021 PUMF adapters and prepared models are available, and releases
   and model packages have citation metadata and archival DOIs.
+- The unreleased `0.7.0` development branch also contains source-independent
+  external-data enrichment contracts, immutable resource records, governed
+  normalized sidecars, and manifests that verify the base population remains
+  unchanged. Can-FED and ODEF source-specific adapters remain later work.
 - The older phase sketch near the end of this file should be read as research
   background, not the live implementation checklist.
 

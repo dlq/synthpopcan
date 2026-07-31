@@ -59,12 +59,14 @@ data/
   private/sources/{canue,cptp,mavan,monnet,topo}/
 ```
 
-Each vintage root has a `manifest.json` inventory of the products actually
-present. At present, both vintages contain the national hierarchical and
-individual PUMFs plus CT, ADA, and national CSD Census Profiles. The 2021 cache
-additionally contains all six regional DA Census Profiles, the national DA
-boundary, and the national Dissemination Geographies Relationship File.
-Matching product coverage does not imply column-identical schemas:
+Each vintage root can have a `manifest.json` inventory of the products actually
+present in a research environment. A full project cache may contain national
+hierarchical and individual PUMFs plus CT, ADA, and national CSD Census
+Profiles for both vintages. A national 2021 DA workflow additionally needs all
+six regional DA Census Profiles, the national DA boundary, and the final
+Dissemination Geographies Relationship File. None of these large source files
+is installed with SynthPopCan or tracked in git. Matching product coverage does
+not imply column-identical schemas:
 adapters must still account for the identifiers, characteristic codes, and
 count/rate columns used by each vintage.
 
@@ -216,17 +218,22 @@ a real census population and should not be reused as research inputs.
 
 ### `data doctor`
 
-Checks the local data directory layout and reports which expected paths are
-present and which are missing. The expected subdirectories under the data root
-are:
+Checks the local data directory layout and reports which expected paths and
+metadata records are present, missing, or invalid. It checks:
 
-- `raw/statcan/` — Statistics Canada source files fetched with `statcan` commands
-- `private/` — restricted files that should not be committed to git
+- the `raw`, `derived`, and `work` directories;
+- versioned `manifest.json` product inventories for the 2016 and 2021 Census
+  caches;
+- extracted 2016 and 2021 hierarchical and individual PUMF variable metadata;
+  and
+- the canonical 2016 CT Census Profile provenance manifest used by the
+  documented tract walkthrough.
 
-Each path is reported as present or missing. A missing path is not an error in
-itself — it means that part of the layout has not been created yet. The report
-is a quick way to confirm the working directory is set up before
-starting a workflow that depends on those paths.
+Each check is reported independently. Missing optional material is not a
+command failure; it tells us which documented workflows the current cache is
+not yet ready to run. An invalid inventory, missing file named by an inventory,
+or wrong Census year is reported as a problem that should be corrected before
+relying on that cache.
 
 ```bash
 synthpopcan data doctor

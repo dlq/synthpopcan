@@ -242,7 +242,13 @@ _BOUNDARY_DOWNLOADS: dict[int, dict[str, BoundaryDownload]] = {
 
 
 def get_boundary_download(geo_level: str, census_year: int = 2016) -> BoundaryDownload:
-    """Return metadata for a supported census-year/geography boundary product."""
+    """Return registered metadata for a Census boundary product.
+
+    ``geo_level`` is normalized to lowercase and interpreted within
+    ``census_year``. Unknown years and unsupported year/level combinations
+    raise :class:`ValueError` listing the registered choices. No network
+    request is made.
+    """
 
     try:
         downloads = _BOUNDARY_DOWNLOADS[census_year]
@@ -351,7 +357,13 @@ def fetch_boundary_zip(
 
 
 def fetch_dgrf_2021(out_dir: Path, *, url: str | None = None) -> Path:
-    """Download the final 2021 Dissemination Geographies Relationship File."""
+    """Download and extract the final 2021 geography relationship CSV.
+
+    The official ZIP is bounded during retrieval, the expected
+    ``2021_98260004.csv`` member is extracted atomically, the temporary archive
+    is removed, and a versioned provenance and integrity manifest is written
+    beside the CSV. ``url`` is reserved for a documented mirror.
+    """
 
     out_dir.mkdir(parents=True, exist_ok=True)
     download_url_ = url or _DGRF_2021_URL

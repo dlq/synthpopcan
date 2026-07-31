@@ -42,7 +42,14 @@ def select_quebec_da_relationships(
     metro_csd: str = _DEFAULT_METRO_CSD,
     rural_csd: str = _DEFAULT_RURAL_CSD,
 ) -> dict[str, object]:
-    """Select deterministic metro and non-CMA/CA DAs from the final 2021 DGRF."""
+    """Select deterministic metropolitan and rural Québec DAs from the DGRF.
+
+    The function reads authoritative 2021 DA-to-CSD and CMA/CA relationships,
+    selects ``per_area`` sorted DAs from each requested parent CSD, and returns
+    versioned :class:`~synthpopcan.geography.GeographyRelationship` evidence
+    tied to the relationship-file checksum. It fails on missing, conflicting,
+    or insufficient relationships.
+    """
 
     if per_area < 1:
         raise ValueError("per_area must be at least 1")
@@ -150,7 +157,11 @@ def prepare_quebec_da_proof(
 ) -> dict[str, object]:
     """Prepare bounded controls, boundaries, relationships, and review evidence.
 
-    Every retained input and output is hashed for reproducibility.
+    Every retained input and output is hashed for reproducibility. The function
+    selects metropolitan and rural DAs, extracts and scales complete household
+    controls, streams a boundary subset, and writes a prepared proof manifest.
+    It does not generate a population or claim that the later calibration is
+    valid.
     """
 
     started = time.perf_counter()
@@ -258,7 +269,13 @@ def finalize_quebec_da_proof(
     population_directory: Path | None = None,
     synthesis_seconds: float | None = None,
 ) -> dict[str, object]:
-    """Validate generated proof artifacts and promote the manifest to complete."""
+    """Validate generated Québec proof artifacts and mark the proof complete.
+
+    Finalization independently checks linked household/person structure, exact
+    selected geography coverage, geography identity, convergence, residual
+    evidence, parent-CSD summaries, file hashes, and map metadata. Any failed
+    requirement leaves the prepared proof unpromoted.
+    """
 
     manifest_path = output_directory / "proof-manifest.json"
     manifest = _read_json(manifest_path)

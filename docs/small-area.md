@@ -7,7 +7,7 @@ geographies while keeping their linked person rows attached.
 
 Use this page when the research question needs statements like "how many
 synthetic households of each type are assigned to each census tract, aggregate
-dissemination area, or dissemination area?" Do not use it as the first
+dissemination area, dissemination area, or census subdivision?" Do not use it as the first
 generation step. Start with {doc}`tree-generate` when we still need candidate
 households and people, and start with {doc}`controls` or {doc}`statcan` when we
 still need to prepare public control totals.
@@ -18,6 +18,9 @@ The ones relevant to this workflow are:
 - **Census tract (CT):** a small, relatively stable urban area containing
   roughly 2,500–8,000 people. Census tracts exist only in census metropolitan
   areas and census agglomerations — large and medium-sized cities.
+- **Census subdivision (CSD):** a municipality or municipal-equivalent area.
+  CSD controls are useful when a research question follows municipal,
+  service-delivery, or local-government geography.
 - **Aggregate dissemination area (ADA):** a grouping of dissemination areas
   designed to cover all of Canada, including rural areas where census tracts
   do not exist. ADAs typically contain 5,000–15,000 people.
@@ -35,10 +38,10 @@ and the controls the seed can support.
 ```
 
 ```{figure} _static/geography-ladder.svg
-:alt: A Canadian census geography ladder showing broad geographies, CT, ADA, and DA calibration geographies, and DB placement later.
+:alt: A Canadian census geography ladder showing broad geographies, CSD, CT, ADA, and DA calibration geographies, and DB placement later.
 :align: center
 
-For SynthPopCan, CT, ADA, and DA are calibration geographies. Dissemination
+For SynthPopCan, CSD, CT, ADA, and DA can be calibration geographies. Dissemination
 blocks are useful later for spatial placement after households have been
 calibrated to a larger small area.
 ```
@@ -52,7 +55,7 @@ Small-area linked synthesis bridges **two sources that do not contain the same
 information**:
 
 - prepared linked household/person model packages can generate plausible
-  synthetic households and people, but they do not know CT, ADA, or DA
+  synthetic households and people, but they do not know CSD, CT, ADA, or DA
   locations by themselves;
 - Census Profile tables contain public small-area totals, but they do not
   contain household/person microdata rows.
@@ -65,8 +68,8 @@ The current workflow has six steps:
    margins per target geography).
 1. **Estimate** the run size before launching a large calibration.
 1. **Calibrate** candidate households to household controls and, when supplied,
-   linked-person controls, assigning each realized household to a CT, ADA, or
-   DA.
+   linked-person controls, assigning each realized household to a CSD, CT, ADA,
+   or DA.
 1. **Map** the output to a self-contained browser choropleth.
 
 Calibration remains **household-first**. Person rows inherit geography from
@@ -268,6 +271,14 @@ manifest status from `prepared` to `completed`.
 
 ### National 2021 DA and ADA execution
 
+```{admonition} Unreleased 0.7.0 workflow
+:class: note
+
+National DA/ADA orchestration is implemented on the development branch but is
+not included in the published `0.6.3` package. Use a source checkout until
+`0.7.0` is published.
+```
+
 The same geography contract supports every province and territory. National
 DA execution uses StatCan's six official regional profile products; ADA uses
 the single national ADA profile. Both source adapters feed the same planner,
@@ -370,7 +381,7 @@ The normal map command accepts either the completed `plan.json` or its
 directory; boundaries, geography identity, and the 161 household/person batch
 pairs are inferred:
 
-```console
+```bash
 synthpopcan geo map data/work/canada-ada-2021
 ```
 
@@ -385,7 +396,7 @@ When only one province or territory has finished, render that completed subset
 explicitly instead of presenting it as a Canada-wide result. For example, a
 completed Québec DA subset can be mapped from an otherwise partial plan:
 
-```console
+```bash
 synthpopcan geo map data/work/canada-da-2021 --jurisdiction QC \
   --out data/work/canada-da-2021/quebec-da-map.html
 ```
@@ -697,6 +708,10 @@ synthpopcan geo relationship-file \
   --out-dir data/raw/statcan/census/2021/geography/relationships
 ```
 
+- `--out-dir`: required directory for the extracted relationship CSV and
+  provenance.
+- `--url`: optional alternate URL for a documented mirror of the same product.
+
 ### `geo national-da` and `geo national-ada`
 
 Coordinate 2021 DA or ADA preparation and synthesis across all 13 provinces
@@ -711,6 +726,56 @@ and territories:
 This interface supplies national execution mechanics. Scientific suitability
 of the selected model outside its training population remains a separate
 review decision.
+
+Both groups expose the same subcommands and options:
+
+**`fetch-profiles`**
+
+- `--out-dir`: required profile cache root.
+- `--force`: redownload a file that is already present.
+
+DA fetches the six registered regional products. ADA fetches the registered
+national product.
+
+**`prepare`**
+
+- `--profiles-dir`: required directory containing the registered 2021 product
+  files for the selected level.
+- `--boundaries`: required national WGS-84 DA or ADA GeoJSON.
+- `--relationships`: required final 2021 DGRF CSV.
+- `--out`: required national plan directory.
+- `--max-households-per-batch`: maximum target households in one restartable
+  batch; default `100000`.
+
+**`run MODEL`**
+
+- `MODEL`: reviewed package path or model-catalogue ID.
+- `--plan`: required `plan.json` written by `prepare`.
+- `--limit`: run at most this many unfinished batches, useful for a first
+  evidence run.
+- `--jurisdiction`: province/territory PRUID or abbreviation; repeat to select
+  several jurisdictions.
+- `--random-seed`: base generation seed; each candidate condition receives a
+  deterministic derived seed.
+- `--condition-by-jurisdiction/--no-condition-by-jurisdiction`: condition a
+  national model on the PUMF province or combined northern category; enabled
+  by default.
+- `--continue-on-error`: record a failed batch and continue.
+- `--candidate-pool-size`: reusable linked candidate households per PUMF
+  condition; default `10000`.
+- `--workers`: concurrent batch processes, from 1 through 8.
+- `--fit-workers`: fitting threads inside each batch process, from 1 through 8.
+- `--force-candidate-pools`: rebuild candidate pools even when their evidence
+  still matches.
+- `--maps/--no-maps`: enable or disable detailed per-batch maps; disabled by
+  default.
+- `--national-map/--no-national-map`: enable or disable the final national
+  polygon map; enabled by default after complete execution.
+- `--allow-low-disk`: override the plan's conservative free-space check.
+
+Use `--limit 1 --workers 1` for the first run. Inspect its batch manifest,
+linkage validation, fractional and realized residuals, and disk use before
+increasing concurrency or resuming the complete plan.
 
 ### `geo controls`
 
@@ -791,6 +856,9 @@ Important options:
   refinement.
 - `--geo-dimension`: geography dimension in the controls.
 - `--geo-column`: geography column written to the assigned outputs.
+- `--census-vintage`, `--geo-level`, `--geo-namespace`, and
+  `--geo-dguid-column`: explicit Census geography universe. Supply the first
+  three together for a Census workflow; the DGUID column is optional.
 - `--include-weights`: also write the potentially large `weights.csv` artifact.
 - `--out`: directory for calibrated `households.csv`, `persons.csv`, and
   `report.json`.
@@ -829,15 +897,21 @@ Important options:
 - `--geo-dimension`: geography dimension in the controls.
 - `--geo-column`: geography column written to the assigned outputs; defaults to
   `--geo-dimension`.
+- `--census-vintage`, `--geo-level`, `--geo-namespace`, and
+  `--geo-dguid-column`: explicit Census geography universe recorded in the
+  output report and linked-population manifest.
 - `--out`: directory for calibrated `households.csv`, `persons.csv`, and
   `report.json`.
 - `--include-weights`: also write the potentially large fitted weights CSV.
 - `--random-seed`: candidate generation seed.
+- `--condition`: fixed package condition in `COLUMN=VALUE` form; repeat for
+  multiple conditions.
 - `--pool-size`: optional maximum number of candidates used for calibration.
 - `--subsample-seed`: reproducible seed for the calibration subsample.
 - `--max-household-size`: group exact household sizes into a top-coded category,
   usually `5` for Census Profile controls.
 - `--household-size-group-column`: grouped-size column used for calibration.
+- `--max-iterations` and `--tolerance`: per-geography fitting limits.
 - `--format summary|json`: printed report format.
 
 ### `geo map`
@@ -859,11 +933,18 @@ Important options:
   prepared GeoJSON.
 - `--geo-column`: geography ID column in the household CSV.
 - `--geo-id-field`: boundary attribute matching the household geography ID.
+- `--census-vintage`, `--geo-level`, `--geo-namespace`, and
+  `--geo-dguid-column`: explicit geography identity embedded in a single-run
+  map. A national plan supplies these values itself.
 - `--out`: destination HTML file.
 - `--title`: title shown in the map panel.
 - `--coord-precision`: output coordinate precision.
 - `--jurisdiction`: one or more completed province/territory codes when
   `POPULATION` is a partial national DA or ADA plan.
+
+For a completed national plan, `--boundaries`, `--geo-column`, and
+`--geo-id-field` are inferred. The default coordinate precision is 5 for a
+single population and 3 for a national plan.
 
 ## Beginner API Shape
 
@@ -929,6 +1010,46 @@ For example, Winnipeg uses prefix `602`, Halifax uses `205`, and Ottawa–Gatine
 uses `505`. Confirm the appropriate package with `synthpopcan models show`, and
 do not assume that a provincial candidate model automatically represents every
 local relationship equally well.
+
+## Troubleshooting
+
+**The profile, relationship file, and boundaries do not join:** confirm that
+all three products use the same Census vintage and requested geography level.
+Do not repair a mismatch by truncating identifiers or joining on a convenient
+prefix.
+
+**Preparation reports incomplete controls:** suppressed, zero, or missing
+household-size or tenure vectors are excluded and reported. Review the exact
+geographies and source values; do not impute them merely to make the plan
+complete.
+
+**Preparation finds usable controls without boundaries:** the planner stops
+because those households could not be represented in the map and geography
+evidence. Confirm that the boundary file is the registered national product and
+that its identifiers were preserved during conversion.
+
+**A DA plan is refused by `national-ada`, or vice versa:** use the command group
+matching the plan's geography identity. DA and ADA share execution mechanics,
+not identifiers or source products.
+
+**Model conditioning fails for a jurisdiction:** inspect the package's
+supported `PR` conditions. The territories share the hierarchical PUMF's
+combined `PR=70` candidate condition; territorial controls remain separate.
+Do not disable conditioning unless a research review supports an unconditioned
+candidate pool.
+
+**The run stops for low disk space:** compare free space with the plan's
+`recommended_free_space_bytes`. Move the workspace, reduce the bounded scope,
+or free space before using `--allow-low-disk`; the override does not reduce the
+actual output.
+
+**A partial national map is refused or misleading:** pass one or more completed
+`--jurisdiction` values. A national map is produced automatically only when the
+whole plan is complete.
+
+**One or more fits do not converge:** inspect candidate category support,
+control universes, largest residuals, and the realized integer result. More
+iterations cannot make structurally incompatible controls fit.
 
 ## Statistical Quality
 

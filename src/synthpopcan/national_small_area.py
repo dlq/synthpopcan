@@ -51,7 +51,13 @@ _RECOMMENDED_FREE_SPACE_RESERVE_BYTES = 5 * 1024**3
 
 @dataclass(frozen=True)
 class NationalSmallAreaJurisdiction:
-    """One province or territory and its official regional profile product."""
+    """One province or territory in national small-area orchestration.
+
+    The record connects the jurisdiction's PRUID, PUMF conditioning value,
+    English and French names, abbreviation, and regional DA Census Profile
+    product. Yukon, Northwest Territories, and Nunavut intentionally share the
+    hierarchical PUMF's combined northern conditioning value.
+    """
 
     pruid: str
     pumf_pr: str
@@ -63,7 +69,13 @@ class NationalSmallAreaJurisdiction:
 
 @dataclass(frozen=True)
 class NationalSmallAreaSpecification:
-    """Source and identity contract for one nationally orchestrated level."""
+    """Source and identifier contract for a national geography level.
+
+    A specification names the short identifier column, authoritative DGRF
+    relationship column, and required Census Profile products for DA or ADA.
+    It lets both levels share planning and execution without pretending their
+    source layouts are identical.
+    """
 
     geography_level: str
     identifier_column: str
@@ -167,7 +179,12 @@ _SMALL_AREA_SPECIFICATIONS = {
 def small_area_specification(
     geography_level: str,
 ) -> NationalSmallAreaSpecification:
-    """Return the national source adapter for DA or ADA."""
+    """Return the registered national source contract for DA or ADA.
+
+    Geography-level matching is case-insensitive. Unsupported levels raise
+    :class:`ValueError`; national orchestration is not inferred for every
+    geography supported by smaller local workflows.
+    """
 
     try:
         return _SMALL_AREA_SPECIFICATIONS[geography_level.lower()]
@@ -176,7 +193,12 @@ def small_area_specification(
 
 
 def required_2021_profile_keys(geography_level: str) -> tuple[str, ...]:
-    """Return official profile keys needed for one national geography level."""
+    """Return registered 2021 Census Profile keys for national DA or ADA work.
+
+    DA returns the six regional products covering Canada; ADA returns its one
+    national product. Keys are suitable for
+    :func:`synthpopcan.statcan.fetch_census_profile`.
+    """
 
     return small_area_specification(geography_level).profile_keys
 
@@ -191,7 +213,12 @@ def national_2021_profile_paths(
     root: Path,
     geography_level: str,
 ) -> dict[str, Path]:
-    """Resolve conventional profile paths for a national small-area source."""
+    """Resolve conventional local paths for all required profile products.
+
+    The resolver accepts the current nested cache layout and the earlier flat
+    layout. It returns expected paths whether or not every file exists, so
+    callers can report missing products explicitly before planning.
+    """
 
     resolved: dict[str, Path] = {}
     for key in required_2021_profile_keys(geography_level):
@@ -213,7 +240,12 @@ def load_2021_small_area_jurisdictions(
     relationship_path: Path,
     geography_level: str,
 ) -> dict[str, str]:
-    """Return authoritative small-area-to-PRUID relationships from the 2021 DGRF."""
+    """Read authoritative DA- or ADA-to-PRUID relationships from the 2021 DGRF.
+
+    Short identifiers are derived from the product's DGUID columns. Missing
+    required columns, conflicting assignments, and unsupported PRUIDs raise
+    :class:`ValueError`; no prefix-based jurisdiction inference is used.
+    """
 
     specification = small_area_specification(geography_level)
     relationships: dict[str, str] = {}
@@ -268,7 +300,14 @@ def prepare_canada_small_area_plan(
     max_households_per_batch: int = 100_000,
     progress: Callable[[str], None] | None = None,
 ) -> dict[str, object]:
-    """Prepare controls, boundaries, and restartable DA or ADA batches."""
+    """Prepare a restartable national DA or ADA plan from official inputs.
+
+    The planner scans registered profiles, reconciles identifiers through the
+    final DGRF, partitions a national boundary file once, excludes and reports
+    incomplete controls, writes bounded batch controls and manifests, and
+    records source hashes and conservative storage estimates. It performs no
+    population generation.
+    """
 
     specification = small_area_specification(geography_level)
     if max_households_per_batch < 1:
@@ -512,7 +551,13 @@ def prepare_canada_small_area_plan(
 def estimate_national_small_area_storage(
     batches: Sequence[Mapping[str, object]],
 ) -> dict[str, int]:
-    """Estimate persistent and peak working storage for planned CSV outputs."""
+    """Estimate persistent output and peak working storage for planned batches.
+
+    Estimates use documented per-household planning constants, the total target
+    household count, and the largest batch. The recommended free-space value
+    adds a reserve; it is a conservative execution guard rather than a measured
+    final file size.
+    """
 
     household_counts: list[int] = []
     for batch in batches:
@@ -552,7 +597,14 @@ def execute_canada_small_area_plan(
     jurisdiction_pruids: set[str] | None = None,
     workers: int = 1,
 ) -> dict[str, object]:
-    """Execute or resume planned batches and persist every state transition."""
+    """Execute or resume national batches through a caller-supplied callback.
+
+    Completed batches are skipped, each attempted transition is persisted, and
+    failures can stop execution or be recorded while later batches continue.
+    ``limit`` and ``jurisdiction_pruids`` bound the selected work; ``workers``
+    controls independent batch processes. The callback owns batch-specific
+    synthesis and must return serializable result evidence.
+    """
 
     if limit is not None and limit < 1:
         raise ValueError("limit must be at least 1")

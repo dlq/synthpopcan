@@ -3,6 +3,8 @@
 The top-level package intentionally exposes a small beginner-friendly API for
 notebooks and short scripts. Import from modules such as ``synthpopcan.ipf`` or
 ``synthpopcan.tree`` when you need lower-level research and maintainer tools.
+The beginner surface also supports validated enrichment sidecars without
+exposing source-specific adapter internals.
 """
 
 from synthpopcan.api import (

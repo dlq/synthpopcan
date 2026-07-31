@@ -22,6 +22,8 @@ It complements, rather than replaces, the other project records:
 | [0004](0004-small-beginner-python-api.md) | Accepted (retrospective) | Maintain a small beginner-facing top-level Python API. |
 | [0005](0005-local-source-data-and-reviewed-model-artifacts.md) | Accepted (retrospective) | Keep source records local and distribute only reviewed model artifacts. |
 | [0006](0006-canonical-release-and-archive-authorities.md) | Accepted (retrospective) | Give each publication surface a defined authority. |
+| [0007](0007-explicit-census-geography-identity.md) | Accepted (retrospective) | Identify Census geography by vintage, level, namespace, and identifier. |
+| [0008](0008-immutable-enrichment-sidecars.md) | Accepted (retrospective) | Add external context through governed, immutable sidecars. |
 
 ## Recording A Decision
 

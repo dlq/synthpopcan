@@ -125,12 +125,22 @@ aggregate national evidence. Detailed batch maps are opt-in; one compact
 national overview is produced after completion. See {doc}`small-area` before
 attempting a national run.
 
+```{admonition} Unreleased 0.7.0 commands
+:class: note
+
+The national DA/ADA commands are implemented on the development branch but are
+not included in the published `0.6.3` package. Use a source checkout until
+`0.7.0` is published.
+```
+
 ### External Context
 
 After creating a linked population, use {doc}`enrichment` to register an
 immutable source revision and attach a normalized geography, facility, or
 other governed sidecar layer. Enrichment keeps the base household/person files
 unchanged and rejects implicit cross-vintage geography joins.
+
+The `enrich` command group is also an unreleased `0.7.0` development feature.
 
 ### Developing a Model
 

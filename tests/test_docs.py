@@ -12,6 +12,7 @@ import click
 
 import synthpopcan
 from synthpopcan.cli import cli
+from synthpopcan.enrichment import SourceProfile
 
 
 def test_citation_metadata_matches_release() -> None:
@@ -330,12 +331,30 @@ def test_library_examples_and_companion_notebook_are_parseable() -> None:
         "generate_from_model",
         "calibrate_small_area",
         "render_small_area_map",
+        "enrich_population",
     ):
         assert workflow_name in notebook_text
 
     for cell in notebook["cells"]:
         if cell["cell_type"] == "code":
             ast.parse("".join(cell["source"]), filename=f"{notebook_path}:{cell['id']}")
+
+
+def test_enrichment_source_profile_example_uses_the_current_schema() -> None:
+    """Keep the complete enrichment walkthrough aligned with its parser."""
+
+    text = Path("docs/enrichment.md").read_text()
+    json_blocks = re.findall(
+        r"^```json\n(.*?)^```$",
+        text,
+        re.MULTILINE | re.DOTALL,
+    )
+
+    assert json_blocks, "docs/enrichment.md should include a source-profile example"
+    profile = SourceProfile.from_dict(json.loads(json_blocks[0]))
+    assert profile.geography is not None
+    assert profile.geography.census_vintage == 2021
+    assert profile.geography.geography_level == "da"
 
 
 def test_beginner_notebook_code_cells_execute(tmp_path: Path, monkeypatch) -> None:

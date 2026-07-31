@@ -14,7 +14,9 @@ It gives us a few functions for **common work**:
 - generate linked household/person rows from a prepared model package;
 - calibrate generated linked household/person candidates to small-area
   household controls;
-- render a browser map from calibrated small-area output.
+- render a browser map from calibrated small-area output; and
+- attach a validated external-data sidecar without changing the linked
+  household/person files.
 
 It does **not** expose training, auditing, packaging, source inspection, or release
 workflows at the top level. Those remain available in the command line and in
@@ -22,7 +24,7 @@ the lower-level library modules described in [Advanced Library Use](library.md).
 
 ## The Beginner Paths
 
-The beginner API corresponds to the **three web app paths**:
+Three beginner API paths correspond to the **three web app paths**:
 
 1. **IPF from margin tables:** read seed rows, read normalized controls, fit
    IPF weights, then write a weighted or expanded population artifact.
@@ -32,13 +34,16 @@ The beginner API corresponds to the **three web app paths**:
    candidate CSVs, calibrate household rows to small-area controls, and write
    household/person CSVs with an assigned geography such as census tract or ADA.
 
-The web app runs IPF and prepared-model generation through the same Python
-implementations used by scripts. It still prepares the small-area run and hands
-its settings to the CLI or Python API until that workflow is migrated.
+The API also provides a fourth, command-line/library-only path:
 
-Use the **web app** when we want guided local controls, previews, and downloads.
-Use the **beginner API** when we want the same work inside a notebook, script, or
-teaching example.
+4. **External-data enrichment:** attach a validated normalized sidecar layer to
+   an existing linked population while preserving the base files.
+
+The web app runs IPF, prepared-model generation, and small-area synthesis as
+durable Python-backed workflows. Use the **web app** when we want guided local
+controls, previews, and downloads. Use the **beginner API** when we want the
+same computational work inside a notebook, script, or teaching example, or
+when we need the current enrichment workflow.
 
 ## Why Use a Notebook?
 
@@ -349,6 +354,44 @@ map_path = spc.render_small_area_map(
     out="data/work/canada-da-2021/quebec-da-map.html",
 )
 ```
+
+## Attach an External Context Layer
+
+**Unreleased 0.7.0 template: prepare the source and geography records first.**
+The complete {doc}`enrichment` walkthrough explains how to create
+`source-profile.json`, register an immutable resource revision, normalize a
+sidecar CSV, and interpret unmatched geographies.
+
+Once those records exist, the beginner API keeps the call compact:
+
+```python
+enrichment = spc.enrich_population(
+    "synthetic-da-population/",
+    "normalized-area-context.csv",
+    source_profile="source-profile.json",
+    resource_record="resource-record.json",
+    layer_id="example.area-context.2025",
+    layer_class="area-attributes",
+    key_columns=["DAUID"],
+    variables=["context_category"],
+    base_geography={
+        "schema_version": "synthpopcan-geography-universe-v1",
+        "census_vintage": 2021,
+        "geography_level": "da",
+        "identifier_namespace": "statcan:census:2021:da",
+        "identifier_column": "DAUID",
+        "dguid_column": None,
+    },
+    output_dir="area-context-enrichment/",
+    limitations=["Area context is not person-level exposure."],
+)
+
+enrichment.validation["passed"]
+```
+
+The result points to the copied sidecar and its manifest. It does not return a
+widened household or person table. Keep the source profile, resource record,
+normalization code, manifest, and coverage report with the notebook.
 
 ## Reproducible Generation
 

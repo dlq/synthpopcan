@@ -221,6 +221,10 @@ and national DA workflows:
 | `da-british-columbia` | British Columbia through DA level |
 | `da-territories` | Yukon, Northwest Territories, and Nunavut through DA level |
 
+The six regional DA keys are an **unreleased 0.7.0 development feature**.
+The published `0.6.3` package includes the earlier registered 2021 products but
+not the national DA orchestration added on the development branch.
+
 The six regional DA products are preferred for restartable national work; they
 cover the same 13 jurisdictions without requiring the single national profile
 to be downloaded and expanded as one object. Do not substitute `csd` for
@@ -256,6 +260,16 @@ a different geography, or use category labels that do not match the seed. Use
 **Download fails:** public Statistics Canada URLs can change. Record the
 product ID, the date, the exact command, and the error message. Check whether
 the product ID still appears in `statcan wds search` results.
+
+**A Census Profile product is refused:** product keys are year-specific. Run
+`synthpopcan statcan census-profile fetch --help` in the environment that will
+perform the download, then choose a key registered for that `--year`. Boundary
+commands use shorter geography codes and are a different product registry.
+
+**A regional DA file has an unexpected archive member name:** use the
+SynthPopCan fetch command rather than renaming archive contents manually. The
+registered adapter tolerates Statistics Canada's known regional naming
+differences and records the selected source revision in the manifest.
 
 **A table has many columns:** normalize only the dimensions needed for the
 first fit. Add more dimensions after a simpler fit validates.

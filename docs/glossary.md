@@ -166,7 +166,8 @@ and are finer than ADAs, but controls can become sparse.
 placement geography, not the first place to calibrate household composition.
 
 **Target geography**
-: The geography we are fitting or assigning output to, such as CT, ADA, or DA.
+: The geography we are fitting or assigning output to, such as CT, CSD, ADA,
+or DA.
 
 **Wall-to-wall coverage**
 : Complete coverage of a province, territory, or country. CTs are not

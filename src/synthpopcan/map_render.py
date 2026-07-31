@@ -1485,7 +1485,14 @@ def prepare_national_map_statistics(
     out_path: Path | None = None,
     jurisdiction_pruids: frozenset[str] | None = None,
 ) -> dict[str, object]:
-    """Aggregate standard map statistics from completed national-plan batches."""
+    """Aggregate and cache map statistics from national-plan batch artifacts.
+
+    Every selected completed household/person pair is streamed once and tied to
+    its recorded checksum. A complete plan is required unless
+    ``jurisdiction_pruids`` explicitly selects completed subsets. The returned
+    evidence identifies coverage, source artifacts, cache validity, and the
+    standard household/person variables available to the map.
+    """
 
     from synthpopcan.statcan import file_integrity
 
@@ -1636,7 +1643,14 @@ def render_national_plan_map(
     title: str = "National Synthetic Population",
     jurisdiction_pruids: frozenset[str] | None = None,
 ) -> dict[str, object]:
-    """Render a completed national plan or completed jurisdiction subset."""
+    """Render a national polygon map or an explicit completed subset.
+
+    Plan geography, prepared jurisdiction boundaries, and cached batch
+    statistics are validated and combined into the standard interactive
+    choropleth. Partial plans require ``jurisdiction_pruids`` so their output
+    cannot be mistaken for national coverage. The returned report records the
+    map path, selected coverage, and supporting artifacts.
+    """
 
     from synthpopcan.geography import statcan_geography_universe
 

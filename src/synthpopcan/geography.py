@@ -43,7 +43,14 @@ _SHA256 = re.compile(r"^[a-f0-9]{64}$")
 
 @dataclass(frozen=True)
 class GeographyUniverse:
-    """The explicit Census context shared by identifiers in one resource."""
+    """The Census context shared by every geography identifier in a resource.
+
+    A short code such as a DAUID is not globally unique across Census vintages
+    or identifier systems. This object records the vintage, geography level,
+    namespace, and source columns needed to interpret all identifiers in one
+    table or artifact. Use :func:`statcan_geography_universe` for the standard
+    Statistics Canada namespace.
+    """
 
     census_vintage: int
     geography_level: str
@@ -112,7 +119,14 @@ class GeographyUniverse:
 
 @dataclass(frozen=True)
 class GeographyIdentity:
-    """One unambiguous geography identifier in an explicit Census context."""
+    """One geography identifier with enough context for safe comparison.
+
+    The canonical key combines Census vintage, geography level, identifier
+    namespace, and short identifier. An optional DGUID provides another
+    publisher-issued identity check but does not replace the explicit universe.
+    Use :func:`ensure_geography_compatible` before joining independently
+    obtained identities.
+    """
 
     census_vintage: int
     geography_level: str
@@ -194,7 +208,11 @@ class GeographyIdentity:
 class GeographyRelationship:
     """One publisher-backed parent/child relationship.
 
-    Both sides carry explicit Census geography identities.
+    Both sides carry explicit Census geography identities. The record also
+    identifies the authoritative product, release date, exact source checksum,
+    and selection method supporting the relationship. It rejects cross-vintage
+    relationships rather than inferring that matching-looking identifiers are
+    historically comparable.
     """
 
     child: GeographyIdentity
@@ -256,7 +274,12 @@ def statcan_geography_identity(
     *,
     dguid: str | None = None,
 ) -> GeographyIdentity:
-    """Build an identity in Statistics Canada's Census identifier namespace."""
+    """Build one identifier in the standard Statistics Canada Census namespace.
+
+    The namespace is derived as ``statcan:census:{vintage}:{level}``. The
+    function normalizes the level to lowercase but preserves the supplied
+    identifier and optional DGUID exactly.
+    """
     level = geography_level.lower()
     return GeographyIdentity(
         census_vintage=census_vintage,
@@ -274,7 +297,13 @@ def statcan_geography_universe(
     *,
     dguid_column: str | None = None,
 ) -> GeographyUniverse:
-    """Build one explicit Statistics Canada Census geography identifier universe."""
+    """Build a resource universe in the standard Statistics Canada namespace.
+
+    Parameters identify the Census vintage and geography level as well as the
+    table columns carrying the short identifier and optional DGUID. The
+    resulting object can be serialized into controls, manifests, maps, and
+    enrichment records.
+    """
     level = geography_level.lower()
     return GeographyUniverse(
         census_vintage=census_vintage,
@@ -291,7 +320,13 @@ def ensure_geography_compatible(
     *,
     require_same_identifier: bool = False,
 ) -> None:
-    """Reject a join whose vintage, level, namespace, or key is incompatible."""
+    """Reject a join across incompatible geography contexts.
+
+    Vintage, level, and namespace must always match. When
+    ``require_same_identifier`` is true, the short identifiers must also match,
+    and two present DGUIDs must agree. The function returns ``None`` on success
+    and raises :class:`ValueError` with the mismatched component otherwise.
+    """
     labels = ("Census vintage", "geography level", "identifier namespace")
     for label, left_value, right_value in zip(
         labels,
@@ -322,7 +357,13 @@ def validate_geography_identifiers(
     *,
     expected: GeographyIdentity | None = None,
 ) -> dict[str, Any]:
-    """Validate one geography universe and report duplicate canonical keys."""
+    """Validate a collection of identities without silently repairing it.
+
+    The report identifies rows from incompatible universes and duplicate
+    canonical keys. If ``expected`` is supplied, its universe is the required
+    context; otherwise the first identity establishes the expected universe.
+    Empty input is valid and reports no inferred universe.
+    """
     values = list(identities)
     issues: list[dict[str, object]] = []
     seen: set[tuple[int, str, str, str]] = set()

@@ -27,6 +27,10 @@ page are supported advanced APIs, but may still evolve before version 1.0. Other
 module attributes and ``__all__`` declarations are implementation details unless
 they are listed here.
 
+The geography, enrichment, Québec DA proof, and national small-area APIs are
+implemented on the development branch for the unreleased ``0.7.0`` line. They
+are not present in the published PyPI ``0.6.3`` package.
+
 Top-Level Beginner API
 ----------------------
 
@@ -78,8 +82,11 @@ Geography and Enrichment
 .. automodule:: synthpopcan.enrichment
    :members: SourceProfile, ResourceRecord, EnrichmentLayer,
              EnrichmentManifest, SourceAdapter, acquire_public_resource,
-             register_resource, import_normalized_layer,
-             validate_normalized_layer, verify_enrichment_manifest
+             register_resource, build_enrichment_layer,
+             build_enrichment_manifest, import_normalized_layer,
+             read_source_profile, read_resource_record,
+             read_enrichment_manifest, validate_normalized_layer,
+             verify_enrichment_manifest
 
 .. automodule:: synthpopcan.da_proof
    :members: finalize_quebec_da_proof, prepare_quebec_da_proof,
@@ -95,6 +102,15 @@ Geography and Enrichment
              prepare_canada_small_area_plan,
              estimate_national_small_area_storage,
              execute_canada_small_area_plan
+   :show-inheritance:
+
+.. automodule:: synthpopcan.national_execution
+   :members: NationalBatchRunConfiguration,
+             prepare_national_candidate_pools,
+             find_cached_national_candidate_pools,
+             reset_nonconverged_national_batches,
+             run_national_cached_batch,
+             build_national_geography_summary
    :show-inheritance:
 
 Controls
@@ -139,12 +155,14 @@ Statistics Canada
 
 .. automodule:: synthpopcan.statcan
    :members: BoundaryDownload, CensusProfileDownload, WDSTableSearchResult,
-             fetch_boundary_zip, wds_download_url,
+             get_boundary_download, fetch_boundary_zip, fetch_dgrf_2021,
+             wds_download_url,
              wds_all_cubes_lite_url, wds_metadata_url, search_wds_tables,
              fetch_wds_metadata, summarize_wds_metadata,
              classify_wds_ipf_suitability, extract_wds_dimension_names,
              extract_wds_dimension_previews, fetch_wds_table,
-             fetch_census_profile_2016, normalize_product_id,
+             fetch_census_profile, fetch_census_profile_2016,
+             normalize_product_id,
              normalize_language
    :show-inheritance:
 
@@ -173,7 +191,9 @@ Small-Area Mapping
 ------------------
 
 .. automodule:: synthpopcan.map_render
-   :members: prepare_boundaries_geojson, render_synthesis_map
+   :members: prepare_boundaries_geojson, filter_boundaries_geojson,
+             partition_boundaries_geojson, render_synthesis_map,
+             prepare_national_map_statistics, render_national_plan_map
    :show-inheritance:
 
 Tree Models

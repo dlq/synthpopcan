@@ -41,6 +41,15 @@ only want to **use the command line or beginner Python API**, start with the
 PyPI installation. If we want to **edit the code, documentation, or tests**, use
 the source checkout.
 
+```{admonition} Published and development features
+:class: note
+
+`pip install synthpopcan` and `uvx synthpopcan` install the current published
+package. The `latest` documentation can also describe development features
+planned for the next release. A section labelled **Unreleased 0.7.0** requires
+the source-checkout path below until `0.7.0` is published.
+```
+
 ## Requirements
 
 - Python 3.11 or newer in the macOS, Linux, or WSL environment where we will run

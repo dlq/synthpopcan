@@ -44,6 +44,10 @@ Prepared-model generation is another **New run** path. **Small-area workflow**
 opens the linked generation/calibration setup; its resulting job appears in the
 same durable Runs history.
 
+The current workbench does not expose the unreleased national DA/ADA
+orchestration or external-data enrichment interfaces. Use the command line or
+Python library for those development workflows.
+
 ### Workspace and run lifecycle
 
 The default workspace is `synthpopcan-runs/` under the directory where the

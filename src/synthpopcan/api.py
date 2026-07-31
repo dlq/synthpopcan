@@ -8,7 +8,8 @@ functions that map directly to common beginner work:
 * fit seed rows to margin/control totals with IPF;
 * generate linked household/person rows from a prepared model package;
 * calibrate generated linked rows to small-area household controls;
-* render browser maps from calibrated small-area or national-plan output.
+* render browser maps from calibrated small-area or national-plan output; and
+* attach validated external-data sidecars without changing the base population.
 
 Most users should import the top-level package and call these functions from
 there::
@@ -151,7 +152,13 @@ class SmallAreaResult:
 
 @dataclass(frozen=True)
 class EnrichmentResult:
-    """Published sidecar layer, manifest, and source-independent validation."""
+    """Paths and validation returned by :func:`enrich_population`.
+
+    ``layer`` is the copied normalized sidecar, ``manifest`` records its source,
+    resource, geography, base-population hashes, and limitations, and
+    ``validation`` contains the source-independent key and coverage checks. The
+    result never represents a widened or rewritten household/person table.
+    """
 
     layer: Path
     manifest: Path
@@ -716,7 +723,49 @@ def enrich_population(
     observed_status: str = "observed",
     limitations: Sequence[str] = (),
 ) -> EnrichmentResult:
-    """Attach a validated normalized sidecar without changing base population files."""
+    """Attach a validated normalized sidecar to a linked population.
+
+    The function reads a versioned source profile and immutable resource record,
+    validates the normalized layer's keys, variables, lineage, and optional
+    geography against the linked-population manifest, then copies the sidecar
+    and writes an enrichment manifest in ``output_dir``. It verifies that the
+    original household, person, and linked-manifest bytes did not change.
+
+    Parameters
+    ----------
+    population:
+        Linked-population v1 directory or paired files returned by
+        :func:`write_linked_population`.
+    layer:
+        Normalized CSV sidecar to validate and copy.
+    source_profile, resource_record:
+        Parsed records or paths to versioned JSON records describing the source
+        and exact input bytes.
+    layer_id, layer_class:
+        Stable layer identifier and one supported structural class.
+    key_columns, variables:
+        CSV columns used for linkage and columns published as values.
+    base_geography:
+        Explicit geography universe for a geography-bearing layer.
+    output_dir:
+        Destination for the copied sidecar and ``manifest.json``.
+    observed_status:
+        Whether values are ``observed``, ``derived``, or ``modeled``.
+    limitations:
+        Reader-facing cautions that should travel with the bundle.
+
+    Returns
+    -------
+    EnrichmentResult
+        Written paths and the validation report.
+
+    Raises
+    ------
+    ValueError
+        If records, lineage, columns, keys, or geography are incompatible.
+    RuntimeError
+        If the base linked-population bytes change during publication.
+    """
     if isinstance(population, LinkedPopulationFiles):
         population_directory = population.households.parent
     else:
@@ -814,6 +863,9 @@ def render_small_area_map(
     coord_precision:
         Decimal places kept in WGS-84 coordinates. Defaults to 5 for a single
         population and 3 for a national plan.
+    jurisdiction_pruids:
+        Optional province/territory PRUIDs selecting completed subsets from a
+        partial national plan. Omit for a single population or complete plan.
     geography_universe:
         Optional explicit Census vintage, level, namespace, and identifier
         column embedded in the self-contained map.

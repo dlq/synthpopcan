@@ -18,6 +18,9 @@ corresponding command-line page first:
   discovery.
 - [Small-Area Linked Synthesis](small-area.md) explains household-first
   calibration, geography controls, integerization, and mapping.
+- [External-Data Enrichment](enrichment.md) explains source authority,
+  immutable resource revisions, geography-safe sidecars, and the limits of a
+  successful join.
 - [Tree Models](tree.md) explains household/person generation, tree and forest
   concepts, support, purity, and model quality.
 - [Validate](validate.md) explains what validation reports do and do not prove.
@@ -265,14 +268,15 @@ person_training, person_manifest = export_training_rows(
 ## Statistics Canada Sources
 
 The `statcan` module is for discovery and download automation. It wraps
-Statistics Canada WDS endpoints and supported 2016 Census Profile bulk files
-with small Python functions that return plain dataclasses, dictionaries, and
-paths.
+Statistics Canada WDS endpoints and registered 2016 and 2021 Census Profile
+bulk products with small Python functions that return plain dataclasses,
+dictionaries, and paths.
 
 ```python
 from pathlib import Path
 
 from synthpopcan.statcan import (
+    fetch_census_profile,
     fetch_wds_metadata,
     fetch_wds_table,
     search_wds_tables,
@@ -288,12 +292,53 @@ summary = summarize_wds_metadata(metadata)
 print(summary["ipf_suitability"])
 
 zip_path = fetch_wds_table(matches[0].product_id, Path("data/raw/statcan/wds"))
+profile_path = fetch_census_profile(
+    "ct",
+    Path("data/raw/statcan/census/2021/profiles/ct"),
+    census_year=2021,
+)
 ```
 
 Live source functions depend on Statistics Canada service availability and may
 raise network or source-format errors. In reproducible research scripts, store
 the downloaded source files and provenance manifests rather than relying on live
 downloads during every run.
+
+## Geography Identity
+
+**Unreleased 0.7.0 API.** A geography code is not self-describing. The same
+short identifier can be meaningless or misleading without its Census vintage,
+level, and namespace. `GeographyUniverse` records the context shared by a file;
+`GeographyIdentity` represents one identifier within that context.
+
+```python
+from synthpopcan.geography import (
+    ensure_geography_compatible,
+    statcan_geography_identity,
+    statcan_geography_universe,
+)
+
+da_universe = statcan_geography_universe(
+    2021,
+    "da",
+    "DAUID",
+    dguid_column="DGUID",
+)
+left = da_universe.identity("24660001", dguid="2021S051224660001")
+right = statcan_geography_identity(
+    2021,
+    "da",
+    "24660001",
+    dguid="2021S051224660001",
+)
+
+ensure_geography_compatible(left, right, require_same_identifier=True)
+```
+
+Compatibility checks reject different vintages, levels, namespaces, short
+identifiers, or conflicting DGUIDs. They do not infer a parent/child
+relationship: use an authoritative relationship product and
+`GeographyRelationship` when connecting DA, CSD, CMA/CA, or other levels.
 
 ## Small-Area Synthesis
 
@@ -444,6 +489,95 @@ For most notebooks, the top-level `spc.calibrate_small_area` and
 `spc.render_small_area_map` wrappers are shorter. Use these module functions
 when we need the intermediate reports, custom output paths, or explicit boundary
 preparation shown here.
+
+### Plan National DA or ADA Work
+
+**Unreleased 0.7.0 template: large official inputs required.** National DA and
+ADA execution uses one shared planning contract while preserving each level's
+different Census Profile source layout. The planner verifies source coverage,
+uses the final 2021 DGRF for province/territory relationships, partitions the
+national boundary file, and writes restartable batches.
+
+```python
+from pathlib import Path
+
+from synthpopcan.national_small_area import (
+    national_2021_profile_paths,
+    prepare_canada_small_area_plan,
+)
+
+geography_level = "da"
+profile_root = Path("data/raw/statcan/census/2021/profiles/da")
+profile_paths = national_2021_profile_paths(profile_root, geography_level)
+
+plan = prepare_canada_small_area_plan(
+    profile_paths,
+    Path("data/derived/statcan/census/2021/boundaries/2021-boundary-da.geojson"),
+    Path(
+        "data/raw/statcan/census/2021/geography/"
+        "relationships/2021_98260004.csv"
+    ),
+    Path("data/work/canada-da-2021"),
+    geography_level=geography_level,
+    max_households_per_batch=100_000,
+)
+
+print(plan["coverage"])
+print(plan["storage_estimate"])
+```
+
+`execute_canada_small_area_plan` is a lower-level executor that accepts a
+project-supplied batch callback. The maintained prepared-model execution,
+candidate-pool caching, worker limits, resume behavior, and national map are
+assembled by `synthpopcan geo national-da run` and `national-ada run`; use
+those commands unless we are deliberately implementing another batch backend.
+
+## External-Data Enrichment
+
+**Unreleased 0.7.0 template: replace every research path and source record.**
+The enrichment library separates source meaning, exact resource bytes,
+normalized layer structure, and the manifest that composes a layer with an
+unchanged linked population.
+
+```python
+from pathlib import Path
+
+from synthpopcan.enrichment import (
+    import_normalized_layer,
+    read_resource_record,
+    read_source_profile,
+)
+
+source = read_source_profile(Path("source-profile.json"))
+resource = read_resource_record(Path("resource-record.json"))
+
+manifest, validation = import_normalized_layer(
+    Path("synthetic-da-population"),
+    Path("normalized-area-context.csv"),
+    Path("area-context-enrichment"),
+    source=source,
+    resource=resource,
+    layer_id="example.area-context.2025",
+    layer_class="area-attributes",
+    key_columns=("DAUID",),
+    variables=("context_category",),
+    base_geography=source.geography,
+    observed_status="observed",
+    reproduction_request={
+        "workflow": "enrichment",
+        "operation": "import-normalized-layer",
+        "normalization_notebook": "prepare-area-context.ipynb",
+    },
+    limitations=("Area context is not person-level exposure.",),
+)
+
+print(validation["passed"], manifest.layers[0].row_count)
+```
+
+The lower-level function returns the validated in-memory manifest as well as
+the report. Use `verify_enrichment_manifest` after copying or restoring the
+bundle. Start with {doc}`enrichment` before using these objects; a technically
+valid sidecar is not evidence that its variables support a substantive claim.
 
 ## Tree Models
 

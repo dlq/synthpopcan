@@ -47,7 +47,8 @@ steps.
 | We have seed rows and margins | {doc}`ipf` |
 | We have a reviewed model package | {doc}`tree-generate` |
 | We need to train or audit a model | {doc}`tree` |
-| We need CT, ADA, or DA assignment | {doc}`small-area` |
+| We need CT, CSD, ADA, or DA assignment | {doc}`small-area` |
+| We need to attach external context | {doc}`enrichment` |
 | We need to inspect data first | {doc}`data` |
 | We need to check results | {doc}`validate` |
 
@@ -90,7 +91,8 @@ exposes a small surface:
 - fit IPF weights;
 - generate from a reviewed model package;
 - calibrate linked candidates to small-area controls;
-- render calibrated small-area output as a browser map.
+- render calibrated small-area output as a browser map; and
+- attach a validated external-data sidecar without rewriting the population.
 
 Use this path when:
 
@@ -162,17 +164,43 @@ Small-area linked synthesis is the **bridge** between broad generated
 household/person candidates and public Census Profile controls for target
 geographies. It is the path we use when generated households need to be assigned
 to **census tracts**, **aggregate dissemination areas**, or **dissemination
-areas**.
+areas**. Census subdivisions are also supported when municipal or
+municipal-equivalent geography fits the research question.
 
 Use this path when:
 
 - we already have candidate linked household/person rows;
-- we have Census Profile controls for CTs, ADAs, or DAs;
+- we have Census Profile controls for CTs, CSDs, ADAs, or DAs;
 - we want output households and people with an assigned geography column.
 
 Dissemination blocks belong later in the workflow. They are better understood
-as a **placement geography** after households have been calibrated to CTs, ADAs,
-or DAs.
+as a **placement geography** after households have been calibrated to CTs,
+CSDs, ADAs, or DAs.
+
+(if-we-need-external-context)=
+
+```{rubric} If We Need External Context
+:class: workflow-step
+```
+
+Start with {doc}`enrichment`.
+
+An enrichment layer adds area characteristics, facilities, governed
+household/person attributes, or relational context **beside** a linked
+population. It does not widen or rewrite the base household and person tables.
+The manifest records the source revision, licence and access context,
+geography identity, linkage keys, coverage, limitations, and checksums.
+
+Use this path when:
+
+- the synthetic population already exists;
+- a research question needs context from another documented source;
+- the source and population use compatible geography identifiers; and
+- we need to prove that the original linked population remained unchanged.
+
+The enrichment framework is an **unreleased 0.7.0 development feature**. Until
+`0.7.0` is published, follow the source-checkout installation path before using
+the `synthpopcan enrich` commands or `spc.enrich_population`.
 
 (if-we-are-still-inspecting-sources)=
 

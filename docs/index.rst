@@ -15,6 +15,13 @@ rules; and **keep the evidence** with the output. The final CSV is only part of
 the work: the source notes, category mappings, commands, random seeds, and
 validation reports are what make the generated population interpretable.
 
+.. note::
+
+   The ``latest`` documentation follows the development branch. Features
+   labelled **Unreleased 0.7.0** require a source checkout until that release is
+   published; they are not present in the PyPI ``0.6.3`` package. The
+   :doc:`Installation <installation>` page explains both installation paths.
+
 Start By Task
 -------------
 

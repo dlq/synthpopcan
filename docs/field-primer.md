@@ -150,6 +150,12 @@ from SynthPopCan's linked-candidate and calibration workflow, but its published
 schema, national scale, DA outputs, validation design, and documented failure
 cases give us concrete questions against which to test our own work.
 
+SynthPopCan follows the same broad lesson by treating national output as a
+collection of restartable, locally validated fits rather than one national
+calibration. See {doc}`small-area` for CT, CSD, ADA, and DA workflows, and
+{doc}`enrichment` for attaching external context without changing the base
+population.
+
 ## Two Families of Methods
 
 SynthPopCan currently separates two method families.
