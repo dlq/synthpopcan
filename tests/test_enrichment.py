@@ -358,6 +358,7 @@ def test_manifest_composes_sidecars_without_mutating_base_population(
     assert verification["base_population_unchanged"] is False
 
 
+@pytest.mark.scenario("SCN-ENRICH-001")
 def test_generic_import_publishes_only_sidecars_and_reuses_shared_contracts(
     tmp_path: Path,
 ) -> None:
@@ -505,7 +506,11 @@ def test_beginner_api_imports_normalized_layer(tmp_path: Path) -> None:
     _layer(normalized, source, resource)
 
     result = spc.enrich_population(
-        population,
+        spc.LinkedPopulationFiles(
+            households=population / "households.csv",
+            persons=population / "persons.csv",
+            manifest=population / "manifest.json",
+        ),
         normalized,
         source_profile=source,
         resource_record=resource,
@@ -521,6 +526,20 @@ def test_beginner_api_imports_normalized_layer(tmp_path: Path) -> None:
     assert result.validation["passed"] is True
     assert result.layer.is_file()
     assert result.manifest.is_file()
+
+    path_result = spc.enrich_population(
+        population,
+        normalized,
+        source_profile=source,
+        resource_record=resource,
+        layer_id="example.area-context.path-input.v1",
+        layer_class="area-attributes",
+        key_columns=("DAUID",),
+        variables=("food_environment",),
+        base_geography=statcan_geography_universe(2021, "da", "DAUID"),
+        output_dir=tmp_path / "enrichment-path-input",
+    )
+    assert path_result.validation["passed"] is True
 
 
 def test_generic_import_rejects_unreviewed_cross_vintage_join(

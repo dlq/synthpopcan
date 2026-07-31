@@ -151,6 +151,7 @@ def test_small_area_workflow_generates_calibrates_and_reports(tmp_path: Path) ->
         for path in (
             result.households_path,
             result.persons_path,
+            result.manifest_path,
             result.report_path,
             result.weights_path,
             result.map_path,

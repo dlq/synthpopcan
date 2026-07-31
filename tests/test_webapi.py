@@ -442,6 +442,7 @@ def test_small_area_api_runs_generation_and_calibration_durably(tmp_path: Path) 
     assert {artifact["logical_name"] for artifact in manifest["artifacts"]} == {
         "households",
         "persons",
+        "linked_population_manifest",
         "small_area_report",
     }
     assert "geo synthesize" in manifest["reproduction"]["shell"]
@@ -464,6 +465,30 @@ def test_model_preflight_caps_local_household_output(tmp_path: Path) -> None:
                 "workflow": "model",
                 "inputs": {"model_id": "demo-linked-household-person"},
                 "options": {"households": LOCAL_RUN_MAX_HOUSEHOLDS + 1},
+            },
+        )
+
+
+def test_model_preflight_strictly_validates_request_field_types(tmp_path: Path) -> None:
+    store = RunStore(tmp_path)
+
+    with pytest.raises(ValueError, match="households"):
+        _preflight_model_run(
+            store,
+            {
+                "workflow": "model",
+                "inputs": {"model_id": "demo-linked-household-person"},
+                "options": {"households": "10"},
+            },
+        )
+
+    with pytest.raises(ValueError, match="extra_forbidden"):
+        _preflight_model_run(
+            store,
+            {
+                "workflow": "model",
+                "inputs": {"model_id": "demo-linked-household-person"},
+                "options": {"households": 10, "househodls": 10},
             },
         )
 

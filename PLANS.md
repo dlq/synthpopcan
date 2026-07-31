@@ -2,7 +2,8 @@
 
 Status: release-phased roadmap\
 Last updated: 2026-07-31\
-Current release: `0.6.3`
+Current published release: `0.6.3`\
+Release candidate: `0.7.0`
 
 ## Current Focus
 
@@ -132,14 +133,6 @@ geography-keyed enrichment alone:
   batches, one-pass boundary partitioning, reusable evidence-checked
   condition-specific candidate pools, atomic/checkpointed resumable execution,
   bounded parallel workers, national aggregate evidence, and disk safeguards;
-- follow that proof with a separately validated **full-field ADA/DA control
-  expansion**: audit every generated household and person field against the
-  relevant Census Profile universe, publish a versioned field/category
-  crosswalk, and classify each field as directly controlled, controlled through
-  an explicitly documented coarser margin, or unavailable/uncontrolled. Add
-  compatible linked-person controls to national planning and batch calibration,
-  then regenerate and validate affected populations. Do not imply that an
-  uncontrolled carried-through PUMF attribute is an ADA- or DA-local estimate;
 - add versioned source-resource and enrichment manifests that compose the
   existing source provenance, linked-population v1, and durable-run records;
 - implement immutable, bounded, checksum-recorded resource retrieval and
@@ -162,6 +155,12 @@ that the broad Canada PUMF model is fit for every provincial, territorial, or
 small-area research question, 2021-to-2016 DA concordance,
 arbitrary-polygon selection, a general CKAN browser, or an automatic
 compatibility promise for every candidate source.
+
+The separately validated full-field ADA/DA control-coverage audit and linked
+person-control expansion remain a post-`0.7.0` correctness milestone. Until
+that work is complete, every carried-through PUMF field that is not named in a
+fitted local margin remains explicitly uncontrolled and must not be presented
+as an ADA- or DA-local estimate.
 
 Once the framework ships, another dataset may be integrated whenever a
 research question, access and redistribution authority, geographic and
@@ -251,6 +250,42 @@ JOSS submission is not currently ready. The repository became public in June
 iterative development plus demonstrated research use and other readiness
 evidence. January 2027 is only the earliest plausible review point, not a
 deadline or promise.
+
+### Strict typing migration
+
+The package is clean under Pyright's `standard` mode and has complete public
+type information. An initial 2026-07-31 strict-mode audit reported 986
+diagnostics; 923 (93.6%) were cascading unknown member, variable, or argument
+types, while 16 source files were already strict-clean. The first ratchet made
+those 16 files strict, fixed every argument-type, general-type, and deprecated
+annotation diagnostic, and reduced the remaining strict total to 908. Treat
+the rest as an incremental quality ratchet rather than a release-blocking
+all-at-once conversion.
+
+Next actions, in order:
+
+- keep `standard` mode blocking for the complete package and retain the 16
+  clean files in Pyright's per-path `strict` list so they cannot regress;
+- type dynamic-data boundaries shared by the assurance/preflight reports, CLI
+  output, national execution manifests, run artifacts, and GeoJSON/map paths;
+- use Pydantic for untrusted HTTP, persisted JSON, and worker-message
+  boundaries, but prefer `TypedDict`, dataclasses, and protocols for trusted
+  internal structures, and retain validated models instead of immediately
+  converting them back to `dict[str, Any]`;
+- concentrate root fixes in `webapi.py`, `map_render.py`, `cli_output.py`,
+  `national_execution.py`, and `assurance.py`, rather than suppressing their
+  downstream findings with blanket `Any` or `cast()` calls;
+- isolate pandas, pyshp, and scikit-learn behind typed adapters or reviewed
+  stubs, and document narrow exceptions such as decorator-registered FastAPI
+  handlers that strict mode otherwise reports as unused; and
+- expand the strict path list whenever a module reaches zero diagnostics, with
+  CI continuing to reject regressions in both the standard package check and
+  the strict-clean subset.
+
+The migration is complete when the source package passes strict mode with only
+explicitly documented third-party or framework exceptions and without using
+blanket `Any`, unchecked casts, or Pydantic models solely to silence the type
+checker.
 
 ## Explicitly Deferred Or Conditional
 

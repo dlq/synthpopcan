@@ -158,14 +158,13 @@ def inspect_microdata(
                 geo_columns=geo_columns,
                 id_columns=id_columns,
             )
+            summary = sample.as_summary()
         else:
             summary = inspect_statcan_microdata(path, source_format=source_format)
     except OSError as exc:
         raise click_file_access_error(path, "read", exc) from exc
     except ValueError as exc:
         raise click_value_error(exc) from exc
-    if source_format == "fixture-v1":
-        summary = sample.as_summary()
     write_output(summary, output_format, title="Microdata Summary")
 
 

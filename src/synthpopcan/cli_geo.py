@@ -14,6 +14,7 @@ from synthpopcan.cli_output import click_file_access_error, click_value_error
 from synthpopcan.console import print_wrote
 from synthpopcan.diagnostics import format_categories, format_number
 from synthpopcan.geography import GeographyUniverse, statcan_geography_universe
+from synthpopcan.linked_schema import write_linked_population_contract
 from synthpopcan.national_small_area import CANADA_SMALL_AREA_JURISDICTIONS
 from synthpopcan.small_area_synthesis import (
     calibrate_linked_household_csvs,
@@ -412,8 +413,17 @@ def calibrate_command(
     except ValueError as exc:
         raise click_value_error(exc) from exc
 
+    manifest_out = output_dir / "manifest.json"
+    write_linked_population_contract(
+        manifest_out,
+        households_out,
+        persons_out,
+        geography_column=output_geo_column,
+    )
+
     print_wrote(households_out)
     print_wrote(persons_out)
+    print_wrote(manifest_out)
     if weights_out is not None:
         print_wrote(weights_out)
     print_wrote(report_out)
@@ -2375,8 +2385,17 @@ def synthesize_command(
         except ValueError as exc:
             raise click_value_error(exc) from exc
 
+    manifest_out = output_dir / "manifest.json"
+    write_linked_population_contract(
+        manifest_out,
+        households_out,
+        persons_out,
+        geography_column=output_geo_column,
+    )
+
     print_wrote(households_out)
     print_wrote(persons_out)
+    print_wrote(manifest_out)
     if weights_out is not None:
         print_wrote(weights_out)
     print_wrote(report_out)

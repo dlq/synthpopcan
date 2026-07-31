@@ -62,7 +62,7 @@ SynthPopCan has **two tree-family model types**:
   needs support, purity, and validation checks.
 
 Reading a portable CART model and generating from it do not import
-scikit-learn. In the unreleased `0.7.0` package, only **training** a CART model
+scikit-learn. Starting with `0.7.0`, only **training** a CART model
 requires the optional dependency:
 
 ```bash

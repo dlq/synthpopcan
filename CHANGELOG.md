@@ -2,7 +2,9 @@
 
 All notable public changes to SynthPopCan are tracked here.
 
-## Unreleased
+## 0.7.0 - 2026-07-31
+
+Explicit Census geography and reusable external-data enrichment framework.
 
 - Publish the independently versioned `geodata-v1` display-boundary catalogue
   and checksummed 2016 national and 2021 national/regional assets; add verified,
@@ -56,6 +58,13 @@ All notable public changes to SynthPopCan are tracked here.
 - Version StatCan resource manifests with explicit source revisions, SHA-256
   digests, byte sizes, and geography identity for single-universe boundary
   products.
+- Validate untrusted local-web requests, durable manifests, uploads, events,
+  and worker messages with strict Pydantic runtime schemas; move the complete
+  package to Pyright standard mode and ratchet 16 clean modules to strict.
+- Make calibrated CLI, beginner-API, and durable small-area workflows publish
+  a linked-population manifest so their outputs compose directly with
+  enrichment; align standard StatCan boundary-field inference and extend the
+  isolated-wheel smoke test through an offline enrichment workflow.
 
 ## 0.6.3 - 2026-07-27
 

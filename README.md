@@ -26,11 +26,10 @@ Near-term goals:
    census-vintage-specific.
 1. Maintain a local web app for configuring runs, inspecting controls, generating from prepared models, validating outputs, and downloading results.
 
-The development branch now contains the unreleased `0.7.0` geography contracts,
-national DA/ADA orchestration, verified prepared-display-boundary retrieval,
-and reusable external-data enrichment framework for public, locally supplied,
-licensed, and restricted sources. The published `0.6.3` package does not yet
-contain those commands. Can-FED v2 and ODEF v3 are planned as contrasting
+The `0.7.0` release adds explicit geography contracts, national DA/ADA
+orchestration, verified prepared-display-boundary retrieval, and a reusable
+external-data enrichment framework for public, locally supplied, licensed, and
+restricted sources. Can-FED v2 and ODEF v3 are planned as contrasting
 area-attribute and facility reference adapters for `0.7.1` and `0.7.2`; later
 integrations remain demand-, authority-, and validation-gated.
 

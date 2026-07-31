@@ -11,12 +11,11 @@ restricted datasets use the same contracts, but access to a dataset does not
 establish permission to publish it or its derivatives. Can-FED and ODEF are
 planned reference adapters; they do not define the framework's scope.
 
-```{admonition} Unreleased 0.7.0 feature
+```{admonition} Added in 0.7.0
 :class: note
 
-External-data enrichment is implemented on the development branch but is not
-included in the published `0.6.3` package. Use the source-checkout installation
-path until `0.7.0` is published.
+External-data enrichment publishes validated sidecars without rewriting the
+linked base population.
 ```
 
 ## Before We Enrich

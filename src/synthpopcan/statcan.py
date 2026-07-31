@@ -6,6 +6,7 @@ import hashlib
 import json
 import os
 import tempfile
+from collections.abc import Iterator
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
@@ -753,7 +754,7 @@ def normalize_dimension_name(value: str) -> str:
     return value.strip().lower()
 
 
-def _iter_wds_dimensions(metadata: dict[str, Any]):
+def _iter_wds_dimensions(metadata: dict[str, Any]) -> Iterator[dict[str, Any]]:
     """Yield each dict dimension entry from WDS metadata, tolerating shape drift."""
 
     dimensions = metadata.get("dimension") or metadata.get("dimensions", [])

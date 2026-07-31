@@ -240,7 +240,7 @@ as `PR=70`; all three use that shared northern candidate pool and separate
 territorial controls. Cross-vintage harmonization and user-supplied polygon
 intersection each require separately reviewed methods.
 
-### Validated full-field ADA/DA control expansion
+### Post-`0.7.0` full-field ADA/DA control expansion
 
 The completed national plans currently control household size and tenure. The
 linked-person records retain all model fields, but a field retained from a
@@ -251,8 +251,9 @@ with only incidental within-province variation. Map labels, metadata, and
 research claims must make that distinction explicit until the relevant local
 control is fitted.
 
-Before presenting any synthetic household or person variable as small-area
-controlled, implement a versioned 2021 Census Profile control-coverage audit
+Before presenting any additional synthetic household or person variable as
+small-area controlled, implement a versioned 2021 Census Profile
+control-coverage audit
 for **every field in the linked synthetic household and person schemas**, at
 both ADA and DA level. The audit must record, per field and PUMF category:
 
@@ -295,10 +296,10 @@ coverage, residual, support/structural-zero, suppression, and reconciliation
 reports. Regenerate—not merely remap—any population whose added controls change
 the fit, and test that current household-only runs remain reproducible.
 
-This expansion is a correctness and substantive-fitness milestone after the
-current household-control national proof, not a promise that every model field
-will acquire an exact small-area Census control. It requires review of each
-source/category crosswalk and should be released only with fixtures,
+This expansion is a post-`0.7.0` correctness and substantive-fitness milestone
+after the current household-control national proof, not a promise that every
+model field will acquire an exact small-area Census control. It requires review
+of each source/category crosswalk and should be released only with fixtures,
 documentation, and claims-to-evidence updates.
 
 The planner keeps the canonical cartographic boundaries exact. If geometry

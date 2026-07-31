@@ -76,6 +76,7 @@ from synthpopcan.models import model_payload
 from synthpopcan.tree import (
     CartTreeModel,
     FrequencyTreeModel,
+    TreeModel,
     TreeTrainingSample,
     audit_tree_model,
     generate_linked_population_to_csv,
@@ -1314,8 +1315,8 @@ def release_blocking_issues(audit: dict[str, Any]) -> list[dict[str, Any]]:
 
 def _build_linked_release_readiness_report(
     *,
-    household_model,
-    person_model,
+    household_model: TreeModel,
+    person_model: TreeModel,
     household_model_path: Path,
     person_model_path: Path,
     household_audit: dict[str, Any],
@@ -1518,7 +1519,7 @@ def validate_package_allows_generation(package: dict[str, Any]) -> None:
         )
 
 
-def package_models(package: dict[str, Any]):
+def package_models(package: dict[str, Any]) -> tuple[TreeModel, TreeModel]:
     models = _object_or_empty(package.get("models"))
     household_model = _object_or_empty(models.get("household"))
     person_model = _object_or_empty(models.get("person"))
@@ -1529,7 +1530,7 @@ def package_models(package: dict[str, Any]):
     )
 
 
-def tree_model_from_payload(payload: dict[str, Any]):
+def tree_model_from_payload(payload: dict[str, Any]) -> TreeModel:
     model_type = payload.get("model_type")
     if model_type == "conditional-frequency":
         return FrequencyTreeModel.from_dict(payload)
@@ -1996,8 +1997,8 @@ def geography_filter_manifest(
 
 
 def validate_linked_model_package_inputs(
-    household_model,
-    person_model,
+    household_model: TreeModel,
+    person_model: TreeModel,
     *,
     household_size_column: str,
 ) -> None:
@@ -2013,7 +2014,7 @@ def validate_linked_model_package_inputs(
         raise ValueError(f"person model must condition on {household_size_column!r}")
 
 
-def _generated_model_columns(model) -> set[str]:
+def _generated_model_columns(model: TreeModel) -> set[str]:
     return set(model.spec.conditioning_columns) | set(model.spec.target_columns)
 
 
@@ -2041,7 +2042,7 @@ def train_tree_sample(
     min_support: int,
     min_samples_leaf: int,
     max_depth: int | None,
-):
+) -> TreeModel:
     if method == "cart":
         return train_cart_model(
             sample,
@@ -2056,7 +2057,7 @@ def train_tree_sample(
     )
 
 
-def model_manifest(model, path: Path) -> dict[str, Any]:
+def model_manifest(model: TreeModel, path: Path) -> dict[str, Any]:
     return {
         "path": str(path),
         "model_type": model.model_type,
@@ -2069,13 +2070,13 @@ def model_manifest(model, path: Path) -> dict[str, Any]:
     }
 
 
-def _model_manifest_with_bytes(model, path: Path) -> dict[str, Any]:
+def _model_manifest_with_bytes(model: TreeModel, path: Path) -> dict[str, Any]:
     """Return :func:`model_manifest` augmented with the on-disk byte size."""
 
     return {**model_manifest(model, path), "bytes": path.stat().st_size}
 
 
-def _effective_random_seed(model, random_seed: int | None) -> int:
+def _effective_random_seed(model: TreeModel, random_seed: int | None) -> int:
     return model.spec.random_seed if random_seed is None else random_seed
 
 

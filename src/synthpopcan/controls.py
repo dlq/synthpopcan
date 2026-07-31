@@ -5,7 +5,7 @@ from __future__ import annotations
 import csv
 import json
 import math
-from collections.abc import Iterator
+from collections.abc import Generator
 from contextlib import contextmanager
 from dataclasses import dataclass
 from io import StringIO, TextIOWrapper
@@ -18,7 +18,7 @@ from synthpopcan.tabular import format_csv_number
 
 
 @contextmanager
-def _open_wds_reader(path: Path) -> Iterator[tuple[str, csv.DictReader]]:
+def _open_wds_reader(path: Path) -> Generator[tuple[str, csv.DictReader[str]]]:
     """Open a WDS ZIP and yield ``(csv_member_name, DictReader)``.
 
     Raises ``ValueError`` when the archive is not a valid ZIP.
@@ -671,7 +671,7 @@ def census_profile_template(
     geography_dimension: str = "geo",
     characteristic_column: str = "CHARACTERISTIC_NAME",
     count_column: str = "C1_COUNT_TOTAL",
-) -> dict:
+) -> dict[str, Any]:
     """Return a starter mapping template for common Census Profile margins.
 
     Supported template names are ``"age5"`` and ``"sex"``. The returned object
@@ -704,7 +704,7 @@ def census_profile_template(
     }
 
 
-def read_census_profile_mapping(path: Path) -> dict:
+def read_census_profile_mapping(path: Path) -> dict[str, Any]:
     """Read and validate a Census Profile control mapping JSON file.
 
     The function validates the high-level structure and raises ``ValueError``

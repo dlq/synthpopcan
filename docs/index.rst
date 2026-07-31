@@ -17,10 +17,10 @@ validation reports are what make the generated population interpretable.
 
 .. note::
 
-   The ``latest`` documentation follows the development branch. Features
-   labelled **Unreleased 0.7.0** require a source checkout until that release is
-   published; they are not present in the PyPI ``0.6.3`` package. The
-   :doc:`Installation <installation>` page explains both installation paths.
+   The ``latest`` documentation follows the development branch and may include
+   work planned for the next release. Use ``stable`` for the latest tagged
+   version. The :doc:`Installation <installation>` page explains package and
+   source-checkout installation paths.
 
 Start By Task
 -------------

@@ -308,7 +308,7 @@ downloads during every run.
 
 ## Geography Identity
 
-**Unreleased 0.7.0 API.** A geography code is not self-describing. The same
+**Added in 0.7.0.** A geography code is not self-describing. The same
 short identifier can be meaningless or misleading without its Census vintage,
 level, and namespace. `GeographyUniverse` records the context shared by a file;
 `GeographyIdentity` represents one identifier within that context.
@@ -494,7 +494,7 @@ preparation shown here.
 
 ### Plan National DA or ADA Work
 
-**Unreleased 0.7.0 template: large official inputs required.** National DA and
+**Maintainer template: large official inputs required.** National DA and
 ADA execution uses one shared planning contract while preserving each level's
 different Census Profile source layout. The planner verifies source coverage,
 uses the final 2021 DGRF for province/territory relationships, partitions the
@@ -515,10 +515,7 @@ profile_paths = national_2021_profile_paths(profile_root, geography_level)
 plan = prepare_canada_small_area_plan(
     profile_paths,
     Path("data/derived/statcan/census/2021/boundaries/2021-boundary-da.geojson"),
-    Path(
-        "data/raw/statcan/census/2021/geography/"
-        "relationships/2021_98260004.csv"
-    ),
+    Path("data/raw/statcan/census/2021/geography/relationships/2021_98260004.csv"),
     Path("data/work/canada-da-2021"),
     geography_level=geography_level,
     max_households_per_batch=100_000,
@@ -536,7 +533,7 @@ those commands unless we are deliberately implementing another batch backend.
 
 ## External-Data Enrichment
 
-**Unreleased 0.7.0 template: replace every research path and source record.**
+**Research template: replace every research path and source record.**
 The enrichment library separates source meaning, exact resource bytes,
 normalized layer structure, and the manifest that composes a layer with an
 unchanged linked population.
@@ -583,7 +580,7 @@ valid sidecar is not evidence that its variables support a substantive claim.
 
 ## Prepared Display Boundaries
 
-**Unreleased 0.7.0 API; network required for an HTTPS catalogue.** The geodata
+**Added in 0.7.0; network required for an HTTPS catalogue.** The geodata
 library retrieves the same display-only assets as the `geodata` command group:
 
 ```python
@@ -629,7 +626,7 @@ discusses the methodological risks; the library API gives us the objects needed
 to train, audit, serialize, and generate from those models.
 
 Portable frequency and CART models can be read and used for generation with the
-base installation. In the unreleased `0.7.0` package, calling
+base installation. Starting with `0.7.0`, calling
 `train_cart_model` requires the optional `model-build` extra; frequency-model
 training does not. See [Installation](installation.md) for the environment
 command.

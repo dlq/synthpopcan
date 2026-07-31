@@ -171,10 +171,10 @@ def test_scenario_inventory_matches_automated_test_references() -> None:
     scenario_text = Path("tests/SCENARIOS.md").read_text()
     scenario_ids = re.findall(r"^## (SCN-[A-Z]+-\d{3})$", scenario_text, re.MULTILINE)
     test_text = "\n".join(
-        (
-            Path("tests/test_workflows.py").read_text(),
+        [
+            *(path.read_text() for path in sorted(Path("tests").glob("test_*.py"))),
             Path("tests/web/scenarios.spec.mjs").read_text(),
-        )
+        ]
     )
     referenced_ids = set(re.findall(r"SCN-[A-Z]+-\d{3}", test_text))
 

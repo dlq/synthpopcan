@@ -9,6 +9,7 @@ import hmac
 import json
 import secrets
 import shutil
+from collections.abc import AsyncGenerator, AsyncIterator
 from contextlib import asynccontextmanager
 from http import HTTPStatus
 from pathlib import Path
@@ -20,8 +21,17 @@ from fastapi import FastAPI, Request, Response
 from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.concurrency import run_in_threadpool
+from starlette.middleware.base import RequestResponseEndpoint
 
 from synthpopcan import __version__
+from synthpopcan._runtime_schemas import (
+    RUN_REQUEST_ADAPTER,
+    IPFRunRequest,
+    ModelRunRequest,
+    SmallAreaEstimateRequest,
+    SmallAreaRunRequest,
+    WDSSeedControlsRequest,
+)
 from synthpopcan.controls import parse_control_table, read_control_table
 from synthpopcan.geography import GeographyUniverse
 from synthpopcan.jobs import JobManager
@@ -70,7 +80,7 @@ def create_web_app(
     job_manager = JobManager(run_store)
 
     @asynccontextmanager
-    async def lifespan(_app: FastAPI):
+    async def lifespan(_app: FastAPI) -> AsyncGenerator[None]:
         try:
             yield
         finally:
@@ -90,7 +100,10 @@ def create_web_app(
     app.state.job_manager = job_manager
 
     @app.middleware("http")
-    async def local_security(request: Request, call_next):
+    async def local_security(
+        request: Request,
+        call_next: RequestResponseEndpoint,
+    ) -> Response:
         hostname = request.url.hostname
         if hostname not in _LOOPBACK_HOSTS:
             return _error_response(
@@ -240,7 +253,7 @@ def create_web_app(
         except (KeyError, ValueError) as exc:
             return _error_response(str(exc), HTTPStatus.NOT_FOUND)
 
-        async def stream_events():
+        async def stream_events() -> AsyncIterator[str]:
             cursor = last_event_id
             while True:
                 events = run_store.read_events(run_id, after_id=cursor)
@@ -364,15 +377,16 @@ def create_web_app(
             )
         try:
             payload = await _read_json_body(request, max_bytes=_MAX_WDS_JSON_BYTES)
-            product_id = normalize_product_id(str(payload.get("productId", "")))
+            request_data = WDSSeedControlsRequest.model_validate(payload)
+            product_id = normalize_product_id(request_data.product_id)
             zip_bytes, download_url = await run_in_threadpool(
                 fetch_wds_zip_bytes, product_id
             )
             generated = await run_in_threadpool(
                 generate_wds_seed_controls_from_zip_bytes,
                 zip_bytes,
-                dimensions=parse_dimensions(payload.get("dimensions", [])),
-                count_column=str(payload.get("countColumn") or "VALUE"),
+                dimensions=parse_dimensions(request_data.dimensions),
+                count_column=request_data.count_column or "VALUE",
             )
             return JSONResponse(
                 {
@@ -390,20 +404,21 @@ def create_web_app(
     async def small_area_estimate(request: Request) -> Response:
         try:
             payload = await _read_json_body(request)
-            controls = parse_control_table(str(payload.get("controlsCsv", "")))
+            request_data = SmallAreaEstimateRequest.model_validate(payload)
+            controls = parse_control_table(request_data.controls_csv)
             if not controls.margins:
                 raise ValueError("controls CSV has no control rows")
-            geography_dimension = str(payload.get("geographyDimension", "")).strip()
+            geography_dimension = request_data.geography_dimension.strip()
             if not geography_dimension:
                 raise ValueError("geography dimension is required")
             estimate = await run_in_threadpool(
                 estimate_small_area_run,
                 controls,
                 geography_dimension=geography_dimension,
-                candidate_households=int(payload.get("candidateHouseholds", 0)),
-                pool_size=_optional_int(payload.get("poolSize")),
-                average_persons_per_household=float(
-                    payload.get("averagePersonsPerHousehold", 2.22)
+                candidate_households=request_data.candidate_households,
+                pool_size=request_data.pool_size,
+                average_persons_per_household=(
+                    request_data.average_persons_per_household
                 ),
             )
             return JSONResponse(
@@ -493,6 +508,16 @@ def _csv_columns(path: Path) -> list[str]:
     return list(fieldnames)
 
 
+def _inspection_string_list(
+    inspection: dict[str, Any],
+    key: str,
+) -> list[str]:
+    value = inspection.get(key)
+    if not isinstance(value, list) or not all(isinstance(item, str) for item in value):
+        raise ValueError(f"model inspection {key} must be a list of strings")
+    return value
+
+
 def _csv_category_support(path: Path, dimensions: set[str]) -> dict[str, set[str]]:
     support = {dimension: set() for dimension in dimensions}
     if not dimensions:
@@ -566,9 +591,23 @@ def _require_browser_compatible_model(model_id: str) -> None:
     )
 
 
-def _preflight_ipf_run(store: RunStore, payload: dict[str, Any]) -> dict[str, Any]:
-    if payload.get("workflow") != "ipf":
-        raise ValueError("only workflow 'ipf' is supported")
+def _preflight_ipf_run(
+    store: RunStore,
+    payload: dict[str, Any] | IPFRunRequest,
+) -> dict[str, Any]:
+    if isinstance(payload, dict):
+        if payload.get("workflow") != "ipf":
+            raise ValueError("only workflow 'ipf' is supported")
+        if not isinstance(payload.get("inputs"), dict):
+            raise ValueError("IPF inputs must be an object")
+        if not isinstance(payload.get("options", {}), dict):
+            raise ValueError("IPF options must be an object")
+    request_data = (
+        payload
+        if isinstance(payload, IPFRunRequest)
+        else IPFRunRequest.model_validate(payload)
+    )
+    payload = request_data.model_dump()
     inputs = payload.get("inputs")
     if not isinstance(inputs, dict):
         raise ValueError("IPF inputs must be an object")
@@ -629,17 +668,32 @@ def _preflight_ipf_run(store: RunStore, payload: dict[str, Any]) -> dict[str, An
 
 
 def _preflight_run(store: RunStore, payload: dict[str, Any]) -> dict[str, Any]:
-    workflow = payload.get("workflow")
-    if workflow == "ipf":
-        return _preflight_ipf_run(store, payload)
-    if workflow == "model":
-        return _preflight_model_run(store, payload)
-    if workflow == "small_area":
-        return _preflight_small_area_run(store, payload)
-    raise ValueError("only workflows 'ipf', 'model', and 'small_area' are supported")
+    request_data = RUN_REQUEST_ADAPTER.validate_python(payload)
+    if isinstance(request_data, IPFRunRequest):
+        return _preflight_ipf_run(store, request_data)
+    if isinstance(request_data, ModelRunRequest):
+        return _preflight_model_run(store, request_data)
+    return _preflight_small_area_run(store, request_data)
 
 
-def _preflight_model_run(store: RunStore, payload: dict[str, Any]) -> dict[str, Any]:
+def _preflight_model_run(
+    store: RunStore,
+    payload: dict[str, Any] | ModelRunRequest,
+) -> dict[str, Any]:
+    if isinstance(payload, dict):
+        if not isinstance(payload.get("inputs"), dict):
+            raise ValueError("model inputs must be an object")
+        raw_options = payload.get("options", {})
+        if not isinstance(raw_options, dict):
+            raise ValueError("model options must be an object")
+        if not isinstance(raw_options.get("conditions", {}), dict):
+            raise ValueError("model conditions must be an object")
+    request_data = (
+        payload
+        if isinstance(payload, ModelRunRequest)
+        else ModelRunRequest.model_validate(payload)
+    )
+    payload = request_data.model_dump()
     inputs = payload.get("inputs")
     if not isinstance(inputs, dict):
         raise ValueError("model inputs must be an object")
@@ -714,25 +768,42 @@ def _preflight_model_run(store: RunStore, payload: dict[str, Any]) -> dict[str, 
 
 
 def _preflight_small_area_run(
-    store: RunStore, payload: dict[str, Any]
+    store: RunStore,
+    payload: dict[str, Any] | SmallAreaRunRequest,
 ) -> dict[str, Any]:
-    inputs = payload.get("inputs")
-    if not isinstance(inputs, dict):
-        raise ValueError("small-area inputs must be an object")
-    model_id = inputs.get("model_id")
-    package_upload_id = inputs.get("package_upload_id")
-    candidate_households_id = inputs.get("candidate_households_upload_id")
-    candidate_persons_id = inputs.get("candidate_persons_upload_id")
+    if isinstance(payload, dict):
+        if not isinstance(payload.get("inputs"), dict):
+            raise ValueError("small-area inputs must be an object")
+        raw_options = payload.get("options", {})
+        if not isinstance(raw_options, dict):
+            raise ValueError("small-area options must be an object")
+        if not isinstance(raw_options.get("conditions", {}), dict):
+            raise ValueError("model conditions must be an object")
+        geography_payload = raw_options.get("geography_universe")
+        if geography_payload is not None and not isinstance(geography_payload, dict):
+            raise ValueError("geography_universe must be an object")
+    request_data = (
+        payload
+        if isinstance(payload, SmallAreaRunRequest)
+        else SmallAreaRunRequest.model_validate(payload)
+    )
+    inputs = request_data.inputs
+    options = request_data.options
+    model_id = inputs.model_id
+    package_upload_id = inputs.package_upload_id
+    candidate_households_id = inputs.candidate_households_upload_id
+    candidate_persons_id = inputs.candidate_persons_upload_id
     has_model_source = bool(model_id) ^ bool(package_upload_id)
     has_candidate_source = bool(candidate_households_id) and bool(candidate_persons_id)
     if bool(candidate_households_id) != bool(candidate_persons_id):
         raise ValueError("provide both candidate household and person uploads")
     if has_model_source == has_candidate_source:
         raise ValueError("provide one model/package or one linked candidate pair")
-    candidate_validation = None
+    candidate_validation: dict[str, Any] | None = None
     candidate_households_path: Path | None = None
     candidate_persons_path: Path | None = None
     package: dict[str, Any] | None = None
+    inspection: dict[str, Any]
     if model_id:
         package = model_payload(str(model_id))
         normalized_inputs: dict[str, str] = {"model_id": str(model_id)}
@@ -768,13 +839,13 @@ def _preflight_small_area_run(
             "provenance": {},
         }
 
-    controls_id = str(inputs.get("controls_upload_id", ""))
+    controls_id = inputs.controls_upload_id
     controls_path = store.upload_path(controls_id, require_unclaimed=True)
     controls = read_control_table(controls_path)
     if not controls.margins:
         raise ValueError("controls CSV has no control rows")
     normalized_inputs["controls_upload_id"] = controls_id
-    person_controls_id = inputs.get("person_controls_upload_id")
+    person_controls_id = inputs.person_controls_upload_id
     person_controls = None
     if person_controls_id:
         person_controls_path = store.upload_path(
@@ -784,7 +855,7 @@ def _preflight_small_area_run(
         if not person_controls.margins:
             raise ValueError("person controls CSV has no control rows")
         normalized_inputs["person_controls_upload_id"] = str(person_controls_id)
-    boundaries_id = inputs.get("boundaries_upload_id")
+    boundaries_id = inputs.boundaries_upload_id
     if boundaries_id:
         boundaries_path = store.upload_path(str(boundaries_id), require_unclaimed=True)
         boundaries = json.loads(boundaries_path.read_text())
@@ -795,13 +866,10 @@ def _preflight_small_area_run(
             raise ValueError("boundaries must be a GeoJSON FeatureCollection")
         normalized_inputs["boundaries_upload_id"] = str(boundaries_id)
 
-    options = payload.get("options", {})
-    if not isinstance(options, dict):
-        raise ValueError("small-area options must be an object")
-    geography_dimension = str(options.get("geography_dimension", "")).strip()
+    geography_dimension = options.geography_dimension.strip()
     if not geography_dimension:
         raise ValueError("geography dimension is required")
-    candidate_households = int(options.get("candidate_households", 0))
+    candidate_households = options.candidate_households
     if candidate_validation is not None:
         candidate_households = int(candidate_validation["summary"]["households"])
     if candidate_households <= 0:
@@ -811,37 +879,35 @@ def _preflight_small_area_run(
             f"local web runs are limited to {LOCAL_RUN_MAX_HOUSEHOLDS:,} candidate "
             "households; use the CLI for a reviewed larger run"
         )
-    pool_size = _optional_int(options.get("pool_size"))
+    pool_size = options.pool_size
     estimate = estimate_small_area_run(
         controls,
         geography_dimension=geography_dimension,
         candidate_households=candidate_households,
         pool_size=pool_size,
-        average_persons_per_household=float(
-            options.get("average_persons_per_household", 2.22)
-        ),
+        average_persons_per_household=options.average_persons_per_household,
     )
-    conditions_payload = options.get("conditions", {})
-    if not isinstance(conditions_payload, dict):
-        raise ValueError("model conditions must be an object")
-    conditions = {str(key): str(value) for key, value in conditions_payload.items()}
-    unsupported = sorted(set(conditions) - set(inspection["conditions"]))
+    conditions = options.conditions
+    inspection_conditions = _inspection_string_list(inspection, "conditions")
+    inspection_household_targets = _inspection_string_list(
+        inspection, "household_targets"
+    )
+    inspection_person_targets = _inspection_string_list(inspection, "person_targets")
+    unsupported = sorted(set(conditions) - set(inspection_conditions))
     if unsupported:
         raise ValueError(
             "unsupported model condition columns: " + ", ".join(unsupported)
         )
-    chunk_size = int(options.get("chunk_size", 1000))
+    chunk_size = options.chunk_size
     if chunk_size <= 0:
         raise ValueError("chunk size must be positive")
-    max_household_size = _optional_int(options.get("max_household_size"))
+    max_household_size = options.max_household_size
     if max_household_size is not None and max_household_size <= 0:
         raise ValueError("maximum household size must be positive")
-    group_column = str(
-        options.get("household_size_group_column", "household_size_group")
-    )
+    group_column = options.household_size_group_column
     household_columns = {
-        *inspection["conditions"],
-        *inspection["household_targets"],
+        *inspection_conditions,
+        *inspection_household_targets,
         geography_dimension,
     }
     if max_household_size is not None:
@@ -886,7 +952,7 @@ def _preflight_small_area_run(
     if person_controls is not None:
         person_columns = {
             *household_columns,
-            *inspection["person_targets"],
+            *inspection_person_targets,
         }
         unsupported_person_dimensions = sorted(
             {
@@ -926,8 +992,8 @@ def _preflight_small_area_run(
     estimated_bytes = max(8192, int(estimate["estimated_total_output_rows"]) * 256)
     disk_free = shutil.disk_usage(store.root).free
     enough_disk = disk_free >= estimated_bytes * 2
-    geography_column = str(options.get("geography_column") or geography_dimension)
-    geography_payload = options.get("geography_universe")
+    geography_column = options.geography_column or geography_dimension
+    geography_payload = options.geography_universe
     if geography_payload is not None:
         if not isinstance(geography_payload, dict):
             raise ValueError("geography_universe must be an object")
@@ -946,15 +1012,15 @@ def _preflight_small_area_run(
             geography_universe.as_dict() if geography_universe is not None else None
         ),
         "conditions": conditions,
-        "random_seed": _optional_int(options.get("random_seed")),
+        "random_seed": options.random_seed,
         "pool_size": pool_size,
-        "subsample_seed": int(options.get("subsample_seed", 42)),
+        "subsample_seed": options.subsample_seed,
         "max_household_size": max_household_size,
         "household_size_group_column": group_column,
-        "include_weights": bool(options.get("include_weights", False)),
+        "include_weights": options.include_weights,
         "chunk_size": chunk_size,
-        "geography_id_field": str(options.get("geography_id_field", "geo_id")),
-        "map_title": str(options.get("map_title", "Synthetic Population")),
+        "geography_id_field": options.geography_id_field,
+        "map_title": options.map_title,
     }
     return {
         "ready": enough_disk,
@@ -973,6 +1039,7 @@ def _preflight_small_area_run(
         "expected_artifacts": [
             "households",
             "persons",
+            "linked_population_manifest",
             "small_area_report",
             *(["map"] if boundaries_id else []),
         ],

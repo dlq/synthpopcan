@@ -694,6 +694,8 @@ def test_linked_candidates_to_small_area_artifacts_workflow(
     assert {row["synthetic_household_id"] for row in person_rows} <= {
         row["synthetic_household_id"] for row in household_rows
     }
+    linked_manifest = json.loads((output / "manifest.json").read_text())
+    assert linked_manifest["geography"]["household_column"] == "tract"
 
 
 def _write_publishable_linked_models(tmp_path: Path) -> tuple[Path, Path]:

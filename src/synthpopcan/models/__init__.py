@@ -14,7 +14,7 @@ import os
 import sys
 import tempfile
 import time
-from collections.abc import Callable, Iterator
+from collections.abc import Callable, Generator
 from contextlib import contextmanager
 from importlib.resources import files
 from pathlib import Path
@@ -871,7 +871,7 @@ def _unique_cache_temp(destination: Path, suffix: str) -> Path:
 
 
 @contextmanager
-def _model_cache_lock(destination: Path) -> Iterator[None]:
+def _model_cache_lock(destination: Path) -> Generator[None]:
     """Serialize cache updates across threads and processes without dependencies."""
 
     lock_path = destination.with_suffix(destination.suffix + ".lock")

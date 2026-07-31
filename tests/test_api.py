@@ -84,6 +84,11 @@ def test_stable_api_contract_is_explicit() -> None:
             "observed_status",
             "limitations",
         ),
+        "write_linked_population": (
+            "population",
+            "directory",
+            "geography_column",
+        ),
     }
     for name, parameters in expected_parameters.items():
         assert tuple(inspect.signature(getattr(spc, name)).parameters) == parameters
@@ -465,6 +470,12 @@ def test_top_level_api_composes_generation_with_small_area_calibration(
     assert result.calibration_mode == "household_and_person"
     assert result.weights_path is not None and result.weights_path.is_file()
     assert result.report_path.is_file()
+    assert result.population.manifest is not None
+    manifest = json.loads(result.population.manifest.read_text())
+    assert manifest["geography"] == {
+        "household_column": "ct",
+        "person_assignment": "inherited-via-household",
+    }
     assert {row["ct"] for row in read_csv(result.population.households)} == {"4620001"}
     assert {row["ct"] for row in read_csv(result.population.persons)} == {"4620001"}
 
@@ -477,6 +488,47 @@ def test_top_level_api_composes_generation_with_small_area_calibration(
     )
     assert file_result.assigned_households == 3
     assert file_result.population.households.is_file()
+
+
+def test_calibrate_small_area_rejects_invalid_workflow_summary(tmp_path: Path) -> None:
+    controls = tmp_path / "controls.csv"
+    controls.write_text('margin,dimensions,ct,TENUR,count\ntenure,"ct,TENUR",001,1,1\n')
+    population = spc.LinkedPopulation(
+        households=[{"synthetic_household_id": "h1", "TENUR": "1"}],
+        persons=[
+            {
+                "synthetic_person_id": "p1",
+                "synthetic_household_id": "h1",
+            }
+        ],
+    )
+
+    def _invalid_result(**options):
+        options["households_out"].write_text(
+            "synthetic_household_id,TENUR,ct\nh1,1,001\n"
+        )
+        options["persons_out"].write_text(
+            "synthetic_person_id,synthetic_household_id,ct\np1,h1,001\n"
+        )
+        return {
+            "assigned_households": 1,
+            "assigned_persons": 1,
+            "calibration_mode": "household_only",
+            "summary": "invalid",
+        }
+
+    with patch(
+        "synthpopcan.api.calibrate_linked_household_csvs",
+        side_effect=_invalid_result,
+    ):
+        with pytest.raises(RuntimeError, match="invalid summary"):
+            spc.calibrate_small_area(
+                population,
+                controls,
+                geography_dimension="ct",
+                output_dir=tmp_path / "output",
+            )
+    assert not (tmp_path / "output" / "manifest.json").exists()
 
 
 def write_csv(path: Path, fieldnames: list[str], rows: list[dict[str, str]]) -> None:
@@ -534,6 +586,25 @@ def test_render_small_area_map_delegates_to_render_synthesis_map(tmp_path) -> No
     assert calls[0]["geography_column"] == "ct"
     assert calls[0]["geography_id_field"] == "CTUID"
     assert result == tmp_path / "out.html"
+
+
+def test_render_small_area_map_infers_standard_statcan_id_field(tmp_path) -> None:
+    calls: list[dict] = []
+
+    def _fake_render(**kwargs):
+        calls.append(kwargs)
+        return tmp_path / "out.html"
+
+    with patch("synthpopcan.map_render.render_synthesis_map", _fake_render):
+        result = api.render_small_area_map(
+            households=tmp_path / "households.csv",
+            boundaries=tmp_path / "boundaries.geojson",
+            geography_column="da",
+            out=tmp_path / "out.html",
+        )
+
+    assert result == tmp_path / "out.html"
+    assert calls[0]["geography_id_field"] == "DAUID"
 
 
 def test_render_small_area_map_infers_national_plan_geography(tmp_path: Path) -> None:
@@ -645,11 +716,11 @@ def test_render_small_area_map_requires_ordinary_map_inputs(tmp_path: Path) -> N
             households=households,
             boundaries=tmp_path / "boundaries.geojson",
         )
-    with pytest.raises(ValueError, match="geography_id_field is required"):
+    with pytest.raises(ValueError, match="unknown geography column"):
         api.render_small_area_map(
             households=households,
             boundaries=tmp_path / "boundaries.geojson",
-            geography_column="ADAUID",
+            geography_column="custom_area",
         )
 
 

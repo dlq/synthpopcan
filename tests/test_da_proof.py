@@ -131,6 +131,7 @@ def test_select_quebec_da_relationships_deduplicates_db_rows(tmp_path: Path) -> 
     }
 
 
+@pytest.mark.scenario("SCN-GEO-001")
 def test_prepare_quebec_da_proof_writes_bounded_review_artifacts(
     tmp_path: Path,
 ) -> None:

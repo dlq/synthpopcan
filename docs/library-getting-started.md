@@ -111,9 +111,7 @@ example_dir.mkdir(exist_ok=True)
 
 seed_path = example_dir / "seed.csv"
 seed_path.write_text(
-    "PP_ID,AGEGRP,SEX,WEIGHT\n"
-    "11101,adult,F,1\n"
-    "11102,child,M,1\n",
+    "PP_ID,AGEGRP,SEX,WEIGHT\n11101,adult,F,1\n11102,child,M,1\n",
     encoding="utf-8",
 )
 
@@ -268,10 +266,13 @@ population_files = spc.write_linked_population(
 )
 ```
 
-That directory will contain `households.csv` and `persons.csv`. Keep the model
-package, generated files, notebook, and validation notes together so another
-reader can understand both the result and the choices that produced it. The
-returned `LinkedPopulationFiles` keeps the two paths together for later steps.
+That directory will contain `households.csv`, `persons.csv`, and a
+linked-population `manifest.json`. Keep the model package, generated files,
+notebook, and validation notes together so another reader can understand both
+the result and the choices that produced it. The returned
+`LinkedPopulationFiles` keeps the paths together for later steps. If rows are
+already assigned, pass `geography_column` so the manifest records the
+assignment.
 
 ## Assign Generated Rows To Small Areas
 
@@ -317,7 +318,6 @@ map_path = spc.render_small_area_map(
     households=result,
     boundaries="data/derived/statcan/census/2016/boundaries/2016-boundary-ct.geojson",
     geography_column="ct",
-    geography_id_field="CTUID",
     out="synthetic-ct-map.html",
     title="Synthetic Census-Tract Population",
 )
@@ -325,9 +325,11 @@ map_path = spc.render_small_area_map(
 map_path
 ```
 
-The boundary identifiers must match the assigned geography values in the
-household output. The generated HTML contains the mapped data, but it needs an
-internet connection when opened because the browser fetches base-map tiles.
+The standard `CTUID` boundary field is inferred from `geography_column="ct"`.
+Pass `geography_id_field` explicitly for a non-standard boundary schema. The
+boundary identifiers must match the assigned geography values in the household
+output. The generated HTML contains the mapped data, but it needs an internet
+connection when opened because the browser fetches base-map tiles.
 Keep the calibration report with the map so readers can distinguish controlled
 geographic patterns from variables that were only carried through from the
 candidate population.
@@ -357,7 +359,7 @@ map_path = spc.render_small_area_map(
 
 ## Attach an External Context Layer
 
-**Unreleased 0.7.0 template: prepare the source and geography records first.**
+**Research template: prepare the source and geography records first.**
 The complete {doc}`enrichment` walkthrough explains how to create
 `source-profile.json`, register an immutable resource revision, normalize a
 sidecar CSV, and interpret unmatched geographies.

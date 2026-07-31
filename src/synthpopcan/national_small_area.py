@@ -469,7 +469,7 @@ def prepare_canada_small_area_plan(
             }
             batch_manifest_path = directory / "batch.json"
             _write_json(batch_manifest_path, batch_manifest)
-            batch_record = {
+            batch_record: dict[str, object] = {
                 "batch_id": batch_id,
                 "manifest": str(batch_manifest_path.relative_to(output_directory)),
                 "jurisdiction_pruid": jurisdiction.pruid,

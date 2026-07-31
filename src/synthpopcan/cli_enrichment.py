@@ -47,7 +47,10 @@ def enrich() -> None:
 @click.option(
     "--public-locator",
     default=None,
-    help="Public authoritative URL; ignored for non-public acquisition modes.",
+    help=(
+        "Authoritative URL required for public acquisition modes; omit for "
+        "non-public resources."
+    ),
 )
 @click.option(
     "--opaque-local-id",
@@ -145,11 +148,33 @@ def register_resource_command(
     multiple=True,
     help="Reader-facing limitation; repeat as needed.",
 )
-@click.option("--base-census-vintage", type=int, default=None)
-@click.option("--base-geo-level", default=None)
-@click.option("--base-geo-namespace", default=None)
-@click.option("--base-geo-column", default=None)
-@click.option("--base-dguid-column", default=None)
+@click.option(
+    "--base-census-vintage",
+    type=click.IntRange(min=1000, max=9999),
+    default=None,
+    help="Census vintage of the linked population, such as 2021.",
+)
+@click.option(
+    "--base-geo-level",
+    type=click.Choice(["ct", "ada", "da", "csd", "cd", "pr", "db"]),
+    default=None,
+    help="Census geography level of the linked population.",
+)
+@click.option(
+    "--base-geo-namespace",
+    default=None,
+    help="Stable identifier namespace, such as statcan:census:2021:da.",
+)
+@click.option(
+    "--base-geo-column",
+    default=None,
+    help="Household column containing the geography identifier.",
+)
+@click.option(
+    "--base-dguid-column",
+    default=None,
+    help="Optional household column containing the matching DGUID.",
+)
 @click.option("--out", "output_directory", required=True, type=_PATH)
 @click.option(
     "--format",

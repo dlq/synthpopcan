@@ -221,9 +221,7 @@ and national DA workflows:
 | `da-british-columbia` | British Columbia through DA level |
 | `da-territories` | Yukon, Northwest Territories, and Nunavut through DA level |
 
-The six regional DA keys are an **unreleased 0.7.0 development feature**.
-The published `0.6.3` package includes the earlier registered 2021 products but
-not the national DA orchestration added on the development branch.
+The six regional DA keys and national DA orchestration were added in `0.7.0`.
 
 The six regional DA products are preferred for restartable national work; they
 cover the same 13 jurisdictions without requiring the single national profile

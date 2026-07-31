@@ -553,11 +553,16 @@ def write_population(
 def write_linked_population(
     population: LinkedPopulation,
     directory: str | Path,
+    *,
+    geography_column: str | None = None,
 ) -> LinkedPopulationFiles:
     """Write linked household and person rows to a directory.
 
     Returns paired paths that can be passed directly to
-    :func:`calibrate_small_area` or :func:`render_small_area_map`.
+    :func:`calibrate_small_area`, :func:`render_small_area_map`, or
+    :func:`enrich_population`. Pass ``geography_column`` when the household
+    rows are already assigned to a geography so the linked-population manifest
+    records that relationship.
     """
 
     if not population.households:
@@ -578,6 +583,7 @@ def write_linked_population(
         manifest_path,
         files.households,
         files.persons,
+        geography_column=geography_column,
     )
     return files
 
@@ -614,7 +620,8 @@ def calibrate_small_area(
     geography_dimension:
         Geography dimension in the controls, such as ``ct`` or ``ada``.
     output_dir:
-        Directory for ``households.csv``, ``persons.csv``, and ``report.json``.
+        Directory for ``households.csv``, ``persons.csv``, ``manifest.json``,
+        and ``report.json``.
     person_controls:
         Optional linked-person controls as a path or :class:`ControlTable`.
     geography_column:
@@ -637,9 +644,11 @@ def calibrate_small_area(
 
     destination = Path(output_dir)
     destination.mkdir(parents=True, exist_ok=True)
+    manifest_path = destination / "manifest.json"
     output_population = LinkedPopulationFiles(
         households=destination / "households.csv",
         persons=destination / "persons.csv",
+        manifest=manifest_path,
     )
     report_path = destination / "report.json"
     weights_path = destination / "weights.csv" if include_weights else None
@@ -693,6 +702,12 @@ def calibrate_small_area(
     summary = details.get("summary")
     if not isinstance(summary, Mapping):
         raise RuntimeError("small-area calibration returned an invalid summary")
+    write_linked_population_contract(
+        manifest_path,
+        output_population.households,
+        output_population.persons,
+        geography_column=geography_column or geography_dimension,
+    )
     non_converged = int(summary.get("non_converged_count", 0))
     return SmallAreaResult(
         population=output_population,
@@ -855,7 +870,7 @@ def render_small_area_map(
         Column in ``households`` that holds the geography ID (e.g. ``ct``).
     geography_id_field:
         Attribute field in the shapefile matching that column (e.g. ``CTUID``
-        or ``ADAUID``).
+        or ``ADAUID``). Inferred for standard StatCan geography columns.
     out:
         Destination HTML file path. Defaults beside the input population.
     title:
@@ -967,7 +982,7 @@ def render_small_area_map(
     if geography_column is None:
         raise ValueError("geography_column is required for a household CSV")
     if geography_id_field is None:
-        raise ValueError("geography_id_field is required for a household CSV")
+        geography_id_field = _standard_geography_id_field(geography_column)
     out_path = (
         Path(out)
         if out is not None
@@ -997,6 +1012,23 @@ def _seed_records(seed: _SeedInput) -> Sequence[Mapping[str, object]]:
     if isinstance(seed, str | Path):
         return read_seed(seed)
     return list(seed)
+
+
+def _standard_geography_id_field(geography_column: str) -> str:
+    known = {
+        "ct": "CTUID",
+        "ada": "ADAUID",
+        "da": "DAUID",
+        "csd": "CSDUID",
+        "cd": "CDUID",
+        "pr": "PRUID",
+    }
+    try:
+        return known[geography_column.lower()]
+    except KeyError as exc:
+        raise ValueError(
+            "geography_id_field is required for an unknown geography column"
+        ) from exc
 
 
 def _control_margins(controls: _ControlInput) -> list[IPFMargin]:

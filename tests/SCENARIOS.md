@@ -98,9 +98,46 @@ artifacts, an optional map, and recorded `geo synthesize` or `geo calibrate`
 reproduction metadata. Exact reproduction of model conditions and optional map
 creation is tracked for `0.6.3`.
 
+## SCN-GEO-001
+
+**Prepare and finalize a bounded Québec 2021 DA proof.** A researcher selects
+metropolitan and rural dissemination areas through authoritative 2021
+relationships, prepares exact controls and matching boundaries, and finalizes
+the proof only after calibration, linkage, geography, and map evidence agree.
+
+Acceptance evidence: explicit 2021 DA identity, deduplicated relationship
+selection, matched profile and boundary identifiers, resource hashes, bounded
+household totals, converged fractional fits, reported integer residuals,
+preserved household/person links, parent summaries, and cross-vintage or
+missing-input rejection.
+
+## SCN-NATIONAL-001
+
+**Prepare and resume a bounded national DA/ADA plan.** A maintainer prepares
+restartable province/territory batches from the appropriate official 2021
+profile adapter, canonical boundaries, and DGRF relationships, then executes a
+bounded batch from a verified reusable candidate pool.
+
+Acceptance evidence: DA/ADA plan identity, complete jurisdiction coverage,
+explicit exclusions and storage estimates, atomic batch output, candidate-pool
+integrity, deterministic resume behavior, linked validation, artifact hashes,
+and aggregate geography summaries.
+
+## SCN-ENRICH-001
+
+**Attach a researcher-supplied normalized sidecar without changing the base
+population.** A researcher registers a source and immutable resource revision,
+imports a normalized geography-keyed layer, reviews coverage, and later
+revalidates every recorded hash.
+
+Acceptance evidence: source/resource lineage, explicit geography compatibility,
+unique linkage keys, unmatched-source and unmatched-base reporting, sidecar and
+manifest publication, byte-for-byte preservation of the linked household,
+person, and manifest files, and corruption detection.
+
 ## Test Ownership
 
-CLI scenarios live in `tests/test_workflows.py` and carry
+Python scenarios live in the closest workflow or domain test module and carry
 `@pytest.mark.scenario("SCN-...")`. Browser scenarios live in
 `tests/web/scenarios.spec.mjs`. `tests/test_docs.py` fails if an inventory ID
 does not have a test reference or if a test references an undocumented ID.

@@ -50,6 +50,22 @@ def test_cli_command_tree_is_coherent() -> None:
         "remove",
         "show",
     }
+    assert set(cli.commands["enrich"].commands) == {
+        "import",
+        "register-resource",
+        "validate",
+    }
+    assert set(cli.commands["geodata"].commands) == {"cache-dir", "fetch"}
+    assert set(cli.commands["geo"].commands["national-da"].commands) == {
+        "fetch-profiles",
+        "prepare",
+        "run",
+    }
+    assert set(cli.commands["geo"].commands["national-ada"].commands) == {
+        "fetch-profiles",
+        "prepare",
+        "run",
+    }
 
 
 @pytest.mark.parametrize(

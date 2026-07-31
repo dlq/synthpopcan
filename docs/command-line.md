@@ -127,12 +127,11 @@ aggregate national evidence. Detailed batch maps are opt-in; one compact
 national overview is produced after completion. See {doc}`small-area` before
 attempting a national run.
 
-```{admonition} Unreleased 0.7.0 commands
+```{admonition} Added in 0.7.0
 :class: note
 
-The national DA/ADA commands are implemented on the development branch but are
-not included in the published `0.6.3` package. Use a source checkout until
-`0.7.0` is published.
+The national DA/ADA commands are intended for reviewed, restartable workflows
+with substantial local source and output storage.
 ```
 
 ### Prepared Display Boundaries
@@ -144,9 +143,9 @@ province/territory assets. These files are for **visualization only**: they do
 not replace canonical boundaries for geographic selection, measurement, or
 reconciliation.
 
-The `geodata` command group is an unreleased `0.7.0` development feature. The
-separately versioned `geodata-v1` assets are already published so their bytes
-and checksums remain stable while the CLI proceeds toward the software release.
+The `geodata` command group was added in `0.7.0`. The separately versioned
+`geodata-v1` assets are published independently so their bytes and checksums
+remain stable across software releases.
 
 ### External Context
 
@@ -155,7 +154,7 @@ immutable source revision and attach a normalized geography, facility, or
 other governed sidecar layer. Enrichment keeps the base household/person files
 unchanged and rejects implicit cross-vintage geography joins.
 
-The `enrich` command group is also an unreleased `0.7.0` development feature.
+The `enrich` command group was also added in `0.7.0`.
 
 ### Developing a Model
 

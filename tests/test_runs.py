@@ -94,6 +94,37 @@ def test_run_store_rejects_ids_traversal_and_symlink_escape(tmp_path: Path) -> N
         store.resolve_managed_path("escape/secret.csv")
 
 
+def test_run_store_validates_persisted_upload_and_manifest_schemas(
+    tmp_path: Path,
+) -> None:
+    store = RunStore(tmp_path)
+    upload_id = write_upload(store, "seed.csv", b"id,age\n1,young\n")
+    metadata_path = store.uploads_dir / f"{upload_id}.json"
+    metadata = json.loads(metadata_path.read_text())
+    metadata["byte_size"] = "not-an-integer"
+    metadata_path.write_text(json.dumps(metadata))
+
+    with pytest.raises(ValueError, match="byte_size"):
+        store.get_upload(upload_id)
+
+    manifest_store = RunStore(tmp_path / "manifest-workspace")
+    seed = write_upload(manifest_store, "seed.csv", b"id,age\n1,young\n")
+    controls = write_upload(
+        manifest_store,
+        "controls.csv",
+        b"margin,dimensions,age,count\nage,age,young,1\n",
+    )
+    manifest = manifest_store.create_ipf_run(ipf_request(seed, controls))
+    run_id = str(manifest["run_id"])
+    manifest_path = manifest_store.run_dir(run_id) / "run.json"
+    persisted = json.loads(manifest_path.read_text())
+    persisted["status"] = "mystery"
+    manifest_path.write_text(json.dumps(persisted))
+
+    with pytest.raises(ValueError, match="status"):
+        manifest_store.load_run(run_id)
+
+
 def test_run_store_recovers_unfinished_runs_as_interrupted(tmp_path: Path) -> None:
     workspace = tmp_path / "workspace"
     store = RunStore(workspace)

@@ -528,6 +528,7 @@ def test_small_area_worker_contract_is_covered_in_process(tmp_path: Path) -> Non
     assert {artifact["logical_name"] for artifact in succeeded["artifacts"]} == {
         "households",
         "persons",
+        "linked_population_manifest",
         "small_area_report",
         "weights",
         "map",

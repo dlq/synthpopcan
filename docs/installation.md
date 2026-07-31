@@ -41,13 +41,12 @@ only want to **use the command line or beginner Python API**, start with the
 PyPI installation. If we want to **edit the code, documentation, or tests**, use
 the source checkout.
 
-```{admonition} Published and development features
+```{admonition} Published and development documentation
 :class: note
 
 `pip install synthpopcan` and `uvx synthpopcan` install the current published
 package. The `latest` documentation can also describe development features
-planned for the next release. A section labelled **Unreleased 0.7.0** requires
-the source-checkout path below until `0.7.0` is published.
+planned for the next release; use `stable` for the latest tagged version.
 ```
 
 ## Requirements
@@ -102,8 +101,8 @@ editing SynthPopCan itself.
 ````{admonition} Optional CART model training in 0.7.0
 :class: note
 
-The unreleased `0.7.0` package keeps scikit-learn out of the ordinary runtime
-installation. Reading portable model JSON, generating populations, and training
+Starting with `0.7.0`, the package keeps scikit-learn out of the ordinary
+runtime installation. Reading portable model JSON, generating populations, and training
 `conditional-frequency` models do not require it. Install the model-building
 extra only when we need to **train CART models**:
 
@@ -111,9 +110,8 @@ extra only when we need to **train CART models**:
 python -m pip install "synthpopcan[model-build]"
 ```
 
-The published `0.6.3` package still installs scikit-learn as a regular
-dependency. A source checkout's development environment includes it through
-`uv sync`.
+Starting with `0.7.0`, the base package does not install scikit-learn. A source
+checkout's development environment includes it through `uv sync`.
 
 ````
 

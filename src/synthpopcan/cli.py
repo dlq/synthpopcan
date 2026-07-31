@@ -811,7 +811,10 @@ def data_doctor(data_root: Path, output_format: str) -> None:
     if output_format == "json":
         write_output(payload, "json")
         return
-    print_checks_table(payload["checks"], title="Local Data Check")
+    print_checks_table(
+        [check.as_dict() for check in checks],
+        title="Local Data Check",
+    )
 
 
 def resolve_data_root(data_root: Path | None) -> Path:

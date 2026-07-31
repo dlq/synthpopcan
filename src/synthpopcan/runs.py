@@ -22,6 +22,7 @@ from pathlib import Path
 from typing import Any, BinaryIO
 
 from synthpopcan import __version__
+from synthpopcan._runtime_schemas import RunEvent, RunManifest, UploadMetadata
 from synthpopcan.assurance import build_run_assurance, verify_run_assurance
 
 RUN_SCHEMA_VERSION = "synthpopcan-run-v1"
@@ -51,7 +52,7 @@ class UploadWriter:
         self.display_name = display_name
         self.media_type = media_type
         self.max_bytes = max_bytes
-        self.byte_size = 0
+        self.byte_size: int = 0
         self._digest = hashlib.sha256()
         self._temporary_path = store.uploads_dir / f".{upload_id}.part"
         self._final_path = store.uploads_dir / f"{upload_id}.bin"
@@ -81,16 +82,16 @@ class UploadWriter:
             self.abort()
             raise ValueError("upload is empty")
         os.replace(self._temporary_path, self._final_path)
-        metadata = {
-            "upload_id": self.upload_id,
-            "display_name": self.display_name,
-            "media_type": self.media_type,
-            "byte_size": self.byte_size,
-            "sha256": self._digest.hexdigest(),
-            "created_at": _utc_now(),
-            "claimed_by": None,
-            "path": str(self._final_path.relative_to(self._store.root)),
-        }
+        metadata = UploadMetadata(
+            upload_id=self.upload_id,
+            display_name=self.display_name,
+            media_type=self.media_type,
+            byte_size=self.byte_size,
+            sha256=self._digest.hexdigest(),
+            created_at=_utc_now(),
+            claimed_by=None,
+            path=str(self._final_path.relative_to(self._store.root)),
+        ).model_dump()
         self._store._write_json_atomic(  # noqa: SLF001
             self._store.uploads_dir / f"{self.upload_id}.json", metadata
         )
@@ -109,9 +110,9 @@ class RunStore:
     """Own all files under one controlled local SynthPopCan workspace."""
 
     def __init__(self, root: Path) -> None:
-        self.root = root.resolve()
-        self.uploads_dir = self.root / "uploads"
-        self.runs_dir = self.root / "runs"
+        self.root: Path = root.resolve()
+        self.uploads_dir: Path = self.root / "uploads"
+        self.runs_dir: Path = self.root / "runs"
         self._lock = threading.RLock()
         self.uploads_dir.mkdir(parents=True, exist_ok=True)
         self.runs_dir.mkdir(parents=True, exist_ok=True)
@@ -136,12 +137,19 @@ class RunStore:
             max_bytes=max_bytes,
         )
 
-    def get_upload(self, upload_id: str, *, require_unclaimed: bool = False) -> dict:
+    def get_upload(
+        self,
+        upload_id: str,
+        *,
+        require_unclaimed: bool = False,
+    ) -> dict[str, Any]:
         """Return validated upload metadata without exposing arbitrary paths."""
         _validate_opaque_id(upload_id, "upload")
         metadata_path = self.uploads_dir / f"{upload_id}.json"
         try:
-            metadata = json.loads(metadata_path.read_text())
+            metadata = UploadMetadata.model_validate(
+                json.loads(metadata_path.read_text())
+            ).model_dump()
         except FileNotFoundError as exc:
             raise KeyError(f"unknown upload {upload_id}") from exc
         if require_unclaimed and metadata.get("claimed_by") is not None:
@@ -429,11 +437,11 @@ class RunStore:
         """Load one validated run manifest."""
         run_dir = self.run_dir(run_id)
         try:
-            manifest = json.loads((run_dir / "run.json").read_text())
+            manifest = RunManifest.model_validate(
+                json.loads((run_dir / "run.json").read_text())
+            ).model_dump()
         except FileNotFoundError as exc:
             raise KeyError(f"unknown run {run_id}") from exc
-        if manifest.get("schema_version") != RUN_SCHEMA_VERSION:
-            raise ValueError(f"run {run_id} has an unsupported manifest schema")
         return manifest
 
     def update_run(self, run_id: str, **changes: Any) -> dict[str, Any]:
@@ -441,10 +449,16 @@ class RunStore:
         with self._lock:
             manifest = self.load_run(run_id)
             manifest.update(changes)
+            manifest = RunManifest.model_validate(manifest).model_dump()
             self._write_json_atomic(self.run_dir(run_id) / "run.json", manifest)
             return manifest
 
-    def transition_run(self, run_id: str, status: str, **changes: Any) -> dict:
+    def transition_run(
+        self,
+        run_id: str,
+        status: str,
+        **changes: Any,
+    ) -> dict[str, Any]:
         """Apply a valid lifecycle transition and its timestamps."""
         with self._lock:
             manifest = self.load_run(run_id)
@@ -468,6 +482,7 @@ class RunStore:
                     manifest,
                     self.resolve_managed_path,
                 )
+            manifest = RunManifest.model_validate(manifest).model_dump()
             self._write_json_atomic(self.run_dir(run_id) / "run.json", manifest)
             return manifest
 
@@ -490,14 +505,14 @@ class RunStore:
         """Persist one numbered progress event with flush and fsync."""
         with self._lock:
             events = self.read_events(run_id)
-            event = {
-                "id": len(events) + 1,
-                "timestamp": _utc_now(),
-                "stage": stage,
-                "message": message,
-                "completed": completed,
-                "total": total,
-            }
+            event = RunEvent(
+                id=len(events) + 1,
+                timestamp=_utc_now(),
+                stage=stage,
+                message=message,
+                completed=completed,
+                total=total,
+            ).model_dump()
             events_path = self.run_dir(run_id) / "events.ndjson"
             with events_path.open("a") as handle:
                 handle.write(json.dumps(event, separators=(",", ":")) + "\n")
@@ -513,13 +528,18 @@ class RunStore:
         except FileNotFoundError:
             self.load_run(run_id)
             return []
-        return [
-            event
+        events = [
+            RunEvent.model_validate(json.loads(line)).model_dump()
             for line in lines
-            if line and (event := json.loads(line))["id"] > after_id
+            if line
         ]
+        return [event for event in events if event["id"] > after_id]
 
-    def artifact_path(self, run_id: str, artifact_id: str) -> tuple[Path, dict]:
+    def artifact_path(
+        self,
+        run_id: str,
+        artifact_id: str,
+    ) -> tuple[Path, dict[str, Any]]:
         """Resolve an artifact only through its owning manifest entry."""
         _validate_opaque_id(artifact_id, "artifact")
         manifest = self.load_run(run_id)
@@ -555,7 +575,9 @@ class RunStore:
             manifest_path = path / "run.json"
             if not manifest_path.is_file():
                 continue
-            manifest = json.loads(manifest_path.read_text())
+            manifest = RunManifest.model_validate(
+                json.loads(manifest_path.read_text())
+            ).model_dump()
             if manifest.get("status") in {"queued", "running", "cancelling"}:
                 manifest["status"] = "interrupted"
                 manifest["finished_at"] = _utc_now()
@@ -567,6 +589,7 @@ class RunStore:
                     manifest,
                     self.resolve_managed_path,
                 )
+                manifest = RunManifest.model_validate(manifest).model_dump()
                 self._write_json_atomic(manifest_path, manifest)
                 events_path = path / "events.ndjson"
                 events_path.touch(exist_ok=True)

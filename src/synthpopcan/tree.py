@@ -9,16 +9,17 @@ import sqlite3
 import tempfile
 from bisect import bisect_left
 from collections import Counter, defaultdict
-from collections.abc import Callable, Iterator, Sequence
+from collections.abc import Callable, Iterable, Iterator, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any, Literal, TypeVar
 
 import numpy as np
 
 from synthpopcan.tabular import validate_columns
 
 TreeLevel = Literal["household", "person"]
+_T = TypeVar("_T")
 
 __all__ = [
     "CartTreeModel",
@@ -983,7 +984,7 @@ def iter_tree_rows(
     rows: int,
     conditions: dict[str, str] | None = None,
     random_seed: int | None = None,
-):
+) -> Iterator[dict[str, str]]:
     if isinstance(model, FrequencyTreeModel):
         yield from iter_frequency_rows(
             model,
@@ -1209,7 +1210,7 @@ def iter_person_rows_for_household(
     conditions: dict[str, str],
     rng: random.Random,
     selection_cache: dict[tuple[tuple[str, str], ...], _FrequencySelection],
-):
+) -> Iterator[dict[str, str]]:
     if not isinstance(person_model, FrequencyTreeModel):
         yield from iter_tree_rows(
             person_model,
@@ -1701,7 +1702,7 @@ def iter_cart_rows(
     rows: int,
     conditions: dict[str, str] | None = None,
     random_seed: int | None = None,
-):
+) -> Iterator[dict[str, str]]:
     if rows <= 0:
         raise ValueError("rows must be greater than zero")
     requested_conditions = conditions or {}
@@ -1760,7 +1761,7 @@ def iter_frequency_rows(
     rows: int,
     conditions: dict[str, str] | None = None,
     random_seed: int | None = None,
-):
+) -> Iterator[dict[str, str]]:
     if rows <= 0:
         raise ValueError("rows must be greater than zero")
     rng = random.Random(model.spec.random_seed if random_seed is None else random_seed)
@@ -2049,11 +2050,15 @@ def choose_frequency_group_and_outcome(
     return group, outcome
 
 
-def weighted_choice(items, weights: Sequence[float], rng: random.Random):
+def weighted_choice(
+    items: Sequence[_T],
+    weights: Sequence[float],
+    rng: random.Random,
+) -> _T:
     return weighted_choice_from_cumulative(items, cumulative_weights(weights), rng)
 
 
-def cumulative_weights(weights) -> tuple[float, ...]:
+def cumulative_weights(weights: Iterable[float]) -> tuple[float, ...]:
     cumulative: list[float] = []
     total = 0.0
     for weight in weights:
@@ -2065,10 +2070,10 @@ def cumulative_weights(weights) -> tuple[float, ...]:
 
 
 def weighted_choice_from_cumulative(
-    items,
+    items: Sequence[_T],
     cumulative_weights: tuple[float, ...],
     rng: random.Random,
-):
+) -> _T:
     threshold = rng.uniform(0, cumulative_weights[-1])
     index = bisect_left(cumulative_weights, threshold)
     if index >= len(cumulative_weights):

@@ -5,14 +5,12 @@ It gives us a smaller alternative to repeatedly simplifying large canonical
 Statistics Canada boundary files, while preserving a clear distinction between
 geometry used for analysis and geometry used for presentation.
 
-```{admonition} Unreleased 0.7.0 commands; published geodata-v1 assets
+```{admonition} Added in 0.7.0; separately versioned geodata assets
 :class: note
 
-The `geodata` commands are implemented on the development branch and are not in
-the PyPI `0.6.3` package. The independently versioned
+The `geodata` commands retrieve the independently versioned
 [`geodata-v1` release](https://github.com/dlq/synthpopcan/releases/tag/geodata-v1)
-already publishes the prepared files and catalogue. Use a source checkout until
-the commands ship in a software release.
+of prepared files and its catalogue.
 ```
 
 ## Concept

@@ -14,6 +14,7 @@ import ipaddress
 import socket
 import threading
 import webbrowser
+from collections.abc import Callable
 from importlib.resources import files
 from pathlib import Path
 from typing import Protocol
@@ -131,8 +132,8 @@ def serve_webapp(
     port: int = 8000,
     workspace: Path = DEFAULT_WORKSPACE,
     open_browser: bool = True,
-    opener=webbrowser.open,
-    server_factory=None,
+    opener: Callable[[str], object] = webbrowser.open,
+    server_factory: Callable[[str, int], _WebAppServer] | None = None,
 ) -> str:
     """Serve the packaged web app and optionally open it in a browser."""
     normalized_host = validate_loopback_host(host)

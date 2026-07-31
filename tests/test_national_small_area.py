@@ -728,6 +728,7 @@ def test_candidate_pools_are_generated_once_and_reused(
     )
 
 
+@pytest.mark.scenario("SCN-NATIONAL-001")
 def test_cached_pool_batch_writes_timing_integrity_and_national_summary(
     tmp_path: Path,
 ) -> None:

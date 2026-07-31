@@ -199,9 +199,8 @@ Use this path when:
   we need; and
 - we will retain the canonical analytical-boundary provenance separately.
 
-The `geodata` commands are an **unreleased 0.7.0 development feature**. The
-display assets themselves are already published in the separately versioned
-`geodata-v1` release.
+The `geodata` commands were added in `0.7.0`. Display assets are published in
+the separately versioned `geodata-v1` release.
 
 (if-we-need-external-context)=
 
@@ -224,9 +223,8 @@ Use this path when:
 - the source and population use compatible geography identifiers; and
 - we need to prove that the original linked population remained unchanged.
 
-The enrichment framework is an **unreleased 0.7.0 development feature**. Until
-`0.7.0` is published, follow the source-checkout installation path before using
-the `synthpopcan enrich` commands or `spc.enrich_population`.
+The enrichment framework was added in `0.7.0`; use the `synthpopcan enrich`
+commands or `spc.enrich_population`.
 
 (if-we-are-still-inspecting-sources)=
 

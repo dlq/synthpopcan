@@ -28,8 +28,7 @@ module attributes and ``__all__`` declarations are implementation details unless
 they are listed here.
 
 The geography, geodata, enrichment, Québec DA proof, and national small-area
-APIs are implemented on the development branch for the unreleased ``0.7.0``
-line. They are not present in the published PyPI ``0.6.3`` package.
+APIs were added in ``0.7.0``.
 
 Top-Level Beginner API
 ----------------------

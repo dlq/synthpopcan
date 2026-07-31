@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any
 
 from synthpopcan.geography import GeographyUniverse
+from synthpopcan.linked_schema import write_linked_population_contract
 from synthpopcan.map_render import render_synthesis_map
 from synthpopcan.small_area_controls import write_recoded_candidates
 from synthpopcan.small_area_synthesis import calibrate_linked_household_csvs
@@ -243,6 +244,7 @@ class SmallAreaWorkflowResult:
 
     households_path: Path
     persons_path: Path
+    manifest_path: Path
     report_path: Path
     weights_path: Path | None
     map_path: Path | None
@@ -308,6 +310,7 @@ def synthesize_small_area_files(
 
     households_path = request.output_dir / "households.csv"
     persons_path = request.output_dir / "persons.csv"
+    manifest_path = request.output_dir / "manifest.json"
     report_path = request.output_dir / "report.json"
     weights_path = (
         request.output_dir / "weights.csv" if request.include_weights else None
@@ -330,6 +333,12 @@ def synthesize_small_area_files(
         max_iterations=request.max_iterations,
         tolerance=request.tolerance,
     )
+    write_linked_population_contract(
+        manifest_path,
+        households_path,
+        persons_path,
+        geography_column=request.geography_column,
+    )
     map_path = None
     if request.boundaries_path is not None and request.map_path is not None:
         _emit(progress, "mapping", "Rendering the standalone small-area map")
@@ -346,6 +355,7 @@ def synthesize_small_area_files(
     return SmallAreaWorkflowResult(
         households_path=households_path,
         persons_path=persons_path,
+        manifest_path=manifest_path,
         report_path=report_path,
         weights_path=weights_path,
         map_path=map_path,

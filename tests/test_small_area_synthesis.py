@@ -1139,6 +1139,7 @@ def test_cli_calibrates_linked_households_to_small_area_controls(
     assert exit_code == 0
     assert (tmp_path / "calibrated" / "households.csv").exists()
     assert (tmp_path / "calibrated" / "persons.csv").exists()
+    assert (tmp_path / "calibrated" / "manifest.json").exists()
 
 
 def _minimal_calibrate_files(tmp_path: Path) -> dict[str, Path]:
@@ -1247,6 +1248,11 @@ def test_cli_calibrate_linked_summary_mentions_largest_residual(
         },
         "suggested_next_steps": ["Review the largest residual rows first."],
     }
+    f["output"].mkdir()
+    (f["output"] / "households.csv").write_text("synthetic_household_id,tract\nh1,G1\n")
+    (f["output"] / "persons.csv").write_text(
+        "synthetic_person_id,synthetic_household_id,tract\np1,h1,G1\n"
+    )
 
     with patch(
         "synthpopcan.cli_geo.calibrate_linked_household_csvs",
@@ -1537,6 +1543,7 @@ def test_cli_synthesize_from_package(tmp_path: Path) -> None:
     assert exit_code == 0
     assert (output / "households.csv").exists()
     assert (output / "persons.csv").exists()
+    assert (output / "manifest.json").exists()
     report = json.loads((output / "report.json").read_text())
     assert report["summary"]["total_geographies"] == 2
     assert report["summary"]["converged_count"] == 2

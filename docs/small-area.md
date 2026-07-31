@@ -271,12 +271,11 @@ manifest status from `prepared` to `completed`.
 
 ### National 2021 DA and ADA execution
 
-```{admonition} Unreleased 0.7.0 workflow
+```{admonition} Added in 0.7.0
 :class: note
 
-National DA/ADA orchestration is implemented on the development branch but is
-not included in the published `0.6.3` package. Use a source checkout until
-`0.7.0` is published.
+National DA/ADA orchestration is a maintainer-scale, restartable workflow. Its
+execution evidence does not establish universal prepared-model fitness.
 ```
 
 The same geography contract supports every province and territory. National
@@ -869,8 +868,8 @@ Important options:
   `--geo-dguid-column`: explicit Census geography universe. Supply the first
   three together for a Census workflow; the DGUID column is optional.
 - `--include-weights`: also write the potentially large `weights.csv` artifact.
-- `--out`: directory for calibrated `households.csv`, `persons.csv`, and
-  `report.json`.
+- `--out`: directory for calibrated `households.csv`, `persons.csv`, their
+  linked-population `manifest.json`, and `report.json`.
 - `--pool-size`: optional maximum number of candidate households used in each
   fit.
 - `--subsample-seed`: reproducible seed for the `--pool-size` candidate
@@ -909,8 +908,8 @@ Important options:
 - `--census-vintage`, `--geo-level`, `--geo-namespace`, and
   `--geo-dguid-column`: explicit Census geography universe recorded in the
   output report and linked-population manifest.
-- `--out`: directory for calibrated `households.csv`, `persons.csv`, and
-  `report.json`.
+- `--out`: directory for calibrated `households.csv`, `persons.csv`, their
+  linked-population `manifest.json`, and `report.json`.
 - `--include-weights`: also write the potentially large fitted weights CSV.
 - `--random-seed`: candidate generation seed.
 - `--condition`: fixed package condition in `COLUMN=VALUE` form; repeat for
@@ -941,7 +940,8 @@ Important options:
 - `--boundaries`: StatCan shapefile, directory containing a shapefile, or
   prepared GeoJSON.
 - `--geo-column`: geography ID column in the household CSV.
-- `--geo-id-field`: boundary attribute matching the household geography ID.
+- `--geo-id-field`: boundary attribute matching the household geography ID;
+  inferred for standard StatCan columns such as `ct`, `ada`, `da`, and `csd`.
 - `--census-vintage`, `--geo-level`, `--geo-namespace`, and
   `--geo-dguid-column`: explicit geography identity embedded in a single-run
   map. A national plan supplies these values itself.
@@ -952,8 +952,9 @@ Important options:
   `POPULATION` is a partial national DA or ADA plan.
 
 For a completed national plan, `--boundaries`, `--geo-column`, and
-`--geo-id-field` are inferred. The default coordinate precision is 5 for a
-single population and 3 for a national plan.
+`--geo-id-field` are inferred. For a single population, the ID field is also
+inferred from a standard StatCan `--geo-column`. The default coordinate
+precision is 5 for a single population and 3 for a national plan.
 
 ## Beginner API Shape
 

@@ -9,9 +9,17 @@ import multiprocessing
 import queue
 import threading
 import time
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any
+from typing import Any, Protocol
 
+from synthpopcan._runtime_schemas import (
+    WORKER_MESSAGE_ADAPTER,
+    WorkerCancelledMessage,
+    WorkerFailedMessage,
+    WorkerProgressMessage,
+    WorkerSucceededMessage,
+)
 from synthpopcan.geography import GeographyUniverse
 from synthpopcan.models import model_payload
 from synthpopcan.runs import RunStore, publish_artifact
@@ -33,7 +41,40 @@ class _WorkerCancelled(RuntimeError):
     pass
 
 
-def _workflow_worker(workspace, run_id, manifest, messages, cancel_event) -> None:
+class _MessageQueue(Protocol):
+    def put(
+        self,
+        obj: object,
+        block: bool = True,
+        timeout: float | None = None,
+    ) -> None: ...
+
+    def get(self, block: bool = True, timeout: float | None = None) -> object: ...
+
+    def get_nowait(self) -> object: ...
+
+
+class _CancelEvent(Protocol):
+    def is_set(self) -> bool: ...
+
+    def set(self) -> None: ...
+
+    def wait(self, timeout: float | None = None) -> bool: ...
+
+
+_WorkerTarget = Callable[
+    [str, str, dict[str, Any], _MessageQueue, _CancelEvent],
+    None,
+]
+
+
+def _workflow_worker(
+    workspace: str,
+    run_id: str,
+    manifest: dict[str, Any],
+    messages: _MessageQueue,
+    cancel_event: _CancelEvent,
+) -> None:
     """Dispatch a durable manifest to its file-backed workflow."""
     if manifest.get("workflow") == "ipf":
         _ipf_worker(workspace, run_id, manifest, messages, cancel_event)
@@ -59,8 +100,8 @@ def _ipf_worker(
     workspace: str,
     run_id: str,
     manifest: dict[str, Any],
-    messages,
-    cancel_event,
+    messages: _MessageQueue,
+    cancel_event: _CancelEvent,
 ) -> None:
     """Execute one IPF workflow in an isolated spawned process."""
     root = Path(workspace)
@@ -153,8 +194,8 @@ def _model_worker(
     workspace: str,
     run_id: str,
     manifest: dict[str, Any],
-    messages,
-    cancel_event,
+    messages: _MessageQueue,
+    cancel_event: _CancelEvent,
 ) -> None:
     """Execute prepared-model generation in the spawned worker."""
     root = Path(workspace)
@@ -258,8 +299,8 @@ def _small_area_worker(
     workspace: str,
     run_id: str,
     manifest: dict[str, Any],
-    messages,
-    cancel_event,
+    messages: _MessageQueue,
+    cancel_event: _CancelEvent,
 ) -> None:
     """Execute linked generation and small-area calibration in one worker."""
     root = Path(workspace)
@@ -380,6 +421,14 @@ def _small_area_worker(
             ),
             publish_artifact(
                 root,
+                result.manifest_path,
+                artifact_dir / "manifest.json",
+                logical_name="linked_population_manifest",
+                media_type="application/json",
+                cancel_check=check_cancelled,
+            ),
+            publish_artifact(
+                root,
                 result.report_path,
                 artifact_dir / "report.json",
                 logical_name="small_area_report",
@@ -446,7 +495,7 @@ class JobManager:
         self,
         store: RunStore,
         *,
-        worker_target=None,
+        worker_target: _WorkerTarget | None = None,
         cancel_grace_seconds: float = 1.0,
         max_run_seconds: float | None = 6 * 60 * 60,
     ) -> None:
@@ -621,46 +670,53 @@ class JobManager:
             self._current_cancel = None
 
     def _drain_messages(
-        self, run_id: str, messages, *, wait_seconds: float = 0
+        self,
+        run_id: str,
+        messages: _MessageQueue,
+        *,
+        wait_seconds: float = 0,
     ) -> bool:
         terminal = False
         first_message = True
         while True:
             try:
                 if first_message and wait_seconds > 0:
-                    message = messages.get(timeout=wait_seconds)
+                    raw_message = messages.get(timeout=wait_seconds)
                 else:
-                    message = messages.get_nowait()
+                    raw_message = messages.get_nowait()
             except queue.Empty:
                 return terminal
             first_message = False
-            message_type = message["type"]
-            if message_type == "progress":
-                event = message["event"]
+            message = WORKER_MESSAGE_ADAPTER.validate_python(raw_message)
+            if isinstance(message, WorkerProgressMessage):
+                event = message.event
                 self.store.append_event(
                     run_id,
-                    str(event["stage"]),
-                    str(event["message"]),
-                    completed=event.get("completed"),
-                    total=event.get("total"),
+                    event.stage,
+                    event.message,
+                    completed=event.completed,
+                    total=event.total,
                 )
-            elif message_type == "succeeded":
+            elif isinstance(message, WorkerSucceededMessage):
                 self.store.transition_run(
                     run_id,
                     "succeeded",
-                    artifacts=message["artifacts"],
-                    summary=message["summary"],
-                    reproduction=message["reproduction"],
+                    artifacts=[artifact.model_dump() for artifact in message.artifacts],
+                    summary=message.summary,
+                    reproduction=message.reproduction,
                 )
                 self.store.append_event(run_id, "succeeded", "Run completed")
                 terminal = True
-            elif message_type == "failed":
-                self.store.transition_run(run_id, "failed", error=message["error"])
+            elif isinstance(message, WorkerFailedMessage):
+                error = message.error.model_dump()
+                self.store.transition_run(run_id, "failed", error=error)
                 self.store.append_event(
-                    run_id, "failed", str(message["error"]["message"])
+                    run_id,
+                    "failed",
+                    message.error.message,
                 )
                 terminal = True
-            elif message_type == "cancelled":
+            elif isinstance(message, WorkerCancelledMessage):
                 self._finish_cancelled(run_id)
                 terminal = True
 

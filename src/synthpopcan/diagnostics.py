@@ -173,7 +173,9 @@ def build_control_total_checks(control_table: ControlTable) -> dict[str, Any]:
             "max_total": 0.0,
             "difference": 0.0,
         }
-    total_values = [float(total["target_total"]) for total in totals]
+    total_values = [
+        sum(cell.count for cell in margin.cells) for margin in control_table.margins
+    ]
     min_total = min(total_values)
     max_total = max(total_values)
     difference = max_total - min_total
