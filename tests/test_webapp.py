@@ -40,11 +40,9 @@ from synthpopcan.webapp import (
     webapp_url,
 )
 
-_WEB_OPENERS: dict[str, object] = {}
-
 
 def urlopen(url_or_request, *, timeout: float):
-    """Open a local test URL after establishing its app session cookie."""
+    """Open a local test URL with a fresh session for its ephemeral server."""
     url = (
         url_or_request.full_url
         if isinstance(url_or_request, Request)
@@ -52,11 +50,8 @@ def urlopen(url_or_request, *, timeout: float):
     )
     parsed = urlsplit(url)
     origin = f"{parsed.scheme}://{parsed.netloc}"
-    opener = _WEB_OPENERS.get(origin)
-    if opener is None:
-        opener = build_opener(HTTPCookieProcessor(CookieJar()))
-        opener.open(f"{origin}/api/app", timeout=timeout)
-        _WEB_OPENERS[origin] = opener
+    opener = build_opener(HTTPCookieProcessor(CookieJar()))
+    opener.open(f"{origin}/api/app", timeout=timeout)
     return opener.open(url_or_request, timeout=timeout)
 
 

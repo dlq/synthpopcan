@@ -201,6 +201,50 @@ def test_cli_models_fetch_uses_model_cache(monkeypatch, tmp_path, capsys) -> Non
     assert output.out.strip() == str(fetched_paths[0])
 
 
+def test_cli_geodata_fetch_and_cache_dir(monkeypatch, tmp_path, capsys) -> None:
+    boundary_path = tmp_path / "2021-da-24.geojson"
+    requests: list[tuple[int, str, str | None, Path | None]] = []
+
+    def fake_fetch_display_boundaries(
+        census_year: int,
+        geography_level: str,
+        *,
+        pruid: str | None,
+        catalogue: Path | None,
+    ) -> Path:
+        requests.append((census_year, geography_level, pruid, catalogue))
+        return boundary_path
+
+    monkeypatch.setattr(
+        "synthpopcan.cli.fetch_display_boundaries", fake_fetch_display_boundaries
+    )
+    monkeypatch.setattr("synthpopcan.cli.geodata_cache_dir", lambda: tmp_path)
+
+    catalogue = tmp_path / "catalogue.json"
+    assert (
+        main(
+            [
+                "geodata",
+                "fetch",
+                "2021",
+                "da",
+                "--pruid",
+                "24",
+                "--catalogue",
+                str(catalogue),
+            ]
+        )
+        == 0
+    )
+    output = capsys.readouterr()
+    assert requests == [(2021, "da", "24", catalogue)]
+    assert output.out.strip() == str(boundary_path)
+    assert "Prepared display boundaries ready" in output.err
+
+    assert main(["geodata", "cache-dir"]) == 0
+    assert capsys.readouterr().out.strip() == str(tmp_path)
+
+
 def test_model_build_commands_are_visible_in_help(capsys) -> None:
     assert main(["models", "build", "--help"]) == 0
 
