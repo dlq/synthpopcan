@@ -15,7 +15,6 @@ from pathlib import Path
 from typing import Any, Literal
 
 import numpy as np
-from sklearn.tree import DecisionTreeClassifier
 
 from synthpopcan.tabular import validate_columns
 
@@ -820,6 +819,13 @@ def train_cart_model(
 
     if min_samples_leaf < 1:
         raise ValueError("min_samples_leaf must be greater than zero")
+    try:
+        from sklearn.tree import DecisionTreeClassifier
+    except ImportError as exc:
+        raise ValueError(
+            "CART model training requires the optional 'model-build' extra. "
+            "Install it with `pip install 'synthpopcan[model-build]'`."
+        ) from exc
     feature_categories = {
         column: tuple(sorted({record[column] for record in sample.records}))
         for column in sample.conditioning_columns

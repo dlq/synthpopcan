@@ -30,8 +30,14 @@ dependencies = [
     "pandas>=2.0",
     "pyshp>=3.1.3",
     "rich>=15.0.0",
-    "scikit-learn>=1.9.0",
     "uvicorn>=0.51.0",
+]
+
+[project.optional-dependencies]
+# CART training is an authoring workflow.  Reading its portable JSON output and
+# generating populations do not require scikit-learn.
+model-build = [
+    "scikit-learn>=1.9.0",
 ]
 
 [project.urls]
@@ -51,6 +57,7 @@ dev = [
   "pytest>=8.0",
   "pytest-cov>=7.1.0",
   "ruff>=0.15.18",
+  "scikit-learn>=1.9.0",
 ]
 docs = [
     "doc8>=2.0.0",
