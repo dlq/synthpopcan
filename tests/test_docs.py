@@ -194,6 +194,7 @@ def test_correctness_assurance_is_public_and_names_each_evidence_family() -> Non
         "tests/test_model_correctness.py",
         "tests/test_small_area_correctness.py",
         "tests/test_reference_correctness.py",
+        "tests/test_geodata.py",
         "tests/test_webapi.py",
         "scripts/check-wheel.sh",
     ):

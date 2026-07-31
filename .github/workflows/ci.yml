@@ -85,6 +85,11 @@ jobs:
           python -m venv .smoke-venv
           .smoke-venv/bin/pip install dist/*.whl
 
+      - name: Verify CART training dependency is not installed at runtime
+        run: >-
+          .smoke-venv/bin/python -c
+          "import importlib.util; assert importlib.util.find_spec('sklearn') is None"
+
       - name: Verify CLI entry point
         run: .smoke-venv/bin/synthpopcan --help
 
@@ -98,7 +103,7 @@ jobs:
           .smoke-venv/bin/synthpopcan models list
           .smoke-venv/bin/synthpopcan models show demo-linked-household-person
 
-      - name: Verify bundled demo generation
+      - name: Verify bundled demo generation without CART dependency
         run: |
           .smoke-venv/bin/synthpopcan models generate \
             demo-linked-household-person \

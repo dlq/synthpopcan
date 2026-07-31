@@ -228,6 +228,12 @@ and external review. Territory and broader-CMA models are feasibility
 candidates, not promised coverage: each must pass support, rare-category,
 privacy, provenance, and reproducible-build gates.
 
+Prepared-geodata releases need a deterministic catalogue audit before each
+publication: verify the expected year/geography/PRUID identity coverage,
+unique asset names, immutable release-tag URLs, and both checksum fields. A
+separate bounded remote retrieval check may exercise a representative asset,
+but routine CI must not redownload the complete boundary release.
+
 The stewardship plan owns the model-licensing decision, full CFF validation,
 Software Heritage capture, a dated FAIR4RS baseline, lightweight governance and
 maintenance documentation, a tested bilingual 2021 case study, targeted
