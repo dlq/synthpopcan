@@ -111,11 +111,17 @@ class RunStore:
 
     def __init__(self, root: Path) -> None:
         self.root: Path = root.resolve()
-        self.uploads_dir: Path = self.root / "uploads"
-        self.runs_dir: Path = self.root / "runs"
         self._lock = threading.RLock()
-        self.uploads_dir.mkdir(parents=True, exist_ok=True)
-        self.runs_dir.mkdir(parents=True, exist_ok=True)
+        uploads_dir = self.root / "uploads"
+        runs_dir = self.root / "runs"
+        uploads_dir.mkdir(parents=True, exist_ok=True)
+        runs_dir.mkdir(parents=True, exist_ok=True)
+        self.uploads_dir = uploads_dir.resolve()
+        self.runs_dir = runs_dir.resolve()
+        if not self.uploads_dir.is_relative_to(self.root):
+            raise ValueError("uploads directory escapes the workspace")
+        if not self.runs_dir.is_relative_to(self.root):
+            raise ValueError("runs directory escapes the workspace")
         self.recover_interrupted_runs()
 
     def begin_upload(
@@ -175,7 +181,7 @@ class RunStore:
             seed = self.get_upload(seed_id, require_unclaimed=True)
             controls = self.get_upload(controls_id, require_unclaimed=True)
             run_id = _new_run_id()
-            run_dir = self.runs_dir / run_id
+            run_dir = self.run_dir(run_id)
             inputs_dir = run_dir / "inputs"
             for directory in (
                 inputs_dir,
@@ -247,7 +253,7 @@ class RunStore:
                 else None
             )
             run_id = _new_run_id()
-            run_dir = self.runs_dir / run_id
+            run_dir = self.run_dir(run_id)
             inputs_dir = run_dir / "inputs"
             for directory in (inputs_dir, run_dir / "artifacts", run_dir / "work"):
                 directory.mkdir(parents=True, exist_ok=False)
@@ -377,7 +383,7 @@ class RunStore:
                 raise ValueError("small-area input uploads must differ")
 
             run_id = _new_run_id()
-            run_dir = self.runs_dir / run_id
+            run_dir = self.run_dir(run_id)
             inputs_dir = run_dir / "inputs"
             for directory in (inputs_dir, run_dir / "artifacts", run_dir / "work"):
                 directory.mkdir(parents=True, exist_ok=False)
@@ -552,10 +558,13 @@ class RunStore:
         raise KeyError(f"unknown artifact {artifact_id}")
 
     def run_dir(self, run_id: str) -> Path:
-        """Return a syntactically validated run directory."""
+        """Return a validated run directory contained by the workspace."""
         if not _RUN_ID.fullmatch(run_id):
             raise ValueError("invalid run ID")
-        return self.runs_dir / run_id
+        candidate = (self.runs_dir / run_id).resolve()
+        if candidate.parent != self.runs_dir:
+            raise ValueError("run path escapes the workspace")
+        return candidate
 
     def resolve_managed_path(self, relative_path: str) -> Path:
         """Resolve a manifest-owned path and reject traversal or symlink escape."""
@@ -634,8 +643,11 @@ class RunStore:
 
     def _release_upload_claim(self, metadata: dict[str, Any]) -> None:
         upload_id = str(metadata["upload_id"])
+        _validate_opaque_id(upload_id, "upload")
         claimed_path = self.resolve_managed_path(str(metadata["path"]))
-        upload_path = self.uploads_dir / f"{upload_id}.bin"
+        upload_path = (self.uploads_dir / f"{upload_id}.bin").resolve()
+        if upload_path.parent != self.uploads_dir:
+            raise ValueError("upload path escapes the workspace")
         if claimed_path.exists():
             os.replace(claimed_path, upload_path)
         metadata["claimed_by"] = None
@@ -643,6 +655,9 @@ class RunStore:
         self._write_json_atomic(self.uploads_dir / f"{upload_id}.json", metadata)
 
     def _write_json_atomic(self, path: Path, payload: dict[str, Any]) -> None:
+        path = path.resolve()
+        if not path.is_relative_to(self.root):
+            raise ValueError("JSON path escapes the workspace")
         temporary = path.with_name(f".{path.name}.{secrets.token_hex(6)}.tmp")
         try:
             with temporary.open("x") as handle:
@@ -683,6 +698,13 @@ def publish_artifact(
     cancel_check: Callable[[], None] | None = None,
 ) -> dict[str, Any]:
     """Copy, hash, fsync, and atomically publish one completed artifact."""
+    root = root.resolve()
+    source = source.resolve()
+    destination = destination.resolve()
+    if not source.is_relative_to(root):
+        raise ValueError("artifact source escapes the workspace")
+    if not destination.is_relative_to(root):
+        raise ValueError("artifact destination escapes the workspace")
     digest = hashlib.sha256()
     byte_size = 0
     temporary = source.with_name(f".{source.name}.publish-{secrets.token_hex(6)}")

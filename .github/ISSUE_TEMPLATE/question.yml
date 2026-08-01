@@ -1,0 +1,42 @@
+name: Question or help
+description: Ask about choosing or using a SynthPopCan workflow.
+title: "[Question]: "
+labels: ["question"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Questions from researchers and first-time contributors are welcome.
+        Do not attach private data, raw Census microdata rows, credentials, or
+        access-controlled files. Describe the shape of the data instead.
+  - type: dropdown
+    id: goal
+    attributes:
+      label: What are you trying to do?
+      options:
+        - Explore SynthPopCan for the first time
+        - Generate or calibrate a population
+        - Use the local web app
+        - Use the command line or Python API
+        - Understand data, methods, or results
+        - Contribute documentation or code
+        - Something else
+    validations:
+      required: true
+  - type: textarea
+    id: question
+    attributes:
+      label: What would help?
+      description: Explain the goal, what you tried, and where you became unsure.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: SynthPopCan version, if relevant
+      placeholder: "0.7.0"
+  - type: textarea
+    id: context
+    attributes:
+      label: Public context
+      description: Include only small, public examples or non-sensitive descriptions.

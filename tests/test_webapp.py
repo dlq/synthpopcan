@@ -409,7 +409,11 @@ def test_webapp_fetches_and_returns_model_package(monkeypatch) -> None:
     ("failure", "status", "message"),
     [
         (KeyError("missing"), 404, "Unknown model"),
-        (OSError("network unavailable"), 502, "network unavailable"),
+        (
+            OSError("/private/cache/model.json: network unavailable"),
+            502,
+            "model download failed",
+        ),
         (ValueError("checksum mismatch"), 502, "checksum mismatch"),
     ],
 )
@@ -534,6 +538,39 @@ def test_webapp_wds_seed_controls_api_reports_bad_requests(monkeypatch) -> None:
             urlopen(non_object, timeout=2)
         assert non_object_info.value.code == 400
         assert "must be an object" in non_object_info.value.read().decode("utf-8")
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=2)
+
+
+def test_webapp_wds_seed_controls_hides_unexpected_exception_details(
+    monkeypatch,
+) -> None:
+    monkeypatch.setattr(
+        "synthpopcan.webapi.fetch_wds_zip_bytes",
+        lambda product_id: (_ for _ in ()).throw(
+            RuntimeError("private cache path: /private/models")
+        ),
+    )
+    server = build_webapp_server("127.0.0.1", 0)
+    thread = Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    try:
+        request = Request(
+            f"{webapp_url(server)}api/wds/seed-controls",
+            data=json.dumps({"productId": "13100005"}).encode("utf-8"),
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        with pytest.raises(HTTPError) as exc_info:
+            urlopen(request, timeout=2)
+
+        payload = json.loads(exc_info.value.read().decode("utf-8"))
+        assert exc_info.value.code == 400
+        assert payload == {
+            "error": "WDS preparation failed; check the product ID and dimensions"
+        }
     finally:
         server.shutdown()
         server.server_close()

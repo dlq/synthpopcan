@@ -71,6 +71,32 @@ def test_artifact_publication_checks_cancellation_before_atomic_publish(
     assert list(tmp_path.glob(".*.publish-*")) == []
 
 
+def test_artifact_publication_rejects_paths_outside_workspace(tmp_path: Path) -> None:
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    source = workspace / "work.csv"
+    source.write_bytes(b"value\n1\n")
+    outside = tmp_path / "outside.csv"
+
+    with pytest.raises(ValueError, match="destination escapes"):
+        publish_artifact(
+            workspace,
+            source,
+            outside,
+            logical_name="test",
+            media_type="text/csv",
+        )
+
+    with pytest.raises(ValueError, match="source escapes"):
+        publish_artifact(
+            workspace,
+            outside,
+            workspace / "artifact.csv",
+            logical_name="test",
+            media_type="text/csv",
+        )
+
+
 def test_run_store_rejects_ids_traversal_and_symlink_escape(tmp_path: Path) -> None:
     store = RunStore(tmp_path / "workspace")
 
@@ -92,6 +118,64 @@ def test_run_store_rejects_ids_traversal_and_symlink_escape(tmp_path: Path) -> N
         pytest.skip("symlinks are unavailable")
     with pytest.raises(ValueError, match="escapes"):
         store.resolve_managed_path("escape/secret.csv")
+
+    outside_run = outside / "run"
+    outside_run.mkdir()
+    run_link = store.runs_dir / "20260801T120000Z-abcdef123456"
+    try:
+        run_link.symlink_to(outside_run, target_is_directory=True)
+    except OSError:
+        pytest.skip("symlinks are unavailable")
+    with pytest.raises(ValueError, match="run path escapes"):
+        store.run_dir(run_link.name)
+
+
+def test_run_store_rejects_workspace_subdirectory_symlink_escape(
+    tmp_path: Path,
+) -> None:
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    outside = tmp_path / "outside-runs"
+    outside.mkdir()
+    try:
+        (workspace / "runs").symlink_to(outside, target_is_directory=True)
+    except OSError:
+        pytest.skip("symlinks are unavailable")
+
+    with pytest.raises(ValueError, match="runs directory escapes"):
+        RunStore(workspace)
+
+    (workspace / "runs").unlink()
+    (workspace / "runs").mkdir()
+    (workspace / "uploads").rmdir()
+    try:
+        (workspace / "uploads").symlink_to(outside, target_is_directory=True)
+    except OSError:
+        pytest.skip("symlinks are unavailable")
+    with pytest.raises(ValueError, match="uploads directory escapes"):
+        RunStore(workspace)
+
+
+def test_run_store_rejects_atomic_write_and_upload_symlink_escapes(
+    tmp_path: Path,
+) -> None:
+    store = RunStore(tmp_path / "workspace")
+    outside = tmp_path / "outside.json"
+    outside.write_text("{}")
+
+    with pytest.raises(ValueError, match="JSON path escapes"):
+        store._write_json_atomic(outside, {})  # noqa: SLF001
+
+    upload_id = "a" * 32
+    upload_link = store.uploads_dir / f"{upload_id}.bin"
+    try:
+        upload_link.symlink_to(outside)
+    except OSError:
+        pytest.skip("symlinks are unavailable")
+    with pytest.raises(ValueError, match="upload path escapes"):
+        store._release_upload_claim(  # noqa: SLF001
+            {"upload_id": upload_id, "path": "uploads/claimed.bin"}
+        )
 
 
 def test_run_store_validates_persisted_upload_and_manifest_schemas(

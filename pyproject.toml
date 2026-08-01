@@ -1,7 +1,7 @@
 [project]
 name = "synthpopcan"
 version = "0.7.0"
-description = "Canadian synthetic population tooling for StatCan margin tables and Census microdata."
+description = "Build, inspect, and validate modelled Canadian households and people for reproducible research."
 readme = "README.md"
 requires-python = ">=3.11"
 license = { file = "LICENSE" }

@@ -11,7 +11,10 @@
   <img src="assets/branding/logo/synthpopcan-logo-512.png" alt="SynthPopCan logo" width="220">
 </p>
 
-SynthPopCan is an early-stage project for building Canadian synthetic population tooling.
+SynthPopCan helps researchers create, inspect, and validate modelled Canadian
+households and people from Census-derived data. It supports reproducible work
+without requiring researchers to expose private source data or become software
+developers first.
 
 SynthPopCan is an independent research-software project. It is not affiliated
 with, endorsed by, or sponsored by Statistics Canada or the Government of
@@ -69,6 +72,17 @@ python3 -m pip install synthpopcan
 The base installation is enough to generate from portable frequency or CART
 models. Starting with `0.7.0`, only researchers training new CART models need
 `python3 -m pip install "synthpopcan[model-build]"`.
+
+For a guided first look, start the local browser workbench:
+
+```bash
+synthpopcan serve
+```
+
+It opens forms, previews, run history, and downloads on this computer only. The
+[local web app guide](docs/web-app.md) includes fictional teaching data and
+explains what stays on disk. Use the command line below when the work needs to
+be scripted or repeated exactly.
 
 Then inspect the command line:
 
@@ -232,7 +246,7 @@ matches what your work actually depended on.
 | You used | Cite | DOI |
 | --- | --- | --- |
 | SynthPopCan generally | The concept DOI, which always resolves to the newest release | [10.5281/zenodo.21461463](https://doi.org/10.5281/zenodo.21461463) |
-| A specific release | That release's version DOI | e.g. `10.5281/zenodo.21461464` for 0.6.2 |
+| SynthPopCan 0.7.0 | The archived 0.7.0 version DOI | [10.5281/zenodo.21743129](https://doi.org/10.5281/zenodo.21743129) |
 | A prepared model package | That package's own DOI, listed on its Zenodo record | one per package |
 
 For reproducibility, prefer the **version** DOI for the release and the model

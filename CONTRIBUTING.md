@@ -3,9 +3,16 @@
 SynthPopCan is early-stage research software. Keep changes small, reviewable,
 and grounded in the existing code and documentation structure.
 
+Contributions do not have to be code. Reports about unclear terminology,
+documentation gaps, inaccessible workflows, research-method concerns, and
+small public teaching examples are especially useful. Open a question or
+feature issue if you want to discuss an idea before preparing a change. Never
+post private data, raw Census microdata rows, credentials, or controlled files.
+
 ## Development Setup
 
-Install the Python and documentation dependencies:
+Install Python 3.11 or newer, `uv`, and Node.js 24. Then install the Python and
+documentation dependencies:
 
 ```bash
 uv sync --group dev --group docs
@@ -26,6 +33,34 @@ Run the normal checks before opening a pull request:
 This runs Python linting, formatting, type checks, tests, a warning-clean docs
 build, web formatting/linting, JavaScript unit tests, and the Playwright browser
 scenarios. Install the Playwright browser once with `npx playwright install chromium` if it is not already available.
+
+For a small documentation or Python-only change, use the relevant faster checks
+while iterating:
+
+```bash
+uv run ruff check src tests scripts
+uv run pyright src
+uv run pytest path/to/relevant_test.py
+uv run --group docs mdformat --check README.md CONTRIBUTING.md docs
+```
+
+Run `./scripts/check.sh` before requesting final review when practical. If a
+local check cannot run on your machine, say which check and why in the pull
+request instead of leaving reviewers to infer it.
+
+## Pull Requests
+
+Before opening a pull request, search existing issues and pull requests, keep
+the change focused, and add or update tests and user documentation where the
+observable behavior changes. Draft pull requests are welcome for early
+feedback.
+
+In the pull request description, explain the user or research problem, the
+chosen change, the checks you ran, and any data, correctness, compatibility, or
+privacy implications. A maintainer may ask for revisions; keep follow-up
+commits reviewable. Once checks and review are complete, a maintainer will merge
+the change. Contributors do not need release permissions or access to private
+research data.
 
 Changes to numerical kernels, model generation, linked records, small-area
 artifacts, or validation must update the relevant claim and evidence in

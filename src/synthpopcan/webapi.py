@@ -74,7 +74,12 @@ def create_web_app(
     session_secret: str | None = None,
 ) -> FastAPI:
     """Create the loopback-only FastAPI application."""
-    secret = session_secret or secrets.token_urlsafe(32)
+    secret = (session_secret or secrets.token_urlsafe(32)).encode()
+    session_token = hmac.new(
+        secret,
+        b"synthpopcan-local-browser-session",
+        "sha256",
+    ).hexdigest()
     resolved_workspace = workspace.resolve()
     run_store = RunStore(resolved_workspace)
     job_manager = JobManager(run_store)
@@ -95,7 +100,7 @@ def create_web_app(
         lifespan=lifespan,
     )
     app.state.workspace = resolved_workspace
-    app.state.session_secret = secret
+    app.state.session_token = session_token
     app.state.run_store = run_store
     app.state.job_manager = job_manager
 
@@ -112,7 +117,7 @@ def create_web_app(
 
         if request.url.path.startswith("/api/") and request.url.path != "/api/app":
             cookie = request.cookies.get(_SESSION_COOKIE, "")
-            if not hmac.compare_digest(cookie, app.state.session_secret):
+            if not hmac.compare_digest(cookie, app.state.session_token):
                 return _error_response(
                     "local app session is missing or invalid", HTTPStatus.FORBIDDEN
                 )
@@ -135,7 +140,7 @@ def create_web_app(
         )
         response.set_cookie(
             _SESSION_COOKIE,
-            app.state.session_secret,
+            app.state.session_token,
             httponly=True,
             samesite="strict",
             secure=False,
@@ -195,9 +200,12 @@ def create_web_app(
         except ValueError as exc:
             writer.abort()
             return _error_response(str(exc), HTTPStatus.BAD_REQUEST)
-        except OSError as exc:
+        except OSError:
             writer.abort()
-            return _error_response(str(exc), HTTPStatus.INSUFFICIENT_STORAGE)
+            return _error_response(
+                "upload could not be stored in the local workspace",
+                HTTPStatus.INSUFFICIENT_STORAGE,
+            )
 
     @app.post("/api/preflight")
     async def preflight_run(request: Request) -> Response:
@@ -328,7 +336,9 @@ def create_web_app(
             return _error_response("Unknown model", HTTPStatus.NOT_FOUND)
         except OverflowError as exc:
             return _error_response(str(exc), HTTPStatus.REQUEST_ENTITY_TOO_LARGE)
-        except (OSError, ValueError) as exc:
+        except OSError:
+            return _error_response("model download failed", HTTPStatus.BAD_GATEWAY)
+        except ValueError as exc:
             return _error_response(str(exc), HTTPStatus.BAD_GATEWAY)
 
     @app.post("/api/models/{model_id}/install")
@@ -340,7 +350,9 @@ def create_web_app(
             return JSONResponse({"model": model_catalogue_entry(model_id)})
         except KeyError:
             return _error_response("Unknown model", HTTPStatus.NOT_FOUND)
-        except (OSError, TimeoutError, ValueError) as exc:
+        except (OSError, TimeoutError):
+            return _error_response("model download failed", HTTPStatus.BAD_GATEWAY)
+        except ValueError as exc:
             return _error_response(str(exc), HTTPStatus.BAD_GATEWAY)
 
     @app.delete("/api/models/{model_id}")
@@ -365,8 +377,12 @@ def create_web_app(
             return _error_response("Unknown model", HTTPStatus.NOT_FOUND)
         except OverflowError as exc:
             return _error_response(str(exc), HTTPStatus.REQUEST_ENTITY_TOO_LARGE)
-        except FileNotFoundError as exc:
-            return _error_response(str(exc), HTTPStatus.CONFLICT)
+        except FileNotFoundError:
+            return _error_response(
+                "model package is not installed; run "
+                f"synthpopcan models fetch {model_id}",
+                HTTPStatus.CONFLICT,
+            )
 
     @app.post("/api/wds/seed-controls")
     async def prepare_wds_seed_controls(request: Request) -> Response:
@@ -395,8 +411,13 @@ def create_web_app(
                     **generated,
                 }
             )
-        except Exception as exc:  # noqa: BLE001
+        except (KeyError, TypeError, ValueError) as exc:
             return _error_response(str(exc), HTTPStatus.BAD_REQUEST)
+        except Exception:  # noqa: BLE001
+            return _error_response(
+                "WDS preparation failed; check the product ID and dimensions",
+                HTTPStatus.BAD_REQUEST,
+            )
         finally:
             _WDS_REQUEST_SLOTS.release()
 

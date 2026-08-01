@@ -26,6 +26,72 @@ from synthpopcan.webapp import get_webapp_root
 from synthpopcan.workflows.models import LOCAL_RUN_MAX_HOUSEHOLDS
 
 
+@pytest.mark.parametrize(
+    ("failure", "status", "message"),
+    [
+        (ValueError("upload is malformed"), 400, "upload is malformed"),
+        (
+            OSError("/private/workspace/upload.bin: disk error"),
+            507,
+            "upload could not be stored in the local workspace",
+        ),
+    ],
+)
+def test_upload_api_returns_safe_writer_failures(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    failure: Exception,
+    status: int,
+    message: str,
+) -> None:
+    app = create_web_app(
+        static_root=get_webapp_root(),
+        workspace=tmp_path / "workspace",
+        session_secret="test-session",
+    )
+
+    class BrokenWriter:
+        aborted = False
+
+        def write(self, chunk: bytes) -> None:
+            pass
+
+        def finish(self) -> dict[str, object]:
+            raise failure
+
+        def abort(self) -> None:
+            self.aborted = True
+
+    writer = BrokenWriter()
+    monkeypatch.setattr(
+        app.state.run_store,
+        "begin_upload",
+        lambda *args, **kwargs: writer,
+    )
+
+    async def exercise() -> httpx.Response:
+        transport = httpx.ASGITransport(app=app)
+        async with httpx.AsyncClient(
+            transport=transport, base_url="http://127.0.0.1"
+        ) as client:
+            await client.get("/api/app")
+            return await client.post(
+                "/api/uploads",
+                content=b"value\n1\n",
+                headers={"Content-Type": "text/csv"},
+            )
+
+    try:
+        response = asyncio.run(exercise())
+    finally:
+        app.state.job_manager.shutdown()
+
+    assert response.status_code == status
+    assert response.json() == {"error": message}
+    assert writer.aborted is True
+    assert "/private/workspace" not in response.text
+
+
 def test_ipf_api_upload_preflight_run_events_artifacts_and_reproduction(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
