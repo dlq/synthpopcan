@@ -1,9 +1,8 @@
 # SynthPopCan Plan
 
 Status: release-phased roadmap\
-Last updated: 2026-07-31\
-Current published release: `0.6.3`\
-Release candidate: `0.7.0`
+Last updated: 2026-08-01\
+Current published release: `0.7.0`
 
 ## Current Focus
 
@@ -13,10 +12,9 @@ completed implementation plans belong in [`plans/archive/`](plans/archive/).
 
 | Order | Focus | Owner |
 | --- | --- | --- |
-| 1 | `0.7.0`: establish explicit geography identity and a reusable external-data enrichment framework, then prove both with a bounded 2021 DA workflow and synthetic fixtures while retaining 2016 compatibility evidence. | [Small-area geography](plans/2026-07-22-small-area-geography.md) and [external-data enrichment](plans/2026-07-15-ecosystem-enrichment.md) |
-| 2 | `0.7.1`: use public general-use Can-FED v2 as the first reference implementation, preserving its August 2024 measures and 2021 DA geography. | [External-data enrichment](plans/2026-07-15-ecosystem-enrichment.md) |
-| 3 | `0.7.2`: use ODEF v3 as the contrasting national facility/location reference implementation. | [External-data enrichment](plans/2026-07-15-ecosystem-enrichment.md) |
-| 4 | `0.8.0`–`0.8.1`: publish a simulator-neutral exchange bundle, then validate one demand-backed target adapter. | [Simulation interoperability](plans/2026-07-15-simulation-interoperability.md) |
+| 1 | `0.7.1`: use public general-use Can-FED v2 as the first reference implementation, preserving its August 2024 measures and 2021 DA geography. | [External-data enrichment](plans/2026-07-15-ecosystem-enrichment.md) |
+| 2 | `0.7.2`: use ODEF v3 as the contrasting national facility/location reference implementation. | [External-data enrichment](plans/2026-07-15-ecosystem-enrichment.md) |
+| 3 | `0.8.0`–`0.8.1`: publish a simulator-neutral exchange bundle, then validate one demand-backed target adapter. | [Simulation interoperability](plans/2026-07-15-simulation-interoperability.md) |
 | Ongoing | Licensing, citation, preservation, FAIR4RS, community introduction, and JOSS maturation. | [Research-software stewardship](plans/2026-07-19-research-software-stewardship.md) |
 
 ## Goal And Boundaries
@@ -63,7 +61,8 @@ action. The [plan index](plans/README.md) records active and archived plans.
 
 ## Current Product State
 
-`0.6.3` is a published alpha release with a stable v1 linked-population
+`0.7.0` is a published alpha release with explicit Census geography identity,
+a reusable external-data enrichment framework, and a stable v1 linked-population
 artifact contract. It provides:
 
 - seed/control IPF with diagnostics, compact weights, integerized records,
@@ -88,10 +87,10 @@ orchestration still differs in places from the durable web workflow, so parity
 tests execute the recorded fixed-seed recipes, including model conditions,
 uploaded candidates, fitted weights, and optional map creation.
 
-The development branch additionally publishes a separately versioned
-`geodata-v1` catalogue of checksummed display-only boundaries and implements
-verified runtime retrieval. Canonical Statistics Canada geometry remains the
-analytical input. The branch also moves scikit-learn behind the optional
+The release also publishes a separately versioned `geodata-v1` catalogue of
+checksummed display-only boundaries and implements verified runtime retrieval.
+Canonical Statistics Canada geometry remains the analytical input. It moves
+scikit-learn behind the optional
 `model-build` extra: CART training needs it, while portable model reading,
 generation, and conditional-frequency training do not.
 
@@ -114,6 +113,7 @@ The completed runtime and linked-schema implementation records are archived:
 | `0.6.1` | Stable linked-population schema, explicit 2021 Census support and model catalogue, bounded execution, and browser sequencing. |
 | `0.6.2` | Statistics Canada attribution, citation and archival metadata, prepared-model DOIs, Zenodo tooling, and corrected IPF documentation. |
 | `0.6.3` | Exact portable reproduction recipes, versioned per-run assurance, permanent checksummed release evidence, and distribution provenance attestations. |
+| `0.7.0` | Explicit Census geography identity, bounded national DA/ADA workflows, reusable external-data enrichment contracts, separately versioned display geodata, and an optional CART model-building dependency. |
 
 ## Sequenced Releases
 

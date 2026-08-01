@@ -44,10 +44,9 @@ Prepared-model generation is another **New run** path. **Small-area workflow**
 opens the linked generation/calibration setup; its resulting job appears in the
 same durable Runs history.
 
-The current workbench does not expose the unreleased national DA/ADA
-orchestration, prepared-geodata retrieval, or external-data enrichment
-interfaces. Use the command line or Python library for those development
-workflows.
+The current workbench does not expose national DA/ADA orchestration,
+prepared-geodata retrieval, or external-data enrichment interfaces. Use the
+command line or Python library for those workflows.
 
 ### Workspace and run lifecycle
 

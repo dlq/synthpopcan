@@ -1,10 +1,10 @@
 # Small-Area Geography Implementation Plan
 
-Status: implementation complete; awaiting the `0.7.0` release\
+Status: completed in `0.7.0`; archive pending\
 Created: 2026-07-22\
-Last updated: 2026-07-31\
+Last updated: 2026-08-01\
 Target: `0.7.0`, with later expansion gated by evidence\
-Next action: preserve the reviewed proof evidence through the `0.7.0` release\
+Next action: archive this completed implementation record while preserving its regression evidence\
 Roadmap: [PLANS.md](../PLANS.md) | [Plan index](README.md)
 
 ## Purpose

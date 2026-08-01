@@ -2,7 +2,7 @@
 
 All notable public changes to SynthPopCan are tracked here.
 
-## 0.7.0 - 2026-07-31
+## 0.7.0 - 2026-08-01
 
 Explicit Census geography and reusable external-data enrichment framework.
 

@@ -67,8 +67,8 @@ python3 -m pip install synthpopcan
 ```
 
 The base installation is enough to generate from portable frequency or CART
-models. On the unreleased `0.7.0` development line, only researchers training
-new CART models need `python3 -m pip install "synthpopcan[model-build]"`.
+models. Starting with `0.7.0`, only researchers training new CART models need
+`python3 -m pip install "synthpopcan[model-build]"`.
 
 Then inspect the command line:
 

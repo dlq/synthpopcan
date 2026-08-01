@@ -1,11 +1,10 @@
 # Reusable External-Data Enrichment Framework Plan
 
-Status: active; `0.7.0` foundation implemented and validated\
+Status: active; `0.7.0` foundation released\
 Created: 2026-07-15\
-Last updated: 2026-07-29\
+Last updated: 2026-08-01\
 Target: `0.7.0`–`0.7.2`\
-Next action: preserve the shared contracts through the `0.7.0` release, then
-begin the separately scoped `0.7.1` Can-FED reference adapter\
+Next action: begin the separately scoped `0.7.1` Can-FED reference adapter\
 Roadmap: [PLANS.md](../PLANS.md) | [Plan index](README.md) | Geography
 prerequisite: [small-area geography](2026-07-22-small-area-geography.md)
 

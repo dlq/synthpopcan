@@ -36,8 +36,8 @@ prepare map geometry.
 
 ## Getting Started
 
-**Network required; source checkout required until 0.7.0.** Configure the
-published catalogue for the current terminal session:
+**Network required.** Configure the published catalogue for the current
+terminal session:
 
 ```bash
 export SYNTHPOPCAN_GEODATA_CATALOGUE="https://github.com/dlq/synthpopcan/releases/download/geodata-v1/geodata-catalogue.json"
