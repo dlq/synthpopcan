@@ -10,12 +10,14 @@ Start here, then open a linked implementation plan only for the area being
 worked on. Completed release detail belongs in [CHANGELOG.md](CHANGELOG.md);
 completed implementation plans belong in [`plans/archive/`](plans/archive/).
 
-| Order | Focus | Owner |
-| --- | --- | --- |
-| 1 | `0.7.1`: use public general-use Can-FED v2 as the first reference implementation, preserving its August 2024 measures and 2021 DA geography. | [External-data enrichment](plans/2026-07-15-ecosystem-enrichment.md) |
-| 2 | `0.7.2`: use ODEF v3 as the contrasting national facility/location reference implementation. | [External-data enrichment](plans/2026-07-15-ecosystem-enrichment.md) |
-| 3 | `0.8.0`–`0.8.1`: publish a simulator-neutral exchange bundle, then validate one demand-backed target adapter. | [Simulation interoperability](plans/2026-07-15-simulation-interoperability.md) |
-| Ongoing | Licensing, citation, preservation, FAIR4RS, community introduction, and JOSS maturation. | [Research-software stewardship](plans/2026-07-19-research-software-stewardship.md) |
+| Order | User outcome | Done when | Owned by |
+| --- | --- | --- | --- |
+| Now: `0.7.1` | A researcher can attach documented historical food-environment context to a compatible 2021 DA population. | Both public Can-FED v2 buffer products reproduce through the common enrichment contract, with exact coverage reconciliation and no person-level exposure claim. | [External-data enrichment](plans/2026-07-15-ecosystem-enrichment.md) |
+| Next: `0.7.2` | A researcher can attach a documented national educational-facility inventory without treating it as capacity or accessibility evidence. | ODEF v3 acquisition, normalization, linkage, limitations, and unmatched records are independently reproducible. | [External-data enrichment](plans/2026-07-15-ecosystem-enrichment.md) |
+| Later: `0.8.0` | A researcher can hand a validated linked population to another tool in a self-describing, simulator-neutral bundle. | The CSV/JSON bundle round-trips with hashes, relationships, data dictionary, validation, and reproduction evidence. | [Simulation interoperability](plans/2026-07-15-simulation-interoperability.md) |
+| Conditional: `0.8.1` | One real downstream project can consume that bundle without SynthPopCan claiming to provide a complete simulation. | A demand-backed, version-pinned adapter passes an official import smoke test and reports every missing external input. | [Simulation interoperability](plans/2026-07-15-simulation-interoperability.md) |
+| Parallel correctness | Researchers can tell which attributes are genuinely controlled at ADA/DA level and which merely pass through from a broader candidate pool. | A field-by-field 2021 control-coverage audit precedes any new small-area representativeness claim; implementation is scheduled independently of `0.7.1` and `0.7.2`. | [Correctness assurance](plans/2026-07-12-correctness-assurance.md) |
+| Ongoing maintenance | Releases remain typed, citable, preserved, governable, and approachable to contributors. | Each maintenance plan advances without silently blocking the numbered product sequence unless it names a release gate. | [Stewardship](plans/2026-07-19-research-software-stewardship.md) and [strict typing](plans/2026-08-01-strict-typing.md) |
 
 ## Goal And Boundaries
 
@@ -119,36 +121,14 @@ The completed runtime and linked-schema implementation records are archived:
 
 ### `0.7.0`: Geography and reusable external-data enrichment framework
 
-Two prerequisites ship together because neither is useful for safe
-geography-keyed enrichment alone:
-
-- make `(census_vintage, geography_level, identifier_namespace, identifier)`
-  explicit in requests, manifests, joins, and errors;
-- prove one bounded Québec 2021 DA workflow with metropolitan and rural areas,
-  matching controls, boundaries, authoritative relationships, resource
-  estimates, validation, and map-size evidence, while retaining a compact 2016
-  DA compatibility regression;
-- add restartable national 2021 DA/ADA orchestration using level-specific
-  official profile adapters, shared province/territory manifests, bounded
-  batches, one-pass boundary partitioning, reusable evidence-checked
-  condition-specific candidate pools, atomic/checkpointed resumable execution,
-  bounded parallel workers, national aggregate evidence, and disk safeguards;
-- add versioned source-resource and enrichment manifests that compose the
-  existing source provenance, linked-population v1, and durable-run records;
-- implement immutable, bounded, checksum-recorded resource retrieval and
-  explicit source revisions;
-- support reusable, source-independent enrichment layers and validators for
-  geography-keyed attributes, point/service locations, and governed
-  household/person relationships without mutating the base population;
-- let a researcher import a conforming normalized layer without waiting for a
-  project-maintained adapter for that source;
-- record each integration's authority, licence and access class, temporal and
-  geographic semantics, variables, linkage method, limitations, and
-  redistribution status;
-- support English/French labels and translation provenance in the metadata
-  contract; and
-- prove with synthetic fixtures that enrichment leaves the base population and
-  its identifiers byte-for-byte unchanged.
+Released on 2026-08-01. It established explicit Census geography identity,
+bounded national DA/ADA planning and execution, and reusable source, resource,
+layer, validation, and enrichment-manifest contracts. Researchers can import a
+conforming normalized sidecar without waiting for a built-in dataset adapter,
+and synthetic fixtures prove that enrichment does not mutate the base linked
+population. See [CHANGELOG.md](CHANGELOG.md) and the archived
+[small-area geography plan](plans/archive/2026-07-22-small-area-geography.md)
+for completed implementation and evidence.
 
 This release does not include a monolithic national fit, an automatic claim
 that the broad Canada PUMF model is fit for every provincial, territorial, or
@@ -156,13 +136,13 @@ small-area research question, 2021-to-2016 DA concordance,
 arbitrary-polygon selection, a general CKAN browser, or an automatic
 compatibility promise for every candidate source.
 
-The separately validated full-field ADA/DA control-coverage audit and linked
-person-control expansion remain a post-`0.7.0` correctness milestone. Until
-that work is complete, every carried-through PUMF field that is not named in a
-fitted local margin remains explicitly uncontrolled and must not be presented
-as an ADA- or DA-local estimate.
+The full-field ADA/DA control-coverage audit and linked person-control expansion
+are a parallel post-`0.7.0` correctness track. They do not block the
+area-sidecar work in `0.7.1` or facility-sidecar work in `0.7.2`, but they do
+block any new claim that a carried-through PUMF field represents an ADA- or
+DA-local distribution.
 
-Once the framework ships, another dataset may be integrated whenever a
+With the framework released, another dataset may be integrated whenever a
 research question, access and redistribution authority, geographic and
 temporal fit, validation strategy, and maintenance case justify it. A source
 need not appear in the current repository examples or wait for every planned
@@ -253,39 +233,10 @@ deadline or promise.
 
 ### Strict typing migration
 
-The package is clean under Pyright's `standard` mode and has complete public
-type information. An initial 2026-07-31 strict-mode audit reported 986
-diagnostics; 923 (93.6%) were cascading unknown member, variable, or argument
-types, while 16 source files were already strict-clean. The first ratchet made
-those 16 files strict, fixed every argument-type, general-type, and deprecated
-annotation diagnostic, and reduced the remaining strict total to 908. Treat
-the rest as an incremental quality ratchet rather than a release-blocking
-all-at-once conversion.
-
-Next actions, in order:
-
-- keep `standard` mode blocking for the complete package and retain the 16
-  clean files in Pyright's per-path `strict` list so they cannot regress;
-- type dynamic-data boundaries shared by the assurance/preflight reports, CLI
-  output, national execution manifests, run artifacts, and GeoJSON/map paths;
-- use Pydantic for untrusted HTTP, persisted JSON, and worker-message
-  boundaries, but prefer `TypedDict`, dataclasses, and protocols for trusted
-  internal structures, and retain validated models instead of immediately
-  converting them back to `dict[str, Any]`;
-- concentrate root fixes in `webapi.py`, `map_render.py`, `cli_output.py`,
-  `national_execution.py`, and `assurance.py`, rather than suppressing their
-  downstream findings with blanket `Any` or `cast()` calls;
-- isolate pandas, pyshp, and scikit-learn behind typed adapters or reviewed
-  stubs, and document narrow exceptions such as decorator-registered FastAPI
-  handlers that strict mode otherwise reports as unused; and
-- expand the strict path list whenever a module reaches zero diagnostics, with
-  CI continuing to reject regressions in both the standard package check and
-  the strict-clean subset.
-
-The migration is complete when the source package passes strict mode with only
-explicitly documented third-party or framework exceptions and without using
-blanket `Any`, unchecked casts, or Pydantic models solely to silence the type
-checker.
+Pyright `standard` remains a package-wide blocking gate. Strict mode advances
+as a non-release-blocking ratchet through the active
+[strict typing plan](plans/2026-08-01-strict-typing.md); a numbered release is
+blocked only if it explicitly adopts a stricter typing gate.
 
 ## Explicitly Deferred Or Conditional
 

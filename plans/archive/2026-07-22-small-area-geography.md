@@ -1,11 +1,13 @@
 # Small-Area Geography Implementation Plan
 
-Status: completed in `0.7.0`; archive pending\
+Status: completed and archived in `0.7.0`\
 Created: 2026-07-22\
 Last updated: 2026-08-01\
-Target: `0.7.0`, with later expansion gated by evidence\
-Next action: archive this completed implementation record while preserving its regression evidence\
-Roadmap: [PLANS.md](../PLANS.md) | [Plan index](README.md)
+Completed: `0.7.0`\
+Outcome: explicit geography identity, reviewed Québec DA evidence, restartable
+national DA/ADA orchestration, bounded Nunavut proofs, and a completed Canada
+ADA execution\
+Roadmap: [PLANS.md](../../PLANS.md) | [Plan index](../README.md)
 
 ## Purpose
 
@@ -14,9 +16,9 @@ filename, identifier prefix, or incidental column. Preserve the current CT,
 ADA, and CSD workflows while adding only the DA support needed for a reviewed
 small-area proof and the reusable geography-keyed external-data framework.
 
-This plan owns geography identity, authoritative relationships, selection, and
-small-area execution. The
-[external-data enrichment framework](2026-07-15-ecosystem-enrichment.md)
+This plan established geography identity, authoritative relationships,
+selection, and small-area execution. The
+[external-data enrichment framework](../2026-07-15-ecosystem-enrichment.md)
 consumes that contract; it does not redefine it.
 
 ## Current Baseline
@@ -240,7 +242,11 @@ as `PR=70`; all three use that shared northern candidate pool and separate
 territorial controls. Cross-vintage harmonization and user-supplied polygon
 intersection each require separately reviewed methods.
 
-### Post-`0.7.0` full-field ADA/DA control expansion
+### Follow-on full-field ADA/DA control expansion
+
+This follow-on is retained here as design history but is owned and sequenced by
+the active [correctness assurance plan](../2026-07-12-correctness-assurance.md).
+This archived plan owns no new implementation work.
 
 The completed national plans currently control household size and tenure. The
 linked-person records retain all model fields, but a field retained from a

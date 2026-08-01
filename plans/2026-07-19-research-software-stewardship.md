@@ -2,7 +2,7 @@
 
 Status: active, with a bounded stewardship baseline and gated publication work\
 Created: 2026-07-19\
-Last updated: 2026-07-27\
+Last updated: 2026-08-01\
 Target: complete the stewardship baseline before another model publication or
 mirror; mature toward JOSS only after its public-development and research-use
 gates are met\
@@ -37,9 +37,9 @@ publication and preservation foundation as settled.
 
 ### Citation metadata
 
-- **Done (2026-07-20).** `CITATION.cff` records the `0.6.2` concept and version
-  DOIs, and a drift test checks its version and release date against package and
-  changelog metadata.
+- **Done (updated 2026-08-01).** `CITATION.cff` records the stable concept DOI
+  and the archived `0.7.0` version DOI, and a drift test checks its version,
+  date, and version DOI against package and changelog metadata.
 - Add full Citation File Format schema validation to a local and CI
   documentation or release gate without adding a runtime dependency. Keep the
   existing release-drift test as a separate check.
@@ -51,10 +51,10 @@ publication and preservation foundation as settled.
 
 ### Model licensing and archival publication
 
-- **Done (2026-07-20).** GitHub releases are connected to Zenodo, the `0.6.2`
-  software release and 32 public prepared models have archival records, and the
-  release, concept, and model DOIs are exposed through project metadata,
-  documentation, and the CLI.
+- **Done (updated 2026-08-01).** GitHub releases are connected to Zenodo, the
+  current `0.7.0` software release and 32 public prepared models have archival
+  records, and release, concept, and model DOIs are exposed through project
+  metadata, documentation, and the CLI.
 - **Done (2026-07-20).** Model deposition tooling defaults to the sandbox and
   draft state, verifies source and uploaded bytes, checkpoints partial work,
   prevents accidental redeposition, and requires explicit production and
@@ -80,7 +80,7 @@ the public model-archive decision and release presentation.
 ### Independent source preservation
 
 - Request Software Heritage capture of the public GitHub origin.
-- Verify that the captured snapshot contains the annotated `v0.6.2` release,
+- Verify that the captured snapshot contains the annotated `v0.7.0` release,
   record the relevant qualified SWHIDs, and link them from an appropriate
   preservation or release record.
 - Revisit capture after important source releases or repository moves; do not
@@ -107,6 +107,21 @@ inputs and source versions, geography, seeds, configuration, commands,
 checksums, validation evidence, licences, and known limitations. Reproducible
 execution alone does not establish statistical fitness, representativeness,
 privacy, or causal validity.
+
+### Contributor and repository health
+
+- **Done (2026-08-01).** The repository publishes contribution, conduct,
+  security, pull-request, bug, feature, model-release, and question/help
+  guidance; issue forms carry appropriate labels and warn against disclosing
+  private or restricted data.
+- **Done (2026-08-01).** The public repository description is outcome-focused,
+  and empty Wiki and Projects surfaces are disabled so contributors are not
+  sent to abandoned destinations.
+- Keep first-contact documentation understandable to researchers who are not
+  software developers, and treat documentation, terminology, method, and
+  accessibility reports as first-class contributions.
+- Review repository navigation and community-health files at major releases or
+  after repeated contributor confusion.
 
 ## Bilingual 2021 Case Study And Community Introduction
 
@@ -236,7 +251,10 @@ The bounded stewardship baseline is complete when:
   boundary;
 - Software Heritage capture and the selected SWHIDs are recorded;
 - dated FAIR4RS and Software Management Plan documents are public and linked
-  from maintained project documentation; and
+  from maintained project documentation;
+- contributor and repository-health guidance remains current and gives
+  technical and non-technical contributors a clear, privacy-safe entry path;
+  and
 - the tested bilingual 2021 case study and focused community introduction are
   public, with substantive feedback captured as issues, documentation changes,
   or roadmap decisions.

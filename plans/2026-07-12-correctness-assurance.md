@@ -2,11 +2,11 @@
 
 Status: active\
 Created: 2026-07-12\
-Last updated: 2026-07-27\
+Last updated: 2026-08-01\
 Target: ongoing correctness and release evidence\
-Next action: maintain the released reproduction, assurance-schema, permanent
-evidence, and linked-population v1 gates; add stronger generated or mutation
-evidence when prioritized\
+Next action: complete the field-by-field 2021 ADA/DA control-coverage audit
+before making any new small-area representativeness claim; maintain the
+released assurance and reproduction gates in parallel\
 Roadmap: [PLANS.md](../PLANS.md) | [Plan index](README.md)
 
 ## Purpose And Boundaries
@@ -156,6 +156,36 @@ Acceptance: the current release reads supported older artifacts or emits a
 documented migration error, and each declared platform runs the named installed
 workflows without relying on a source checkout.
 
+### Full-field ADA/DA control coverage
+
+This plan owns the follow-on work transferred from the completed small-area
+geography implementation. Current national plans control household size and
+tenure. Other linked household and person fields remain candidate-pool
+attributes unless a compatible local margin is explicitly fitted.
+
+Before presenting another field as ADA- or DA-local, audit every linked-schema
+field against the 2021 Census Profile at both levels. Record the Profile
+characteristic and universe, exact or coarsened category crosswalk,
+suppression/availability conditions, geography and source revision, and an
+explicit `unavailable` or `uncontrolled` result where no defensible margin
+exists.
+
+Use the audit to prioritize suitably supported household and person margins.
+Linked person controls may change whole-household weights but must never detach
+people from their households. Each fitted field needs coverage, residual,
+support/structural-zero, suppression, and reconciliation evidence, plus updated
+documentation and claims-to-evidence records.
+
+This work runs in parallel with the `0.7.1` Can-FED and `0.7.2` ODEF sidecar
+adapters because those releases do not claim to recalibrate base population
+attributes. It blocks only new small-area representativeness claims and any
+release that explicitly includes expanded ADA/DA controls.
+
+Acceptance: every linked-schema field has an auditable classification; every
+implemented crosswalk has independent fixtures; household-only runs remain
+reproducible; and documentation distinguishes fitted local margins from
+uncontrolled carried-through fields.
+
 ## Statistical And Model Quality
 
 ### Zero-cell and support policy
@@ -172,8 +202,9 @@ fitted feasibility from realized integer output.
 Validate emitted populations at target geography and, where authoritative
 relationships exist, at CSD/CMA, province or territory, and national scales.
 Report error distributions and rare-category behavior rather than only a single
-maximum residual. The [small-area geography plan](2026-07-22-small-area-geography.md)
-owns relationship indexing and representative DA workflows.
+maximum residual. The archived
+[small-area geography plan](archive/2026-07-22-small-area-geography.md) records
+the released relationship indexing and representative DA workflows.
 
 Acceptance: aggregation uses version- and namespace-matched relationships,
 reconciles independently from output rows, and reports unmatched geographies,

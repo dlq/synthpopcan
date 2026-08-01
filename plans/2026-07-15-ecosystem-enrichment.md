@@ -4,9 +4,9 @@ Status: active; `0.7.0` foundation released\
 Created: 2026-07-15\
 Last updated: 2026-08-01\
 Target: `0.7.0`–`0.7.2`\
-Next action: begin the separately scoped `0.7.1` Can-FED reference adapter\
-Roadmap: [PLANS.md](../PLANS.md) | [Plan index](README.md) | Geography
-prerequisite: [small-area geography](2026-07-22-small-area-geography.md)
+Next action: implement the bounded public `0.7.1` Can-FED reference adapter\
+Roadmap: [PLANS.md](../PLANS.md) | [Plan index](README.md) | Released geography
+foundation: [small-area geography](archive/2026-07-22-small-area-geography.md)
 
 ## Purpose And Boundary
 
@@ -30,10 +30,11 @@ person, but it must not alter base rows, identifiers, controls, or validation
 evidence. Cohort attachment, activities, schedules, contact networks,
 interventions, and simulation behaviour are not committed `0.7.x` outcomes.
 
-The [small-area geography plan](2026-07-22-small-area-geography.md) owns
-structured geography requests, relationship indexing, DA synthesis, and
-cross-vintage concordance. This plan consumes those contracts; it does not
-reimplement them.
+The archived [small-area geography plan](archive/2026-07-22-small-area-geography.md)
+records the released structured geography requests, relationship indexing, and
+DA/ADA synthesis foundation. This plan consumes those contracts; it does not
+reimplement them. Follow-on control-coverage work belongs to the active
+[correctness plan](2026-07-12-correctness-assurance.md).
 
 ## Source-Agnostic Pipeline
 
