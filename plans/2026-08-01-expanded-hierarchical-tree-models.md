@@ -2,7 +2,7 @@
 
 Status: planned research and implementation track\
 Created: 2026-08-01\
-Last updated: 2026-08-01\
+Last updated: 2026-08-02\
 Target: incremental after the field inventory; no numbered-release commitment\
 Next action: produce and review a machine-readable 2016/2021 eligibility
 inventory for every hierarchical PUMF column\
@@ -326,7 +326,8 @@ Documentation must explain:
 Publish new models under new identifiers and immutable archival records. A
 numbered release should adopt this track only after its exact included phases
 and compatibility promises are named; this plan does not silently block
-`0.7.1`, `0.7.2`, or the simulation-interoperability sequence.
+the released `0.7.2` Can-FED and ODEF adapters or the simulation-interoperability
+sequence.
 
 ## Sequencing And Completion
 

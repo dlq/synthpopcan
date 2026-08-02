@@ -64,7 +64,7 @@ into public artifacts.
 
 ## Evidence And Related Records
 
-- [Ecosystem enrichment plan](../plans/2026-07-15-ecosystem-enrichment.md)
+- [Ecosystem enrichment plan](../plans/archive/2026-07-15-ecosystem-enrichment.md)
 - [External-Data Enrichment](../docs/enrichment.md)
 - [Getting Started With the Beginner API](../docs/library-getting-started.md)
 - [`synthpopcan.enrichment`](../src/synthpopcan/enrichment.py)

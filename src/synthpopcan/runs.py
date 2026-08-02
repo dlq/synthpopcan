@@ -116,8 +116,8 @@ class RunStore:
         runs_dir = self.root / "runs"
         uploads_dir.mkdir(parents=True, exist_ok=True)
         runs_dir.mkdir(parents=True, exist_ok=True)
-        self.uploads_dir = uploads_dir.resolve()
-        self.runs_dir = runs_dir.resolve()
+        self.uploads_dir: Path = uploads_dir.resolve()
+        self.runs_dir: Path = runs_dir.resolve()
         if not self.uploads_dir.is_relative_to(self.root):
             raise ValueError("uploads directory escapes the workspace")
         if not self.runs_dir.is_relative_to(self.root):

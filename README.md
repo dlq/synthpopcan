@@ -43,6 +43,14 @@ navigation to the web app, IPF from StatCan margin tables,
 generated-from-model workflows, the beginner Python API, and advanced
 microdata/model-training material.
 
+The development branch and the
+[`latest` documentation](https://synthpopcan.readthedocs.io/en/latest/) may
+describe the next release before it reaches PyPI. The PyPI badge above identifies
+what `pip install synthpopcan` currently installs; use the
+[`stable` documentation](https://synthpopcan.readthedocs.io/en/stable/) for that
+published version. Maintained Can-FED and ODEF adapters are included in `0.7.2`
+and later.
+
 Project planning and research notes are tracked separately:
 
 - [`PLANS.md`](PLANS.md): current roadmap, open work, and release sequencing.

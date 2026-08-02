@@ -2,7 +2,7 @@
 
 Status: release-phased roadmap\
 Last updated: 2026-08-02\
-Current published release: `0.7.0`
+Current published release: `0.7.2`
 
 ## Current Focus
 
@@ -12,8 +12,7 @@ completed implementation plans belong in [`plans/archive/`](plans/archive/).
 
 | Order | User outcome | Done when | Owned by |
 | --- | --- | --- | --- |
-| Now: `0.7.2` release candidate | Researchers can attach reviewed Can-FED area context and the corrected ODEF national facility inventory without overstating either source. | The combined former `0.7.1`/`0.7.2` tranche passes the complete release checklist and is published with durable evidence. | [External-data enrichment](plans/2026-07-15-ecosystem-enrichment.md) |
-| Later: `0.8.0` | A researcher can hand a validated linked population to another tool in a self-describing, simulator-neutral bundle. | The CSV/JSON bundle round-trips with hashes, relationships, data dictionary, validation, and reproduction evidence. | [Simulation interoperability](plans/2026-07-15-simulation-interoperability.md) |
+| Next: `0.8.0` | A researcher can hand a validated linked population to another tool in a self-describing, simulator-neutral bundle. | The CSV/JSON bundle round-trips with hashes, relationships, data dictionary, validation, and reproduction evidence. | [Simulation interoperability](plans/2026-07-15-simulation-interoperability.md) |
 | Conditional: `0.8.1` | One real downstream project can consume that bundle without SynthPopCan claiming to provide a complete simulation. | A demand-backed, version-pinned adapter passes an official import smoke test and reports every missing external input. | [Simulation interoperability](plans/2026-07-15-simulation-interoperability.md) |
 | Parallel correctness | Researchers can tell which attributes are genuinely controlled at small-area level and which merely pass through from a broader candidate pool. | The completed 2016/2021 CSD/CT/ADA/DA source screen advances through reviewed multi-margin control packs and feasibility gates before any new local-representativeness claim. | [Expanded small-area controls](plans/2026-08-01-expanded-small-area-controls.md) and [correctness assurance](plans/2026-07-12-correctness-assurance.md) |
 | Parallel model richness | Researchers can generate more supportable hierarchical PUMF attributes without sparse all-column target classes or invented family relationships. | Every 2016/2021 source field has a reviewed role; additive and chained profiles pass fitness/privacy gates; any family hierarchy uses a new validated artifact contract. | [Expanded hierarchical tree models](plans/2026-08-01-expanded-hierarchical-tree-models.md) |
@@ -71,9 +70,9 @@ action. The [plan index](plans/README.md) records active and archived plans.
 
 ## Current Product State
 
-`0.7.0` is a published alpha release with explicit Census geography identity,
-a reusable external-data enrichment framework, and a stable v1 linked-population
-artifact contract. It provides:
+`0.7.2` is a published alpha release with explicit Census geography identity,
+a reusable external-data enrichment framework, maintained Can-FED and ODEF
+adapters, and a stable v1 linked-population artifact contract. It provides:
 
 - seed/control IPF with diagnostics, compact weights, integerized records,
   reports, and validation;
@@ -104,10 +103,12 @@ scikit-learn behind the optional
 `model-build` extra: CART training needs it, while portable model reading,
 generation, and conditional-frequency training do not.
 
-The completed runtime and linked-schema implementation records are archived:
+Completed implementation records are archived:
 
 - [local web runtime](plans/archive/2026-07-10-local-web-application-runtime.md);
-- [linked-population schema](plans/archive/2026-07-18-linked-population-schema.md).
+- [linked-population schema](plans/archive/2026-07-18-linked-population-schema.md);
+- [small-area geography](plans/archive/2026-07-22-small-area-geography.md); and
+- [external-data enrichment](plans/archive/2026-07-15-ecosystem-enrichment.md).
 
 ## Release History
 
@@ -124,6 +125,7 @@ The completed runtime and linked-schema implementation records are archived:
 | `0.6.2` | Statistics Canada attribution, citation and archival metadata, prepared-model DOIs, Zenodo tooling, and corrected IPF documentation. |
 | `0.6.3` | Exact portable reproduction recipes, versioned per-run assurance, permanent checksummed release evidence, and distribution provenance attestations. |
 | `0.7.0` | Explicit Census geography identity, bounded national DA/ADA workflows, reusable external-data enrichment contracts, separately versioned display geodata, and an optional CART model-building dependency. |
+| `0.7.2` | Maintained Can-FED area-context and corrected ODEF facility-inventory adapters with pinned acquisition, normalization, validation, and complete provenance evidence; no separate `0.7.1` package was released. |
 
 ## Sequenced Releases
 
@@ -146,7 +148,7 @@ compatibility promise for every candidate source.
 
 The full-field ADA/DA control-coverage audit and linked person-control expansion
 are a parallel post-`0.7.0` correctness track. They did not block the combined
-area- and facility-sidecar implementation in the `0.7.2` candidate, but they do
+area- and facility-sidecar implementation released in `0.7.2`, but they do
 block any new claim that a carried-through PUMF field represents an ADA- or
 DA-local distribution.
 
@@ -158,7 +160,7 @@ reference implementation.
 
 ### `0.7.1` outcome: Can-FED v2 reference implementation
 
-Implemented in the combined `0.7.2` candidate rather than released separately.
+Implemented and released in `0.7.2` rather than published separately.
 
 - Integrate the public general-use 1 km and 3 km Can-FED categorical measures
   as a normalized geography/environment layer.
@@ -173,8 +175,8 @@ Implemented in the combined `0.7.2` candidate rather than released separately.
 
 ### `0.7.2`: ODEF v3 facility reference implementation
 
-Implemented in the combined candidate using the corrected v3.0.1 bytes served
-by the official v3.0 URL. The adapter preserves the fields actually present:
+Released in the combined `0.7.2` tranche using the corrected v3.0.1 bytes
+served by the official v3.0 URL. The adapter preserves the fields actually present:
 source identifiers, provider and authority, source dates, facility type,
 grades/ISCED, language indicators, 2021 CSD context, WKT, and parsed
 coordinates. It validates duplicates, missingness, geocoding, coverage, and

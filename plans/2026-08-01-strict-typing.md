@@ -2,7 +2,7 @@
 
 Status: active maintenance ratchet\
 Created: 2026-08-01\
-Last updated: 2026-08-01\
+Last updated: 2026-08-02\
 Target: incremental; not a numbered-release gate\
 Next action: type the shared dynamic-data boundaries in assurance, preflight,
 CLI output, national execution, run artifacts, and GeoJSON/map handling\
@@ -22,13 +22,18 @@ adopts it as a gate.
 
 ## Baseline
 
-The package is clean under Pyright `standard` and has complete public type
-information. The initial 2026-07-31 strict audit reported 986 diagnostics; 923
-were cascading unknown member, variable, or argument types. Sixteen source
-files were initially strict-clean. The first ratchet retained those files in
-Pyright's per-path strict list, fixed every argument-type, general-type, and
-deprecated-annotation diagnostic, and reduced the remaining strict total to
-908 diagnostics.
+The package is clean under Pyright `standard`. A 2026-08-02 `--verifytypes`
+audit reports all 1,453 exported symbols with known types: 100% public type
+completeness when third-party-package unknowns are ignored. The former 33
+missing/unknown-parameter diagnostics remain at zero.
+
+The initial 2026-07-31 strict audit reported 986 diagnostics; 923 were
+cascading unknown member, variable, or argument types. The first ratchet fixed
+the parameter, general-type, and deprecated-annotation findings and reduced
+the recorded total to 908. A fresh 2026-08-02 audit reports 921 diagnostics
+across 35 of 51 source files; 864 are cascading unknown member, variable, or
+argument types. Sixteen source files remain strict-clean and blocking in
+Pyright's per-path strict list.
 
 Recount the baseline after each substantial tranche rather than presenting the
 2026-07-31 number as current indefinitely.
@@ -44,8 +49,9 @@ Recount the baseline after each substantial tranche rather than presenting the
    `dict[str, Any]`.
 1. Prefer `TypedDict`, dataclasses, and protocols for trusted internal
    structures.
-1. Concentrate root fixes in `webapi.py`, `map_render.py`, `cli_output.py`,
-   `national_execution.py`, and `assurance.py` before addressing cascades.
+1. Concentrate root fixes in `map_render.py`, `cli_output.py`, `webapi.py`,
+   `national_execution.py`, `tree.py`, and `assurance.py` before addressing
+   cascades.
 1. Isolate pandas, pyshp, and scikit-learn behind typed adapters or reviewed
    stubs, and document narrow framework exceptions.
 1. Expand the strict path list whenever a module reaches zero diagnostics.

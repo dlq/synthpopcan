@@ -164,12 +164,19 @@ class SmallAreaResult:
 
 @dataclass(frozen=True)
 class EnrichmentResult:
-    """Paths and validation returned by :func:`enrich_population`.
+    """Paths and validation returned by an enrichment operation.
 
     ``layer`` is the copied normalized sidecar, ``manifest`` records its source,
-    resource, geography, base-population hashes, and limitations, and
-    ``validation`` contains the source-independent key and coverage checks. The
-    result never represents a widened or rewritten household/person table.
+    resource, geography, base-population hashes, and limitations. For the
+    generic :func:`enrich_population` path, ``validation`` contains the
+    source-independent key and coverage checks and the three optional artifact
+    paths are ``None``.
+
+    Maintained adapters also set ``source_profile``, ``resource_record``, and
+    ``validation_report`` to their written JSON artifacts. Their ``validation``
+    mapping is the combined source-specific and layer-validation report stored
+    at ``validation_report``. The result never represents a widened or rewritten
+    household/person table.
     """
 
     layer: Path
@@ -896,8 +903,8 @@ def enrich_odef(
     language indicators, 2021 CSD context, source WKT, parsed coordinates, and
     missing facilities/geographies. It reports duplicates without deleting
     possible colocated facilities. Supplying a base geography requests a
-    validated 2021 CSD linkage; omitting it attaches the national point
-    inventory without claiming a direct geographic join to the population.
+    validated 2021 CSD coverage comparison; omitting it attaches the national
+    point inventory without claiming a direct geographic join to the population.
     """
 
     normalized_geography = (

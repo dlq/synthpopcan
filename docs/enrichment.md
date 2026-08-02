@@ -57,8 +57,8 @@ assuming that matching-looking codes are equivalent.
 An enrichment bundle composes four records:
 
 1. A **source profile** describes the publisher, authority, licence, access and
-   redistribution status, version, observation period, variables, geography,
-   limitations, and English/French descriptive metadata.
+   redistribution status, version, observation period, geography, limitations,
+   and English/French descriptive metadata.
 1. A **resource record** identifies one immutable byte revision by SHA-256,
    size, media type, acquisition mode, and retrieval or registration time.
    Records for local, licensed, or restricted resources never contain local
@@ -123,7 +123,8 @@ the bytes actually acquired rather than inventing an exclusion flag.
 
 The default output is `canfed-v2-both.csv`; single-buffer runs write
 `canfed-v2-1km.csv` or `canfed-v2-3km.csv`. `DAUID` is the text key. For each
-selected suffix (`_1km` and/or `_3km`), the exact value columns are:
+selected suffix (`_1km` and/or `_3km`), the adapter appends that suffix to each
+of these eight value-column stems:
 
 ```text
 grocery_store_class
@@ -173,8 +174,10 @@ synthpopcan enrich odef population/ --out odef-enrichment/
 ```
 
 This attaches the national inventory without claiming that its facilities have
-been assigned to the population. If the household table contains compatible
-2021 CSDUIDs, request an explicit coverage comparison:
+been assigned to the population. To request an explicit coverage comparison,
+the household table must contain compatible 2021 CSDUIDs and the linked
+population's `manifest.json` must declare the same column as
+`geography.household_column`:
 
 ```bash
 synthpopcan enrich odef population/ \
@@ -393,6 +396,8 @@ Runs the maintained public Can-FED v2 area adapter.
 - `--buffer 1km|3km|both`: selected categorical product; defaults to both.
 - `--resource`: optional reviewed ZIP already downloaded.
 - `--cache-dir`: optional content-addressed download cache.
+- `--acquired-at`: optional ISO 8601 retrieval time; generated in UTC when
+  omitted.
 - `--out`: destination enrichment directory.
 - `--format summary|json`: human-readable or machine-readable report.
 
@@ -401,10 +406,14 @@ Runs the maintained public Can-FED v2 area adapter.
 Runs the maintained corrected ODEF v3.0.1 facility adapter.
 
 - `POPULATION`: linked-population v1 directory.
-- `--base-csd-column`: optional household 2021 CSDUID column. Omit it when the
-  national point inventory is being attached without a direct population join.
+- `--base-csd-column`: optional household 2021 CSDUID column. For a coverage
+  comparison, the population's `manifest.json` must declare this same column as
+  `geography.household_column`. Omit the option when attaching the national
+  point inventory without a direct population join.
 - `--resource`: optional reviewed ZIP already downloaded.
 - `--cache-dir`: optional content-addressed download cache.
+- `--acquired-at`: optional ISO 8601 retrieval time; generated in UTC when
+  omitted.
 - `--out`: destination enrichment directory.
 - `--format summary|json`: human-readable or machine-readable report.
 

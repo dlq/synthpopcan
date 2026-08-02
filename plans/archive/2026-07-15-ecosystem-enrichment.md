@@ -1,13 +1,14 @@
 # Reusable External-Data Enrichment Framework Plan
 
-Status: implementation complete; combined `0.7.2` release candidate\
+Status: completed and archived in `0.7.2`\
 Created: 2026-07-15\
 Last updated: 2026-08-02\
+Completed: `0.7.2`\
 Target: `0.7.0`–`0.7.2`\
-Next action: complete release verification and publish the combined `0.7.2`
-candidate; archive this plan after publication\
-Roadmap: [PLANS.md](../PLANS.md) | [Plan index](README.md) | Released geography
-foundation: [small-area geography](archive/2026-07-22-small-area-geography.md)
+Maintenance: governed by ADR-0008, the enrichment documentation, and regression
+tests; this archived plan owns no new work\
+Roadmap: [PLANS.md](../../PLANS.md) | [Plan index](../README.md) | Released
+geography foundation: [small-area geography](2026-07-22-small-area-geography.md)
 
 ## Purpose And Boundary
 
@@ -241,15 +242,17 @@ separate source or linkage logic.
 `0.7.0` establishes reusable capability; it does not claim compatibility with
 every external dataset. It does not include a general catalogue client,
 private cohort adapter, cross-vintage concordance, arbitrary-polygon
-selection, or national DA orchestration.
+selection, or source-specific reference adapters.
 
-### `0.7.1`: Can-FED v2 reference adapter
+### Combined `0.7.2`: Can-FED v2 reference adapter
 
-Implemented in the combined `0.7.2` candidate. The reviewed live ZIP contains
-CSV members named `dens_thresholds_1km.csv` and `dens_thresholds_3km.csv`, not
-the CSV/Parquet names in the guide. Each contains 57,936 unique DA rows even
-though the guide says 28 DAs were excluded; validation preserves this
-documentation/file discrepancy and reconciles the acquired bytes exactly.
+Can-FED was originally assigned to an unpublished `0.7.1` slice. It is instead
+implemented in the combined `0.7.2` release; no separate `0.7.1` package was
+published. The reviewed live ZIP contains CSV members named
+`dens_thresholds_1km.csv` and `dens_thresholds_3km.csv`, not the CSV/Parquet
+names in the guide. Each contains 57,936 unique DA rows even though the guide
+says 28 DAs were excluded; validation preserves this documentation/file
+discrepancy and reconciles the acquired bytes exactly.
 
 Integrate Statistics Canada's public general-use
 [Canadian Food Environment Dataset (Can-FED) v2](https://www150.statcan.gc.ca/n1/pub/13-20-0001/132000012025002-eng.htm)
@@ -268,7 +271,7 @@ The result is historical, area-level food-environment context. It is not a
 current inventory of establishments, a person-level exposure measurement, or
 evidence that the food environment caused an outcome.
 
-### `0.7.2`: ODEF v3 facility reference adapter
+### Combined `0.7.2`: ODEF v3 facility reference adapter
 
 Implemented against the corrected v3.0.1 bytes currently served by the
 official v3.0 URL.
@@ -518,7 +521,7 @@ by the enrichment contract.
 - User-facing metadata exposes reviewed English/French text where available
   and clearly marks single-language or project-translated fields.
 
-### `0.7.1`
+### Combined `0.7.2`: Can-FED
 
 - Both public Can-FED buffer products are reproducibly acquired and profiled.
 - The August 2024 observation period, 2024 Business Register basis, and 2021
@@ -530,7 +533,7 @@ by the enrichment contract.
   validation report without bundling RDC-controlled detailed Can-FED
   measures.
 
-### `0.7.2`
+### Combined `0.7.2`: ODEF
 
 - ODEF v3 acquisition, source version, 2024 collection period, national
   coverage, coordinate fields, and source identifiers are preserved.

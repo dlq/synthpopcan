@@ -380,8 +380,9 @@ assert canfed.validation["passed"] and odef.validation["passed"]
 
 Can-FED requires the population's explicit 2021 DA universe. ODEF is an
 unlinked national facility inventory unless we deliberately supply compatible
-2021 CSD geography for a coverage comparison. See {doc}`enrichment` before
-interpreting either layer.
+2021 CSD geography for a coverage comparison. That comparison also requires
+the population manifest to declare the same household CSDUID column supplied
+to the adapter. See {doc}`enrichment` before interpreting either layer.
 
 **Research template: prepare the source and geography records first.**
 The complete {doc}`enrichment` walkthrough explains how to create

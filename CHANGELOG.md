@@ -5,8 +5,8 @@ All notable public changes to SynthPopCan are tracked here.
 ## 0.7.2 - 2026-08-02
 
 Maintained public Can-FED and educational-facility enrichment adapters. This
-single release candidate combines the outcomes originally sequenced as 0.7.1
-and 0.7.2; no separate 0.7.1 package is planned.
+release combines the outcomes originally sequenced as 0.7.1 and 0.7.2; no
+separate 0.7.1 package is planned.
 
 - Add shared maintained-adapter orchestration for bounded public acquisition,
   offline reuse of pinned content-addressed bytes, reviewed byte-revision
@@ -41,6 +41,9 @@ and 0.7.2; no separate 0.7.1 package is planned.
 - Make adapter JSON output report every written artifact path alongside the
   complete validation object; document exact normalized columns, missing-value
   encodings, ordinal Can-FED semantics, and ODEF's undeclared coordinate CRS.
+- Restore 100% Pyright public type completeness after adding the maintained
+  adapters, while retaining the package-wide standard gate and the existing
+  16-module strict ratchet.
 
 ## 0.7.0 - 2026-08-01
 

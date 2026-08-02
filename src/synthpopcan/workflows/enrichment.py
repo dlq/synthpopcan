@@ -17,7 +17,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import Protocol
+from typing import ClassVar, Protocol
 
 from synthpopcan.enrichment import (
     ResourceRecord,
@@ -50,14 +50,12 @@ class ReferenceDatasetAdapter(Protocol):
     @property
     def layer_filename(self) -> str: ...
 
-    @property
-    def key_columns(self) -> tuple[str, ...]: ...
+    key_columns: ClassVar[tuple[str, ...]]
 
     @property
     def variables(self) -> tuple[str, ...]: ...
 
-    @property
-    def limitations(self) -> tuple[str, ...]: ...
+    limitations: ClassVar[tuple[str, ...]]
 
     @property
     def requires_base_geography(self) -> bool: ...

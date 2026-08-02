@@ -19,6 +19,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from itertools import chain
 from pathlib import Path
+from typing import ClassVar
 
 from synthpopcan.enrichment import SourceProfile
 from synthpopcan.geography import statcan_geography_universe
@@ -119,9 +120,9 @@ class OdefAdapter:
     layer_id = "statcan.odef.v3.0.1.facilities"
     layer_class = "facilities-points"
     layer_filename = "odef-v3.0.1-facilities.csv"
-    key_columns = ("facility_id",)
+    key_columns: ClassVar[tuple[str, ...]] = ("facility_id",)
     variables = _VARIABLES
-    limitations = (
+    limitations: ClassVar[tuple[str, ...]] = (
         "ODEF is a harmonized facility inventory, not evidence of capacity, "
         "catchment, quality, eligibility, accessibility, or service use.",
         "Provider reference dates and provincial coverage vary; the 2024 "

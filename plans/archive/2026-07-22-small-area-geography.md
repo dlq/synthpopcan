@@ -18,7 +18,7 @@ small-area proof and the reusable geography-keyed external-data framework.
 
 This plan established geography identity, authoritative relationships,
 selection, and small-area execution. The
-[external-data enrichment framework](../2026-07-15-ecosystem-enrichment.md)
+[external-data enrichment framework](2026-07-15-ecosystem-enrichment.md)
 consumes that contract; it does not redefine it.
 
 ## Current Baseline

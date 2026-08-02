@@ -334,6 +334,8 @@ def test_library_examples_and_companion_notebook_are_parseable() -> None:
         "generate_from_model",
         "calibrate_small_area",
         "render_small_area_map",
+        "enrich_can_fed",
+        "enrich_odef",
         "enrich_population",
     ):
         assert workflow_name in notebook_text

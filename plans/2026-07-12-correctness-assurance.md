@@ -2,7 +2,7 @@
 
 Status: active\
 Created: 2026-07-12\
-Last updated: 2026-08-01\
+Last updated: 2026-08-02\
 Target: ongoing correctness and release evidence\
 Next action: review and fixture the highest-priority vintage-specific category
 crosswalks identified by the 2016/2021 CSD/CT/ADA/DA source-coverage inventory
@@ -178,10 +178,10 @@ people from their households. Each fitted field needs coverage, residual,
 support/structural-zero, suppression, and reconciliation evidence, plus updated
 documentation and claims-to-evidence records.
 
-This work runs in parallel with the `0.7.1` Can-FED and `0.7.2` ODEF sidecar
-adapters because those releases do not claim to recalibrate base population
-attributes. It blocks only new small-area representativeness claims and any
-release that explicitly includes expanded ADA/DA controls.
+This work runs in parallel with the Can-FED and ODEF sidecar adapters released
+in `0.7.2`, which do not claim to recalibrate base population attributes. It
+blocks only new small-area representativeness claims and any release that
+explicitly includes expanded ADA/DA controls.
 
 Acceptance: every linked-schema field has an auditable classification; every
 implemented crosswalk has independent fixtures; household-only runs remain

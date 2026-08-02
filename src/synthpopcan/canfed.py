@@ -17,7 +17,7 @@ import zipfile
 from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Literal
+from typing import ClassVar, Literal
 
 from synthpopcan.enrichment import SourceProfile
 from synthpopcan.geography import statcan_geography_universe
@@ -66,8 +66,8 @@ class CanFedAdapter:
     dataset_id = "statcan.canfed.v2.general-use"
     resource_url = CANFED_V2_ARCHIVE_URL
     layer_class = "area-attributes"
-    key_columns = ("DAUID",)
-    limitations = (
+    key_columns: ClassVar[tuple[str, ...]] = ("DAUID",)
+    limitations: ClassVar[tuple[str, ...]] = (
         "Can-FED describes historical area-level food-environment context, not "
         "a current establishment inventory or a person-level exposure.",
         "The public categorical product does not contain the detailed measures "

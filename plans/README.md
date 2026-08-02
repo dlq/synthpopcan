@@ -9,7 +9,6 @@ current task matches its scope.
 | [Expanded small-area controls](2026-08-01-expanded-small-area-controls.md) | Planned correctness and implementation track | Incremental; coordinated with expanded tree profiles | Define the field/control compatibility registry and fixture the first 2016/2021 household and person control packs. |
 | [Expanded hierarchical tree models](2026-08-01-expanded-hierarchical-tree-models.md) | Planned research and implementation track | Incremental; no numbered-release commitment | Build and review the 2016/2021 field eligibility inventory before adding model targets or changing an artifact schema. |
 | [Research-software stewardship](2026-07-19-research-software-stewardship.md) | Active baseline; ongoing release policy | Before another model publication or mirror; JOSS only after maturity gates | Settle model licensing, add full CFF validation, capture Software Heritage identifiers, publish dated FAIR4RS/management records, and release a tested bilingual 2021 case study for focused community introduction. |
-| [External-data enrichment framework](2026-07-15-ecosystem-enrichment.md) | Implementation complete; combined `0.7.2` candidate | `0.7.2` release verification | Run the full release checklist, publish the candidate, then archive the plan before selecting later adapters by evidence. |
 | [Simulation interoperability](2026-07-15-simulation-interoperability.md) | Planned and conditional | `0.8.0`–`0.8.1` | Define a simulator-neutral exchange bundle, then validate one demand-backed target adapter against a pinned input contract. |
 | [Strict typing](2026-08-01-strict-typing.md) | Active maintenance ratchet | Incremental; not a numbered-release gate | Type shared dynamic-data boundaries and expand the strict-clean module list without weakening the package-wide standard gate. |
 
@@ -23,6 +22,7 @@ not own new work.
 | [Local web application runtime](archive/2026-07-10-local-web-application-runtime.md) | `0.6.0`, with `0.6.1` follow-up | Durable FastAPI/Uvicorn local runs, shared backend workflows, bounded artifacts, and browser sequencing. |
 | [Linked population schema](archive/2026-07-18-linked-population-schema.md) | `0.6.1` | Stable v1 household/person/geography artifact contract and compatibility checks. |
 | [Small-area geography](archive/2026-07-22-small-area-geography.md) | `0.7.0` | Explicit geography identity, reviewed Québec DA evidence, restartable national DA/ADA orchestration, bounded Nunavut proofs, and completed Canada ADA execution. |
+| [External-data enrichment framework](archive/2026-07-15-ecosystem-enrichment.md) | `0.7.2` | Reusable enrichment contracts plus maintained Can-FED area-context and corrected ODEF facility-inventory adapters with pinned source evidence. |
 
 Move a plan to `plans/archive/` after its completion criteria are met and its
 outcome is recorded in [CHANGELOG.md](../CHANGELOG.md).

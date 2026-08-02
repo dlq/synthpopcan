@@ -22,7 +22,7 @@ This plan owns the bounded stewardship baseline, ongoing release policy,
 community introduction, and JOSS maturation gates. It does not duplicate:
 
 - source, language, access, CARE, or OCAP implementation, which belongs in the
-  [external-data enrichment framework](2026-07-15-ecosystem-enrichment.md); or
+  [external-data enrichment framework](archive/2026-07-15-ecosystem-enrichment.md); or
 - exchange bundles, RO-Crate experiments, or simulator adapters, which belong
   in the
   [simulation interoperability plan](2026-07-15-simulation-interoperability.md).

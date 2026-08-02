@@ -8,7 +8,7 @@ Next action: validate a CSV/JSON exchange contract that composes the existing
 linked-population and durable-run records\
 Roadmap: [PLANS.md](../PLANS.md) | [Plan index](README.md) | Foundations:
 [linked-population schema](archive/2026-07-18-linked-population-schema.md) and
-[external-data enrichment](2026-07-15-ecosystem-enrichment.md)
+[external-data enrichment](archive/2026-07-15-ecosystem-enrichment.md)
 
 ## Purpose And Boundary
 

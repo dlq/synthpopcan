@@ -1,6 +1,12 @@
 # SynthPopCan Research Notes
 
-Date: 2026-07-31
+Snapshot date: 2026-07-31
+
+> **Historical snapshot:** this file preserves research and design context as
+> recorded on the dates shown. Statements below such as “current,”
+> “unreleased,” and “later work” describe that dated context, not the present
+> codebase or release state. Use [PLANS.md](PLANS.md) for active sequencing and
+> [CHANGELOG.md](CHANGELOG.md) for implemented release history.
 
 ## Purpose
 
@@ -15,7 +21,7 @@ recent external work relevant to a narrower near-term goal:
    population is stable, while leaving cohort attachment and simulation work
    for later evidence-gated phases.
 
-Current codebase status, 2026-07-30:
+Historical codebase snapshot recorded 2026-07-30:
 
 - The active roadmap is now `PLANS.md`; this file is the research and design
   notes companion.
