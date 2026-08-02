@@ -2,8 +2,8 @@
 
 Status: planned\
 Created: 2026-07-15\
-Last updated: 2026-07-27\
-Target: `0.8.0`–`0.8.1`\
+Last updated: 2026-08-02\
+Target: `0.8.0` neutral bundle; one demand-backed adapter only after `1.0.0`\
 Next action: validate a CSV/JSON exchange contract that composes the existing
 linked-population and durable-run records\
 Roadmap: [PLANS.md](../PLANS.md) | [Plan index](README.md) | Foundations:
@@ -82,9 +82,10 @@ The exchange contract specifies:
 - whether the export is only a population contribution or a complete target
   input, with the latter allowed only when target validation proves it.
 
-## Adapter Selection Gate
+## Post-`1.0` Adapter Selection Gate
 
-`0.8.1` supports one external target, selected only when all of these exist:
+One post-`1.0` release may support one external target, selected only when all
+of these exist:
 
 1. a real user, collaborator, or reference model;
 1. a concrete research question that fits SynthPopCan's public-health and
@@ -158,7 +159,7 @@ Validate the contract before declaring exchange schema v1 stable. If archives
 are supported, normalize file ordering and metadata so identical input produces
 identical archive bytes.
 
-### `0.8.1`: One demand-backed adapter pilot
+### Post-`1.0`: One demand-backed adapter pilot
 
 After the selection gate passes:
 
@@ -207,7 +208,7 @@ research-software stewardship track after the native bundle stabilizes.
 - The manifest clearly describes the export as a population contribution and
   lists absent simulation inputs.
 
-### `0.8.1`
+### Post-`1.0` adapter pilot
 
 - The supported target, version, fixture authority, mapping, prerequisites, and
   exact reproduction are documented and machine-checkable.

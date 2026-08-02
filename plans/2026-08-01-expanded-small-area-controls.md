@@ -2,8 +2,9 @@
 
 Status: planned correctness and implementation track\
 Created: 2026-08-01\
-Last updated: 2026-08-01\
-Target: incremental; coordinated with expanded hierarchical tree models\
+Last updated: 2026-08-02\
+Target: core private-household packs for `0.9.0`; broader controls and
+population universes after `1.0.0`\
 Next action: define the versioned field/control compatibility registry and
 fixture the core household and private-household age-by-sex/gender crosswalks\
 Roadmap: [PLANS.md](../PLANS.md) | [Plan index](README.md)
@@ -35,7 +36,11 @@ This plan owns expanded small-area control implementation. The
 general evidence standards, and the
 [expanded hierarchical tree-model plan](2026-08-01-expanded-hierarchical-tree-models.md)
 owns which PUMF fields and entity relationships a generated population can
-represent.
+represent. The
+[methodological validation and uncertainty plan](2026-08-02-methodological-validation-and-uncertainty.md)
+owns shared solver oracles, backend and integerization comparisons,
+uncertainty ensembles, statistical metrics, external benchmarks, and empirical
+disclosure-risk methods.
 
 ## Current Baseline
 
@@ -87,6 +92,26 @@ source and compatibility process below.
   Version and document a replacement when a cleaner control-pack contract
   requires a break.
 
+## Pre-`1.0` Cut Line
+
+The `0.9.0` tranche implements only:
+
+- the versioned compatibility-registry and control-pack contracts;
+- reviewed 2016 and 2021 household-size and tenure controls;
+- one reviewed private-household age-by-sex/gender person-control family;
+- the feasibility and combined whole-household contribution path needed by
+  those packs;
+- bounded evidence at explicitly named supported CSD/CT/ADA/DA cases rather
+  than an all-geography promise; and
+- the generic CLI/API/web extension points needed to add later packs without
+  redesigning the frozen surface.
+
+The remaining candidate control families, conditional/economic packs,
+family-aware controls, exhaustive geography coverage, collective/non-private
+household implementation, and broad catalogue publication move after `1.0.0`.
+The field/control inventory may continue as research, but incomplete inventory
+rows do not block the interface freeze when the implemented core is explicit.
+
 Out of scope without a separate method and evidence:
 
 - fitting confidential or restricted control tables in a public package;
@@ -95,6 +120,31 @@ Out of scope without a separate method and evidence:
 - calibrating incompatible 2016 and 2021 geography in one fit;
 - assigning people independently of their households; and
 - claiming record-level truth from aggregate calibration.
+
+## Post-`1.0` Population Scope — Collective And Non-Private Households
+
+Private households and their linked residents remain the first supported
+calibration universe. Before claiming complete local or national population
+coverage, design a separate path for collective dwellings, institutional
+residents, and other people outside ordinary private households.
+
+The design must determine, by Census vintage:
+
+- which collective-dwelling and resident categories are publicly controllable
+  at CSD, CT, ADA, or DA;
+- whether the PUMF or another authorized public seed can represent those
+  categories without pretending they are ordinary households;
+- the required entity, linkage, identifier, and output-schema changes;
+- which controls and geographies are suppressed or unavailable;
+- whether separate generation and calibration should be combined only at the
+  final population-manifest level; and
+- how exclusions and denominators appear in national planning, validation,
+  maps, and user-facing claims.
+
+Acceptance: the project either implements a separately validated collective
+population component or declares its exclusion in every complete-coverage
+claim; collective residents are never forced into private-household structure;
+and combined totals identify each component's universe and evidence.
 
 ## Phase 1 — Field/Control Compatibility Registry
 
@@ -124,10 +174,10 @@ The registry must be able to answer mechanically:
 
 1. Does this generated model profile contain the required field and entity
    structure?
-2. Is a compatible control available for this vintage and geography level?
-3. Can it share a calibration universe with the other selected margins?
-4. Is the crosswalk implemented and independently tested?
-5. Is the field controlled, approximate, validation-only, or unavailable in
+1. Is a compatible control available for this vintage and geography level?
+1. Can it share a calibration universe with the other selected margins?
+1. Is the crosswalk implemented and independently tested?
+1. Is the field controlled, approximate, validation-only, or unavailable in
    this particular run?
 
 Acceptance:
@@ -234,17 +284,17 @@ Initial packs should proceed in this order:
 1. **Core household:** household size, tenure, structural dwelling type, rooms,
    bedrooms, condominium status, repair condition, construction period, and
    housing suitability.
-2. **Core person:** reviewed age-by-sex/gender for people in private households.
-3. **Demographic:** marital status, citizenship, immigration, generation,
+1. **Core person:** reviewed age-by-sex/gender for people in private households.
+1. **Demographic:** marital status, citizenship, immigration, generation,
    visible-minority group, mother tongue, and home language.
-4. **Conditional/economic:** place of birth, education, labour-force status,
+1. **Conditional/economic:** place of birth, education, labour-force status,
    work activity, employment-income bands, and total-income bands.
-5. **Approximate opt-in:** mortgage and subsidy based on rounded percentages.
-6. **Extended education/labour/mobility:** only fields admitted by the expanded
+1. **Approximate opt-in:** mortgage and subsidy based on rounded percentages.
+1. **Extended education/labour/mobility:** only fields admitted by the expanded
    tree eligibility inventory and the source screen.
-7. **Extended sensitive/background:** separately reviewed and never enabled by
+1. **Extended sensitive/background:** separately reviewed and never enabled by
    a broad default merely because source cells exist.
-8. **Family-aware:** census-family and economic-family margins only after the
+1. **Family-aware:** census-family and economic-family margins only after the
    expanded linked schema represents those entities and roles.
 
 A pack may contain many low-dimensional margins. Do not build a Cartesian
@@ -291,12 +341,12 @@ plan.
 Retain the current household-first design:
 
 1. fit household margins for each target geography;
-2. build one contribution matrix whose columns are candidate households;
-3. add household indicator rows and linked-person count rows;
-4. when the expanded linked schema exists, add economic-family and
+1. build one contribution matrix whose columns are candidate households;
+1. add household indicator rows and linked-person count rows;
+1. when the expanded linked schema exists, add economic-family and
    census-family contribution rows aggregated within each household;
-5. update one weight per household against all selected constraints; and
-6. integerize household weights so every linked entity moves together.
+1. update one weight per household against all selected constraints; and
+1. integerize household weights so every linked entity moves together.
 
 Family controls must count generated family entities or roles inside a
 household; they must not treat a family identifier as a categorical person
@@ -310,6 +360,12 @@ structural zeros, deterministic behavior, runtime, memory, and interpretability
 before changing the backend. Preserve the current method unless evidence shows
 a material improvement.
 
+Phase 1 of the methodological-validation plan supplies the independent
+solver-backed oracle, generated feasible contribution cases, weight bounds,
+hard/soft-constraint semantics, and backend comparison method. This plan owns
+how a selected backend consumes versioned control packs and reports
+field-, unit-, and geography-specific outcomes.
+
 Acceptance: every selected constraint appears in the contribution matrix and
 report; whole-household linkage survives realization; family counts reconcile
 independently; redundant and unsupported rows are reported; and backend changes
@@ -321,11 +377,11 @@ Produce validation at four layers:
 
 1. **Source:** crosswalk completeness, totals, suppression, rounding, and
    geography identifiers.
-2. **Candidate:** field/entity availability, category support, linked
+1. **Candidate:** field/entity availability, category support, linked
    household/family/person integrity, and broad-model distribution.
-3. **Fractional fit:** convergence and absolute/relative residuals for every
+1. **Fractional fit:** convergence and absolute/relative residuals for every
    cell and margin.
-4. **Realized output:** integer residuals, household/family/person counts,
+1. **Realized output:** integer residuals, household/family/person counts,
    linkage, geography assignment, and aggregation to authoritative parent
    geographies.
 
@@ -342,6 +398,12 @@ Include:
   relationships are authoritative; and
 - field-specific interpretation and claim limitations.
 
+Use the methodological-validation plan's shared definitions for effective
+sample size, weight concentration, held-out multivariate comparisons,
+relationship signatures, ensemble stability, and uncertainty components.
+Control-pack reports retain responsibility for naming the exact source
+universe, approximation, geography, field, and denominator behind each metric.
+
 Acceptance: an independent validator recomputes representative source totals,
 contributions, residuals, linkage, and aggregation from emitted artifacts;
 failed/non-converged runs cannot appear successful; and documentation never
@@ -354,13 +416,13 @@ Provide one shared Python workflow used by the library, CLI, and local web app.
 The researcher-facing sequence should be:
 
 1. inspect a generated model/profile and available compatible packs;
-2. select census vintage and geography level;
-3. inspect fields, universes, approximations, coverage, and exclusions;
-4. run the feasibility planner;
-5. explicitly accept any approximate or coarsened margins;
-6. execute or resume the calibration;
-7. inspect per-margin fractional and realized validation; and
-8. export linked output, control-pack manifest, plan, report, reproduction
+1. select census vintage and geography level;
+1. inspect fields, universes, approximations, coverage, and exclusions;
+1. run the feasibility planner;
+1. explicitly accept any approximate or coarsened margins;
+1. execute or resume the calibration;
+1. inspect per-margin fractional and realized validation; and
+1. export linked output, control-pack manifest, plan, report, reproduction
    recipe, and checksums.
 
 CLI/API contracts should support one household pack and one person/family pack,
@@ -408,14 +470,15 @@ included packs, model profiles, geography levels, and claims.
 Work proceeds in this order:
 
 1. compatibility-registry schema and generated baseline inventory;
-2. reviewed core household crosswalks for 2016 and 2021;
-3. private-household age-by-sex/gender person crosswalk;
-4. first versioned household/person pack and feasibility planner;
-5. bounded CT/ADA/DA evidence and interface parity;
-6. demographic and conditional/economic packs;
-7. extended tree-field source screens as model fields are admitted;
-8. family-aware controls only after the linked family schema exists; and
-9. broader catalogue publication after fitness and privacy review.
+1. reviewed core household crosswalks for 2016 and 2021;
+1. private-household age-by-sex/gender person crosswalk;
+1. first versioned household/person pack and feasibility planner;
+1. bounded CT/ADA/DA evidence, calibration-oracle evidence, and interface parity;
+1. collective/non-private-household source and entity-scope decision;
+1. demographic and conditional/economic packs;
+1. extended tree-field source screens as model fields are admitted;
+1. family-aware controls only after the linked family schema exists; and
+1. broader catalogue publication after fitness and privacy review.
 
 The plan is complete when every supported generated field has an explicit
 small-area control status; reviewed packs can combine compatible margins in one

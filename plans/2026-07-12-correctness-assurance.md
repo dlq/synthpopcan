@@ -4,11 +4,9 @@ Status: active\
 Created: 2026-07-12\
 Last updated: 2026-08-02\
 Target: ongoing correctness and release evidence\
-Next action: review and fixture the highest-priority vintage-specific category
-crosswalks identified by the 2016/2021 CSD/CT/ADA/DA source-coverage inventory
-before implementing expanded controls or making a new small-area
-representativeness claim; maintain the released assurance and reproduction
-gates in parallel\
+Next action: review and fixture the core 2016/2021 household-size, tenure, and
+private-household age-by-sex/gender crosswalks for the bounded `0.9.0` tranche;
+maintain the released assurance and reproduction gates in parallel\
 Roadmap: [PLANS.md](../PLANS.md) | [Plan index](README.md)
 
 ## Purpose And Boundaries
@@ -27,6 +25,15 @@ builders must not be the sole validators of production output.
 Passing the project gate establishes behavior only under the tested conditions.
 It does not certify source-data accuracy, statistical fitness for a particular
 study, disclosure safety, causal validity, or substantive interpretation.
+
+Before `1.0.0`, this plan gates only the bounded assurance slice named in
+[PLANS.md](../PLANS.md): calibration-oracle evidence, the integerization
+decision, core private-household control packs, representative multi-scale and
+external Canadian comparison evidence, and the compatibility fixtures needed
+to freeze the declared CLI/API and persisted contracts. Broader control
+coverage, uncertainty ensembles, general attack infrastructure, richer model
+profiles, and new population universes remain post-`1.0` work unless required
+to correct a released claim.
 
 ## Released In `0.6.3`: Exact Reproduction And Durable Evidence
 
@@ -131,11 +138,23 @@ Acceptance:
 
 ## Evidence Hardening After `0.6.3`
 
+The dedicated
+[methodological validation and uncertainty plan](2026-08-02-methodological-validation-and-uncertainty.md)
+owns new calibration oracles, backend and integerization comparisons,
+uncertainty ensembles, shared multi-axis statistical validation, external
+Canadian benchmarks, and empirical disclosure-risk methods. This plan retains
+the released claims-to-evidence baseline, routine gates, reproduction,
+cross-version/platform evidence, and permanent release evidence into which
+adopted methods must be integrated.
+
 ### Generated and mutation evidence
 
 - Add Hypothesis strategies that construct feasible IPF tables, record
   permutations, category renamings, target scaling, and finite weight vectors
   directly, with deterministic CI profiles and useful shrinking.
+- Add generated feasible linked household/person contribution matrices with
+  known weights; compare the production updater with the independent oracle
+  defined by the methodological-validation plan.
 - Add targeted mutation testing for IPF, integerization, calibration, model
   traversal, artifact reconciliation, and report construction.
 - Record a reviewed baseline and triage every surviving mutation; do not adopt an
@@ -236,11 +255,19 @@ Acceptance: aggregation uses version- and namespace-matched relationships,
 reconciles independently from output rows, and reports unmatched geographies,
 suppression, denominators, and tail errors.
 
+The methodological-validation plan owns the reusable metric definitions,
+held-out multivariate comparisons, relationship signatures, effective sample
+size, weight concentration, and ensemble stability. This plan owns their
+placement in routine and release evidence once adopted.
+
 ### Integerization alternatives
 
-Compare deterministic systematic integerization with QISI on public fixtures
-before adding another production backend. Measure residuals, reproducibility,
-runtime, memory, and sparse-candidate behavior.
+Follow Phase 2 of the methodological-validation plan. Compare deterministic
+systematic integerization with QISI/QIWS, simultaneous optimization, and other
+reviewed candidates on public fixtures before adding another production
+backend. Measure residuals, reproducibility, runtime, memory,
+sparse-candidate behavior, household/person consistency, and parent-geography
+reconciliation.
 
 Acceptance: publish the benchmark method and decision; retain the current
 backend unless another method provides a material, reviewed benefit without
@@ -260,6 +287,10 @@ weakening determinism or traceability.
   reproducible-build, checksum, generation, and archival gates.
 
 Automated privacy findings remain subordinate to documented human review.
+The methodological-validation plan owns shared copying, nearest-neighbour,
+membership-inference, attribute-inference, and baseline attack methods. Model
+profiles retain ownership of their source authority, intended use, thresholds,
+coarsening, and final human release decision.
 
 ### External comparison and review
 
@@ -272,6 +303,10 @@ Automated privacy findings remain subordinate to documented human review.
 Acceptance: external data is not downloaded by the default test gate, source
 version and licence are recorded, comparison metrics and denominators are
 explicit, and review findings remain publicly traceable.
+
+The pinned crosswalk, metrics, software comparisons, and benchmark execution
+belong to Phase 5 of the methodological-validation plan; this plan retains the
+requirement that adopted findings appear in the public assurance case.
 
 ## Execution Tiers
 

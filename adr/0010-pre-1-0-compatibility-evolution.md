@@ -2,6 +2,7 @@
 
 - **Status:** Accepted
 - **Date:** 2026-08-01
+- **Amended:** 2026-08-02
 - **Decision owners:** Maintainers
 
 ## Context
@@ -38,6 +39,19 @@ Every deliberate compatibility break must:
 Published artifacts, releases, checksums, DOIs, and archival records remain
 immutable. A new contract or corrected artifact is published as a new version;
 an existing published object is never rewritten in place.
+
+At `1.0.0`, the project freezes the documented CLI command paths and options,
+documented Python API symbols, and versioned persisted contracts explicitly
+declared supported for the `1.x` line. Later minor releases may add interfaces
+and new versioned schemas. Removing a frozen interface or changing its meaning
+requires a documented deprecation where practical and a new major version.
+Internal modules, undocumented helpers, web presentation details, external
+source catalogues, and research findings are not part of that freeze.
+
+Before the freeze, the project must publish and test an explicit supported
+surface inventory. `1.0.0` is a stability claim about the bounded supported
+core, not a claim that every planned field, geography, population universe,
+method, enrichment, or downstream adapter has been implemented.
 
 This decision does not itself authorize a particular schema or architecture.
 Consequential replacement contracts still require their own design review and,

@@ -13,10 +13,9 @@ completed implementation plans belong in [`plans/archive/`](plans/archive/).
 | Order | User outcome | Done when | Owned by |
 | --- | --- | --- | --- |
 | Next: `0.8.0` | A researcher can hand a validated linked population to another tool in a self-describing, simulator-neutral bundle. | The CSV/JSON bundle round-trips with hashes, relationships, data dictionary, validation, and reproduction evidence. | [Simulation interoperability](plans/2026-07-15-simulation-interoperability.md) |
-| Conditional: `0.8.1` | One real downstream project can consume that bundle without SynthPopCan claiming to provide a complete simulation. | A demand-backed, version-pinned adapter passes an official import smoke test and reports every missing external input. | [Simulation interoperability](plans/2026-07-15-simulation-interoperability.md) |
-| Parallel correctness | Researchers can tell which attributes are genuinely controlled at small-area level and which merely pass through from a broader candidate pool. | The completed 2016/2021 CSD/CT/ADA/DA source screen advances through reviewed multi-margin control packs and feasibility gates before any new local-representativeness claim. | [Expanded small-area controls](plans/2026-08-01-expanded-small-area-controls.md) and [correctness assurance](plans/2026-07-12-correctness-assurance.md) |
-| Parallel model richness | Researchers can generate more supportable hierarchical PUMF attributes without sparse all-column target classes or invented family relationships. | Every 2016/2021 source field has a reviewed role; additive and chained profiles pass fitness/privacy gates; any family hierarchy uses a new validated artifact contract. | [Expanded hierarchical tree models](plans/2026-08-01-expanded-hierarchical-tree-models.md) |
-| Ongoing maintenance | Releases remain typed, citable, preserved, governable, and approachable to contributors. | Each maintenance plan advances without silently blocking the numbered product sequence unless it names a release gate. | [Stewardship](plans/2026-07-19-research-software-stewardship.md) and [strict typing](plans/2026-08-01-strict-typing.md) |
+| Then: `0.9.0` | A researcher can trust the bounded private-household small-area workflow without assuming that every PUMF field is locally controlled. | Linked calibration has an independent oracle, integerization has a published backend decision, one core 2016/2021 household/person control-pack family passes bounded multi-scale and external Canadian comparison evidence, and uncontrolled fields remain explicit. | [Methodological validation and uncertainty](plans/2026-08-02-methodological-validation-and-uncertainty.md), [expanded small-area controls](plans/2026-08-01-expanded-small-area-controls.md), and [correctness assurance](plans/2026-07-12-correctness-assurance.md) |
+| Then: `1.0.0` | Researchers and downstream tools can rely on a documented stable CLI, Python API, and declared persisted contracts. | The supported surface inventory is reviewed, pre-1.0 aliases and inconsistencies are resolved, compatibility tests freeze the declared contracts, the installed-package documentation and bilingual case study pass, and release/stewardship gates are complete. | This roadmap, [stewardship](plans/2026-07-19-research-software-stewardship.md), [strict typing](plans/2026-08-01-strict-typing.md), and [ADR-0010](adr/0010-pre-1-0-compatibility-evolution.md) |
+| Post-`1.0` expansion | Add richer fields, family and collective-population structure, deeper uncertainty/privacy methods, building placement, and demand-backed adapters without destabilizing the frozen core. | Each addition uses the stable extension points or a separately versioned new contract and has its own evidence-backed release scope. | Active research plans and the research queue below |
 
 ## Goal And Boundaries
 
@@ -109,6 +108,72 @@ Completed implementation records are archived:
 - [linked-population schema](plans/archive/2026-07-18-linked-population-schema.md);
 - [small-area geography](plans/archive/2026-07-22-small-area-geography.md); and
 - [external-data enrichment](plans/archive/2026-07-15-ecosystem-enrichment.md).
+
+## Path To `1.0.0` And Stability Boundary
+
+The project should reach `1.0.0` by stabilizing the useful core, not by
+finishing every research direction. Only three bounded product tranches are on
+the pre-`1.0` path.
+
+### `0.8.0`: portable handoff
+
+Finish the simulator-neutral CSV/JSON bundle already described below. Do not
+add a simulator-specific adapter before `1.0.0`; a real consumer can still read
+the neutral bundle and help validate the contract.
+
+### `0.9.0`: bounded methodological and small-area confidence
+
+Complete only the evidence needed to support the current private-household
+workflow and its extension points:
+
+- generated feasible linked-calibration cases and one independent
+  solver-backed oracle;
+- a reviewed integerization comparison and backend decision;
+- versioned generic control-pack and field/control compatibility contracts;
+- reviewed 2016 and 2021 core household controls plus private-household
+  age-by-sex/gender person controls for explicitly named supported geographies;
+- bounded multi-scale validation and a pinned external Canadian comparison;
+- weight concentration, candidate reuse, rare-category, structural-zero, and
+  controlled-versus-uncontrolled reporting; and
+- one representative end-to-end fixture proving that the generic model-profile
+  and control-pack interfaces can accept later additive profiles without a CLI
+  redesign.
+
+This tranche does not require implementing every candidate control, every
+hierarchical PUMF field, a family hierarchy, collective populations, a national
+fit, full uncertainty ensembles, or a new generative-model family.
+
+### `1.0.0`: interface review and freeze
+
+Before tagging `1.0.0`:
+
+1. inventory every documented `synthpopcan` command path, option, exit behavior,
+   and machine-readable output mode;
+1. inventory every documented Python import and symbol intended as public;
+1. list the persisted schemas and model/control/exchange contracts supported by
+   the `1.x` line;
+1. remove, rename, or consolidate misleading pre-`1.0` interfaces while a
+   deliberate break is still allowed, with migration guidance where useful;
+1. add installed-package CLI/API compatibility fixtures and semantic snapshots
+   that ignore harmless formatting, paths, and timestamps;
+1. verify documentation, public type completeness, supported-platform claims,
+   packaging, security, citation, preservation, licensing, and the bilingual
+   2021 case study; and
+1. publish the compatibility policy and exact declared surface with the
+   release.
+
+The freeze covers documented CLI command paths and options, documented Python
+API symbols, and versioned persisted contracts explicitly declared supported
+for `1.x`. Additive commands, options, symbols, and new versioned schemas may be
+introduced in later minor releases. Removing or changing the meaning of frozen
+surface requires deprecation where practical and a new major version. Internal
+modules, undocumented helpers, web presentation details, external source
+catalogues, and research findings are not frozen.
+
+`1.0.0` does not require Pyright strict mode, a monolithic national population,
+all possible controls, building-level placement, population projection,
+simulation, or a JOSS paper. It means the supported core is coherent,
+documented, tested, and stable enough to build upon.
 
 ## Release History
 
@@ -205,13 +270,13 @@ gates.
 - Treat Parquet, GeoParquet, GeoPackage, and RO-Crate as later optional mappings
   until semantic types, dependency costs, and round trips are demonstrated.
 
-### `0.8.1`: One target adapter pilot
+### Post-`1.0`: One target adapter pilot
 
-Select one external target only when there is a real user or reference model,
-a pinned supported version, an official input contract, and a maintainable
-import smoke test. The adapter must distinguish a population contribution from
-a runnable simulation and list every external network, land-use, schedule,
-behaviour, coefficient, or model input still required.
+Select one external target after `1.0.0` only when there is a real user or
+reference model, a pinned supported version, an official input contract, and a
+maintainable import smoke test. The adapter must distinguish a population
+contribution from a runnable simulation and list every external network,
+land-use, schedule, behaviour, coefficient, or model input still required.
 
 ActivitySim, Starsim, Mesa, GAMA, MATSim, SUMO, Vivarium, FRED, and AnyLogic
 remain researched candidates, not simultaneous commitments. Transport-plan
@@ -220,12 +285,15 @@ modes, and network/link mappings are justified by a concrete project.
 
 ## Ongoing Assurance And Stewardship
 
-The correctness plan owns exact reproduction, a versioned assurance payload,
-zero-cell policy, multi-scale and rare-category validation, model content
-audits, public external comparisons, QISI evaluation, cross-platform evidence,
-and external review. Territory and broader-CMA models are feasibility
-candidates, not promised coverage: each must pass support, rare-category,
-privacy, provenance, and reproducible-build gates.
+The correctness plan owns exact reproduction, the versioned assurance payload,
+routine evidence gates, zero-cell policy, cross-platform evidence, and external
+review. The dedicated
+[methodological validation and uncertainty plan](plans/2026-08-02-methodological-validation-and-uncertainty.md)
+owns calibration oracles, backend and integerization comparisons, uncertainty
+ensembles, shared multi-axis validation, external Canadian benchmarks, and
+attack-oriented disclosure evidence. Territory and broader-CMA models are
+feasibility candidates, not promised coverage: each must pass support,
+rare-category, privacy, provenance, and reproducible-build gates.
 
 Prepared-geodata releases need a deterministic catalogue audit before each
 publication: verify the expected year/geography/PRUID identity coverage,
@@ -233,10 +301,10 @@ unique asset names, immutable release-tag URLs, and both checksum fields. A
 separate bounded remote retrieval check may exercise a representative asset,
 but routine CI must not redownload the complete boundary release.
 
-The stewardship plan owns the model-licensing decision, full CFF validation,
-Software Heritage capture, a dated FAIR4RS baseline, lightweight governance and
-maintenance documentation, a tested bilingual 2021 case study, targeted
-community introduction, and JOSS maturation.
+The stewardship plan owns the pre-`1.0` model-licensing decision, full CFF
+validation, Software Heritage capture, dated FAIR4RS and management records,
+and tested bilingual 2021 case study. Targeted community introduction and JOSS
+maturation remain post-`1.0` or non-blocking activities.
 
 JOSS submission is not currently ready. The repository became public in June
 2026; current JOSS screening requires more than six months of public,
@@ -262,12 +330,32 @@ blocked only if it explicitly adopts a stricter typing gate.
 - Generic activity, schedule, contact-network, or intervention generation
   without an evidence-backed research model.
 - Multiple simulator adapters before one target pilot demonstrates demand.
+- Any simulator-specific adapter before the `1.0.0` interface freeze.
+- Exhaustive implementation of every candidate small-area control or extended
+  PUMF field before `1.0.0`.
+- Chained production models, economic- or census-family entities, and
+  collective/non-private-household generation before `1.0.0`.
+- Full uncertainty ensembles and a general empirical privacy-attack framework
+  beyond the bounded evidence required for current public models before
+  `1.0.0`.
+- Building- or dwelling-level household placement before the stable population,
+  geography, and exchange contracts exist.
 - Population simulation inside SynthPopCan.
 - Claims that test passage proves substantive validity, disclosure safety, or
   causal validity.
 
 ## Research Queue, Not Release Commitments
 
+- Design building-level residential placement after `1.0.0`. Start with a
+  bounded urban/rural Canadian case and treat it as constrained allocation of
+  whole households to compatible dwelling/building candidates—not random point
+  placement. Required evidence includes authoritative or licensed building and
+  dwelling sources, vintage and address/geography reconciliation, residential
+  capacity, vacancy, multi-unit and mixed-use handling, housing/household
+  compatibility, collective-dwelling separation, unmatched cases, spatial
+  uncertainty, privacy, and aggregation back to Census geography. Keep precise
+  coordinates optional and access-classified, and do not claim that a building
+  match is an observed residence.
 - Test official province/territory projection scenarios only after the DA
   foundation is validated. Begin with a 2016-to-2021 backcast; distinguish
   projected values from carried-forward attributes and never claim

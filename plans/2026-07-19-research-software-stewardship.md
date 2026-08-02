@@ -30,6 +30,19 @@ community introduction, and JOSS maturation gates. It does not duplicate:
 Adopt another standard or publication surface only when it solves a concrete
 preservation, interoperability, governance, credit, or discovery problem.
 
+## Pre-`1.0` Cut Line
+
+The stewardship work required for `1.0.0` is limited to the model-licensing
+decision, full CFF validation, a verified Software Heritage capture, dated
+FAIR4RS and software-management records, supported-platform and maintenance
+claims, and the tested bilingual 2021 case study. The release must also publish
+the exact stable CLI/API/schema inventory and compatibility policy owned by the
+main roadmap.
+
+Focused community introduction may proceed when useful but does not block
+`1.0.0`. A model mirror, JOSS submission, broader outreach campaign, or new
+publication surface remains demand- and maturity-gated after the stable release.
+
 ## Stewardship Baseline
 
 Complete the following bounded tranche before treating the project's

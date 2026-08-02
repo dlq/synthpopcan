@@ -3,7 +3,8 @@
 Status: planned research and implementation track\
 Created: 2026-08-01\
 Last updated: 2026-08-02\
-Target: incremental after the field inventory; no numbered-release commitment\
+Target: pre-`1.0` inventory and extension-contract proof only; richer profiles
+and family hierarchy after `1.0.0`\
 Next action: produce and review a machine-readable 2016/2021 eligibility
 inventory for every hierarchical PUMF column\
 Roadmap: [PLANS.md](../PLANS.md) | [Plan index](README.md)
@@ -33,7 +34,10 @@ every PUMF field is statistically fit for every geography, safe to publish in a
 model artifact, or locally representative after small-area assignment.
 The [expanded small-area controls plan](2026-08-01-expanded-small-area-controls.md)
 owns control discovery, compatibility, calibration, and local-representativeness
-evidence for current and future tree profiles.
+evidence for current and future tree profiles. The
+[methodological validation and uncertainty plan](2026-08-02-methodological-validation-and-uncertainty.md)
+owns shared held-out metrics, ensemble and replicate-weight evaluation,
+external benchmarks, and empirical disclosure-risk attack methods.
 
 ## Current Baseline
 
@@ -78,13 +82,30 @@ In scope:
 
 Out of scope without a separate approved design:
 
-- generating source identifiers, survey weights, or replicate weights;
+- generating source identifiers, survey weights, or replicate weights as
+  synthetic attributes; source replicate weights may still be used for
+  methodological stability and uncertainty evaluation;
 - treating `PR` or `CMA` as synthetic small-area locations;
 - fusing the individual PUMF into households as if its people were observed
   household members;
 - reconstructing confidential records or claiming disclosure-proof output;
 - promising controls for a field merely because it is present in the PUMF; and
 - replacing immutable published model packages or DOI records in place.
+
+## Pre-`1.0` Cut Line
+
+Before `1.0.0`, complete the machine-readable 2016/2021 field eligibility
+inventory far enough to review the existing profiles and define stable generic
+profile-inspection and control-compatibility extension contracts. Exercise one
+representative end-to-end additive or chained prototype only if needed to prove
+that those contracts can grow without changing the frozen CLI/API.
+
+No new public expanded profile is required for `1.0.0`. Production chained
+blocks, the broad additive field catalogue, numeric-generation extensions,
+economic- and census-family entities, and a replacement linked-population
+schema are post-`1.0` work. They may arrive through additive public interfaces
+and separately versioned artifact contracts after the current household/person
+core is stable.
 
 ## Phase 1 — Field Eligibility Inventory
 
@@ -146,12 +167,12 @@ column.
 Candidate additive profiles should be organized by research concept:
 
 1. education and school attendance;
-2. language knowledge and additional home/work-language components;
-3. labour, industry, occupation, and job characteristics;
-4. mobility and commuting;
-5. income components and reviewed low-income measures;
-6. immigration timing; and
-7. sensitive identity/background fields only after a separate release review.
+1. language knowledge and additional home/work-language components;
+1. labour, industry, occupation, and job characteristics;
+1. mobility and commuting;
+1. income components and reviewed low-income measures;
+1. immigration timing; and
+1. sensitive identity/background fields only after a separate release review.
 
 For every added field:
 
@@ -178,11 +199,11 @@ Replace the single ever-growing target tuple with an optional directed chain of
 small models. A proposed person chain is:
 
 1. demographics and household context;
-2. identity, immigration, and language;
-3. education;
-4. labour, occupation, and workplace characteristics;
-5. mobility and commuting; and
-6. income and derived socioeconomic measures.
+1. identity, immigration, and language;
+1. education;
+1. labour, occupation, and workplace characteristics;
+1. mobility and commuting; and
+1. income and derived socioeconomic measures.
 
 Each block may condition only on source conditions, household context, and
 outputs from completed predecessor blocks. The package must store the ordered
@@ -238,12 +259,12 @@ family roles/counts, then people and their attributes. It must enforce at least:
   combinations defined by reviewed rules.
 
 This requires a new linked-population schema and a new model-package schema.
-Before `1.0.0`, the new release may replace v1 as the default and may drop v1
-reading when retaining it would materially complicate the design. In that case,
-the reader must identify the unsupported schema clearly and documentation must
-name the last compatible release. Provide a one-time converter when practical;
-it may wrap a v1 artifact as a household/person-only view but must never invent
-missing family relationships.
+Because family hierarchy is now post-`1.0`, a `1.x` implementation must publish
+the richer schema as a separately versioned addition while retaining the
+declared `1.0` household/person contract. Dropping that frozen contract or
+changing its meaning requires a new major release. A converter may expose a
+richer artifact as a household/person-only view when it can preserve meaning,
+but it must never invent missing family relationships.
 
 Acceptance: synthetic fixtures exercise multiple economic and census families
 within households; independent validation recomputes every membership and role
@@ -283,6 +304,10 @@ Evaluate each candidate profile and geography with:
 - multi-seed stability and rare-category behavior;
 - model fallback rates and unseen-condition coverage;
 - support, purity, uniqueness, and source-row leakage screening;
+- exact/near-copy, nearest-neighbour, linked-signature, and baseline empirical
+  disclosure-risk checks appropriate to its release class;
+- replicate-weight or documented resampling stability where the source design
+  supports it;
 - package size, generation throughput, and peak memory;
 - compatible Census Profile controls where available; and
 - post-calibration residuals without claiming accuracy for uncontrolled fields.
@@ -294,6 +319,12 @@ thresholds solely to make a candidate pass.
 Sensitive fields require a documented purpose and human release review in
 addition to automated checks. A technically generatable field may remain
 private, validation-only, coarsened, or excluded.
+
+Reuse the methodological-validation plan's metric and attack implementations,
+but keep profile-specific field semantics, privacy thresholds, source
+authority, intended use, and final human release decisions here. High utility
+on held-out distributions must not override a material disclosure or rare
+linked-household finding.
 
 Acceptance: every published profile has a field eligibility manifest, audit
 report, held-out comparison, privacy decision, reproducible build, checksums,
@@ -334,12 +365,12 @@ sequence.
 Work proceeds in this order:
 
 1. inventory and field decisions;
-2. a small additive profile proving the evidence and interface path;
-3. chained blocks for a bounded 2021 provincial model;
-4. a parallel 2016 compatibility case;
-5. family hierarchy only after the additive/chained evidence is satisfactory;
-6. broader catalogue candidates after geography-specific fitness review; and
-7. public release only after archival and documentation gates pass.
+1. a small additive profile proving the evidence and interface path;
+1. chained blocks for a bounded 2021 provincial model;
+1. a parallel 2016 compatibility case;
+1. family hierarchy only after the additive/chained evidence is satisfactory;
+1. broader catalogue candidates after geography-specific fitness review; and
+1. public release only after archival and documentation gates pass.
 
 The plan is complete when every hierarchical PUMF field has a reviewed role;
 supportable additive and chained fields are available through coherent named
