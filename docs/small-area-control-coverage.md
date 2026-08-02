@@ -143,14 +143,14 @@ household weights rather than detach people from households.
 
 1. Add broad age-by-sex/gender person controls. They cover two important fields
    jointly and use the strongest population universe.
-2. Expand household controls to dwelling type, bedrooms, rooms, repair,
+1. Expand household controls to dwelling type, bedrooms, rooms, repair,
    construction period, housing suitability, and condominium status.
-3. Add reviewed immigration, citizenship, generation, visible-minority,
+1. Add reviewed immigration, citizenship, generation, visible-minority,
    language, education, labour-force, work-activity, and income-band
    crosswalks, with explicit universe handling.
-4. Consider mortgage and subsidy only as an opt-in approximate tier with
+1. Consider mortgage and subsidy only as an opt-in approximate tier with
    rounding provenance and a reconciliation tolerance.
-5. Leave the five unsupported fields explicitly uncontrolled unless another
+1. Leave the five unsupported fields explicitly uncontrolled unless another
    authoritative, geography-compatible source is adopted.
 
 ## Sources And Reproduction
