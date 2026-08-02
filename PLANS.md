@@ -63,7 +63,8 @@ Principles:
   replacement path, fail clearly on unsupported old artifacts, and provide a
   converter when practical; backward compatibility is desirable but is not a
   release gate. Never rewrite an already published artifact or archival record
-  in place.
+  in place. [ADR-0010](adr/0010-pre-1-0-compatibility-evolution.md) records this
+  compatibility boundary.
 
 Research background belongs in [NOTES.md](NOTES.md). Every unfinished roadmap
 item must appear here or be owned by one linked active plan with a current next
