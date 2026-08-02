@@ -5,7 +5,9 @@ current task matches its scope.
 
 | Plan | Status | Target | Next action |
 | --- | --- | --- | --- |
-| [Correctness assurance](2026-07-12-correctness-assurance.md) | Active baseline | Ongoing evidence and post-`0.7.0` control audit | Audit field-level ADA/DA control coverage before making new local-representativeness claims; maintain released assurance gates in parallel. |
+| [Correctness assurance](2026-07-12-correctness-assurance.md) | Active baseline | Ongoing evidence and post-`0.7.0` control expansion | Review and fixture the first 2016/2021 multi-margin control-pack crosswalks before making new local-representativeness claims. |
+| [Expanded small-area controls](2026-08-01-expanded-small-area-controls.md) | Planned correctness and implementation track | Incremental; coordinated with expanded tree profiles | Define the field/control compatibility registry and fixture the first 2016/2021 household and person control packs. |
+| [Expanded hierarchical tree models](2026-08-01-expanded-hierarchical-tree-models.md) | Planned research and implementation track | Incremental; no numbered-release commitment | Build and review the 2016/2021 field eligibility inventory before adding model targets or changing an artifact schema. |
 | [Research-software stewardship](2026-07-19-research-software-stewardship.md) | Active baseline; ongoing release policy | Before another model publication or mirror; JOSS only after maturity gates | Settle model licensing, add full CFF validation, capture Software Heritage identifiers, publish dated FAIR4RS/management records, and release a tested bilingual 2021 case study for focused community introduction. |
 | [External-data enrichment framework](2026-07-15-ecosystem-enrichment.md) | Active; `0.7.0` foundation released | `0.7.1`–`0.7.2` reference implementations | Demonstrate reuse with Can-FED v2 and ODEF v3 before selecting later adapters by evidence. |
 | [Simulation interoperability](2026-07-15-simulation-interoperability.md) | Planned and conditional | `0.8.0`–`0.8.1` | Define a simulator-neutral exchange bundle, then validate one demand-backed target adapter against a pinned input contract. |

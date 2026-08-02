@@ -4,9 +4,11 @@ Status: active\
 Created: 2026-07-12\
 Last updated: 2026-08-01\
 Target: ongoing correctness and release evidence\
-Next action: complete the field-by-field 2021 ADA/DA control-coverage audit
-before making any new small-area representativeness claim; maintain the
-released assurance and reproduction gates in parallel\
+Next action: review and fixture the highest-priority vintage-specific category
+crosswalks identified by the 2016/2021 CSD/CT/ADA/DA source-coverage inventory
+before implementing expanded controls or making a new small-area
+representativeness claim; maintain the released assurance and reproduction
+gates in parallel\
 Roadmap: [PLANS.md](../PLANS.md) | [Plan index](README.md)
 
 ## Purpose And Boundaries
@@ -185,6 +187,30 @@ Acceptance: every linked-schema field has an auditable classification; every
 implemented crosswalk has independent fixtures; household-only runs remain
 reproducible; and documentation distinguishes fitted local margins from
 uncontrolled carried-through fields.
+
+The initial source-availability screen now covers both census vintages and all
+four supported calibration levels; see the
+[small-area control coverage inventory](../docs/small-area-control-coverage.md).
+It identifies 29 count-based candidate fields, two lower-confidence
+percentage-derived candidates, and five fields without matching Profile count
+distributions. Those candidates are not implemented controls until their
+category crosswalks and statistical evidence meet the acceptance criteria
+above.
+
+### Multi-margin control packs
+
+The dedicated
+[expanded small-area controls plan](2026-08-01-expanded-small-area-controls.md)
+owns the field/control registry, source screening, universe reconciliation,
+versioned packs, feasibility planner, family-aware contributions, interfaces,
+and implementation sequence. This assurance plan retains the cross-cutting
+requirements for independent fixtures, structural-zero policy, residual and
+aggregation evidence, reproducibility, privacy review, and restrained claims.
+
+Expanded controls must remain low-dimensional reviewed margins fitted against
+whole-household weights. Do not describe a field as locally controlled merely
+because it exists in a generated hierarchical population or appears in a
+source-availability inventory.
 
 ## Statistical And Model Quality
 

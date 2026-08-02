@@ -16,7 +16,8 @@ completed implementation plans belong in [`plans/archive/`](plans/archive/).
 | Next: `0.7.2` | A researcher can attach a documented national educational-facility inventory without treating it as capacity or accessibility evidence. | ODEF v3 acquisition, normalization, linkage, limitations, and unmatched records are independently reproducible. | [External-data enrichment](plans/2026-07-15-ecosystem-enrichment.md) |
 | Later: `0.8.0` | A researcher can hand a validated linked population to another tool in a self-describing, simulator-neutral bundle. | The CSV/JSON bundle round-trips with hashes, relationships, data dictionary, validation, and reproduction evidence. | [Simulation interoperability](plans/2026-07-15-simulation-interoperability.md) |
 | Conditional: `0.8.1` | One real downstream project can consume that bundle without SynthPopCan claiming to provide a complete simulation. | A demand-backed, version-pinned adapter passes an official import smoke test and reports every missing external input. | [Simulation interoperability](plans/2026-07-15-simulation-interoperability.md) |
-| Parallel correctness | Researchers can tell which attributes are genuinely controlled at ADA/DA level and which merely pass through from a broader candidate pool. | A field-by-field 2021 control-coverage audit precedes any new small-area representativeness claim; implementation is scheduled independently of `0.7.1` and `0.7.2`. | [Correctness assurance](plans/2026-07-12-correctness-assurance.md) |
+| Parallel correctness | Researchers can tell which attributes are genuinely controlled at small-area level and which merely pass through from a broader candidate pool. | The completed 2016/2021 CSD/CT/ADA/DA source screen advances through reviewed multi-margin control packs and feasibility gates before any new local-representativeness claim. | [Expanded small-area controls](plans/2026-08-01-expanded-small-area-controls.md) and [correctness assurance](plans/2026-07-12-correctness-assurance.md) |
+| Parallel model richness | Researchers can generate more supportable hierarchical PUMF attributes without sparse all-column target classes or invented family relationships. | Every 2016/2021 source field has a reviewed role; additive and chained profiles pass fitness/privacy gates; any family hierarchy uses a new validated artifact contract. | [Expanded hierarchical tree models](plans/2026-08-01-expanded-hierarchical-tree-models.md) |
 | Ongoing maintenance | Releases remain typed, citable, preserved, governable, and approachable to contributors. | Each maintenance plan advances without silently blocking the numbered product sequence unless it names a release gate. | [Stewardship](plans/2026-07-19-research-software-stewardship.md) and [strict typing](plans/2026-08-01-strict-typing.md) |
 
 ## Goal And Boundaries
@@ -56,6 +57,13 @@ Principles:
   review, and substantive research validity.
 - Add a dependency, standard, catalogue integration, or platform adapter only
   when a concrete use case justifies its maintenance cost.
+- Before `1.0.0`, allow deliberate breaking changes when they materially
+  simplify the architecture, improve correctness, or make the research model
+  more honest. Version changed schemas and packages, document the break and
+  replacement path, fail clearly on unsupported old artifacts, and provide a
+  converter when practical; backward compatibility is desirable but is not a
+  release gate. Never rewrite an already published artifact or archival record
+  in place.
 
 Research background belongs in [NOTES.md](NOTES.md). Every unfinished roadmap
 item must appear here or be owned by one linked active plan with a current next

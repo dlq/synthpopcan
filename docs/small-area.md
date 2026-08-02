@@ -77,6 +77,11 @@ their assigned household. Optional person controls refine the household weights
 using linked-person category counts; they never separate people from their
 household.
 
+The current preparer implements household size and tenure. The
+{doc}`small-area-control-coverage` inventory records which other all-fields
+attributes have potential 2016 and 2021 Profile controls, how widely their
+source universes are available, and which fields remain uncontrolled.
+
 ## Worked Workflow
 
 **Runnable research workflow; network and time required.** The steps below use
