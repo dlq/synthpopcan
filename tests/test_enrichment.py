@@ -542,6 +542,43 @@ def test_beginner_api_imports_normalized_layer(tmp_path: Path) -> None:
     assert path_result.validation["passed"] is True
 
 
+def test_beginner_api_rejects_base_directory_as_output_before_writing(
+    tmp_path: Path,
+) -> None:
+    population = tmp_path / "population"
+    population.mkdir()
+    _linked_population(population)
+    source = _source()
+    raw = tmp_path / "raw.csv"
+    raw.write_text("source\nfixture\n")
+    resource = register_resource(
+        raw,
+        source,
+        acquired_at="2026-07-29T12:00:00Z",
+        media_type="text/csv",
+        public_locator=source.canonical_url,
+    )
+    normalized = tmp_path / "area-context.csv"
+    _layer(normalized, source, resource)
+    manifest_before = (population / "manifest.json").read_bytes()
+
+    with pytest.raises(ValueError, match="must differ"):
+        spc.enrich_population(
+            population,
+            normalized,
+            source_profile=source,
+            resource_record=resource,
+            layer_id="example.area-context.overlap.v1",
+            layer_class="area-attributes",
+            key_columns=("DAUID",),
+            variables=("food_environment",),
+            base_geography=statcan_geography_universe(2021, "da", "DAUID"),
+            output_dir=population,
+        )
+
+    assert (population / "manifest.json").read_bytes() == manifest_before
+
+
 def test_generic_import_rejects_unreviewed_cross_vintage_join(
     tmp_path: Path,
 ) -> None:

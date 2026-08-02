@@ -220,11 +220,15 @@ Use this path when:
 
 - the synthetic population already exists;
 - a research question needs context from another documented source;
-- the source and population use compatible geography identifiers; and
+- any requested join or coverage comparison uses compatible geography
+  identifiers (an unlinked ODEF facility inventory does not require one); and
 - we need to prove that the original linked population remained unchanged.
 
-The enrichment framework was added in `0.7.0`; use the `synthpopcan enrich`
-commands or `spc.enrich_population`.
+The enrichment framework was added in `0.7.0`. Use `synthpopcan enrich can-fed`
+or `spc.enrich_can_fed` for reviewed 2021 DA food-environment context, and
+`synthpopcan enrich odef` or `spc.enrich_odef` for the reviewed educational-
+facility inventory. Use `enrich import` or `spc.enrich_population` for another
+documented normalized layer.
 
 (if-we-are-still-inspecting-sources)=
 

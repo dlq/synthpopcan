@@ -1,10 +1,11 @@
 # Reusable External-Data Enrichment Framework Plan
 
-Status: active; `0.7.0` foundation released\
+Status: implementation complete; combined `0.7.2` release candidate\
 Created: 2026-07-15\
-Last updated: 2026-08-01\
+Last updated: 2026-08-02\
 Target: `0.7.0`–`0.7.2`\
-Next action: implement the bounded public `0.7.1` Can-FED reference adapter\
+Next action: complete release verification and publish the combined `0.7.2`
+candidate; archive this plan after publication\
 Roadmap: [PLANS.md](../PLANS.md) | [Plan index](README.md) | Released geography
 foundation: [small-area geography](archive/2026-07-22-small-area-geography.md)
 
@@ -244,12 +245,17 @@ selection, or national DA orchestration.
 
 ### `0.7.1`: Can-FED v2 reference adapter
 
+Implemented in the combined `0.7.2` candidate. The reviewed live ZIP contains
+CSV members named `dens_thresholds_1km.csv` and `dens_thresholds_3km.csv`, not
+the CSV/Parquet names in the guide. Each contains 57,936 unique DA rows even
+though the guide says 28 DAs were excluded; validation preserves this
+documentation/file discrepancy and reconciles the acquired bytes exactly.
+
 Integrate Statistics Canada's public general-use
 [Canadian Food Environment Dataset (Can-FED) v2](https://www150.statcan.gc.ca/n1/pub/13-20-0001/132000012025002-eng.htm)
 as the first real area-attribute adapter:
 
-- acquire and profile the public general-use 1 km and 3 km categorical files
-  in their published CSV or Parquet form;
+- acquire and profile the public ZIP's 1 km and 3 km categorical CSV files;
 - preserve the August 2024 food-environment observation period, 2024 Business
   Register basis, and 2021 DA geography;
 - key the normalized environment layer by the explicit 2021 DA namespace;
@@ -264,16 +270,21 @@ evidence that the food environment caused an outcome.
 
 ### `0.7.2`: ODEF v3 facility reference adapter
 
+Implemented against the corrected v3.0.1 bytes currently served by the
+official v3.0 URL.
+
 Integrate Statistics Canada's
 [Open Database of Educational Facilities (ODEF) v3](https://www150.statcan.gc.ca/n1/pub/37-26-0001/372600012022001-eng.htm)
-as the contrasting national facility/point adapter. The approximately 19,000
-records collected in 2024 provide coordinates and fields including facility
-type, governing authority, ISCED level, official-language-minority status,
-address, and CSD/CMA identifiers.
+as the contrasting national facility/point adapter. The corrected archive has
+18,858 records and preserves facility type, governing authority, ISCED level,
+official-language-minority and immersion status, address, source WKT, and 2021
+CSD identity. Its live CSV has no CMA fields or separate source longitude and
+latitude columns; the adapter parses coordinate pairs from WKT and does not
+invent CMA lineage.
 
 Preserve source identifiers and observations, assess duplicate facilities and
 geocoding/coverage limitations, and publish a normalized facility layer with
-source and geography lineage, unmatched reporting, synthetic fixtures, and an
+source and CSD lineage, unmatched reporting, synthetic fixtures, and an
 end-to-end reproduction through the same framework used by Can-FED. ODEF
 supports facility inventory and spatial linkage; it does not establish school
 capacity, catchments, quality, enrolment eligibility, or accessibility. Do not

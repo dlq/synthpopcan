@@ -33,8 +33,13 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import Any
+from typing import Any, cast
 
+from synthpopcan.canfed import (
+    CANFED_V2_ARCHIVE_SHA256,
+    CanFedAdapter,
+    CanFedBuffer,
+)
 from synthpopcan.controls import ControlTable, read_control_table, write_control_table
 from synthpopcan.enrichment import (
     ResourceRecord,
@@ -48,12 +53,17 @@ from synthpopcan.ipf import IPFMargin, IPFResult, expand_records
 from synthpopcan.ipf import fit_ipf as fit_ipf_records
 from synthpopcan.linked_schema import write_linked_population_contract
 from synthpopcan.models import fetch_model_package
+from synthpopcan.odef import ODEF_V3_ARCHIVE_SHA256, OdefAdapter
 from synthpopcan.small_area_synthesis import calibrate_linked_household_csvs
 from synthpopcan.tabular import format_csv_number
 from synthpopcan.tree import (
     CartTreeModel,
     FrequencyTreeModel,
     generate_linked_population,
+)
+from synthpopcan.workflows.enrichment import (
+    ReferenceEnrichmentArtifacts,
+    run_reference_enrichment,
 )
 from synthpopcan.workflows.ipf import read_csv_records
 
@@ -71,6 +81,8 @@ __all__ = [
     "PopulationRows",
     "SmallAreaResult",
     "calibrate_small_area",
+    "enrich_can_fed",
+    "enrich_odef",
     "enrich_population",
     "expand_population",
     "fetch_model",
@@ -163,6 +175,9 @@ class EnrichmentResult:
     layer: Path
     manifest: Path
     validation: Mapping[str, object]
+    source_profile: Path | None = None
+    resource_record: Path | None = None
+    validation_report: Path | None = None
 
 
 def read_seed(path: str | Path) -> PopulationRows:
@@ -781,10 +796,7 @@ def enrich_population(
     RuntimeError
         If the base linked-population bytes change during publication.
     """
-    if isinstance(population, LinkedPopulationFiles):
-        population_directory = population.households.parent
-    else:
-        population_directory = Path(population)
+    population_directory = _population_directory(population)
     source = (
         source_profile
         if isinstance(source_profile, SourceProfile)
@@ -826,6 +838,83 @@ def enrich_population(
         manifest=output_directory / "manifest.json",
         validation=validation,
     )
+
+
+def enrich_can_fed(
+    population: LinkedPopulationFiles | str | Path,
+    *,
+    output_dir: str | Path,
+    base_geography: GeographyUniverse | Mapping[str, object],
+    buffer: str = "both",
+    resource: str | Path | None = None,
+    cache_dir: str | Path | None = None,
+    acquired_at: str | None = None,
+) -> EnrichmentResult:
+    """Attach reviewed public Can-FED v2 categorical context to a population.
+
+    By default the function retrieves and pins the reviewed public archive,
+    combines its 1 km and 3 km categorical products into one 2021 DA sidecar,
+    validates exact source and base coverage, and writes durable provenance and
+    validation files. ``resource`` may name an already downloaded copy of the
+    same reviewed bytes. A 2016 or non-DA base geography is rejected.
+    """
+
+    if buffer not in {"1km", "3km", "both"}:
+        raise ValueError("Can-FED buffer must be 1km, 3km, or both")
+    normalized_geography = (
+        GeographyUniverse.from_dict(base_geography)
+        if isinstance(base_geography, Mapping)
+        else base_geography
+    )
+    artifacts = run_reference_enrichment(
+        _population_directory(population),
+        Path(output_dir),
+        CanFedAdapter(
+            buffer=cast(CanFedBuffer, buffer),
+            expected_sha256=CANFED_V2_ARCHIVE_SHA256,
+        ),
+        resource_path=Path(resource) if resource is not None else None,
+        cache_directory=Path(cache_dir) if cache_dir is not None else None,
+        acquired_at=acquired_at,
+        base_geography=normalized_geography,
+    )
+    return _reference_enrichment_result(artifacts)
+
+
+def enrich_odef(
+    population: LinkedPopulationFiles | str | Path,
+    *,
+    output_dir: str | Path,
+    resource: str | Path | None = None,
+    cache_dir: str | Path | None = None,
+    acquired_at: str | None = None,
+    base_geography: GeographyUniverse | Mapping[str, object] | None = None,
+) -> EnrichmentResult:
+    """Attach the reviewed corrected ODEF v3 facility inventory as a sidecar.
+
+    The adapter preserves source identifiers, provider lineage, education and
+    language indicators, 2021 CSD context, source WKT, parsed coordinates, and
+    missing facilities/geographies. It reports duplicates without deleting
+    possible colocated facilities. Supplying a base geography requests a
+    validated 2021 CSD linkage; omitting it attaches the national point
+    inventory without claiming a direct geographic join to the population.
+    """
+
+    normalized_geography = (
+        GeographyUniverse.from_dict(base_geography)
+        if isinstance(base_geography, Mapping)
+        else base_geography
+    )
+    artifacts = run_reference_enrichment(
+        _population_directory(population),
+        Path(output_dir),
+        OdefAdapter(expected_sha256=ODEF_V3_ARCHIVE_SHA256),
+        resource_path=Path(resource) if resource is not None else None,
+        cache_directory=Path(cache_dir) if cache_dir is not None else None,
+        acquired_at=acquired_at,
+        base_geography=normalized_geography,
+    )
+    return _reference_enrichment_result(artifacts)
 
 
 def render_small_area_map(
@@ -1051,6 +1140,49 @@ def _linked_population_files(
             if (directory / "manifest.json").is_file()
             else None
         ),
+    )
+
+
+def _population_directory(
+    population: LinkedPopulationFiles | str | Path,
+) -> Path:
+    files = _linked_population_files(population)
+    directory = files.households.parent
+    if directory.resolve() != files.persons.parent.resolve():
+        raise ValueError("linked population files must share one directory")
+    if (
+        files.manifest is not None
+        and files.manifest.parent.resolve() != directory.resolve()
+    ):
+        raise ValueError("linked population manifest must share the CSV directory")
+    if files.households.name != "households.csv" or files.persons.name != "persons.csv":
+        raise ValueError(
+            "enrichment requires the standard linked-population filenames "
+            "households.csv and persons.csv"
+        )
+    if files.manifest is not None and files.manifest.name != "manifest.json":
+        raise ValueError(
+            "enrichment requires the standard linked-population filename manifest.json"
+        )
+    _validate_linked_population_files(files)
+    manifest_path = directory / "manifest.json"
+    if not manifest_path.is_file():
+        raise FileNotFoundError(
+            f"linked population manifest not found: {manifest_path}"
+        )
+    return directory
+
+
+def _reference_enrichment_result(
+    artifacts: ReferenceEnrichmentArtifacts,
+) -> EnrichmentResult:
+    return EnrichmentResult(
+        layer=artifacts.layer,
+        manifest=artifacts.manifest,
+        validation=artifacts.validation,
+        source_profile=artifacts.source_profile,
+        resource_record=artifacts.resource_record,
+        validation_report=artifacts.validation_report,
     )
 
 

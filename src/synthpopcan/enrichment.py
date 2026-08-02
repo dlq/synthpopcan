@@ -802,6 +802,7 @@ def import_normalized_layer(
     observed_status: str = "observed",
     reproduction_request: Mapping[str, object] | None = None,
     limitations: Sequence[str] = (),
+    require_geography_match: bool = True,
 ) -> tuple[EnrichmentManifest, dict[str, object]]:
     """Validate and atomically publish a normalized sidecar and manifest.
 
@@ -811,6 +812,10 @@ def import_normalized_layer(
     reproduction, and limitation metadata. Base file hashes are checked before
     and after publication to prove that enrichment did not rewrite them.
     """
+    if population_directory.resolve() == output_directory.resolve():
+        raise ValueError(
+            "enrichment output directory must differ from the base population directory"
+        )
     households_path = population_directory / "households.csv"
     persons_path = population_directory / "persons.csv"
     linked_manifest_path = population_directory / "manifest.json"
@@ -823,7 +828,11 @@ def import_normalized_layer(
         "linked population manifest",
     )
     linked_geography = linked_manifest.get("geography")
-    if source.geography is not None and base_geography is None:
+    if (
+        require_geography_match
+        and source.geography is not None
+        and base_geography is None
+    ):
         raise ValueError(
             "base_geography is required for a geography-bearing enrichment layer"
         )

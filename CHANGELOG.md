@@ -2,6 +2,46 @@
 
 All notable public changes to SynthPopCan are tracked here.
 
+## 0.7.2 - 2026-08-02
+
+Maintained public Can-FED and educational-facility enrichment adapters. This
+single release candidate combines the outcomes originally sequenced as 0.7.1
+and 0.7.2; no separate 0.7.1 package is planned.
+
+- Add shared maintained-adapter orchestration for bounded public acquisition,
+  offline reuse of pinned content-addressed bytes, reviewed byte-revision
+  checks, deterministic normalization, source-specific and generic validation,
+  immutable source/resource evidence, sidecar publication, and proof that
+  linked base tables remain unchanged. Reject an output directory that aliases
+  the base population before any file is written.
+- Add the Can-FED v2 general-use adapter and `enrich can-fed`/
+  `enrich_can_fed` interfaces. It combines or selects the public 1 km and 3 km
+  categorical products, preserves 2021 DA and August 2024/Business Register
+  context, rejects malformed keys and cross-vintage linkage, reconciles exact
+  source/base coverage, and excludes RDC-controlled detailed measures.
+- Record the live Can-FED discrepancy explicitly: the reviewed archive contains
+  57,936 unique DAs per buffer even though the accompanying guide says 28 DAs
+  were excluded. Validation follows acquired bytes without inventing a quality
+  flag.
+- Add the corrected ODEF v3.0.1 adapter and `enrich odef`/`enrich_odef`
+  interfaces. It streams normalized rows through an atomic output, preserves
+  stable and source facility IDs, provider/authority, address, grade and ISCED,
+  language, provider-specific facility type, source dates, CSD context, WKT,
+  and parsed coordinates while retaining missing and potentially colocated
+  facilities.
+- Pin the mutable ODEF v3.0 URL to its reviewed v3.0.1 correction and report
+  differences between the live CSV, bundled record layout, and older product
+  prose. The current source has no CMA columns or separate source longitude and
+  latitude fields, so the adapter does not invent them.
+- Add public-safe synthetic fixtures, source-drift and malformed-data tests,
+  end-to-end CLI/API reproduction, exact unmatched-geography evidence, opt-in
+  live Statistics Canada checks, and documentation that keeps area context and
+  facility inventory distinct from exposure, capacity, catchment,
+  accessibility, eligibility, or causal claims.
+- Make adapter JSON output report every written artifact path alongside the
+  complete validation object; document exact normalized columns, missing-value
+  encodings, ordinal Can-FED semantics, and ODEF's undeclared coordinate CRS.
+
 ## 0.7.0 - 2026-08-01
 
 Explicit Census geography and reusable external-data enrichment framework.

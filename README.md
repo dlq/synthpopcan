@@ -29,12 +29,12 @@ Near-term goals:
    census-vintage-specific.
 1. Maintain a local web app for configuring runs, inspecting controls, generating from prepared models, validating outputs, and downloading results.
 
-The `0.7.0` release adds explicit geography contracts, national DA/ADA
+The `0.7.x` line adds explicit geography contracts, national DA/ADA
 orchestration, verified prepared-display-boundary retrieval, and a reusable
 external-data enrichment framework for public, locally supplied, licensed, and
-restricted sources. Can-FED v2 and ODEF v3 are planned as contrasting
-area-attribute and facility reference adapters for `0.7.1` and `0.7.2`; later
-integrations remain demand-, authority-, and validation-gated.
+restricted sources. Maintained Can-FED v2 and corrected ODEF v3.0.1 adapters
+exercise the framework with contrasting area-attribute and facility sources;
+later integrations remain demand-, authority-, and validation-gated.
 
 Detailed documentation is published at
 <https://synthpopcan.readthedocs.io/>. The source files live under

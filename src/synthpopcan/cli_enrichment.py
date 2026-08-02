@@ -9,6 +9,7 @@ from pathlib import Path
 
 import click
 
+from synthpopcan.api import EnrichmentResult, enrich_can_fed, enrich_odef
 from synthpopcan.cli_output import click_file_access_error, click_value_error
 from synthpopcan.console import print_wrote
 from synthpopcan.enrichment import (
@@ -27,6 +28,172 @@ _PATH = click.Path(path_type=Path)
 @click.group()
 def enrich() -> None:
     """Register sources and attach validated sidecar layers to populations."""
+
+
+@enrich.command("can-fed")
+@click.argument("population_directory", metavar="POPULATION", type=_PATH)
+@click.option(
+    "--resource",
+    "resource_path",
+    default=None,
+    type=_PATH,
+    help="Reviewed Can-FED ZIP already downloaded; otherwise fetch it.",
+)
+@click.option(
+    "--cache-dir",
+    default=None,
+    type=_PATH,
+    help="Content-addressed public download cache.",
+)
+@click.option(
+    "--buffer",
+    "buffer_choice",
+    default="both",
+    type=click.Choice(["1km", "3km", "both"]),
+    show_default=True,
+)
+@click.option(
+    "--base-census-vintage",
+    required=True,
+    type=click.IntRange(min=1000, max=9999),
+    help="Declared Census vintage of the linked population; must be 2021.",
+)
+@click.option(
+    "--base-geo-column",
+    default="DAUID",
+    show_default=True,
+    help="Household column containing 2021 DA identifiers.",
+)
+@click.option(
+    "--acquired-at",
+    default=None,
+    help="Optional ISO 8601 retrieval time; generated in UTC when omitted.",
+)
+@click.option("--out", "output_directory", required=True, type=_PATH)
+@click.option(
+    "--format",
+    "output_format",
+    default="summary",
+    type=click.Choice(["summary", "json"]),
+    show_default=True,
+)
+def can_fed_command(
+    population_directory: Path,
+    resource_path: Path | None,
+    cache_dir: Path | None,
+    buffer_choice: str,
+    base_census_vintage: int,
+    base_geo_column: str,
+    acquired_at: str | None,
+    output_directory: Path,
+    output_format: str,
+) -> None:
+    """Attach reviewed Can-FED v2 area context to a 2021 DA population."""
+
+    try:
+        result = enrich_can_fed(
+            population_directory,
+            output_dir=output_directory,
+            base_geography=GeographyUniverse(
+                census_vintage=base_census_vintage,
+                geography_level="da",
+                identifier_namespace=f"statcan:census:{base_census_vintage}:da",
+                identifier_column=base_geo_column,
+            ),
+            buffer=buffer_choice,
+            resource=resource_path,
+            cache_dir=cache_dir,
+            acquired_at=acquired_at,
+        )
+    except OSError as exc:
+        raise click_file_access_error(
+            Path(exc.filename)
+            if exc.filename
+            else resource_path or population_directory,
+            "read, retrieve, or write",
+            exc,
+        ) from exc
+    except ValueError as exc:
+        raise click_value_error(exc) from exc
+    _print_reference_result(result, output_format)
+
+
+@enrich.command("odef")
+@click.argument("population_directory", metavar="POPULATION", type=_PATH)
+@click.option(
+    "--resource",
+    "resource_path",
+    default=None,
+    type=_PATH,
+    help="Reviewed ODEF ZIP already downloaded; otherwise fetch it.",
+)
+@click.option(
+    "--cache-dir",
+    default=None,
+    type=_PATH,
+    help="Content-addressed public download cache.",
+)
+@click.option(
+    "--base-csd-column",
+    default=None,
+    help=(
+        "Optional household column containing 2021 CSDUIDs. Omit to attach "
+        "the national point inventory without a direct population join."
+    ),
+)
+@click.option(
+    "--acquired-at",
+    default=None,
+    help="Optional ISO 8601 retrieval time; generated in UTC when omitted.",
+)
+@click.option("--out", "output_directory", required=True, type=_PATH)
+@click.option(
+    "--format",
+    "output_format",
+    default="summary",
+    type=click.Choice(["summary", "json"]),
+    show_default=True,
+)
+def odef_command(
+    population_directory: Path,
+    resource_path: Path | None,
+    cache_dir: Path | None,
+    base_csd_column: str | None,
+    acquired_at: str | None,
+    output_directory: Path,
+    output_format: str,
+) -> None:
+    """Attach the corrected ODEF v3 national educational-facility inventory."""
+
+    try:
+        result = enrich_odef(
+            population_directory,
+            output_dir=output_directory,
+            resource=resource_path,
+            cache_dir=cache_dir,
+            acquired_at=acquired_at,
+            base_geography=(
+                GeographyUniverse(
+                    census_vintage=2021,
+                    geography_level="csd",
+                    identifier_namespace="statcan:census:2021:csd",
+                    identifier_column=base_csd_column,
+                )
+                if base_csd_column is not None
+                else None
+            ),
+        )
+    except OSError as exc:
+        raise click_file_access_error(
+            Path(exc.filename)
+            if exc.filename
+            else resource_path or population_directory,
+            "read, retrieve, or write",
+            exc,
+        ) from exc
+    except ValueError as exc:
+        raise click_value_error(exc) from exc
+    _print_reference_result(result, output_format)
 
 
 @enrich.command("register-resource")
@@ -324,3 +491,67 @@ def validate_enrichment_command(
             click.echo(f"Problem: {issue}")
     if not report["passed"]:
         raise click.ClickException("enrichment validation failed")
+
+
+def _print_reference_result(
+    result: EnrichmentResult,
+    output_format: str,
+) -> None:
+    if output_format == "json":
+        click.echo(
+            json.dumps(
+                {
+                    "artifacts": {
+                        "layer": str(result.layer)
+                        if result.layer is not None
+                        else None,
+                        "manifest": (
+                            str(result.manifest)
+                            if result.manifest is not None
+                            else None
+                        ),
+                        "source_profile": (
+                            str(result.source_profile)
+                            if result.source_profile is not None
+                            else None
+                        ),
+                        "resource_record": (
+                            str(result.resource_record)
+                            if result.resource_record is not None
+                            else None
+                        ),
+                        "validation_report": (
+                            str(result.validation_report)
+                            if result.validation_report is not None
+                            else None
+                        ),
+                    },
+                    "validation": result.validation,
+                },
+                sort_keys=True,
+            )
+        )
+        return
+    for path in (
+        result.layer,
+        result.manifest,
+        result.source_profile,
+        result.resource_record,
+        result.validation_report,
+    ):
+        if path is not None:
+            print_wrote(path)
+    source_validation = result.validation.get("source_validation")
+    rows = (
+        source_validation.get("normalized_rows")
+        if isinstance(source_validation, dict)
+        else None
+    )
+    dataset_id = result.validation.get("dataset_id", "reference dataset")
+    if isinstance(rows, int):
+        click.echo(
+            f"Validated {rows:,} normalized rows for {dataset_id}; "
+            "the base population was not modified."
+        )
+    else:
+        click.echo(f"Validated {dataset_id}; the base population was not modified.")

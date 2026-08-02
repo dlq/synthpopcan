@@ -359,6 +359,30 @@ map_path = spc.render_small_area_map(
 
 ## Attach an External Context Layer
 
+For the two maintained public sources, use the reviewed adapters. They acquire
+or reuse the pinned archive, normalize it, validate its source-specific
+semantics, and publish all provenance records with the sidecar:
+
+```python
+from synthpopcan.geography import statcan_geography_universe
+
+canfed = spc.enrich_can_fed(
+    "synthetic-da-population/",
+    output_dir="canfed-enrichment/",
+    base_geography=statcan_geography_universe(2021, "da", "DAUID"),
+)
+odef = spc.enrich_odef(
+    "synthetic-population/",
+    output_dir="odef-enrichment/",
+)
+assert canfed.validation["passed"] and odef.validation["passed"]
+```
+
+Can-FED requires the population's explicit 2021 DA universe. ODEF is an
+unlinked national facility inventory unless we deliberately supply compatible
+2021 CSD geography for a coverage comparison. See {doc}`enrichment` before
+interpreting either layer.
+
 **Research template: prepare the source and geography records first.**
 The complete {doc}`enrichment` walkthrough explains how to create
 `source-profile.json`, register an immutable resource revision, normalize a
@@ -456,6 +480,8 @@ The beginner API groups a small set of names around common tasks.
 
 **Attach validated external context:**
 
+- {py:func}`~synthpopcan.api.enrich_can_fed`
+- {py:func}`~synthpopcan.api.enrich_odef`
 - {py:func}`~synthpopcan.api.enrich_population`
 
 **Inspect returned results:**

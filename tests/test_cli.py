@@ -51,7 +51,9 @@ def test_cli_command_tree_is_coherent() -> None:
         "show",
     }
     assert set(cli.commands["enrich"].commands) == {
+        "can-fed",
         "import",
+        "odef",
         "register-resource",
         "validate",
     }

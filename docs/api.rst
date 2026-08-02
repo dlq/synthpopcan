@@ -27,8 +27,9 @@ page are supported advanced APIs, but may still evolve before version 1.0. Other
 module attributes and ``__all__`` declarations are implementation details unless
 they are listed here.
 
-The geography, geodata, enrichment, Québec DA proof, and national small-area
-APIs were added in ``0.7.0``.
+The geography, geodata, generic enrichment, Québec DA proof, and national
+small-area APIs were added in ``0.7.0``. Maintained Can-FED and ODEF workflows
+were added in ``0.7.2``.
 
 Top-Level Beginner API
 ----------------------
@@ -86,6 +87,13 @@ Geography and Enrichment
              read_source_profile, read_resource_record,
              read_enrichment_manifest, validate_normalized_layer,
              verify_enrichment_manifest
+
+.. automodule:: synthpopcan.canfed
+   :members: CanFedAdapter, can_fed_source_profile,
+             normalize_can_fed_archive
+
+.. automodule:: synthpopcan.odef
+   :members: OdefAdapter, odef_source_profile, normalize_odef_archive
 
 .. automodule:: synthpopcan.da_proof
    :members: finalize_quebec_da_proof, prepare_quebec_da_proof,

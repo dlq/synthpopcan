@@ -8,8 +8,9 @@ revision, geography context, linkage keys, validation, and limitations.
 
 This framework is source-independent. Public, locally supplied, licensed, and
 restricted datasets use the same contracts, but access to a dataset does not
-establish permission to publish it or its derivatives. Can-FED and ODEF are
-planned reference adapters; they do not define the framework's scope.
+establish permission to publish it or its derivatives. The maintained Can-FED
+and ODEF adapters demonstrate area and facility sources; they do not define the
+framework's scope.
 
 ```{admonition} Added in 0.7.0
 :class: note
@@ -71,6 +72,163 @@ The initial layer classes are area attributes, facilities/points, governed
 household/person attachments, and relational or temporal layers. Supporting a
 class does not mean that every linkage method within it is scientifically or
 ethically justified.
+
+## Maintained Public Adapters
+
+The maintained adapters perform the complete source-specific workflow: fetch
+or reuse reviewed bytes, verify the pinned revision, normalize by header name,
+validate source semantics and geography, publish the sidecar, and write
+`source-profile.json`, `resource-record.json`, `validation.json`, and
+`manifest.json`. Pass `--resource PATH` to work from an already downloaded copy
+of the reviewed archive without a network request.
+
+Without `--resource`, the workflow first looks for the pinned SHA-256 object in
+its content-addressed cache and can reuse it fully offline. A cache miss triggers
+the bounded HTTPS download. `--cache-dir PATH` chooses another cache, and
+`SYNTHPOPCAN_ENRICHMENT_CACHE` sets the shared default. Otherwise the cache is
+`~/Library/Caches/synthpopcan/enrichment` on macOS and
+`${XDG_CACHE_HOME:-~/.cache}/synthpopcan/enrichment` elsewhere. `--format json`
+returns an `artifacts` object with all written paths and a `validation` object
+with the full report.
+
+### Can-FED v2 area context
+
+The Can-FED adapter reads both public general-use categorical products and, by
+default, publishes one 2021 DA-keyed sidecar containing the 1 km and 3 km
+classes:
+
+```bash
+synthpopcan enrich can-fed population/ \
+  --base-census-vintage 2021 \
+  --base-geo-column DAUID \
+  --buffer both \
+  --out canfed-enrichment/
+```
+
+Use `--buffer 1km` or `--buffer 3km` for one product. The values are categorical
+classes, not outlet counts. A class of zero means no establishments of that
+type were observed in the source measure; classes 1 through 4 are nonzero
+k-medians groups. For the two ratio measures, `not_applicable` means the source
+published `..` because its denominator was zero.
+
+The source represents August 2024 food-environment conditions using the 2024
+Business Register, a 2024 road network, and 2021 DA geography. It is historical
+area context—not a current establishment inventory or measured person-level
+exposure. The detailed RDC-controlled measures are not acquired or emitted.
+
+The reviewed archive currently contains 57,936 unique DA rows in each buffer
+file, although the publisher's user guide says 28 DAs were excluded. The
+validation report records this documentation/file discrepancy and reconciles
+the bytes actually acquired rather than inventing an exclusion flag.
+
+The default output is `canfed-v2-both.csv`; single-buffer runs write
+`canfed-v2-1km.csv` or `canfed-v2-3km.csv`. `DAUID` is the text key. For each
+selected suffix (`_1km` and/or `_3km`), the exact value columns are:
+
+```text
+grocery_store_class
+superstore_class
+convenience_store_class
+fruit_vegetable_market_class
+restaurant_class
+limited_service_fast_food_class
+modified_retail_food_environment_index_class
+restaurant_mix_class
+```
+
+The first six classify the source's outlet-density measure (outlets per square
+kilometre of network buffer). The modified retail food environment index is the
+source-defined proportion of healthier outlets among the included food outlets;
+restaurant mix is the proportion of fast-food places among fast-food and
+restaurant places. See the [official Can-FED v2 user
+guide](https://www150.statcan.gc.ca/n1/pub/13-20-0001/132000012025002-eng.htm)
+for the outlet definitions and formulas.
+
+Every column uses a metric- and buffer-specific ordinal classification: `0`
+means zero density, and `1` through `4` run from the lowest to highest nonzero
+k-medians group. `not_applicable` is limited to the two ratios and means their
+source denominator was zero. Class numbers are not quantities: class `4` is not
+twice class `2`, and classes must not be compared as equal magnitudes across
+metrics or buffer sizes.
+
+```python
+import synthpopcan as spc
+from synthpopcan.geography import statcan_geography_universe
+
+result = spc.enrich_can_fed(
+    "population/",
+    output_dir="canfed-enrichment/",
+    base_geography=statcan_geography_universe(2021, "da", "DAUID"),
+)
+assert result.validation["passed"]
+```
+
+### ODEF v3 facility inventory
+
+The ODEF adapter publishes the corrected v3.0.1 national educational-facility
+inventory as a point sidecar:
+
+```bash
+synthpopcan enrich odef population/ --out odef-enrichment/
+```
+
+This attaches the national inventory without claiming that its facilities have
+been assigned to the population. If the household table contains compatible
+2021 CSDUIDs, request an explicit coverage comparison:
+
+```bash
+synthpopcan enrich odef population/ \
+  --base-csd-column CSDUID \
+  --out odef-enrichment/
+```
+
+The product was released on December 13, 2024. The official URL is named
+`v3.0`, but its current corrected bytes identify v3.0.1; the correction notice
+is dated November 17, 2025. The correction restored `facility_type` and fixed
+Manitoba official-language-minority-school information. The adapter preserves
+the facility and source IDs, provider and authority, provider-specific facility
+type, grades and ISCED indicators, language indicators, address fields, source
+update date, 2021 CSD context, source WKT, and parsed coordinate pair.
+
+The live facility CSV differs from both its bundled record layout and older
+product-page prose: it omits the declared `postOfficeBoxNumber`, has no CMA
+fields, and stores coordinates in one WKT field rather than separate source
+longitude and latitude columns. These differences travel in validation
+evidence. Missing coordinates and CSDs remain missing, and possible duplicates
+are reported without automatically deleting colocated schools or campuses.
+
+The normalized file is `odef-v3.0.1-facilities.csv`, keyed by `facility_id`.
+Its remaining columns are grouped as follows:
+
+- source identity and governance: `province_code`, `province_numeric_code`,
+  `source_id`, `provider`, `authority_id`, `authority_name`,
+  `source_facility_id`, `facility_name`, and `facility_type`;
+- address and level text: `source_address`, `street_address`, `postal_code`,
+  `locality`, `min_grade`, and `max_grade`;
+- education/language flags: `isced_010`, `isced_020`, `isced_1`, `isced_2`,
+  `isced_3`, `isced_4_plus`, `official_language_minority_school`,
+  `french_immersion`, `early_immersion`, `middle_immersion`, and
+  `late_immersion`;
+- geography: `CSDUID`, `CSDDGUID`, `csd_name`, `longitude`, `latitude`, and
+  `geometry_wkt`; and
+- source timing: `source_updated_date`.
+
+Identifiers and source dates remain text. Flags are `true`, `false`, or blank
+when the source supplied no value; blank does not mean false. Coordinates are
+parsed from the source `POINT (longitude latitude)` text while the original WKT
+is retained. Because the reviewed methodology does not explicitly declare its
+coordinate reference system, the adapter does not manufacture a CRS claim.
+
+```python
+result = spc.enrich_odef(
+    "population/",
+    output_dir="odef-enrichment/",
+)
+assert result.validation["source_validation"]["ungeocoded_count"] >= 0
+```
+
+ODEF is an inventory. It does not establish capacity, catchment, quality,
+eligibility, accessibility, enrolment, service use, or causal effects.
 
 ## Import a Normalized Layer
 
@@ -224,6 +382,31 @@ without waiting for a built-in adapter, but SynthPopCan cannot validate an
 undocumented transformation performed outside the project.
 
 ## Command Reference
+
+### `enrich can-fed`
+
+Runs the maintained public Can-FED v2 area adapter.
+
+- `POPULATION`: linked-population v1 directory.
+- `--base-census-vintage`: required declaration; only 2021 is compatible.
+- `--base-geo-column`: household DA identifier column; defaults to `DAUID`.
+- `--buffer 1km|3km|both`: selected categorical product; defaults to both.
+- `--resource`: optional reviewed ZIP already downloaded.
+- `--cache-dir`: optional content-addressed download cache.
+- `--out`: destination enrichment directory.
+- `--format summary|json`: human-readable or machine-readable report.
+
+### `enrich odef`
+
+Runs the maintained corrected ODEF v3.0.1 facility adapter.
+
+- `POPULATION`: linked-population v1 directory.
+- `--base-csd-column`: optional household 2021 CSDUID column. Omit it when the
+  national point inventory is being attached without a direct population join.
+- `--resource`: optional reviewed ZIP already downloaded.
+- `--cache-dir`: optional content-addressed download cache.
+- `--out`: destination enrichment directory.
+- `--format summary|json`: human-readable or machine-readable report.
 
 ### `enrich register-resource`
 

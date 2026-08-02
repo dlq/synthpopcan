@@ -1,7 +1,7 @@
 # SynthPopCan Plan
 
 Status: release-phased roadmap\
-Last updated: 2026-08-01\
+Last updated: 2026-08-02\
 Current published release: `0.7.0`
 
 ## Current Focus
@@ -12,8 +12,7 @@ completed implementation plans belong in [`plans/archive/`](plans/archive/).
 
 | Order | User outcome | Done when | Owned by |
 | --- | --- | --- | --- |
-| Now: `0.7.1` | A researcher can attach documented historical food-environment context to a compatible 2021 DA population. | Both public Can-FED v2 buffer products reproduce through the common enrichment contract, with exact coverage reconciliation and no person-level exposure claim. | [External-data enrichment](plans/2026-07-15-ecosystem-enrichment.md) |
-| Next: `0.7.2` | A researcher can attach a documented national educational-facility inventory without treating it as capacity or accessibility evidence. | ODEF v3 acquisition, normalization, linkage, limitations, and unmatched records are independently reproducible. | [External-data enrichment](plans/2026-07-15-ecosystem-enrichment.md) |
+| Now: `0.7.2` release candidate | Researchers can attach reviewed Can-FED area context and the corrected ODEF national facility inventory without overstating either source. | The combined former `0.7.1`/`0.7.2` tranche passes the complete release checklist and is published with durable evidence. | [External-data enrichment](plans/2026-07-15-ecosystem-enrichment.md) |
 | Later: `0.8.0` | A researcher can hand a validated linked population to another tool in a self-describing, simulator-neutral bundle. | The CSV/JSON bundle round-trips with hashes, relationships, data dictionary, validation, and reproduction evidence. | [Simulation interoperability](plans/2026-07-15-simulation-interoperability.md) |
 | Conditional: `0.8.1` | One real downstream project can consume that bundle without SynthPopCan claiming to provide a complete simulation. | A demand-backed, version-pinned adapter passes an official import smoke test and reports every missing external input. | [Simulation interoperability](plans/2026-07-15-simulation-interoperability.md) |
 | Parallel correctness | Researchers can tell which attributes are genuinely controlled at small-area level and which merely pass through from a broader candidate pool. | The completed 2016/2021 CSD/CT/ADA/DA source screen advances through reviewed multi-margin control packs and feasibility gates before any new local-representativeness claim. | [Expanded small-area controls](plans/2026-08-01-expanded-small-area-controls.md) and [correctness assurance](plans/2026-07-12-correctness-assurance.md) |
@@ -146,8 +145,8 @@ arbitrary-polygon selection, a general CKAN browser, or an automatic
 compatibility promise for every candidate source.
 
 The full-field ADA/DA control-coverage audit and linked person-control expansion
-are a parallel post-`0.7.0` correctness track. They do not block the
-area-sidecar work in `0.7.1` or facility-sidecar work in `0.7.2`, but they do
+are a parallel post-`0.7.0` correctness track. They did not block the combined
+area- and facility-sidecar implementation in the `0.7.2` candidate, but they do
 block any new claim that a carried-through PUMF field represents an ADA- or
 DA-local distribution.
 
@@ -157,7 +156,9 @@ temporal fit, validation strategy, and maintenance case justify it. A source
 need not appear in the current repository examples or wait for every planned
 reference implementation.
 
-### `0.7.1`: Can-FED v2 reference implementation
+### `0.7.1` outcome: Can-FED v2 reference implementation
+
+Implemented in the combined `0.7.2` candidate rather than released separately.
 
 - Integrate the public general-use 1 km and 3 km Can-FED categorical measures
   as a normalized geography/environment layer.
@@ -172,13 +173,14 @@ reference implementation.
 
 ### `0.7.2`: ODEF v3 facility reference implementation
 
-Integrate Statistics Canada's national Open Database of Educational Facilities
-v3 as the contrasting facility/point adapter. Preserve its 2024 collection
-period, source identifiers, coordinates, facility type, authority, ISCED
-level, official-language-minority status, and CSD/CMA lineage. Validate
-duplicates, missingness, geocoding, coverage, and unmatched geographies.
-Treat the result as a facility inventory, not evidence of capacity, catchment,
-quality, eligibility, or accessibility.
+Implemented in the combined candidate using the corrected v3.0.1 bytes served
+by the official v3.0 URL. The adapter preserves the fields actually present:
+source identifiers, provider and authority, source dates, facility type,
+grades/ISCED, language indicators, 2021 CSD context, WKT, and parsed
+coordinates. It validates duplicates, missingness, geocoding, coverage, and
+unmatched CSDs. The live source contains no CMA fields, so CMA lineage is not
+invented. The result is a facility inventory, not evidence of capacity,
+catchment, quality, eligibility, or accessibility.
 
 Can-FED and ODEF demonstrate that the framework is reusable; they do not
 define or limit its scope. The enrichment plan ranks PMD 2021, Québec

@@ -533,6 +533,29 @@ those commands unless we are deliberately implementing another batch backend.
 
 ## External-Data Enrichment
 
+The maintained beginner workflows acquire, normalize, validate, and publish
+the reviewed public adapters through the shared enrichment contracts:
+
+```python
+import synthpopcan as spc
+from synthpopcan.geography import statcan_geography_universe
+
+canfed = spc.enrich_can_fed(
+    "synthetic-da-population",
+    output_dir="canfed-enrichment",
+    base_geography=statcan_geography_universe(2021, "da", "DAUID"),
+)
+odef = spc.enrich_odef(
+    "synthetic-population",
+    output_dir="odef-enrichment",
+)
+print(canfed.validation["passed"], odef.validation["passed"])
+```
+
+Can-FED is 2021 DA area context. ODEF is a facility inventory and remains
+unlinked unless a compatible 2021 CSD base geography is requested. See
+{doc}`enrichment` for source-specific fields, warnings, and claim boundaries.
+
 **Research template: replace every research path and source record.**
 The enrichment library separates source meaning, exact resource bytes,
 normalized layer structure, and the manifest that composes a layer with an

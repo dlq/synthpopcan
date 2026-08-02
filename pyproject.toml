@@ -1,6 +1,6 @@
 [project]
 name = "synthpopcan"
-version = "0.7.0"
+version = "0.7.2"
 description = "Build, inspect, and validate modelled Canadian households and people for reproducible research."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -78,7 +78,7 @@ build-backend = "hatchling.build"
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 markers = [
-  "live_statcan: opt-in tests that call live Statistics Canada WDS services",
+  "live_statcan: opt-in tests that call live Statistics Canada services",
   "performance: opt-in timing-sensitive tests for local performance checks",
   "scenario(id): stable acceptance-scenario ID documented in tests/SCENARIOS.md",
 ]

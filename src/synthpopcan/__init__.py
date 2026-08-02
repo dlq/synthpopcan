@@ -16,6 +16,8 @@ from synthpopcan.api import (
     PopulationRows,
     SmallAreaResult,
     calibrate_small_area,
+    enrich_can_fed,
+    enrich_odef,
     enrich_population,
     expand_population,
     fetch_model,
@@ -40,6 +42,8 @@ __all__ = [
     "SmallAreaResult",
     "__version__",
     "calibrate_small_area",
+    "enrich_can_fed",
+    "enrich_odef",
     "enrich_population",
     "expand_population",
     "fetch_model",
@@ -54,4 +58,4 @@ __all__ = [
     "write_weights",
 ]
 
-__version__ = "0.7.0"
+__version__ = "0.7.2"

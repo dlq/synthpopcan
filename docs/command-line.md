@@ -156,6 +156,23 @@ unchanged and rejects implicit cross-vintage geography joins.
 
 The `enrich` command group was also added in `0.7.0`.
 
+Starting in `0.7.2`, two maintained commands execute the complete public-source
+workflow through the same contracts:
+
+```bash
+synthpopcan enrich can-fed population/ \
+  --base-census-vintage 2021 --out canfed-enrichment/
+synthpopcan enrich odef population/ --out odef-enrichment/
+```
+
+`can-fed` publishes 2021 DA area context and refuses another Census vintage.
+`odef` publishes a national facility inventory; add `--base-csd-column COLUMN`
+only when requesting a direct comparison with compatible 2021 CSD assignments.
+Both commands pin reviewed source bytes and emit source, resource, validation,
+layer, and manifest evidence. See {doc}`enrichment` for interpretation limits.
+With `--format json`, the result has an `artifacts` object containing those
+output paths and a `validation` object containing the complete report.
+
 ### Developing a Model
 
 This is the advanced path for researchers who have appropriate access to source
