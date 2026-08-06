@@ -53,6 +53,16 @@ whether linked household/person rows remain internally consistent.
 URLs, access restrictions, column mappings, command lines, random seeds,
 software versions, and validation reports.
 
+**Enrichment layer**
+: A normalized CSV published beside a generated population, adding external
+context such as area measures or facility inventories. The base population is
+never rewritten.
+
+**Sidecar**
+: The published enrichment file itself, stored next to an immutable base
+population. `synthpopcan enrich validate` rechecks the recorded base and
+sidecar hashes together.
+
 ## Controls and IPF
 
 **Control**
@@ -239,6 +249,15 @@ meant for notebooks, teaching examples, and short scripts.
 **Advanced library**
 : Lower-level Python modules for contributors and people building reusable
 research tools.
+
+**Workspace**
+: The controlled local directory the web app owns, holding uploads, runs, and
+published artifacts. Set it with `synthpopcan serve --workspace PATH`.
+
+**Durable run**
+: A recorded run in the workspace. The run manifest keeps run identity,
+software version, request, random seed, artifacts, row counts, byte sizes, and
+SHA-256 hashes, so a run survives a restart and can be reproduced.
 
 **Read the Docs**
 : The hosted documentation site for SynthPopCan:
