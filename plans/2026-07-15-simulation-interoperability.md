@@ -1,11 +1,11 @@
 # Simulation Interoperability And Data Handoff Plan
 
-Status: planned\
+Status: `0.8.0` neutral bundle completed; target adapter conditional\
 Created: 2026-07-15\
-Last updated: 2026-08-02\
+Last updated: 2026-08-07\
 Target: `0.8.0` neutral bundle; one demand-backed adapter only after `1.0.0`\
-Next action: validate a CSV/JSON exchange contract that composes the existing
-linked-population and durable-run records\
+Next action: after `1.0.0`, require a real consumer and pinned target contract
+before selecting one adapter pilot\
 Roadmap: [PLANS.md](../PLANS.md) | [Plan index](README.md) | Foundations:
 [linked-population schema](archive/2026-07-18-linked-population-schema.md) and
 [external-data enrichment](archive/2026-07-15-ecosystem-enrichment.md)

@@ -11,6 +11,7 @@ CORE_MODULES = (
     "calibration",
     "controls",
     "diagnostics",
+    "exchange",
     "ipf",
     "localdata",
     "map_render",

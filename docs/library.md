@@ -23,6 +23,8 @@ corresponding command-line page first:
 - [External-Data Enrichment](enrichment.md) explains source authority,
   immutable resource revisions, geography-safe sidecars, and the limits of a
   successful join.
+- [Portable Population Exchange](exchange.md) explains the simulator-neutral
+  household/person handoff contract, governance fields, and integrity checks.
 - [Tree Models](tree.md) explains household/person generation, tree and forest
   concepts, support, purity, and model quality.
 - [Validate](validate.md) explains what validation reports do and do not prove.

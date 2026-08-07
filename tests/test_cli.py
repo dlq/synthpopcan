@@ -19,6 +19,7 @@ from synthpopcan.cli_geo import (
     _coerce_float,
     _format_surface_recommendation,
 )
+from synthpopcan.linked_schema import write_linked_population_contract
 
 
 def test_cli_smoke(capsys) -> None:
@@ -29,6 +30,7 @@ def test_cli_smoke(capsys) -> None:
 def test_cli_command_tree_is_coherent() -> None:
     assert "tree" not in cli.commands
     assert set(cli.commands) == {
+        "bundle",
         "controls",
         "data",
         "enrich",
@@ -58,6 +60,7 @@ def test_cli_command_tree_is_coherent() -> None:
         "validate",
     }
     assert set(cli.commands["geodata"].commands) == {"cache-dir", "fetch"}
+    assert set(cli.commands["bundle"].commands) == {"create", "validate"}
     assert set(cli.commands["geo"].commands["national-da"].commands) == {
         "fetch-profiles",
         "prepare",
@@ -93,6 +96,96 @@ def test_resolve_data_root_defaults_to_data(monkeypatch) -> None:
     monkeypatch.delenv("SYNTHPOPCAN_DATA_ROOT", raising=False)
 
     assert resolve_data_root(None) == Path("data")
+
+
+def test_cli_creates_and_validates_exchange_bundle(tmp_path, capsys) -> None:
+    population = tmp_path / "population"
+    population.mkdir()
+    households = population / "households.csv"
+    persons = population / "persons.csv"
+    households.write_text("synthetic_household_id,household_size,csd\nh1,1,2466023\n")
+    persons.write_text(
+        "synthetic_person_id,synthetic_household_id,age_group\np1,h1,adult\n"
+    )
+    write_linked_population_contract(
+        population / "manifest.json",
+        households,
+        persons,
+        geography_column="csd",
+    )
+    output = tmp_path / "exchange"
+
+    assert (
+        main(
+            [
+                "bundle",
+                "create",
+                str(population),
+                "--out",
+                str(output),
+                "--census-vintage",
+                "2021",
+                "--geography-level",
+                "csd",
+                "--identifier-namespace",
+                "statcan:2021:csd",
+                "--geography-column",
+                "csd",
+                "--access",
+                "public",
+                "--redistribution",
+                "permitted",
+                "--format",
+                "json",
+            ]
+        )
+        == 0
+    )
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["validation_report"]["passed"] is True
+    assert payload["artifacts"]["manifest"] == str(output / "manifest.json")
+
+    assert main(["bundle", "validate", str(output), "--format", "json"]) == 0
+    assert json.loads(capsys.readouterr().out)["passed"] is True
+
+    table_output = tmp_path / "exchange-table"
+    assert (
+        main(
+            [
+                "bundle",
+                "create",
+                str(population),
+                "--out",
+                str(table_output),
+            ]
+        )
+        == 0
+    )
+    table_text = capsys.readouterr()
+    assert "Portable population bundle ready" in table_text.err
+    assert str(table_output) in table_text.out
+    assert main(["bundle", "validate", str(table_output)]) == 0
+    assert "validation passed" in capsys.readouterr().err
+
+    (table_output / "persons.csv").write_text("tampered")
+    with pytest.raises(ClickException, match="validation failed"):
+        main(["bundle", "validate", str(table_output)])
+    assert "persons SHA-256 does not match" in capsys.readouterr().err
+
+
+def test_cli_bundle_requires_complete_geography_context(tmp_path) -> None:
+    with pytest.raises(ClickException, match="requires --census-vintage"):
+        main(
+            [
+                "bundle",
+                "create",
+                str(tmp_path),
+                "--out",
+                str(tmp_path / "exchange"),
+                "--census-vintage",
+                "2021",
+            ]
+        )
 
 
 def test_controls_validate_accepts_long_control_csv(tmp_path) -> None:

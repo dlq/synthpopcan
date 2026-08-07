@@ -63,6 +63,17 @@ never rewritten.
 population. `synthpopcan enrich validate` rechecks the recorded base and
 sidecar hashes together.
 
+**Exchange bundle**
+: A portable directory containing linked household/person CSVs and JSON records
+for their relationships, column meanings, provenance, governance, hashes,
+reproduction, and validation. It is designed to be read by another research
+tool without requiring a simulator-specific dependency.
+
+**Population contribution**
+: A synthetic population supplied as one input to a downstream model. It is not
+a runnable simulation: behaviour, activities, schedules, locations, networks,
+states, coefficients, and target settings may still be required.
+
 ## Controls and IPF
 
 **Control**

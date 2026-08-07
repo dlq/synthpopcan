@@ -22,6 +22,7 @@ from rich.progress import (
 
 from synthpopcan import __version__
 from synthpopcan.cli_enrichment import enrich
+from synthpopcan.cli_exchange import bundle
 from synthpopcan.cli_geo import small_area
 from synthpopcan.cli_ipf import ipf
 from synthpopcan.cli_microdata import microdata
@@ -120,6 +121,7 @@ cli.add_command(microdata)
 cli.add_command(ipf)
 cli.add_command(small_area)
 cli.add_command(enrich)
+cli.add_command(bundle)
 
 
 @cli.group()

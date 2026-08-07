@@ -65,6 +65,11 @@ Most new readers should start with one of these generation workflows:
    population when a research question needs geography, environment, service,
    facility, or other governed external context.
 
+**Hand a population to another research tool**
+   Use :doc:`Portable Population Exchange <exchange>` to package linked CSVs,
+   relationships, a data dictionary, provenance, hashes, and validation as a
+   simulator-neutral population contribution.
+
 If we want to work in a notebook or teaching script, start with
 :doc:`Getting Started With the Beginner API <library-getting-started>`. That
 page uses ``import synthpopcan as spc`` and keeps **advanced training**,
@@ -111,6 +116,7 @@ beginner generation workflows.
    small-area-control-coverage
    geodata
    enrichment
+   exchange
    validate
    microdata
    tree

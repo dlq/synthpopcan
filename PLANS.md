@@ -1,8 +1,8 @@
 # SynthPopCan Plan
 
 Status: release-phased roadmap\
-Last updated: 2026-08-02\
-Current published release: `0.7.2`
+Last updated: 2026-08-07\
+Current published release: `0.8.0`
 
 ## Current Focus
 
@@ -12,8 +12,7 @@ completed implementation plans belong in [`plans/archive/`](plans/archive/).
 
 | Order | User outcome | Done when | Owned by |
 | --- | --- | --- | --- |
-| Next: `0.8.0` | A researcher can hand a validated linked population to another tool in a self-describing, simulator-neutral bundle. | The CSV/JSON bundle round-trips with hashes, relationships, data dictionary, validation, and reproduction evidence. | [Simulation interoperability](plans/2026-07-15-simulation-interoperability.md) |
-| Then: `0.9.0` | A researcher can trust the bounded private-household small-area workflow without assuming that every PUMF field is locally controlled. | Linked calibration has an independent oracle, integerization has a published backend decision, one core 2016/2021 household/person control-pack family passes bounded multi-scale and external Canadian comparison evidence, and uncontrolled fields remain explicit. | [Methodological validation and uncertainty](plans/2026-08-02-methodological-validation-and-uncertainty.md), [expanded small-area controls](plans/2026-08-01-expanded-small-area-controls.md), and [correctness assurance](plans/2026-07-12-correctness-assurance.md) |
+| Next: `0.9.0` | A researcher can trust the bounded private-household small-area workflow without assuming that every PUMF field is locally controlled. | Linked calibration has an independent oracle, integerization has a published backend decision, one core 2016/2021 household/person control-pack family passes bounded multi-scale and external Canadian comparison evidence, and uncontrolled fields remain explicit. | [Methodological validation and uncertainty](plans/2026-08-02-methodological-validation-and-uncertainty.md), [expanded small-area controls](plans/2026-08-01-expanded-small-area-controls.md), and [correctness assurance](plans/2026-07-12-correctness-assurance.md) |
 | Then: `1.0.0` | Researchers and downstream tools can rely on a documented stable CLI, Python API, and declared persisted contracts. | The supported surface inventory is reviewed, pre-1.0 aliases and inconsistencies are resolved, compatibility tests freeze the declared contracts, the installed-package documentation and bilingual case study pass, and release/stewardship gates are complete. | This roadmap, [stewardship](plans/2026-07-19-research-software-stewardship.md), [strict typing](plans/2026-08-01-strict-typing.md), and [ADR-0010](adr/0010-pre-1-0-compatibility-evolution.md) |
 | Post-`1.0` expansion | Add richer fields, family and collective-population structure, deeper uncertainty/privacy methods, building placement, and demand-backed adapters without destabilizing the frozen core. | Each addition uses the stable extension points or a separately versioned new contract and has its own evidence-backed release scope. | Active research plans and the research queue below |
 
@@ -69,7 +68,7 @@ action. The [plan index](plans/README.md) records active and archived plans.
 
 ## Current Product State
 
-`0.7.2` is a published alpha release with explicit Census geography identity,
+`0.8.0` is a published alpha release with explicit Census geography identity,
 a reusable external-data enrichment framework, maintained Can-FED and ODEF
 adapters, and a stable v1 linked-population artifact contract. It provides:
 
@@ -87,7 +86,10 @@ adapters, and a stable v1 linked-population artifact contract. It provides:
 - durable local runs with bounded uploads and previews, progress, cancellation,
   recovery, exact structured reproduction recipes, and versioned assurance
   evidence with independently verifiable hashes, row counts, diagnostics, and
-  linkage findings.
+  linkage findings; and
+- a simulator-neutral CSV/JSON population-contribution bundle with unchanged
+  linked tables, a data dictionary, provenance, access classifications,
+  reproduction evidence, strict validation, and per-file hashes.
 
 The released web, CLI, and library surfaces share Python domain algorithms.
 IPF also shares structured workflow orchestration. Model and small-area CLI
@@ -115,11 +117,12 @@ The project should reach `1.0.0` by stabilizing the useful core, not by
 finishing every research direction. Only three bounded product tranches are on
 the pre-`1.0` path.
 
-### `0.8.0`: portable handoff
+### `0.8.0`: portable handoff — completed
 
-Finish the simulator-neutral CSV/JSON bundle already described below. Do not
-add a simulator-specific adapter before `1.0.0`; a real consumer can still read
-the neutral bundle and help validate the contract.
+Released on 2026-08-07. The simulator-neutral CSV/JSON bundle composes the
+linked-population and durable-run contracts without adding a simulator-specific
+adapter. A real consumer can read and independently validate the contract with
+no optional format or simulator dependency.
 
 ### `0.9.0`: bounded methodological and small-area confidence
 
@@ -191,6 +194,7 @@ documented, tested, and stable enough to build upon.
 | `0.6.3` | Exact portable reproduction recipes, versioned per-run assurance, permanent checksummed release evidence, and distribution provenance attestations. |
 | `0.7.0` | Explicit Census geography identity, bounded national DA/ADA workflows, reusable external-data enrichment contracts, separately versioned display geodata, and an optional CART model-building dependency. |
 | `0.7.2` | Maintained Can-FED area-context and corrected ODEF facility-inventory adapters with pinned acquisition, normalization, validation, and complete provenance evidence; no separate `0.7.1` package was released. |
+| `0.8.0` | Simulator-neutral linked-population exchange bundle with data dictionary, provenance, reproduction, file governance, hashes, and strict independent validation. |
 
 ## Sequenced Releases
 
@@ -259,16 +263,14 @@ gates.
 
 ### `0.8.0`: Simulator-neutral exchange
 
-- Compose the existing linked-population and durable-run contracts into a
-  self-describing bundle.
-- Require CSV household/person tables plus JSON manifest, data dictionary,
-  validation, reproduction, access classification, and per-file hashes.
-- Preserve `synthetic_household_id` and `synthetic_person_id`; do not introduce
-  competing generic identifiers.
-- Include only optional geography or enrichment tables that actually exist.
-- Keep the bundle readable and validatable without simulator dependencies.
-- Treat Parquet, GeoParquet, GeoPackage, and RO-Crate as later optional mappings
-  until semantic types, dependency costs, and round trips are demonstrated.
+Released on 2026-08-07. It composes the existing linked-population and
+durable-run contracts into a self-describing bundle; requires CSV
+household/person tables plus JSON manifest, data dictionary, validation,
+reproduction, access classification, and per-file hashes; preserves
+`synthetic_household_id` and `synthetic_person_id`; and remains readable and
+validatable without simulator dependencies. Parquet, GeoParquet, GeoPackage,
+RO-Crate, deterministic archives, and target adapters remain conditional later
+mappings.
 
 ### Post-`1.0`: One target adapter pilot
 

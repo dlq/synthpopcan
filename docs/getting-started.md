@@ -50,6 +50,7 @@ steps.
 | We need CT, CSD, ADA, or DA assignment | {doc}`small-area` |
 | We need smaller verified map geometry | {doc}`geodata` |
 | We need to attach external context | {doc}`enrichment` |
+| We need to hand population files to another tool | {doc}`exchange` |
 | We need to inspect data first | {doc}`data` |
 | We need to check results | {doc}`validate` |
 

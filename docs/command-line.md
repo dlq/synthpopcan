@@ -26,6 +26,7 @@ synthpopcan statcan wds search "population age sex"
 synthpopcan ipf fit --help
 synthpopcan geodata fetch --help
 synthpopcan enrich import --help
+synthpopcan bundle create --help
 ```
 
 Here, `data`, `statcan`, `ipf`, `geodata`, and `enrich` are **command groups**. A
@@ -172,6 +173,21 @@ Both commands pin reviewed source bytes and emit source, resource, validation,
 layer, and manifest evidence. See {doc}`enrichment` for interpretation limits.
 With `--format json`, the result has an `artifacts` object containing those
 output paths and a `validation` object containing the complete report.
+
+### Portable handoff
+
+After validating a linked population, use {doc}`exchange` when another research
+tool needs a self-describing handoff:
+
+```bash
+synthpopcan bundle create population/ --out exchange/
+synthpopcan bundle validate exchange/
+```
+
+The bundle keeps household/person CSV bytes unchanged and adds keys,
+relationships, a data dictionary, provenance, hashes, access classifications,
+and reproduction evidence. It is a population contribution, not a complete
+simulation input.
 
 ### Developing a Model
 

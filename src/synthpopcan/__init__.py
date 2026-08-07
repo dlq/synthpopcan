@@ -10,12 +10,14 @@ exposing source-specific adapter internals.
 from synthpopcan.api import (
     ControlTable,
     EnrichmentResult,
+    ExchangeBundle,
     IPFResult,
     LinkedPopulation,
     LinkedPopulationFiles,
     PopulationRows,
     SmallAreaResult,
     calibrate_small_area,
+    create_exchange_bundle,
     enrich_can_fed,
     enrich_odef,
     enrich_population,
@@ -27,6 +29,7 @@ from synthpopcan.api import (
     read_model_package,
     read_seed,
     render_small_area_map,
+    validate_exchange_bundle,
     write_linked_population,
     write_population,
     write_weights,
@@ -35,6 +38,7 @@ from synthpopcan.api import (
 __all__ = [
     "ControlTable",
     "EnrichmentResult",
+    "ExchangeBundle",
     "IPFResult",
     "LinkedPopulation",
     "LinkedPopulationFiles",
@@ -42,6 +46,7 @@ __all__ = [
     "SmallAreaResult",
     "__version__",
     "calibrate_small_area",
+    "create_exchange_bundle",
     "enrich_can_fed",
     "enrich_odef",
     "enrich_population",
@@ -53,9 +58,10 @@ __all__ = [
     "read_model_package",
     "read_seed",
     "render_small_area_map",
+    "validate_exchange_bundle",
     "write_linked_population",
     "write_population",
     "write_weights",
 ]
 
-__version__ = "0.7.2"
+__version__ = "0.8.0"

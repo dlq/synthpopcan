@@ -32,6 +32,7 @@ details unless they are listed here.
 The geography, geodata, generic enrichment, Québec DA proof, and national
 small-area APIs were added in ``0.7.0``. Maintained Can-FED and ODEF workflows
 were added in ``0.7.2``.
+The simulator-neutral exchange bundle was added in ``0.8.0``.
 
 Top-Level Beginner API
 ----------------------
@@ -72,8 +73,13 @@ Local Data and Sources
    :members: inspect_source_root, read_source_schema, read_source_sample
    :show-inheritance:
 
-Geography and Enrichment
-------------------------
+Exchange, Geography, and Enrichment
+-----------------------------------
+
+.. automodule:: synthpopcan.exchange
+   :members: ExchangeBundle, create_exchange_bundle, read_exchange_manifest,
+             validate_exchange_bundle
+   :show-inheritance:
 
 .. automodule:: synthpopcan.geography
    :members: GeographyUniverse, GeographyIdentity, GeographyRelationship,

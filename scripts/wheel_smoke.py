@@ -90,6 +90,21 @@ assert enrichment.validation["passed"] is True
 assert population.manifest is not None and population.manifest.is_file()
 assert enrichment.manifest.is_file()
 
+exchange = synthpopcan.create_exchange_bundle(
+    population,
+    "exchange",
+    geography_universe=geography,
+    reproduction={
+        "interface": "python",
+        "operation": "installed-wheel-smoke",
+    },
+    access_classification="public",
+    redistribution_status="permitted",
+    limitations=("Fictional packaging smoke fixture only.",),
+)
+assert exchange.report["passed"] is True
+assert synthpopcan.validate_exchange_bundle(exchange.directory)["passed"] is True
+
 help_result = CliRunner().invoke(cli, ["--help"])
 assert help_result.exit_code == 0
 assert "SynthPopCan" in help_result.output

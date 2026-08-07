@@ -18,12 +18,14 @@ from synthpopcan.tree import read_tree_training_sample, train_cart_model
 STABLE_API_NAMES = (
     "ControlTable",
     "EnrichmentResult",
+    "ExchangeBundle",
     "IPFResult",
     "LinkedPopulation",
     "LinkedPopulationFiles",
     "PopulationRows",
     "SmallAreaResult",
     "calibrate_small_area",
+    "create_exchange_bundle",
     "enrich_can_fed",
     "enrich_odef",
     "enrich_population",
@@ -35,6 +37,7 @@ STABLE_API_NAMES = (
     "read_model_package",
     "read_seed",
     "render_small_area_map",
+    "validate_exchange_bundle",
     "write_linked_population",
     "write_population",
     "write_weights",
@@ -44,9 +47,9 @@ STABLE_API_NAMES = (
 def test_stable_api_contract_is_explicit() -> None:
     assert tuple(api.__all__) == STABLE_API_NAMES
     assert tuple(spc.__all__) == (
-        *STABLE_API_NAMES[:7],
+        *STABLE_API_NAMES[:8],
         "__version__",
-        *STABLE_API_NAMES[7:],
+        *STABLE_API_NAMES[8:],
     )
     expected_parameters = {
         "fit_ipf": ("seed", "controls", "weight_field", "max_iterations", "tolerance"),
@@ -108,6 +111,18 @@ def test_stable_api_contract_is_explicit() -> None:
             "directory",
             "geography_column",
         ),
+        "create_exchange_bundle": (
+            "population",
+            "output_dir",
+            "geography_universe",
+            "run_manifest",
+            "reproduction",
+            "temporal_coverage",
+            "access_classification",
+            "redistribution_status",
+            "limitations",
+        ),
+        "validate_exchange_bundle": ("bundle",),
     }
     for name, parameters in expected_parameters.items():
         assert tuple(inspect.signature(getattr(spc, name)).parameters) == parameters
@@ -181,6 +196,23 @@ def test_top_level_api_generates_from_linked_model_package(tmp_path: Path) -> No
     manifest = json.loads((output_dir / "manifest.json").read_text())
     assert manifest["schema_version"] == "synthpopcan-linked-population-v1"
     assert manifest["tables"]["households"]["rows"] == 3
+
+
+def test_top_level_api_creates_and_validates_exchange_bundle(tmp_path: Path) -> None:
+    population = spc.generate_from_model(
+        spc.fetch_model("demo-linked-household-person"),
+        households=3,
+        conditions={"geo": "Demo North"},
+        random_seed=11,
+    )
+    files = spc.write_linked_population(population, tmp_path / "population")
+
+    bundle = spc.create_exchange_bundle(files, tmp_path / "exchange")
+
+    assert isinstance(bundle, spc.ExchangeBundle)
+    assert bundle.manifest == tmp_path / "exchange" / "manifest.json"
+    assert bundle.report["passed"] is True
+    assert spc.validate_exchange_bundle(bundle.directory)["passed"] is True
 
 
 def test_top_level_api_fetches_bundled_demo_model() -> None:

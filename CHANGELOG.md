@@ -2,6 +2,33 @@
 
 All notable public changes to SynthPopCan are tracked here.
 
+## 0.8.0 - 2026-08-07
+
+Portable, simulator-neutral population handoff.
+
+- Add `synthpopcan-exchange-v1`, a self-describing CSV/JSON population-
+  contribution bundle that copies linked household and person CSV bytes
+  unchanged and carries their stable keys, foreign-key relationship, row
+  counts, and optional household geography.
+- Add a complete machine-readable data dictionary, standalone or durable-run
+  provenance, exact CLI/library reproduction metadata, creation-time
+  validation, and a manifest with SHA-256 digests, byte sizes, media types,
+  access classifications, redistribution status, temporal context, limitations,
+  and explicitly absent simulation inputs.
+- Add shared `create_exchange_bundle` and `validate_exchange_bundle` library
+  workflows plus `synthpopcan bundle create` and `bundle validate` commands.
+  Strict validation rejects missing, changed, extra, misclassified, or
+  structurally inconsistent bundle files and incompatible Census geography
+  context.
+- Document and test a deterministic fictional handoff from the bundled model,
+  successful durable-run composition, tamper detection, CLI/API parity, and an
+  isolated installed-wheel exchange workflow without adding a simulator or
+  optional format dependency.
+- Keep exchange v1 deliberately bounded: it is not a runnable simulation,
+  target-specific adapter, observed-residence claim, privacy certification, or
+  finding of statistical fitness. Parquet, GIS containers, RO-Crate, archives,
+  and target adapters remain demand-backed future mappings.
+
 ## 0.7.2 - 2026-08-02
 
 Maintained public Can-FED and educational-facility enrichment adapters. This

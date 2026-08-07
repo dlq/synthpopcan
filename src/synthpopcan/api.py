@@ -48,6 +48,15 @@ from synthpopcan.enrichment import (
     read_resource_record,
     read_source_profile,
 )
+from synthpopcan.exchange import (
+    ExchangeBundle,
+)
+from synthpopcan.exchange import (
+    create_exchange_bundle as _create_exchange_bundle,
+)
+from synthpopcan.exchange import (
+    validate_exchange_bundle as _validate_exchange_bundle,
+)
 from synthpopcan.geography import GeographyUniverse
 from synthpopcan.ipf import IPFMargin, IPFResult, expand_records
 from synthpopcan.ipf import fit_ipf as fit_ipf_records
@@ -75,12 +84,14 @@ PopulationRows = list[dict[str, str]]
 __all__ = [
     "ControlTable",
     "EnrichmentResult",
+    "ExchangeBundle",
     "IPFResult",
     "LinkedPopulation",
     "LinkedPopulationFiles",
     "PopulationRows",
     "SmallAreaResult",
     "calibrate_small_area",
+    "create_exchange_bundle",
     "enrich_can_fed",
     "enrich_odef",
     "enrich_population",
@@ -92,6 +103,7 @@ __all__ = [
     "read_model_package",
     "read_seed",
     "render_small_area_map",
+    "validate_exchange_bundle",
     "write_linked_population",
     "write_population",
     "write_weights",
@@ -608,6 +620,47 @@ def write_linked_population(
         geography_column=geography_column,
     )
     return files
+
+
+def create_exchange_bundle(
+    population: LinkedPopulationFiles | str | Path,
+    output_dir: str | Path,
+    *,
+    geography_universe: GeographyUniverse | Mapping[str, object] | None = None,
+    run_manifest: str | Path | None = None,
+    reproduction: Mapping[str, object] | None = None,
+    temporal_coverage: Mapping[str, str] | None = None,
+    access_classification: str = "local",
+    redistribution_status: str = "not-assessed",
+    limitations: Sequence[str] = (),
+) -> ExchangeBundle:
+    """Create a validated simulator-neutral household/person exchange bundle.
+
+    ``population`` may be a linked-population directory or the paired paths
+    returned by :func:`write_linked_population`. The bundle copies the CSV
+    bytes unchanged and adds an exchange manifest, linked descriptor, data
+    dictionary, provenance, reproduction request, hashes, and validation.
+    It is explicitly a population contribution rather than runnable simulation
+    input.
+    """
+
+    return _create_exchange_bundle(
+        _exchange_population_directory(population),
+        output_dir,
+        geography_universe=geography_universe,
+        run_manifest=run_manifest,
+        reproduction=reproduction,
+        temporal_coverage=temporal_coverage,
+        access_classification=access_classification,
+        redistribution_status=redistribution_status,
+        limitations=limitations,
+    )
+
+
+def validate_exchange_bundle(bundle: str | Path) -> dict[str, Any]:
+    """Independently verify an exchange bundle's files and declared metadata."""
+
+    return _validate_exchange_bundle(bundle)
 
 
 def calibrate_small_area(
@@ -1177,6 +1230,27 @@ def _population_directory(
         raise FileNotFoundError(
             f"linked population manifest not found: {manifest_path}"
         )
+    return directory
+
+
+def _exchange_population_directory(
+    population: LinkedPopulationFiles | str | Path,
+) -> Path:
+    files = _linked_population_files(population)
+    directory = files.households.parent
+    if directory.resolve() != files.persons.parent.resolve():
+        raise ValueError("linked population files must share one directory")
+    if files.households.name != "households.csv" or files.persons.name != "persons.csv":
+        raise ValueError(
+            "exchange requires the standard linked-population filenames "
+            "households.csv and persons.csv"
+        )
+    if (
+        files.manifest is not None
+        and files.manifest.parent.resolve() != directory.resolve()
+    ):
+        raise ValueError("linked population manifest must share the CSV directory")
+    _validate_linked_population_files(files)
     return directory
 
 

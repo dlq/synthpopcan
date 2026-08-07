@@ -16,7 +16,8 @@ It gives us a few functions for **common work**:
   household controls;
 - render a browser map from calibrated small-area output; and
 - attach a validated external-data sidecar without changing the linked
-  household/person files.
+  household/person files; and
+- package linked household/person files for a portable, validated handoff.
 
 It does **not** expose training, auditing, packaging, source inspection, or release
 workflows at the top level. Those remain available in the command line and in
@@ -34,16 +35,18 @@ Three beginner API paths correspond to the **three web app paths**:
    candidate CSVs, calibrate household rows to small-area controls, and write
    household/person CSVs with an assigned geography such as census tract or ADA.
 
-The API also provides a fourth, command-line/library-only path:
+The API also provides two command-line/library-only paths:
 
 4. **External-data enrichment:** attach a validated normalized sidecar layer to
    an existing linked population while preserving the base files.
+1. **Portable exchange:** package linked household/person CSVs with a data
+   dictionary, provenance, governance classifications, and integrity evidence.
 
 The web app runs IPF, prepared-model generation, and small-area synthesis as
 durable Python-backed workflows. Use the **web app** when we want guided local
 controls, previews, and downloads. Use the **beginner API** when we want the
 same computational work inside a notebook, script, or teaching example, or
-when we need the current enrichment workflow.
+when we need enrichment or a portable exchange bundle.
 
 ## Why Use a Notebook?
 
@@ -419,6 +422,34 @@ enrichment.validation["passed"]
 The result points to the copied sidecar and its manifest. It does not return a
 widened household or person table. Keep the source profile, resource record,
 normalization code, manifest, and coverage report with the notebook.
+
+## Package a Portable Handoff
+
+Use an exchange bundle when another researcher or tool needs the linked
+population plus enough metadata to inspect and validate it independently:
+
+```python
+exchange = spc.create_exchange_bundle(
+    "synthetic-linked-population/",
+    "synthetic-exchange/",
+    reproduction={
+        "interface": "python",
+        "script": "population-notebook.ipynb",
+    },
+    access_classification="local",
+    redistribution_status="not-assessed",
+    limitations=["Fictional teaching population; not representative."],
+)
+
+assert exchange.report["passed"]
+assert spc.validate_exchange_bundle(exchange.directory)["passed"]
+```
+
+The bundle preserves the two CSV files byte-for-byte and adds a linked-table
+descriptor, data dictionary, provenance, validation record, and checksummed
+manifest. It does not certify disclosure safety or grant permission to share
+the data. See {doc}`exchange` before changing the conservative governance
+defaults or declaring Census geography context.
 
 ## Reproducible Generation
 

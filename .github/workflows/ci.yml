@@ -112,6 +112,12 @@ jobs:
             demo-linked-household-person \
             --households 10 \
             --out /tmp/smoke-population
+          .smoke-venv/bin/synthpopcan bundle create \
+            /tmp/smoke-population \
+            --out /tmp/smoke-exchange \
+            --access public \
+            --redistribution permitted
+          .smoke-venv/bin/synthpopcan bundle validate /tmp/smoke-exchange
 
   web:
     name: Web assets

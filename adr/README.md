@@ -26,6 +26,7 @@ It complements, rather than replaces, the other project records:
 | [0008](0008-immutable-enrichment-sidecars.md) | Accepted (retrospective) | Add external context through governed, immutable sidecars. |
 | [0009](0009-separate-display-and-analytical-geodata.md) | Accepted (retrospective) | Distribute verified display geometry separately from canonical analytical boundaries. |
 | [0010](0010-pre-1-0-compatibility-evolution.md) | Accepted | Permit deliberate, versioned compatibility breaks before 1.0.0. |
+| [0011](0011-simulator-neutral-population-exchange.md) | Accepted | Use a validated CSV/JSON population contribution before adding target-specific adapters. |
 
 ## Recording A Decision
 

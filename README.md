@@ -29,12 +29,12 @@ Near-term goals:
    census-vintage-specific.
 1. Maintain a local web app for configuring runs, inspecting controls, generating from prepared models, validating outputs, and downloading results.
 
-The `0.7.x` line adds explicit geography contracts, national DA/ADA
-orchestration, verified prepared-display-boundary retrieval, and a reusable
-external-data enrichment framework for public, locally supplied, licensed, and
-restricted sources. Maintained Can-FED v2 and corrected ODEF v3.0.1 adapters
-exercise the framework with contrasting area-attribute and facility sources;
-later integrations remain demand-, authority-, and validation-gated.
+The `0.8.0` line adds a simulator-neutral CSV/JSON exchange bundle for handing
+validated linked households and people to another research tool with explicit
+relationships, a data dictionary, provenance, hashes, access classifications,
+and reproduction evidence. It builds on the `0.7.x` geography, national
+DA/ADA, prepared-boundary, and external-data enrichment work without claiming
+that a population contribution is a runnable simulation.
 
 Detailed documentation is published at
 <https://synthpopcan.readthedocs.io/>. The source files live under
@@ -155,6 +155,7 @@ README:
 | Assign linked households and people to small areas | [`docs/small-area.md`](docs/small-area.md) |
 | Fetch verified display-only map boundaries | [`docs/geodata.md`](docs/geodata.md) |
 | Attach governed external context as a sidecar layer | [`docs/enrichment.md`](docs/enrichment.md) |
+| Hand a validated linked population to another tool | [`docs/exchange.md`](docs/exchange.md) |
 | Use the beginner Python API | [`docs/library-getting-started.md`](docs/library-getting-started.md) |
 | Work with local data layout and `data doctor` | [`docs/data.md`](docs/data.md) |
 | Inspect source files safely | [`docs/data.md`](docs/data.md), [`docs/statcan.md`](docs/statcan.md), [`docs/microdata.md`](docs/microdata.md) |
