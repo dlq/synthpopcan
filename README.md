@@ -258,6 +258,7 @@ matches what your work actually depended on.
 | You used | Cite | DOI |
 | --- | --- | --- |
 | SynthPopCan generally | The concept DOI, which always resolves to the newest release | [10.5281/zenodo.21461463](https://doi.org/10.5281/zenodo.21461463) |
+| SynthPopCan 0.9.0 | The archived 0.9.0 version DOI | [10.5281/zenodo.21876960](https://doi.org/10.5281/zenodo.21876960) |
 | SynthPopCan 0.7.0 | The archived 0.7.0 version DOI | [10.5281/zenodo.21743129](https://doi.org/10.5281/zenodo.21743129) |
 | A prepared model package | That package's own DOI, listed on its Zenodo record | one per package |
 
