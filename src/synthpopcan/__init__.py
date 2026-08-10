@@ -8,6 +8,8 @@ exposing source-specific adapter internals.
 """
 
 from synthpopcan.api import (
+    ControlPackEvidence,
+    ControlPackManifest,
     ControlTable,
     EnrichmentResult,
     ExchangeBundle,
@@ -16,6 +18,7 @@ from synthpopcan.api import (
     LinkedPopulationFiles,
     PopulationRows,
     SmallAreaResult,
+    build_control_pack_evidence,
     calibrate_small_area,
     create_exchange_bundle,
     enrich_can_fed,
@@ -25,6 +28,10 @@ from synthpopcan.api import (
     fetch_model,
     fit_ipf,
     generate_from_model,
+    list_control_packs,
+    plan_control_pack,
+    read_control_pack,
+    read_control_pack_evidence,
     read_controls,
     read_model_package,
     read_seed,
@@ -36,6 +43,8 @@ from synthpopcan.api import (
 )
 
 __all__ = [
+    "ControlPackEvidence",
+    "ControlPackManifest",
     "ControlTable",
     "EnrichmentResult",
     "ExchangeBundle",
@@ -45,6 +54,7 @@ __all__ = [
     "PopulationRows",
     "SmallAreaResult",
     "__version__",
+    "build_control_pack_evidence",
     "calibrate_small_area",
     "create_exchange_bundle",
     "enrich_can_fed",
@@ -54,6 +64,10 @@ __all__ = [
     "fetch_model",
     "fit_ipf",
     "generate_from_model",
+    "list_control_packs",
+    "plan_control_pack",
+    "read_control_pack",
+    "read_control_pack_evidence",
     "read_controls",
     "read_model_package",
     "read_seed",
@@ -64,4 +78,4 @@ __all__ = [
     "write_weights",
 ]
 
-__version__ = "0.8.0"
+__version__ = "0.9.0"

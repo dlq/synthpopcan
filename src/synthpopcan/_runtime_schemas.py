@@ -57,6 +57,8 @@ class SmallAreaRunInputs(_BoundaryModel):
     candidate_persons_upload_id: str | None = None
     controls_upload_id: str = ""
     person_controls_upload_id: str | None = None
+    control_pack_id: str | None = None
+    control_pack_evidence_upload_id: str | None = None
     boundaries_upload_id: str | None = None
 
 

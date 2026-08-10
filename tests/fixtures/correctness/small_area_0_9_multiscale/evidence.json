@@ -1,0 +1,2490 @@
+{
+  "acceptance_bounds": {
+    "fractional_max_abs_error": 1e-06,
+    "parent_child_fractional_max_abs_error": 2e-06,
+    "parent_child_realized_max_abs_error": 1.0,
+    "parent_child_target_max_abs_error": 0.0,
+    "realized_cell_max_abs_error": 1.0
+  },
+  "cases": {
+    "montreal-ada-2021": {
+      "expected_weight_max_abs_error": 0.200000000032,
+      "fitter": {
+        "converged": true,
+        "function": "fit_linked_by_geography",
+        "iterations": 19,
+        "reported_max_abs_error": 5.4e-11
+      },
+      "fractional_weights": [
+        1.200000000032,
+        1.799999999968,
+        0.800000000022,
+        1.199999999978,
+        1.0,
+        1.0,
+        0.0
+      ],
+      "identifier_column": "ADAUID",
+      "identity": {
+        "census_vintage": 2021,
+        "dguid": "2021S051624660001",
+        "geography_level": "ada",
+        "identifier": "24660001",
+        "identifier_namespace": "statcan:census:2021:ada",
+        "schema_version": "synthpopcan-geography-identity-v1"
+      },
+      "independent_validation": {
+        "candidate_reuse": {
+          "additional_copies_from_reuse": 1,
+          "candidate_count": 7,
+          "candidate_selection_share": 0.857142857143,
+          "copy_count_histogram": {
+            "0": 1,
+            "1": 5,
+            "2": 1
+          },
+          "maximum_copies_of_one_candidate": 2,
+          "realized_records": 7,
+          "realized_share_from_reused_candidates": 0.285714285714,
+          "reused_candidates": 1,
+          "selected_candidates": 6,
+          "unique_copy_share": 0.714285714286,
+          "unselected_candidates": 1
+        },
+        "cells": [
+          {
+            "candidate_rows": 3,
+            "categories": {
+              "TENUR": "owner"
+            },
+            "dimensions": [
+              "TENUR"
+            ],
+            "fractional_abs_error": 5.4e-11,
+            "fractional_count": 3.000000000054,
+            "margin": "tenure",
+            "name": "tenure:1",
+            "realized_abs_error": 0.0,
+            "realized_count": 3,
+            "supporting_households": 3,
+            "target_count": 3.0,
+            "unit": "household"
+          },
+          {
+            "candidate_rows": 3,
+            "categories": {
+              "TENUR": "renter"
+            },
+            "dimensions": [
+              "TENUR"
+            ],
+            "fractional_abs_error": 5.4e-11,
+            "fractional_count": 3.999999999946,
+            "margin": "tenure",
+            "name": "tenure:2",
+            "realized_abs_error": 0.0,
+            "realized_count": 4,
+            "supporting_households": 3,
+            "target_count": 4.0,
+            "unit": "household"
+          },
+          {
+            "candidate_rows": 1,
+            "categories": {
+              "TENUR": "declared-zero"
+            },
+            "dimensions": [
+              "TENUR"
+            ],
+            "fractional_abs_error": 0.0,
+            "fractional_count": 0.0,
+            "margin": "tenure",
+            "name": "tenure:3",
+            "realized_abs_error": 0.0,
+            "realized_count": 0,
+            "supporting_households": 1,
+            "target_count": 0.0,
+            "unit": "household"
+          },
+          {
+            "candidate_rows": 2,
+            "categories": {
+              "household_size_group": "1"
+            },
+            "dimensions": [
+              "household_size_group"
+            ],
+            "fractional_abs_error": 0.0,
+            "fractional_count": 3.0,
+            "margin": "household-size",
+            "name": "household-size:4",
+            "realized_abs_error": 0.0,
+            "realized_count": 3,
+            "supporting_households": 2,
+            "target_count": 3.0,
+            "unit": "household"
+          },
+          {
+            "candidate_rows": 2,
+            "categories": {
+              "household_size_group": "2"
+            },
+            "dimensions": [
+              "household_size_group"
+            ],
+            "fractional_abs_error": 0.0,
+            "fractional_count": 2.0,
+            "margin": "household-size",
+            "name": "household-size:5",
+            "realized_abs_error": 0.0,
+            "realized_count": 2,
+            "supporting_households": 2,
+            "target_count": 2.0,
+            "unit": "household"
+          },
+          {
+            "candidate_rows": 2,
+            "categories": {
+              "household_size_group": "3+"
+            },
+            "dimensions": [
+              "household_size_group"
+            ],
+            "fractional_abs_error": 0.0,
+            "fractional_count": 2.0,
+            "margin": "household-size",
+            "name": "household-size:6",
+            "realized_abs_error": 0.0,
+            "realized_count": 2,
+            "supporting_households": 2,
+            "target_count": 2.0,
+            "unit": "household"
+          },
+          {
+            "candidate_rows": 1,
+            "categories": {
+              "household_size_group": "4"
+            },
+            "dimensions": [
+              "household_size_group"
+            ],
+            "fractional_abs_error": 0.0,
+            "fractional_count": 0.0,
+            "margin": "household-size",
+            "name": "household-size:7",
+            "realized_abs_error": 0.0,
+            "realized_count": 0,
+            "supporting_households": 1,
+            "target_count": 0.0,
+            "unit": "household"
+          },
+          {
+            "candidate_rows": 8,
+            "categories": {
+              "AGE_BAND": "adult"
+            },
+            "dimensions": [
+              "AGE_BAND"
+            ],
+            "fractional_abs_error": 0.0,
+            "fractional_count": 7.0,
+            "margin": "linked-age-band",
+            "name": "linked-age-band:8",
+            "realized_abs_error": 0.0,
+            "realized_count": 7,
+            "supporting_households": 7,
+            "target_count": 7.0,
+            "unit": "person"
+          },
+          {
+            "candidate_rows": 5,
+            "categories": {
+              "AGE_BAND": "child"
+            },
+            "dimensions": [
+              "AGE_BAND"
+            ],
+            "fractional_abs_error": 0.0,
+            "fractional_count": 4.0,
+            "margin": "linked-age-band",
+            "name": "linked-age-band:9",
+            "realized_abs_error": 0.0,
+            "realized_count": 4,
+            "supporting_households": 5,
+            "target_count": 4.0,
+            "unit": "person"
+          },
+          {
+            "candidate_rows": 2,
+            "categories": {
+              "AGE_BAND": "elder"
+            },
+            "dimensions": [
+              "AGE_BAND"
+            ],
+            "fractional_abs_error": 0.0,
+            "fractional_count": 1.0,
+            "margin": "linked-age-band",
+            "name": "linked-age-band:10",
+            "realized_abs_error": 0.0,
+            "realized_count": 1,
+            "supporting_households": 2,
+            "target_count": 1.0,
+            "unit": "person"
+          },
+          {
+            "candidate_rows": 1,
+            "categories": {
+              "AGE_BAND": "rare"
+            },
+            "dimensions": [
+              "AGE_BAND"
+            ],
+            "fractional_abs_error": 0.0,
+            "fractional_count": 1.0,
+            "margin": "linked-age-band",
+            "name": "linked-age-band:11",
+            "realized_abs_error": 0.0,
+            "realized_count": 1,
+            "supporting_households": 1,
+            "target_count": 1.0,
+            "unit": "person"
+          }
+        ],
+        "fit_evidence_status": "verified-fractional-residual",
+        "fractional_max_abs_error": 5.4e-11,
+        "fractional_tolerance": 1e-06,
+        "issues": [],
+        "passed": true,
+        "rare_categories": [
+          {
+            "candidate_rows": 3,
+            "categories": {
+              "TENUR": "owner"
+            },
+            "dimensions": [
+              "TENUR"
+            ],
+            "fractional_abs_error": 5.4e-11,
+            "fractional_count": 3.000000000054,
+            "margin": "tenure",
+            "name": "tenure:1",
+            "realized_abs_error": 0.0,
+            "realized_count": 3,
+            "retained_fractionally": true,
+            "retained_in_realization": true,
+            "supporting_households": 3,
+            "target_count": 3.0,
+            "unit": "household"
+          },
+          {
+            "candidate_rows": 3,
+            "categories": {
+              "TENUR": "renter"
+            },
+            "dimensions": [
+              "TENUR"
+            ],
+            "fractional_abs_error": 5.4e-11,
+            "fractional_count": 3.999999999946,
+            "margin": "tenure",
+            "name": "tenure:2",
+            "realized_abs_error": 0.0,
+            "realized_count": 4,
+            "retained_fractionally": true,
+            "retained_in_realization": true,
+            "supporting_households": 3,
+            "target_count": 4.0,
+            "unit": "household"
+          },
+          {
+            "candidate_rows": 2,
+            "categories": {
+              "household_size_group": "1"
+            },
+            "dimensions": [
+              "household_size_group"
+            ],
+            "fractional_abs_error": 0.0,
+            "fractional_count": 3.0,
+            "margin": "household-size",
+            "name": "household-size:4",
+            "realized_abs_error": 0.0,
+            "realized_count": 3,
+            "retained_fractionally": true,
+            "retained_in_realization": true,
+            "supporting_households": 2,
+            "target_count": 3.0,
+            "unit": "household"
+          },
+          {
+            "candidate_rows": 2,
+            "categories": {
+              "household_size_group": "2"
+            },
+            "dimensions": [
+              "household_size_group"
+            ],
+            "fractional_abs_error": 0.0,
+            "fractional_count": 2.0,
+            "margin": "household-size",
+            "name": "household-size:5",
+            "realized_abs_error": 0.0,
+            "realized_count": 2,
+            "retained_fractionally": true,
+            "retained_in_realization": true,
+            "supporting_households": 2,
+            "target_count": 2.0,
+            "unit": "household"
+          },
+          {
+            "candidate_rows": 2,
+            "categories": {
+              "household_size_group": "3+"
+            },
+            "dimensions": [
+              "household_size_group"
+            ],
+            "fractional_abs_error": 0.0,
+            "fractional_count": 2.0,
+            "margin": "household-size",
+            "name": "household-size:6",
+            "realized_abs_error": 0.0,
+            "realized_count": 2,
+            "retained_fractionally": true,
+            "retained_in_realization": true,
+            "supporting_households": 2,
+            "target_count": 2.0,
+            "unit": "household"
+          },
+          {
+            "candidate_rows": 5,
+            "categories": {
+              "AGE_BAND": "child"
+            },
+            "dimensions": [
+              "AGE_BAND"
+            ],
+            "fractional_abs_error": 0.0,
+            "fractional_count": 4.0,
+            "margin": "linked-age-band",
+            "name": "linked-age-band:9",
+            "realized_abs_error": 0.0,
+            "realized_count": 4,
+            "retained_fractionally": true,
+            "retained_in_realization": true,
+            "supporting_households": 5,
+            "target_count": 4.0,
+            "unit": "person"
+          },
+          {
+            "candidate_rows": 2,
+            "categories": {
+              "AGE_BAND": "elder"
+            },
+            "dimensions": [
+              "AGE_BAND"
+            ],
+            "fractional_abs_error": 0.0,
+            "fractional_count": 1.0,
+            "margin": "linked-age-band",
+            "name": "linked-age-band:10",
+            "realized_abs_error": 0.0,
+            "realized_count": 1,
+            "retained_fractionally": true,
+            "retained_in_realization": true,
+            "supporting_households": 2,
+            "target_count": 1.0,
+            "unit": "person"
+          },
+          {
+            "candidate_rows": 1,
+            "categories": {
+              "AGE_BAND": "rare"
+            },
+            "dimensions": [
+              "AGE_BAND"
+            ],
+            "fractional_abs_error": 0.0,
+            "fractional_count": 1.0,
+            "margin": "linked-age-band",
+            "name": "linked-age-band:11",
+            "realized_abs_error": 0.0,
+            "realized_count": 1,
+            "retained_fractionally": true,
+            "retained_in_realization": true,
+            "supporting_households": 1,
+            "target_count": 1.0,
+            "unit": "person"
+          }
+        ],
+        "rare_threshold": 5.0,
+        "realized_max_abs_error": 0.0,
+        "targets_assessed": 11,
+        "weight_concentration": {
+          "candidate_count": 7,
+          "effective_sample_share": 0.799086757996,
+          "herfindahl_concentration": 0.178775510203,
+          "kish_effective_sample_size": 5.593607305972,
+          "largest_candidate_weight_share": 0.257142857138,
+          "maximum_weight": 1.799999999968,
+          "mean_weight": 1.0,
+          "minimum_positive_weight": 0.800000000022,
+          "positive_weight_candidates": 6,
+          "top_10_percent_candidate_count": 1,
+          "top_10_percent_weight_share": 0.257142857138,
+          "total_weight": 7.0,
+          "zero_weight_candidates": 1
+        },
+        "zero_target_constraints": [
+          {
+            "candidate_rows": 1,
+            "categories": {
+              "TENUR": "declared-zero"
+            },
+            "constraint_kind": "declared-zero-target",
+            "dimensions": [
+              "TENUR"
+            ],
+            "fractional_abs_error": 0.0,
+            "fractional_count": 0.0,
+            "fractional_violation": false,
+            "margin": "tenure",
+            "name": "tenure:3",
+            "realized_abs_error": 0.0,
+            "realized_count": 0,
+            "realized_violation": false,
+            "structural_impossibility_claimed": false,
+            "supporting_households": 1,
+            "target_count": 0.0,
+            "unit": "household"
+          },
+          {
+            "candidate_rows": 1,
+            "categories": {
+              "household_size_group": "4"
+            },
+            "constraint_kind": "declared-zero-target",
+            "dimensions": [
+              "household_size_group"
+            ],
+            "fractional_abs_error": 0.0,
+            "fractional_count": 0.0,
+            "fractional_violation": false,
+            "margin": "household-size",
+            "name": "household-size:7",
+            "realized_abs_error": 0.0,
+            "realized_count": 0,
+            "realized_violation": false,
+            "structural_impossibility_claimed": false,
+            "supporting_households": 1,
+            "target_count": 0.0,
+            "unit": "household"
+          }
+        ]
+      },
+      "integer_weights": [
+        1,
+        2,
+        1,
+        1,
+        1,
+        1,
+        0
+      ]
+    },
+    "montreal-csd-2021": {
+      "expected_weight_max_abs_error": 0.0,
+      "fitter": {
+        "converged": true,
+        "function": "fit_linked_by_geography",
+        "iterations": 1,
+        "reported_max_abs_error": 0.0
+      },
+      "fractional_weights": [
+        2.0,
+        2.0,
+        2.0,
+        2.0,
+        3.0,
+        3.0,
+        0.0
+      ],
+      "identifier_column": "CSDUID",
+      "identity": {
+        "census_vintage": 2021,
+        "dguid": "2021A00052466023",
+        "geography_level": "csd",
+        "identifier": "2466023",
+        "identifier_namespace": "statcan:census:2021:csd",
+        "schema_version": "synthpopcan-geography-identity-v1"
+      },
+      "independent_validation": {
+        "candidate_reuse": {
+          "additional_copies_from_reuse": 8,
+          "candidate_count": 7,
+          "candidate_selection_share": 0.857142857143,
+          "copy_count_histogram": {
+            "0": 1,
+            "2": 4,
+            "3": 2
+          },
+          "maximum_copies_of_one_candidate": 3,
+          "realized_records": 14,
+          "realized_share_from_reused_candidates": 1.0,
+          "reused_candidates": 6,
+          "selected_candidates": 6,
+          "unique_copy_share": 0.0,
+          "unselected_candidates": 1
+        },
+        "cells": [
+          {
+            "candidate_rows": 3,
+            "categories": {
+              "TENUR": "owner"
+            },
+            "dimensions": [
+              "TENUR"
+            ],
+            "fractional_abs_error": 0.0,
+            "fractional_count": 7.0,
+            "margin": "tenure",
+            "name": "tenure:1",
+            "realized_abs_error": 0.0,
+            "realized_count": 7,
+            "supporting_households": 3,
+            "target_count": 7.0,
+            "unit": "household"
+          },
+          {
+            "candidate_rows": 3,
+            "categories": {
+              "TENUR": "renter"
+            },
+            "dimensions": [
+              "TENUR"
+            ],
+            "fractional_abs_error": 0.0,
+            "fractional_count": 7.0,
+            "margin": "tenure",
+            "name": "tenure:2",
+            "realized_abs_error": 0.0,
+            "realized_count": 7,
+            "supporting_households": 3,
+            "target_count": 7.0,
+            "unit": "household"
+          },
+          {
+            "candidate_rows": 1,
+            "categories": {
+              "TENUR": "declared-zero"
+            },
+            "dimensions": [
+              "TENUR"
+            ],
+            "fractional_abs_error": 0.0,
+            "fractional_count": 0.0,
+            "margin": "tenure",
+            "name": "tenure:3",
+            "realized_abs_error": 0.0,
+            "realized_count": 0,
+            "supporting_households": 1,
+            "target_count": 0.0,
+            "unit": "household"
+          },
+          {
+            "candidate_rows": 2,
+            "categories": {
+              "household_size_group": "1"
+            },
+            "dimensions": [
+              "household_size_group"
+            ],
+            "fractional_abs_error": 0.0,
+            "fractional_count": 4.0,
+            "margin": "household-size",
+            "name": "household-size:4",
+            "realized_abs_error": 0.0,
+            "realized_count": 4,
+            "supporting_households": 2,
+            "target_count": 4.0,
+            "unit": "household"
+          },
+          {
+            "candidate_rows": 2,
+            "categories": {
+              "household_size_group": "2"
+            },
+            "dimensions": [
+              "household_size_group"
+            ],
+            "fractional_abs_error": 0.0,
+            "fractional_count": 4.0,
+            "margin": "household-size",
+            "name": "household-size:5",
+            "realized_abs_error": 0.0,
+            "realized_count": 4,
+            "supporting_households": 2,
+            "target_count": 4.0,
+            "unit": "household"
+          },
+          {
+            "candidate_rows": 2,
+            "categories": {
+              "household_size_group": "3+"
+            },
+            "dimensions": [
+              "household_size_group"
+            ],
+            "fractional_abs_error": 0.0,
+            "fractional_count": 6.0,
+            "margin": "household-size",
+            "name": "household-size:6",
+            "realized_abs_error": 0.0,
+            "realized_count": 6,
+            "supporting_households": 2,
+            "target_count": 6.0,
+            "unit": "household"
+          },
+          {
+            "candidate_rows": 1,
+            "categories": {
+              "household_size_group": "4"
+            },
+            "dimensions": [
+              "household_size_group"
+            ],
+            "fractional_abs_error": 0.0,
+            "fractional_count": 0.0,
+            "margin": "household-size",
+            "name": "household-size:7",
+            "realized_abs_error": 0.0,
+            "realized_count": 0,
+            "supporting_households": 1,
+            "target_count": 0.0,
+            "unit": "household"
+          },
+          {
+            "candidate_rows": 8,
+            "categories": {
+              "AGE_BAND": "adult"
+            },
+            "dimensions": [
+              "AGE_BAND"
+            ],
+            "fractional_abs_error": 0.0,
+            "fractional_count": 14.0,
+            "margin": "linked-age-band",
+            "name": "linked-age-band:8",
+            "realized_abs_error": 0.0,
+            "realized_count": 14,
+            "supporting_households": 7,
+            "target_count": 14.0,
+            "unit": "person"
+          },
+          {
+            "candidate_rows": 5,
+            "categories": {
+              "AGE_BAND": "child"
+            },
+            "dimensions": [
+              "AGE_BAND"
+            ],
+            "fractional_abs_error": 0.0,
+            "fractional_count": 10.0,
+            "margin": "linked-age-band",
+            "name": "linked-age-band:9",
+            "realized_abs_error": 0.0,
+            "realized_count": 10,
+            "supporting_households": 5,
+            "target_count": 10.0,
+            "unit": "person"
+          },
+          {
+            "candidate_rows": 2,
+            "categories": {
+              "AGE_BAND": "elder"
+            },
+            "dimensions": [
+              "AGE_BAND"
+            ],
+            "fractional_abs_error": 0.0,
+            "fractional_count": 3.0,
+            "margin": "linked-age-band",
+            "name": "linked-age-band:10",
+            "realized_abs_error": 0.0,
+            "realized_count": 3,
+            "supporting_households": 2,
+            "target_count": 3.0,
+            "unit": "person"
+          },
+          {
+            "candidate_rows": 1,
+            "categories": {
+              "AGE_BAND": "rare"
+            },
+            "dimensions": [
+              "AGE_BAND"
+            ],
+            "fractional_abs_error": 0.0,
+            "fractional_count": 3.0,
+            "margin": "linked-age-band",
+            "name": "linked-age-band:11",
+            "realized_abs_error": 0.0,
+            "realized_count": 3,
+            "supporting_households": 1,
+            "target_count": 3.0,
+            "unit": "person"
+          }
+        ],
+        "fit_evidence_status": "verified-fractional-residual",
+        "fractional_max_abs_error": 0.0,
+        "fractional_tolerance": 1e-06,
+        "issues": [],
+        "passed": true,
+        "rare_categories": [
+          {
+            "candidate_rows": 2,
+            "categories": {
+              "household_size_group": "1"
+            },
+            "dimensions": [
+              "household_size_group"
+            ],
+            "fractional_abs_error": 0.0,
+            "fractional_count": 4.0,
+            "margin": "household-size",
+            "name": "household-size:4",
+            "realized_abs_error": 0.0,
+            "realized_count": 4,
+            "retained_fractionally": true,
+            "retained_in_realization": true,
+            "supporting_households": 2,
+            "target_count": 4.0,
+            "unit": "household"
+          },
+          {
+            "candidate_rows": 2,
+            "categories": {
+              "household_size_group": "2"
+            },
+            "dimensions": [
+              "household_size_group"
+            ],
+            "fractional_abs_error": 0.0,
+            "fractional_count": 4.0,
+            "margin": "household-size",
+            "name": "household-size:5",
+            "realized_abs_error": 0.0,
+            "realized_count": 4,
+            "retained_fractionally": true,
+            "retained_in_realization": true,
+            "supporting_households": 2,
+            "target_count": 4.0,
+            "unit": "household"
+          },
+          {
+            "candidate_rows": 2,
+            "categories": {
+              "AGE_BAND": "elder"
+            },
+            "dimensions": [
+              "AGE_BAND"
+            ],
+            "fractional_abs_error": 0.0,
+            "fractional_count": 3.0,
+            "margin": "linked-age-band",
+            "name": "linked-age-band:10",
+            "realized_abs_error": 0.0,
+            "realized_count": 3,
+            "retained_fractionally": true,
+            "retained_in_realization": true,
+            "supporting_households": 2,
+            "target_count": 3.0,
+            "unit": "person"
+          },
+          {
+            "candidate_rows": 1,
+            "categories": {
+              "AGE_BAND": "rare"
+            },
+            "dimensions": [
+              "AGE_BAND"
+            ],
+            "fractional_abs_error": 0.0,
+            "fractional_count": 3.0,
+            "margin": "linked-age-band",
+            "name": "linked-age-band:11",
+            "realized_abs_error": 0.0,
+            "realized_count": 3,
+            "retained_fractionally": true,
+            "retained_in_realization": true,
+            "supporting_households": 1,
+            "target_count": 3.0,
+            "unit": "person"
+          }
+        ],
+        "rare_threshold": 5.0,
+        "realized_max_abs_error": 0.0,
+        "targets_assessed": 11,
+        "weight_concentration": {
+          "candidate_count": 7,
+          "effective_sample_share": 0.823529411765,
+          "herfindahl_concentration": 0.173469387755,
+          "kish_effective_sample_size": 5.764705882353,
+          "largest_candidate_weight_share": 0.214285714286,
+          "maximum_weight": 3.0,
+          "mean_weight": 2.0,
+          "minimum_positive_weight": 2.0,
+          "positive_weight_candidates": 6,
+          "top_10_percent_candidate_count": 1,
+          "top_10_percent_weight_share": 0.214285714286,
+          "total_weight": 14.0,
+          "zero_weight_candidates": 1
+        },
+        "zero_target_constraints": [
+          {
+            "candidate_rows": 1,
+            "categories": {
+              "TENUR": "declared-zero"
+            },
+            "constraint_kind": "declared-zero-target",
+            "dimensions": [
+              "TENUR"
+            ],
+            "fractional_abs_error": 0.0,
+            "fractional_count": 0.0,
+            "fractional_violation": false,
+            "margin": "tenure",
+            "name": "tenure:3",
+            "realized_abs_error": 0.0,
+            "realized_count": 0,
+            "realized_violation": false,
+            "structural_impossibility_claimed": false,
+            "supporting_households": 1,
+            "target_count": 0.0,
+            "unit": "household"
+          },
+          {
+            "candidate_rows": 1,
+            "categories": {
+              "household_size_group": "4"
+            },
+            "constraint_kind": "declared-zero-target",
+            "dimensions": [
+              "household_size_group"
+            ],
+            "fractional_abs_error": 0.0,
+            "fractional_count": 0.0,
+            "fractional_violation": false,
+            "margin": "household-size",
+            "name": "household-size:7",
+            "realized_abs_error": 0.0,
+            "realized_count": 0,
+            "realized_violation": false,
+            "structural_impossibility_claimed": false,
+            "supporting_households": 1,
+            "target_count": 0.0,
+            "unit": "household"
+          }
+        ]
+      },
+      "integer_weights": [
+        2,
+        2,
+        2,
+        2,
+        3,
+        3,
+        0
+      ]
+    },
+    "montreal-ct-2021": {
+      "expected_weight_max_abs_error": 0.0,
+      "fitter": {
+        "converged": true,
+        "function": "fit_linked_by_geography",
+        "iterations": 1,
+        "reported_max_abs_error": 0.0
+      },
+      "fractional_weights": [
+        2.0,
+        2.0,
+        2.0,
+        2.0,
+        2.0,
+        2.0,
+        0.0
+      ],
+      "identifier_column": "CTUID",
+      "identity": {
+        "census_vintage": 2021,
+        "dguid": "2021S05074620001.00",
+        "geography_level": "ct",
+        "identifier": "4620001.00",
+        "identifier_namespace": "statcan:census:2021:ct",
+        "schema_version": "synthpopcan-geography-identity-v1"
+      },
+      "independent_validation": {
+        "candidate_reuse": {
+          "additional_copies_from_reuse": 6,
+          "candidate_count": 7,
+          "candidate_selection_share": 0.857142857143,
+          "copy_count_histogram": {
+            "0": 1,
+            "2": 6
+          },
+          "maximum_copies_of_one_candidate": 2,
+          "realized_records": 12,
+          "realized_share_from_reused_candidates": 1.0,
+          "reused_candidates": 6,
+          "selected_candidates": 6,
+          "unique_copy_share": 0.0,
+          "unselected_candidates": 1
+        },
+        "cells": [
+          {
+            "candidate_rows": 3,
+            "categories": {
+              "TENUR": "owner"
+            },
+            "dimensions": [
+              "TENUR"
+            ],
+            "fractional_abs_error": 0.0,
+            "fractional_count": 6.0,
+            "margin": "tenure",
+            "name": "tenure:1",
+            "realized_abs_error": 0.0,
+            "realized_count": 6,
+            "supporting_households": 3,
+            "target_count": 6.0,
+            "unit": "household"
+          },
+          {
+            "candidate_rows": 3,
+            "categories": {
+              "TENUR": "renter"
+            },
+            "dimensions": [
+              "TENUR"
+            ],
+            "fractional_abs_error": 0.0,
+            "fractional_count": 6.0,
+            "margin": "tenure",
+            "name": "tenure:2",
+            "realized_abs_error": 0.0,
+            "realized_count": 6,
+            "supporting_households": 3,
+            "target_count": 6.0,
+            "unit": "household"
+          },
+          {
+            "candidate_rows": 1,
+            "categories": {
+              "TENUR": "declared-zero"
+            },
+            "dimensions": [
+              "TENUR"
+            ],
+            "fractional_abs_error": 0.0,
+            "fractional_count": 0.0,
+            "margin": "tenure",
+            "name": "tenure:3",
+            "realized_abs_error": 0.0,
+            "realized_count": 0,
+            "supporting_households": 1,
+            "target_count": 0.0,
+            "unit": "household"
+          },
+          {
+            "candidate_rows": 2,
+            "categories": {
+              "household_size_group": "1"
+            },
+            "dimensions": [
+              "household_size_group"
+            ],
+            "fractional_abs_error": 0.0,
+            "fractional_count": 4.0,
+            "margin": "household-size",
+            "name": "household-size:4",
+            "realized_abs_error": 0.0,
+            "realized_count": 4,
+            "supporting_households": 2,
+            "target_count": 4.0,
+            "unit": "household"
+          },
+          {
+            "candidate_rows": 2,
+            "categories": {
+              "household_size_group": "2"
+            },
+            "dimensions": [
+              "household_size_group"
+            ],
+            "fractional_abs_error": 0.0,
+            "fractional_count": 4.0,
+            "margin": "household-size",
+            "name": "household-size:5",
+            "realized_abs_error": 0.0,
+            "realized_count": 4,
+            "supporting_households": 2,
+            "target_count": 4.0,
+            "unit": "household"
+          },
+          {
+            "candidate_rows": 2,
+            "categories": {
+              "household_size_group": "3+"
+            },
+            "dimensions": [
+              "household_size_group"
+            ],
+            "fractional_abs_error": 0.0,
+            "fractional_count": 4.0,
+            "margin": "household-size",
+            "name": "household-size:6",
+            "realized_abs_error": 0.0,
+            "realized_count": 4,
+            "supporting_households": 2,
+            "target_count": 4.0,
+            "unit": "household"
+          },
+          {
+            "candidate_rows": 1,
+            "categories": {
+              "household_size_group": "4"
+            },
+            "dimensions": [
+              "household_size_group"
+            ],
+            "fractional_abs_error": 0.0,
+            "fractional_count": 0.0,
+            "margin": "household-size",
+            "name": "household-size:7",
+            "realized_abs_error": 0.0,
+            "realized_count": 0,
+            "supporting_households": 1,
+            "target_count": 0.0,
+            "unit": "household"
+          },
+          {
+            "candidate_rows": 8,
+            "categories": {
+              "AGE_BAND": "adult"
+            },
+            "dimensions": [
+              "AGE_BAND"
+            ],
+            "fractional_abs_error": 0.0,
+            "fractional_count": 12.0,
+            "margin": "linked-age-band",
+            "name": "linked-age-band:8",
+            "realized_abs_error": 0.0,
+            "realized_count": 12,
+            "supporting_households": 7,
+            "target_count": 12.0,
+            "unit": "person"
+          },
+          {
+            "candidate_rows": 5,
+            "categories": {
+              "AGE_BAND": "child"
+            },
+            "dimensions": [
+              "AGE_BAND"
+            ],
+            "fractional_abs_error": 0.0,
+            "fractional_count": 8.0,
+            "margin": "linked-age-band",
+            "name": "linked-age-band:9",
+            "realized_abs_error": 0.0,
+            "realized_count": 8,
+            "supporting_households": 5,
+            "target_count": 8.0,
+            "unit": "person"
+          },
+          {
+            "candidate_rows": 2,
+            "categories": {
+              "AGE_BAND": "elder"
+            },
+            "dimensions": [
+              "AGE_BAND"
+            ],
+            "fractional_abs_error": 0.0,
+            "fractional_count": 2.0,
+            "margin": "linked-age-band",
+            "name": "linked-age-band:10",
+            "realized_abs_error": 0.0,
+            "realized_count": 2,
+            "supporting_households": 2,
+            "target_count": 2.0,
+            "unit": "person"
+          },
+          {
+            "candidate_rows": 1,
+            "categories": {
+              "AGE_BAND": "rare"
+            },
+            "dimensions": [
+              "AGE_BAND"
+            ],
+            "fractional_abs_error": 0.0,
+            "fractional_count": 2.0,
+            "margin": "linked-age-band",
+            "name": "linked-age-band:11",
+            "realized_abs_error": 0.0,
+            "realized_count": 2,
+            "supporting_households": 1,
+            "target_count": 2.0,
+            "unit": "person"
+          }
+        ],
+        "fit_evidence_status": "verified-fractional-residual",
+        "fractional_max_abs_error": 0.0,
+        "fractional_tolerance": 1e-06,
+        "issues": [],
+        "passed": true,
+        "rare_categories": [
+          {
+            "candidate_rows": 2,
+            "categories": {
+              "household_size_group": "1"
+            },
+            "dimensions": [
+              "household_size_group"
+            ],
+            "fractional_abs_error": 0.0,
+            "fractional_count": 4.0,
+            "margin": "household-size",
+            "name": "household-size:4",
+            "realized_abs_error": 0.0,
+            "realized_count": 4,
+            "retained_fractionally": true,
+            "retained_in_realization": true,
+            "supporting_households": 2,
+            "target_count": 4.0,
+            "unit": "household"
+          },
+          {
+            "candidate_rows": 2,
+            "categories": {
+              "household_size_group": "2"
+            },
+            "dimensions": [
+              "household_size_group"
+            ],
+            "fractional_abs_error": 0.0,
+            "fractional_count": 4.0,
+            "margin": "household-size",
+            "name": "household-size:5",
+            "realized_abs_error": 0.0,
+            "realized_count": 4,
+            "retained_fractionally": true,
+            "retained_in_realization": true,
+            "supporting_households": 2,
+            "target_count": 4.0,
+            "unit": "household"
+          },
+          {
+            "candidate_rows": 2,
+            "categories": {
+              "household_size_group": "3+"
+            },
+            "dimensions": [
+              "household_size_group"
+            ],
+            "fractional_abs_error": 0.0,
+            "fractional_count": 4.0,
+            "margin": "household-size",
+            "name": "household-size:6",
+            "realized_abs_error": 0.0,
+            "realized_count": 4,
+            "retained_fractionally": true,
+            "retained_in_realization": true,
+            "supporting_households": 2,
+            "target_count": 4.0,
+            "unit": "household"
+          },
+          {
+            "candidate_rows": 2,
+            "categories": {
+              "AGE_BAND": "elder"
+            },
+            "dimensions": [
+              "AGE_BAND"
+            ],
+            "fractional_abs_error": 0.0,
+            "fractional_count": 2.0,
+            "margin": "linked-age-band",
+            "name": "linked-age-band:10",
+            "realized_abs_error": 0.0,
+            "realized_count": 2,
+            "retained_fractionally": true,
+            "retained_in_realization": true,
+            "supporting_households": 2,
+            "target_count": 2.0,
+            "unit": "person"
+          },
+          {
+            "candidate_rows": 1,
+            "categories": {
+              "AGE_BAND": "rare"
+            },
+            "dimensions": [
+              "AGE_BAND"
+            ],
+            "fractional_abs_error": 0.0,
+            "fractional_count": 2.0,
+            "margin": "linked-age-band",
+            "name": "linked-age-band:11",
+            "realized_abs_error": 0.0,
+            "realized_count": 2,
+            "retained_fractionally": true,
+            "retained_in_realization": true,
+            "supporting_households": 1,
+            "target_count": 2.0,
+            "unit": "person"
+          }
+        ],
+        "rare_threshold": 5.0,
+        "realized_max_abs_error": 0.0,
+        "targets_assessed": 11,
+        "weight_concentration": {
+          "candidate_count": 7,
+          "effective_sample_share": 0.857142857143,
+          "herfindahl_concentration": 0.166666666667,
+          "kish_effective_sample_size": 6.0,
+          "largest_candidate_weight_share": 0.166666666667,
+          "maximum_weight": 2.0,
+          "mean_weight": 1.714285714286,
+          "minimum_positive_weight": 2.0,
+          "positive_weight_candidates": 6,
+          "top_10_percent_candidate_count": 1,
+          "top_10_percent_weight_share": 0.166666666667,
+          "total_weight": 12.0,
+          "zero_weight_candidates": 1
+        },
+        "zero_target_constraints": [
+          {
+            "candidate_rows": 1,
+            "categories": {
+              "TENUR": "declared-zero"
+            },
+            "constraint_kind": "declared-zero-target",
+            "dimensions": [
+              "TENUR"
+            ],
+            "fractional_abs_error": 0.0,
+            "fractional_count": 0.0,
+            "fractional_violation": false,
+            "margin": "tenure",
+            "name": "tenure:3",
+            "realized_abs_error": 0.0,
+            "realized_count": 0,
+            "realized_violation": false,
+            "structural_impossibility_claimed": false,
+            "supporting_households": 1,
+            "target_count": 0.0,
+            "unit": "household"
+          },
+          {
+            "candidate_rows": 1,
+            "categories": {
+              "household_size_group": "4"
+            },
+            "constraint_kind": "declared-zero-target",
+            "dimensions": [
+              "household_size_group"
+            ],
+            "fractional_abs_error": 0.0,
+            "fractional_count": 0.0,
+            "fractional_violation": false,
+            "margin": "household-size",
+            "name": "household-size:7",
+            "realized_abs_error": 0.0,
+            "realized_count": 0,
+            "realized_violation": false,
+            "structural_impossibility_claimed": false,
+            "supporting_households": 1,
+            "target_count": 0.0,
+            "unit": "household"
+          }
+        ]
+      },
+      "integer_weights": [
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        0
+      ]
+    },
+    "montreal-da-24660001-2021": {
+      "expected_weight_max_abs_error": 0.0,
+      "fitter": {
+        "converged": true,
+        "function": "fit_linked_by_geography",
+        "iterations": 1,
+        "reported_max_abs_error": 0.0
+      },
+      "fractional_weights": [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        0.0
+      ],
+      "identifier_column": "DAUID",
+      "identity": {
+        "census_vintage": 2021,
+        "dguid": "2021S051224660001",
+        "geography_level": "da",
+        "identifier": "24660001",
+        "identifier_namespace": "statcan:census:2021:da",
+        "schema_version": "synthpopcan-geography-identity-v1"
+      },
+      "independent_validation": {
+        "candidate_reuse": {
+          "additional_copies_from_reuse": 0,
+          "candidate_count": 7,
+          "candidate_selection_share": 0.857142857143,
+          "copy_count_histogram": {
+            "0": 1,
+            "1": 6
+          },
+          "maximum_copies_of_one_candidate": 1,
+          "realized_records": 6,
+          "realized_share_from_reused_candidates": 0.0,
+          "reused_candidates": 0,
+          "selected_candidates": 6,
+          "unique_copy_share": 1.0,
+          "unselected_candidates": 1
+        },
+        "cells": [
+          {
+            "candidate_rows": 3,
+            "categories": {
+              "TENUR": "owner"
+            },
+            "dimensions": [
+              "TENUR"
+            ],
+            "fractional_abs_error": 0.0,
+            "fractional_count": 3.0,
+            "margin": "tenure",
+            "name": "tenure:1",
+            "realized_abs_error": 0.0,
+            "realized_count": 3,
+            "supporting_households": 3,
+            "target_count": 3.0,
+            "unit": "household"
+          },
+          {
+            "candidate_rows": 3,
+            "categories": {
+              "TENUR": "renter"
+            },
+            "dimensions": [
+              "TENUR"
+            ],
+            "fractional_abs_error": 0.0,
+            "fractional_count": 3.0,
+            "margin": "tenure",
+            "name": "tenure:2",
+            "realized_abs_error": 0.0,
+            "realized_count": 3,
+            "supporting_households": 3,
+            "target_count": 3.0,
+            "unit": "household"
+          },
+          {
+            "candidate_rows": 1,
+            "categories": {
+              "TENUR": "declared-zero"
+            },
+            "dimensions": [
+              "TENUR"
+            ],
+            "fractional_abs_error": 0.0,
+            "fractional_count": 0.0,
+            "margin": "tenure",
+            "name": "tenure:3",
+            "realized_abs_error": 0.0,
+            "realized_count": 0,
+            "supporting_households": 1,
+            "target_count": 0.0,
+            "unit": "household"
+          },
+          {
+            "candidate_rows": 2,
+            "categories": {
+              "household_size_group": "1"
+            },
+            "dimensions": [
+              "household_size_group"
+            ],
+            "fractional_abs_error": 0.0,
+            "fractional_count": 2.0,
+            "margin": "household-size",
+            "name": "household-size:4",
+            "realized_abs_error": 0.0,
+            "realized_count": 2,
+            "supporting_households": 2,
+            "target_count": 2.0,
+            "unit": "household"
+          },
+          {
+            "candidate_rows": 2,
+            "categories": {
+              "household_size_group": "2"
+            },
+            "dimensions": [
+              "household_size_group"
+            ],
+            "fractional_abs_error": 0.0,
+            "fractional_count": 2.0,
+            "margin": "household-size",
+            "name": "household-size:5",
+            "realized_abs_error": 0.0,
+            "realized_count": 2,
+            "supporting_households": 2,
+            "target_count": 2.0,
+            "unit": "household"
+          },
+          {
+            "candidate_rows": 2,
+            "categories": {
+              "household_size_group": "3+"
+            },
+            "dimensions": [
+              "household_size_group"
+            ],
+            "fractional_abs_error": 0.0,
+            "fractional_count": 2.0,
+            "margin": "household-size",
+            "name": "household-size:6",
+            "realized_abs_error": 0.0,
+            "realized_count": 2,
+            "supporting_households": 2,
+            "target_count": 2.0,
+            "unit": "household"
+          },
+          {
+            "candidate_rows": 1,
+            "categories": {
+              "household_size_group": "4"
+            },
+            "dimensions": [
+              "household_size_group"
+            ],
+            "fractional_abs_error": 0.0,
+            "fractional_count": 0.0,
+            "margin": "household-size",
+            "name": "household-size:7",
+            "realized_abs_error": 0.0,
+            "realized_count": 0,
+            "supporting_households": 1,
+            "target_count": 0.0,
+            "unit": "household"
+          },
+          {
+            "candidate_rows": 8,
+            "categories": {
+              "AGE_BAND": "adult"
+            },
+            "dimensions": [
+              "AGE_BAND"
+            ],
+            "fractional_abs_error": 0.0,
+            "fractional_count": 6.0,
+            "margin": "linked-age-band",
+            "name": "linked-age-band:8",
+            "realized_abs_error": 0.0,
+            "realized_count": 6,
+            "supporting_households": 7,
+            "target_count": 6.0,
+            "unit": "person"
+          },
+          {
+            "candidate_rows": 5,
+            "categories": {
+              "AGE_BAND": "child"
+            },
+            "dimensions": [
+              "AGE_BAND"
+            ],
+            "fractional_abs_error": 0.0,
+            "fractional_count": 4.0,
+            "margin": "linked-age-band",
+            "name": "linked-age-band:9",
+            "realized_abs_error": 0.0,
+            "realized_count": 4,
+            "supporting_households": 5,
+            "target_count": 4.0,
+            "unit": "person"
+          },
+          {
+            "candidate_rows": 2,
+            "categories": {
+              "AGE_BAND": "elder"
+            },
+            "dimensions": [
+              "AGE_BAND"
+            ],
+            "fractional_abs_error": 0.0,
+            "fractional_count": 1.0,
+            "margin": "linked-age-band",
+            "name": "linked-age-band:10",
+            "realized_abs_error": 0.0,
+            "realized_count": 1,
+            "supporting_households": 2,
+            "target_count": 1.0,
+            "unit": "person"
+          },
+          {
+            "candidate_rows": 1,
+            "categories": {
+              "AGE_BAND": "rare"
+            },
+            "dimensions": [
+              "AGE_BAND"
+            ],
+            "fractional_abs_error": 0.0,
+            "fractional_count": 1.0,
+            "margin": "linked-age-band",
+            "name": "linked-age-band:11",
+            "realized_abs_error": 0.0,
+            "realized_count": 1,
+            "supporting_households": 1,
+            "target_count": 1.0,
+            "unit": "person"
+          }
+        ],
+        "fit_evidence_status": "verified-fractional-residual",
+        "fractional_max_abs_error": 0.0,
+        "fractional_tolerance": 1e-06,
+        "issues": [],
+        "passed": true,
+        "rare_categories": [
+          {
+            "candidate_rows": 3,
+            "categories": {
+              "TENUR": "owner"
+            },
+            "dimensions": [
+              "TENUR"
+            ],
+            "fractional_abs_error": 0.0,
+            "fractional_count": 3.0,
+            "margin": "tenure",
+            "name": "tenure:1",
+            "realized_abs_error": 0.0,
+            "realized_count": 3,
+            "retained_fractionally": true,
+            "retained_in_realization": true,
+            "supporting_households": 3,
+            "target_count": 3.0,
+            "unit": "household"
+          },
+          {
+            "candidate_rows": 3,
+            "categories": {
+              "TENUR": "renter"
+            },
+            "dimensions": [
+              "TENUR"
+            ],
+            "fractional_abs_error": 0.0,
+            "fractional_count": 3.0,
+            "margin": "tenure",
+            "name": "tenure:2",
+            "realized_abs_error": 0.0,
+            "realized_count": 3,
+            "retained_fractionally": true,
+            "retained_in_realization": true,
+            "supporting_households": 3,
+            "target_count": 3.0,
+            "unit": "household"
+          },
+          {
+            "candidate_rows": 2,
+            "categories": {
+              "household_size_group": "1"
+            },
+            "dimensions": [
+              "household_size_group"
+            ],
+            "fractional_abs_error": 0.0,
+            "fractional_count": 2.0,
+            "margin": "household-size",
+            "name": "household-size:4",
+            "realized_abs_error": 0.0,
+            "realized_count": 2,
+            "retained_fractionally": true,
+            "retained_in_realization": true,
+            "supporting_households": 2,
+            "target_count": 2.0,
+            "unit": "household"
+          },
+          {
+            "candidate_rows": 2,
+            "categories": {
+              "household_size_group": "2"
+            },
+            "dimensions": [
+              "household_size_group"
+            ],
+            "fractional_abs_error": 0.0,
+            "fractional_count": 2.0,
+            "margin": "household-size",
+            "name": "household-size:5",
+            "realized_abs_error": 0.0,
+            "realized_count": 2,
+            "retained_fractionally": true,
+            "retained_in_realization": true,
+            "supporting_households": 2,
+            "target_count": 2.0,
+            "unit": "household"
+          },
+          {
+            "candidate_rows": 2,
+            "categories": {
+              "household_size_group": "3+"
+            },
+            "dimensions": [
+              "household_size_group"
+            ],
+            "fractional_abs_error": 0.0,
+            "fractional_count": 2.0,
+            "margin": "household-size",
+            "name": "household-size:6",
+            "realized_abs_error": 0.0,
+            "realized_count": 2,
+            "retained_fractionally": true,
+            "retained_in_realization": true,
+            "supporting_households": 2,
+            "target_count": 2.0,
+            "unit": "household"
+          },
+          {
+            "candidate_rows": 5,
+            "categories": {
+              "AGE_BAND": "child"
+            },
+            "dimensions": [
+              "AGE_BAND"
+            ],
+            "fractional_abs_error": 0.0,
+            "fractional_count": 4.0,
+            "margin": "linked-age-band",
+            "name": "linked-age-band:9",
+            "realized_abs_error": 0.0,
+            "realized_count": 4,
+            "retained_fractionally": true,
+            "retained_in_realization": true,
+            "supporting_households": 5,
+            "target_count": 4.0,
+            "unit": "person"
+          },
+          {
+            "candidate_rows": 2,
+            "categories": {
+              "AGE_BAND": "elder"
+            },
+            "dimensions": [
+              "AGE_BAND"
+            ],
+            "fractional_abs_error": 0.0,
+            "fractional_count": 1.0,
+            "margin": "linked-age-band",
+            "name": "linked-age-band:10",
+            "realized_abs_error": 0.0,
+            "realized_count": 1,
+            "retained_fractionally": true,
+            "retained_in_realization": true,
+            "supporting_households": 2,
+            "target_count": 1.0,
+            "unit": "person"
+          },
+          {
+            "candidate_rows": 1,
+            "categories": {
+              "AGE_BAND": "rare"
+            },
+            "dimensions": [
+              "AGE_BAND"
+            ],
+            "fractional_abs_error": 0.0,
+            "fractional_count": 1.0,
+            "margin": "linked-age-band",
+            "name": "linked-age-band:11",
+            "realized_abs_error": 0.0,
+            "realized_count": 1,
+            "retained_fractionally": true,
+            "retained_in_realization": true,
+            "supporting_households": 1,
+            "target_count": 1.0,
+            "unit": "person"
+          }
+        ],
+        "rare_threshold": 5.0,
+        "realized_max_abs_error": 0.0,
+        "targets_assessed": 11,
+        "weight_concentration": {
+          "candidate_count": 7,
+          "effective_sample_share": 0.857142857143,
+          "herfindahl_concentration": 0.166666666667,
+          "kish_effective_sample_size": 6.0,
+          "largest_candidate_weight_share": 0.166666666667,
+          "maximum_weight": 1.0,
+          "mean_weight": 0.857142857143,
+          "minimum_positive_weight": 1.0,
+          "positive_weight_candidates": 6,
+          "top_10_percent_candidate_count": 1,
+          "top_10_percent_weight_share": 0.166666666667,
+          "total_weight": 6.0,
+          "zero_weight_candidates": 1
+        },
+        "zero_target_constraints": [
+          {
+            "candidate_rows": 1,
+            "categories": {
+              "TENUR": "declared-zero"
+            },
+            "constraint_kind": "declared-zero-target",
+            "dimensions": [
+              "TENUR"
+            ],
+            "fractional_abs_error": 0.0,
+            "fractional_count": 0.0,
+            "fractional_violation": false,
+            "margin": "tenure",
+            "name": "tenure:3",
+            "realized_abs_error": 0.0,
+            "realized_count": 0,
+            "realized_violation": false,
+            "structural_impossibility_claimed": false,
+            "supporting_households": 1,
+            "target_count": 0.0,
+            "unit": "household"
+          },
+          {
+            "candidate_rows": 1,
+            "categories": {
+              "household_size_group": "4"
+            },
+            "constraint_kind": "declared-zero-target",
+            "dimensions": [
+              "household_size_group"
+            ],
+            "fractional_abs_error": 0.0,
+            "fractional_count": 0.0,
+            "fractional_violation": false,
+            "margin": "household-size",
+            "name": "household-size:7",
+            "realized_abs_error": 0.0,
+            "realized_count": 0,
+            "realized_violation": false,
+            "structural_impossibility_claimed": false,
+            "supporting_households": 1,
+            "target_count": 0.0,
+            "unit": "household"
+          }
+        ]
+      },
+      "integer_weights": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        0
+      ]
+    },
+    "montreal-da-24660002-2021": {
+      "expected_weight_max_abs_error": 0.0,
+      "fitter": {
+        "converged": true,
+        "function": "fit_linked_by_geography",
+        "iterations": 1,
+        "reported_max_abs_error": 0.0
+      },
+      "fractional_weights": [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        2.0,
+        2.0,
+        0.0
+      ],
+      "identifier_column": "DAUID",
+      "identity": {
+        "census_vintage": 2021,
+        "dguid": "2021S051224660002",
+        "geography_level": "da",
+        "identifier": "24660002",
+        "identifier_namespace": "statcan:census:2021:da",
+        "schema_version": "synthpopcan-geography-identity-v1"
+      },
+      "independent_validation": {
+        "candidate_reuse": {
+          "additional_copies_from_reuse": 2,
+          "candidate_count": 7,
+          "candidate_selection_share": 0.857142857143,
+          "copy_count_histogram": {
+            "0": 1,
+            "1": 4,
+            "2": 2
+          },
+          "maximum_copies_of_one_candidate": 2,
+          "realized_records": 8,
+          "realized_share_from_reused_candidates": 0.5,
+          "reused_candidates": 2,
+          "selected_candidates": 6,
+          "unique_copy_share": 0.5,
+          "unselected_candidates": 1
+        },
+        "cells": [
+          {
+            "candidate_rows": 3,
+            "categories": {
+              "TENUR": "owner"
+            },
+            "dimensions": [
+              "TENUR"
+            ],
+            "fractional_abs_error": 0.0,
+            "fractional_count": 4.0,
+            "margin": "tenure",
+            "name": "tenure:1",
+            "realized_abs_error": 0.0,
+            "realized_count": 4,
+            "supporting_households": 3,
+            "target_count": 4.0,
+            "unit": "household"
+          },
+          {
+            "candidate_rows": 3,
+            "categories": {
+              "TENUR": "renter"
+            },
+            "dimensions": [
+              "TENUR"
+            ],
+            "fractional_abs_error": 0.0,
+            "fractional_count": 4.0,
+            "margin": "tenure",
+            "name": "tenure:2",
+            "realized_abs_error": 0.0,
+            "realized_count": 4,
+            "supporting_households": 3,
+            "target_count": 4.0,
+            "unit": "household"
+          },
+          {
+            "candidate_rows": 1,
+            "categories": {
+              "TENUR": "declared-zero"
+            },
+            "dimensions": [
+              "TENUR"
+            ],
+            "fractional_abs_error": 0.0,
+            "fractional_count": 0.0,
+            "margin": "tenure",
+            "name": "tenure:3",
+            "realized_abs_error": 0.0,
+            "realized_count": 0,
+            "supporting_households": 1,
+            "target_count": 0.0,
+            "unit": "household"
+          },
+          {
+            "candidate_rows": 2,
+            "categories": {
+              "household_size_group": "1"
+            },
+            "dimensions": [
+              "household_size_group"
+            ],
+            "fractional_abs_error": 0.0,
+            "fractional_count": 2.0,
+            "margin": "household-size",
+            "name": "household-size:4",
+            "realized_abs_error": 0.0,
+            "realized_count": 2,
+            "supporting_households": 2,
+            "target_count": 2.0,
+            "unit": "household"
+          },
+          {
+            "candidate_rows": 2,
+            "categories": {
+              "household_size_group": "2"
+            },
+            "dimensions": [
+              "household_size_group"
+            ],
+            "fractional_abs_error": 0.0,
+            "fractional_count": 2.0,
+            "margin": "household-size",
+            "name": "household-size:5",
+            "realized_abs_error": 0.0,
+            "realized_count": 2,
+            "supporting_households": 2,
+            "target_count": 2.0,
+            "unit": "household"
+          },
+          {
+            "candidate_rows": 2,
+            "categories": {
+              "household_size_group": "3+"
+            },
+            "dimensions": [
+              "household_size_group"
+            ],
+            "fractional_abs_error": 0.0,
+            "fractional_count": 4.0,
+            "margin": "household-size",
+            "name": "household-size:6",
+            "realized_abs_error": 0.0,
+            "realized_count": 4,
+            "supporting_households": 2,
+            "target_count": 4.0,
+            "unit": "household"
+          },
+          {
+            "candidate_rows": 1,
+            "categories": {
+              "household_size_group": "4"
+            },
+            "dimensions": [
+              "household_size_group"
+            ],
+            "fractional_abs_error": 0.0,
+            "fractional_count": 0.0,
+            "margin": "household-size",
+            "name": "household-size:7",
+            "realized_abs_error": 0.0,
+            "realized_count": 0,
+            "supporting_households": 1,
+            "target_count": 0.0,
+            "unit": "household"
+          },
+          {
+            "candidate_rows": 8,
+            "categories": {
+              "AGE_BAND": "adult"
+            },
+            "dimensions": [
+              "AGE_BAND"
+            ],
+            "fractional_abs_error": 0.0,
+            "fractional_count": 8.0,
+            "margin": "linked-age-band",
+            "name": "linked-age-band:8",
+            "realized_abs_error": 0.0,
+            "realized_count": 8,
+            "supporting_households": 7,
+            "target_count": 8.0,
+            "unit": "person"
+          },
+          {
+            "candidate_rows": 5,
+            "categories": {
+              "AGE_BAND": "child"
+            },
+            "dimensions": [
+              "AGE_BAND"
+            ],
+            "fractional_abs_error": 0.0,
+            "fractional_count": 6.0,
+            "margin": "linked-age-band",
+            "name": "linked-age-band:9",
+            "realized_abs_error": 0.0,
+            "realized_count": 6,
+            "supporting_households": 5,
+            "target_count": 6.0,
+            "unit": "person"
+          },
+          {
+            "candidate_rows": 2,
+            "categories": {
+              "AGE_BAND": "elder"
+            },
+            "dimensions": [
+              "AGE_BAND"
+            ],
+            "fractional_abs_error": 0.0,
+            "fractional_count": 2.0,
+            "margin": "linked-age-band",
+            "name": "linked-age-band:10",
+            "realized_abs_error": 0.0,
+            "realized_count": 2,
+            "supporting_households": 2,
+            "target_count": 2.0,
+            "unit": "person"
+          },
+          {
+            "candidate_rows": 1,
+            "categories": {
+              "AGE_BAND": "rare"
+            },
+            "dimensions": [
+              "AGE_BAND"
+            ],
+            "fractional_abs_error": 0.0,
+            "fractional_count": 2.0,
+            "margin": "linked-age-band",
+            "name": "linked-age-band:11",
+            "realized_abs_error": 0.0,
+            "realized_count": 2,
+            "supporting_households": 1,
+            "target_count": 2.0,
+            "unit": "person"
+          }
+        ],
+        "fit_evidence_status": "verified-fractional-residual",
+        "fractional_max_abs_error": 0.0,
+        "fractional_tolerance": 1e-06,
+        "issues": [],
+        "passed": true,
+        "rare_categories": [
+          {
+            "candidate_rows": 3,
+            "categories": {
+              "TENUR": "owner"
+            },
+            "dimensions": [
+              "TENUR"
+            ],
+            "fractional_abs_error": 0.0,
+            "fractional_count": 4.0,
+            "margin": "tenure",
+            "name": "tenure:1",
+            "realized_abs_error": 0.0,
+            "realized_count": 4,
+            "retained_fractionally": true,
+            "retained_in_realization": true,
+            "supporting_households": 3,
+            "target_count": 4.0,
+            "unit": "household"
+          },
+          {
+            "candidate_rows": 3,
+            "categories": {
+              "TENUR": "renter"
+            },
+            "dimensions": [
+              "TENUR"
+            ],
+            "fractional_abs_error": 0.0,
+            "fractional_count": 4.0,
+            "margin": "tenure",
+            "name": "tenure:2",
+            "realized_abs_error": 0.0,
+            "realized_count": 4,
+            "retained_fractionally": true,
+            "retained_in_realization": true,
+            "supporting_households": 3,
+            "target_count": 4.0,
+            "unit": "household"
+          },
+          {
+            "candidate_rows": 2,
+            "categories": {
+              "household_size_group": "1"
+            },
+            "dimensions": [
+              "household_size_group"
+            ],
+            "fractional_abs_error": 0.0,
+            "fractional_count": 2.0,
+            "margin": "household-size",
+            "name": "household-size:4",
+            "realized_abs_error": 0.0,
+            "realized_count": 2,
+            "retained_fractionally": true,
+            "retained_in_realization": true,
+            "supporting_households": 2,
+            "target_count": 2.0,
+            "unit": "household"
+          },
+          {
+            "candidate_rows": 2,
+            "categories": {
+              "household_size_group": "2"
+            },
+            "dimensions": [
+              "household_size_group"
+            ],
+            "fractional_abs_error": 0.0,
+            "fractional_count": 2.0,
+            "margin": "household-size",
+            "name": "household-size:5",
+            "realized_abs_error": 0.0,
+            "realized_count": 2,
+            "retained_fractionally": true,
+            "retained_in_realization": true,
+            "supporting_households": 2,
+            "target_count": 2.0,
+            "unit": "household"
+          },
+          {
+            "candidate_rows": 2,
+            "categories": {
+              "household_size_group": "3+"
+            },
+            "dimensions": [
+              "household_size_group"
+            ],
+            "fractional_abs_error": 0.0,
+            "fractional_count": 4.0,
+            "margin": "household-size",
+            "name": "household-size:6",
+            "realized_abs_error": 0.0,
+            "realized_count": 4,
+            "retained_fractionally": true,
+            "retained_in_realization": true,
+            "supporting_households": 2,
+            "target_count": 4.0,
+            "unit": "household"
+          },
+          {
+            "candidate_rows": 2,
+            "categories": {
+              "AGE_BAND": "elder"
+            },
+            "dimensions": [
+              "AGE_BAND"
+            ],
+            "fractional_abs_error": 0.0,
+            "fractional_count": 2.0,
+            "margin": "linked-age-band",
+            "name": "linked-age-band:10",
+            "realized_abs_error": 0.0,
+            "realized_count": 2,
+            "retained_fractionally": true,
+            "retained_in_realization": true,
+            "supporting_households": 2,
+            "target_count": 2.0,
+            "unit": "person"
+          },
+          {
+            "candidate_rows": 1,
+            "categories": {
+              "AGE_BAND": "rare"
+            },
+            "dimensions": [
+              "AGE_BAND"
+            ],
+            "fractional_abs_error": 0.0,
+            "fractional_count": 2.0,
+            "margin": "linked-age-band",
+            "name": "linked-age-band:11",
+            "realized_abs_error": 0.0,
+            "realized_count": 2,
+            "retained_fractionally": true,
+            "retained_in_realization": true,
+            "supporting_households": 1,
+            "target_count": 2.0,
+            "unit": "person"
+          }
+        ],
+        "rare_threshold": 5.0,
+        "realized_max_abs_error": 0.0,
+        "targets_assessed": 11,
+        "weight_concentration": {
+          "candidate_count": 7,
+          "effective_sample_share": 0.761904761905,
+          "herfindahl_concentration": 0.1875,
+          "kish_effective_sample_size": 5.333333333333,
+          "largest_candidate_weight_share": 0.25,
+          "maximum_weight": 2.0,
+          "mean_weight": 1.142857142857,
+          "minimum_positive_weight": 1.0,
+          "positive_weight_candidates": 6,
+          "top_10_percent_candidate_count": 1,
+          "top_10_percent_weight_share": 0.25,
+          "total_weight": 8.0,
+          "zero_weight_candidates": 1
+        },
+        "zero_target_constraints": [
+          {
+            "candidate_rows": 1,
+            "categories": {
+              "TENUR": "declared-zero"
+            },
+            "constraint_kind": "declared-zero-target",
+            "dimensions": [
+              "TENUR"
+            ],
+            "fractional_abs_error": 0.0,
+            "fractional_count": 0.0,
+            "fractional_violation": false,
+            "margin": "tenure",
+            "name": "tenure:3",
+            "realized_abs_error": 0.0,
+            "realized_count": 0,
+            "realized_violation": false,
+            "structural_impossibility_claimed": false,
+            "supporting_households": 1,
+            "target_count": 0.0,
+            "unit": "household"
+          },
+          {
+            "candidate_rows": 1,
+            "categories": {
+              "household_size_group": "4"
+            },
+            "constraint_kind": "declared-zero-target",
+            "dimensions": [
+              "household_size_group"
+            ],
+            "fractional_abs_error": 0.0,
+            "fractional_count": 0.0,
+            "fractional_violation": false,
+            "margin": "household-size",
+            "name": "household-size:7",
+            "realized_abs_error": 0.0,
+            "realized_count": 0,
+            "realized_violation": false,
+            "structural_impossibility_claimed": false,
+            "supporting_households": 1,
+            "target_count": 0.0,
+            "unit": "household"
+          }
+        ]
+      },
+      "integer_weights": [
+        1,
+        1,
+        1,
+        1,
+        2,
+        2,
+        0
+      ]
+    }
+  },
+  "checks": {
+    "all_fitters_converged": true,
+    "all_independent_profiles_pass": true,
+    "fractional_error_within_bound": true,
+    "parent_child_fractional_counts_reconcile": true,
+    "parent_child_realized_counts_reconcile": true,
+    "parent_child_targets_reconcile": true,
+    "realized_error_within_bound": true
+  },
+  "fixture_schema_version": "synthpopcan-multiscale-calibration-fixture-v1",
+  "generated_by": "scripts/build_multiscale_validation_evidence.py",
+  "limitations": [
+    "All candidate attributes and targets are fictional; official identifiers are used only to exercise level and namespace handling.",
+    "Person controls are computed from linked person rows aggregated to household contributions before applying household weights.",
+    "A zero target is a declared test constraint, not evidence that the category is structurally impossible in disseminated Census data.",
+    "The fixture proves bounded software behavior, not national coverage or Canadian-population quality."
+  ],
+  "parent_child_reconciliation": {
+    "candidate_weight_fractional_max_abs_error": 0.0,
+    "candidate_weight_integer_max_abs_error": 0,
+    "cells": [
+      {
+        "categories": {
+          "household_size_group": "1"
+        },
+        "children_fractional_sum": 4.0,
+        "children_realized_sum": 4,
+        "children_target_sum": 4.0,
+        "fractional_abs_error": 0.0,
+        "margin": "household-size",
+        "parent_fractional_count": 4.0,
+        "parent_realized_count": 4,
+        "parent_target": 4.0,
+        "realized_abs_error": 0,
+        "target_abs_error": 0.0,
+        "unit": "household"
+      },
+      {
+        "categories": {
+          "household_size_group": "2"
+        },
+        "children_fractional_sum": 4.0,
+        "children_realized_sum": 4,
+        "children_target_sum": 4.0,
+        "fractional_abs_error": 0.0,
+        "margin": "household-size",
+        "parent_fractional_count": 4.0,
+        "parent_realized_count": 4,
+        "parent_target": 4.0,
+        "realized_abs_error": 0,
+        "target_abs_error": 0.0,
+        "unit": "household"
+      },
+      {
+        "categories": {
+          "household_size_group": "3+"
+        },
+        "children_fractional_sum": 6.0,
+        "children_realized_sum": 6,
+        "children_target_sum": 6.0,
+        "fractional_abs_error": 0.0,
+        "margin": "household-size",
+        "parent_fractional_count": 6.0,
+        "parent_realized_count": 6,
+        "parent_target": 6.0,
+        "realized_abs_error": 0,
+        "target_abs_error": 0.0,
+        "unit": "household"
+      },
+      {
+        "categories": {
+          "household_size_group": "4"
+        },
+        "children_fractional_sum": 0.0,
+        "children_realized_sum": 0,
+        "children_target_sum": 0.0,
+        "fractional_abs_error": 0.0,
+        "margin": "household-size",
+        "parent_fractional_count": 0.0,
+        "parent_realized_count": 0,
+        "parent_target": 0.0,
+        "realized_abs_error": 0,
+        "target_abs_error": 0.0,
+        "unit": "household"
+      },
+      {
+        "categories": {
+          "TENUR": "declared-zero"
+        },
+        "children_fractional_sum": 0.0,
+        "children_realized_sum": 0,
+        "children_target_sum": 0.0,
+        "fractional_abs_error": 0.0,
+        "margin": "tenure",
+        "parent_fractional_count": 0.0,
+        "parent_realized_count": 0,
+        "parent_target": 0.0,
+        "realized_abs_error": 0,
+        "target_abs_error": 0.0,
+        "unit": "household"
+      },
+      {
+        "categories": {
+          "TENUR": "owner"
+        },
+        "children_fractional_sum": 7.0,
+        "children_realized_sum": 7,
+        "children_target_sum": 7.0,
+        "fractional_abs_error": 0.0,
+        "margin": "tenure",
+        "parent_fractional_count": 7.0,
+        "parent_realized_count": 7,
+        "parent_target": 7.0,
+        "realized_abs_error": 0,
+        "target_abs_error": 0.0,
+        "unit": "household"
+      },
+      {
+        "categories": {
+          "TENUR": "renter"
+        },
+        "children_fractional_sum": 7.0,
+        "children_realized_sum": 7,
+        "children_target_sum": 7.0,
+        "fractional_abs_error": 0.0,
+        "margin": "tenure",
+        "parent_fractional_count": 7.0,
+        "parent_realized_count": 7,
+        "parent_target": 7.0,
+        "realized_abs_error": 0,
+        "target_abs_error": 0.0,
+        "unit": "household"
+      },
+      {
+        "categories": {
+          "AGE_BAND": "adult"
+        },
+        "children_fractional_sum": 14.0,
+        "children_realized_sum": 14,
+        "children_target_sum": 14.0,
+        "fractional_abs_error": 0.0,
+        "margin": "linked-age-band",
+        "parent_fractional_count": 14.0,
+        "parent_realized_count": 14,
+        "parent_target": 14.0,
+        "realized_abs_error": 0,
+        "target_abs_error": 0.0,
+        "unit": "person"
+      },
+      {
+        "categories": {
+          "AGE_BAND": "child"
+        },
+        "children_fractional_sum": 10.0,
+        "children_realized_sum": 10,
+        "children_target_sum": 10.0,
+        "fractional_abs_error": 0.0,
+        "margin": "linked-age-band",
+        "parent_fractional_count": 10.0,
+        "parent_realized_count": 10,
+        "parent_target": 10.0,
+        "realized_abs_error": 0,
+        "target_abs_error": 0.0,
+        "unit": "person"
+      },
+      {
+        "categories": {
+          "AGE_BAND": "elder"
+        },
+        "children_fractional_sum": 3.0,
+        "children_realized_sum": 3,
+        "children_target_sum": 3.0,
+        "fractional_abs_error": 0.0,
+        "margin": "linked-age-band",
+        "parent_fractional_count": 3.0,
+        "parent_realized_count": 3,
+        "parent_target": 3.0,
+        "realized_abs_error": 0,
+        "target_abs_error": 0.0,
+        "unit": "person"
+      },
+      {
+        "categories": {
+          "AGE_BAND": "rare"
+        },
+        "children_fractional_sum": 3.0,
+        "children_realized_sum": 3,
+        "children_target_sum": 3.0,
+        "fractional_abs_error": 0.0,
+        "margin": "linked-age-band",
+        "parent_fractional_count": 3.0,
+        "parent_realized_count": 3,
+        "parent_target": 3.0,
+        "realized_abs_error": 0,
+        "target_abs_error": 0.0,
+        "unit": "person"
+      }
+    ],
+    "child_case_ids": [
+      "montreal-da-24660001-2021",
+      "montreal-da-24660002-2021"
+    ],
+    "fractional_max_abs_error": 0.0,
+    "kind": "bounded-additive-software-case",
+    "limitation": "The two real DA identities are an intentionally bounded subset of the CSD. Their fictional targets sum to the fictional CSD targets solely to test reconciliation; they do not exhaust the real Montreal CSD.",
+    "parent_case_id": "montreal-csd-2021",
+    "realized_max_abs_error": 0,
+    "target_max_abs_error": 0.0
+  },
+  "passed": true,
+  "schema_version": "synthpopcan-multiscale-calibration-evidence-v1"
+}

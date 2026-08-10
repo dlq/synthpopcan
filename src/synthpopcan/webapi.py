@@ -9,6 +9,7 @@ import hmac
 import json
 import secrets
 import shutil
+from collections import Counter
 from collections.abc import AsyncGenerator, AsyncIterator
 from contextlib import asynccontextmanager
 from http import HTTPStatus
@@ -32,8 +33,19 @@ from synthpopcan._runtime_schemas import (
     SmallAreaRunRequest,
     WDSSeedControlsRequest,
 )
-from synthpopcan.controls import parse_control_table, read_control_table
-from synthpopcan.geography import GeographyUniverse
+from synthpopcan.control_packs import (
+    ControlPackEvidence,
+    ControlPackManifest,
+    control_table_sha256,
+    list_builtin_control_packs,
+    load_compatibility_registry,
+    load_control_pack,
+    load_control_pack_evidence,
+    plan_control_pack,
+    validate_control_pack_compatibility,
+)
+from synthpopcan.controls import ControlTable, parse_control_table, read_control_table
+from synthpopcan.geography import GeographyUniverse, statcan_geography_universe
 from synthpopcan.jobs import JobManager
 from synthpopcan.models import (
     fetch_model_package,
@@ -151,6 +163,10 @@ def create_web_app(
     @app.get("/api/models")
     async def get_models() -> Response:
         return JSONResponse({"models": model_catalogue()})
+
+    @app.get("/api/control-packs")
+    async def get_control_packs() -> Response:
+        return JSONResponse({"control_packs": list_builtin_control_packs()})
 
     @app.post("/api/uploads")
     async def upload_file(request: Request) -> Response:
@@ -529,6 +545,183 @@ def _csv_columns(path: Path) -> list[str]:
     return list(fieldnames)
 
 
+def _read_csv_rows(path: Path) -> list[dict[str, str]]:
+    with path.open(newline="", encoding="utf-8-sig") as handle:
+        reader = csv.DictReader(handle)
+        if reader.fieldnames is None:
+            raise ValueError("CSV input has no header row")
+        return [dict(row) for row in reader]
+
+
+def _pack_derived_dimensions(
+    pack: ControlPackManifest,
+    entity_level: str,
+) -> set[str]:
+    registry = load_compatibility_registry()
+    controls = {control.identifier: control for control in registry.controls}
+    return {
+        derivation.output_field
+        for margin in pack.margins
+        if margin.entity_level == entity_level
+        for derivation in controls[margin.control_identifier].candidate_derivations
+        if derivation.output_field != derivation.source_field
+    }
+
+
+def _validate_control_pack_tables(
+    pack: ControlPackManifest,
+    household_controls: ControlTable,
+    person_controls: ControlTable,
+) -> set[str]:
+    registry = load_compatibility_registry()
+    definitions = {control.identifier: control for control in registry.controls}
+    tables = {"household": household_controls, "person": person_controls}
+    geography_sets: dict[str, set[str]] = {}
+    totals: dict[str, dict[str, float]] = {}
+    for entity_level, table in tables.items():
+        required = [
+            margin for margin in pack.margins if margin.entity_level == entity_level
+        ]
+        expected_dimensions = sorted(tuple(margin.dimensions) for margin in required)
+        actual_dimensions = sorted(tuple(margin.dimensions) for margin in table.margins)
+        if actual_dimensions != expected_dimensions:
+            raise ValueError(
+                f"{entity_level} controls do not match the selected control pack "
+                "margin structure"
+            )
+        for pack_margin in required:
+            definition = definitions[pack_margin.control_identifier]
+            expected_cells: set[tuple[str, ...]] = {()}
+            for axis in definition.source_axes:
+                expected_cells = {
+                    (*prefix, category.target_category)
+                    for prefix in expected_cells
+                    for category in axis.categories
+                }
+            margin = next(
+                item
+                for item in table.margins
+                if item.dimensions == tuple(pack_margin.dimensions)
+            )
+            seen: Counter[tuple[str, ...]] = Counter()
+            actual_by_geography: dict[str, set[tuple[str, ...]]] = {}
+            for cell in margin.cells:
+                geography = cell.categories.get(pack.geography_column, "")
+                categories = tuple(
+                    cell.categories.get(dimension, "")
+                    for dimension in pack_margin.dimensions[1:]
+                )
+                seen[(geography, *categories)] += 1
+                actual_by_geography.setdefault(geography, set()).add(categories)
+                totals.setdefault(pack_margin.control_identifier, {}).setdefault(
+                    geography, 0.0
+                )
+                totals[pack_margin.control_identifier][geography] += cell.count
+            if any(count > 1 for count in seen.values()):
+                raise ValueError(
+                    f"control {pack_margin.control_identifier!r} contains duplicate "
+                    "geography/category cells"
+                )
+            if "" in actual_by_geography:
+                raise ValueError(
+                    f"control {pack_margin.control_identifier!r} has an empty "
+                    "geography identifier"
+                )
+            for geography, actual_cells in actual_by_geography.items():
+                if actual_cells != expected_cells:
+                    raise ValueError(
+                        f"control {pack_margin.control_identifier!r} geography "
+                        f"{geography!r} does not contain its complete category vector"
+                    )
+            geography_sets[pack_margin.control_identifier] = set(actual_by_geography)
+    if not geography_sets:
+        raise ValueError("control pack inputs contain no target geographies")
+    first_geographies = next(iter(geography_sets.values()))
+    if any(geographies != first_geographies for geographies in geography_sets.values()):
+        raise ValueError(
+            "every required control-pack margin must cover the same geographies"
+        )
+    household_margin_ids = [
+        margin.control_identifier
+        for margin in pack.margins
+        if margin.entity_level == "household"
+    ]
+    for geography in sorted(first_geographies):
+        household_totals = [
+            totals[identifier][geography] for identifier in household_margin_ids
+        ]
+        if max(household_totals) != min(household_totals):
+            raise ValueError(
+                f"household control totals for geography {geography!r} must "
+                "reconcile exactly before calibration"
+            )
+    return first_geographies
+
+
+def _validate_control_pack_evidence_binding(
+    pack: ControlPackManifest,
+    evidence: ControlPackEvidence,
+    household_controls: ControlTable,
+    person_controls: ControlTable,
+    geographies: set[str],
+) -> None:
+    comparisons = (
+        ("pack identifier", pack.identifier, evidence.pack_identifier),
+        (
+            "pack checksum",
+            pack.definition_sha256,
+            evidence.pack_definition_sha256,
+        ),
+        ("Census vintage", pack.census_vintage, evidence.census_vintage),
+        ("geography level", pack.geography_level, evidence.geography_level),
+        (
+            "identifier namespace",
+            pack.identifier_namespace,
+            evidence.identifier_namespace,
+        ),
+        (
+            "source revisions",
+            list(pack.source_revisions),
+            list(evidence.controls_source_revisions),
+        ),
+        (
+            "household controls checksum",
+            control_table_sha256(household_controls),
+            evidence.household_controls_sha256,
+        ),
+        (
+            "person controls checksum",
+            control_table_sha256(person_controls),
+            evidence.person_controls_sha256,
+        ),
+        ("eligible geography set", geographies, set(evidence.geographies)),
+    )
+    for label, expected, actual in comparisons:
+        if expected != actual:
+            raise ValueError(
+                f"control-pack evidence {label} does not match the selected "
+                "pack or normalized controls"
+            )
+    person_totals: dict[str, float] = {}
+    for margin in person_controls.margins:
+        for cell in margin.cells:
+            geography = cell.categories[pack.geography_column]
+            person_totals[geography] = person_totals.get(geography, 0.0) + cell.count
+    for geography, universe in evidence.geographies.items():
+        total = float(universe.total_population)
+        private = float(universe.persons_in_private_households)
+        if total != private:
+            raise ValueError(
+                f"control-pack geography {geography!r} has non-zero collective "
+                "population"
+            )
+        if private != person_totals.get(geography):
+            raise ValueError(
+                f"control-pack geography {geography!r} person-control total does "
+                "not match its private-household universe evidence"
+            )
+
+
 def _inspection_string_list(
     inspection: dict[str, Any],
     key: str,
@@ -876,6 +1069,24 @@ def _preflight_small_area_run(
         if not person_controls.margins:
             raise ValueError("person controls CSV has no control rows")
         normalized_inputs["person_controls_upload_id"] = str(person_controls_id)
+    control_pack_id = inputs.control_pack_id
+    control_pack_evidence_id = inputs.control_pack_evidence_upload_id
+    if bool(control_pack_id) != bool(control_pack_evidence_id):
+        raise ValueError("select a control pack and upload its evidence JSON")
+    control_pack = None
+    control_pack_evidence: ControlPackEvidence | None = None
+    if control_pack_id:
+        if person_controls is None:
+            raise ValueError("control packs require a person controls CSV")
+        control_pack = load_control_pack(str(control_pack_id))
+        evidence_path = store.upload_path(
+            str(control_pack_evidence_id), require_unclaimed=True
+        )
+        control_pack_evidence = load_control_pack_evidence(evidence_path)
+        normalized_inputs["control_pack_id"] = control_pack.identifier
+        normalized_inputs["control_pack_evidence_upload_id"] = str(
+            control_pack_evidence_id
+        )
     boundaries_id = inputs.boundaries_upload_id
     if boundaries_id:
         boundaries_path = store.upload_path(str(boundaries_id), require_unclaimed=True)
@@ -890,6 +1101,14 @@ def _preflight_small_area_run(
     geography_dimension = options.geography_dimension.strip()
     if not geography_dimension:
         raise ValueError("geography dimension is required")
+    if (
+        control_pack is not None
+        and geography_dimension != control_pack.geography_column
+    ):
+        raise ValueError(
+            f"control pack {control_pack.identifier!r} requires geography "
+            f"dimension {control_pack.geography_column!r}"
+        )
     candidate_households = options.candidate_households
     if candidate_validation is not None:
         candidate_households = int(candidate_validation["summary"]["households"])
@@ -931,6 +1150,13 @@ def _preflight_small_area_run(
         *inspection_household_targets,
         geography_dimension,
     }
+    if control_pack is not None:
+        household_columns.update(
+            dimension
+            for margin in control_pack.margins
+            if margin.entity_level == "household"
+            for dimension in margin.dimensions
+        )
     if max_household_size is not None:
         household_columns.add(group_column)
     unsupported_household_dimensions = sorted(
@@ -952,18 +1178,29 @@ def _preflight_small_area_run(
         for dimension in margin.dimensions
         if dimension != geography_dimension
     }
+    derived_household_dimensions = (
+        _pack_derived_dimensions(control_pack, "household")
+        if control_pack is not None
+        else set()
+    )
+    household_support_dimensions = (
+        controlled_household_dimensions - derived_household_dimensions
+    )
     if candidate_households_path is not None:
         household_support = _csv_category_support(
-            candidate_households_path, controlled_household_dimensions
+            candidate_households_path, household_support_dimensions
         )
     else:
         household_support = _model_category_support(
-            package or {}, "household", controlled_household_dimensions
+            package or {}, "household", household_support_dimensions
         )
     unsupported_household_categories = _unsupported_control_categories(
         controls,
         household_support,
-        ignored_dimensions={group_column} if max_household_size is not None else set(),
+        ignored_dimensions=(
+            ({group_column} if max_household_size is not None else set())
+            | (derived_household_dimensions)
+        ),
     )
     if unsupported_household_categories:
         raise ValueError(
@@ -975,6 +1212,13 @@ def _preflight_small_area_run(
             *household_columns,
             *inspection_person_targets,
         }
+        if control_pack is not None:
+            person_columns.update(
+                dimension
+                for margin in control_pack.margins
+                if margin.entity_level == "person"
+                for dimension in margin.dimensions
+            )
         unsupported_person_dimensions = sorted(
             {
                 dimension
@@ -994,16 +1238,26 @@ def _preflight_small_area_run(
             for dimension in margin.dimensions
             if dimension != geography_dimension
         }
+        derived_person_dimensions = (
+            _pack_derived_dimensions(control_pack, "person")
+            if control_pack is not None
+            else set()
+        )
+        person_support_dimensions = (
+            controlled_person_dimensions - derived_person_dimensions
+        )
         if candidate_persons_path is not None:
             person_support = _csv_category_support(
-                candidate_persons_path, controlled_person_dimensions
+                candidate_persons_path, person_support_dimensions
             )
         else:
             person_support = _model_category_support(
-                package or {}, "person", controlled_person_dimensions
+                package or {}, "person", person_support_dimensions
             )
         unsupported_person_categories = _unsupported_control_categories(
-            person_controls, person_support, ignored_dimensions=set()
+            person_controls,
+            person_support,
+            ignored_dimensions=(derived_person_dimensions),
         )
         if unsupported_person_categories:
             raise ValueError(
@@ -1025,6 +1279,82 @@ def _preflight_small_area_run(
             )
     else:
         geography_universe = None
+    control_pack_plan: dict[str, Any] | None = None
+    if control_pack is not None:
+        assert control_pack_evidence is not None
+        assert person_controls is not None
+        expected_universe = statcan_geography_universe(
+            control_pack.census_vintage,
+            control_pack.geography_level,
+            geography_column,
+        )
+        if (
+            geography_universe is not None
+            and geography_universe.canonical_key != expected_universe.canonical_key
+        ):
+            raise ValueError(
+                "geography universe is incompatible with the selected control pack"
+            )
+        geography_universe = expected_universe
+        control_geographies = _validate_control_pack_tables(
+            control_pack, controls, person_controls
+        )
+        _validate_control_pack_evidence_binding(
+            control_pack,
+            control_pack_evidence,
+            controls,
+            person_controls,
+            control_geographies,
+        )
+        household_fields = (
+            _csv_columns(candidate_households_path)
+            if candidate_households_path is not None
+            else [*inspection_conditions, *inspection_household_targets]
+        )
+        person_fields = (
+            _csv_columns(candidate_persons_path)
+            if candidate_persons_path is not None
+            else [*inspection_conditions, *inspection_person_targets]
+        )
+        compatibility = validate_control_pack_compatibility(
+            control_pack,
+            census_vintage=control_pack_evidence.census_vintage,
+            geography_level=control_pack_evidence.geography_level,
+            linked_schema_version=control_pack.linked_schema_version,
+            household_fields=household_fields,
+            person_fields=person_fields,
+        )
+        if not compatibility["passed"]:
+            raise ValueError(str(compatibility["issues"][0]["message"]))
+        if candidate_households_path is not None and candidate_persons_path is not None:
+            control_pack_plan = plan_control_pack(
+                control_pack,
+                _read_csv_rows(candidate_households_path),
+                _read_csv_rows(candidate_persons_path),
+                controls,
+                person_controls,
+                evidence=control_pack_evidence,
+            )
+            if not control_pack_plan["passed"]:
+                raise ValueError(str(control_pack_plan["issues"][0]["message"]))
+        else:
+            control_pack_plan = {
+                "schema_version": "synthpopcan-control-pack-web-preflight-v1",
+                "passed": True,
+                "pack": {
+                    "identifier": control_pack.identifier,
+                    "definition_sha256": control_pack.definition_sha256,
+                    "census_vintage": control_pack.census_vintage,
+                    "geography_level": control_pack.geography_level,
+                    "identifier_namespace": control_pack.identifier_namespace,
+                },
+                "compatibility": compatibility,
+                "deferred_checks": [
+                    "candidate category support after deterministic generation",
+                    "post-subsample structural support and whole-household "
+                    "contribution",
+                ],
+            }
     normalized_options = {
         "candidate_households": candidate_households,
         "geography_dimension": geography_dimension,
@@ -1057,6 +1387,7 @@ def _preflight_small_area_run(
             "disk_free_bytes": disk_free,
             "enough_disk": enough_disk,
         },
+        "control_pack_plan": control_pack_plan,
         "expected_artifacts": [
             "households",
             "persons",

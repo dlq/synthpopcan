@@ -1,6 +1,6 @@
 [project]
 name = "synthpopcan"
-version = "0.8.0"
+version = "0.9.0"
 description = "Build, inspect, and validate modelled Canadian households and people for reproducible research."
 readme = "README.md"
 requires-python = ">=3.11"

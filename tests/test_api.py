@@ -16,6 +16,8 @@ from synthpopcan.models import model_payload
 from synthpopcan.tree import read_tree_training_sample, train_cart_model
 
 STABLE_API_NAMES = (
+    "ControlPackEvidence",
+    "ControlPackManifest",
     "ControlTable",
     "EnrichmentResult",
     "ExchangeBundle",
@@ -24,6 +26,7 @@ STABLE_API_NAMES = (
     "LinkedPopulationFiles",
     "PopulationRows",
     "SmallAreaResult",
+    "build_control_pack_evidence",
     "calibrate_small_area",
     "create_exchange_bundle",
     "enrich_can_fed",
@@ -33,6 +36,10 @@ STABLE_API_NAMES = (
     "fetch_model",
     "fit_ipf",
     "generate_from_model",
+    "list_control_packs",
+    "plan_control_pack",
+    "read_control_pack",
+    "read_control_pack_evidence",
     "read_controls",
     "read_model_package",
     "read_seed",
@@ -47,9 +54,9 @@ STABLE_API_NAMES = (
 def test_stable_api_contract_is_explicit() -> None:
     assert tuple(api.__all__) == STABLE_API_NAMES
     assert tuple(spc.__all__) == (
-        *STABLE_API_NAMES[:8],
+        *STABLE_API_NAMES[:10],
         "__version__",
-        *STABLE_API_NAMES[8:],
+        *STABLE_API_NAMES[10:],
     )
     expected_parameters = {
         "fit_ipf": ("seed", "controls", "weight_field", "max_iterations", "tolerance"),
@@ -67,6 +74,8 @@ def test_stable_api_contract_is_explicit() -> None:
             "geography_dimension",
             "output_dir",
             "person_controls",
+            "control_pack",
+            "control_pack_evidence",
             "geography_column",
             "geography_universe",
             "max_iterations",

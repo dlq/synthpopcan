@@ -1,11 +1,31 @@
 import { numberValue, optionalNumberValue } from "./form-utils.mjs";
 import { createOperationSequencer } from "./operation-sequencer.mjs";
 import { resultItem, revokeDownloads, showError, showStatus } from "./result-ui.mjs";
-import { createRun, preflightRun, uploadCsv } from "./run-api.mjs";
+import { createRun, listControlPacks, preflightRun, uploadCsv } from "./run-api.mjs";
 
 export function bindSmallAreaWorkflow() {
   const form = document.querySelector("#small-area-form");
   const operations = createOperationSequencer();
+  const controlPackSelect = document.querySelector("#small-area-control-pack");
+  const controlPackEvidence = document.querySelector(
+    "#small-area-control-pack-evidence-file",
+  );
+  void populateControlPackSelect(controlPackSelect).catch(() => {
+    controlPackSelect.title =
+      "Reviewed control packs are unavailable; raw normalized controls remain available.";
+  });
+  controlPackSelect.addEventListener("change", () => {
+    const selected = controlPackSelect.selectedOptions[0];
+    const geography = selected?.dataset.geographyLevel;
+    controlPackEvidence.required = Boolean(controlPackSelect.value);
+    if (geography) {
+      const dimension = document.querySelector("#small-area-geo-dimension");
+      const output = document.querySelector("#small-area-geo-column");
+      dimension.value = geography;
+      output.value = geography;
+      delete output.dataset.edited;
+    }
+  });
   form.addEventListener("input", () => invalidatePreparedEstimate(operations));
   form.addEventListener("change", () => invalidatePreparedEstimate(operations));
   form.addEventListener("submit", async (event) => {
@@ -81,6 +101,16 @@ function snapshotDraft() {
   if (!controlsFile) throw new Error("Choose household controls CSV.");
   const personControlsFile = document.querySelector("#small-area-person-controls-file")
     .files?.[0];
+  const controlPackId = document.querySelector("#small-area-control-pack").value;
+  const controlPackEvidenceFile = document.querySelector(
+    "#small-area-control-pack-evidence-file",
+  ).files?.[0];
+  if (controlPackId && !personControlsFile)
+    throw new Error("Reviewed control packs require a person controls CSV.");
+  if (Boolean(controlPackId) !== Boolean(controlPackEvidenceFile))
+    throw new Error(
+      "Choose both a reviewed control pack and its control-pack evidence JSON.",
+    );
   const boundariesFile = document.querySelector("#small-area-boundaries-file")
     .files?.[0];
   return {
@@ -90,6 +120,8 @@ function snapshotDraft() {
     candidatePersons,
     controlsFile,
     personControlsFile,
+    controlPackId,
+    controlPackEvidenceFile,
     boundariesFile,
     options: {
       candidate_households: numberValue("#small-area-candidate-households"),
@@ -117,6 +149,8 @@ async function buildRequest(draft) {
     candidatePersons,
     controlsFile,
     personControlsFile,
+    controlPackId,
+    controlPackEvidenceFile,
     boundariesFile,
     options,
   } = draft;
@@ -138,6 +172,11 @@ async function buildRequest(draft) {
   if (personControlsFile) {
     const uploaded = await uploadCsv(personControlsFile);
     inputs.person_controls_upload_id = uploaded.upload_id;
+  }
+  if (controlPackId && controlPackEvidenceFile) {
+    const uploaded = await uploadCsv(controlPackEvidenceFile);
+    inputs.control_pack_id = controlPackId;
+    inputs.control_pack_evidence_upload_id = uploaded.upload_id;
   }
   if (boundariesFile) {
     const uploaded = await uploadCsv(boundariesFile);
@@ -172,6 +211,10 @@ function showEstimate(element, preflight, operations) {
       estimate.enough_disk ? "Enough disk space" : "Too little disk space",
     ),
   );
+  const pack = preflight.control_pack_plan?.pack;
+  if (pack?.identifier) {
+    summary.append(resultItem("Control pack", pack.identifier));
+  }
   element.append(summary);
   const button = document.createElement("button");
   button.type = "button";
@@ -195,4 +238,17 @@ function showEstimate(element, preflight, operations) {
     }
   });
   element.append(button);
+}
+
+async function populateControlPackSelect(select) {
+  const payload = await listControlPacks();
+  for (const pack of payload.control_packs ?? []) {
+    const option = document.createElement("option");
+    option.value = pack.identifier;
+    option.dataset.geographyLevel = String(pack.geography_level).toLowerCase();
+    option.textContent = `${pack.census_vintage} ${String(
+      pack.geography_level,
+    ).toUpperCase()} — ${pack.label}`;
+    select.append(option);
+  }
 }

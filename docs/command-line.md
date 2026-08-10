@@ -118,6 +118,15 @@ Use this path when a suitable linked household/person package already exists:
 Small-area assignment is optional. A project that does not need local geography
 can validate the generated household/person files directly.
 
+For the reviewed 0.9 core workflow, start with
+`synthpopcan geo control-packs list`, then use `show`, `evidence`, and `plan`
+before `geo calibrate` or `geo synthesize`. The pack defines compatible
+household/person margins and candidate derivations; separate normalized CSVs
+still supply the counts, and a strict evidence JSON binds their source,
+universe, geography, and checksums. Both calibration commands accept
+`--control-pack` and `--control-pack-evidence`. Omitting those options preserves
+the project-specific raw-controls path without implying the built-in review.
+
 For restartable national 2021 execution, `synthpopcan geo national-da` and
 `synthpopcan geo national-ada` provide matching `fetch-profiles`, `prepare`,
 and `run` interfaces. They share planning and execution contracts while

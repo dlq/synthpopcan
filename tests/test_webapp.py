@@ -113,6 +113,8 @@ def test_small_area_panel_starts_hidden_and_help_is_prepared_for_keyboard() -> N
     app_source = (root / "app.mjs").read_text()
 
     assert 'data-workflow-panel="small-area" hidden' in html
+    assert 'id="small-area-control-pack"' in html
+    assert 'id="small-area-control-pack-evidence-file"' in html
     assert "prepareHelpLabels();" in app_source
     assert "label.tabIndex = 0" in app_source
     assert 'label.setAttribute("aria-label"' in app_source

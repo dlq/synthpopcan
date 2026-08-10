@@ -1,0 +1,3 @@
+index,HID,sex,prihm,agegrp,age,area,hdgree,lfact,hhsize,totinc,hhtype
+fixture-1,fixture-household-1,0,1,2,37,24660001,2,0,0,1,3
+fixture-2,fixture-household-2,1,1,5,72,24660001,1,2,0,0,3

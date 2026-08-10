@@ -7,6 +7,7 @@ import json
 import shlex
 import shutil
 import time
+from copy import deepcopy
 from io import StringIO
 from pathlib import Path
 
@@ -14,6 +15,8 @@ import httpx
 import pytest
 
 from synthpopcan.cli import main
+from synthpopcan.control_packs import build_control_pack_evidence, load_control_pack
+from synthpopcan.controls import read_control_table
 from synthpopcan.models import model_payload
 from synthpopcan.runs import RunStore
 from synthpopcan.webapi import (
@@ -252,6 +255,39 @@ def test_model_install_and_removal_return_bounded_catalogue_metadata(
 
 def test_model_category_support_handles_absent_model_level() -> None:
     assert _model_category_support({"models": {}}, "person", {"sex"}) == {"sex": set()}
+
+
+def test_control_pack_catalogue_api_lists_reviewed_builtins(tmp_path: Path) -> None:
+    app = create_web_app(
+        static_root=get_webapp_root(),
+        workspace=tmp_path / "workspace",
+        session_secret="test-session",
+    )
+
+    async def exercise() -> httpx.Response:
+        transport = httpx.ASGITransport(app=app)
+        async with httpx.AsyncClient(
+            transport=transport, base_url="http://127.0.0.1"
+        ) as client:
+            await client.get("/api/app")
+            return await client.get("/api/control-packs")
+
+    try:
+        response = asyncio.run(exercise())
+    finally:
+        app.state.job_manager.shutdown()
+
+    assert response.status_code == 200
+    packs = response.json()["control_packs"]
+    assert len(packs) == 8
+    assert {item["census_vintage"] for item in packs} == {2016, 2021}
+    assert {item["geography_level"] for item in packs} == {
+        "csd",
+        "ct",
+        "ada",
+        "da",
+    }
+    assert all(len(item["definition_sha256"]) == 64 for item in packs)
 
 
 def test_upload_is_streamed_hashed_sanitized_and_session_protected(
@@ -722,6 +758,47 @@ def test_small_area_preflight_optional_inputs_and_validation(tmp_path: Path) -> 
         )
 
 
+def test_small_area_control_pack_preflight_binds_candidates_controls_and_evidence(
+    tmp_path: Path,
+) -> None:
+    store = RunStore(tmp_path)
+    request = control_pack_request(store)
+
+    preflight = _preflight_small_area_run(store, request)
+
+    assert preflight["ready"] is True
+    assert preflight["control_pack_plan"]["passed"] is True
+    assert preflight["control_pack_plan"]["pack"]["identifier"] == (
+        "statcan-2021-core-private-household-da-v1"
+    )
+    assert preflight["request"]["inputs"]["control_pack_id"] == (
+        "statcan-2021-core-private-household-da-v1"
+    )
+    assert preflight["request"]["options"]["geography_universe"] == {
+        "schema_version": "synthpopcan-geography-universe-v1",
+        "census_vintage": 2021,
+        "geography_level": "da",
+        "identifier_namespace": "statcan:census:2021:da",
+        "identifier_column": "DAUID",
+        "dguid_column": None,
+    }
+
+    missing_evidence = deepcopy(request)
+    missing_evidence["inputs"].pop("control_pack_evidence_upload_id")
+    with pytest.raises(ValueError, match="select a control pack and upload"):
+        _preflight_small_area_run(store, missing_evidence)
+
+    tampered_controls = store_upload(
+        store,
+        "tampered-household-controls.csv",
+        control_pack_household_controls_csv(multiplier=2),
+    )
+    tampered = deepcopy(request)
+    tampered["inputs"]["controls_upload_id"] = tampered_controls
+    with pytest.raises(ValueError, match="household controls checksum"):
+        _preflight_small_area_run(store, tampered)
+
+
 def test_preflight_blocks_invalid_inputs_and_run_rechecks_claimed_uploads(
     tmp_path: Path,
 ) -> None:
@@ -907,3 +984,113 @@ def controls_csv() -> bytes:
         b"sex,sex,,F,50\n"
         b"sex,sex,,M,50\n"
     )
+
+
+def control_pack_request(store: RunStore) -> dict:
+    pack = load_control_pack("statcan-2021-core-private-household-da-v1")
+    candidate_households = store_upload(
+        store,
+        "candidate-households.csv",
+        control_pack_candidate_households_csv(),
+    )
+    candidate_persons = store_upload(
+        store,
+        "candidate-persons.csv",
+        control_pack_candidate_persons_csv(),
+    )
+    controls = store_upload(
+        store,
+        "household-controls.csv",
+        control_pack_household_controls_csv(),
+    )
+    person_controls = store_upload(
+        store,
+        "person-controls.csv",
+        control_pack_person_controls_csv(),
+    )
+    evidence = build_control_pack_evidence(
+        pack,
+        read_control_table(store.upload_path(controls)),
+        read_control_table(store.upload_path(person_controls)),
+        geographies={
+            "24660244": {
+                "total_population": 15,
+                "persons_in_private_households": 15,
+            }
+        },
+        controls_source_revisions=pack.source_revisions,
+    )
+    evidence_upload = store_upload(
+        store,
+        "control-pack-evidence.json",
+        evidence.model_dump_json(indent=2).encode(),
+    )
+    return {
+        "workflow": "small_area",
+        "inputs": {
+            "candidate_households_upload_id": candidate_households,
+            "candidate_persons_upload_id": candidate_persons,
+            "controls_upload_id": controls,
+            "person_controls_upload_id": person_controls,
+            "control_pack_id": pack.identifier,
+            "control_pack_evidence_upload_id": evidence_upload,
+        },
+        "options": {
+            "candidate_households": 5,
+            "geography_dimension": "da",
+            "geography_column": "DAUID",
+        },
+    }
+
+
+def control_pack_candidate_households_csv() -> bytes:
+    return (
+        b"synthetic_household_id,household_size,TENUR\n"
+        b"h1,1,1\n"
+        b"h2,2,2\n"
+        b"h3,3,1\n"
+        b"h4,4,2\n"
+        b"h5,5,1\n"
+    )
+
+
+def control_pack_candidate_persons_csv() -> bytes:
+    rows = ["synthetic_person_id,synthetic_household_id,AGEGRP,GENDER\n"]
+    person_index = 0
+    for household_size in range(1, 6):
+        for _member in range(household_size):
+            age_group = ("1", "4", "14")[person_index % 3]
+            gender = ("1", "2")[(person_index // 3) % 2]
+            rows.append(f"p{person_index + 1},h{household_size},{age_group},{gender}\n")
+            person_index += 1
+    return "".join(rows).encode()
+
+
+def control_pack_household_controls_csv(*, multiplier: int = 1) -> bytes:
+    rows = ["margin,dimensions,da,household_size_group,TENUR,count\n"]
+    for category in ("1", "2", "3", "4", "5"):
+        rows.append(
+            f'household size,"da,household_size_group",24660244,{category},,'
+            f"{multiplier}\n"
+        )
+    rows.extend(
+        (
+            f'tenure,"da,TENUR",24660244,,1,{3 * multiplier}\n',
+            f'tenure,"da,TENUR",24660244,,2,{2 * multiplier}\n',
+        )
+    )
+    return "".join(rows).encode()
+
+
+def control_pack_person_controls_csv() -> bytes:
+    rows = ["margin,dimensions,da,age_group_3,GENDER,count\n"]
+    for age_group in ("0_14", "15_64", "65_plus"):
+        rows.extend(
+            (
+                f'broad age by gender,"da,age_group_3,GENDER",24660244,'
+                f"{age_group},1,3\n",
+                f'broad age by gender,"da,age_group_3,GENDER",24660244,'
+                f"{age_group},2,2\n",
+            )
+        )
+    return "".join(rows).encode()

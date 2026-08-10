@@ -1,8 +1,8 @@
 # SynthPopCan Plan
 
 Status: release-phased roadmap\
-Last updated: 2026-08-07\
-Current published release: `0.8.0`
+Last updated: 2026-08-10\
+Current published release: `0.9.0`
 
 ## Current Focus
 
@@ -12,8 +12,7 @@ completed implementation plans belong in [`plans/archive/`](plans/archive/).
 
 | Order | User outcome | Done when | Owned by |
 | --- | --- | --- | --- |
-| Next: `0.9.0` | A researcher can trust the bounded private-household small-area workflow without assuming that every PUMF field is locally controlled. | Linked calibration has an independent oracle, integerization has a published backend decision, one core 2016/2021 household/person control-pack family passes bounded multi-scale and external Canadian comparison evidence, and uncontrolled fields remain explicit. | [Methodological validation and uncertainty](plans/2026-08-02-methodological-validation-and-uncertainty.md), [expanded small-area controls](plans/2026-08-01-expanded-small-area-controls.md), and [correctness assurance](plans/2026-07-12-correctness-assurance.md) |
-| Then: `1.0.0` | Researchers and downstream tools can rely on a documented stable CLI, Python API, and declared persisted contracts. | The supported surface inventory is reviewed, pre-1.0 aliases and inconsistencies are resolved, compatibility tests freeze the declared contracts, the installed-package documentation and bilingual case study pass, and release/stewardship gates are complete. | This roadmap, [stewardship](plans/2026-07-19-research-software-stewardship.md), [strict typing](plans/2026-08-01-strict-typing.md), and [ADR-0010](adr/0010-pre-1-0-compatibility-evolution.md) |
+| Next: `1.0.0` | Researchers and downstream tools can rely on a documented stable CLI, Python API, and declared persisted contracts. | The supported surface inventory is reviewed, pre-1.0 aliases and inconsistencies are resolved, compatibility tests freeze the declared contracts, the installed-package documentation and bilingual case study pass, and release/stewardship gates are complete. | This roadmap, [stewardship](plans/2026-07-19-research-software-stewardship.md), [strict typing](plans/2026-08-01-strict-typing.md), and [ADR-0010](adr/0010-pre-1-0-compatibility-evolution.md) |
 | Post-`1.0` expansion | Add richer fields, family and collective-population structure, deeper uncertainty/privacy methods, building placement, and demand-backed adapters without destabilizing the frozen core. | Each addition uses the stable extension points or a separately versioned new contract and has its own evidence-backed release scope. | Active research plans and the research queue below |
 
 ## Goal And Boundaries
@@ -68,9 +67,11 @@ action. The [plan index](plans/README.md) records active and archived plans.
 
 ## Current Product State
 
-`0.8.0` is a published alpha release with explicit Census geography identity,
-a reusable external-data enrichment framework, maintained Can-FED and ODEF
-adapters, and a stable v1 linked-population artifact contract. It provides:
+`0.9.0` is a published alpha release with bounded methodological evidence,
+strict control-pack and source/universe-evidence contracts, explicit Census
+geography identity, a reusable external-data enrichment framework, maintained
+Can-FED and ODEF adapters, and a stable v1 linked-population artifact contract.
+It provides:
 
 - seed/control IPF with diagnostics, compact weights, integerized records,
   reports, and validation;
@@ -81,8 +82,9 @@ adapters, and a stable v1 linked-population artifact contract. It provides:
   validation;
 - a 33-entry prepared-model registry containing a demo plus parallel 2016 and
   2021 packages for Canada, supported provinces, and five PUMF-coded CMAs;
-- linked small-area calibration, joint person controls, scale estimation,
-  residual reports, realization, and standalone maps; and
+- linked small-area calibration, joint person controls, fail-closed control-pack
+  planning, independently recomputed field/weight/reuse/tail diagnostics, scale
+  estimation, residual reports, realization, and standalone maps;
 - durable local runs with bounded uploads and previews, progress, cancellation,
   recovery, exact structured reproduction recipes, and versioned assurance
   evidence with independently verifiable hashes, row counts, diagnostics, and
@@ -124,10 +126,9 @@ linked-population and durable-run contracts without adding a simulator-specific
 adapter. A real consumer can read and independently validate the contract with
 no optional format or simulator dependency.
 
-### `0.9.0`: bounded methodological and small-area confidence
+### `0.9.0`: bounded methodological and small-area confidence — completed
 
-Complete only the evidence needed to support the current private-household
-workflow and its extension points:
+Released on 2026-08-10. The bounded private-household workflow now has:
 
 - generated feasible linked-calibration cases and one independent
   solver-backed oracle;
@@ -136,13 +137,13 @@ workflow and its extension points:
 - reviewed 2016 and 2021 core household controls plus private-household
   age-by-sex/gender person controls for explicitly named supported geographies;
 - bounded multi-scale validation and a pinned external Canadian comparison;
-- weight concentration, candidate reuse, rare-category, structural-zero, and
-  controlled-versus-uncontrolled reporting; and
+- weight concentration, candidate reuse, rare-category, declared-zero-target,
+  and targeted-versus-uncontrolled reporting; and
 - one representative end-to-end fixture proving that the generic model-profile
   and control-pack interfaces can accept later additive profiles without a CLI
   redesign.
 
-This tranche does not require implementing every candidate control, every
+This tranche did not require implementing every candidate control, every
 hierarchical PUMF field, a family hierarchy, collective populations, a national
 fit, full uncertainty ensembles, or a new generative-model family.
 
@@ -195,6 +196,7 @@ documented, tested, and stable enough to build upon.
 | `0.7.0` | Explicit Census geography identity, bounded national DA/ADA workflows, reusable external-data enrichment contracts, separately versioned display geodata, and an optional CART model-building dependency. |
 | `0.7.2` | Maintained Can-FED area-context and corrected ODEF facility-inventory adapters with pinned acquisition, normalization, validation, and complete provenance evidence; no separate `0.7.1` package was released. |
 | `0.8.0` | Simulator-neutral linked-population exchange bundle with data dictionary, provenance, reproduction, file governance, hashes, and strict independent validation. |
+| `0.9.0` | Independent bounded calibration and integerization evidence, strict 2016/2021 core private-household control packs across CSD/CT/ADA/DA, bound source/universe evidence, and linked methodological diagnostics. |
 
 ## Sequenced Releases
 
@@ -271,6 +273,18 @@ reproduction, access classification, and per-file hashes; preserves
 validatable without simulator dependencies. Parquet, GeoParquet, GeoPackage,
 RO-Crate, deterministic archives, and target adapters remain conditional later
 mappings.
+
+### `0.9.0`: Bounded methodological and small-area confidence
+
+Released on 2026-08-10. It retains the production linked multiplicative
+updater and systematic-midpoint integerizer after independent bounded
+comparisons; adds strict, definition-only 2016/2021 CSD, CT, ADA, and DA core
+control packs; binds exact normalized counts to explicit source and
+private-household-universe evidence; and carries independently recomputed
+residual, concentration, reuse, rare-cell, zero-target, and field-status
+diagnostics through the API, CLI, and local web workflow. The multi-scale and
+external Canadian evidence is bounded and descriptive, not a national
+representativeness or record-level truth claim.
 
 ### Post-`1.0`: One target adapter pilot
 

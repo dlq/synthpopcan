@@ -20,11 +20,11 @@ import json
 import os
 import time
 from collections import Counter, defaultdict
-from collections.abc import Callable, Iterable, Sequence
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, TypeVar, cast
+from typing import TYPE_CHECKING, Any, TypeVar, cast
 
 import numpy as np
 import pandas as pd
@@ -45,7 +45,13 @@ from synthpopcan.ipf import (
     integerize_weights,
 )
 from synthpopcan.linked_schema import build_linked_population_contract
+from synthpopcan.methodological_validation import (
+    build_linked_calibration_validation_profile,
+)
 from synthpopcan.tabular import format_csv_number
+
+if TYPE_CHECKING:
+    import synthpopcan.control_packs
 
 HouseholdRow = dict[str, str]
 PersonRow = dict[str, str]
@@ -1219,6 +1225,16 @@ def calibrate_linked_household_csvs(
     persons_path: Path,
     controls_path: Path,
     person_controls_path: Path | None = None,
+    control_pack: (
+        str | Path | synthpopcan.control_packs.ControlPackManifest | None
+    ) = None,
+    control_pack_evidence: (
+        str
+        | Path
+        | Mapping[str, object]
+        | synthpopcan.control_packs.ControlPackEvidence
+        | None
+    ) = None,
     geography_dimension: str,
     geography_column: str,
     geography_universe: GeographyUniverse | None = None,
@@ -1259,6 +1275,9 @@ def calibrate_linked_household_csvs(
         Include non-deterministic wall-clock phase timings in the report.
         Disabled by default so otherwise identical reports remain byte stable.
     """
+
+    if control_pack is None and control_pack_evidence is not None:
+        raise ValueError("control_pack_evidence requires control_pack")
 
     started = time.perf_counter()
     timing_seconds: dict[str, float] = {}
@@ -1304,6 +1323,65 @@ def calibrate_linked_household_csvs(
             pool_size,  # type: ignore[arg-type]
             household_id_column=household_id_column,
             seed=subsample_seed,
+        )
+
+    control_pack_manifest: synthpopcan.control_packs.ControlPackManifest | None = None
+    control_pack_evidence_record: (
+        synthpopcan.control_packs.ControlPackEvidence | None
+    ) = None
+    control_pack_plan: dict[str, Any] | None = None
+    if control_pack is not None:
+        if person_controls is None:
+            raise ValueError("control_pack requires person_controls_path")
+        from synthpopcan.control_packs import (
+            apply_control_pack_derivations,
+            load_control_pack,
+            load_control_pack_evidence,
+            plan_control_pack,
+        )
+
+        control_pack_manifest = load_control_pack(control_pack)
+        if control_pack_manifest.geography_column != geography_dimension:
+            raise ValueError(
+                "control pack geography column "
+                f"{control_pack_manifest.geography_column!r} does not match "
+                f"geography_dimension {geography_dimension!r}"
+            )
+        pack_geography_universe = GeographyUniverse(
+            census_vintage=control_pack_manifest.census_vintage,
+            geography_level=control_pack_manifest.geography_level,
+            identifier_namespace=control_pack_manifest.identifier_namespace,
+            identifier_column=geography_column,
+        )
+        if geography_universe is not None:
+            if (
+                geography_universe.canonical_key
+                != pack_geography_universe.canonical_key
+            ):
+                raise ValueError(
+                    "geography universe is incompatible with the selected control pack"
+                )
+        else:
+            geography_universe = pack_geography_universe
+        control_pack_evidence_record = (
+            load_control_pack_evidence(control_pack_evidence)
+            if control_pack_evidence is not None
+            else None
+        )
+        control_pack_plan = plan_control_pack(
+            control_pack_manifest,
+            households,
+            persons,
+            controls,
+            person_controls,
+            evidence=control_pack_evidence_record,
+        )
+        if not control_pack_plan["passed"]:
+            raise ValueError(_format_control_pack_plan_error(control_pack_plan))
+        households, persons = apply_control_pack_derivations(
+            control_pack_manifest,
+            households,
+            persons,
         )
 
     phase_started = time.perf_counter()
@@ -1421,6 +1499,27 @@ def calibrate_linked_household_csvs(
         geography_universe.as_dict() if geography_universe is not None else None
     )
     summary["output_integrity"] = realization["output_integrity"]
+    summary["methodological_diagnostics"] = build_linked_calibration_validation_profile(
+        households,
+        persons,
+        controls,
+        person_controls,
+        fit.weights_by_geography,
+        realization["integer_weights"],
+        geography_dimension=geography_dimension,
+        geography_column=geography_column,
+        household_id_column=household_id_column,
+        fractional_tolerance=tolerance,
+    )
+    summary["control_pack"] = (
+        control_pack_manifest.as_dict() if control_pack_manifest is not None else None
+    )
+    summary["control_pack_evidence"] = (
+        control_pack_evidence_record.as_dict()
+        if control_pack_evidence_record is not None
+        else None
+    )
+    summary["control_pack_plan"] = control_pack_plan
     timing_seconds["report_construction"] = time.perf_counter() - phase_started
     timing_seconds["total_before_report_write"] = time.perf_counter() - started
     if record_timing:
@@ -1474,6 +1573,20 @@ def _format_preflight_error(report: dict[str, Any]) -> str:
     if tip:
         return f"{message} {tip}"
     return message
+
+
+def _format_control_pack_plan_error(plan: Mapping[str, object]) -> str:
+    issues = plan.get("issues", [])
+    if not isinstance(issues, list) or not issues:
+        return "control-pack feasibility plan did not pass"
+    messages = [
+        str(issue.get("message", "control-pack feasibility issue"))
+        for issue in issues
+        if isinstance(issue, Mapping) and issue.get("severity") == "error"
+    ]
+    if not messages:
+        return "control-pack feasibility plan did not pass"
+    return "control-pack feasibility plan did not pass: " + "; ".join(messages[:3])
 
 
 def _control_dimensions(margins: Sequence[ControlMargin]) -> tuple[str, ...]:

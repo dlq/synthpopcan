@@ -408,6 +408,56 @@ def test_run_creation_rolls_back_partially_claimed_uploads(
     assert list(store.runs_dir.iterdir()) == []
 
 
+def test_small_area_run_claims_control_pack_evidence_as_a_durable_input(
+    tmp_path: Path,
+) -> None:
+    store = RunStore(tmp_path)
+    households = write_upload(
+        store,
+        "households.csv",
+        b"synthetic_household_id,household_size,TENUR\nh1,1,1\n",
+    )
+    persons = write_upload(
+        store,
+        "persons.csv",
+        b"synthetic_person_id,synthetic_household_id,AGEGRP,GENDER\np1,h1,1,1\n",
+    )
+    controls = write_upload(store, "controls.csv", b"controls\nplaceholder\n")
+    person_controls = write_upload(
+        store, "person-controls.csv", b"controls\nplaceholder\n"
+    )
+    evidence = write_upload(store, "evidence.json", b'{"schema_version":"test"}')
+
+    manifest = store.create_small_area_run(
+        {
+            "workflow": "small_area",
+            "inputs": {
+                "candidate_households_upload_id": households,
+                "candidate_persons_upload_id": persons,
+                "controls_upload_id": controls,
+                "person_controls_upload_id": person_controls,
+                "control_pack_id": "statcan-2021-core-private-household-da-v1",
+                "control_pack_evidence_upload_id": evidence,
+            },
+            "options": {
+                "candidate_households": 1,
+                "geography_dimension": "da",
+                "geography_column": "da",
+            },
+        }
+    )
+
+    inputs = {item["logical_name"]: item for item in manifest["inputs"]}
+    assert inputs["control_pack_evidence"]["path"].endswith(
+        "/inputs/control-pack-evidence.json"
+    )
+    assert manifest["request"]["inputs"]["control_pack_id"] == (
+        "statcan-2021-core-private-household-da-v1"
+    )
+    with pytest.raises(ValueError, match="already been claimed"):
+        store.get_upload(evidence, require_unclaimed=True)
+
+
 def write_upload(store: RunStore, name: str, body: bytes) -> str:
     writer = store.begin_upload(name, max_bytes=max(1, len(body)))
     midpoint = len(body) // 2
