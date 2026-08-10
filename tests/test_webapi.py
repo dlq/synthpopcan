@@ -32,7 +32,7 @@ from synthpopcan.workflows.models import LOCAL_RUN_MAX_HOUSEHOLDS
 @pytest.mark.parametrize(
     ("failure", "status", "message"),
     [
-        (ValueError("upload is malformed"), 400, "upload is malformed"),
+        (ValueError("upload is malformed"), 400, "upload is invalid"),
         (
             OSError("/private/workspace/upload.bin: disk error"),
             507,
@@ -92,6 +92,40 @@ def test_upload_api_returns_safe_writer_failures(
     assert response.status_code == status
     assert response.json() == {"error": message}
     assert writer.aborted is True
+    assert "/private/workspace" not in response.text
+
+
+def test_preflight_api_does_not_expose_exception_details(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    app = create_web_app(
+        static_root=get_webapp_root(),
+        workspace=tmp_path / "workspace",
+        session_secret="test-session",
+    )
+    monkeypatch.setattr(
+        "synthpopcan.webapi._preflight_run",
+        lambda *_: (_ for _ in ()).throw(
+            ValueError("invalid file at /private/workspace/secret.csv")
+        ),
+    )
+
+    async def exercise() -> httpx.Response:
+        transport = httpx.ASGITransport(app=app)
+        async with httpx.AsyncClient(
+            transport=transport, base_url="http://127.0.0.1"
+        ) as client:
+            await client.get("/api/app")
+            return await client.post("/api/preflight", json={})
+
+    try:
+        response = asyncio.run(exercise())
+    finally:
+        app.state.job_manager.shutdown()
+
+    assert response.status_code == 400
+    assert response.json() == {"error": "preflight request is invalid"}
     assert "/private/workspace" not in response.text
 
 
@@ -442,7 +476,7 @@ def test_prepared_model_preflight_rejects_non_positive_chunk_size(
 
     response = asyncio.run(exercise())
     assert response.status_code == 400
-    assert response.json()["error"] == "chunk size must be positive"
+    assert response.json()["error"] == "preflight request is invalid"
 
 
 def test_prepared_model_preflight_accepts_claimable_json_upload(tmp_path: Path) -> None:
@@ -845,7 +879,7 @@ def test_preflight_blocks_invalid_inputs_and_run_rechecks_claimed_uploads(
     assert blocked.status_code == 400
     assert "blocking input diagnostics" in blocked.json()["error"]
     assert stale.status_code == 400
-    assert "already been claimed" in stale.json()["error"]
+    assert stale.json()["error"] == "run request is invalid"
 
 
 def test_run_api_rejects_unknown_workflows_ids_and_artifacts(tmp_path: Path) -> None:

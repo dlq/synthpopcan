@@ -416,7 +416,7 @@ def test_webapp_fetches_and_returns_model_package(monkeypatch) -> None:
             502,
             "model download failed",
         ),
-        (ValueError("checksum mismatch"), 502, "checksum mismatch"),
+        (ValueError("checksum mismatch"), 502, "model package failed validation"),
     ],
 )
 def test_webapp_model_fetch_reports_failures(
@@ -514,7 +514,7 @@ def test_webapp_wds_seed_controls_api_reports_bad_requests(monkeypatch) -> None:
             urlopen(request, timeout=2)
         assert exc_info.value.code == 400
         payload = json.loads(exc_info.value.read().decode("utf-8"))
-        assert payload == {"error": "download failed"}
+        assert payload == {"error": "WDS request is invalid"}
 
         missing = Request(f"{webapp_url(server)}api/missing", data=b"{}", method="POST")
         with pytest.raises(HTTPError) as missing_info:
@@ -539,7 +539,9 @@ def test_webapp_wds_seed_controls_api_reports_bad_requests(monkeypatch) -> None:
         with pytest.raises(HTTPError) as non_object_info:
             urlopen(non_object, timeout=2)
         assert non_object_info.value.code == 400
-        assert "must be an object" in non_object_info.value.read().decode("utf-8")
+        assert json.loads(non_object_info.value.read())["error"] == (
+            "WDS request is invalid"
+        )
     finally:
         server.shutdown()
         server.server_close()
@@ -670,7 +672,7 @@ def test_webapp_small_area_estimate_reports_invalid_controls() -> None:
 
         assert exc_info.value.code == 400
         payload = json.loads(exc_info.value.read().decode("utf-8"))
-        assert "has no dimensions" in payload["error"]
+        assert payload["error"] == "small-area estimate request is invalid"
 
         no_rows = Request(
             f"{webapp_url(server)}api/small-area/estimate",
@@ -688,7 +690,7 @@ def test_webapp_small_area_estimate_reports_invalid_controls() -> None:
             urlopen(no_rows, timeout=2)
         assert no_rows_info.value.code == 400
         assert json.loads(no_rows_info.value.read())["error"] == (
-            "controls CSV has no control rows"
+            "small-area estimate request is invalid"
         )
 
         no_geography = Request(
@@ -709,7 +711,7 @@ def test_webapp_small_area_estimate_reports_invalid_controls() -> None:
             urlopen(no_geography, timeout=2)
         assert no_geography_info.value.code == 400
         assert json.loads(no_geography_info.value.read())["error"] == (
-            "geography dimension is required"
+            "small-area estimate request is invalid"
         )
     finally:
         server.shutdown()

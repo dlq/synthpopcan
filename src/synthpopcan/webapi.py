@@ -213,9 +213,9 @@ def create_web_app(
                 },
                 status_code=HTTPStatus.CREATED,
             )
-        except ValueError as exc:
+        except ValueError:
             writer.abort()
-            return _error_response(str(exc), HTTPStatus.BAD_REQUEST)
+            return _error_response("upload is invalid", HTTPStatus.BAD_REQUEST)
         except OSError:
             writer.abort()
             return _error_response(
@@ -229,8 +229,11 @@ def create_web_app(
             payload = await _read_json_body(request)
             result = await run_in_threadpool(_preflight_run, run_store, payload)
             return JSONResponse(result)
-        except (KeyError, TypeError, ValueError) as exc:
-            return _error_response(str(exc), HTTPStatus.BAD_REQUEST)
+        except (KeyError, TypeError, ValueError):
+            return _error_response(
+                "preflight request is invalid",
+                HTTPStatus.BAD_REQUEST,
+            )
 
     @app.get("/api/runs")
     async def list_runs() -> Response:
@@ -259,23 +262,23 @@ def create_web_app(
                 manifest = run_store.create_small_area_run(preflight["request"])
             job_manager.enqueue(str(manifest["run_id"]))
             return JSONResponse(manifest, status_code=HTTPStatus.ACCEPTED)
-        except (KeyError, TypeError, ValueError) as exc:
-            return _error_response(str(exc), HTTPStatus.BAD_REQUEST)
+        except (KeyError, TypeError, ValueError):
+            return _error_response("run request is invalid", HTTPStatus.BAD_REQUEST)
 
     @app.get("/api/runs/{run_id}")
     async def get_run(run_id: str) -> Response:
         try:
             return JSONResponse(run_store.load_run(run_id))
-        except (KeyError, ValueError) as exc:
-            return _error_response(str(exc), HTTPStatus.NOT_FOUND)
+        except (KeyError, ValueError):
+            return _error_response("run not found", HTTPStatus.NOT_FOUND)
 
     @app.get("/api/runs/{run_id}/events")
     async def get_run_events(run_id: str, request: Request) -> Response:
         try:
             run_store.load_run(run_id)
             last_event_id = int(request.headers.get("last-event-id", "0"))
-        except (KeyError, ValueError) as exc:
-            return _error_response(str(exc), HTTPStatus.NOT_FOUND)
+        except (KeyError, ValueError):
+            return _error_response("run not found", HTTPStatus.NOT_FOUND)
 
         async def stream_events() -> AsyncIterator[str]:
             cursor = last_event_id
@@ -306,12 +309,15 @@ def create_web_app(
     async def cancel_run(run_id: str) -> Response:
         try:
             run_store.load_run(run_id)
-        except (KeyError, ValueError) as exc:
-            return _error_response(str(exc), HTTPStatus.NOT_FOUND)
+        except (KeyError, ValueError):
+            return _error_response("run not found", HTTPStatus.NOT_FOUND)
         try:
             return JSONResponse(job_manager.cancel(run_id))
-        except ValueError as exc:
-            return _error_response(str(exc), HTTPStatus.CONFLICT)
+        except ValueError:
+            return _error_response(
+                "run cannot be cancelled in its current state",
+                HTTPStatus.CONFLICT,
+            )
 
     @app.get("/api/runs/{run_id}/artifacts/{artifact_id}/preview")
     async def preview_artifact(
@@ -325,10 +331,13 @@ def create_web_app(
                 raise ValueError("only CSV artifacts can be previewed")
             preview = await run_in_threadpool(_read_csv_preview, path, rows)
             return JSONResponse(preview)
-        except KeyError as exc:
-            return _error_response(str(exc), HTTPStatus.NOT_FOUND)
-        except ValueError as exc:
-            return _error_response(str(exc), HTTPStatus.BAD_REQUEST)
+        except KeyError:
+            return _error_response("artifact not found", HTTPStatus.NOT_FOUND)
+        except ValueError:
+            return _error_response(
+                "artifact preview request is invalid",
+                HTTPStatus.BAD_REQUEST,
+            )
 
     @app.get("/api/runs/{run_id}/artifacts/{artifact_id}")
     async def get_artifact(run_id: str, artifact_id: str) -> Response:
@@ -339,8 +348,8 @@ def create_web_app(
                 media_type=str(artifact["media_type"]),
                 filename=str(artifact["filename"]),
             )
-        except (KeyError, ValueError) as exc:
-            return _error_response(str(exc), HTTPStatus.NOT_FOUND)
+        except (KeyError, ValueError):
+            return _error_response("artifact not found", HTTPStatus.NOT_FOUND)
 
     @app.post("/api/models/{model_id}/fetch")
     async def fetch_model(model_id: str) -> Response:
@@ -350,12 +359,19 @@ def create_web_app(
             return JSONResponse({"model": model_payload(model_id)})
         except KeyError:
             return _error_response("Unknown model", HTTPStatus.NOT_FOUND)
-        except OverflowError as exc:
-            return _error_response(str(exc), HTTPStatus.REQUEST_ENTITY_TOO_LARGE)
+        except OverflowError:
+            return _error_response(
+                "model package is above the browser memory limit; run "
+                f"synthpopcan models generate {model_id}",
+                HTTPStatus.REQUEST_ENTITY_TOO_LARGE,
+            )
         except OSError:
             return _error_response("model download failed", HTTPStatus.BAD_GATEWAY)
-        except ValueError as exc:
-            return _error_response(str(exc), HTTPStatus.BAD_GATEWAY)
+        except ValueError:
+            return _error_response(
+                "model package failed validation",
+                HTTPStatus.BAD_GATEWAY,
+            )
 
     @app.post("/api/models/{model_id}/install")
     async def install_model(model_id: str) -> Response:
@@ -368,8 +384,11 @@ def create_web_app(
             return _error_response("Unknown model", HTTPStatus.NOT_FOUND)
         except (OSError, TimeoutError):
             return _error_response("model download failed", HTTPStatus.BAD_GATEWAY)
-        except ValueError as exc:
-            return _error_response(str(exc), HTTPStatus.BAD_GATEWAY)
+        except ValueError:
+            return _error_response(
+                "model package failed validation",
+                HTTPStatus.BAD_GATEWAY,
+            )
 
     @app.delete("/api/models/{model_id}")
     async def remove_model(model_id: str) -> Response:
@@ -391,8 +410,12 @@ def create_web_app(
             return JSONResponse(model_payload(model_id))
         except KeyError:
             return _error_response("Unknown model", HTTPStatus.NOT_FOUND)
-        except OverflowError as exc:
-            return _error_response(str(exc), HTTPStatus.REQUEST_ENTITY_TOO_LARGE)
+        except OverflowError:
+            return _error_response(
+                "model package is above the browser memory limit; run "
+                f"synthpopcan models generate {model_id}",
+                HTTPStatus.REQUEST_ENTITY_TOO_LARGE,
+            )
         except FileNotFoundError:
             return _error_response(
                 "model package is not installed; run "
@@ -427,8 +450,8 @@ def create_web_app(
                     **generated,
                 }
             )
-        except (KeyError, TypeError, ValueError) as exc:
-            return _error_response(str(exc), HTTPStatus.BAD_REQUEST)
+        except (KeyError, TypeError, ValueError):
+            return _error_response("WDS request is invalid", HTTPStatus.BAD_REQUEST)
         except Exception:  # noqa: BLE001
             return _error_response(
                 "WDS preparation failed; check the product ID and dimensions",
@@ -464,8 +487,11 @@ def create_web_app(
                     "controlDimensions": list(controls.dimensions),
                 }
             )
-        except (TypeError, ValueError) as exc:
-            return _error_response(str(exc), HTTPStatus.BAD_REQUEST)
+        except (TypeError, ValueError):
+            return _error_response(
+                "small-area estimate request is invalid",
+                HTTPStatus.BAD_REQUEST,
+            )
 
     @app.api_route(
         "/api/{path:path}",
