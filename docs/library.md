@@ -422,6 +422,50 @@ for note in estimate["guidance"]:
 The estimate is a planning aid, not a quality result. Candidate support,
 convergence, and integerized residuals still need review after calibration.
 
+### Bind and Plan a Reviewed Control Pack
+
+The 0.9 control-pack contract separates reusable definitions from study-specific
+counts. A strict evidence record binds one pack to the exact normalized
+household and person controls, source revision, geography namespace, eligible
+geographies, and companion private-household population totals.
+
+```python
+import synthpopcan as spc
+
+pack = spc.read_control_pack("statcan-2021-core-private-household-da-v1")
+household_controls = spc.read_controls("household-controls.csv")
+person_controls = spc.read_controls("person-controls.csv")
+evidence = spc.build_control_pack_evidence(
+    pack,
+    household_controls,
+    person_controls,
+    geographies={
+        "24660244": {
+            "total_population": 610,
+            "persons_in_private_households": 610,
+        }
+    },
+)
+population = spc.LinkedPopulationFiles(
+    Path("candidates/households.csv"),
+    Path("candidates/persons.csv"),
+)
+plan = spc.plan_control_pack(
+    pack,
+    population,
+    household_controls,
+    person_controls,
+    evidence=evidence,
+)
+```
+
+The example counts only show the object shape. A research run must use and cite
+its own published companion values. Inspect `plan["issues"]`,
+`plan["field_status"]`, `plan["universe_evidence"]`, and
+`plan["margin_total_reconciliation"]`; proceed only when `plan["passed"]` is
+true. The calibration entry points repeat this plan after any candidate-pool
+subsample and fail rather than dropping a geography or margin.
+
 ### Calibrate Linked Candidate Files
 
 Use `calibrate_linked_household_csvs` when a pipeline needs explicit input and
@@ -454,6 +498,16 @@ print(summary["non_converged_count"] == 0, summary["max_abs_error"])
 If we also have compatible person controls, pass `person_controls_path`. Review
 the input warnings and both fractional and integerized residual summaries in
 the report before treating the output as usable.
+
+For a reviewed pack, also pass `control_pack=pack` and
+`control_pack_evidence=evidence`. The function adds the reviewed helper fields
+without overwriting their raw sources and embeds the complete manifest,
+evidence, and plan in the report. `report["methodological_diagnostics"]`
+independently recomputes linked household/person residuals, weight
+concentration, effective sample size, candidate reuse, rare-cell retention,
+declared zero-target constraints, and targeted-versus-uncontrolled fields.
+These diagnostics assess the implemented fit; they do not authorize a local
+representativeness claim.
 
 ### Prepare Boundaries and Render a Map
 

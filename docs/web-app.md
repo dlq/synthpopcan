@@ -137,6 +137,10 @@ same work reproducibly at larger scale.
 1. Upload normalized household controls and, when available, compatible person
    controls. Enter the geography dimension used by the controls, such as `ct`
    or `ada`.
+1. For the reviewed 0.9 path, select the matching Census vintage/geography
+   control pack and upload its strict evidence JSON. A pack requires person
+   controls. Leave the selector on **Raw normalized controls** for a
+   project-specific method that has its own review.
 1. Set the candidate household count and, for an exploratory run, a calibration
    pool size. Keep both random seeds recorded with the project.
 1. Choose **Estimate and prepare**, review target counts and workspace capacity,
@@ -231,6 +235,15 @@ dissemination areas, or another target geography. Select a premade model ID,
 upload a local package JSON, or upload both `households.csv` and `persons.csv`,
 then upload the household controls and optional person controls.
 
+The optional reviewed-control-pack selector loads the eight built-in 2016/2021
+CSD, CT, ADA, and DA definitions. Selecting one makes its bound evidence JSON
+required. Preflight verifies the manifest and evidence checksums, exact control
+vectors and geography set, companion private-household universe counts, and
+candidate/model field compatibility. Uploaded candidates receive the complete
+feasibility plan immediately; model-generated candidates receive clearly named
+deferred category/support checks that run after deterministic generation and
+any pool subsample. The durable run stops if that final plan fails.
+
 The form asks for the geography dimension and output column, candidate household
 count, optional calibration pool size, average persons per household, and random
 seed. Question-mark help labels can be hovered, tapped, or reached with the
@@ -250,7 +263,9 @@ publishes bounded previews plus downloadable artifacts. The result retains
 metadata for existing candidates. This keeps province-scale output out of
 browser memory while preserving model conditions, seeds, candidate settings,
 person controls, fitted-weight output, geography fields, and optional map
-creation. When the controls use the Census Profile `household_size_group`
+creation. A selected pack and evidence file are claimed as durable inputs, and
+the reproduction command records `--control-pack` and
+`--control-pack-evidence`. When the controls use the Census Profile `household_size_group`
 dimension, the generated command automatically adds `--max-household-size 5`
 and the matching grouped-column option. See {doc}`small-area` for
 control-building, validation, and mapping steps.

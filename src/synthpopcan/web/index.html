@@ -271,6 +271,22 @@
             <label>
               <span
                 class="help-label"
+                data-help="Optional reviewed 2016 or 2021 household/person control contract. Raw normalized controls remain available when no pack is selected."
+              >Reviewed control pack</span>
+              <select id="small-area-control-pack">
+                <option value="">Raw normalized controls</option>
+              </select>
+            </label>
+            <label>
+              <span
+                class="help-label"
+                data-help="Required with a reviewed pack. This strict JSON binds the pack, source revision, universe, geography, and exact household/person control tables."
+              >Control-pack evidence JSON</span>
+              <input id="small-area-control-pack-evidence-file" type="file" accept=".json,application/json">
+            </label>
+            <label>
+              <span
+                class="help-label"
                 data-help="Optional prepared WGS-84 GeoJSON whose features use a geo_id property matching the output geography values."
               >Boundary GeoJSON for map</span>
               <input id="small-area-boundaries-file" type="file" accept=".geojson,.json,application/json">

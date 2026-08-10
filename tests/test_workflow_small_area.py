@@ -6,6 +6,7 @@ import shlex
 import shutil
 from pathlib import Path
 
+import pytest
 from click.testing import CliRunner
 
 from synthpopcan.cli import cli
@@ -228,3 +229,49 @@ def test_small_area_workflow_accepts_existing_linked_candidates(tmp_path: Path) 
         replay_dir / "households.csv"
     ).read_bytes() == result.households_path.read_bytes()
     assert (replay_dir / "persons.csv").read_bytes() == result.persons_path.read_bytes()
+
+
+def test_small_area_control_pack_reproduction_records_durable_flags(
+    tmp_path: Path,
+) -> None:
+    common = {
+        "package_path": None,
+        "controls_path": tmp_path / "controls.csv",
+        "person_controls_path": tmp_path / "person-controls.csv",
+        "candidates_dir": tmp_path / "candidates",
+        "output_dir": tmp_path / "output",
+        "candidate_households": 5,
+        "geography_dimension": "da",
+        "geography_column": "da",
+        "conditions": {},
+        "candidate_households_path": tmp_path / "households.csv",
+        "candidate_persons_path": tmp_path / "persons.csv",
+    }
+    with pytest.raises(ValueError, match="both required"):
+        SmallAreaRequest(
+            **common,
+            control_pack="statcan-2021-core-private-household-da-v1",
+        )
+
+    request = SmallAreaRequest(
+        **common,
+        control_pack="statcan-2021-core-private-household-da-v1",
+        control_pack_evidence_path=tmp_path / "control-pack-evidence.json",
+        control_pack_reference="statcan-2021-core-private-household-da-v1",
+        control_pack_evidence_reference="inputs/control-pack-evidence.json",
+    )
+
+    reproduction = request.reproduction().as_dict()
+    rendered = shlex.split(reproduction["shell"])
+    assert rendered[rendered.index("--control-pack") + 1] == (
+        "statcan-2021-core-private-household-da-v1"
+    )
+    assert rendered[rendered.index("--control-pack-evidence") + 1] == (
+        "inputs/control-pack-evidence.json"
+    )
+    assert reproduction["request"]["inputs"]["control_pack"] == (
+        "statcan-2021-core-private-household-da-v1"
+    )
+    assert reproduction["request"]["inputs"]["control_pack_evidence"] == (
+        "inputs/control-pack-evidence.json"
+    )

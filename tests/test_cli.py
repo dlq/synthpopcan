@@ -8,6 +8,7 @@ from unittest.mock import patch
 import click
 import pytest
 from click import ClickException
+from click.testing import CliRunner
 
 from synthpopcan.cli import (
     _format_model_availability,
@@ -71,6 +72,273 @@ def test_cli_command_tree_is_coherent() -> None:
         "prepare",
         "run",
     }
+    assert set(cli.commands["geo"].commands["control-packs"].commands) == {
+        "evidence",
+        "list",
+        "plan",
+        "show",
+    }
+
+
+def test_cli_lists_and_shows_control_packs(tmp_path: Path, capsys) -> None:
+    assert main(["geo", "control-packs", "list", "--format", "json"]) == 0
+    packs = json.loads(capsys.readouterr().out)
+    assert len(packs) == 8
+    pack_id = "statcan-2021-core-private-household-da-v1"
+    assert any(item["identifier"] == pack_id for item in packs)
+
+    assert main(["geo", "control-packs", "list"]) == 0
+    summary = capsys.readouterr().out
+    assert pack_id in summary
+    assert "Census 2021  DA" in summary
+
+    assert main(["geo", "control-packs", "show", pack_id]) == 0
+    manifest = json.loads(capsys.readouterr().out)
+    assert manifest["identifier"] == pack_id
+    assert manifest["geography_level"] == "da"
+
+    manifest_path = tmp_path / "pack.json"
+    assert (
+        main(
+            [
+                "geo",
+                "control-packs",
+                "show",
+                pack_id,
+                "--out",
+                str(manifest_path),
+            ]
+        )
+        == 0
+    )
+    capsys.readouterr()
+    assert json.loads(manifest_path.read_text())["identifier"] == pack_id
+
+    with pytest.raises(ClickException, match="unknown control pack"):
+        main(["geo", "control-packs", "show", "not-a-pack"])
+
+
+_CONTROL_PACK_ID = "statcan-2021-core-private-household-da-v1"
+
+
+def _write_control_pack_cli_inputs(tmp_path: Path) -> dict[str, Path]:
+    population = tmp_path / "population"
+    population.mkdir()
+    households = population / "households.csv"
+    persons = population / "persons.csv"
+    controls = tmp_path / "household-controls.csv"
+    person_controls = tmp_path / "person-controls.csv"
+    universe = tmp_path / "universe.json"
+    evidence = tmp_path / "evidence.json"
+
+    households.write_text(
+        "synthetic_household_id,household_size,TENUR\n"
+        "h1,1,1\n"
+        "h2,2,2\n"
+        "h3,3,1\n"
+        "h4,4,2\n"
+        "h5,5,1\n"
+    )
+    person_rows = ["synthetic_person_id,synthetic_household_id,AGEGRP,GENDER\n"]
+    person_index = 0
+    for household_size in range(1, 6):
+        for _member in range(household_size):
+            age_group = ("1", "4", "14")[person_index % 3]
+            gender = ("1", "2")[(person_index // 3) % 2]
+            person_rows.append(
+                f"p{person_index + 1},h{household_size},{age_group},{gender}\n"
+            )
+            person_index += 1
+    persons.write_text("".join(person_rows))
+
+    control_rows = ["margin,dimensions,da,household_size_group,TENUR,count\n"]
+    for category in ("1", "2", "3", "4", "5"):
+        control_rows.append(
+            f'household size,"da,household_size_group",24660244,{category},,1\n'
+        )
+    control_rows.extend(
+        (
+            'tenure,"da,TENUR",24660244,,1,3\n',
+            'tenure,"da,TENUR",24660244,,2,2\n',
+        )
+    )
+    controls.write_text("".join(control_rows))
+
+    person_control_rows = ["margin,dimensions,da,age_group_3,GENDER,count\n"]
+    for age_group in ("0_14", "15_64", "65_plus"):
+        person_control_rows.extend(
+            (
+                f'broad age by gender,"da,age_group_3,GENDER",24660244,'
+                f"{age_group},1,3\n",
+                f'broad age by gender,"da,age_group_3,GENDER",24660244,'
+                f"{age_group},2,2\n",
+            )
+        )
+    person_controls.write_text("".join(person_control_rows))
+    universe.write_text(
+        json.dumps(
+            {
+                "24660244": {
+                    "total_population": 15,
+                    "persons_in_private_households": 15,
+                }
+            }
+        )
+    )
+    return {
+        "population": population,
+        "households": households,
+        "persons": persons,
+        "controls": controls,
+        "person_controls": person_controls,
+        "universe": universe,
+        "evidence": evidence,
+    }
+
+
+def _build_control_pack_cli_evidence(paths: dict[str, Path]) -> None:
+    assert (
+        main(
+            [
+                "geo",
+                "control-packs",
+                "evidence",
+                _CONTROL_PACK_ID,
+                "--controls",
+                str(paths["controls"]),
+                "--person-controls",
+                str(paths["person_controls"]),
+                "--universe-evidence",
+                str(paths["universe"]),
+                "--out",
+                str(paths["evidence"]),
+            ]
+        )
+        == 0
+    )
+
+
+def test_cli_builds_evidence_and_plans_population_directory(
+    tmp_path: Path, capsys
+) -> None:
+    paths = _write_control_pack_cli_inputs(tmp_path)
+    _build_control_pack_cli_evidence(paths)
+    capsys.readouterr()
+
+    assert (
+        main(
+            [
+                "geo",
+                "control-packs",
+                "plan",
+                _CONTROL_PACK_ID,
+                str(paths["population"]),
+                "--controls",
+                str(paths["controls"]),
+                "--person-controls",
+                str(paths["person_controls"]),
+                "--evidence",
+                str(paths["evidence"]),
+            ]
+        )
+        == 0
+    )
+    output = capsys.readouterr().out
+    assert f"PASS: {_CONTROL_PACK_ID} for 1 geographies" in output
+    assert "WARNING: 1 target geographies contain fewer than 50 households" in output
+    assert "WARNING: 1 target geographies contain fewer than 50 people" in output
+
+
+def test_cli_control_pack_plan_fails_closed_for_tampered_evidence(
+    tmp_path: Path,
+) -> None:
+    paths = _write_control_pack_cli_inputs(tmp_path)
+    _build_control_pack_cli_evidence(paths)
+    payload = json.loads(paths["evidence"].read_text())
+    payload["household_controls_sha256"] = "0" * 64
+    paths["evidence"].write_text(json.dumps(payload))
+
+    result = CliRunner().invoke(
+        cli,
+        [
+            "geo",
+            "control-packs",
+            "plan",
+            _CONTROL_PACK_ID,
+            str(paths["population"]),
+            "--controls",
+            str(paths["controls"]),
+            "--person-controls",
+            str(paths["person_controls"]),
+            "--evidence",
+            str(paths["evidence"]),
+        ],
+    )
+
+    assert result.exit_code == 1
+    assert f"FAIL: {_CONTROL_PACK_ID} for 1 geographies" in result.output
+    assert "household_controls_sha256" in result.output
+
+
+@pytest.mark.parametrize(
+    ("universe_payload", "message"),
+    [
+        ([], "expected a JSON object"),
+        ({"geographies": []}, "geographies must be a JSON object"),
+        (
+            {"geographies": {"24660244": "not-an-object"}},
+            "must map geography strings to JSON objects",
+        ),
+        (
+            {
+                "geographies": {
+                    "24660244": {
+                        "total_population": 15,
+                        "persons_in_private_households": 15,
+                    }
+                },
+                "excluded_geographies": {"24660245": 42},
+            },
+            "excluded_geographies must map strings to reasons",
+        ),
+    ],
+)
+def test_cli_control_pack_evidence_rejects_malformed_universe_envelopes(
+    tmp_path: Path,
+    universe_payload: object,
+    message: str,
+) -> None:
+    paths = _write_control_pack_cli_inputs(tmp_path)
+    paths["universe"].write_text(json.dumps(universe_payload))
+
+    with pytest.raises(ClickException, match=message):
+        _build_control_pack_cli_evidence(paths)
+
+
+def test_cli_control_pack_plan_requires_persons_for_household_csv(
+    tmp_path: Path,
+) -> None:
+    paths = _write_control_pack_cli_inputs(tmp_path)
+
+    with pytest.raises(
+        click.UsageError,
+        match="--persons is required when POPULATION is a household CSV",
+    ):
+        main(
+            [
+                "geo",
+                "control-packs",
+                "plan",
+                _CONTROL_PACK_ID,
+                str(paths["households"]),
+                "--controls",
+                str(paths["controls"]),
+                "--person-controls",
+                str(paths["person_controls"]),
+                "--evidence",
+                str(paths["evidence"]),
+            ]
+        )
 
 
 @pytest.mark.parametrize(

@@ -1,0 +1,126 @@
+{
+  "schema_version": "synthpopcan-external-comparison-v1",
+  "comparison_id": "predhumeau-manley-canada-2021-bounded-v1",
+  "title": "Bounded comparison with the Prédhumeau–Manley Canadian synthetic population",
+  "source": {
+    "creators": ["Manon Prédhumeau", "Ed Manley"],
+    "doi": "10.5281/zenodo.7572117",
+    "concept_doi": "10.5281/zenodo.7085408",
+    "article_doi": "10.1038/s41597-023-02030-4",
+    "version": "2.1.0",
+    "publication_date": "2023-01-26",
+    "record_url": "https://zenodo.org/records/7572117",
+    "access_right": "open",
+    "license": "CC-BY-4.0",
+    "resource_type": "dataset",
+    "publisher": "Zenodo",
+    "metadata_checked": "2026-08-10"
+  },
+  "resource": {
+    "filename": "synpopCanada_dataset.zip",
+    "url": "https://zenodo.org/api/records/7572117/files/synpopCanada_dataset.zip/content",
+    "byte_size": 9573036764,
+    "checksum": "md5:b9f4b9db45aed0169d1a86af77fa9298",
+    "checksum_authority": "Zenodo record 7572117",
+    "checksum_limitation": "The publisher exposes MD5 for this archive; extracted evidence must add SHA-256."
+  },
+  "download_policy": {
+    "default": "disabled",
+    "explicit_opt_in_required": true,
+    "cache_outside_git": true,
+    "maximum_bytes": 10000000000,
+    "default_tests": "offline",
+    "reason": "The pinned archive is approximately 9.6 GB."
+  },
+  "comparison_scope": {
+    "dataset_year": 2021,
+    "geography_level": "territory aggregate",
+    "identifier_namespace": "statcan:province-territory",
+    "bounded_identifier": "62",
+    "bounded_name": "Nunavut",
+    "da_identity_policy": "No DA-level join: the external projection uses 2016 DA identities and the local output uses 2021 DA identities.",
+    "population_unit": "person linked to household",
+    "status": "bounded-territory-aggregate-evidence-ready",
+    "execution_requirement": "Regeneration is opt-in and requires the pinned extracted member plus local SynthPopCan Nunavut CSV outputs; default tests validate the committed aggregate without downloading either source.",
+    "truth_status": "Both populations are modelled artifacts; neither is observed record-level truth."
+  },
+  "schema_crosswalk": {
+    "external_fields": [
+      "index",
+      "HID",
+      "sex",
+      "prihm",
+      "agegrp",
+      "age",
+      "area",
+      "hdgree",
+      "lfact",
+      "hhsize",
+      "totinc",
+      "hhtype"
+    ],
+    "mappings": [
+      {
+        "external": "HID",
+        "synthpopcan": "synthetic_household_id",
+        "status": "identifier-role-only"
+      },
+      {
+        "external": "sex",
+        "synthpopcan": "SEX/GENDER concept",
+        "status": "requires-vintage-aware-category-crosswalk"
+      },
+      {
+        "external": "agegrp",
+        "synthpopcan": "AGEGRP concept",
+        "status": "requires-category-crosswalk"
+      },
+      {
+        "external": "area",
+        "synthpopcan": "DAUID",
+        "status": "requires-2016-geography-identity"
+      },
+      {
+        "external": "hhsize",
+        "synthpopcan": "household_size",
+        "status": "external-codes-0-through-4-require-recoding"
+      }
+    ],
+    "unmapped_external_fields": ["prihm", "age", "hdgree", "lfact", "totinc", "hhtype"],
+    "rule": "No field is compared until its categories, universe, unit, and denominator are explicitly aligned."
+  },
+  "fixture": {
+    "kind": "project-authored-schema-only",
+    "path": "schema-fixture.csv",
+    "checksum": "sha256:59a2f8aeeaf3f7693c388f521a9832e0496371f8bd67487822be4084808130d0",
+    "contains_external_records": false,
+    "purpose": "Offline deterministic validation of schema and checksum plumbing."
+  },
+  "empirical_aggregate_evidence": {
+    "path": "nunavut-fa-aggregate-comparison.json",
+    "checksum": "sha256:811188a1a38c02a52a777adf56a449bf1f6917fb4c82f2e61e1c4a55f00c3691",
+    "contains_external_records": false,
+    "aggregate_only": true,
+    "minimum_geography": "Nunavut territory",
+    "archive_member": "Canada/nunavut/syn_pop/FA/synthetic_pop_2021_hh_.csv",
+    "extracted_member_checksum": "sha256:0d06e1c2932c027d6750cc48615041d085c50b910a7334ed4e3a0487fc3fb935",
+    "regeneration_script": "scripts/build_external_canadian_comparison.py",
+    "default_tests": "offline committed-artifact validation"
+  },
+  "required_empirical_evidence": [
+    "archive member name and checksum",
+    "bounded extracted-slice SHA-256 and row count",
+    "DA and Census-vintage identity",
+    "category crosswalk losses and exclusions",
+    "metric-specific units and denominators",
+    "runtime and storage context"
+  ],
+  "limitations": [
+    "The external 2021 population is a projection from a 2016 base, so dataset year and source Census vintage must not be conflated.",
+    "The committed CSV is fictional; the separate JSON contains only territory aggregates from an opt-in empirical method-to-method run.",
+    "The empirical member is the FA scenario, not the LG scenario used for validation in the associated article.",
+    "The 2016-versus-2021 DA identity mismatch prevents a DA-level join without a reviewed crosswalk.",
+    "The complete archive is not suitable for default CI or an ordinary package installation.",
+    "This descriptor does not authorize a national-quality claim."
+  ]
+}

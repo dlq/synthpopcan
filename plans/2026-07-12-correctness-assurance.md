@@ -2,11 +2,11 @@
 
 Status: active\
 Created: 2026-07-12\
-Last updated: 2026-08-02\
+Last updated: 2026-08-10\
 Target: ongoing correctness and release evidence\
-Next action: review and fixture the core 2016/2021 household-size, tenure, and
-private-household age-by-sex/gender crosswalks for the bounded `0.9.0` tranche;
-maintain the released assurance and reproduction gates in parallel\
+Next action: inventory and freeze the declared 1.0 CLI, API, and persisted
+contracts with installed-package compatibility fixtures while maintaining the
+released assurance and reproduction gates\
 Roadmap: [PLANS.md](../PLANS.md) | [Plan index](README.md)
 
 ## Purpose And Boundaries

@@ -324,6 +324,14 @@ class RunStore:
                 )
             controls_id = str(inputs.get("controls_upload_id", ""))
             person_controls_id = inputs.get("person_controls_upload_id")
+            control_pack_id = inputs.get("control_pack_id")
+            control_pack_evidence_id = inputs.get("control_pack_evidence_upload_id")
+            if bool(control_pack_id) != bool(control_pack_evidence_id):
+                raise ValueError(
+                    "small-area control pack and evidence upload are both required"
+                )
+            if control_pack_id and not person_controls_id:
+                raise ValueError("small-area control packs require person controls")
             upload_specs: list[tuple[dict[str, Any], str, str]] = []
             if package_id:
                 upload_specs.append(
@@ -367,6 +375,16 @@ class RunStore:
                         ),
                         "person_controls",
                         "person-controls.csv",
+                    )
+                )
+            if control_pack_evidence_id:
+                upload_specs.append(
+                    (
+                        self.get_upload(
+                            str(control_pack_evidence_id), require_unclaimed=True
+                        ),
+                        "control_pack_evidence",
+                        "control-pack-evidence.json",
                     )
                 )
             boundaries_id = inputs.get("boundaries_upload_id")

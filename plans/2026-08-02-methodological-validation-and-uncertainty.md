@@ -1,13 +1,13 @@
 # Methodological Validation And Uncertainty Plan
 
-Status: planned cross-cutting assurance track\
+Status: active post-1.0 research track; bounded 0.9 tranche completed\
 Created: 2026-08-02\
-Last updated: 2026-08-02\
+Last updated: 2026-08-10\
 Target: bounded oracle, integerization, validation, and Canadian comparison for
 `0.9.0`; deeper ensembles and attack infrastructure after `1.0.0`\
-Next action: add generated feasible linked-calibration cases and an independent
-solver-backed oracle for bounded fixtures, then publish the first convergence
-and residual comparison\
+Next action: after the 1.0 interface freeze, design the first explicit
+candidate-pool and control-uncertainty ensemble without changing the retained
+production backend silently\
 Roadmap: [PLANS.md](../PLANS.md) | [Plan index](README.md)
 
 ## Outcome
@@ -116,6 +116,12 @@ Relevant external references include:
   purpose-, source-, licence-, ethics-, and human-release review.
 
 ## Pre-`1.0` Cut Line
+
+Completed in `0.9.0` on 2026-08-10. The release includes the bounded generated
+oracle fixtures, retained-backend decision, independently recomputed linked
+validation profile, fitter-generated CSD/CT/ADA/DA evidence, and pinned
+aggregate-only Prédhumeau-Manley comparison described below. The remaining
+phases stay active after the 1.0 interface freeze.
 
 Only a bounded subset of this plan is a `0.9.0`/`1.0.0` gate:
 

@@ -2,6 +2,47 @@
 
 All notable public changes to SynthPopCan are tracked here.
 
+## 0.9.0 - 2026-08-10
+
+Bounded methodological and small-area confidence.
+
+- Add a reproducible independent bounded relative-entropy calibration oracle,
+  generated feasible and infeasible linked cases, and a reviewed
+  integerization comparison. Retain the production linked multiplicative
+  updater and deterministic systematic-midpoint integerizer; keep the oracle
+  and largest-remainder method as evidence comparators rather than new runtime
+  switches.
+- Add strict versioned control-pack, compatibility-registry, and source/
+  universe-evidence contracts. Ship eight definition-only core packs spanning
+  the 2016 and 2021 Census vintages and CSD, CT, ADA, and DA levels, with
+  reviewed private-household household-size, tenure, and broad age-by-sex or
+  age-by-gender mappings. Census counts remain explicit normalized inputs and
+  are never bundled into pack definitions.
+- Add fail-closed pack planning across the Python API, CLI, and durable local
+  web workflow. Plans bind the exact control tables, source revisions, Census
+  vintage, geography namespace, eligible geography set, and private-household
+  universe evidence; validate complete vectors, candidate fields and support,
+  linkage, duplicate cells, and reconciliation; apply reviewed candidate
+  derivations; and report controlled, coarsened, derived, and uncontrolled
+  fields without treating carried-through PUMF attributes as local controls.
+- Add an independently recomputed linked-calibration validation profile to
+  small-area reports. It separates fractional residuals from integer
+  realization, counts person contributions through household weights, and
+  reports weight concentration, effective sample size, candidate reuse,
+  supported rare-cell loss, declared zero-target violations, field targeting,
+  and explicit claim limitations using cached vectorized contribution data.
+- Add bounded multi-scale calibration evidence and a pinned, aggregate-only
+  comparison with the Prédhumeau-Manley Canadian synthetic population. The
+  comparison records exact external resource and slice provenance and remains
+  descriptive: differing geography vintages, methods, and modeled outputs do
+  not create a record-level truth or representativeness claim.
+- Record the calibration and integerization backend decision in ADR-0012 and
+  the separation of reusable control definitions, normalized counts, and
+  checksummed evidence in ADR-0013. Document the applicability boundaries and
+  defer broader control families, collective populations, national claims,
+  uncertainty ensembles, and richer hierarchical entities until after the
+  pre-1.0 interface freeze unless separately justified.
+
 ## 0.8.0 - 2026-08-07
 
 Portable, simulator-neutral population handoff.

@@ -20,6 +20,10 @@ export function listRuns() {
   return fetchJson("/api/runs");
 }
 
+export function listControlPacks() {
+  return fetchJson("/api/control-packs");
+}
+
 export function getRun(runId) {
   return fetchJson(`/api/runs/${encodeURIComponent(runId)}`);
 }
