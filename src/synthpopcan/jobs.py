@@ -347,6 +347,12 @@ def _small_area_worker(
                 package_path=package_path,
                 controls_path=input_paths["controls"],
                 person_controls_path=input_paths.get("person_controls"),
+                control_pack=(
+                    str(request_inputs["control_pack_id"])
+                    if request_inputs.get("control_pack_id")
+                    else None
+                ),
+                control_pack_evidence_path=input_paths.get("control_pack_evidence"),
                 candidates_dir=work_dir / "candidates",
                 output_dir=work_dir / "output",
                 candidate_households=int(options.get("candidate_households", 10_000)),
@@ -382,6 +388,16 @@ def _small_area_worker(
                 person_controls_reference=(
                     "inputs/person-controls.csv"
                     if "person_controls" in input_paths
+                    else None
+                ),
+                control_pack_reference=(
+                    str(request_inputs["control_pack_id"])
+                    if request_inputs.get("control_pack_id")
+                    else None
+                ),
+                control_pack_evidence_reference=(
+                    "inputs/control-pack-evidence.json"
+                    if "control_pack_evidence" in input_paths
                     else None
                 ),
                 candidate_households_reference=(
@@ -473,6 +489,11 @@ def _small_area_worker(
                     "largest_residuals": summary["largest_residuals"],
                     "suggested_next_steps": result.details["suggested_next_steps"],
                     "calibration_mode": result.details["calibration_mode"],
+                    "control_pack": (
+                        result.details.get("control_pack_plan", {}).get("pack")
+                        if isinstance(result.details.get("control_pack_plan"), dict)
+                        else None
+                    ),
                 },
                 "reproduction": result.reproduction.as_dict(),
             }

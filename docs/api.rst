@@ -33,6 +33,8 @@ The geography, geodata, generic enrichment, Québec DA proof, and national
 small-area APIs were added in ``0.7.0``. Maintained Can-FED and ODEF workflows
 were added in ``0.7.2``.
 The simulator-neutral exchange bundle was added in ``0.8.0``.
+The strict control-pack/evidence contracts and bounded methodological evidence
+were added in ``0.9.0``.
 
 Top-Level Beginner API
 ----------------------
@@ -118,6 +120,24 @@ Exchange, Geography, and Enrichment
              estimate_national_small_area_storage,
              execute_canada_small_area_plan
    :show-inheritance:
+
+Small-Area Control Packs And Methodological Evidence
+----------------------------------------------------
+
+.. automodule:: synthpopcan.control_packs
+   :members: ControlPackManifest, ControlPackEvidence,
+             ControlCompatibilityRegistry, ControlDefinition,
+             list_builtin_control_packs, load_control_pack,
+             read_control_pack, write_control_pack,
+             build_control_pack_evidence, read_control_pack_evidence,
+             write_control_pack_evidence, validate_control_pack_compatibility,
+             apply_control_pack_derivations, plan_control_pack
+   :show-inheritance:
+
+.. automodule:: synthpopcan.methodological_validation
+   :members: build_linked_calibration_validation_profile,
+             read_external_comparison_descriptor,
+             validate_external_comparison_fixture
 
 .. automodule:: synthpopcan.national_execution
    :members: NationalBatchRunConfiguration,

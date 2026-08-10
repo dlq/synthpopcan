@@ -1,12 +1,13 @@
 # Expanded Small-Area Controls Plan
 
-Status: planned correctness and implementation track\
+Status: active post-1.0 expansion track; core 0.9 packs completed\
 Created: 2026-08-01\
-Last updated: 2026-08-02\
+Last updated: 2026-08-10\
 Target: core private-household packs for `0.9.0`; broader controls and
 population universes after `1.0.0`\
-Next action: define the versioned field/control compatibility registry and
-fixture the core household and private-household age-by-sex/gender crosswalks\
+Next action: after the 1.0 interface freeze, select the first additional
+reviewed control family from the coverage inventory and give it a bounded
+source, universe, suppression, and validation case\
 Roadmap: [PLANS.md](../PLANS.md) | [Plan index](README.md)
 
 ## Outcome
@@ -94,7 +95,14 @@ source and compatibility process below.
 
 ## Pre-`1.0` Cut Line
 
-The `0.9.0` tranche implements only:
+Completed in `0.9.0` on 2026-08-10. Strict generic registry, pack, and bound
+evidence contracts now support reviewed 2016/2021 private-household
+household-size, tenure, and broad age-by-sex/gender definitions at CSD, CT,
+ADA, and DA levels. Their shared API, CLI, and local-web extension points fail
+closed on incompatible counts, candidates, geography, or universe evidence.
+The broader families below remain post-1.0 research work.
+
+The `0.9.0` tranche implemented only:
 
 - the versioned compatibility-registry and control-pack contracts;
 - reviewed 2016 and 2021 household-size and tenure controls;

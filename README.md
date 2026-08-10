@@ -29,12 +29,15 @@ Near-term goals:
    census-vintage-specific.
 1. Maintain a local web app for configuring runs, inspecting controls, generating from prepared models, validating outputs, and downloading results.
 
-The `0.8.0` line adds a simulator-neutral CSV/JSON exchange bundle for handing
-validated linked households and people to another research tool with explicit
-relationships, a data dictionary, provenance, hashes, access classifications,
-and reproduction evidence. It builds on the `0.7.x` geography, national
-DA/ADA, prepared-boundary, and external-data enrichment work without claiming
-that a population contribution is a runnable simulation.
+The `0.9.0` line adds bounded methodological evidence and versioned small-area
+control packs for the 2016 and 2021 Censuses at CSD, CT, ADA, and DA levels.
+It keeps public Census counts separate from reusable control definitions,
+requires source and private-household-universe evidence, and reports which
+fields were controlled, coarsened, derived, or merely carried through. An
+independent calibration oracle, integerization comparison, linked diagnostics,
+multi-scale fixtures, and a pinned aggregate Canadian comparison support the
+implemented scope without claiming that every model field is locally
+representative.
 
 Detailed documentation is published at
 <https://synthpopcan.readthedocs.io/>. The source files live under
@@ -255,6 +258,7 @@ matches what your work actually depended on.
 | You used | Cite | DOI |
 | --- | --- | --- |
 | SynthPopCan generally | The concept DOI, which always resolves to the newest release | [10.5281/zenodo.21461463](https://doi.org/10.5281/zenodo.21461463) |
+| SynthPopCan 0.9.0 | The archived 0.9.0 version DOI | [10.5281/zenodo.21876960](https://doi.org/10.5281/zenodo.21876960) |
 | SynthPopCan 0.7.0 | The archived 0.7.0 version DOI | [10.5281/zenodo.21743129](https://doi.org/10.5281/zenodo.21743129) |
 | A prepared model package | That package's own DOI, listed on its Zenodo record | one per package |
 

@@ -40,6 +40,8 @@ class SmallAreaRequest:
     conditions: dict[str, str]
     geography_universe: GeographyUniverse | None = None
     person_controls_path: Path | None = None
+    control_pack: str | Path | None = None
+    control_pack_evidence_path: Path | None = None
     package_reference: str | None = None
     random_seed: int | None = None
     pool_size: int | None = None
@@ -60,6 +62,8 @@ class SmallAreaRequest:
     max_candidate_persons: int | None = None
     controls_reference: str | None = None
     person_controls_reference: str | None = None
+    control_pack_reference: str | None = None
+    control_pack_evidence_reference: str | None = None
     candidate_households_reference: str | None = None
     candidate_persons_reference: str | None = None
     boundaries_reference: str | None = None
@@ -73,12 +77,24 @@ class SmallAreaRequest:
             raise ValueError(
                 "geography universe identifier column must match geography_column"
             )
+        if bool(self.control_pack) != bool(self.control_pack_evidence_path):
+            raise ValueError("control pack and control-pack evidence are both required")
+        if self.control_pack is not None and self.person_controls_path is None:
+            raise ValueError("control packs require person controls")
 
     def reproduction(self) -> WorkflowReproduction:
         controls_reference = self.controls_reference or str(self.controls_path)
         person_controls_reference = self.person_controls_reference or (
             str(self.person_controls_path)
             if self.person_controls_path is not None
+            else None
+        )
+        control_pack_reference = self.control_pack_reference or (
+            str(self.control_pack) if self.control_pack is not None else None
+        )
+        control_pack_evidence_reference = self.control_pack_evidence_reference or (
+            str(self.control_pack_evidence_path)
+            if self.control_pack_evidence_path is not None
             else None
         )
         candidate_households_reference = self.candidate_households_reference or (
@@ -138,6 +154,12 @@ class SmallAreaRequest:
         )
         if person_controls_reference is not None:
             arguments.extend(("--person-controls", person_controls_reference))
+        if control_pack_reference is not None:
+            assert control_pack_evidence_reference is not None
+            arguments.extend(("--control-pack", control_pack_reference))
+            arguments.extend(
+                ("--control-pack-evidence", control_pack_evidence_reference)
+            )
         for column, value in sorted(self.conditions.items()):
             if reference is not None:
                 arguments.extend(("--condition", f"{column}={value}"))
@@ -202,6 +224,8 @@ class SmallAreaRequest:
                     "candidate_persons": candidate_persons_reference,
                     "controls": controls_reference,
                     "person_controls": person_controls_reference,
+                    "control_pack": control_pack_reference,
+                    "control_pack_evidence": control_pack_evidence_reference,
                 },
                 "options": {
                     "candidate_households": self.candidate_households,
@@ -321,6 +345,8 @@ def synthesize_small_area_files(
         persons_path=candidate_persons,
         controls_path=request.controls_path,
         person_controls_path=request.person_controls_path,
+        control_pack=request.control_pack,
+        control_pack_evidence=request.control_pack_evidence_path,
         geography_dimension=request.geography_dimension,
         geography_column=request.geography_column,
         geography_universe=request.geography_universe,

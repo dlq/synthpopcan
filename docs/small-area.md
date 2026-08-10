@@ -82,6 +82,95 @@ The current preparer implements household size and tenure. The
 attributes have potential 2016 and 2021 Profile controls, how widely their
 source universes are available, and which fields remain uncontrolled.
 
+## Reviewed Control Packs (0.9)
+
+A **control pack** is a reviewed definition of which margins may be fitted
+together. It records the Census vintage and geography level, source rows,
+category mappings, population universes, candidate-field derivations,
+suppression policy, and known limitations. It does **not** contain Census
+counts. Household and person counts remain ordinary normalized control CSVs so
+we can inspect, cite, replace, and hash the exact values used by one study.
+
+SynthPopCan 0.9 includes eight definition-only core packs: one for each
+combination of the 2016 or 2021 Census and CSD, CT, ADA, or DA geography. Each
+combines:
+
+- private-household size, top-coded to the published five-or-more category;
+- private-household tenure; and
+- broad linked-person age by sex (2016) or gender (2021), coarsened to the
+  reviewed common categories.
+
+List and inspect them before preparing counts:
+
+```bash
+synthpopcan geo control-packs list
+synthpopcan geo control-packs show \
+  statcan-2021-core-private-household-da-v1
+```
+
+The broad age source is a total-population Profile vector, while the modelled
+population contains people in private households. A pack therefore requires a
+strict evidence JSON record for every included geography. The record must show
+that published total population equals published persons in private households
+for that geography, bind the exact household and person control-table hashes,
+and identify exclusions. A minimal source file used to build that record has
+this shape:
+
+```json
+{
+  "geographies": {
+    "24660244": {
+      "total_population": 610,
+      "persons_in_private_households": 610
+    }
+  },
+  "excluded_geographies": {
+    "24660245": "suppressed person-control cell"
+  }
+}
+```
+
+The numbers above only illustrate the file shape; they are not published
+controls. Build the bound record from the study's reviewed values, then plan
+against the actual linked candidates before fitting:
+
+```bash
+PACK=statcan-2021-core-private-household-da-v1
+
+synthpopcan geo control-packs evidence "$PACK" \
+  --controls household-controls.csv \
+  --person-controls person-controls.csv \
+  --universe-evidence universe-evidence.json \
+  --out control-pack-evidence.json
+
+synthpopcan geo control-packs plan "$PACK" candidates/ \
+  --controls household-controls.csv \
+  --person-controls person-controls.csv \
+  --evidence control-pack-evidence.json
+
+synthpopcan geo calibrate candidates/ \
+  --controls household-controls.csv \
+  --person-controls person-controls.csv \
+  --control-pack "$PACK" \
+  --control-pack-evidence control-pack-evidence.json \
+  --geo-dimension da \
+  --geo-column DAUID \
+  --out calibrated-population/
+```
+
+The planner fails closed on a wrong vintage or geography namespace, changed
+control bytes, incomplete or duplicate category vectors, unreconciled margin
+totals, missing fields, unsupported positive cells, broken linkage, or a
+private-household universe mismatch. It applies reviewed helper derivations
+without overwriting raw fields. For example, `household_size` and `AGEGRP`
+remain visible but are reported as **coarsened to a control**; only the fitted
+helper dimensions carry the corresponding control status. All other fields
+remain explicitly uncontrolled.
+
+Raw normalized controls remain supported when no pack is selected. That path
+is useful for project-specific methods, but it does not inherit the built-in
+pack's source, universe, or local-claim review.
+
 ## Worked Workflow
 
 **Runnable research workflow; network and time required.** The steps below use
@@ -824,6 +913,23 @@ Important options:
 - `--household-size-group-column`: grouped-size column name, default
   `household_size_group`.
 
+### `geo control-packs`
+
+Inspects and applies the reviewed definition-only pack contracts introduced in
+0.9:
+
+- `list [--format summary|json]` lists the eight built-ins;
+- `show PACK [--out pack.json]` renders a built-in or strict local manifest;
+- `evidence PACK --controls ... --person-controls ... --universe-evidence ... --out ...` binds a pack to the exact normalized counts and companion
+  private-household population evidence; and
+- `plan PACK POPULATION --controls ... --person-controls ... --evidence ...`
+  checks compatibility and feasibility without fitting. Use `--persons` when
+  `POPULATION` is a household CSV rather than a linked-population directory.
+
+`plan` exits with status 1 when any required source, universe, field, vector,
+geography, linkage, or support check fails. `--format json` retains the complete
+machine-readable issue list.
+
 ### `geo estimate`
 
 Estimates the size of a small-area run before calibration. Use it to decide
@@ -867,6 +973,10 @@ Important options:
 - `--controls`: household controls with a target geography dimension.
 - `--person-controls`: optional person controls for joint household-weight
   refinement.
+- `--control-pack`: optional built-in identifier or strict local pack manifest.
+  Requires person controls and `--control-pack-evidence`.
+- `--control-pack-evidence`: strict JSON bound to the selected pack and the
+  exact household/person control tables. A non-passing plan stops before fit.
 - `--geo-dimension`: geography dimension in the controls.
 - `--geo-column`: geography column written to the assigned outputs.
 - `--census-vintage`, `--geo-level`, `--geo-namespace`, and
@@ -907,6 +1017,10 @@ Important options:
 - `--households`: candidate household count generated before calibration.
 - `--controls`: household controls with a target geography dimension.
 - `--person-controls`: optional linked-person controls.
+- `--control-pack`: optional built-in identifier or strict local pack manifest.
+  Requires person controls and `--control-pack-evidence`.
+- `--control-pack-evidence`: strict bound evidence JSON. Candidate derivations
+  and the complete plan run after candidate generation and any pool subsample.
 - `--geo-dimension`: geography dimension in the controls.
 - `--geo-column`: geography column written to the assigned outputs; defaults to
   `--geo-dimension`.
@@ -986,6 +1100,54 @@ result = spc.calibrate_small_area(
 
 result.assigned_households, result.assigned_persons, result.converged
 ```
+
+For a reviewed pack, use the same explicit counts and evidence in planning and
+calibration:
+
+```python
+pack = spc.read_control_pack("statcan-2021-core-private-household-da-v1")
+pack_population = spc.LinkedPopulationFiles(
+    households=Path("reviewed-2021-candidates/households.csv"),
+    persons=Path("reviewed-2021-candidates/persons.csv"),
+)
+household_controls = spc.read_controls("household-controls.csv")
+person_controls = spc.read_controls("person-controls.csv")
+universe_counts = {
+    "24660244": {
+        "total_population": 610,
+        "persons_in_private_households": 610,
+    }
+}
+evidence = spc.build_control_pack_evidence(
+    pack,
+    household_controls,
+    person_controls,
+    geographies=universe_counts,
+)
+plan = spc.plan_control_pack(
+    pack,
+    pack_population,
+    household_controls,
+    person_controls,
+    evidence=evidence,
+)
+if not plan["passed"]:
+    raise ValueError(plan["issues"])
+
+result = spc.calibrate_small_area(
+    pack_population,
+    household_controls,
+    person_controls=person_controls,
+    control_pack=pack,
+    control_pack_evidence=evidence,
+    geography_dimension="da",
+    geography_column="DAUID",
+    output_dir="bounded-da-population",
+)
+```
+
+As in the JSON example above, the counts are placeholders showing the API
+shape, not reusable evidence for a real geography.
 
 After calibration, the beginner API can also render the same kind of standalone
 map as `geo map`:
@@ -1093,6 +1255,18 @@ age and sex controls, for example, does not calibrate income, immigration
 status, visible-minority status, or shelter costs. Within-geography
 distributions for uncontrolled attributes remain model estimates, not observed
 small-area facts.
+
+**What the 0.9 report adds.** `methodological_diagnostics` independently
+recomputes fractional and realized counts from candidate rows and emitted
+weights. For each geography it records weight concentration and Kish effective
+sample size, candidate reuse, supported rare categories, declared zero-target
+constraints, and every assessed cell. Linked-person contributions are summed
+inside each candidate household before that household's weight is applied.
+`field_status` says `targeted` or `uncontrolled`; `claim_status` remains
+`not-assessed` because a fitted margin and small residual do not by themselves
+establish source validity or local representativeness. See
+{doc}`methodological-validation` for the oracle, integerization, multi-scale,
+and external-comparison evidence.
 
 **Practical guidance.**
 

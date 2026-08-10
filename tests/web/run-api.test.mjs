@@ -6,6 +6,7 @@ import {
   cancelRun,
   createRun,
   getRun,
+  listControlPacks,
   listRuns,
   preflightRun,
   previewArtifact,
@@ -61,6 +62,7 @@ test("builds durable run API requests and artifact URLs", async () => {
   };
   try {
     await listRuns();
+    await listControlPacks();
     await getRun("run/id");
     await preflightRun({ workflow: "ipf" });
     await createRun({ workflow: "ipf" });
@@ -73,6 +75,7 @@ test("builds durable run API requests and artifact URLs", async () => {
     calls.map((call) => [call.url, call.options?.method ?? "GET"]),
     [
       ["/api/runs", "GET"],
+      ["/api/control-packs", "GET"],
       ["/api/runs/run%2Fid", "GET"],
       ["/api/preflight", "POST"],
       ["/api/runs", "POST"],

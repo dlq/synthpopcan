@@ -1,0 +1,104 @@
+{
+  "schema_version": "synthpopcan-multiscale-calibration-fixture-v1",
+  "fixture_kind": "project-authored-bounded-linked-calibration-evidence",
+  "candidate_households": [
+    {"synthetic_household_id": "h1", "TENUR": "owner", "household_size_group": "1", "UNCONTROLLED_FIELD": "A"},
+    {"synthetic_household_id": "h2", "TENUR": "renter", "household_size_group": "1", "UNCONTROLLED_FIELD": "B"},
+    {"synthetic_household_id": "h3", "TENUR": "owner", "household_size_group": "2", "UNCONTROLLED_FIELD": "C"},
+    {"synthetic_household_id": "h4", "TENUR": "renter", "household_size_group": "2", "UNCONTROLLED_FIELD": "D"},
+    {"synthetic_household_id": "h5", "TENUR": "owner", "household_size_group": "3+", "UNCONTROLLED_FIELD": "E"},
+    {"synthetic_household_id": "h6", "TENUR": "renter", "household_size_group": "3+", "UNCONTROLLED_FIELD": "F"},
+    {"synthetic_household_id": "h7", "TENUR": "declared-zero", "household_size_group": "4", "UNCONTROLLED_FIELD": "G"}
+  ],
+  "candidate_persons": [
+    {"synthetic_person_id": "p1", "synthetic_household_id": "h1", "AGE_BAND": "adult"},
+    {"synthetic_person_id": "p2", "synthetic_household_id": "h2", "AGE_BAND": "adult"},
+    {"synthetic_person_id": "p3", "synthetic_household_id": "h3", "AGE_BAND": "adult"},
+    {"synthetic_person_id": "p4", "synthetic_household_id": "h3", "AGE_BAND": "child"},
+    {"synthetic_person_id": "p5", "synthetic_household_id": "h4", "AGE_BAND": "adult"},
+    {"synthetic_person_id": "p6", "synthetic_household_id": "h4", "AGE_BAND": "child"},
+    {"synthetic_person_id": "p7", "synthetic_household_id": "h5", "AGE_BAND": "adult"},
+    {"synthetic_person_id": "p8", "synthetic_household_id": "h5", "AGE_BAND": "child"},
+    {"synthetic_person_id": "p9", "synthetic_household_id": "h5", "AGE_BAND": "elder"},
+    {"synthetic_person_id": "p10", "synthetic_household_id": "h6", "AGE_BAND": "adult"},
+    {"synthetic_person_id": "p11", "synthetic_household_id": "h6", "AGE_BAND": "child"},
+    {"synthetic_person_id": "p12", "synthetic_household_id": "h6", "AGE_BAND": "rare"},
+    {"synthetic_person_id": "p13", "synthetic_household_id": "h7", "AGE_BAND": "adult"},
+    {"synthetic_person_id": "p14", "synthetic_household_id": "h7", "AGE_BAND": "adult"},
+    {"synthetic_person_id": "p15", "synthetic_household_id": "h7", "AGE_BAND": "child"},
+    {"synthetic_person_id": "p16", "synthetic_household_id": "h7", "AGE_BAND": "elder"}
+  ],
+  "household_margins": [
+    {"name": "tenure", "dimension": "TENUR", "categories": ["owner", "renter", "declared-zero"]},
+    {"name": "household-size", "dimension": "household_size_group", "categories": ["1", "2", "3+", "4"]}
+  ],
+  "person_margins": [
+    {"name": "linked-age-band", "dimension": "AGE_BAND", "categories": ["adult", "child", "elder", "rare"]}
+  ],
+  "geographies": [
+    {
+      "case_id": "montreal-csd-2021",
+      "identity": {"schema_version": "synthpopcan-geography-identity-v1", "census_vintage": 2021, "geography_level": "csd", "identifier_namespace": "statcan:census:2021:csd", "identifier": "2466023", "dguid": "2021A00052466023"},
+      "identifier_column": "CSDUID",
+      "source_url": "https://www12.statcan.gc.ca/census-recensement/2021/dp-pd/prof/details/moreinfo-plusinfo.cfm?DGUIDlist=2021A00052466023&Lang=E",
+      "expected_candidate_weights": [2, 2, 2, 2, 3, 3, 0],
+      "household_targets": {"tenure": [7, 7, 0], "household-size": [4, 4, 6, 0]},
+      "person_targets": {"linked-age-band": [14, 10, 3, 3]}
+    },
+    {
+      "case_id": "montreal-ct-2021",
+      "identity": {"schema_version": "synthpopcan-geography-identity-v1", "census_vintage": 2021, "geography_level": "ct", "identifier_namespace": "statcan:census:2021:ct", "identifier": "4620001.00", "dguid": "2021S05074620001.00"},
+      "identifier_column": "CTUID",
+      "source_url": "https://www12.statcan.gc.ca/census-recensement/2021/geo/maps-cartes/thematicmaps-cartesthematiques/as/map-eng.cfm?dguid=2021S0503462&lang=E&mapid=5",
+      "expected_candidate_weights": [2, 2, 2, 2, 2, 2, 0],
+      "household_targets": {"tenure": [6, 6, 0], "household-size": [4, 4, 4, 0]},
+      "person_targets": {"linked-age-band": [12, 8, 2, 2]}
+    },
+    {
+      "case_id": "montreal-ada-2021",
+      "identity": {"schema_version": "synthpopcan-geography-identity-v1", "census_vintage": 2021, "geography_level": "ada", "identifier_namespace": "statcan:census:2021:ada", "identifier": "24660001", "dguid": "2021S051624660001"},
+      "identifier_column": "ADAUID",
+      "source_url": "https://www12.statcan.gc.ca/census-recensement/2021/geo/maps-cartes/thematicmaps-cartesthematiques/low-ldt/map-eng.cfm?Dguid=2021S0503462&TYPE=1",
+      "expected_candidate_weights": [1, 2, 1, 1, 1, 1, 0],
+      "household_targets": {"tenure": [3, 4, 0], "household-size": [3, 2, 2, 0]},
+      "person_targets": {"linked-age-band": [7, 4, 1, 1]}
+    },
+    {
+      "case_id": "montreal-da-24660001-2021",
+      "identity": {"schema_version": "synthpopcan-geography-identity-v1", "census_vintage": 2021, "geography_level": "da", "identifier_namespace": "statcan:census:2021:da", "identifier": "24660001", "dguid": "2021S051224660001"},
+      "identifier_column": "DAUID",
+      "source_url": "https://www12.statcan.gc.ca/census-recensement/2021/dp-pd/prof/details/moreinfo-plusinfo.cfm?DGUIDlist=2021S051224660001&Lang=E",
+      "expected_candidate_weights": [1, 1, 1, 1, 1, 1, 0],
+      "household_targets": {"tenure": [3, 3, 0], "household-size": [2, 2, 2, 0]},
+      "person_targets": {"linked-age-band": [6, 4, 1, 1]}
+    },
+    {
+      "case_id": "montreal-da-24660002-2021",
+      "identity": {"schema_version": "synthpopcan-geography-identity-v1", "census_vintage": 2021, "geography_level": "da", "identifier_namespace": "statcan:census:2021:da", "identifier": "24660002", "dguid": "2021S051224660002"},
+      "identifier_column": "DAUID",
+      "source_url": "https://www12.statcan.gc.ca/census-recensement/2021/dp-pd/prof/details/moreinfo-plusinfo.cfm?DGUIDlist=2021S051224660002&Lang=E",
+      "expected_candidate_weights": [1, 1, 1, 1, 2, 2, 0],
+      "household_targets": {"tenure": [4, 4, 0], "household-size": [2, 2, 4, 0]},
+      "person_targets": {"linked-age-band": [8, 6, 2, 2]}
+    }
+  ],
+  "parent_child_reconciliation": {
+    "parent_case_id": "montreal-csd-2021",
+    "child_case_ids": ["montreal-da-24660001-2021", "montreal-da-24660002-2021"],
+    "kind": "bounded-additive-software-case",
+    "limitation": "The two real DA identities are an intentionally bounded subset of the CSD. Their fictional targets sum to the fictional CSD targets solely to test reconciliation; they do not exhaust the real Montreal CSD."
+  },
+  "acceptance_bounds": {
+    "fractional_max_abs_error": 0.000001,
+    "realized_cell_max_abs_error": 1.0,
+    "parent_child_target_max_abs_error": 0.0,
+    "parent_child_fractional_max_abs_error": 0.000002,
+    "parent_child_realized_max_abs_error": 1.0
+  },
+  "limitations": [
+    "All candidate attributes and targets are fictional; official identifiers are used only to exercise level and namespace handling.",
+    "Person controls are computed from linked person rows aggregated to household contributions before applying household weights.",
+    "A zero target is a declared test constraint, not evidence that the category is structurally impossible in disseminated Census data.",
+    "The fixture proves bounded software behavior, not national coverage or Canadian-population quality."
+  ]
+}

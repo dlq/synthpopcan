@@ -114,6 +114,7 @@ beginner generation workflows.
    linked-population
    small-area
    small-area-control-coverage
+   methodological-validation
    geodata
    enrichment
    exchange

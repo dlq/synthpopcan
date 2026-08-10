@@ -1,0 +1,156 @@
+{
+  "comparison": {
+    "household_size_proportion_deltas": {
+      "0": 0.0,
+      "1": 0.031052867075,
+      "2": -0.0573926998,
+      "3": 0.013477318098,
+      "4": 0.00055689406,
+      "5+": 0.012305620568
+    },
+    "household_size_total_variation_distance": 0.0573926998,
+    "metric_deltas": {
+      "linked_households": {
+        "external": 11680,
+        "percent_relative_to_external": -14.811643835616,
+        "synthpopcan": 9950,
+        "synthpopcan_minus_external": -1730
+      },
+      "linked_person_rows": {
+        "external": 39642,
+        "percent_relative_to_external": -11.762776852833,
+        "synthpopcan": 34979,
+        "synthpopcan_minus_external": -4663
+      },
+      "mean_linked_household_size": {
+        "external": 3.394006849315,
+        "percent_relative_to_external": 3.57897149337,
+        "synthpopcan": 3.515477386935,
+        "synthpopcan_minus_external": 0.12147053762
+      }
+    }
+  },
+  "comparison_id": "nunavut-fa-2021-territory-aggregate-v1",
+  "external_aggregates": {
+    "derived_household_size_distribution": {
+      "counts": {
+        "0": 0,
+        "1": 1924,
+        "2": 2977,
+        "3": 1540,
+        "4": 1624,
+        "5+": 3615
+      },
+      "denominator_households": 11680,
+      "proportions": {
+        "0": 0.0,
+        "1": 0.164726027397,
+        "2": 0.254880136986,
+        "3": 0.131849315068,
+        "4": 0.13904109589,
+        "5+": 0.309503424658
+      }
+    },
+    "derived_linked_households": 11680,
+    "distinct_da_codes": 42,
+    "linked_person_rows": 39642,
+    "mean_linked_household_size": 3.394006849315,
+    "person_rows": 39700,
+    "raw_sex_code_counts_not_crosswalked": {
+      "0": 19300,
+      "1": 20400
+    },
+    "rows_outside_territory_prefix": 0,
+    "unlinked_person_rows": 58
+  },
+  "interpretation": {
+    "allowed_use": "A deterministic method-to-method territory aggregate check of scale, linkage, and household-size composition.",
+    "category_crosswalk": "Sex/gender raw-code distributions are reported separately but not compared because no vintage-aware semantic crosswalk was approved.",
+    "disallowed_use": "No DA-level agreement, national quality, scenario superiority, or local-representativeness claim is supported.",
+    "truth_status": "Both inputs are synthetic model outputs; neither is observed record-level truth or an oracle."
+  },
+  "public_safety": {
+    "aggregate_only": true,
+    "contains_direct_identifiers": false,
+    "contains_source_rows": false,
+    "minimum_released_unit": "territory"
+  },
+  "schema_version": "synthpopcan-external-aggregate-comparison-v1",
+  "scope": {
+    "comparison_level": "territory aggregate only",
+    "da_join_performed": false,
+    "external_dataset_year": 2021,
+    "external_geography_basis": "2016 dissemination areas",
+    "external_scenario": "FA",
+    "reason_no_da_join": "The external projection retains 2016 DA identities while the SynthPopCan output uses 2021 DA identities; no crosswalk was applied in this bounded evidence.",
+    "synthpopcan_dataset_year": 2021,
+    "synthpopcan_geography_basis": "2021 dissemination areas",
+    "territory": "Nunavut",
+    "territory_code": "62"
+  },
+  "sources": {
+    "external": {
+      "archive_member": "Canada/nunavut/syn_pop/FA/synthetic_pop_2021_hh_.csv",
+      "archive_member_compressed_bytes": 318352,
+      "archive_member_compression": "deflate",
+      "archive_member_local_header_offset": 3391658460,
+      "archive_member_uncompressed_bytes": 1617540,
+      "dataset": "Pr\u00e9dhumeau-Manley Canadian synthetic population v2.1.0",
+      "doi": "10.5281/zenodo.7572117",
+      "extracted_sha256": "0d06e1c2932c027d6750cc48615041d085c50b910a7334ed4e3a0487fc3fb935",
+      "scenario_note": "FA is compared here because this bounded member was extracted; it is not the LG scenario used for validation in the associated article."
+    },
+    "synthpopcan": {
+      "households_sha256": "3de7e1016a114e2899f9be09315c28ffe70df1d00685803be6a04c1e76d3a837",
+      "persons_sha256": "081c8948eaeee8529e91fec44845ea809589549a8609c01c53814d56348fda5e",
+      "source_scope": "2021 Nunavut DA batch output"
+    }
+  },
+  "synthpopcan_aggregates": {
+    "declared_household_size_code_counts": {
+      "1": 1948,
+      "2": 1965,
+      "3": 1446,
+      "4": 1389,
+      "5": 1182,
+      "6": 843,
+      "7": 1177
+    },
+    "derived_household_size_distribution": {
+      "counts": {
+        "0": 0,
+        "1": 1948,
+        "2": 1965,
+        "3": 1446,
+        "4": 1389,
+        "5+": 3202
+      },
+      "denominator_households": 9950,
+      "proportions": {
+        "0": 0.0,
+        "1": 0.195778894472,
+        "2": 0.197487437186,
+        "3": 0.145326633166,
+        "4": 0.13959798995,
+        "5+": 0.321809045226
+      }
+    },
+    "distinct_household_da_codes": 41,
+    "distinct_person_da_codes": 41,
+    "empty_households_from_linkage": 0,
+    "household_person_da_set_symmetric_difference": 0,
+    "household_person_geography_link_mismatches": 0,
+    "households": 9950,
+    "households_outside_territory_prefix": 0,
+    "linked_person_rows": 34979,
+    "mean_linked_household_size": 3.515477386935,
+    "orphan_person_rows": 0,
+    "person_rows": 34979,
+    "persons_outside_territory_prefix": 0,
+    "raw_gender_code_counts_not_crosswalked": {
+      "1": 10418,
+      "2": 12463,
+      "8": 12098
+    }
+  }
+}

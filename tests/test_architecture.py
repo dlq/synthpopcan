@@ -96,6 +96,14 @@ def test_package_declares_inline_typing_support() -> None:
     assert (PACKAGE_ROOT / "py.typed").is_file()
 
 
+def test_ci_exposes_a_stable_required_check_for_the_python_matrix() -> None:
+    workflow = Path(".github/workflows/ci.yml").read_text()
+
+    assert "  python-summary:\n    name: Python\n" in workflow
+    assert "    if: ${{ always() }}\n    needs: python\n" in workflow
+    assert 'run: test "$PYTHON_MATRIX_RESULT" = "success"' in workflow
+
+
 def test_beginner_api_does_not_depend_on_cli_or_web_adapters() -> None:
     imports = module_imports(PACKAGE_ROOT / "api.py")
 

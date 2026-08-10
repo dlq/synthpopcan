@@ -415,6 +415,46 @@ test("SCN-WEB-003 runs durable linked small-area synthesis", async ({ page }) =>
   expect(consoleErrors).toEqual([]);
 });
 
+test("reviewed control-pack selection requires bound evidence", async ({ page }) => {
+  const consoleErrors = [];
+  page.on("console", (message) => {
+    if (message.type() === "error") consoleErrors.push(message.text());
+  });
+  await page.route("**/api/control-packs", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        control_packs: [
+          {
+            identifier: "statcan-2021-core-private-household-da-v1",
+            census_vintage: 2021,
+            geography_level: "da",
+            label: "2021 core private-household DA controls",
+          },
+        ],
+      }),
+    }),
+  );
+
+  await page.goto("/");
+  await page.getByText("Small-area workflow").click();
+  await page.getByRole("button", { name: /Prepare a small-area synthesis/ }).click();
+  const selector = page.locator("#small-area-control-pack");
+  await expect(selector).toContainText("2021 DA");
+  await selector.selectOption("statcan-2021-core-private-household-da-v1");
+
+  const evidence = page.locator("#small-area-control-pack-evidence-file");
+  await expect(evidence).toHaveJSProperty("required", true);
+  await expect(page.locator("#small-area-geo-dimension")).toHaveValue("da");
+  await expect(page.locator("#small-area-geo-column")).toHaveValue("da");
+  expect(await evidence.evaluate((element) => element.checkValidity())).toBe(false);
+
+  await selector.selectOption("");
+  await expect(evidence).toHaveJSProperty("required", false);
+  expect(consoleErrors).toEqual([]);
+});
+
 test("model catalogue failure leaves both workflows usable", async ({ page }) => {
   const consoleErrors = [];
   page.on("console", (message) => {

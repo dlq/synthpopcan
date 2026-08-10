@@ -307,6 +307,16 @@ without splitting households. Keep both fractional and integerized residual
 summaries with the output. `result.population` contains the paired output paths,
 and `result.details` retains the complete machine-readable report.
 
+The reviewed 0.9 path also accepts `control_pack` and
+`control_pack_evidence`. Use `spc.list_control_packs()` and
+`spc.read_control_pack()` to inspect the definition, then
+`spc.build_control_pack_evidence()` and `spc.plan_control_pack()` with the
+study's exact household/person controls and published companion universe
+counts. Calibration repeats the plan and stops on any mismatch. The pack does
+not supply or download Census counts, and a passing plan does not make every
+carried-through model field locally representative. The complete example and
+field-status interpretation are in {doc}`small-area`.
+
 ## Render the Small-Area Result as a Map
 
 Once calibration has produced assigned household and person files, the beginner
@@ -507,6 +517,11 @@ The beginner API groups a small set of names around common tasks.
 
 **Assign and map small-area results:**
 
+- {py:func}`~synthpopcan.api.list_control_packs`
+- {py:func}`~synthpopcan.api.read_control_pack`
+- {py:func}`~synthpopcan.api.read_control_pack_evidence`
+- {py:func}`~synthpopcan.api.build_control_pack_evidence`
+- {py:func}`~synthpopcan.api.plan_control_pack`
 - {py:func}`~synthpopcan.api.calibrate_small_area`
 - {py:func}`~synthpopcan.api.render_small_area_map`
 
@@ -523,6 +538,8 @@ The beginner API groups a small set of names around common tasks.
 - {py:class}`~synthpopcan.api.LinkedPopulation`
 - {py:class}`~synthpopcan.api.LinkedPopulationFiles`
 - {py:class}`~synthpopcan.api.SmallAreaResult`
+- {py:class}`~synthpopcan.control_packs.ControlPackManifest`
+- {py:class}`~synthpopcan.control_packs.ControlPackEvidence`
 - {py:class}`~synthpopcan.api.EnrichmentResult`
 
 ## Where To Go Next

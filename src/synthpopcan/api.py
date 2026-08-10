@@ -40,6 +40,19 @@ from synthpopcan.canfed import (
     CanFedAdapter,
     CanFedBuffer,
 )
+from synthpopcan.control_packs import (
+    ControlPackEvidence,
+    ControlPackManifest,
+    list_builtin_control_packs,
+    load_control_pack,
+    load_control_pack_evidence,
+)
+from synthpopcan.control_packs import (
+    build_control_pack_evidence as _build_control_pack_evidence,
+)
+from synthpopcan.control_packs import (
+    plan_control_pack as _plan_control_pack,
+)
 from synthpopcan.controls import ControlTable, read_control_table, write_control_table
 from synthpopcan.enrichment import (
     ResourceRecord,
@@ -78,10 +91,14 @@ from synthpopcan.workflows.ipf import read_csv_records
 
 _SeedInput = str | Path | Sequence[Mapping[str, object]]
 _ControlInput = str | Path | ControlTable
+_ControlPackInput = str | Path | ControlPackManifest
+_ControlPackEvidenceInput = str | Path | Mapping[str, object] | ControlPackEvidence
 _ModelPackageInput = str | Path | Mapping[str, object]
 PopulationRows = list[dict[str, str]]
 
 __all__ = [
+    "ControlPackEvidence",
+    "ControlPackManifest",
     "ControlTable",
     "EnrichmentResult",
     "ExchangeBundle",
@@ -90,6 +107,7 @@ __all__ = [
     "LinkedPopulationFiles",
     "PopulationRows",
     "SmallAreaResult",
+    "build_control_pack_evidence",
     "calibrate_small_area",
     "create_exchange_bundle",
     "enrich_can_fed",
@@ -99,6 +117,10 @@ __all__ = [
     "fetch_model",
     "fit_ipf",
     "generate_from_model",
+    "list_control_packs",
+    "plan_control_pack",
+    "read_control_pack",
+    "read_control_pack_evidence",
     "read_controls",
     "read_model_package",
     "read_seed",
@@ -250,6 +272,87 @@ def read_controls(path: str | Path) -> ControlTable:
     """
 
     return read_control_table(Path(path))
+
+
+def list_control_packs() -> tuple[dict[str, Any], ...]:
+    """List the built-in reviewed small-area control packs.
+
+    Each row includes the pack identifier, Census vintage, geography level,
+    required candidate fields, and semantic definition checksum. Pass an
+    identifier from this result to :func:`read_control_pack`.
+    """
+
+    return list_builtin_control_packs()
+
+
+def read_control_pack(pack: _ControlPackInput) -> ControlPackManifest:
+    """Read a built-in control pack by identifier or a strict JSON manifest."""
+
+    return load_control_pack(pack)
+
+
+def read_control_pack_evidence(
+    evidence: _ControlPackEvidenceInput,
+) -> ControlPackEvidence:
+    """Read a strict evidence record from a path, mapping, or existing record."""
+
+    return load_control_pack_evidence(evidence)
+
+
+def build_control_pack_evidence(
+    pack: _ControlPackInput,
+    controls: _ControlInput,
+    person_controls: _ControlInput,
+    *,
+    geographies: Mapping[str, Mapping[str, object]],
+    excluded_geographies: Mapping[str, str] | None = None,
+) -> ControlPackEvidence:
+    """Bind one pack, its exact controls, and reviewed universe evidence.
+
+    ``geographies`` must name exactly the geographies in both control tables.
+    Each value supplies ``total_population`` and
+    ``persons_in_private_households``. The selected pack's reviewed source
+    revisions are recorded automatically.
+    """
+
+    manifest = load_control_pack(pack)
+    return _build_control_pack_evidence(
+        manifest,
+        _read_control_input(controls),
+        _read_control_input(person_controls),
+        geographies=geographies,
+        controls_source_revisions=manifest.source_revisions,
+        excluded_geographies=excluded_geographies,
+    )
+
+
+def plan_control_pack(
+    pack: _ControlPackInput,
+    population: LinkedPopulation | LinkedPopulationFiles | str | Path,
+    controls: _ControlInput,
+    person_controls: _ControlInput,
+    *,
+    evidence: _ControlPackEvidenceInput,
+    model_profile: str | None = None,
+) -> dict[str, Any]:
+    """Plan a control-pack run without fitting or writing population rows.
+
+    The returned plan validates pack/evidence binding, exact control shapes,
+    candidate fields and categories, linked-person support, geography coverage,
+    and common-universe feasibility. A caller should proceed only when
+    ``plan["passed"]`` is true; :func:`calibrate_small_area` enforces that rule.
+    """
+
+    households, persons = _linked_population_rows(population)
+    return _plan_control_pack(
+        pack,
+        households,
+        persons,
+        _read_control_input(controls),
+        _read_control_input(person_controls),
+        evidence=evidence,
+        model_profile=model_profile,
+    )
 
 
 def fit_ipf(
@@ -670,6 +773,8 @@ def calibrate_small_area(
     geography_dimension: str,
     output_dir: str | Path,
     person_controls: str | Path | ControlTable | None = None,
+    control_pack: _ControlPackInput | None = None,
+    control_pack_evidence: _ControlPackEvidenceInput | None = None,
     geography_column: str | None = None,
     geography_universe: GeographyUniverse | Mapping[str, object] | None = None,
     max_iterations: int = 100,
@@ -699,6 +804,11 @@ def calibrate_small_area(
         and ``report.json``.
     person_controls:
         Optional linked-person controls as a path or :class:`ControlTable`.
+    control_pack, control_pack_evidence:
+        Optional reviewed control-pack definition and its evidence record. Both
+        are additive to the raw household/person control tables. When a pack is
+        selected, its plan must pass before calibration starts and its reviewed
+        candidate derivations are applied automatically.
     geography_column:
         Output geography column. Defaults to ``geography_dimension``.
     geography_universe:
@@ -761,6 +871,8 @@ def calibrate_small_area(
             persons_path=candidate_files.persons,
             controls_path=controls_path,
             person_controls_path=person_controls_path,
+            control_pack=control_pack,
+            control_pack_evidence=control_pack_evidence,
             geography_dimension=geography_dimension,
             geography_column=geography_column or geography_dimension,
             geography_universe=normalized_geography,
@@ -1184,6 +1296,25 @@ def _control_margins(controls: _ControlInput) -> list[IPFMargin]:
     if isinstance(controls, str | Path):
         return read_controls(controls).to_ipf_margins()
     return controls.to_ipf_margins()
+
+
+def _read_control_input(controls: _ControlInput) -> ControlTable:
+    if isinstance(controls, str | Path):
+        return read_control_table(Path(controls))
+    return controls
+
+
+def _linked_population_rows(
+    population: LinkedPopulation | LinkedPopulationFiles | str | Path,
+) -> tuple[PopulationRows, PopulationRows]:
+    if isinstance(population, LinkedPopulation):
+        return (
+            [dict(row) for row in population.households],
+            [dict(row) for row in population.persons],
+        )
+    files = _linked_population_files(population)
+    _validate_linked_population_files(files)
+    return read_csv_records(files.households), read_csv_records(files.persons)
 
 
 def _linked_population_files(

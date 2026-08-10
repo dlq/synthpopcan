@@ -1,0 +1,678 @@
+{
+  "calibration": {
+    "applicability": {
+      "contribution_domain": "finite non-negative household contributions",
+      "initial_weight_domain": "finite non-negative candidate weights",
+      "maximum_candidate_households": 14,
+      "maximum_constraints": 20,
+      "purpose": "bounded independent evidence; not a production backend"
+    },
+    "cases": [
+      {
+        "candidate_households": 3,
+        "comparison": {
+          "both_meet_controls": true,
+          "feasibility_matches_expectation": true,
+          "oracle_objective_no_worse": true
+        },
+        "constraints": 3,
+        "evidence_classification": "feasible",
+        "expected_feasible": true,
+        "features": [
+          "analytical",
+          "ordinary_household_indicators"
+        ],
+        "name": "analytical_identity",
+        "oracle": {
+          "iterations": 5,
+          "max_abs_error": 0.0,
+          "message": "bounded feasibility and relative-entropy optimum established",
+          "relative_entropy": 1.7903288893,
+          "status": "optimal",
+          "weight_metrics": {
+            "effective_sample_size": 2.7704918033,
+            "l1_distance_from_initial": 3.5,
+            "maximum": 3.0,
+            "maximum_share": 0.4615384615,
+            "minimum": 1.5,
+            "positive_candidates": 3,
+            "total": 6.5
+          }
+        },
+        "production": {
+          "error": null,
+          "iterations": 1,
+          "max_abs_error": 0.0,
+          "relative_entropy": 1.7903288893,
+          "status": "converged",
+          "weight_metrics": {
+            "effective_sample_size": 2.7704918033,
+            "l1_distance_from_initial": 3.5,
+            "maximum": 3.0,
+            "maximum_share": 0.4615384615,
+            "minimum": 1.5,
+            "positive_candidates": 3,
+            "total": 6.5
+          }
+        }
+      },
+      {
+        "candidate_households": 4,
+        "comparison": {
+          "both_meet_controls": true,
+          "feasibility_matches_expectation": true,
+          "oracle_objective_no_worse": true
+        },
+        "constraints": 3,
+        "evidence_classification": "feasible",
+        "expected_feasible": true,
+        "features": [
+          "ordinary_household_indicators",
+          "linked_person_counts_greater_than_one",
+          "non_uniform_initial_weights"
+        ],
+        "name": "linked_person_counts",
+        "oracle": {
+          "iterations": 4,
+          "max_abs_error": 2e-10,
+          "message": "bounded feasibility and relative-entropy optimum established",
+          "relative_entropy": 0.2904914263,
+          "status": "optimal",
+          "weight_metrics": {
+            "effective_sample_size": 3.5188051592,
+            "l1_distance_from_initial": 1.6304908883,
+            "maximum": 2.1390182237,
+            "maximum_share": 0.3565030373,
+            "minimum": 0.7847545559,
+            "positive_candidates": 4,
+            "total": 6.0000000001
+          }
+        },
+        "production": {
+          "error": null,
+          "iterations": 315,
+          "max_abs_error": 9.7e-09,
+          "relative_entropy": 0.2904914225,
+          "status": "converged",
+          "weight_metrics": {
+            "effective_sample_size": 3.5188051721,
+            "l1_distance_from_initial": 1.6304908711,
+            "maximum": 2.1390182198,
+            "maximum_share": 0.3565030361,
+            "minimum": 0.7847545693,
+            "positive_candidates": 4,
+            "total": 6.0000000097
+          }
+        }
+      },
+      {
+        "candidate_households": 5,
+        "comparison": {
+          "both_meet_controls": true,
+          "feasibility_matches_expectation": true,
+          "oracle_objective_no_worse": true
+        },
+        "constraints": 4,
+        "evidence_classification": "feasible",
+        "expected_feasible": true,
+        "features": [
+          "sparse_category",
+          "rare_category",
+          "zero_target",
+          "linked_person_counts_greater_than_one"
+        ],
+        "name": "sparse_rare_and_zero",
+        "oracle": {
+          "iterations": 5,
+          "max_abs_error": 0.0,
+          "message": "bounded feasibility and relative-entropy optimum established",
+          "relative_entropy": 1.7975497982,
+          "status": "optimal",
+          "weight_metrics": {
+            "effective_sample_size": 3.4414573408,
+            "l1_distance_from_initial": 3.1149914782,
+            "maximum": 1.8175042609,
+            "maximum_share": 0.382632476,
+            "minimum": 0.0,
+            "positive_candidates": 4,
+            "total": 4.75
+          }
+        },
+        "production": {
+          "error": null,
+          "iterations": 65,
+          "max_abs_error": 7.5e-09,
+          "relative_entropy": 1.7975497902,
+          "status": "converged",
+          "weight_metrics": {
+            "effective_sample_size": 3.4414573466,
+            "l1_distance_from_initial": 3.1149914635,
+            "maximum": 1.8175042513,
+            "maximum_share": 0.3826324745,
+            "minimum": 0.0,
+            "positive_candidates": 4,
+            "total": 4.7499999937
+          }
+        }
+      },
+      {
+        "candidate_households": 3,
+        "comparison": {
+          "both_meet_controls": true,
+          "feasibility_matches_expectation": true,
+          "oracle_objective_no_worse": true
+        },
+        "constraints": 4,
+        "evidence_classification": "feasible",
+        "expected_feasible": true,
+        "features": [
+          "redundant_constraints",
+          "linearly_dependent_constraints"
+        ],
+        "name": "redundant_constraints",
+        "oracle": {
+          "iterations": 4,
+          "max_abs_error": 8.8e-09,
+          "message": "bounded feasibility and relative-entropy optimum established",
+          "relative_entropy": 0.2240709214,
+          "status": "optimal",
+          "weight_metrics": {
+            "effective_sample_size": 2.5714285698,
+            "l1_distance_from_initial": 0.9000000044,
+            "maximum": 2.0000000044,
+            "maximum_share": 0.5000000005,
+            "minimum": 0.6666666667,
+            "positive_candidates": 3,
+            "total": 4.0000000044
+          }
+        },
+        "production": {
+          "error": null,
+          "iterations": 1,
+          "max_abs_error": 0.0,
+          "relative_entropy": 0.2240709192,
+          "status": "converged",
+          "weight_metrics": {
+            "effective_sample_size": 2.5714285714,
+            "l1_distance_from_initial": 0.9,
+            "maximum": 2.0,
+            "maximum_share": 0.5,
+            "minimum": 0.6666666667,
+            "positive_candidates": 3,
+            "total": 4.0
+          }
+        }
+      },
+      {
+        "candidate_households": 3,
+        "comparison": {
+          "both_meet_controls": true,
+          "feasibility_matches_expectation": true,
+          "oracle_objective_no_worse": true
+        },
+        "constraints": 3,
+        "evidence_classification": "feasible",
+        "expected_feasible": true,
+        "features": [
+          "nearly_dependent_constraints"
+        ],
+        "name": "nearly_dependent_constraints",
+        "oracle": {
+          "iterations": 5,
+          "max_abs_error": 0.0,
+          "message": "bounded feasibility and relative-entropy optimum established",
+          "relative_entropy": 0.4210737593,
+          "status": "optimal",
+          "weight_metrics": {
+            "effective_sample_size": 2.6172106825,
+            "l1_distance_from_initial": 1.3,
+            "maximum": 1.4285714286,
+            "maximum_share": 0.4761904762,
+            "minimum": 0.5,
+            "positive_candidates": 3,
+            "total": 3.0
+          }
+        },
+        "production": {
+          "error": null,
+          "iterations": 12,
+          "max_abs_error": 2.7e-09,
+          "relative_entropy": 0.4210737588,
+          "status": "converged",
+          "weight_metrics": {
+            "effective_sample_size": 2.617210683,
+            "l1_distance_from_initial": 1.2999999973,
+            "maximum": 1.428571427,
+            "maximum_share": 0.4761904761,
+            "minimum": 0.5,
+            "positive_candidates": 3,
+            "total": 2.9999999973
+          }
+        }
+      },
+      {
+        "candidate_households": 6,
+        "comparison": {
+          "both_meet_controls": true,
+          "feasibility_matches_expectation": true,
+          "oracle_objective_no_worse": true
+        },
+        "constraints": 6,
+        "evidence_classification": "feasible",
+        "expected_feasible": true,
+        "features": [
+          "generated_feasible",
+          "ordinary_household_indicators",
+          "linked_person_counts_greater_than_one",
+          "sparse_category",
+          "rare_category",
+          "redundant_constraints",
+          "zero_target",
+          "non_uniform_initial_weights"
+        ],
+        "name": "generated_01",
+        "oracle": {
+          "iterations": 4,
+          "max_abs_error": 7e-10,
+          "message": "bounded feasibility and relative-entropy optimum established",
+          "relative_entropy": 1.5149300033,
+          "status": "optimal",
+          "weight_metrics": {
+            "effective_sample_size": 4.6012218079,
+            "l1_distance_from_initial": 2.6902717248,
+            "maximum": 2.1770892331,
+            "maximum_share": 0.2904268746,
+            "minimum": 0.0,
+            "positive_candidates": 5,
+            "total": 7.4961700285
+          }
+        },
+        "production": {
+          "error": null,
+          "iterations": 54,
+          "max_abs_error": 7.2e-09,
+          "relative_entropy": 1.5149300025,
+          "status": "converged",
+          "weight_metrics": {
+            "effective_sample_size": 4.6012218102,
+            "l1_distance_from_initial": 2.6902717261,
+            "maximum": 2.1770892326,
+            "maximum_share": 0.2904268743,
+            "minimum": 0.0,
+            "positive_candidates": 5,
+            "total": 7.4961700354
+          }
+        }
+      },
+      {
+        "candidate_households": 7,
+        "comparison": {
+          "both_meet_controls": true,
+          "feasibility_matches_expectation": true,
+          "oracle_objective_no_worse": true
+        },
+        "constraints": 6,
+        "evidence_classification": "feasible",
+        "expected_feasible": true,
+        "features": [
+          "generated_feasible",
+          "ordinary_household_indicators",
+          "linked_person_counts_greater_than_one",
+          "sparse_category",
+          "rare_category",
+          "redundant_constraints",
+          "zero_target",
+          "non_uniform_initial_weights"
+        ],
+        "name": "generated_02",
+        "oracle": {
+          "iterations": 5,
+          "max_abs_error": 0.0,
+          "message": "bounded feasibility and relative-entropy optimum established",
+          "relative_entropy": 4.6151059573,
+          "status": "optimal",
+          "weight_metrics": {
+            "effective_sample_size": 5.7535900753,
+            "l1_distance_from_initial": 7.489905088,
+            "maximum": 2.6210688026,
+            "maximum_share": 0.2054404224,
+            "minimum": 0.0,
+            "positive_candidates": 6,
+            "total": 12.7582915352
+          }
+        },
+        "production": {
+          "error": null,
+          "iterations": 118,
+          "max_abs_error": 9.2e-09,
+          "relative_entropy": 4.6151059417,
+          "status": "converged",
+          "weight_metrics": {
+            "effective_sample_size": 5.7535900777,
+            "l1_distance_from_initial": 7.4899050712,
+            "maximum": 2.6210687962,
+            "maximum_share": 0.2054404221,
+            "minimum": 0.0,
+            "positive_candidates": 6,
+            "total": 12.7582915259
+          }
+        }
+      },
+      {
+        "candidate_households": 8,
+        "comparison": {
+          "both_meet_controls": true,
+          "feasibility_matches_expectation": true,
+          "oracle_objective_no_worse": true
+        },
+        "constraints": 6,
+        "evidence_classification": "feasible",
+        "expected_feasible": true,
+        "features": [
+          "generated_feasible",
+          "ordinary_household_indicators",
+          "linked_person_counts_greater_than_one",
+          "sparse_category",
+          "rare_category",
+          "redundant_constraints",
+          "zero_target",
+          "non_uniform_initial_weights"
+        ],
+        "name": "generated_03",
+        "oracle": {
+          "iterations": 5,
+          "max_abs_error": 2e-10,
+          "message": "bounded feasibility and relative-entropy optimum established",
+          "relative_entropy": 2.7237360426,
+          "status": "optimal",
+          "weight_metrics": {
+            "effective_sample_size": 5.2495750333,
+            "l1_distance_from_initial": 5.4378152149,
+            "maximum": 2.3224136325,
+            "maximum_share": 0.2630757454,
+            "minimum": 0.0,
+            "positive_candidates": 7,
+            "total": 8.8279275969
+          }
+        },
+        "production": {
+          "error": null,
+          "iterations": 97,
+          "max_abs_error": 9.3e-09,
+          "relative_entropy": 2.7237360405,
+          "status": "converged",
+          "weight_metrics": {
+            "effective_sample_size": 5.249575037,
+            "l1_distance_from_initial": 5.4378152216,
+            "maximum": 2.322413629,
+            "maximum_share": 0.2630757447,
+            "minimum": 0.0,
+            "positive_candidates": 7,
+            "total": 8.8279276061
+          }
+        }
+      },
+      {
+        "candidate_households": 2,
+        "comparison": {
+          "both_meet_controls": false,
+          "feasibility_matches_expectation": true,
+          "oracle_objective_no_worse": false
+        },
+        "constraints": 2,
+        "evidence_classification": "infeasible",
+        "expected_feasible": false,
+        "features": [
+          "unsupported_positive_target"
+        ],
+        "name": "unsupported_positive_target",
+        "oracle": {
+          "iterations": 0,
+          "max_abs_error": null,
+          "message": "no non-negative household weights satisfy all positive targets after structural-zero and initial-weight support",
+          "relative_entropy": null,
+          "status": "infeasible",
+          "weight_metrics": null
+        },
+        "production": {
+          "error": "a positive linked calibration target has no household support after applying structural-zero controls",
+          "iterations": 0,
+          "max_abs_error": null,
+          "relative_entropy": null,
+          "status": "rejected",
+          "weight_metrics": null
+        }
+      },
+      {
+        "candidate_households": 2,
+        "comparison": {
+          "both_meet_controls": false,
+          "feasibility_matches_expectation": true,
+          "oracle_objective_no_worse": false
+        },
+        "constraints": 2,
+        "evidence_classification": "infeasible",
+        "expected_feasible": false,
+        "features": [
+          "linearly_dependent_constraints",
+          "infeasible"
+        ],
+        "name": "inconsistent_dependent_constraints",
+        "oracle": {
+          "iterations": 0,
+          "max_abs_error": null,
+          "message": "no non-negative household weights satisfy all positive targets after structural-zero and initial-weight support",
+          "relative_entropy": null,
+          "status": "infeasible",
+          "weight_metrics": null
+        },
+        "production": {
+          "error": null,
+          "iterations": 2000,
+          "max_abs_error": 0.5,
+          "relative_entropy": 0.0684768913,
+          "status": "iteration_limit",
+          "weight_metrics": {
+            "effective_sample_size": 2.0,
+            "l1_distance_from_initial": 0.5,
+            "maximum": 0.75,
+            "maximum_share": 0.5,
+            "minimum": 0.75,
+            "positive_candidates": 2,
+            "total": 1.5
+          }
+        }
+      },
+      {
+        "candidate_households": 2,
+        "comparison": {
+          "both_meet_controls": false,
+          "feasibility_matches_expectation": true,
+          "oracle_objective_no_worse": false
+        },
+        "constraints": 2,
+        "evidence_classification": "infeasible",
+        "expected_feasible": false,
+        "features": [
+          "zero_target",
+          "unsupported_after_structural_zero"
+        ],
+        "name": "structural_zero_removes_support",
+        "oracle": {
+          "iterations": 0,
+          "max_abs_error": null,
+          "message": "no non-negative household weights satisfy all positive targets after structural-zero and initial-weight support",
+          "relative_entropy": null,
+          "status": "infeasible",
+          "weight_metrics": null
+        },
+        "production": {
+          "error": "a positive linked calibration target has no household support after applying structural-zero controls",
+          "iterations": 0,
+          "max_abs_error": null,
+          "relative_entropy": null,
+          "status": "rejected",
+          "weight_metrics": null
+        }
+      }
+    ],
+    "oracle_backend": "bounded-relative-entropy-dual-newton-v1",
+    "production_backend": "linked-multiplicative-updater-v1"
+  },
+  "integerization": {
+    "cases": [
+      {
+        "candidate_households": 10,
+        "fractional_total": 2.0,
+        "largest_remainder": {
+          "counts": [
+            1,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "max_abs_control_residual": 1.0,
+          "maximum_expansion": 1,
+          "positive_weight_candidate_recall": 0.2,
+          "positive_weight_candidates_retained": 2,
+          "selected_candidates": 2,
+          "structural_zeros_preserved": true,
+          "sum_abs_control_residual": 2.0,
+          "total": 2
+        },
+        "name": "balanced_subunit_pool",
+        "rounded_total": 2,
+        "systematic": {
+          "counts": [
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0
+          ],
+          "max_abs_control_residual": 0.0,
+          "maximum_expansion": 1,
+          "positive_weight_candidate_recall": 0.2,
+          "positive_weight_candidates_retained": 2,
+          "selected_candidates": 2,
+          "structural_zeros_preserved": true,
+          "sum_abs_control_residual": 0.0,
+          "total": 2
+        }
+      },
+      {
+        "candidate_households": 4,
+        "fractional_total": 4.0,
+        "largest_remainder": {
+          "counts": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "max_abs_control_residual": 0.6,
+          "maximum_expansion": 1,
+          "positive_weight_candidate_recall": 1.0,
+          "positive_weight_candidates_retained": 4,
+          "selected_candidates": 4,
+          "structural_zeros_preserved": true,
+          "sum_abs_control_residual": 1.0,
+          "total": 4
+        },
+        "name": "linked_person_contributions",
+        "rounded_total": 4,
+        "systematic": {
+          "counts": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "max_abs_control_residual": 0.6,
+          "maximum_expansion": 1,
+          "positive_weight_candidate_recall": 1.0,
+          "positive_weight_candidates_retained": 4,
+          "selected_candidates": 4,
+          "structural_zeros_preserved": true,
+          "sum_abs_control_residual": 1.0,
+          "total": 4
+        }
+      },
+      {
+        "candidate_households": 5,
+        "fractional_total": 3.0,
+        "largest_remainder": {
+          "counts": [
+            0,
+            0,
+            1,
+            1,
+            1
+          ],
+          "max_abs_control_residual": 0.58,
+          "maximum_expansion": 1,
+          "positive_weight_candidate_recall": 0.75,
+          "positive_weight_candidates_retained": 3,
+          "selected_candidates": 3,
+          "structural_zeros_preserved": true,
+          "sum_abs_control_residual": 1.07,
+          "total": 3
+        },
+        "name": "sparse_structural_zero",
+        "rounded_total": 3,
+        "systematic": {
+          "counts": [
+            0,
+            0,
+            1,
+            1,
+            1
+          ],
+          "max_abs_control_residual": 0.58,
+          "maximum_expansion": 1,
+          "positive_weight_candidate_recall": 0.75,
+          "positive_weight_candidates_retained": 3,
+          "selected_candidates": 3,
+          "structural_zeros_preserved": true,
+          "sum_abs_control_residual": 1.07,
+          "total": 3
+        }
+      }
+    ],
+    "decision": {
+      "applicability": [
+        "non-negative finite fitted household weights",
+        "one independently realized geography",
+        "stable candidate ordering and deterministic reproduction"
+      ],
+      "comparison_backend": "deterministic-largest-remainder-v1",
+      "decision": "retain",
+      "not_claimed": [
+        "simultaneous control preservation",
+        "joint optimality across geographies",
+        "hierarchical parent-child reconciliation"
+      ],
+      "production_backend": "deterministic-systematic-midpoint-v1",
+      "reasons": [
+        "Both methods preserve the rounded household total and never select a zero-weight candidate.",
+        "Systematic midpoint selection retains distribution across ordered subunit-weight candidate pools where largest remainder can concentrate all tied remainders at the start of the pool.",
+        "The bounded comparison does not show a material reviewed benefit that would justify changing existing deterministic outputs.",
+        "Neither backend jointly guarantees household, person, or parent-geography controls; fractional and realized residual reports remain mandatory."
+      ],
+      "schema_version": "synthpopcan-integerization-backend-decision-v1",
+      "scope": "independent realization of one fitted geography at a time"
+    }
+  },
+  "schema_version": "synthpopcan-methodology-evidence-v1"
+}

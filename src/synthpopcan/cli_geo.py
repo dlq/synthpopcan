@@ -12,6 +12,15 @@ import click
 
 from synthpopcan.cli_output import click_file_access_error, click_value_error
 from synthpopcan.console import print_wrote
+from synthpopcan.control_packs import (
+    build_control_pack_evidence,
+    list_builtin_control_packs,
+    load_control_pack,
+    plan_control_pack,
+    write_control_pack,
+    write_control_pack_evidence,
+)
+from synthpopcan.controls import read_control_table
 from synthpopcan.diagnostics import format_categories, format_number
 from synthpopcan.geography import GeographyUniverse, statcan_geography_universe
 from synthpopcan.linked_schema import write_linked_population_contract
@@ -20,6 +29,7 @@ from synthpopcan.small_area_synthesis import (
     calibrate_linked_household_csvs,
     estimate_small_area_run,
 )
+from synthpopcan.workflows.ipf import read_csv_records
 
 _BOUNDARIES_HELP = (
     "StatCan boundary shapefile (.shp), pre-converted GeoJSON (.geojson), "
@@ -136,6 +146,211 @@ def _optional_geography_universe(
 # Keep the Python object named for the field term while exposing a shorter CLI group.
 def small_area() -> None:
     """Assign and calibrate linked households to target geographies."""
+
+
+@small_area.group("control-packs")
+def control_packs_group() -> None:
+    """Inspect, bind, and plan reviewed small-area control packs."""
+
+
+@control_packs_group.command("list")
+@click.option(
+    "--format",
+    "output_format",
+    type=click.Choice(["summary", "json"]),
+    default="summary",
+    show_default=True,
+)
+def control_packs_list_command(output_format: str) -> None:
+    """List built-in control packs for 2016 and 2021."""
+
+    packs = list_builtin_control_packs()
+    if output_format == "json":
+        click.echo(json.dumps(packs, sort_keys=True))
+        return
+    for pack in packs:
+        click.echo(
+            f"{pack['identifier']}  Census {pack['census_vintage']}  "
+            f"{str(pack['geography_level']).upper()}"
+        )
+
+
+@control_packs_group.command("show")
+@click.argument("pack", metavar="PACK")
+@click.option(
+    "--out",
+    "output_path",
+    type=_PATH,
+    default=None,
+    help="Optionally write the normalized strict manifest to this JSON path.",
+)
+def control_packs_show_command(pack: str, output_path: Path | None) -> None:
+    """Show a built-in pack identifier or strict local pack manifest."""
+
+    try:
+        manifest = load_control_pack(pack)
+        if output_path is not None:
+            write_control_pack(manifest, output_path)
+    except ValueError as exc:
+        raise click_value_error(exc) from exc
+    if output_path is not None:
+        print_wrote(output_path)
+        return
+    click.echo(json.dumps(manifest.as_dict(), indent=2, sort_keys=True))
+
+
+@control_packs_group.command("evidence")
+@click.argument("pack", metavar="PACK")
+@click.option("--controls", "controls_path", required=True, type=_PATH)
+@click.option(
+    "--person-controls",
+    "person_controls_path",
+    required=True,
+    type=_PATH,
+)
+@click.option(
+    "--universe-evidence",
+    "universe_evidence_path",
+    required=True,
+    type=_PATH,
+    help=(
+        "JSON mapping each control geography to total_population and "
+        "persons_in_private_households; an envelope may also include "
+        "geographies and excluded_geographies."
+    ),
+)
+@click.option("--out", "output_path", required=True, type=_PATH)
+def control_packs_evidence_command(
+    pack: str,
+    controls_path: Path,
+    person_controls_path: Path,
+    universe_evidence_path: Path,
+    output_path: Path,
+) -> None:
+    """Bind exact controls to reviewed source and universe evidence."""
+
+    try:
+        manifest = load_control_pack(pack)
+        household_controls = read_control_table(controls_path)
+        person_controls = read_control_table(person_controls_path)
+        raw = _read_json_object(universe_evidence_path)
+        raw_geographies = raw.get("geographies", raw)
+        if not isinstance(raw_geographies, Mapping):
+            raise ValueError("universe evidence geographies must be a JSON object")
+        geographies: dict[str, Mapping[str, object]] = {}
+        for geography, value in raw_geographies.items():
+            if not isinstance(geography, str) or not isinstance(value, Mapping):
+                raise ValueError(
+                    "universe evidence must map geography strings to JSON objects"
+                )
+            geographies[geography] = value
+        raw_exclusions = raw.get("excluded_geographies", {})
+        if not isinstance(raw_exclusions, Mapping) or not all(
+            isinstance(key, str) and isinstance(value, str)
+            for key, value in raw_exclusions.items()
+        ):
+            raise ValueError("excluded_geographies must map strings to reasons")
+        evidence = build_control_pack_evidence(
+            manifest,
+            household_controls,
+            person_controls,
+            geographies=geographies,
+            controls_source_revisions=manifest.source_revisions,
+            excluded_geographies={
+                str(key): str(value) for key, value in raw_exclusions.items()
+            },
+        )
+        write_control_pack_evidence(evidence, output_path)
+    except OSError as exc:
+        filename = exc.filename or universe_evidence_path
+        raise click_file_access_error(Path(filename), "read or write", exc) from exc
+    except ValueError as exc:
+        raise click_value_error(exc) from exc
+    print_wrote(output_path)
+
+
+@control_packs_group.command("plan")
+@click.argument("pack", metavar="PACK")
+@click.argument("population_path", metavar="POPULATION", type=_PATH)
+@click.option("--persons", "persons_path", type=_PATH)
+@click.option("--controls", "controls_path", required=True, type=_PATH)
+@click.option(
+    "--person-controls",
+    "person_controls_path",
+    required=True,
+    type=_PATH,
+)
+@click.option("--evidence", "evidence_path", required=True, type=_PATH)
+@click.option(
+    "--format",
+    "output_format",
+    type=click.Choice(["summary", "json"]),
+    default="summary",
+    show_default=True,
+)
+def control_packs_plan_command(
+    pack: str,
+    population_path: Path,
+    persons_path: Path | None,
+    controls_path: Path,
+    person_controls_path: Path,
+    evidence_path: Path,
+    output_format: str,
+) -> None:
+    """Check a pack, candidates, controls, and evidence without fitting."""
+
+    if population_path.is_dir():
+        households_path, inferred_persons = _linked_population_paths(population_path)
+        if persons_path is None:
+            persons_path = inferred_persons
+    else:
+        households_path = population_path
+        if persons_path is None:
+            raise click.UsageError(
+                "--persons is required when POPULATION is a household CSV"
+            )
+    try:
+        plan = plan_control_pack(
+            pack,
+            read_csv_records(households_path),
+            read_csv_records(persons_path),
+            read_control_table(controls_path),
+            read_control_table(person_controls_path),
+            evidence=evidence_path,
+        )
+    except OSError as exc:
+        filename = exc.filename or households_path
+        raise click_file_access_error(Path(filename), "read", exc) from exc
+    except ValueError as exc:
+        raise click_value_error(exc) from exc
+    if output_format == "json":
+        click.echo(json.dumps(plan, sort_keys=True))
+    else:
+        status = "PASS" if plan["passed"] else "FAIL"
+        geographies = plan.get("geographies", {})
+        geography_count = (
+            geographies.get("count", 0) if isinstance(geographies, Mapping) else 0
+        )
+        click.echo(
+            f"{status}: {plan['pack']['identifier']} for {geography_count} geographies"
+        )
+        for issue in plan["issues"]:
+            if isinstance(issue, Mapping):
+                click.echo(
+                    f"  {str(issue.get('severity', 'error')).upper()}: "
+                    f"{issue.get('message', '')}"
+                )
+    if not plan["passed"]:
+        raise click.exceptions.Exit(1)
+
+
+def _read_json_object(path: Path) -> dict[str, object]:
+    payload = json.loads(path.read_text())
+    if not isinstance(payload, dict) or not all(
+        isinstance(key, str) for key in payload
+    ):
+        raise ValueError(f"expected a JSON object in {path}")
+    return payload
 
 
 @small_area.command("estimate")
@@ -257,6 +472,17 @@ def _format_surface_recommendation(recommendation: str) -> str:
     ),
 )
 @click.option(
+    "--control-pack",
+    default=None,
+    help="Built-in control-pack identifier or strict local manifest JSON.",
+)
+@click.option(
+    "--control-pack-evidence",
+    type=_PATH,
+    default=None,
+    help="Evidence JSON bound to the selected pack and exact control tables.",
+)
+@click.option(
     "--geo-dimension",
     required=True,
     help="Control dimension naming the target geography, such as ct or ada.",
@@ -350,6 +576,8 @@ def calibrate_command(
     persons_path: Path | None,
     controls_path: Path,
     person_controls_path: Path | None,
+    control_pack: str | None,
+    control_pack_evidence: Path | None,
     geo_dimension: str,
     geo_column: str | None,
     census_vintage: int | None,
@@ -395,6 +623,8 @@ def calibrate_command(
             persons_path=persons_path,
             controls_path=controls_path,
             person_controls_path=person_controls_path,
+            control_pack=control_pack,
+            control_pack_evidence=control_pack_evidence,
             geography_dimension=geo_dimension,
             geography_column=output_geo_column,
             geography_universe=geography_universe,
@@ -2143,6 +2373,17 @@ def _render_deferred_national_maps(
     help="Optional linked-person controls CSV for joint calibration.",
 )
 @click.option(
+    "--control-pack",
+    default=None,
+    help="Built-in control-pack identifier or strict local manifest JSON.",
+)
+@click.option(
+    "--control-pack-evidence",
+    type=_PATH,
+    default=None,
+    help="Evidence JSON bound to the selected pack and exact control tables.",
+)
+@click.option(
     "--geo-dimension",
     required=True,
     help="Dimension name in controls (e.g. ct, ada).",
@@ -2260,6 +2501,8 @@ def synthesize_command(
     household_count: int,
     controls_path: Path,
     person_controls_path: Path | None,
+    control_pack: str | None,
+    control_pack_evidence: Path | None,
     geo_dimension: str,
     geo_column: str | None,
     census_vintage: int | None,
@@ -2364,6 +2607,8 @@ def synthesize_command(
                 persons_path=candidates_persons,
                 controls_path=controls_path,
                 person_controls_path=person_controls_path,
+                control_pack=control_pack,
+                control_pack_evidence=control_pack_evidence,
                 geography_dimension=geo_dimension,
                 geography_column=output_geo_column,
                 geography_universe=geography_universe,
