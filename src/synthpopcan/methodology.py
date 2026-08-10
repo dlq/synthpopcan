@@ -318,7 +318,7 @@ def solve_relative_entropy_oracle(
     if not positive_targets.size:
         optimal = prior.copy()
         optimal[forced_zero] = 0.0
-        residual = float(np.max(np.abs(matrix @ optimal - target_array)))
+        residual = _maximum_absolute_control_error(matrix, optimal, target_array)
         return OracleResult(
             CALIBRATION_ORACLE_BACKEND,
             "optimal",
@@ -338,12 +338,26 @@ def solve_relative_entropy_oracle(
     optimal_reduced = active_prior.copy()
 
     for iteration in range(max_iterations + 1):
-        exponent = np.clip(reduced_matrix.T @ multipliers, -700.0, 700.0)
-        optimal_reduced = active_prior * np.exp(exponent)
-        residual_vector = reduced_matrix @ optimal_reduced - reduced_targets
+        exponent = np.clip(
+            _deterministic_matrix_vector_product(reduced_matrix.T, multipliers),
+            -700.0,
+            700.0,
+        )
+        optimal_reduced = np.fromiter(
+            (
+                float(weight) * math.exp(float(value))
+                for weight, value in zip(active_prior, exponent, strict=True)
+            ),
+            dtype=np.float64,
+            count=active_prior.size,
+        )
+        residual_vector = (
+            _deterministic_matrix_vector_product(reduced_matrix, optimal_reduced)
+            - reduced_targets
+        )
         optimal = np.zeros(matrix.shape[1], dtype=float)
         optimal[eligible] = optimal_reduced
-        max_abs_error = float(np.max(np.abs(matrix @ optimal - target_array)))
+        max_abs_error = _maximum_absolute_control_error(matrix, optimal, target_array)
         if max_abs_error <= tolerance:
             return OracleResult(
                 CALIBRATION_ORACLE_BACKEND,
@@ -358,9 +372,12 @@ def solve_relative_entropy_oracle(
         if iteration == max_iterations:
             break
 
-        hessian = (reduced_matrix * optimal_reduced) @ reduced_matrix.T
-        newton_step = np.linalg.lstsq(hessian, residual_vector, rcond=None)[0]
-        directional_decrease = float(residual_vector @ newton_step)
+        hessian = _deterministic_weighted_crossproduct(reduced_matrix, optimal_reduced)
+        newton_step = _solve_linear_system(hessian, residual_vector)
+        directional_decrease = math.fsum(
+            float(residual) * float(step)
+            for residual, step in zip(residual_vector, newton_step, strict=True)
+        )
         objective = _dual_objective(
             multipliers, reduced_matrix, reduced_targets, active_prior
         )
@@ -371,8 +388,40 @@ def solve_relative_entropy_oracle(
             proposed_objective = _dual_objective(
                 proposed, reduced_matrix, reduced_targets, active_prior
             )
-            if math.isfinite(proposed_objective) and proposed_objective <= (
+            armijo_satisfied = proposed_objective <= (
                 objective - 1e-4 * step_scale * directional_decrease
+            )
+            solves_controls = False
+            if math.isfinite(proposed_objective) and not armijo_satisfied:
+                # Near the optimum, the rounded dual objective can appear flat or
+                # increase by a few ulps.  An exponential-family proposal that
+                # satisfies every original control already meets the bounded
+                # oracle's primal and stationarity tolerances, so accept it.
+                proposed_exponent = np.clip(
+                    _deterministic_matrix_vector_product(reduced_matrix.T, proposed),
+                    -700.0,
+                    700.0,
+                )
+                proposed_reduced = np.fromiter(
+                    (
+                        float(weight) * math.exp(float(value))
+                        for weight, value in zip(
+                            active_prior, proposed_exponent, strict=True
+                        )
+                    ),
+                    dtype=np.float64,
+                    count=active_prior.size,
+                )
+                proposed_optimal = np.zeros(matrix.shape[1], dtype=float)
+                proposed_optimal[eligible] = proposed_reduced
+                solves_controls = (
+                    _maximum_absolute_control_error(
+                        matrix, proposed_optimal, target_array
+                    )
+                    <= tolerance
+                )
+            if math.isfinite(proposed_objective) and (
+                armijo_satisfied or solves_controls
             ):
                 multipliers = proposed
                 accepted = True
@@ -383,7 +432,7 @@ def solve_relative_entropy_oracle(
 
     optimal = np.zeros(matrix.shape[1], dtype=float)
     optimal[eligible] = optimal_reduced
-    max_abs_error = float(np.max(np.abs(matrix @ optimal - target_array)))
+    max_abs_error = _maximum_absolute_control_error(matrix, optimal, target_array)
     return OracleResult(
         CALIBRATION_ORACLE_BACKEND,
         "iteration_limit",
@@ -407,7 +456,7 @@ def largest_remainder_integerize(weights: Sequence[float]) -> list[int]:
     if np.any(array < 0):
         raise ValueError("weights must be non-negative")
     counts = np.floor(array).astype(np.int64)
-    remainder = round(float(array.sum())) - int(counts.sum())
+    remainder = round(math.fsum(float(value) for value in array)) - int(counts.sum())
     if remainder:
         fractions = array - counts
         order = sorted(range(len(array)), key=lambda index: (-fractions[index], index))
@@ -533,12 +582,13 @@ def build_integerization_comparison() -> dict[str, Any]:
     for name, weights, contributions, targets in cases:
         systematic = integerize_weights(weights.tolist())
         largest_remainder = largest_remainder_integerize(weights.tolist())
+        fractional_total = math.fsum(float(weight) for weight in weights)
         comparisons.append(
             {
                 "name": name,
                 "candidate_households": len(weights),
-                "fractional_total": _rounded(float(weights.sum())),
-                "rounded_total": round(float(weights.sum())),
+                "fractional_total": _rounded(fractional_total),
+                "rounded_total": round(fractional_total),
                 "systematic": _integerization_metrics(
                     systematic, weights, contributions, targets
                 ),
@@ -601,10 +651,28 @@ def _fixture_from_known_weights(
     return _fixture(
         name,
         matrix,
-        matrix @ known,
+        _deterministic_matrix_vector_product(matrix, known),
         initial_weights,
         features=features,
         known_weights=known,
+    )
+
+
+def _deterministic_matrix_vector_product(
+    matrix: np.ndarray, vector: np.ndarray
+) -> np.ndarray:
+    """Multiply in a fixed order without BLAS-dependent reductions."""
+
+    return np.fromiter(
+        (
+            math.fsum(
+                float(coefficient) * float(value)
+                for coefficient, value in zip(row, vector, strict=True)
+            )
+            for row in matrix
+        ),
+        dtype=np.float64,
+        count=matrix.shape[0],
     )
 
 
@@ -661,7 +729,10 @@ def _nonnegative_feasibility_witness(
             if np.any(solution < -scaled_tolerance):
                 continue
             clipped = np.maximum(solution, 0.0)
-            if float(np.max(np.abs(selected @ clipped - targets))) > scaled_tolerance:
+            if (
+                _maximum_absolute_control_error(selected, clipped, targets)
+                > scaled_tolerance
+            ):
                 continue
             witness = np.zeros(candidate_count, dtype=float)
             witness[list(subset)] = clipped
@@ -672,11 +743,38 @@ def _nonnegative_feasibility_witness(
 def _independent_constraint_basis(
     matrix: np.ndarray, targets: np.ndarray, *, tolerance: float
 ) -> tuple[np.ndarray, np.ndarray]:
-    left, singular_values, _right = np.linalg.svd(matrix, full_matrices=False)
-    threshold = tolerance * max(matrix.shape) * max(float(singular_values[0]), 1.0)
-    rank = int(np.count_nonzero(singular_values > threshold))
-    transform = left[:, :rank].T
-    return transform @ matrix, transform @ targets
+    """Select a canonical full-rank subset of the original constraint rows.
+
+    Singular vectors are not a canonical basis: their signs, and their
+    orientation within repeated singular-value subspaces, may vary between
+    LAPACK implementations.  Feeding those vectors into the Newton iteration
+    made the last reported evidence digits platform-dependent.  Input-order
+    Gaussian elimination gives the bounded oracle a stable basis while
+    preserving the original constraint equations.
+    """
+
+    scale = max(float(np.max(np.abs(matrix))), 1.0)
+    threshold = tolerance * max(matrix.shape) * scale
+    echelon_rows: list[np.ndarray] = []
+    pivot_columns: list[int] = []
+    selected_rows: list[int] = []
+
+    for row_index, row in enumerate(matrix):
+        residual = row.copy()
+        for pivot_column, echelon_row in zip(pivot_columns, echelon_rows, strict=True):
+            residual -= residual[pivot_column] * echelon_row
+
+        pivot_candidates = np.flatnonzero(np.abs(residual) > threshold)
+        if not pivot_candidates.size:
+            continue
+        pivot_column = int(pivot_candidates[0])
+        residual /= residual[pivot_column]
+        residual[np.abs(residual) <= threshold] = 0.0
+        pivot_columns.append(pivot_column)
+        echelon_rows.append(residual)
+        selected_rows.append(row_index)
+
+    return matrix[selected_rows], targets[selected_rows]
 
 
 def _dual_objective(
@@ -685,8 +783,80 @@ def _dual_objective(
     targets: np.ndarray,
     prior: np.ndarray,
 ) -> float:
-    exponent = np.clip(matrix.T @ multipliers, -700.0, 700.0)
-    return float(np.sum(prior * np.exp(exponent)) - targets @ multipliers)
+    exponent = np.clip(
+        _deterministic_matrix_vector_product(matrix.T, multipliers),
+        -700.0,
+        700.0,
+    )
+    exponential_sum = math.fsum(
+        float(weight) * math.exp(float(value))
+        for weight, value in zip(prior, exponent, strict=True)
+    )
+    target_product = math.fsum(
+        float(target) * float(multiplier)
+        for target, multiplier in zip(targets, multipliers, strict=True)
+    )
+    return exponential_sum - target_product
+
+
+def _deterministic_weighted_crossproduct(
+    matrix: np.ndarray, weights: np.ndarray
+) -> np.ndarray:
+    row_count, column_count = matrix.shape
+    result = np.empty((row_count, row_count), dtype=np.float64)
+    for left_index in range(row_count):
+        for right_index in range(left_index, row_count):
+            value = math.fsum(
+                float(matrix[left_index, column_index])
+                * float(weights[column_index])
+                * float(matrix[right_index, column_index])
+                for column_index in range(column_count)
+            )
+            result[left_index, right_index] = value
+            result[right_index, left_index] = value
+    return result
+
+
+def _solve_linear_system(matrix: np.ndarray, vector: np.ndarray) -> np.ndarray:
+    """Solve a small full-rank system with fixed-order Gaussian elimination."""
+
+    size = matrix.shape[0]
+    rows = [[float(value) for value in row] for row in matrix]
+    values = [float(value) for value in vector]
+
+    for column in range(size):
+        pivot_row = max(
+            range(column, size),
+            key=lambda row_index: abs(rows[row_index][column]),
+        )
+        if rows[pivot_row][column] == 0.0:
+            raise ValueError("independent constraint basis produced a singular Hessian")
+        if pivot_row != column:
+            rows[column], rows[pivot_row] = rows[pivot_row], rows[column]
+            values[column], values[pivot_row] = values[pivot_row], values[column]
+
+        for row_index in range(column + 1, size):
+            factor = rows[row_index][column] / rows[column][column]
+            rows[row_index][column] = 0.0
+            for entry_index in range(column + 1, size):
+                rows[row_index][entry_index] -= factor * rows[column][entry_index]
+            values[row_index] -= factor * values[column]
+
+    solution = [0.0] * size
+    for row_index in range(size - 1, -1, -1):
+        tail = math.fsum(
+            rows[row_index][column] * solution[column]
+            for column in range(row_index + 1, size)
+        )
+        solution[row_index] = (values[row_index] - tail) / rows[row_index][row_index]
+    return np.asarray(solution, dtype=np.float64)
+
+
+def _maximum_absolute_control_error(
+    matrix: np.ndarray, weights: np.ndarray, targets: np.ndarray
+) -> float:
+    residuals = _deterministic_matrix_vector_product(matrix, weights) - targets
+    return max(abs(float(value)) for value in residuals)
 
 
 def _relative_entropy(weights: np.ndarray | None, prior: np.ndarray) -> float:
@@ -695,13 +865,16 @@ def _relative_entropy(weights: np.ndarray | None, prior: np.ndarray) -> float:
     positive = weights > 0
     if np.any(positive & (prior <= 0)):
         return float("inf")
-    terms = prior.copy()
-    terms[positive] = (
-        weights[positive] * np.log(weights[positive] / prior[positive])
-        - weights[positive]
-        + prior[positive]
+    return math.fsum(
+        (
+            float(weight) * math.log(float(weight) / float(initial_weight))
+            - float(weight)
+            + float(initial_weight)
+            if weight > 0
+            else float(initial_weight)
+        )
+        for weight, initial_weight in zip(weights, prior, strict=True)
     )
-    return float(np.sum(terms))
 
 
 def _weight_metrics(
@@ -709,8 +882,8 @@ def _weight_metrics(
 ) -> dict[str, float | int | None] | None:
     if weights is None:
         return None
-    total = float(weights.sum())
-    squares = float(weights @ weights)
+    total = math.fsum(float(weight) for weight in weights)
+    squares = math.fsum(float(weight) * float(weight) for weight in weights)
     return {
         "minimum": _rounded(float(np.min(weights))),
         "maximum": _rounded(float(np.max(weights))),
@@ -719,7 +892,10 @@ def _weight_metrics(
         "effective_sample_size": _rounded(total * total / squares if squares else 0.0),
         "positive_candidates": int(np.count_nonzero(weights > 0)),
         "l1_distance_from_initial": _rounded(
-            float(np.sum(np.abs(weights - initial_weights)))
+            math.fsum(
+                abs(float(weight) - float(initial_weight))
+                for weight, initial_weight in zip(weights, initial_weights, strict=True)
+            )
         ),
     }
 
@@ -744,19 +920,21 @@ def _integerization_cases() -> tuple[
             "balanced_subunit_pool",
             balanced_weights,
             balanced_contributions,
-            balanced_contributions @ balanced_weights,
+            _deterministic_matrix_vector_product(
+                balanced_contributions, balanced_weights
+            ),
         ),
         (
             "linked_person_contributions",
             linked_weights,
             linked_contributions,
-            linked_contributions @ linked_weights,
+            _deterministic_matrix_vector_product(linked_contributions, linked_weights),
         ),
         (
             "sparse_structural_zero",
             sparse_weights,
             sparse_contributions,
-            sparse_contributions @ sparse_weights,
+            _deterministic_matrix_vector_product(sparse_contributions, sparse_weights),
         ),
     )
 
@@ -768,14 +946,18 @@ def _integerization_metrics(
     targets: np.ndarray,
 ) -> dict[str, Any]:
     count_array = np.asarray(counts, dtype=float)
-    residuals = contributions @ count_array - targets
+    residuals = (
+        _deterministic_matrix_vector_product(contributions, count_array) - targets
+    )
     positive_weight = weights > 0
     retained_positive = int(np.count_nonzero((count_array > 0) & positive_weight))
     return {
         "counts": [int(value) for value in counts],
         "total": int(sum(counts)),
         "max_abs_control_residual": _rounded(float(np.max(np.abs(residuals)))),
-        "sum_abs_control_residual": _rounded(float(np.sum(np.abs(residuals)))),
+        "sum_abs_control_residual": _rounded(
+            math.fsum(abs(float(residual)) for residual in residuals)
+        ),
         "selected_candidates": int(np.count_nonzero(count_array)),
         "maximum_expansion": int(np.max(count_array)) if len(count_array) else 0,
         "positive_weight_candidates_retained": retained_positive,

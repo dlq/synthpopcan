@@ -1,5 +1,6 @@
 import importlib.util
 import json
+import math
 from pathlib import Path
 
 import numpy as np
@@ -9,6 +10,7 @@ from synthpopcan.methodology import (
     CALIBRATION_ORACLE_BACKEND,
     INTEGERIZATION_BACKEND_DECISION,
     METHODOLOGY_EVIDENCE_SCHEMA_VERSION,
+    _independent_constraint_basis,
     build_calibration_oracle_comparison,
     build_integerization_comparison,
     build_methodology_evidence,
@@ -43,6 +45,52 @@ def test_generated_feasible_fixture_targets_come_from_known_weights() -> None:
         assert np.max(fixture.contributions) > 1
         assert "zero_target" in fixture.features
         assert fixture.targets[-1] == 0
+
+
+def test_generated_fixture_targets_use_platform_independent_reductions() -> None:
+    fixture = next(
+        fixture
+        for fixture in generated_linked_calibration_fixtures()
+        if fixture.name == "generated_02"
+    )
+    assert fixture.known_feasible_weights is not None
+
+    expected = np.fromiter(
+        (
+            math.fsum(
+                float(coefficient) * float(weight)
+                for coefficient, weight in zip(
+                    row, fixture.known_feasible_weights, strict=True
+                )
+            )
+            for row in fixture.contributions
+        ),
+        dtype=np.float64,
+    )
+
+    np.testing.assert_array_equal(fixture.targets, expected)
+    assert fixture.targets[2].hex() == "0x1.76eef48c61663p+2"
+    assert fixture.targets[3].hex() == "0x1.4ac3a0a008251p+4"
+
+
+def test_constraint_basis_selects_original_rows_in_input_order() -> None:
+    matrix = np.asarray(
+        [
+            [1, 1, 1, 1],
+            [1, 1, 0, 0],
+            [0, 0, 1, 1],
+            [0, 1, 0, 0],
+        ],
+        dtype=np.float64,
+    )
+    targets = np.asarray([6, 3, 3, 2], dtype=np.float64)
+
+    basis, basis_targets = _independent_constraint_basis(
+        matrix, targets, tolerance=1e-8
+    )
+
+    np.testing.assert_array_equal(basis, matrix[[0, 1, 3]])
+    np.testing.assert_array_equal(basis_targets, targets[[0, 1, 3]])
 
 
 def test_fixture_catalog_covers_methodological_edge_cases() -> None:
@@ -141,6 +189,20 @@ def test_oracle_reports_iteration_limit_separately_from_infeasibility() -> None:
     assert result.weights is not None
     assert result.feasibility_witness is not None
     assert result.max_abs_error is not None and result.max_abs_error > 0
+
+
+def test_oracle_accepts_a_solved_step_when_objective_rounding_masks_it() -> None:
+    result = solve_relative_entropy_oracle(
+        [[3, 0, 0, 3, 1, 2, 0, 0]],
+        [10.50837462965823],
+        [1] * 8,
+        tolerance=1e-8,
+        max_iterations=300,
+    )
+
+    assert result.status == "optimal"
+    assert result.max_abs_error is not None
+    assert result.max_abs_error <= 1e-8
 
 
 @pytest.mark.parametrize(
