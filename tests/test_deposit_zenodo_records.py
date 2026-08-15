@@ -105,8 +105,11 @@ def _existing_record() -> dict:
     }
 
 
-def _new_version_deposition() -> dict:
-    deposition = _deposition()
+def _new_version_deposition(
+    *, census_year: int = 2021, model_id: str = "ontario-2021-all-fields"
+) -> dict:
+    licensing = statcan_prepared_model_licensing(census_year)
+    deposition = _deposition(licensing=licensing)
     metadata = deposition["metadata"]
     metadata["version"] = "1.0.0-corrected"
     metadata["related_identifiers"] = [
@@ -147,10 +150,11 @@ def _new_version_deposition() -> dict:
             "historical_json_preserved_except_inserted_licensing": True,
             "package_schema_version": "synthpopcan-linked-tree-package-v1",
             "package_type": "linked_household_person",
-            "census_vintage": "2021",
+            "census_vintage": f"{census_year} Census",
             "licensing_schema_version": synthpopcan["licensing"]["schema_version"],
         }
     )
+    synthpopcan["model_id"] = model_id
     synthpopcan["historical_asset"]["contains_embedded_licensing"] = False
     synthpopcan["candidate_asset"] = {
         "filename": synthpopcan["filename"],
@@ -164,13 +168,16 @@ def _new_version_deposition() -> dict:
     return deposition
 
 
-def _metadata_correction_deposition() -> dict:
-    deposition = _deposition()
+def _metadata_correction_deposition(
+    *, census_year: int = 2021, model_id: str = "ontario-2021-all-fields"
+) -> dict:
+    licensing = statcan_prepared_model_licensing(census_year)
+    deposition = _deposition(licensing=licensing)
     synthpopcan = deposition["synthpopcan"]
     synthpopcan.clear()
     synthpopcan.update(
         {
-            "model_id": "ontario-2021-all-fields",
+            "model_id": model_id,
             "deposit_operation": "correct-existing-metadata",
             "metadata_ready": True,
             "existing_record_id": 100,
@@ -185,7 +192,7 @@ def _metadata_correction_deposition() -> dict:
                 "uncompressed_sha256": "5" * 64,
                 "contains_embedded_licensing": False,
             },
-            "licensing": statcan_prepared_model_licensing(2021),
+            "licensing": licensing,
             "production_ready": True,
             "build_scope": "complete-catalogue",
             "candidate_envelope_schema": (
@@ -196,10 +203,8 @@ def _metadata_correction_deposition() -> dict:
             "historical_json_preserved_except_inserted_licensing": True,
             "package_schema_version": "synthpopcan-linked-tree-package-v1",
             "package_type": "linked_household_person",
-            "census_vintage": "2021",
-            "licensing_schema_version": statcan_prepared_model_licensing(2021)[
-                "schema_version"
-            ],
+            "census_vintage": f"{census_year} Census",
+            "licensing_schema_version": licensing["schema_version"],
         }
     )
     deposition["metadata"]["description"] = (
@@ -438,6 +443,167 @@ def test_test_subset_correction_manifest_is_never_executable(monkeypatch) -> Non
         MODULE.deposit_one(deposition, api=MODULE.SANDBOX_API, token="t", publish=False)
 
     assert fetched == []
+
+
+def _production_candidate(entry: dict, *, record_id: int) -> dict:
+    model_id = str(entry["id"])
+    historical = BUILD_MODULE.model_registry_entry(model_id)
+    historical_filename = BUILD_MODULE._archive_filename(historical)
+    new_version = "v1.0.0-rights.1"
+    candidate_filename = (
+        f"{historical_filename.removesuffix('.json.gz')}-{new_version}.json.gz"
+    )
+    candidate_asset = {
+        "filename": candidate_filename,
+        "asset_url": f"file:///tmp/{candidate_filename}",
+        "size_bytes": 123,
+        "sha256": "7" * 64,
+        "uncompressed_size_bytes": 456,
+        "uncompressed_sha256": "8" * 64,
+        "contains_embedded_licensing": True,
+    }
+    return {
+        "model_id": model_id,
+        "census_vintage": str(entry["census_vintage"]),
+        "package_schema_version": "synthpopcan-linked-tree-package-v1",
+        "package_type": "linked_household_person",
+        "existing_package_version": str(entry["release_version"]),
+        "existing_record_id": record_id,
+        "existing_concept_doi": str(entry["doi"]),
+        "existing_version_doi": f"10.5281/zenodo.{record_id}",
+        "new_package_version": new_version,
+        "licensing_schema_version": entry["licensing"]["schema_version"],
+        "licensing": entry["licensing"],
+        "historical_asset": {
+            "filename": historical_filename,
+            "size_bytes": historical["size_bytes"],
+            "sha256": historical["sha256"],
+            "uncompressed_size_bytes": historical["uncompressed_size_bytes"],
+            "uncompressed_sha256": historical["uncompressed_sha256"],
+            "contains_embedded_licensing": False,
+        },
+        "candidate_asset": candidate_asset,
+        **{
+            field: candidate_asset[field]
+            for field in (
+                "filename",
+                "asset_url",
+                "size_bytes",
+                "sha256",
+                "uncompressed_size_bytes",
+                "uncompressed_sha256",
+            )
+        },
+        "transformation": "rights-metadata-only-top-level-field-insertion",
+        "model_retrained": False,
+        "historical_json_preserved_except_inserted_licensing": True,
+    }
+
+
+def test_all_64_generated_correction_shapes_pass_readiness() -> None:
+    entries = [
+        entry
+        for entry in BUILD_MODULE.model_catalogue()
+        if entry["census_vintage"] in {"2016 Census", "2021 Census"}
+    ]
+    manifests = []
+    for index, entry in enumerate(entries, start=30_000_000):
+        manifests.extend(
+            BUILD_MODULE.build_correction_depositions(
+                str(entry["id"]),
+                _production_candidate(entry, record_id=index),
+                concept_doi="10.5281/zenodo.21461463",
+                production_ready=True,
+                build_scope="complete-catalogue",
+                envelope_new_version="v1.0.0-rights.1",
+            )
+        )
+
+    assert len(entries) == 32
+    assert len(manifests) == 64
+    for manifest in manifests:
+        MODULE._validate_correction_manifest_readiness(manifest)
+
+
+@pytest.mark.parametrize(
+    ("vintage", "reference_year", "model_id", "message"),
+    [
+        ("2021", 2021, "ontario-2021-all-fields", "vintage binding"),
+        ("2020 Census", 2020, "ontario-2020-all-fields", "vintage binding"),
+        ("2021 Census", "2021", "ontario-2021-all-fields", "vintage binding"),
+        ("2021 Census", 2016, "ontario-2021-all-fields", "vintage binding"),
+        ("2021 Census", 2021, "ontario-2016-all-fields", "model identity"),
+    ],
+)
+def test_correction_readiness_rejects_noncanonical_vintage_bindings(
+    vintage, reference_year, model_id, message
+) -> None:
+    deposition = _metadata_correction_deposition()
+    synthpopcan = deposition["synthpopcan"]
+    synthpopcan["census_vintage"] = vintage
+    synthpopcan["model_id"] = model_id
+    synthpopcan["licensing"]["source_information"]["product"]["reference_year"] = (
+        reference_year
+    )
+
+    with pytest.raises(MODULE.ZenodoError, match=message):
+        MODULE._validate_correction_manifest_readiness(deposition)
+
+
+@pytest.mark.parametrize(
+    "arguments",
+    [
+        ["--production", "--dry-run"],
+        ["--dry-run"],
+    ],
+)
+def test_ready_correction_dry_run_preflights_before_token_or_network(
+    arguments, monkeypatch
+) -> None:
+    invalid = _metadata_correction_deposition()
+    invalid["synthpopcan"]["census_vintage"] = "2021"
+    requests: list[tuple] = []
+    monkeypatch.setattr(
+        MODULE, "_load_depositions", lambda only, directory=None: [invalid]
+    )
+    monkeypatch.setattr(MODULE, "_read_correction_execution_index", lambda source: {})
+    monkeypatch.setattr(
+        MODULE, "_request", lambda *args, **kwargs: requests.append(args)
+    )
+
+    result = CliRunner().invoke(MODULE.main, arguments)
+
+    assert result.exit_code == 2
+    assert "correction manifest preflight failed" in result.output
+    assert "Census vintage binding does not match" in result.output
+    assert "ZENODO_TOKEN" not in result.output
+    assert requests == []
+
+
+def test_nonproduction_subset_is_sandbox_dry_run_only(monkeypatch) -> None:
+    subset = _metadata_correction_deposition()
+    subset["synthpopcan"]["production_ready"] = False
+    subset["synthpopcan"]["build_scope"] = "test-subset"
+    subset["synthpopcan"]["metadata_ready"] = False
+    requests: list[tuple] = []
+    monkeypatch.setattr(
+        MODULE, "_load_depositions", lambda only, directory=None: [subset]
+    )
+    monkeypatch.setattr(MODULE, "_read_correction_execution_index", lambda source: {})
+    monkeypatch.setattr(
+        MODULE, "_request", lambda *args, **kwargs: requests.append(args)
+    )
+
+    review = CliRunner().invoke(MODULE.main, ["--dry-run"])
+    write = CliRunner().invoke(MODULE.main, [])
+
+    assert review.exit_code == 0
+    assert "Dry run against sandbox" in review.output
+    assert "review-only metadata" in review.output
+    assert write.exit_code == 2
+    assert "bounded bundles are dry-run only" in write.output
+    assert "ZENODO_SANDBOX_TOKEN" not in write.output
+    assert requests == []
 
 
 def test_new_version_rejects_overwriting_the_historical_filename(monkeypatch) -> None:

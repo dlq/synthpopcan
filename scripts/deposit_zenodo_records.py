@@ -76,6 +76,10 @@ _TERMINAL_STATE = "verified"
 _HTTP_STATUS_KEY = "_synthpopcan_http_status"
 _OWNERSHIP_PREFIX = "<!-- synthpopcan-zenodo-executor:"
 _NEWVERSION_AUTHORITY_PREFIX = "<!-- synthpopcan-zenodo-newversion-authority:"
+_CENSUS_VINTAGE_YEAR = {
+    "2016 Census": 2016,
+    "2021 Census": 2021,
+}
 
 
 class ZenodoError(RuntimeError):
@@ -1111,14 +1115,21 @@ def _validate_correction_manifest_readiness(deposition: dict[str, Any]) -> None:
     source = licensing.get("source_information")
     product = source.get("product") if isinstance(source, dict) else None
     vintage = synthpopcan.get("census_vintage")
+    census_year = (
+        _CENSUS_VINTAGE_YEAR.get(vintage) if isinstance(vintage, str) else None
+    )
+    reference_year = (
+        product.get("reference_year") if isinstance(product, dict) else None
+    )
     if (
-        not isinstance(vintage, str)
-        or not isinstance(product, dict)
-        or str(product.get("reference_year")) != vintage
+        census_year is None
+        or not isinstance(reference_year, int)
+        or isinstance(reference_year, bool)
+        or reference_year != census_year
     ):
         raise ZenodoError("correction manifest Census vintage binding does not match")
     model_id = synthpopcan.get("model_id")
-    if not isinstance(model_id, str) or f"-{vintage}-" not in model_id:
+    if not isinstance(model_id, str) or f"-{census_year}-" not in model_id:
         raise ZenodoError(
             "correction manifest model identity does not match its vintage"
         )
@@ -2512,6 +2523,31 @@ def main(
     )
     api = PRODUCTION_API if production else SANDBOX_API
     target = "PRODUCTION" if production else "sandbox"
+
+    # Validate the complete local authority before token lookup, confirmation,
+    # or any possible request.  Production dry-runs are the final 64-operation
+    # canary, so they must exercise the same fail-closed manifest readiness
+    # checks as a write rather than merely render descriptive output.  An
+    # explicitly non-production test subset remains eligible for a sandbox
+    # dry-run review, but the write-authority gate below keeps it unwritable.
+    for item in depositions:
+        synthpopcan = item.get("synthpopcan")
+        operation = (
+            synthpopcan.get("deposit_operation")
+            if isinstance(synthpopcan, dict)
+            else None
+        )
+        if operation not in {"correct-existing-metadata", "create-new-version"}:
+            continue
+        if not production and synthpopcan.get("production_ready") is not True:
+            continue
+        try:
+            _validate_correction_manifest_readiness(item)
+        except ZenodoError as exc:
+            model_id = synthpopcan.get("model_id", "unknown")
+            raise click.UsageError(
+                f"{model_id}: correction manifest preflight failed: {exc}"
+            ) from exc
 
     if production and not dry_run and not _production_licensing_gates_are_complete():
         raise click.UsageError(
