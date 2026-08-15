@@ -36,9 +36,15 @@ Every deliberate compatibility break must:
 - provide a migration tool or one-time converter when practical and when it can
   preserve meaning without inventing unavailable information.
 
-Published artifacts, releases, checksums, DOIs, and archival records remain
-immutable. A new contract or corrected artifact is published as a new version;
-an existing published object is never rewritten in place.
+Published file bytes, release versions, checksums, and identifier-to-version
+bindings remain immutable. A new contract or corrected artifact is published
+as a new version; an existing published file is never replaced or silently
+relabelled. Descriptive archive metadata may be corrected in place when the
+archive supports identifier-preserving edits, the correction is disclosed and
+audited, and it does not change the archived bytes or their version identity.
+This 2026-08-15 clarification resolves the ambiguity exposed by
+[ADR-0014](0014-separate-prepared-model-and-source-licensing.md); that accepted
+later decision governs its specific correction workflow.
 
 At `1.0.0`, the project freezes the documented CLI command paths and options,
 documented Python API symbols, and versioned persisted contracts explicitly

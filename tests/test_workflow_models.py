@@ -47,6 +47,10 @@ def test_prepared_model_workflow_writes_deterministic_linked_artifacts(
         == "synthpopcan-linked-population-v1"
     )
     assert result.report["linked_population"]["tables"]["households"]["rows"] == 8
+    assert (
+        result.report["package"]["licensing"]
+        == (model_payload("demo-linked-household-person")["licensing"])
+    )
     assert {event.stage for event in events} >= {
         "checking-model",
         "generating",

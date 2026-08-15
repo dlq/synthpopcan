@@ -32,11 +32,11 @@ person, but it must not alter base rows, identifiers, controls, or validation
 evidence. Cohort attachment, activities, schedules, contact networks,
 interventions, and simulation behaviour are not committed `0.7.x` outcomes.
 
-The archived [small-area geography plan](archive/2026-07-22-small-area-geography.md)
+The archived [small-area geography plan](2026-07-22-small-area-geography.md)
 records the released structured geography requests, relationship indexing, and
 DA/ADA synthesis foundation. This plan consumes those contracts; it does not
 reimplement them. Follow-on control-coverage work belongs to the active
-[correctness plan](2026-07-12-correctness-assurance.md).
+[correctness plan](../2026-07-12-correctness-assurance.md).
 
 ## Source-Agnostic Pipeline
 

@@ -23,7 +23,12 @@ from synthpopcan.control_packs import (
 from synthpopcan.controls import read_control_table
 from synthpopcan.diagnostics import format_categories, format_number
 from synthpopcan.geography import GeographyUniverse, statcan_geography_universe
-from synthpopcan.linked_schema import write_linked_population_contract
+from synthpopcan.linked_schema import (
+    read_linked_population_contract,
+    validate_linked_population_contract,
+    write_linked_population_contract,
+)
+from synthpopcan.model_licensing import validate_prepared_model_licensing
 from synthpopcan.national_small_area import CANADA_SMALL_AREA_JURISDICTIONS
 from synthpopcan.small_area_synthesis import (
     calibrate_linked_household_csvs,
@@ -108,6 +113,50 @@ def _linked_population_paths(directory: Path) -> tuple[Path, Path]:
     """Return the conventional household and person paths in an artifact directory."""
 
     return directory / "households.csv", directory / "persons.csv"
+
+
+def _linked_population_licensing(
+    households_path: Path,
+    persons_path: Path,
+) -> dict[str, object] | None:
+    if households_path.parent.resolve() != persons_path.parent.resolve():
+        return None
+    manifest_path = households_path.parent / "manifest.json"
+    if not manifest_path.is_file():
+        return None
+    try:
+        contract = read_linked_population_contract(manifest_path)
+        licensing = contract.get("licensing")
+    except ValueError as linked_error:
+        try:
+            payload = json.loads(manifest_path.read_text())
+        except (OSError, json.JSONDecodeError):
+            raise linked_error from None
+        if not isinstance(payload, dict) or payload.get("schema_version") != (
+            "synthpopcan-tree-generation-manifest-v1"
+        ):
+            raise linked_error
+        embedded = payload.get("linked_population")
+        if not isinstance(embedded, dict):
+            raise linked_error
+        validate_linked_population_contract(embedded)
+        contract = embedded
+        licensing = payload.get("licensing", contract.get("licensing"))
+    tables = contract.get("tables")
+    if not isinstance(tables, Mapping):
+        return None
+    households = tables.get("households")
+    persons = tables.get("persons")
+    if not isinstance(households, Mapping) or not isinstance(persons, Mapping):
+        return None
+    if (
+        households.get("path") != households_path.name
+        or persons.get("path") != persons_path.name
+    ):
+        return None
+    return (
+        validate_prepared_model_licensing(licensing) if licensing is not None else None
+    )
 
 
 def _optional_geography_universe(
@@ -604,6 +653,7 @@ def calibrate_command(
             raise click.UsageError(
                 "--persons is required when POPULATION is a household CSV"
             )
+    input_licensing = _linked_population_licensing(households_path, persons_path)
     output_dir.mkdir(parents=True, exist_ok=True)
     households_out, persons_out = _linked_population_paths(output_dir)
     report_out = output_dir / "report.json"
@@ -649,6 +699,7 @@ def calibrate_command(
         households_out,
         persons_out,
         geography_column=output_geo_column,
+        licensing=input_licensing,
     )
 
     print_wrote(households_out)
@@ -2557,6 +2608,7 @@ def synthesize_command(
         raise click_file_access_error(Path(package_path), "read", exc) from exc
     except ValueError as exc:
         raise click_value_error(exc) from exc
+    input_licensing = validate_prepared_model_licensing(package.get("licensing"))
 
     try:
         validate_package_allows_generation(package)
@@ -2636,6 +2688,7 @@ def synthesize_command(
         households_out,
         persons_out,
         geography_column=output_geo_column,
+        licensing=input_licensing,
     )
 
     print_wrote(households_out)

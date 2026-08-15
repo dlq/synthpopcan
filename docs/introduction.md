@@ -1,10 +1,12 @@
 # Introduction
 
 SynthPopCan helps researchers build and check Canadian synthetic populations.
-The project is early-stage, but the current command-line tools already support
-small, inspectable workflows for control tables, IPF calibration, Statistics
-Canada sources, microdata-derived seed files, linked household/person models,
-and validation reports.
+It is maintained research software with small, inspectable workflows for
+control tables, IPF calibration, Statistics Canada sources, microdata-derived
+seed files, linked household/person models, and validation reports. A stable
+software interface does not imply that every generated population is fit for a
+particular study, representative at every geography, or certified disclosure
+safe.
 
 SynthPopCan also has a specific project lineage: it began from work connected
 to the SynthEco proposal and should be read as a spiritual and academic

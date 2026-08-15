@@ -122,23 +122,70 @@ endorsed by Statistics Canada or the Government of Canada.
 ## Source Licensing And Attribution
 
 Statistics Canada public use microdata files (PUMFs) are released under the
-[Statistics Canada Open Licence](https://www.statcan.gc.ca/en/reference/licence).
+[Statistics Canada Open Licence](https://www.statcan.gc.ca/en/terms-conditions/open-licence).
 That licence defines "Information" to include public use microdata files, and
 grants a worldwide, royalty-free, non-exclusive right to reproduce, publish, and
 freely distribute both the Information and **Value-added Products** — products
-made by adapting or incorporating it.
+made by adapting or incorporating it. It also permits sublicensing on terms
+consistent with the Open Licence and addresses intellectual-property rights in
+Value-added Products.
 
-A trained SynthPopCan model package is a Value-added Product, so publishing and
-redistributing prepared model packages is permitted. The licence attaches
-conditions, which SynthPopCan meets as follows:
+The project treats a trained SynthPopCan model package as a Value-added Product,
+for which the licence grants publication and redistribution rights subject to
+its continuing conditions. This project guidance is not a substitute for
+licensing advice.
 
-- **Attribution.** Every Census-derived package carries the licence's prescribed
-  notice in its `provenance` metadata. For the 2016 vintage that reads:
-  *"Adapted from Statistics Canada, 2016 Census Hierarchical Public Use
-  Microdata File (98M0002X2016001), 2016. This does not constitute an
-  endorsement by Statistics Canada of this product."* The notice travels with
-  the package payload, so generated outputs and manifests inherit it. View it
-  with `synthpopcan models show MODEL_ID`.
+Darcy Quesnel accepted this open-by-default project policy on 2026-08-15: to
+the extent the package author owns or controls copyright or similar rights in
+the original selection, organization, schema, documentation, and model
+representation, those rights are offered under CC BY 4.0. That grant does
+not license, replace, or supersede Statistics Canada Information or rights
+governed by the Open Licence, and it claims no author-controlled rights in
+source classifications, facts, or unprotectable numeric results. The statements
+are cumulative and scoped to their respective material; they are not alternative
+licences for the package as a whole.
+
+CC BY 4.0 is deliberately used instead of CC0 for that authored layer: it
+permits broad reuse while preserving attribution, and it avoids implying that
+the project can waive Statistics Canada or other third-party rights.
+
+The policy is Accepted in
+[ADR-0014](https://github.com/dlq/synthpopcan/blob/main/adr/0014-separate-prepared-model-and-source-licensing.md),
+with Darcy Quesnel as decision authority on 2026-08-15. External review is
+welcome but optional and is not a `1.0.0` gate; no Statistics Canada approval or
+legal opinion is claimed. Another production model publication remains blocked
+until the verified live archive correction is complete. The [dated review
+record](records/prepared-model-licensing-review-2026-08-15.md) records the
+decision and correction disposition.
+
+For Census-derived packages, the embedded `policy_decision` uses
+`status: accepted`, `basis: maintainer-selected-permissive-default`, the
+accepted ADR-0014 record, Darcy Quesnel as `decided_by`, `2026-08-15` as
+`decided_on`, and `external_legal_review: not-obtained`. Synthetic-only examples
+use `not-applicable`; unclassified legacy material remains `unresolved`. These
+values make the source of project authority explicit without fabricating an
+external opinion.
+
+The continuing source conditions are presented as follows:
+
+- **Attribution.** The model catalogue and current archive descriptions carry
+  the licence's prescribed notice. New and corrected packages derive the exact
+  vintage-specific wording from the authoritative machine-readable licensing
+  metadata at `licensing.source_information.prescribed_notice`, including the
+  official product title, catalogue number, and Census reference year. The
+  enclosing `synthpopcan-prepared-model-licensing-v1` object also records the
+  cumulative authored/source layers, explicit rights exclusions, continuing
+  conditions, and policy decision. View it with the `models show` command; do
+  not shorten or reconstruct the notice from the Census year alone.
+- **Historical-byte correction.** The 2026-08-15 review found that the 32
+  historical archive records describe the source terms but the immutable model
+  JSON bytes do not yet embed a complete scoped rights block. Corrected bytes
+  will be published as new, non-overwriting versions under the existing concept
+  DOIs, with new checksums and version DOIs. Existing records receive in-place
+  metadata clarification and remain available for reproducibility. The
+  accepted project policy requires both record-level and embedded-JSON rights
+  statements. Materially conflicting future authoritative guidance will trigger
+  a prospective review and, where needed, another non-overwriting correction.
 - **No endorsement.** The notice states this explicitly, and SynthPopCan makes no
   claim of affiliation with Statistics Canada.
 - **No re-identification.** The licence forbids merging or linking the
@@ -149,10 +196,11 @@ conditions, which SynthPopCan meets as follows:
   information, or as legally anonymized data. Passing SynthPopCan's
   disclosure-risk checks is a project-level screen, not certification.
 
-When you redistribute a package or an output derived from one, carry the
-`provenance` notice with it.
+When you redistribute a package or an output derived from one, carry the exact
+source notice and Open Licence link with it. Do not treat a bare `CC BY 4.0`
+label as the complete rights statement for a Census-derived model package.
 
-**This clearance covers Census PUMF-derived packages only.** Published model
+**This release path covers Census PUMF-derived packages only.** Published model
 packages are trained from Statistics Canada public use microdata files and
 nothing else. Access-controlled sources are used locally, if at all, and are
 never redistributed through SynthPopCan — neither the source material nor any

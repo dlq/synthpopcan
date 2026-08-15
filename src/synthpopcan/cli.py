@@ -235,7 +235,7 @@ def show_model(model_id: str, output_format: str) -> None:
         return
     table = make_table(title=str(model["name"]))
     table.add_column("Field")
-    table.add_column("Value")
+    table.add_column("Value", overflow="fold")
     for field, value in _model_detail_rows(model):
         table.add_row(field, value)
     print_table(table)
@@ -518,7 +518,24 @@ def _format_model_doi(model: dict[str, Any]) -> str:
 
 
 def _model_detail_rows(model: dict[str, Any]) -> list[tuple[str, str]]:
-    return [
+    licensing = model.get("licensing")
+    licensing = licensing if isinstance(licensing, dict) else {}
+    authored = licensing.get("authored_material")
+    authored = authored if isinstance(authored, dict) else {}
+    authored_licence = authored.get("licence")
+    authored_licence = authored_licence if isinstance(authored_licence, dict) else {}
+    grant_scope = authored.get("grant_scope")
+    grant_scope = grant_scope if isinstance(grant_scope, dict) else {}
+    presentation = licensing.get("presentation")
+    presentation = presentation if isinstance(presentation, dict) else {}
+    source = licensing.get("source_information")
+    source = source if isinstance(source, dict) else {}
+    source_licence = source.get("licence")
+    source_licence = source_licence if isinstance(source_licence, dict) else {}
+    policy = licensing.get("policy_decision")
+    policy = policy if isinstance(policy, dict) else {}
+
+    rows = [
         ("Package ID", str(model["id"])),
         ("Geography", str(model["geography"])),
         ("Census vintage", str(model["census_vintage"])),
@@ -529,10 +546,39 @@ def _model_detail_rows(model: dict[str, Any]) -> list[tuple[str, str]]:
         ("Cite as", _format_model_doi(model)),
         ("Source", str(model["provenance"])),
         ("Source licence", str(model["source_licence"])),
+        (
+            "Prepared-model licence",
+            _licence_label(authored_licence),
+        ),
+        ("Prepared-model scope", str(grant_scope.get("statement") or "")),
+        ("Licence layering", str(presentation.get("statement") or "")),
+        ("Source licence (contract)", _licence_label(source_licence)),
+        ("Source notice", str(source.get("prescribed_notice") or "")),
+        ("Policy decision", _policy_decision_label(policy)),
+        ("External legal review", str(policy.get("external_legal_review") or "")),
         ("Privacy", str(model["privacy_review_status"])),
         ("Generation guidance", str(model["generation_limits"])),
         ("Known limitations", str(model["known_limitations"])),
     ]
+    return [(label, value) for label, value in rows if value]
+
+
+def _licence_label(licence: dict[str, Any]) -> str:
+    name = str(licence.get("name") or "")
+    spdx_id = str(licence.get("spdx_id") or "")
+    url = str(licence.get("url") or "")
+    identity = f"{name} ({spdx_id})" if name and spdx_id else name or spdx_id
+    return f"{identity}: {url}" if identity and url else identity or url
+
+
+def _policy_decision_label(policy: dict[str, Any]) -> str:
+    authority = ", ".join(
+        str(value)
+        for value in (policy.get("decided_by"), policy.get("decided_on"))
+        if value
+    )
+    values = [policy.get("status"), policy.get("basis"), authority]
+    return "; ".join(str(value) for value in values if value)
 
 
 @cli.group()

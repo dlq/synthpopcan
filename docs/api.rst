@@ -22,16 +22,16 @@ Stability
 ---------
 
 Names exported directly from :mod:`synthpopcan` are the supported beginner API.
-Before version 1.0, deliberate, documented breaking changes remain possible when
-they improve correctness or materially simplify the research model; changed
-artifacts and schemas receive a versioned replacement path. The curated
-lower-level names on this page are supported advanced APIs, but may evolve more
-readily. Other module attributes and ``__all__`` declarations are implementation
-details unless they are listed here.
+The curated lower-level names on this page are the supported advanced API.
+Starting with version 1.0, their import paths and callable parameter shapes are
+covered by the :doc:`1.x compatibility policy <compatibility>` and the packaged
+machine-readable interface manifest. Other module attributes and ``__all__``
+declarations are implementation details unless they are listed here.
 
-The geography, geodata, generic enrichment, Québec DA proof, and national
-small-area APIs were added in ``0.7.0``. Maintained Can-FED and ODEF workflows
-were added in ``0.7.2``.
+The geography, geodata, generic enrichment, and supported national small-area
+APIs were added in ``0.7.0``. Maintained Can-FED and ODEF workflows were added
+in ``0.7.2``. Bounded Québec DA proof-building helpers remain an internal
+release-evidence surface rather than part of the 1.x API contract.
 The simulator-neutral exchange bundle was added in ``0.8.0``.
 The strict control-pack/evidence contracts and bounded methodological evidence
 were added in ``0.9.0``.
@@ -105,11 +105,6 @@ Exchange, Geography, and Enrichment
 .. automodule:: synthpopcan.odef
    :members: OdefAdapter, odef_source_profile, normalize_odef_archive
 
-.. automodule:: synthpopcan.da_proof
-   :members: finalize_quebec_da_proof, prepare_quebec_da_proof,
-             select_quebec_da_relationships
-   :show-inheritance:
-
 .. automodule:: synthpopcan.national_small_area
    :members: NationalSmallAreaJurisdiction,
              CANADA_SMALL_AREA_JURISDICTIONS,
@@ -138,15 +133,6 @@ Small-Area Control Packs And Methodological Evidence
    :members: build_linked_calibration_validation_profile,
              read_external_comparison_descriptor,
              validate_external_comparison_fixture
-
-.. automodule:: synthpopcan.national_execution
-   :members: NationalBatchRunConfiguration,
-             prepare_national_candidate_pools,
-             find_cached_national_candidate_pools,
-             reset_nonconverged_national_batches,
-             run_national_cached_batch,
-             build_national_geography_summary
-   :show-inheritance:
 
 .. automodule:: synthpopcan.geodata
    :members: load_geodata_catalogue, fetch_display_boundaries,

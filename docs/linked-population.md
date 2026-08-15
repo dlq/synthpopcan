@@ -69,6 +69,24 @@ This embedding rule lets an existing workflow manifest keep its own lifecycle
 and diagnostic fields while giving all consumers one shared population-table
 contract.
 
+## Licensing metadata
+
+A v1 descriptor may include a top-level `licensing` object using
+`synthpopcan-prepared-model-licensing-v1`. The field is optional so descriptors
+written before licensing metadata was added remain valid and readable. When a
+prepared model carries a validated licensing object, generation and small-area
+calibration copy that complete object into each derived linked-population
+descriptor. They do not infer, replace, or reduce its licence layers.
+
+Consumers must validate `licensing` when it is present. Its absence means only
+that the linked-population descriptor does not carry a licensing presentation;
+it must not be interpreted as a licence grant. See {doc}`tree` for the supported
+package bases and policy-decision states. For Census-derived packages, the
+nested `policy_decision` identifies the accepted maintainer-selected permissive
+default and explicitly records that no external legal review is claimed. That
+open default remains cumulative with the source conditions and does not weaken
+attribution, provenance, anti-identification, or disclosure-risk safeguards.
+
 ## Compatibility and migration
 
 Readers of v1 must:
@@ -78,6 +96,8 @@ Readers of v1 must:
 1. allow additional attribute columns;
 1. treat household geography as optional and, when declared, inherit it for
    people through the household relationship; and
+1. validate a `licensing` object when present while continuing to accept v1
+   manifests written without it; and
 1. validate identifier uniqueness and foreign-key integrity before analysis.
 
 Legacy directories containing only `households.csv` and `persons.csv` are not
@@ -104,6 +124,7 @@ Adoption validates primary-key uniqueness and the person-to-household foreign
 key before writing `manifest.json`. It does not rename columns or assert that
 the population is statistically fit for a research purpose.
 
-Future compatible additions may add optional metadata fields. Renaming stable
+The optional `licensing` field is one such compatible addition to v1. Future
+compatible additions may add other optional metadata fields. Renaming stable
 keys, changing relationship semantics, or requiring a new table requires a new
 schema version and documented migration path.

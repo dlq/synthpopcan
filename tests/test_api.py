@@ -200,11 +200,56 @@ def test_top_level_api_generates_from_linked_model_package(tmp_path: Path) -> No
     assert files.manifest == output_dir / "manifest.json"
     assert len(population.households) == 3
     assert len(population.persons) >= 3
+    assert population.licensing == package["licensing"]
+    assert population.licensing is not package["licensing"]
     assert (output_dir / "households.csv").is_file()
     assert (output_dir / "persons.csv").is_file()
     manifest = json.loads((output_dir / "manifest.json").read_text())
     assert manifest["schema_version"] == "synthpopcan-linked-population-v1"
     assert manifest["tables"]["households"]["rows"] == 3
+    assert manifest["licensing"] == package["licensing"]
+
+
+def test_top_level_api_keeps_hand_built_linked_populations_compatible(
+    tmp_path: Path,
+) -> None:
+    population = spc.LinkedPopulation(
+        households=[{"synthetic_household_id": "h1"}],
+        persons=[
+            {
+                "synthetic_person_id": "p1",
+                "synthetic_household_id": "h1",
+            }
+        ],
+    )
+
+    files = spc.write_linked_population(population, tmp_path / "population")
+    assert files.manifest is not None
+    manifest = json.loads(files.manifest.read_text())
+
+    assert population.licensing is None
+    assert "licensing" not in manifest
+
+
+def test_top_level_api_rejects_invalid_linked_population_licensing_before_writing(
+    tmp_path: Path,
+) -> None:
+    output = tmp_path / "population"
+    population = spc.LinkedPopulation(
+        households=[{"synthetic_household_id": "h1"}],
+        persons=[
+            {
+                "synthetic_person_id": "p1",
+                "synthetic_household_id": "h1",
+            }
+        ],
+        licensing={"schema_version": "legacy"},
+    )
+
+    with pytest.raises(ValueError, match="unsupported prepared-model licensing"):
+        spc.write_linked_population(population, output)
+
+    assert not output.exists()
 
 
 def test_top_level_api_creates_and_validates_exchange_bundle(tmp_path: Path) -> None:
@@ -221,6 +266,9 @@ def test_top_level_api_creates_and_validates_exchange_bundle(tmp_path: Path) -> 
     assert isinstance(bundle, spc.ExchangeBundle)
     assert bundle.manifest == tmp_path / "exchange" / "manifest.json"
     assert bundle.report["passed"] is True
+    assert json.loads(bundle.linked_population.read_text())["licensing"] == (
+        population.licensing
+    )
     assert spc.validate_exchange_bundle(bundle.directory)["passed"] is True
 
 
@@ -477,6 +525,7 @@ def test_top_level_api_composes_generation_with_small_area_calibration(
                 "age_group": "adult",
             },
         ],
+        licensing=model_payload("demo-linked-household-person")["licensing"],
     )
     write_csv(
         controls_path,
@@ -536,6 +585,7 @@ def test_top_level_api_composes_generation_with_small_area_calibration(
         "household_column": "ct",
         "person_assignment": "inherited-via-household",
     }
+    assert manifest["licensing"] == population.licensing
     assert {row["ct"] for row in read_csv(result.population.households)} == {"4620001"}
     assert {row["ct"] for row in read_csv(result.population.persons)} == {"4620001"}
 
@@ -548,6 +598,10 @@ def test_top_level_api_composes_generation_with_small_area_calibration(
     )
     assert file_result.assigned_households == 3
     assert file_result.population.households.is_file()
+    assert file_result.population.manifest is not None
+    assert json.loads(file_result.population.manifest.read_text())["licensing"] == (
+        population.licensing
+    )
 
 
 def test_calibrate_small_area_rejects_invalid_workflow_summary(tmp_path: Path) -> None:

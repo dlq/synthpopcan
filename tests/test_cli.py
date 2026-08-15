@@ -548,10 +548,39 @@ def test_cli_models_show_reports_detailed_metadata(capsys) -> None:
     assert main(["models", "show", "demo-linked-household-person"]) == 0
 
     output = capsys.readouterr().out
+    compact = " ".join(output.split())
     assert "Census vintage" in output
     assert "Asset release" in output
     assert "v0.4.0" in output
     assert "Known limitations" in output
+    assert "Prepared-model licence" in compact
+    assert "MIT License (MIT)" in compact
+    assert "only to the extent Darcy Quesnel owns or controls" in compact
+    assert "Policy decision" in compact
+    assert "not-applicable" in compact
+
+
+def test_cli_models_show_explains_census_rights_layers(capsys) -> None:
+    assert main(["models", "show", "quebec-2021-all-fields"]) == 0
+
+    output = capsys.readouterr().out
+    compact = " ".join(output.split())
+    unwrapped = "".join(output.split())
+    assert "Prepared-model licence" in compact
+    assert "Creative Commons Attribution 4.0 International (CC-BY-4.0)" in compact
+    assert "https://creativecommons.org/licenses/by/4.0/" in compact
+    assert "Prepared-model scope" in compact
+    assert "only for rights Darcy Quesnel owns or controls" in compact
+    assert "Licence layering" in compact
+    assert "cumulative, not alternatives" in compact
+    assert "Source licence (contract)" in compact
+    assert "https://www.statcan.gc.ca/en/terms-conditions/open-licence" in unwrapped
+    assert "Source notice" in compact
+    assert "This does not constitute an endorsement" in compact
+    assert "maintainer-selected-permissive-default" in compact
+    assert "Darcy Quesnel, 2026-08-15" in compact
+    assert "External legal review" in compact
+    assert "not-obtained" in compact
 
 
 def test_cli_models_show_rejects_unknown_id() -> None:

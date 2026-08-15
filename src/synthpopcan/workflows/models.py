@@ -18,6 +18,7 @@ from pathlib import Path
 from typing import Any
 
 from synthpopcan.linked_schema import build_linked_population_contract
+from synthpopcan.model_licensing import normalize_prepared_model_licensing
 from synthpopcan.tree import (
     CartTreeModel,
     FrequencyTreeModel,
@@ -120,13 +121,14 @@ def read_prepared_model_package(path: Path) -> dict[str, Any]:
         raise ValueError("linked model package must be a JSON object")
     if payload.get("schema_version") != "synthpopcan-linked-tree-package-v1":
         raise ValueError("unsupported linked model package schema")
-    return payload
+    return normalize_prepared_model_licensing(payload)
 
 
 def inspect_prepared_model(package: dict[str, Any]) -> dict[str, Any]:
     """Return generation readiness, provenance, privacy, and model dimensions."""
     if package.get("schema_version") != "synthpopcan-linked-tree-package-v1":
         raise ValueError("unsupported linked model package schema")
+    package = normalize_prepared_model_licensing(package)
     privacy = _object(package.get("privacy"))
     if privacy.get("publishable_candidate") is not True:
         raise ValueError("linked model package is not a publishable candidate")
@@ -159,6 +161,7 @@ def inspect_prepared_model(package: dict[str, Any]) -> dict[str, Any]:
             "census_vintage": catalogue.get("census_vintage"),
             "release_version": catalogue.get("release_version"),
         },
+        "licensing": package["licensing"],
         "conditions": list(household_model.spec.conditioning_columns),
         "household_targets": list(household_model.spec.target_columns),
         "person_targets": list(person_model.spec.target_columns),
@@ -228,6 +231,7 @@ def generate_prepared_model_files(
         "linked_population": build_linked_population_contract(
             request.households_path,
             request.persons_path,
+            licensing=package["licensing"],
         ),
     }
     request.report_path.write_text(json.dumps(report, indent=2) + "\n")

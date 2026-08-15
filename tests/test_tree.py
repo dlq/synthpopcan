@@ -47,6 +47,7 @@ from synthpopcan.cli_tree import (
     validate_linked_training_manifest_model_paths,
     validate_package_allows_generation,
 )
+from synthpopcan.model_licensing import statcan_prepared_model_licensing
 from synthpopcan.tree import (
     CartTreeModel,
     FrequencyOutcome,
@@ -1725,6 +1726,10 @@ def test_cli_packages_publishable_linked_models(tmp_path) -> None:
     assert package["source_provenance"]["path"] == str(fixture.source_provenance_path)
     assert package["source_provenance"]["provider"] == "Statistics Canada"
     assert package["source_provenance"]["access_class"] == "restricted"
+    assert package["licensing"]["package_basis"] == "unclassified-legacy"
+    assert package["licensing"]["authored_material"]["rights_holder"] == (
+        "Not asserted"
+    )
     assert package["model_summaries"]["household"]["bytes"] > 0
     assert package["model_summaries"]["person"]["bytes"] > 0
     assert package["models"]["household"]["spec"]["level"] == "household"
@@ -1911,6 +1916,8 @@ def test_cli_inspects_linked_model_package_as_table(tmp_path, capsys) -> None:
     assert "Publishable candidate" in output
     assert "publishable_candidate" not in output
     assert "Do not redistribute source microdata." in output
+    assert "Policy decision" in output
+    assert "unresolved" in output
 
 
 def test_cli_inspects_demo_linked_model_package_as_table(tmp_path, capsys) -> None:
@@ -1928,7 +1935,38 @@ def test_cli_inspects_demo_linked_model_package_as_table(tmp_path, capsys) -> No
     assert "publishable_candidate" not in output
     assert "Household; Conditional frequency" in output
     assert "Person; Conditional frequency" in output
+    assert "Policy decision" in output
+    assert "not-applicable" in output
     assert "None" not in output
+
+
+def test_cli_inspect_table_explains_census_rights_layers(tmp_path, capsys) -> None:
+    fixture = _write_publishable_linked_package(tmp_path)
+    capsys.readouterr()
+    package = json.loads(fixture.package_path.read_text())
+    package["licensing"] = statcan_prepared_model_licensing(2016)
+    fixture.package_path.write_text(json.dumps(package))
+
+    assert main(["models", "build", "inspect", str(fixture.package_path)]) == 0
+
+    output = capsys.readouterr().out
+    compact = " ".join(output.split())
+    unwrapped = "".join(output.split())
+    assert "Prepared-model licence" in compact
+    assert "Creative Commons Attribution 4.0 International (CC-BY-4.0)" in compact
+    assert "https://creativecommons.org/licenses/by/4.0/" in compact
+    assert "Prepared-model scope" in compact
+    assert "only for rights Darcy Quesnel owns or controls" in compact
+    assert "Licence layering" in compact
+    assert "cumulative, not alternatives" in compact
+    assert "Source licence" in compact
+    assert "https://www.statcan.gc.ca/en/terms-conditions/open-licence" in unwrapped
+    assert "Source notice" in compact
+    assert "This does not constitute an endorsement" in compact
+    assert "maintainer-selected-permissive-default" in compact
+    assert "Darcy Quesnel, 2026-08-15" in compact
+    assert "External legal review" in compact
+    assert "not-obtained" in compact
 
 
 def test_cli_lists_model_packages(capsys) -> None:
@@ -2027,6 +2065,10 @@ def test_cli_generates_linked_population_from_package(tmp_path) -> None:
     assert manifest["command"] == "models generate"
     assert manifest["package"]["package_path"] == str(fixture.package_path)
     assert manifest["package"]["source"]["provider"] == "Statistics Canada"
+    assert manifest["package"]["licensing"]["package_basis"] == ("unclassified-legacy")
+    assert manifest["package"]["licensing"]["policy_decision"]["status"] == (
+        "unresolved"
+    )
     assert manifest["household_conditions"] == {"geo": "QC"}
     assert manifest["generated_households"] == 3
     assert manifest["generated_persons"] == 6

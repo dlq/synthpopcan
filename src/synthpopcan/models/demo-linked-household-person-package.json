@@ -5,6 +5,47 @@
     "households": 10
   },
   "household_size_column": "household_size",
+  "licensing": {
+    "authored_material": {
+      "excluded_material": [
+        "facts and factual data",
+        "numeric results not protected by applicable law"
+      ],
+      "grant_scope": {
+        "materials": [
+          "synthetic demonstration selection and organization",
+          "synthetic demonstration documentation",
+          "synthetic schema and model representation"
+        ],
+        "only_rights_owned_or_controlled": true,
+        "only_to_extent_protected": true,
+        "statement": "The MIT License applies to the authored synthetic teaching package only to the extent Darcy Quesnel owns or controls protected rights in it."
+      },
+      "licence": {
+        "name": "MIT License",
+        "spdx_id": "MIT",
+        "url": "https://github.com/dlq/synthpopcan/blob/main/LICENSE"
+      },
+      "rights_holder": "Darcy Quesnel"
+    },
+    "policy_decision": {
+      "basis": "not-applicable",
+      "decided_by": null,
+      "decided_on": null,
+      "decision_record": null,
+      "external_legal_review": "not-applicable",
+      "statement": "The synthetic-only teaching package is governed directly by its MIT authored-material licence; the Census-derived project default does not apply.",
+      "status": "not-applicable"
+    },
+    "package_basis": "synthetic-only",
+    "presentation": {
+      "alternative_licence_choice": false,
+      "mode": "single-synthetic-authored-layer",
+      "statement": "This bundled teaching package uses synthetic toy rows only; it does not contain a Statistics Canada licence layer."
+    },
+    "schema_version": "synthpopcan-prepared-model-licensing-v1",
+    "source_information": null
+  },
   "models": {
     "household": {
       "global_outcomes": [

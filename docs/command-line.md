@@ -90,6 +90,12 @@ Use the guide when we need the **next command**. Use the documentation chapter
 when we need to understand **why that step exists**, how to interpret its
 inputs, or what can go wrong.
 
+Starting with `1.0.0`, the complete command/argument/option inventory and the
+common stdout, stderr, and exit-status rules are covered by the
+{doc}`compatibility policy <compatibility>`. Human table presentation may
+improve, so automation should request `--format json` where it is available or
+consume a documented versioned artifact instead of scraping displayed tables.
+
 ## Choose a Workflow
 
 The sidebar follows the order in which commands usually enter a research

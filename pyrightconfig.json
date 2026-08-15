@@ -5,10 +5,13 @@
   "typeCheckingMode": "standard",
   "strict": [
     "src/synthpopcan/__init__.py",
+    "src/synthpopcan/_interface.py",
     "src/synthpopcan/_runtime_schemas.py",
     "src/synthpopcan/benchmarks.py",
+    "src/synthpopcan/cli_exchange.py",
     "src/synthpopcan/cli_microdata.py",
     "src/synthpopcan/console.py",
+    "src/synthpopcan/contracts/__init__.py",
     "src/synthpopcan/ipf.py",
     "src/synthpopcan/national_da.py",
     "src/synthpopcan/tabular.py",

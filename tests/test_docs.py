@@ -24,6 +24,11 @@ def test_citation_metadata_matches_release() -> None:
     .zenodo.json is present, which is the case here.
     """
 
+    project = tomllib.loads(Path("pyproject.toml").read_text())
+    assert project["project"]["version"] == synthpopcan.__version__, (
+        "pyproject.toml and synthpopcan.__version__ must identify the same release"
+    )
+
     citation = Path("CITATION.cff").read_text()
     versions = re.findall(r'^\s*version:\s*"([^"]+)"', citation, re.MULTILINE)
     dates = re.findall(r"^\s*date-released:\s*(\S+)", citation, re.MULTILINE)
@@ -63,6 +68,41 @@ def test_citation_metadata_matches_release() -> None:
         assert primary_dois == [version_identifier.group(1)] * 2, (
             "the versioned software and preferred citation should use the version DOI"
         )
+
+
+def test_citation_schema_validation_is_a_local_and_ci_gate() -> None:
+    """Keep full CFF validation separate from the lightweight drift test."""
+
+    project = tomllib.loads(Path("pyproject.toml").read_text())
+    dev_dependencies = project["dependency-groups"]["dev"]
+    runtime_dependencies = project["project"]["dependencies"]
+    local_gate = Path("scripts/check.sh").read_text()
+    ci_gate = Path(".github/workflows/ci.yml").read_text()
+
+    assert any(item.startswith("cffconvert>=") for item in dev_dependencies)
+    assert not any(item.startswith("cffconvert") for item in runtime_dependencies)
+    assert "uv run --locked cffconvert --validate" in local_gate
+    assert "uv run --locked cffconvert --validate" in ci_gate
+
+
+def test_dated_stewardship_records_are_public_and_preservation_is_consistent() -> None:
+    landing = Path("docs/stewardship.md").read_text()
+    docs_index = Path("docs/index.rst").read_text()
+    citation = Path("CITATION.cff").read_text()
+    preservation = Path("docs/records/software-heritage-2026-08-15.md").read_text()
+    snapshot = "swh:1:snp:98f7bee54900f50bc99ac5c9f000a728e80016b9"
+
+    assert re.search(r"^\s+stewardship$", docs_index, re.MULTILINE)
+    for record in (
+        "records/fair4rs-2026-08-15",
+        "records/software-management-plan-2026-08-15",
+        "records/software-heritage-2026-08-15",
+    ):
+        assert record in landing
+    assert snapshot in landing
+    assert snapshot in citation
+    assert snapshot in preservation
+    assert "swh:1:rel:6637b3aa961bbd21888da5aa847a128ac9975d3b" in (preservation)
 
 
 def test_zenodo_metadata_is_valid_and_drift_free() -> None:

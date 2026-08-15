@@ -5,10 +5,10 @@
 [![Documentation Status](https://readthedocs.org/projects/synthpopcan/badge/?version=latest)](https://synthpopcan.readthedocs.io/en/latest/)
 [![PyPI](https://img.shields.io/pypi/v/synthpopcan.svg)](https://pypi.org/project/synthpopcan/)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21461463.svg)](https://doi.org/10.5281/zenodo.21461463)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/dlq/synthpopcan/blob/main/LICENSE)
 
 <p align="center">
-  <img src="assets/branding/logo/synthpopcan-logo-512.png" alt="SynthPopCan logo" width="220">
+  <img src="https://raw.githubusercontent.com/dlq/synthpopcan/main/assets/branding/logo/synthpopcan-logo-512.png" alt="SynthPopCan logo" width="220">
 </p>
 
 SynthPopCan helps researchers create, inspect, and validate modelled Canadian
@@ -39,9 +39,19 @@ multi-scale fixtures, and a pinned aggregate Canadian comparison support the
 implemented scope without claiming that every model field is locally
 representative.
 
+Development toward `1.0.0` now has a reviewable
+[1.x compatibility policy](https://synthpopcan.readthedocs.io/en/latest/compatibility.html), a packaged exact
+CLI/API/schema manifest, a complete
+[2016/2021 field-eligibility inventory](https://synthpopcan.readthedocs.io/en/latest/field-eligibility.html), and a
+[bilingual Quebec 2021 case study](https://synthpopcan.readthedocs.io/en/latest/case-study-quebec-2021.html). The accepted
+prepared-model policy and remaining archive/release work are tracked in
+[PLANS.md](https://github.com/dlq/synthpopcan/blob/main/PLANS.md); the published package remains `0.9.0` until those gates
+are complete.
+
 Detailed documentation is published at
 <https://synthpopcan.readthedocs.io/>. The source files live under
-[`docs/`](docs/); start with [`docs/index.rst`](docs/index.rst) for task-based
+[`docs/`](https://github.com/dlq/synthpopcan/tree/main/docs); start with
+[`docs/index.rst`](https://synthpopcan.readthedocs.io/en/latest/) for task-based
 navigation to the web app, IPF from StatCan margin tables,
 generated-from-model workflows, the beginner Python API, and advanced
 microdata/model-training material.
@@ -56,20 +66,23 @@ and later.
 
 Project planning and research notes are tracked separately:
 
-- [`PLANS.md`](PLANS.md): current roadmap, open work, and release sequencing.
-- [`adr/`](adr/README.md): accepted architecture decisions, alternatives, and
+- [`PLANS.md`](https://github.com/dlq/synthpopcan/blob/main/PLANS.md): current roadmap, open work, and release sequencing.
+- [`adr/`](https://github.com/dlq/synthpopcan/tree/main/adr): accepted architecture decisions, alternatives, and
   consequences.
-- [`NOTES.md`](NOTES.md): research synthesis from local materials and external
+- [`NOTES.md`](https://github.com/dlq/synthpopcan/blob/main/NOTES.md): research synthesis from local materials and external
   literature.
-- [`CHANGELOG.md`](CHANGELOG.md): public release notes and completed release
+- [`CHANGELOG.md`](https://github.com/dlq/synthpopcan/blob/main/CHANGELOG.md): public release notes and completed release
   highlights.
-- [`CORRECTNESS.md`](CORRECTNESS.md): tested correctness claims, evidence,
+- [`CORRECTNESS.md`](https://github.com/dlq/synthpopcan/blob/main/CORRECTNESS.md): tested correctness claims, evidence,
   limitations, and reproducibility commands.
+- [`docs/stewardship.md`](https://synthpopcan.readthedocs.io/en/latest/stewardship.html): supported environments,
+  maintenance expectations, preservation identifiers, and dated FAIR4RS and
+  software-management records.
 
 ## Quick Start
 
 These commands use a Unix-style shell. Windows readers should first complete
-the [WSL setup in the Installation guide](docs/installation.md),
+the [WSL setup in the Installation guide](https://synthpopcan.readthedocs.io/en/latest/installation.html),
 then run the same commands inside the Ubuntu terminal.
 
 Install the published package from PyPI:
@@ -91,7 +104,8 @@ synthpopcan serve
 ```
 
 It opens forms, previews, run history, and downloads on this computer only. The
-[local web app guide](docs/web-app.md) includes fictional teaching data and
+[local web app guide](https://synthpopcan.readthedocs.io/en/latest/web-app.html)
+includes fictional teaching data and
 explains what stays on disk. Use the command line below when the work needs to
 be scripted or repeated exactly.
 
@@ -142,7 +156,8 @@ uv sync
 uv run synthpopcan --help
 ```
 
-For installation details, see [`docs/installation.md`](docs/installation.md).
+For installation details, see
+[`docs/installation.md`](https://synthpopcan.readthedocs.io/en/latest/installation.html).
 
 ## Where To Start
 
@@ -151,27 +166,27 @@ README:
 
 | Task | Documentation |
 | --- | --- |
-| Choose a first workflow | [`docs/getting-started.md`](docs/getting-started.md) |
-| Start a reproducible command-line workflow | [`docs/command-line.md`](docs/command-line.md) |
-| Use the local browser app | [`docs/web-app.md`](docs/web-app.md) |
-| Generate with IPF from margin/control tables | [`docs/ipf.md`](docs/ipf.md), [`docs/controls.md`](docs/controls.md), [`docs/statcan.md`](docs/statcan.md) |
-| Assign linked households and people to small areas | [`docs/small-area.md`](docs/small-area.md) |
-| Fetch verified display-only map boundaries | [`docs/geodata.md`](docs/geodata.md) |
-| Attach governed external context as a sidecar layer | [`docs/enrichment.md`](docs/enrichment.md) |
-| Hand a validated linked population to another tool | [`docs/exchange.md`](docs/exchange.md) |
-| Use the beginner Python API | [`docs/library-getting-started.md`](docs/library-getting-started.md) |
-| Work with local data layout and `data doctor` | [`docs/data.md`](docs/data.md) |
-| Inspect source files safely | [`docs/data.md`](docs/data.md), [`docs/statcan.md`](docs/statcan.md), [`docs/microdata.md`](docs/microdata.md) |
-| Work with census microdata adapters | [`docs/microdata.md`](docs/microdata.md) |
-| Train, audit, package, or use tree models | [`docs/tree.md`](docs/tree.md) |
-| Validate generated outputs | [`docs/validate.md`](docs/validate.md) |
-| Understand correctness evidence and limitations | [`CORRECTNESS.md`](CORRECTNESS.md) |
-| Check current plans and implementation notes | [`PLANS.md`](PLANS.md), [`CHANGELOG.md`](CHANGELOG.md) |
+| Choose a first workflow | [`docs/getting-started.md`](https://synthpopcan.readthedocs.io/en/latest/getting-started.html) |
+| Start a reproducible command-line workflow | [`docs/command-line.md`](https://synthpopcan.readthedocs.io/en/latest/command-line.html) |
+| Use the local browser app | [`docs/web-app.md`](https://synthpopcan.readthedocs.io/en/latest/web-app.html) |
+| Generate with IPF from margin/control tables | [`docs/ipf.md`](https://synthpopcan.readthedocs.io/en/latest/ipf.html), [`docs/controls.md`](https://synthpopcan.readthedocs.io/en/latest/controls.html), [`docs/statcan.md`](https://synthpopcan.readthedocs.io/en/latest/statcan.html) |
+| Assign linked households and people to small areas | [`docs/small-area.md`](https://synthpopcan.readthedocs.io/en/latest/small-area.html) |
+| Fetch verified display-only map boundaries | [`docs/geodata.md`](https://synthpopcan.readthedocs.io/en/latest/geodata.html) |
+| Attach governed external context as a sidecar layer | [`docs/enrichment.md`](https://synthpopcan.readthedocs.io/en/latest/enrichment.html) |
+| Hand a validated linked population to another tool | [`docs/exchange.md`](https://synthpopcan.readthedocs.io/en/latest/exchange.html) |
+| Use the beginner Python API | [`docs/library-getting-started.md`](https://synthpopcan.readthedocs.io/en/latest/library-getting-started.html) |
+| Work with local data layout and `data doctor` | [`docs/data.md`](https://synthpopcan.readthedocs.io/en/latest/data.html) |
+| Inspect source files safely | [`docs/data.md`](https://synthpopcan.readthedocs.io/en/latest/data.html), [`docs/statcan.md`](https://synthpopcan.readthedocs.io/en/latest/statcan.html), [`docs/microdata.md`](https://synthpopcan.readthedocs.io/en/latest/microdata.html) |
+| Work with census microdata adapters | [`docs/microdata.md`](https://synthpopcan.readthedocs.io/en/latest/microdata.html) |
+| Train, audit, package, or use tree models | [`docs/tree.md`](https://synthpopcan.readthedocs.io/en/latest/tree.html) |
+| Validate generated outputs | [`docs/validate.md`](https://synthpopcan.readthedocs.io/en/latest/validate.html) |
+| Understand correctness evidence and limitations | [`CORRECTNESS.md`](https://github.com/dlq/synthpopcan/blob/main/CORRECTNESS.md) |
+| Check current plans and implementation notes | [`PLANS.md`](https://github.com/dlq/synthpopcan/blob/main/PLANS.md), [`CHANGELOG.md`](https://github.com/dlq/synthpopcan/blob/main/CHANGELOG.md) |
 
 Build the documentation locally with:
 
 **Source checkout required.** Contributor setup is documented in
-[`CONTRIBUTING.md`](CONTRIBUTING.md).
+[`CONTRIBUTING.md`](https://github.com/dlq/synthpopcan/blob/main/CONTRIBUTING.md).
 
 ```bash
 uv run sphinx-build -W -b html docs docs/_build/html
@@ -246,9 +261,11 @@ and limitations. A model package being marked as a publishable candidate means
 it passed the project's current checks; it is not a claim of official approval,
 legal privacy certification, or fitness for every research use.
 
-Before publishing a new model package, review [`docs/data.md`](docs/data.md),
-[`docs/tree.md`](docs/tree.md), [`PLANS.md`](PLANS.md), and
-[`CONTRIBUTING.md`](CONTRIBUTING.md).
+Before publishing a new model package, review
+[`docs/data.md`](https://synthpopcan.readthedocs.io/en/latest/data.html),
+[`docs/tree.md`](https://synthpopcan.readthedocs.io/en/latest/tree.html),
+[`PLANS.md`](https://github.com/dlq/synthpopcan/blob/main/PLANS.md), and
+[`CONTRIBUTING.md`](https://github.com/dlq/synthpopcan/blob/main/CONTRIBUTING.md).
 
 ## How To Cite
 
@@ -267,15 +284,37 @@ package DOI for each package you generated from: together they pin the exact
 code and the exact artifact, and every model record publishes the checksums
 needed to verify the file you downloaded.
 
-Citation metadata lives in [`CITATION.cff`](CITATION.cff), which GitHub renders
-as a ready-made citation from the sidebar.
+Citation metadata lives in
+[`CITATION.cff`](https://github.com/dlq/synthpopcan/blob/main/CITATION.cff),
+which GitHub renders as a ready-made citation from the sidebar.
+
+The source history through `v0.9.0` is also independently preserved in
+[Software Heritage](https://archive.softwareheritage.org/swh:1:snp:98f7bee54900f50bc99ac5c9f000a728e80016b9;origin=https://github.com/dlq/synthpopcan).
+Use its SWHIDs to identify source objects; continue to use the release DOI and
+artifact checksums to identify the software and model bytes used in research.
 
 Prepared model packages are derived from Statistics Canada public use microdata
 files under the
-[Statistics Canada Open Licence](https://www.statcan.gc.ca/en/reference/licence).
-Each package carries the attribution notice that licence requires; keep it with
-the package and with anything you generate from it. See
-[`docs/data.md`](docs/data.md) for the full attribution and licensing terms.
+[Statistics Canada Open Licence](https://www.statcan.gc.ca/en/terms-conditions/open-licence).
+The catalogue and archive records carry the required attribution. Current
+runtime readers add the same machine-readable notice to checksum-verified older
+registered packages; historical direct-download bytes predate that embedded
+contract, so keep their record-level attribution with them until corrected
+non-overwriting versions are published. Newly built and corrected packages will
+carry the notice in their own bytes and in generated manifests. See
+[`docs/data.md`](https://synthpopcan.readthedocs.io/en/latest/data.html) for the
+full attribution and licensing terms.
+The accepted open-by-default policy in
+[`ADR-0014`](https://github.com/dlq/synthpopcan/blob/main/adr/0014-separate-prepared-model-and-source-licensing.md)
+offers CC BY 4.0 only for original prepared-model rights the package author
+owns or controls. That scoped grant is cumulative with the continuing
+Statistics Canada conditions; it does not cover source Information, facts, or
+unprotectable results, and it does not relax privacy or provenance safeguards.
+The fail-closed existing-record correction implementation has passed
+independent review. Another production model publication remains blocked until
+all 32 metadata corrections, 32 non-overwriting versions, and 32 registry
+updates are remotely verified with durable evidence. External review remains
+welcome but is not a `1.0.0` gate.
 
 ## Development Acknowledgement
 

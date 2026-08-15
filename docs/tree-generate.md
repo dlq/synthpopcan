@@ -9,6 +9,9 @@ microdata, and we do not need to train or audit a model ourselves.
 If we need to train a model from microdata — because no suitable published
 package exists for the geography or period — see {doc}`tree`.
 
+For a complete released-model example with pinned checksums, a fixed seed, and
+parallel English/French interpretation, follow the {doc}`case-study-quebec-2021`.
+
 ## Concept
 
 Generation from a package is a **two-step process**. The household model generates
@@ -183,6 +186,14 @@ Options:
 The household count is controlled directly. The person count is derived from
 the model's household-size distribution and will not match a separate population
 target exactly.
+
+The generated `manifest.json` retains the package's complete
+`synthpopcan-prepared-model-licensing-v1` object. Keep that object with shared or
+archived outputs: it distinguishes authored and Statistics Canada source
+layers, preserves the exact source notice and continuing conditions, and makes
+the accepted maintainer policy decision visible without implying external
+legal review. Its open licence grant does not relax privacy, attribution, or
+provenance safeguards.
 
 ## Troubleshooting
 

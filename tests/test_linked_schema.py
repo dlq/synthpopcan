@@ -20,6 +20,7 @@ from synthpopcan.microdata import (
     export_training_rows,
     read_statcan_hierarchical_seed_sample,
 )
+from synthpopcan.model_licensing import synthetic_demo_model_licensing
 from synthpopcan.tree import train_frequency_model, validate_linked_population_files
 
 
@@ -40,6 +41,40 @@ def test_build_linked_population_contract_matches_golden_fixture(
     assert contract == json.loads(expected_path.read_text())
 
 
+def test_reader_accepts_pre_licensing_golden_v1_manifest(tmp_path: Path) -> None:
+    fixture = (
+        Path(__file__).parent / "fixtures" / "schemas" / "linked-population-v1.json"
+    )
+    manifest = tmp_path / "manifest.json"
+    manifest.write_text(fixture.read_text())
+
+    contract = read_linked_population_contract(manifest)
+
+    assert "licensing" not in contract
+
+
+def test_build_licensing_bearing_contract_matches_golden_fixture(
+    tmp_path: Path,
+) -> None:
+    households, persons = _write_linked_fixture(tmp_path)
+
+    contract = build_linked_population_contract(
+        households,
+        persons,
+        geography_column="csd",
+        licensing=synthetic_demo_model_licensing(),
+    )
+
+    expected_path = (
+        Path(__file__).parent
+        / "fixtures"
+        / "schemas"
+        / "linked-population-v1-with-licensing.json"
+    )
+    assert contract == json.loads(expected_path.read_text())
+    validate_linked_population_contract(contract)
+
+
 def test_linked_population_contract_round_trips(tmp_path: Path) -> None:
     households, persons = _write_linked_fixture(tmp_path)
     manifest = tmp_path / "manifest.json"
@@ -53,6 +88,43 @@ def test_linked_population_contract_round_trips(tmp_path: Path) -> None:
 
     assert read_linked_population_contract(manifest) == written
     assert written["schema_version"] == LINKED_POPULATION_SCHEMA_VERSION
+
+
+def test_linked_population_contract_round_trips_validated_licensing(
+    tmp_path: Path,
+) -> None:
+    households, persons = _write_linked_fixture(tmp_path)
+    manifest = tmp_path / "manifest.json"
+    licensing = synthetic_demo_model_licensing()
+
+    written = write_linked_population_contract(
+        manifest,
+        households,
+        persons,
+        licensing=licensing,
+    )
+
+    assert written["licensing"] == licensing
+    assert written["licensing"] is not licensing
+    assert read_linked_population_contract(manifest) == written
+
+
+def test_linked_population_contract_strictly_validates_optional_licensing(
+    tmp_path: Path,
+) -> None:
+    households, persons = _write_linked_fixture(tmp_path)
+
+    with pytest.raises(ValueError, match="unsupported prepared-model licensing"):
+        build_linked_population_contract(
+            households,
+            persons,
+            licensing={"schema_version": "legacy"},
+        )
+
+    contract = build_linked_population_contract(households, persons)
+    contract["licensing"] = None
+    with pytest.raises(ValueError, match="licensing must be a JSON object"):
+        validate_linked_population_contract(contract)
 
 
 def test_linked_population_contract_allows_extension_columns(

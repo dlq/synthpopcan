@@ -62,7 +62,7 @@ cross-vintage, or cross-namespace joins instead of guessing.
 
 ## Evidence And Related Records
 
-- [Small-area geography plan](../plans/2026-07-22-small-area-geography.md)
+- [Small-area geography plan](../plans/archive/2026-07-22-small-area-geography.md)
 - [Small-Area Linked Synthesis](../docs/small-area.md)
 - [External-Data Enrichment](../docs/enrichment.md)
 - [`synthpopcan.geography`](../src/synthpopcan/geography.py)

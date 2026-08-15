@@ -3,12 +3,14 @@
 from __future__ import annotations
 
 import os
+from importlib.metadata import version as distribution_version
 from importlib.resources import files
 from pathlib import Path
 
 from click.testing import CliRunner
 
 import synthpopcan
+from synthpopcan._interface import validate_installed_public_interface
 from synthpopcan.cli import cli
 from synthpopcan.enrichment import SourceProfile, register_resource
 from synthpopcan.geography import statcan_geography_universe
@@ -16,9 +18,12 @@ from synthpopcan.ipf import IPFMargin, fit_ipf
 
 package_path = Path(synthpopcan.__file__).resolve()
 source_root = Path(os.environ["SYNTHPOPCAN_SOURCE_ROOT"]).resolve()
+expected_version = os.environ["SYNTHPOPCAN_EXPECTED_VERSION"]
 if source_root in package_path.parents:
     raise RuntimeError(f"wheel smoke imported from the checkout: {package_path}")
 assert "site-packages" in package_path.parts
+assert distribution_version("synthpopcan") == expected_version
+assert synthpopcan.__version__ == expected_version
 
 result = fit_ipf(
     [{"age": "young"}, {"age": "old"}],
@@ -27,6 +32,13 @@ result = fit_ipf(
 assert result.converged
 assert result.weights == [6.0, 4.0]
 assert files("synthpopcan").joinpath("web/index.html").is_file()
+assert files("synthpopcan").joinpath("contracts/public-interface-v1.json").is_file()
+assert (
+    files("synthpopcan")
+    .joinpath("contracts/prepared-model-licensing-v1-examples.json")
+    .is_file()
+)
+validate_installed_public_interface()
 
 geography = statcan_geography_universe(2021, "da", "DAUID")
 population = synthpopcan.write_linked_population(

@@ -2,6 +2,70 @@
 
 All notable public changes to SynthPopCan are tracked here.
 
+## Unreleased
+
+Preparation for the 1.0 interface and stewardship boundary.
+
+- Add a packaged, machine-readable candidate contract for the complete
+  documented command tree, curated beginner and advanced Python APIs, and
+  supported persisted schemas. Publish the corresponding 1.x compatibility,
+  deprecation, output-stream, and correctness-exception policy; validate the
+  same contract from an isolated installed wheel.
+- Add a complete machine-readable eligibility inventory for all 116 fields in
+  the 2016 hierarchical PUMF and all 122 fields in 2021. Reconcile the 35
+  existing source targets per vintage; classify identifiers, weights,
+  geography context, deferred fields, cross-vintage concepts, applicability,
+  support, controls, interpretation concerns, and family-entity requirements
+  without introducing a new public model profile.
+- Add a bilingual English/French Quebec 2021 case study with a pinned released
+  model, DOI, compressed and uncompressed checksums, fixed seed, validation
+  sequence, and scoped interpretation. Exercise the documented fetch, inspect,
+  generate, and validate commands from an isolated installed wheel using an
+  honest offline fictional-package substitution in release CI.
+- Add full Citation File Format schema validation as a development-only local
+  and CI gate, record the independently preserved Software Heritage snapshot
+  and release objects, and publish dated FAIR4RS, software-management,
+  preservation, supported-environment, maintenance, succession, and end-of-life
+  records.
+- Accept Darcy Quesnel's 2026-08-15 open-by-default prepared-model policy in
+  ADR-0014: MIT for software, continuing Statistics Canada Open Licence
+  conditions for source Information, and CC BY 4.0 only for original rights the
+  package author owns or controls. Keep those layers cumulative and scoped,
+  preserve privacy and provenance safeguards, and make external review optional
+  rather than a `1.0.0` gate. Production deposition remains closed pending the
+  reviewed, non-overwriting correction and durable verification of all 32
+  existing model records.
+- Add a strict, versioned prepared-model licensing object that distinguishes
+  Census-derived, synthetic-only, and unclassified legacy packages without
+  inferring an author licence from arbitrary provenance. Preserve validated
+  licensing metadata through package inspection, linked generation,
+  calibration, exchange, CLI, API, and workflow manifests. Census-derived
+  completion remains bound to the accepted maintainer policy authority and
+  date rather than an invented external approval.
+- Make current Zenodo correction manifests explicitly review-only and gate all
+  production model deposition on accepted ADR and separate correction-
+  implementation and correction-execution markers.
+  Add a streaming, byte-preserving corrected-asset builder plus a fail-closed
+  executor for identifier-preserving metadata edits, non-overwriting versions,
+  supersession, historical/new-asset verification, exact registry candidates,
+  durable draft ownership, and operation/version/hash-aware resume. Historical
+  assets remain ineligible for sandbox upload. Independent adversarial review
+  closed all three prior executor blockers, with 137 focused tests plus Ruff,
+  Pyright, and diff checks passing. Live correction execution remains pending
+  and separately authorized.
+- Add a reproducible package-wide strict-Pyright audit configuration and move
+  the exchange CLI adapter into the strict-clean regression list by separating
+  its typed artifact-path mapping from the heterogeneous result payload.
+  Preserve 100% Pyright public type completeness for the frozen Python surface.
+- Pin the isolated Hatchling build backend in the lock graph, make every README
+  link and image render correctly from PyPI, and strengthen the local and
+  publishing gates. Release evidence now requires the exact successful push CI
+  run, both distributions, and completed wheel, sdist, optional model-build,
+  and bilingual case-study installation smokes.
+- Advance the package maturity classifier from alpha to beta while retaining
+  explicit limits on statistical fitness, representativeness, disclosure
+  safety, causal claims, and support commitments.
+
 ## 0.9.0 - 2026-08-10
 
 Bounded methodological and small-area confidence.
@@ -225,7 +289,7 @@ Citation, licensing, and archival release.
   Census-derived model package. Public use microdata files are "Information"
   under that licence, which permits distributing derived "Value-added Products"
   provided its prescribed notice travels with them. Each package's `provenance`
-  now states the exact product, catalogue number, and reference date, and adds
+  now states the exact product, catalogue number, and Census reference year, and adds
   the required no-endorsement statement.
 - Add a `source_licence` field to the model catalogue, shown as a new
   "Source licence" row by `synthpopcan models show`.

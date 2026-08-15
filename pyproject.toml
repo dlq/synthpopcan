@@ -15,7 +15,7 @@ keywords = [
   "ipf",
 ]
 classifiers = [
-  "Development Status :: 3 - Alpha",
+  "Development Status :: 4 - Beta",
   "Intended Audience :: Science/Research",
   "License :: OSI Approved :: MIT License",
   "Programming Language :: Python :: 3",
@@ -54,6 +54,9 @@ synthpopcan = "synthpopcan.cli:cli"
 
 [dependency-groups]
 dev = [
+  "cffconvert>=2.0.0",
+  # Keep the isolated build backend in the locked release environment too.
+  "hatchling==1.32.0",
   "httpx>=0.28.1",
   "pre-commit>=4.0",
   "pyright>=1.1",
@@ -72,7 +75,7 @@ docs = [
 ]
 
 [build-system]
-requires = ["hatchling"]
+requires = ["hatchling==1.32.0"]
 build-backend = "hatchling.build"
 
 [tool.pytest.ini_options]

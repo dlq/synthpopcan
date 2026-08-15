@@ -10,6 +10,8 @@ import pytest
 
 from synthpopcan.cli import main
 from synthpopcan.controls import ControlCell, ControlMargin, ControlTable
+from synthpopcan.linked_schema import write_linked_population_contract
+from synthpopcan.model_licensing import synthetic_demo_model_licensing
 from synthpopcan.small_area_synthesis import (
     _fit_joint_constraints,
     _format_preflight_error,
@@ -1117,6 +1119,12 @@ def test_cli_calibrates_linked_households_to_small_area_controls(
         'age,"tract,AGEGRP",4620001.00,adult,2\n'
         'age,"tract,AGEGRP",4620001.00,child,1\n'
     )
+    write_linked_population_contract(
+        tmp_path / "manifest.json",
+        households,
+        persons,
+        licensing=synthetic_demo_model_licensing(),
+    )
 
     exit_code = main(
         [
@@ -1140,6 +1148,10 @@ def test_cli_calibrates_linked_households_to_small_area_controls(
     assert (tmp_path / "calibrated" / "households.csv").exists()
     assert (tmp_path / "calibrated" / "persons.csv").exists()
     assert (tmp_path / "calibrated" / "manifest.json").exists()
+    assert (
+        json.loads((tmp_path / "calibrated" / "manifest.json").read_text())["licensing"]
+        == synthetic_demo_model_licensing()
+    )
 
 
 def _minimal_calibrate_files(tmp_path: Path) -> dict[str, Path]:
@@ -1543,6 +1555,10 @@ def test_cli_synthesize_from_package(tmp_path: Path) -> None:
     assert exit_code == 0
     assert (output / "households.csv").exists()
     assert (output / "persons.csv").exists()
+    assert (
+        json.loads((output / "manifest.json").read_text())["licensing"]["package_basis"]
+        == "unclassified-legacy"
+    )
     assert (output / "manifest.json").exists()
     report = json.loads((output / "report.json").read_text())
     assert report["summary"]["total_geographies"] == 2
@@ -1597,6 +1613,9 @@ def test_cli_synthesize_from_registered_model_id(tmp_path: Path) -> None:
     assert exit_code == 0
     assert (output / "households.csv").exists()
     assert (output / "persons.csv").exists()
+    assert json.loads((output / "manifest.json").read_text())["licensing"] == (
+        synthetic_demo_model_licensing()
+    )
 
 
 # ---------------------------------------------------------------------------

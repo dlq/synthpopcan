@@ -18,31 +18,41 @@ jobs:
         python-version: ["3.11", "3.12", "3.13", "3.14"]
     steps:
       - name: Check out repository
-        uses: actions/checkout@v7.0.1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Set up uv
-        uses: astral-sh/setup-uv@v9.0.0
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
 
       - name: Set up Python
-        uses: actions/setup-python@v7.0.0
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: ${{ matrix.python-version }}
 
       - name: Install dependencies
-        run: uv sync --group dev --group docs
+        run: uv sync --locked --group dev --group docs
+
+      - name: Verify release-facing source versions agree
+        run: |
+          PACKAGE_VERSION="$(python -c 'import tomllib; print(tomllib.load(open("pyproject.toml", "rb"))["project"]["version"])')"
+          python scripts/build_release_evidence.py \
+            --check-source-version \
+            --version "$PACKAGE_VERSION"
 
       - name: Lint Python
-        run: uv run ruff check src tests scripts
+        run: uv run --locked ruff check src tests scripts
 
       - name: Check Python formatting
-        run: uv run ruff format --check src tests scripts
+        run: uv run --locked ruff format --check src tests scripts
 
       - name: Check Python types
-        run: uv run pyright src
+        run: uv run --locked pyright src
+
+      - name: Validate citation metadata against the CFF schema
+        run: uv run --locked cffconvert --validate
 
       - name: Run tests with enforced coverage
         run: >-
-          uv run pytest
+          uv run --locked pytest
           --junitxml=correctness-report.xml
           --cov=src/synthpopcan
           --cov-branch
@@ -52,7 +62,7 @@ jobs:
 
       - name: Retain machine-readable correctness report
         if: always()
-        uses: actions/upload-artifact@v7.0.1
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: correctness-report-python-${{ matrix.python-version }}-${{ github.sha }}
           path: |
@@ -60,10 +70,10 @@ jobs:
             coverage.xml
 
       - name: Check Markdown formatting
-        run: uv run --group docs mdformat --check docs README.md
+        run: uv run --locked --group docs mdformat --check docs README.md
 
       - name: Build documentation
-        run: uv run sphinx-build -W -b html docs docs/_build/html
+        run: uv run --locked sphinx-build -W -b html docs docs/_build/html
 
   python-summary:
     name: Python
@@ -81,18 +91,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
-        uses: actions/checkout@v7.0.1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Set up uv
-        uses: astral-sh/setup-uv@v9.0.0
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
 
       - name: Set up Python
-        uses: actions/setup-python@v7.0.0
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.12"
 
       - name: Build wheel
-        run: uv build --wheel
+        run: |
+          uv lock --check
+          uv build --wheel
 
       - name: Install wheel in isolated environment
         run: |
@@ -103,6 +115,18 @@ jobs:
         run: >-
           .smoke-venv/bin/python -c
           "import importlib.util; assert importlib.util.find_spec('sklearn') is None"
+
+      - name: Verify CFF validation remains a development-only dependency
+        run: >-
+          .smoke-venv/bin/python -c
+          "import importlib.util; assert importlib.util.find_spec('cffconvert') is None"
+
+      - name: Verify installed distribution and runtime versions agree
+        run: |
+          PACKAGE_VERSION="$(python -c 'import tomllib; print(tomllib.load(open("pyproject.toml", "rb"))["project"]["version"])')"
+          .smoke-venv/bin/python -c \
+            "import importlib.metadata, synthpopcan, sys; expected=sys.argv[1]; assert importlib.metadata.version('synthpopcan') == expected; assert synthpopcan.__version__ == expected" \
+            "$PACKAGE_VERSION"
 
       - name: Verify CLI entry point
         run: .smoke-venv/bin/synthpopcan --help
@@ -135,26 +159,26 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
-        uses: actions/checkout@v7.0.1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Set up Node
-        uses: actions/setup-node@v7.0.0
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: "24"
           cache: npm
 
       - name: Set up uv
-        uses: astral-sh/setup-uv@v9.0.0
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
 
       - name: Set up Python
-        uses: actions/setup-python@v7.0.0
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.12"
 
       - name: Install dependencies
         run: |
           npm ci
-          uv sync --group dev
+          uv sync --locked --group dev
 
       - name: Check web assets
         run: npm run check:web

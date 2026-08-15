@@ -2,13 +2,13 @@
 
 Status: active, with a bounded stewardship baseline and gated publication work\
 Created: 2026-07-19\
-Last updated: 2026-08-01\
+Last updated: 2026-08-15\
 Target: complete the stewardship baseline before another model publication or
 mirror; mature toward JOSS only after its public-development and research-use
 gates are met\
-Next milestone: settle model licensing, validate CFF metadata, capture the
-source in Software Heritage, publish dated FAIR4RS and management records, and
-release a tested bilingual 2021 case study for focused community introduction\
+Next milestone: execute and preserve evidence for all 64 live archive-
+correction operations and 32 registry updates, and then advance the verified
+1.0 software release metadata\
 Roadmap: [PLANS.md](../PLANS.md) | [Plan index](README.md)
 
 ## Purpose And Boundary
@@ -32,8 +32,9 @@ preservation, interoperability, governance, credit, or discovery problem.
 
 ## Pre-`1.0` Cut Line
 
-The stewardship work required for `1.0.0` is limited to the model-licensing
-decision, full CFF validation, a verified Software Heritage capture, dated
+The stewardship work required for `1.0.0` is limited to the accepted model-
+licensing policy and archive-correction disposition, full CFF validation, a
+verified Software Heritage capture, dated
 FAIR4RS and software-management records, supported-platform and maintenance
 claims, and the tested bilingual 2021 case study. The release must also publish
 the exact stable CLI/API/schema inventory and compatibility policy owned by the
@@ -50,12 +51,12 @@ publication and preservation foundation as settled.
 
 ### Citation metadata
 
-- **Done (updated 2026-08-01).** `CITATION.cff` records the stable concept DOI
-  and the archived `0.7.0` version DOI, and a drift test checks its version,
+- **Done (updated 2026-08-15).** `CITATION.cff` records the stable concept DOI
+  and the archived `0.9.0` version DOI, and a drift test checks its version,
   date, and version DOI against package and changelog metadata.
-- Add full Citation File Format schema validation to a local and CI
-  documentation or release gate without adding a runtime dependency. Keep the
-  existing release-drift test as a separate check.
+- **Done (2026-08-15).** Full Citation File Format schema validation now runs
+  in local and CI gates without adding a runtime dependency. The existing
+  release-drift test remains a separate check.
 - Keep `CITATION.cff` current for every later release. Add ORCIDs only when
   supplied and confirmed by their owners; never infer them.
 - Preserve the current citation guidance distinguishing the software concept,
@@ -64,24 +65,45 @@ publication and preservation foundation as settled.
 
 ### Model licensing and archival publication
 
-- **Done (updated 2026-08-01).** GitHub releases are connected to Zenodo, the
-  current `0.7.0` software release and 32 public prepared models have archival
+- **Done (updated 2026-08-15).** GitHub releases are connected to Zenodo, the
+  current `0.9.0` software release and 32 public prepared models have archival
   records, and release, concept, and model DOIs are exposed through project
   metadata, documentation, and the CLI.
 - **Done (2026-07-20).** Model deposition tooling defaults to the sandbox and
   draft state, verifies source and uploaded bytes, checkpoints partial work,
   prevents accidental redeposition, and requires explicit production and
   per-record publication confirmation.
-- Before publishing another prepared model or placing a model on a mirror,
-  obtain an informed review of how any licence on SynthPopCan-authored model
-  material should be represented beside continuing Statistics Canada Open
-  Licence conditions. Record the decision in an ADR or equivalent durable
-  record, update release guidance, and correct live archive metadata if the
-  review changes the current representation.
-- Treat metadata generation, validation, and draft preparation as candidates
-  for automation. Preserve a human approval gate for irreversible production
-  publication unless a later reviewed process establishes an equally clear
-  safety boundary.
+- **Maintainer policy accepted (2026-08-15).** Darcy Quesnel accepted an
+  open-by-default rights presentation that offers CC BY
+  4.0 only for copyright or similar rights the package author owns or controls
+  in original selection, organization, schema, documentation, and model
+  representation. It leaves Statistics Canada Information under the Open
+  Licence and presents the statements as cumulative and scoped, not
+  alternatives for the package as a whole. It claims no author-controlled
+  rights in source classifications, facts, or unprotectable numeric results.
+  ADR-0014 is Accepted. External review is optional rather than a `1.0.0` gate,
+  and the project claims no external approval or legal opinion. Open licensing
+  does not relax anti-identification, disclosure-risk, attribution, provenance,
+  or no-endorsement safeguards. Materially conflicting future authoritative
+  guidance triggers prompt prospective review and correction.
+- **Correction implementation completed (2026-08-15).** A
+  live audit found that all 32 current model records retain Statistics Canada
+  attribution and use CC BY 4.0, but none explains the CC scope and the
+  immutable model JSON does not embed the complete rights block. The local
+  correction builder now verifies each historical file against the registry,
+  inserts only the exact licensing field while preserving every other JSON
+  byte, and emits deterministic, non-overwriting candidates. The executor
+  supports identifier-preserving metadata edits and new versions under each
+  existing concept DOI with draft ownership, supersession, predecessor and
+  replacement verification, exact registry candidates, transactional execution
+  indexing, and operation/version/hash-aware resume. Independent adversarial
+  review closed all three prior blockers; 137 focused tests, Ruff, Pyright, and
+  diff checks pass. ADR-0014's implementation marker is Completed. No live
+  correction is recorded.
+- Treat review-only metadata generation and validation as candidates for
+  automation. Historical assets are not eligible for sandbox upload. Preserve
+  a human approval gate for irreversible production publication unless a later
+  reviewed process establishes an equally clear safety boundary.
 - Keep Git tags, GitHub Releases, PyPI artifacts, documentation, Zenodo records,
   identifiers, and checksums mutually consistent and test all deterministic
   relationships.
@@ -92,28 +114,41 @@ the public model-archive decision and release presentation.
 
 ### Independent source preservation
 
-- Request Software Heritage capture of the public GitHub origin.
-- Verify that the captured snapshot contains the annotated `v0.7.0` release,
-  record the relevant qualified SWHIDs, and link them from an appropriate
-  preservation or release record.
+- **Done (2026-08-15).** Software Heritage captured the public GitHub origin.
+- **Done (2026-08-15).** The captured snapshot contains the annotated `v0.7.0`
+  and `v0.9.0` releases; the relevant qualified SWHIDs are linked from a dated
+  preservation record.
 - Revisit capture after important source releases or repository moves; do not
   imply that one snapshot replaces Git tags, Zenodo release records, or model
   archives.
 
 ### Dated FAIR4RS and management records
 
-- Publish a lightweight, dated FAIR for Research Software self-assessment tied
-  to the current release. For each FAIR4RS principle, link existing evidence,
-  state the gap, and assign any product work to one active implementation plan.
-- Publish a concise Software Management Plan covering ownership, decision and
-  release authority, contribution and credit, dependency and security
-  practice, testing, archival, licensing, support expectations,
+- **Done (2026-08-15).** A lightweight, dated FAIR for Research Software
+  self-assessment links evidence and assigns each remaining gap to an active
+  plan or an explicit decision.
+- **Done (2026-08-15).** A concise Software Management Plan covers ownership,
+  decision and release authority, contribution and credit, dependency and
+  security practice, testing, archival, licensing, support expectations,
   succession/bus-factor risk, and end-of-life policy.
 - Reuse and link `CONTRIBUTING.md`, `SECURITY.md`, `RELEASING.md`, the ADRs,
   `CORRECTNESS.md`, and citation metadata rather than duplicating them.
+- **Done (updated 2026-08-15).** The dated prepared-model licensing review
+  records the accepted maintainer policy, the 32-record audit, its privacy and
+  provenance boundaries, the correction disposition, and the optional future-
+  review trigger without implying external approval.
 - Review these two dated records at major releases or after a material change
   to maintainers, infrastructure, data authority, distribution, or governance;
   ordinary patch releases do not require a ceremonial rewrite.
+
+### Supported environments and maintenance
+
+- **Done (2026-08-15).** Publish a support policy that distinguishes the tested
+  Ubuntu/Python and Chromium matrix from best-effort macOS/WSL paths and the
+  unsupported native-Windows path.
+- **Done (2026-08-15).** Record maintenance, security-reporting, succession,
+  bus-factor, and end-of-life expectations without implying funded or
+  guaranteed support.
 
 Reproducibility evidence must preserve applicable software and model versions,
 inputs and source versions, geography, seeds, configuration, commands,
@@ -143,7 +178,7 @@ collaborators, not a one-time publicity campaign.
 
 ### Tested launch artifact
 
-Prepare a short English/French case study that:
+**Done (2026-08-15).** Prepare a short English/French case study that:
 
 - installs a named released SynthPopCan version in a clean environment;
 - fetches and inspects one public 2021 prepared model;
@@ -156,9 +191,9 @@ Prepare a short English/French case study that:
   populations but does not simulate health outcomes, infer causal effects, or
   certify fitness or disclosure safety.
 
-Test the published commands as an installed-package smoke scenario. Resolve the
-model-archive licensing decision before the case study presents its licence
-language as settled.
+Test the published commands as an installed-package smoke scenario. Keep the
+case study's licence language aligned with accepted ADR-0014 and preserve its
+privacy, provenance, and fitness caveats.
 
 ### Focused introduction
 
@@ -186,7 +221,8 @@ that GitHub Releases, Zenodo, and `synthpopcan models fetch` do not solve.
 
 If that gate is met:
 
-- complete the model-archive licensing decision first;
+- require the accepted model-archive licensing policy and completed archive
+  correction;
 - mirror exactly one representative 2021 package without rebuilding it;
 - generate its model card from maintained registry metadata;
 - identify Zenodo as the canonical citable archive and GitHub Releases as the
@@ -259,7 +295,11 @@ The bounded stewardship baseline is complete when:
 
 - full CFF schema validation and existing release-drift checks pass locally and
   in CI;
-- a durable model-licensing decision governs future archives and mirrors;
+- accepted ADR-0014 governs future archives and mirrors without implying
+  external legal review; its correction executor has passed the documented
+  non-overwriting and resume gates; and exactly 32 metadata corrections, 32
+  corrected package versions, and 32 registry updates have remotely verified
+  tracked evidence;
 - the protected, human-approved Zenodo process is documented as the publication
   boundary;
 - Software Heritage capture and the selected SWHIDs are recorded;

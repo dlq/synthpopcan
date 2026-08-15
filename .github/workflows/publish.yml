@@ -8,6 +8,10 @@ on:
         required: true
         type: string
 
+concurrency:
+  group: publish-python-${{ inputs.tag }}
+  cancel-in-progress: false
+
 jobs:
   build:
     name: Build distributions
@@ -15,94 +19,193 @@ jobs:
     outputs:
       release_commit: ${{ steps.release-identity.outputs.release_commit }}
     permissions:
+      actions: read
       contents: read
-      id-token: write
-      attestations: write
     steps:
-      - uses: actions/checkout@v7.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ inputs.tag }}
           fetch-depth: 0
-      - uses: astral-sh/setup-uv@v9.0.0
-      - uses: actions/setup-python@v7.0.0
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.12"
       - name: Verify release tag and package version
         id: release-identity
         env:
+          DISPATCH_REF: ${{ github.ref }}
+          DISPATCH_SHA: ${{ github.sha }}
           RELEASE_TAG: ${{ inputs.tag }}
+          WORKFLOW_SHA: ${{ github.workflow_sha }}
         run: |
           case "$RELEASE_TAG" in
             v[0-9]*.[0-9]*.[0-9]*) ;;
             *) echo "Release tag must look like v0.5.1" >&2; exit 1 ;;
           esac
-          test "$(git describe --tags --exact-match HEAD)" = "$RELEASE_TAG"
+          test "$(git cat-file -t "$RELEASE_TAG")" = "tag"
+          RELEASE_COMMIT="$(git rev-parse "$RELEASE_TAG^{commit}")"
+          test "$(git rev-parse HEAD)" = "$RELEASE_COMMIT"
+          test "$DISPATCH_REF" = "refs/tags/$RELEASE_TAG"
+          test "$DISPATCH_SHA" = "$RELEASE_COMMIT"
+          test "$WORKFLOW_SHA" = "$RELEASE_COMMIT"
           PACKAGE_VERSION="$(python -c 'import tomllib; print(tomllib.load(open("pyproject.toml", "rb"))["project"]["version"])')"
           test "$RELEASE_TAG" = "v$PACKAGE_VERSION"
-          echo "release_commit=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
-      - run: uv sync --group dev
+          python scripts/build_release_evidence.py \
+            --check-source-version \
+            --version "$PACKAGE_VERSION"
+          echo "release_commit=$RELEASE_COMMIT" >> "$GITHUB_OUTPUT"
+      - name: Require successful CI for the exact release commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_COMMIT: ${{ steps.release-identity.outputs.release_commit }}
+        run: |
+          git fetch --no-tags origin main:refs/remotes/origin/main
+          git merge-base --is-ancestor "$RELEASE_COMMIT" origin/main
+          gh api --method GET \
+            "repos/$GITHUB_REPOSITORY/actions/workflows/ci.yml/runs" \
+            -f head_sha="$RELEASE_COMMIT" \
+            -f event=push \
+            -f status=success \
+            -f per_page=100 \
+            > "$RUNNER_TEMP/release-ci-runs.json"
+          jq -e --arg commit "$RELEASE_COMMIT" '
+            [
+              .workflow_runs[]
+              | select(
+                  .head_sha == $commit
+                  and .head_branch == "main"
+                  and .event == "push"
+                  and .status == "completed"
+                  and .conclusion == "success"
+                  and .name == "CI"
+                  and .path == ".github/workflows/ci.yml"
+                )
+            ]
+            | if length == 0 then
+                error("no successful push CI run for exact release commit")
+              else
+                max_by(.run_number)
+                | {
+                    id,
+                    workflow_id,
+                    name,
+                    path,
+                    head_branch,
+                    run_number,
+                    run_attempt,
+                    event,
+                    status,
+                    conclusion,
+                    head_sha,
+                    html_url,
+                    created_at,
+                    updated_at
+                  }
+              end
+          ' "$RUNNER_TEMP/release-ci-runs.json" \
+            > "$RUNNER_TEMP/release-ci-run.json"
+          test "$(jq -r .head_sha "$RUNNER_TEMP/release-ci-run.json")" = "$RELEASE_COMMIT"
+      - run: uv sync --locked --group dev
       - name: Run full suite with release coverage
         run: >-
-          uv run pytest
+          uv run --locked pytest
           --junitxml=release-test-report.xml
           --cov=src/synthpopcan
           --cov-branch
           --cov-report=xml:release-coverage.xml
           --cov-fail-under=95
       - name: Run extended correctness suite
+        env:
+          UV_LOCKED: "1"
         run: >-
           sh scripts/check-correctness.sh
           --junitxml=release-correctness-report.xml
-      - run: uv build
-      - name: Smoke-test installed wheel
-        run: sh scripts/check-wheel.sh | tee release-wheel-smoke.log
+      - name: Build distributions from the checked lock
+        run: |
+          uv lock --check
+          uv build
+      - name: Smoke-test installed distributions and optional dependency paths
+        run: |
+          set -o pipefail
+          sh scripts/check-wheel.sh | tee release-distribution-smoke.log
       - name: Assemble release evidence
         env:
+          DISPATCH_REF: ${{ github.ref }}
+          DISPATCH_SHA: ${{ github.sha }}
           RELEASE_TAG: ${{ inputs.tag }}
+          WORKFLOW_SHA: ${{ github.workflow_sha }}
         run: |
           PACKAGE_VERSION="$(python -c 'import tomllib; print(tomllib.load(open("pyproject.toml", "rb"))["project"]["version"])')"
           mkdir -p release-evidence
-          cp dist/* release-test-report.xml release-coverage.xml release-correctness-report.xml release-wheel-smoke.log pyproject.toml uv.lock release-evidence/
+          cp dist/* release-test-report.xml release-coverage.xml release-correctness-report.xml release-distribution-smoke.log pyproject.toml uv.lock "$RUNNER_TEMP/release-ci-run.json" release-evidence/
           python scripts/build_release_evidence.py \
             --tag "$RELEASE_TAG" \
             --commit "$(git rev-parse HEAD)" \
             --version "$PACKAGE_VERSION" \
+            --workflow-sha "$WORKFLOW_SHA" \
+            --dispatch-sha "$DISPATCH_SHA" \
+            --dispatch-ref "$DISPATCH_REF" \
             --output release-evidence/manifest.json \
             release-evidence/synthpopcan-* \
             release-evidence/release-test-report.xml \
             release-evidence/release-coverage.xml \
             release-evidence/release-correctness-report.xml \
-            release-evidence/release-wheel-smoke.log \
+            release-evidence/release-distribution-smoke.log \
+            release-evidence/release-ci-run.json \
             release-evidence/pyproject.toml release-evidence/uv.lock
           cd release-evidence
           sha256sum * > SHA256SUMS
-      - name: Attest distribution provenance
-        uses: actions/attest-build-provenance@v4
-        with:
-          subject-path: dist/*
-      - uses: actions/upload-artifact@v7.0.1
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: python-package-distributions
           path: dist/*
       - name: Retain complete release evidence
         if: always()
-        uses: actions/upload-artifact@v7.0.1
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: release-evidence-${{ inputs.tag }}
           path: release-evidence/*
 
-  attach-to-github-release:
-    name: Attach permanent evidence to GitHub Release
+  attest-distributions:
+    name: Attest distribution provenance
     needs: build
     runs-on: ubuntu-latest
     permissions:
+      actions: read
+      attestations: write
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: python-package-distributions
+          path: dist/
+      - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4
+        with:
+          subject-path: dist/*
+
+  attach-to-github-release:
+    name: Attach permanent evidence to GitHub Release
+    needs: [build, attest-distributions]
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
       contents: write
     steps:
-      - uses: actions/download-artifact@v8.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.tag }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: release-evidence-${{ inputs.tag }}
           path: release-evidence/
-      - name: Upload distributions and evidence
+      - name: Verify the remote tag, release, and immutable assets
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ inputs.tag }}
@@ -110,9 +213,45 @@ jobs:
         run: |
           test "$(jq -r .release.commit release-evidence/manifest.json)" = "$RELEASE_COMMIT"
           test "$(jq -r .release.tag release-evidence/manifest.json)" = "$RELEASE_TAG"
-          cd release-evidence
-          sha256sum --check SHA256SUMS
-          gh release upload "$RELEASE_TAG" * --clobber --repo "$GITHUB_REPOSITORY"
+          (
+            cd release-evidence
+            sha256sum --check SHA256SUMS
+          )
+
+          gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$RELEASE_TAG" \
+            > "$RUNNER_TEMP/release-tag-ref.json"
+          test "$(jq -r .object.type "$RUNNER_TEMP/release-tag-ref.json")" = "tag"
+          TAG_OBJECT_SHA="$(jq -r .object.sha "$RUNNER_TEMP/release-tag-ref.json")"
+          gh api "repos/$GITHUB_REPOSITORY/git/tags/$TAG_OBJECT_SHA" \
+            > "$RUNNER_TEMP/release-tag-object.json"
+          test "$(jq -r .tag "$RUNNER_TEMP/release-tag-object.json")" = "$RELEASE_TAG"
+          test "$(jq -r .object.type "$RUNNER_TEMP/release-tag-object.json")" = "commit"
+          test "$(jq -r .object.sha "$RUNNER_TEMP/release-tag-object.json")" = "$RELEASE_COMMIT"
+
+          gh api "repos/$GITHUB_REPOSITORY/releases/tags/$RELEASE_TAG" \
+            > "$RUNNER_TEMP/github-release.json"
+          python scripts/build_release_evidence.py \
+            --verify-release-assets "$RUNNER_TEMP/github-release.json" \
+            --asset-dir release-evidence \
+            --missing-output "$RUNNER_TEMP/missing-release-assets.json" \
+            --tag "$RELEASE_TAG"
+
+          mapfile -t MISSING_ASSETS \
+            < <(jq -r '.[]' "$RUNNER_TEMP/missing-release-assets.json")
+          for ASSET_NAME in "${MISSING_ASSETS[@]}"; do
+            gh release upload "$RELEASE_TAG" \
+              "release-evidence/$ASSET_NAME" \
+              --repo "$GITHUB_REPOSITORY"
+          done
+
+          gh api "repos/$GITHUB_REPOSITORY/releases/tags/$RELEASE_TAG" \
+            > "$RUNNER_TEMP/github-release-after-upload.json"
+          python scripts/build_release_evidence.py \
+            --verify-release-assets "$RUNNER_TEMP/github-release-after-upload.json" \
+            --asset-dir release-evidence \
+            --missing-output "$RUNNER_TEMP/missing-release-assets-after-upload.json" \
+            --tag "$RELEASE_TAG"
+          test "$(jq 'length' "$RUNNER_TEMP/missing-release-assets-after-upload.json")" = "0"
 
   publish-to-pypi:
     name: Publish to PyPI
@@ -122,10 +261,32 @@ jobs:
       name: pypi
       url: https://pypi.org/p/synthpopcan
     permissions:
+      actions: read
+      contents: read
       id-token: write
     steps:
-      - uses: actions/download-artifact@v8.0.1
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: python-package-distributions
           path: dist/
-      - uses: pypa/gh-action-pypi-publish@release/v1
+      - name: Reverify the remote tag and final release state
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.tag }}
+          RELEASE_COMMIT: ${{ needs.build.outputs.release_commit }}
+        run: |
+          gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$RELEASE_TAG" \
+            > "$RUNNER_TEMP/release-tag-ref.json"
+          test "$(jq -r .object.type "$RUNNER_TEMP/release-tag-ref.json")" = "tag"
+          TAG_OBJECT_SHA="$(jq -r .object.sha "$RUNNER_TEMP/release-tag-ref.json")"
+          gh api "repos/$GITHUB_REPOSITORY/git/tags/$TAG_OBJECT_SHA" \
+            > "$RUNNER_TEMP/release-tag-object.json"
+          test "$(jq -r .tag "$RUNNER_TEMP/release-tag-object.json")" = "$RELEASE_TAG"
+          test "$(jq -r .object.type "$RUNNER_TEMP/release-tag-object.json")" = "commit"
+          test "$(jq -r .object.sha "$RUNNER_TEMP/release-tag-object.json")" = "$RELEASE_COMMIT"
+          gh api "repos/$GITHUB_REPOSITORY/releases/tags/$RELEASE_TAG" \
+            > "$RUNNER_TEMP/github-release.json"
+          test "$(jq -r .tag_name "$RUNNER_TEMP/github-release.json")" = "$RELEASE_TAG"
+          test "$(jq -r .draft "$RUNNER_TEMP/github-release.json")" = "false"
+          test "$(jq -r .prerelease "$RUNNER_TEMP/github-release.json")" = "false"
+      - uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # release/v1

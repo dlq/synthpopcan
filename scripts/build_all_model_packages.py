@@ -39,6 +39,7 @@ from synthpopcan.microdata import (
     read_statcan_2021_hierarchical_seed_sample,
     resolve_tree_column_block_pair,
 )
+from synthpopcan.model_licensing import statcan_prepared_model_licensing
 from synthpopcan.tree import (
     audit_tree_model,
     read_tree_model,
@@ -404,6 +405,7 @@ def build_package(target: dict, sample_all, *, source: Path, year: int) -> dict:
             "script": "scripts/build_all_model_packages.py",
             "seconds": round(time.perf_counter() - started, 3),
         },
+        "licensing": statcan_prepared_model_licensing(year),
         "training_manifest": json.loads(training_manifest_path.read_text()),
         "source_provenance": read_source_provenance(source_provenance_path),
         "release_manifests": {

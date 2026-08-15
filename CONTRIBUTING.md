@@ -111,14 +111,25 @@ under ignored paths such as `data/raw`, `data/private`, `references`, `runs`, or
 `outputs`.
 
 Reviewed model packages may be published only when they are explicitly intended
-for distribution and carry provenance and disclosure-risk metadata. Large
-packages should be uploaded as GitHub Release assets and listed in the model
-registry, not bundled into the normal Python package.
+for distribution and carry provenance, disclosure-risk metadata, and the
+validated embedded prepared-model licensing contract. Production model
+publication remains fail-closed while the live archive-correction execution
+gate in
+[`ADR-0014`](adr/0014-separate-prepared-model-and-source-licensing.md) are open.
+Large packages should be uploaded as GitHub Release assets and listed in the
+model registry, not bundled into the normal Python package.
 
 Before contributing a model artifact:
 
 - verify it contains no raw source rows or source identifiers;
 - inspect its provenance and redistribution notes;
+- validate its embedded licensing object and preserve that object in every
+  derived manifest;
+- confirm the accepted ADR-0014 policy and its archive-correction gates are
+  complete before any archive write;
+- preserve the Statistics Canada conditions, exact source attribution,
+  provenance, no-endorsement statement, and anti-identification boundary; an
+  open licence never relaxes those obligations;
 - run the relevant SynthPopCan audit/release workflow;
 - confirm large files are distributed as release assets with checksums and
   fetched on demand by `synthpopcan models fetch`.

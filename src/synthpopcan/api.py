@@ -73,7 +73,14 @@ from synthpopcan.exchange import (
 from synthpopcan.geography import GeographyUniverse
 from synthpopcan.ipf import IPFMargin, IPFResult, expand_records
 from synthpopcan.ipf import fit_ipf as fit_ipf_records
-from synthpopcan.linked_schema import write_linked_population_contract
+from synthpopcan.linked_schema import (
+    read_linked_population_contract,
+    write_linked_population_contract,
+)
+from synthpopcan.model_licensing import (
+    normalize_prepared_model_licensing,
+    validate_prepared_model_licensing,
+)
 from synthpopcan.models import fetch_model_package
 from synthpopcan.odef import ODEF_V3_ARCHIVE_SHA256, OdefAdapter
 from synthpopcan.small_area_synthesis import calibrate_linked_household_csvs
@@ -150,6 +157,10 @@ class LinkedPopulation:
         Synthetic person rows. Person rows are generated inside the synthetic
         households and may include household identifiers or household-level
         context columns.
+    licensing:
+        Optional validated licensing presentation inherited from the prepared
+        model package. :func:`write_linked_population` preserves it in the
+        linked-population manifest. Hand-constructed populations may omit it.
 
     Notes
     -----
@@ -159,6 +170,7 @@ class LinkedPopulation:
 
     households: PopulationRows
     persons: PopulationRows
+    licensing: dict[str, Any] | None = None
 
 
 @dataclass(frozen=True)
@@ -528,7 +540,7 @@ def read_model_package(path: str | Path) -> dict[str, Any]:
     if not isinstance(payload, dict):
         raise ValueError("model package must be a JSON object")
     _validate_model_package_schema(payload)
-    return payload
+    return normalize_prepared_model_licensing(payload)
 
 
 def fetch_model(model_id: str) -> dict[str, Any]:
@@ -643,7 +655,8 @@ def generate_from_model(
         household_size_column=package_household_size_column,
         random_seed=random_seed,
     )
-    return LinkedPopulation(household_rows, person_rows)
+    licensing = validate_prepared_model_licensing(package_payload.get("licensing"))
+    return LinkedPopulation(household_rows, person_rows, licensing)
 
 
 def write_population(
@@ -706,6 +719,11 @@ def write_linked_population(
         raise ValueError("cannot write a linked population without households")
     if not population.persons:
         raise ValueError("cannot write a linked population without persons")
+    licensing = (
+        validate_prepared_model_licensing(population.licensing)
+        if population.licensing is not None
+        else None
+    )
     output_directory = Path(directory)
     output_directory.mkdir(parents=True, exist_ok=True)
     manifest_path = output_directory / "manifest.json"
@@ -721,6 +739,7 @@ def write_linked_population(
         files.households,
         files.persons,
         geography_column=geography_column,
+        licensing=licensing,
     )
     return files
 
@@ -837,6 +856,7 @@ def calibrate_small_area(
     )
     report_path = destination / "report.json"
     weights_path = destination / "weights.csv" if include_weights else None
+    input_licensing = _linked_population_licensing(population)
 
     with TemporaryDirectory(prefix="synthpopcan-small-area-") as temporary:
         temporary_path = Path(temporary)
@@ -894,6 +914,7 @@ def calibrate_small_area(
         output_population.households,
         output_population.persons,
         geography_column=geography_column or geography_dimension,
+        licensing=input_licensing,
     )
     non_converged = int(summary.get("non_converged_count", 0))
     return SmallAreaResult(
@@ -1334,6 +1355,25 @@ def _linked_population_files(
     )
 
 
+def _linked_population_licensing(
+    population: LinkedPopulation | LinkedPopulationFiles | str | Path,
+) -> dict[str, Any] | None:
+    if isinstance(population, LinkedPopulation):
+        return (
+            validate_prepared_model_licensing(population.licensing)
+            if population.licensing is not None
+            else None
+        )
+    files = _linked_population_files(population)
+    if files.manifest is None or not files.manifest.is_file():
+        return None
+    contract = read_linked_population_contract(files.manifest)
+    licensing = contract.get("licensing")
+    return (
+        validate_prepared_model_licensing(licensing) if licensing is not None else None
+    )
+
+
 def _population_directory(
     population: LinkedPopulationFiles | str | Path,
 ) -> Path:
@@ -1423,7 +1463,7 @@ def _model_package(package: _ModelPackageInput) -> dict[str, Any]:
         return read_model_package(package)
     payload = dict(package)
     _validate_model_package_schema(payload)
-    return payload
+    return normalize_prepared_model_licensing(payload)
 
 
 def _validate_model_package_schema(package: Mapping[str, object]) -> None:

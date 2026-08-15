@@ -101,6 +101,11 @@ def test_small_area_workflow_generates_calibrates_and_reports(tmp_path: Path) ->
         "household_column": "tract",
         "person_assignment": "inherited-via-household",
     }
+    manifest = json.loads(result.manifest_path.read_text())
+    assert (
+        manifest["licensing"]
+        == model_payload("demo-linked-household-person")["licensing"]
+    )
     assert result.details["summary"]["non_converged_count"] == 0
     assert result.details["geography_universe"] == {
         "schema_version": "synthpopcan-geography-universe-v1",

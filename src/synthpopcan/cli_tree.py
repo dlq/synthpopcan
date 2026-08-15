@@ -72,6 +72,7 @@ from synthpopcan.microdata import (
     reduced_person_targets,
     resolve_tree_column_block_pair,
 )
+from synthpopcan.model_licensing import normalize_prepared_model_licensing
 from synthpopcan.models import model_payload
 from synthpopcan.tree import (
     CartTreeModel,
@@ -746,9 +747,11 @@ def generate_model_population(
                     random_seed,
                 ),
                 "package": package_inspection,
+                "licensing": package["licensing"],
                 "linked_population": build_linked_population_contract(
                     households_out,
                     persons_out,
+                    licensing=package["licensing"],
                 ),
             },
         )
@@ -1180,6 +1183,7 @@ def package_linked_tree_models_command(
             "contains_source_identifiers": False,
         },
     }
+    package = normalize_prepared_model_licensing(package)
     try:
         write_json_object(out_path, package)
     except OSError as exc:
@@ -1482,7 +1486,7 @@ def read_linked_model_package(path: Path) -> dict[str, Any]:
     payload = read_json_object(path, "linked model package")
     if payload.get("schema_version") != "synthpopcan-linked-tree-package-v1":
         raise ValueError("unsupported linked model package schema")
-    return payload
+    return normalize_prepared_model_licensing(payload)
 
 
 def _read_package_path_or_id(
@@ -1543,6 +1547,7 @@ def _build_linked_package_inspection(
     package: dict[str, Any],
     package_path: Path | None,
 ) -> dict[str, Any]:
+    package = normalize_prepared_model_licensing(package)
     training_manifest = _object_or_empty(package.get("training_manifest"))
     source_provenance = _object_or_empty(
         package.get("source_provenance") or package.get("provenance")
@@ -1554,6 +1559,7 @@ def _build_linked_package_inspection(
     audits = _object_or_empty(package.get("audits"))
     release_manifests = _object_or_empty(package.get("release_manifests"))
     review = _object_or_empty(package.get("review"))
+    licensing = package.get("licensing")
 
     return {
         "schema_version": "synthpopcan-linked-tree-package-inspection-v1",
@@ -1586,6 +1592,7 @@ def _build_linked_package_inspection(
             "contains_raw_rows": privacy.get("contains_raw_rows"),
             "contains_source_identifiers": privacy.get("contains_source_identifiers"),
         },
+        "licensing": licensing,
         "thresholds": thresholds,
         "models": _summarize_package_models(model_summaries or embedded_models),
         "audits": _summarize_package_audits(audits),
@@ -1659,13 +1666,21 @@ def _summarize_release_manifests(
 def _print_linked_package_inspection_table(report: dict[str, Any]) -> None:
     table = make_table(title="Linked Model Package")
     table.add_column("Field", no_wrap=True)
-    table.add_column("Value")
+    table.add_column("Value", overflow="fold")
 
     source = _object_or_empty(report.get("source"))
     training = _object_or_empty(report.get("training"))
     privacy = _object_or_empty(report.get("privacy"))
     models = _object_or_empty(report.get("models"))
     audits = _object_or_empty(report.get("audits"))
+    licensing = _object_or_empty(report.get("licensing"))
+    licence_presentation = _object_or_empty(licensing.get("presentation"))
+    policy_decision = _object_or_empty(licensing.get("policy_decision"))
+    authored_material = _object_or_empty(licensing.get("authored_material"))
+    authored_licence = _object_or_empty(authored_material.get("licence"))
+    grant_scope = _object_or_empty(authored_material.get("grant_scope"))
+    source_information = _object_or_empty(licensing.get("source_information"))
+    source_licence = _object_or_empty(source_information.get("licence"))
 
     _add_optional_table_row(table, "Name", report.get("name"))
     table.add_row("Package", str(report.get("package_path", "")))
@@ -1673,6 +1688,46 @@ def _print_linked_package_inspection_table(report: dict[str, Any]) -> None:
     _add_optional_table_row(table, "Source", format_source_label(source))
     _add_optional_table_row(table, "Access", source.get("access_class"))
     _add_optional_table_row(table, "Redistribution", source.get("redistribution_note"))
+    _add_optional_table_row(
+        table,
+        "Licensing",
+        licensing.get("package_basis"),
+    )
+    _add_optional_table_row(
+        table,
+        "Prepared-model licence",
+        _licence_label(authored_licence),
+    )
+    _add_optional_table_row(
+        table,
+        "Prepared-model scope",
+        grant_scope.get("statement"),
+    )
+    _add_optional_table_row(
+        table,
+        "Licence layering",
+        licence_presentation.get("statement"),
+    )
+    _add_optional_table_row(
+        table,
+        "Policy decision",
+        _policy_decision_label(policy_decision),
+    )
+    _add_optional_table_row(
+        table,
+        "External legal review",
+        policy_decision.get("external_legal_review"),
+    )
+    _add_optional_table_row(
+        table,
+        "Source licence",
+        _licence_label(source_licence),
+    )
+    _add_optional_table_row(
+        table,
+        "Source notice",
+        source_information.get("prescribed_notice"),
+    )
     _add_optional_table_row(
         table, "Geography", format_geography_filter(training.get("geography_filter"))
     )
@@ -1699,6 +1754,24 @@ def _add_optional_table_row(table: Table, label: str, value: object) -> None:
 
 def _format_optional(value: object) -> str:
     return "" if value is None else str(value)
+
+
+def _licence_label(licence: dict[str, Any]) -> str:
+    name = str(licence.get("name") or "")
+    spdx_id = str(licence.get("spdx_id") or "")
+    url = str(licence.get("url") or "")
+    identity = f"{name} ({spdx_id})" if name and spdx_id else name or spdx_id
+    return f"{identity}: {url}" if identity and url else identity or url
+
+
+def _policy_decision_label(policy: dict[str, Any]) -> str:
+    authority = ", ".join(
+        str(value)
+        for value in (policy.get("decided_by"), policy.get("decided_on"))
+        if value
+    )
+    values = [policy.get("status"), policy.get("basis"), authority]
+    return "; ".join(str(value) for value in values if value)
 
 
 def format_source_label(source: dict[str, Any]) -> str:

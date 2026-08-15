@@ -19,6 +19,8 @@ from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
 
+from synthpopcan.model_licensing import validate_prepared_model_licensing
+
 LINKED_POPULATION_SCHEMA_VERSION = "synthpopcan-linked-population-v1"
 HOUSEHOLD_ID_COLUMN = "synthetic_household_id"
 PERSON_ID_COLUMN = "synthetic_person_id"
@@ -62,6 +64,7 @@ def build_linked_population_contract(
     persons_path: Path,
     *,
     geography_column: str | None = None,
+    licensing: Mapping[str, object] | None = None,
 ) -> dict[str, Any]:
     """Describe two linked CSVs using the stable v1 artifact contract.
 
@@ -125,6 +128,8 @@ def build_linked_population_contract(
             else None
         ),
     }
+    if licensing is not None:
+        contract["licensing"] = validate_prepared_model_licensing(licensing)
     validate_linked_population_contract(contract)
     return contract
 
@@ -178,6 +183,9 @@ def validate_linked_population_contract(payload: Mapping[str, object]) -> None:
         if geography_mapping.get("person_assignment") != "inherited-via-household":
             raise ValueError("unsupported linked population geography assignment")
 
+    if "licensing" in payload:
+        validate_prepared_model_licensing(payload["licensing"])
+
 
 def write_linked_population_contract(
     path: Path,
@@ -185,6 +193,7 @@ def write_linked_population_contract(
     persons_path: Path,
     *,
     geography_column: str | None = None,
+    licensing: Mapping[str, object] | None = None,
 ) -> dict[str, Any]:
     """Build and write a linked-population v1 manifest."""
 
@@ -192,6 +201,7 @@ def write_linked_population_contract(
         households_path,
         persons_path,
         geography_column=geography_column,
+        licensing=licensing,
     )
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(contract, indent=2, sort_keys=True) + "\n")

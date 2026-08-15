@@ -21,6 +21,13 @@ from pathlib import Path
 from typing import Any
 from urllib.request import urlopen
 
+from synthpopcan.model_licensing import (
+    STATCAN_OPEN_LICENCE_URL,
+    normalize_prepared_model_licensing,
+    statcan_prepared_model_licensing,
+    synthetic_demo_model_licensing,
+)
+
 ProgressCallback = Callable[[int, int | None], None]
 
 _RELEASE_BASE_URL = "https://github.com/dlq/synthpopcan/releases/download/v0.2.1"
@@ -32,9 +39,13 @@ _BROWSER_MODEL_MAX_UNCOMPRESSED_BYTES = 32 * 1024 * 1024
 # Statistics Canada public use microdata files are "Information" under the
 # Statistics Canada Open Licence, which grants the right to distribute
 # "Value-added Products" derived from them. Models trained on a PUMF are such a
-# product, so every downloadable package carries the licence's prescribed
-# "Adapted from ... does not constitute an endorsement" attribution notice.
-_STATCAN_OPEN_LICENCE = "https://www.statcan.gc.ca/en/reference/licence"
+# product, so the catalogue carries the licence's prescribed "Adapted from ...
+# does not constitute an endorsement" attribution notice. Corrected package
+# bytes will embed the same notice; registered historical bytes are enriched
+# only after their catalogue checksum is verified.
+_STATCAN_OPEN_LICENCE = STATCAN_OPEN_LICENCE_URL
+_PUMF_2016_LICENSING = statcan_prepared_model_licensing(2016)
+_PUMF_2021_LICENSING = statcan_prepared_model_licensing(2021)
 
 _DEMO_CATALOGUE_METADATA = {
     "census_vintage": "Not applicable",
@@ -52,11 +63,9 @@ _PUMF_2016_CATALOGUE_METADATA = {
     "census_vintage": "2016 Census",
     "release_status": "publishable_candidate",
     "release_version": "v0.2.1",
-    "provenance": (
-        "Adapted from Statistics Canada, 2016 Census Hierarchical Public Use "
-        "Microdata File (98M0002X2016001), 2016. This does not constitute an "
-        "endorsement by Statistics Canada of this product."
-    ),
+    "provenance": _PUMF_2016_LICENSING["source_information"][  # type: ignore[index]
+        "prescribed_notice"
+    ],
     "source_licence": _STATCAN_OPEN_LICENCE,
     "privacy": "No raw rows or source identifiers.",
     "privacy_review_status": "publishable candidate; human review still required",
@@ -75,11 +84,9 @@ _PUMF_2021_CATALOGUE_METADATA = {
     "census_vintage": "2021 Census",
     "release_status": "publishable_candidate",
     "release_version": "v0.6.0",
-    "provenance": (
-        "Adapted from Statistics Canada, 2021 Census Hierarchical Public Use "
-        "Microdata File, version 2 (98M0001X2021002), 2021. This does not "
-        "constitute an endorsement by Statistics Canada of this product."
-    ),
+    "provenance": _PUMF_2021_LICENSING["source_information"][  # type: ignore[index]
+        "prescribed_notice"
+    ],
     "source_licence": _STATCAN_OPEN_LICENCE,
     "privacy": "No raw rows or source identifiers.",
     "privacy_review_status": "publishable candidate; human review still required",
@@ -697,6 +704,16 @@ def model_catalogue_entry(model_id: str) -> dict[str, Any]:
     """Return public catalogue metadata for one registered model package."""
 
     metadata = model_registry_entry(model_id)
+    if metadata.get("safe_demo") is True:
+        licensing = synthetic_demo_model_licensing()
+    elif metadata.get("census_vintage") == "2016 Census":
+        licensing = statcan_prepared_model_licensing(2016)
+    elif metadata.get("census_vintage") == "2021 Census":
+        licensing = statcan_prepared_model_licensing(2021)
+    else:
+        raise ValueError(
+            f"model package {model_id} has an unsupported licensing vintage"
+        )
     return {
         "id": model_id,
         "name": str(metadata["name"]),
@@ -708,6 +725,7 @@ def model_catalogue_entry(model_id: str) -> dict[str, Any]:
         "release_version": str(metadata["release_version"]),
         "provenance": str(metadata["provenance"]),
         "source_licence": str(metadata["source_licence"]),
+        "licensing": licensing,
         "doi": metadata.get("doi"),
         "privacy": str(metadata["privacy"]),
         "privacy_review_status": str(metadata["privacy_review_status"]),
@@ -744,13 +762,17 @@ def model_payload(model_id: str) -> dict[str, Any]:
     """
 
     metadata = model_registry_entry(model_id)
-    payload = json.loads(_model_path(model_id).read_text())
+    package_path = _model_path(model_id)
+    if metadata.get("distribution") == "download":
+        _verify_model_checksum(package_path, metadata)
+    payload = json.loads(package_path.read_text())
     if not isinstance(payload, dict):
         raise ValueError(f"model package {model_id} must be a JSON object")
     payload.setdefault("name", metadata["name"])
     payload.setdefault("description", metadata["description"])
     payload.setdefault("generation_defaults", metadata["default_generation"])
     catalogue_entry = model_catalogue_entry(model_id)
+    payload.setdefault("licensing", catalogue_entry["licensing"])
     payload.setdefault(
         "catalogue_metadata",
         {
@@ -770,7 +792,7 @@ def model_payload(model_id: str) -> dict[str, Any]:
             )
         },
     )
-    return payload
+    return normalize_prepared_model_licensing(payload)
 
 
 def model_registry_entry(model_id: str) -> dict[str, Any]:

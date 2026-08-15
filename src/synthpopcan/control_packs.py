@@ -38,7 +38,7 @@ import math
 from collections import Counter
 from collections.abc import Collection, Mapping, Sequence
 from pathlib import Path
-from typing import Any, Literal, Self
+from typing import Any, ClassVar, Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -81,7 +81,9 @@ ControlStatus = Literal["implemented", "planned", "validation-only", "unavailabl
 class _BoundaryModel(BaseModel):
     """Reject coercion and unknown fields at persisted contract boundaries."""
 
-    model_config = ConfigDict(extra="forbid", strict=True, frozen=True)
+    model_config: ClassVar[ConfigDict] = ConfigDict(
+        extra="forbid", strict=True, frozen=True
+    )
 
     def as_dict(self) -> dict[str, Any]:
         """Return a JSON-serializable representation with stable field names."""

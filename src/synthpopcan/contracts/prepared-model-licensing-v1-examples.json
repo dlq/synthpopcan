@@ -1,0 +1,280 @@
+{
+  "examples": {
+    "census-2016-project-default": {
+      "authored_material": {
+        "excluded_material": [
+          "Statistics Canada Information",
+          "source classifications and labels",
+          "facts and factual data",
+          "numeric results not protected by applicable law"
+        ],
+        "grant_scope": {
+          "materials": [
+            "original selection",
+            "original organization",
+            "original documentation",
+            "original schema representation",
+            "original model representation"
+          ],
+          "only_rights_owned_or_controlled": true,
+          "only_to_extent_protected": true,
+          "statement": "CC BY 4.0 is offered only for rights Darcy Quesnel owns or controls in the named original material, and only to the extent that material is protected by applicable law."
+        },
+        "licence": {
+          "name": "Creative Commons Attribution 4.0 International",
+          "spdx_id": "CC-BY-4.0",
+          "url": "https://creativecommons.org/licenses/by/4.0/"
+        },
+        "rights_holder": "Darcy Quesnel"
+      },
+      "policy_decision": {
+        "basis": "maintainer-selected-permissive-default",
+        "decided_by": "Darcy Quesnel",
+        "decided_on": "2026-08-15",
+        "decision_record": {
+          "id": "ADR-0014",
+          "status": "accepted",
+          "url": "https://github.com/dlq/synthpopcan/blob/main/adr/0014-separate-prepared-model-and-source-licensing.md"
+        },
+        "external_legal_review": "not-obtained",
+        "statement": "This is the project's maintained publication and licensing default, subject to the cumulative licence layers, provenance requirements, and privacy safeguards recorded here. It is not legal advice or a claim of external legal review.",
+        "status": "accepted"
+      },
+      "package_basis": "census-derived",
+      "presentation": {
+        "alternative_licence_choice": false,
+        "mode": "cumulative-layers-not-alternatives",
+        "statement": "The licence layers are cumulative, not alternatives. CC BY 4.0 does not license, replace, or supersede Statistics Canada Information or rights governed by the Statistics Canada Open Licence."
+      },
+      "schema_version": "synthpopcan-prepared-model-licensing-v1",
+      "source_information": {
+        "classification": "Information",
+        "continuing_conditions": [
+          {
+            "id": "source-acknowledgment",
+            "requirement": "Include and maintain the prescribed notice."
+          },
+          {
+            "id": "accurate-reproduction",
+            "requirement": "Reproduce Statistics Canada Information accurately."
+          },
+          {
+            "id": "no-endorsement",
+            "requirement": "Do not suggest endorsement by Statistics Canada."
+          },
+          {
+            "id": "no-misrepresentation",
+            "requirement": "Do not misrepresent the Information or its source."
+          },
+          {
+            "id": "lawful-use",
+            "requirement": "Do not breach or infringe applicable laws."
+          },
+          {
+            "id": "no-identification-linkage",
+            "requirement": "Do not merge or link Information to attempt to identify a person, business, or organization."
+          },
+          {
+            "id": "no-confidential-access-appearance",
+            "requirement": "Do not present Information as though identifiable confidential Statistics Canada information was available."
+          },
+          {
+            "id": "no-reverse-engineering",
+            "requirement": "Do not reverse engineer software provided as part of the Information."
+          }
+        ],
+        "licence": {
+          "name": "Statistics Canada Open Licence",
+          "url": "https://www.statcan.gc.ca/en/terms-conditions/open-licence"
+        },
+        "prescribed_notice": "Adapted from Statistics Canada, 2016 Census Public Use Microdata File (PUMF), Hierarchical File (98M0002X2016001), 2016. This does not constitute an endorsement by Statistics Canada of this product.",
+        "product": {
+          "catalogue_number": "98M0002X2016001",
+          "catalogue_url": "https://www150.statcan.gc.ca/n1/en/catalogue/98M0002X2016001",
+          "reference_year": 2016,
+          "title": "2016 Census Public Use Microdata File (PUMF), Hierarchical File"
+        },
+        "provider": "Statistics Canada"
+      }
+    },
+    "census-2021-project-default": {
+      "authored_material": {
+        "excluded_material": [
+          "Statistics Canada Information",
+          "source classifications and labels",
+          "facts and factual data",
+          "numeric results not protected by applicable law"
+        ],
+        "grant_scope": {
+          "materials": [
+            "original selection",
+            "original organization",
+            "original documentation",
+            "original schema representation",
+            "original model representation"
+          ],
+          "only_rights_owned_or_controlled": true,
+          "only_to_extent_protected": true,
+          "statement": "CC BY 4.0 is offered only for rights Darcy Quesnel owns or controls in the named original material, and only to the extent that material is protected by applicable law."
+        },
+        "licence": {
+          "name": "Creative Commons Attribution 4.0 International",
+          "spdx_id": "CC-BY-4.0",
+          "url": "https://creativecommons.org/licenses/by/4.0/"
+        },
+        "rights_holder": "Darcy Quesnel"
+      },
+      "policy_decision": {
+        "basis": "maintainer-selected-permissive-default",
+        "decided_by": "Darcy Quesnel",
+        "decided_on": "2026-08-15",
+        "decision_record": {
+          "id": "ADR-0014",
+          "status": "accepted",
+          "url": "https://github.com/dlq/synthpopcan/blob/main/adr/0014-separate-prepared-model-and-source-licensing.md"
+        },
+        "external_legal_review": "not-obtained",
+        "statement": "This is the project's maintained publication and licensing default, subject to the cumulative licence layers, provenance requirements, and privacy safeguards recorded here. It is not legal advice or a claim of external legal review.",
+        "status": "accepted"
+      },
+      "package_basis": "census-derived",
+      "presentation": {
+        "alternative_licence_choice": false,
+        "mode": "cumulative-layers-not-alternatives",
+        "statement": "The licence layers are cumulative, not alternatives. CC BY 4.0 does not license, replace, or supersede Statistics Canada Information or rights governed by the Statistics Canada Open Licence."
+      },
+      "schema_version": "synthpopcan-prepared-model-licensing-v1",
+      "source_information": {
+        "classification": "Information",
+        "continuing_conditions": [
+          {
+            "id": "source-acknowledgment",
+            "requirement": "Include and maintain the prescribed notice."
+          },
+          {
+            "id": "accurate-reproduction",
+            "requirement": "Reproduce Statistics Canada Information accurately."
+          },
+          {
+            "id": "no-endorsement",
+            "requirement": "Do not suggest endorsement by Statistics Canada."
+          },
+          {
+            "id": "no-misrepresentation",
+            "requirement": "Do not misrepresent the Information or its source."
+          },
+          {
+            "id": "lawful-use",
+            "requirement": "Do not breach or infringe applicable laws."
+          },
+          {
+            "id": "no-identification-linkage",
+            "requirement": "Do not merge or link Information to attempt to identify a person, business, or organization."
+          },
+          {
+            "id": "no-confidential-access-appearance",
+            "requirement": "Do not present Information as though identifiable confidential Statistics Canada information was available."
+          },
+          {
+            "id": "no-reverse-engineering",
+            "requirement": "Do not reverse engineer software provided as part of the Information."
+          }
+        ],
+        "licence": {
+          "name": "Statistics Canada Open Licence",
+          "url": "https://www.statcan.gc.ca/en/terms-conditions/open-licence"
+        },
+        "prescribed_notice": "Adapted from Statistics Canada, Hierarchical File, Census of Population: Public Use Microdata Files, Census Year 2021 (98M0001X2021002), 2021. This does not constitute an endorsement by Statistics Canada of this product.",
+        "product": {
+          "catalogue_number": "98M0001X2021002",
+          "catalogue_url": "https://www150.statcan.gc.ca/n1/en/catalogue/98M0001X2021002",
+          "reference_year": 2021,
+          "title": "Hierarchical File, Census of Population: Public Use Microdata Files, Census Year 2021"
+        },
+        "provider": "Statistics Canada"
+      }
+    },
+    "synthetic-only": {
+      "authored_material": {
+        "excluded_material": [
+          "facts and factual data",
+          "numeric results not protected by applicable law"
+        ],
+        "grant_scope": {
+          "materials": [
+            "synthetic demonstration selection and organization",
+            "synthetic demonstration documentation",
+            "synthetic schema and model representation"
+          ],
+          "only_rights_owned_or_controlled": true,
+          "only_to_extent_protected": true,
+          "statement": "The MIT License applies to the authored synthetic teaching package only to the extent Darcy Quesnel owns or controls protected rights in it."
+        },
+        "licence": {
+          "name": "MIT License",
+          "spdx_id": "MIT",
+          "url": "https://github.com/dlq/synthpopcan/blob/main/LICENSE"
+        },
+        "rights_holder": "Darcy Quesnel"
+      },
+      "policy_decision": {
+        "basis": "not-applicable",
+        "decided_by": null,
+        "decided_on": null,
+        "decision_record": null,
+        "external_legal_review": "not-applicable",
+        "statement": "The synthetic-only teaching package is governed directly by its MIT authored-material licence; the Census-derived project default does not apply.",
+        "status": "not-applicable"
+      },
+      "package_basis": "synthetic-only",
+      "presentation": {
+        "alternative_licence_choice": false,
+        "mode": "single-synthetic-authored-layer",
+        "statement": "This bundled teaching package uses synthetic toy rows only; it does not contain a Statistics Canada licence layer."
+      },
+      "schema_version": "synthpopcan-prepared-model-licensing-v1",
+      "source_information": null
+    },
+    "unclassified-legacy": {
+      "authored_material": {
+        "excluded_material": [
+          "Statistics Canada Information",
+          "source classifications and labels",
+          "facts and factual data",
+          "numeric results not protected by applicable law"
+        ],
+        "grant_scope": {
+          "materials": [],
+          "only_rights_owned_or_controlled": true,
+          "only_to_extent_protected": true,
+          "statement": "No authored-material licence grant was inferred."
+        },
+        "licence": {
+          "name": "Not asserted",
+          "spdx_id": "NOASSERTION",
+          "url": null
+        },
+        "rights_holder": "Not asserted"
+      },
+      "policy_decision": {
+        "basis": "unclassified-legacy",
+        "decided_by": null,
+        "decided_on": null,
+        "decision_record": null,
+        "external_legal_review": "not-obtained",
+        "statement": "No project licensing default was inferred. Source and rights classification must be resolved before redistribution.",
+        "status": "unresolved"
+      },
+      "package_basis": "unclassified-legacy",
+      "presentation": {
+        "alternative_licence_choice": false,
+        "mode": "unclassified-legacy",
+        "statement": "No licence grant or source layer was inferred from these legacy package bytes; inspect and classify their provenance before redistribution."
+      },
+      "schema_version": "synthpopcan-prepared-model-licensing-v1",
+      "source_information": null
+    }
+  },
+  "contract_schema_version": "synthpopcan-prepared-model-licensing-v1",
+  "schema_version": "synthpopcan-prepared-model-licensing-examples-v1"
+}

@@ -4,9 +4,9 @@ Status: active\
 Created: 2026-07-12\
 Last updated: 2026-08-10\
 Target: ongoing correctness and release evidence\
-Next action: inventory and freeze the declared 1.0 CLI, API, and persisted
-contracts with installed-package compatibility fixtures while maintaining the
-released assurance and reproduction gates\
+Next action: run the final combined release gate, review the generated
+public-interface manifest, and freeze it only in the verified 1.0 release
+commit while maintaining the released assurance and reproduction gates\
 Roadmap: [PLANS.md](../PLANS.md) | [Plan index](README.md)
 
 ## Purpose And Boundaries

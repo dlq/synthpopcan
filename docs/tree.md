@@ -616,6 +616,12 @@ Statistics Canada special codes such as not applicable, not available, or valid
 skip, depending on the column. Do not treat these as ordinary numeric values
 without decoding the relevant field metadata.
 
+The {doc}`field-eligibility` inventory records an explicit pre-1.0 decision for
+all 116 source columns in 2016 and all 122 in 2021. It distinguishes the 35
+source targets in each current full profile from structural keys, source
+weights, geography conditions, and deliberately deferred fields. Consult that
+inventory before proposing another target or cross-vintage mapping.
+
 ## Preparing Repository Release Assets
 
 The commands above explain each stage of a model's path from **private working
@@ -630,6 +636,54 @@ and release operations out of the reader-facing generation examples.
 Ordinary users do not need to perform those release steps. Once a reviewed
 package is listed in the catalogue, we can fetch, inspect, generate, and
 validate it using {doc}`tree-generate`.
+
+### Licensing metadata carried by packages and outputs
+
+Every loaded linked package has a top-level `licensing` object using
+`synthpopcan-prepared-model-licensing-v1`. Reviewed project release builds embed
+it directly; readers add the catalogue-reviewed object only when they load an
+older registered package whose bytes match the catalogue checksum. Generic
+local packages and `models build package-linked` output without an explicit
+contract are labelled `unclassified-legacy`; provenance text alone never
+invents a Darcy Quesnel licence grant. Package inspections and generation
+manifests carry the resulting object forward rather than reducing it to a bare
+licence label.
+
+The v1 contract supports exactly these package bases:
+
+| `package_basis` | Meaning | `policy_decision` status and basis |
+| --- | --- | --- |
+| `census-derived` | A reviewed presentation with separate authored-material and Statistics Canada source-information layers. | `accepted`; `maintainer-selected-permissive-default` |
+| `synthetic-only` | The bundled teaching package contains only synthetic toy rows and has no Statistics Canada source layer. | `not-applicable`; `not-applicable` |
+| `unclassified-legacy` | No licence or source classification was inferred for local or legacy bytes. | `unresolved`; `unclassified-legacy` |
+
+The Census-derived `policy_decision` names Darcy Quesnel, the decision date
+`2026-08-15`, and accepted ADR-0014. Its `external_legal_review` value is
+`not-obtained`: the marker records a maintainer-selected project default, not
+legal advice or external approval. A literal, distributed set of canonical
+examples is available as
+`synthpopcan/contracts/prepared-model-licensing-v1-examples.json`; its distinct
+examples envelope cannot be mistaken for one licensing object.
+
+For Census-derived packages, the object presents two cumulative layers, not a
+choice between alternatives. CC BY 4.0 is scoped only to protected original
+selection, organization, documentation, schema, and model-representation
+rights that the named author owns or controls. Statistics Canada Information,
+source classifications, facts, and unprotectable numeric results are expressly
+excluded from that grant. A separate source layer records the product,
+catalogue number, Census reference year, canonical Statistics Canada Open
+Licence, exact prescribed notice, and continuing conditions.
+
+The installed reader validates the complete Census policy marker against the
+accepted project default; arbitrary local names, dates, bases, external-review
+claims, or changed status strings fail. Open licensing does not relax the
+Statistics Canada anti-identification condition, source attribution,
+provenance, no-endorsement language, confidential-source access controls, or
+the project's disclosure-risk caveats.
+
+The bundled fictional demo is deliberately different: it is marked
+`synthetic-only`, uses a single MIT-authored layer, and has no Statistics Canada
+source layer. See {doc}`data` for interpretation and redistribution guidance.
 
 ## Example: Use the Published Quebec Province Model
 

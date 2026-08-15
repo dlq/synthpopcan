@@ -6,11 +6,15 @@ __all__ = ["SmallAreaRequest", "SmallAreaWorkflowResult", "synthesize_small_area
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from synthpopcan.geography import GeographyUniverse
-from synthpopcan.linked_schema import write_linked_population_contract
+from synthpopcan.linked_schema import (
+    read_linked_population_contract,
+    write_linked_population_contract,
+)
 from synthpopcan.map_render import render_synthesis_map
+from synthpopcan.model_licensing import validate_prepared_model_licensing
 from synthpopcan.small_area_controls import write_recoded_candidates
 from synthpopcan.small_area_synthesis import calibrate_linked_household_csvs
 from synthpopcan.tree import validate_linked_population_files
@@ -304,6 +308,10 @@ def synthesize_small_area_files(
         candidate_households = generated.households_path
         candidate_persons = generated.persons_path
         household_size_column = str(generated.report["household_size_column"])
+        generated_contract = _object(generated.report.get("linked_population"))
+        input_licensing = validate_prepared_model_licensing(
+            generated_contract.get("licensing")
+        )
     elif (
         request.candidate_households_path is not None
         and request.candidate_persons_path is not None
@@ -318,6 +326,10 @@ def synthesize_small_area_files(
         candidate_households = request.candidate_households_path
         candidate_persons = request.candidate_persons_path
         household_size_column = "household_size"
+        input_licensing = _candidate_licensing(
+            candidate_households,
+            candidate_persons,
+        )
     else:
         raise ValueError("provide a package or linked candidate household/person CSVs")
     if request.max_household_size is not None:
@@ -364,6 +376,7 @@ def synthesize_small_area_files(
         households_path,
         persons_path,
         geography_column=request.geography_column,
+        licensing=input_licensing,
     )
     map_path = None
     if request.boundaries_path is not None and request.map_path is not None:
@@ -388,6 +401,34 @@ def synthesize_small_area_files(
         details=details,
         reproduction=request.reproduction(),
     )
+
+
+def _candidate_licensing(
+    households_path: Path,
+    persons_path: Path,
+) -> dict[str, Any] | None:
+    if households_path.parent.resolve() != persons_path.parent.resolve():
+        return None
+    manifest_path = households_path.parent / "manifest.json"
+    if not manifest_path.is_file():
+        return None
+    contract = read_linked_population_contract(manifest_path)
+    tables = _object(contract.get("tables"))
+    households = _object(tables.get("households"))
+    persons = _object(tables.get("persons"))
+    if (
+        households.get("path") != households_path.name
+        or persons.get("path") != persons_path.name
+    ):
+        return None
+    licensing = contract.get("licensing")
+    return (
+        validate_prepared_model_licensing(licensing) if licensing is not None else None
+    )
+
+
+def _object(value: object) -> dict[str, Any]:
+    return cast("dict[str, Any]", value) if isinstance(value, dict) else {}
 
 
 def _emit(progress: ProgressReporter | None, stage: str, message: str) -> None:

@@ -1,12 +1,12 @@
 # Expanded Hierarchical Tree Models Plan
 
-Status: planned research and implementation track\
+Status: active post-1.0 research track; pre-1.0 inventory complete\
 Created: 2026-08-01\
-Last updated: 2026-08-02\
+Last updated: 2026-08-15\
 Target: pre-`1.0` inventory and extension-contract proof only; richer profiles
 and family hierarchy after `1.0.0`\
-Next action: produce and review a machine-readable 2016/2021 eligibility
-inventory for every hierarchical PUMF column\
+Next action: after the 1.0 freeze, select one coherent additive field family
+from the reviewed inventory and design a separately versioned profile\
 Roadmap: [PLANS.md](../PLANS.md) | [Plan index](README.md)
 
 ## Outcome
@@ -68,6 +68,14 @@ unreliable.
 The current output represents households and people. Although the source rows
 contain economic-family and census-family identifiers and roles, generated
 output does not represent those intermediate entities.
+
+The pre-1.0 inventory is now published as
+[`synthpopcan-hierarchical-pumf-field-eligibility-v1`](../docs/field-eligibility.md).
+It covers all 116 and 122 source columns exactly once, reconciles the current 35
+source targets per vintage, and records explicit structural, conditioning,
+validation-only, or deferred roles for every other field. Its source-bound
+aggregate evidence makes applicability and family-membership ambiguities
+visible without adding a new model profile or publishing source rows.
 
 ## Scope And Non-Goals
 

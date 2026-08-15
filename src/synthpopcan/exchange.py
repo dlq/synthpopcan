@@ -215,6 +215,7 @@ def create_exchange_bundle(
             households,
             persons,
             geography_column=_household_geography_column(source_contract),
+            licensing=_linked_population_licensing(source_contract),
         )
         linked_path = temporary / "linked-population.json"
         _write_json(linked_path, linked_contract)
@@ -380,6 +381,7 @@ def validate_exchange_bundle(bundle: str | Path) -> dict[str, Any]:
             directory / "households.csv",
             directory / "persons.csv",
             geography_column=_household_geography_column(linked_raw),
+            licensing=_linked_population_licensing(linked_raw),
         )
         if rebuilt != linked_raw:
             issues.append("linked-population descriptor does not match the CSV files")
@@ -491,10 +493,22 @@ def _source_linked_contract(
         households,
         persons,
         geography_column=_household_geography_column(contract),
+        licensing=_linked_population_licensing(contract),
     )
     if rebuilt != contract:
         raise ValueError("source linked-population descriptor does not match its CSVs")
     return contract
+
+
+def _linked_population_licensing(
+    contract: Mapping[str, object],
+) -> Mapping[str, object] | None:
+    licensing = contract.get("licensing")
+    if licensing is None:
+        return None
+    if not isinstance(licensing, Mapping):  # pragma: no cover - validated upstream
+        raise ValueError("linked population licensing must be an object")
+    return licensing
 
 
 def _build_data_dictionary(

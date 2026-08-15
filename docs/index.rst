@@ -1,10 +1,12 @@
 SynthPopCan Documentation
 =========================
 
-SynthPopCan is early-stage tooling for Canadian synthetic population work:
-control tables, iterative proportional fitting, Statistics Canada source
+SynthPopCan is maintained research software for Canadian synthetic population
+work: control tables, iterative proportional fitting, Statistics Canada source
 inspection, census microdata adapters, linked household/person tree models, and
-validation reports.
+validation reports. Its 1.0 candidate stabilizes the documented interfaces;
+that stability does not turn bounded statistical evidence into a universal
+fitness, privacy, or representativeness claim.
 
 Most SynthPopCan workflows have the same basic shape. We begin by **inspecting
 sources** and deciding which categories, geographies, and constraints are
@@ -33,6 +35,9 @@ If we are new to SynthPopCan, follow these pages in order:
    small fictional smoke test.
 #. Continue to :doc:`Getting Started <getting-started>` to choose a workflow
    and move into the **web app**, **command-line tools**, or **notebook API**.
+#. Follow the bilingual :doc:`Quebec 2021 case study
+   <case-study-quebec-2021>` for a complete, checksummed model workflow in
+   English and French.
 
 If SynthPopCan is already installed, we can go directly to
 :doc:`Getting Started <getting-started>`.
@@ -96,10 +101,14 @@ beginner generation workflows.
    introduction
    installation
    getting-started
+   case-study-quebec-2021
    field-primer
+   field-eligibility
    glossary
+   compatibility
    correctness
    acknowledgments
+   stewardship
 
 .. toctree::
    :maxdepth: 2

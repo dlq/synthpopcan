@@ -2,9 +2,11 @@
 
 SynthPopCan is a **command-line tool** and **Python library**. Using it requires
 opening a **terminal**, a text window where we type commands rather than click
-buttons. The examples in this documentation use a **Unix-style shell** so that
-the same commands work on macOS, Linux, and Windows through the Windows
-Subsystem for Linux (WSL).
+buttons. The examples in this documentation use a **Unix-style shell** on
+macOS, Linux, and Windows through the Windows Subsystem for Linux (WSL).
+Automated release checks run on Ubuntu; macOS and WSL are best-effort supported,
+and native Windows Python is not a supported 1.0 environment. See the
+[support policy](stewardship.md#supported-environments) for the exact boundary.
 
 For a short introduction, start with MDN's [Command Line Crash
 Course](https://developer.mozilla.org/en-US/docs/Learn_web_development/Getting_started/Environment_setup/Command_line).
@@ -52,7 +54,8 @@ planned for the next release; use `stable` for the latest tagged version.
 ## Requirements
 
 - Python 3.11 or newer in the macOS, Linux, or WSL environment where we will run
-  SynthPopCan. Download from
+  SynthPopCan. Versions 3.11 through 3.14 are in the current automated release
+  matrix; a newer Python has not yet received that release coverage. Download from
   [python.org/downloads](https://www.python.org/downloads/) on macOS, use the
   operating system's package manager on Linux, or follow the WSL steps above on
   Windows.

@@ -1,7 +1,7 @@
 # SynthPopCan Plan
 
 Status: release-phased roadmap\
-Last updated: 2026-08-10\
+Last updated: 2026-08-15\
 Current published release: `0.9.0`
 
 ## Current Focus
@@ -12,13 +12,13 @@ completed implementation plans belong in [`plans/archive/`](plans/archive/).
 
 | Order | User outcome | Done when | Owned by |
 | --- | --- | --- | --- |
-| Next: `1.0.0` | Researchers and downstream tools can rely on a documented stable CLI, Python API, and declared persisted contracts. | The supported surface inventory is reviewed, pre-1.0 aliases and inconsistencies are resolved, compatibility tests freeze the declared contracts, the installed-package documentation and bilingual case study pass, and release/stewardship gates are complete. | This roadmap, [stewardship](plans/2026-07-19-research-software-stewardship.md), [strict typing](plans/2026-08-01-strict-typing.md), and [ADR-0010](adr/0010-pre-1-0-compatibility-evolution.md) |
+| Next: `1.0.0` | Researchers and downstream tools can rely on a documented stable CLI, Python API, and declared persisted contracts. | The completed candidate interface, installed-package, field-inventory, documentation, preservation, and accepted scoped-licensing work passes the combined release gate; the tested 32-record correction executor and live correction are complete; and the version/changelog/citation/tag metadata is advanced deliberately. | This roadmap, [stewardship](plans/2026-07-19-research-software-stewardship.md), [strict typing](plans/2026-08-01-strict-typing.md), [ADR-0010](adr/0010-pre-1-0-compatibility-evolution.md), and [ADR-0014](adr/0014-separate-prepared-model-and-source-licensing.md) |
 | Post-`1.0` expansion | Add richer fields, family and collective-population structure, deeper uncertainty/privacy methods, building placement, and demand-backed adapters without destabilizing the frozen core. | Each addition uses the stable extension points or a separately versioned new contract and has its own evidence-backed release scope. | Active research plans and the research queue below |
 
 ## Goal And Boundaries
 
-Build an early-stage Python library, CLI, and local web workbench for Canadian
-synthetic population generation through:
+Build and maintain a research-software library, CLI, and local web workbench
+for Canadian synthetic population generation through:
 
 1. iterative proportional fitting from Statistics Canada controls; and
 1. tree-based linked household/person generation followed, where appropriate,
@@ -57,9 +57,13 @@ Principles:
   more honest. Version changed schemas and packages, document the break and
   replacement path, fail clearly on unsupported old artifacts, and provide a
   converter when practical; backward compatibility is desirable but is not a
-  release gate. Never rewrite an already published artifact or archival record
-  in place. [ADR-0010](adr/0010-pre-1-0-compatibility-evolution.md) records this
-  compatibility boundary.
+  release gate. Never replace published file bytes, version identities, or
+  checksums in place. Audited, identifier-preserving descriptive-metadata
+  corrections are allowed when the archive supports them, the change is
+  disclosed, and the underlying version remains unchanged; changed bytes always
+  require a new version. [ADR-0010](adr/0010-pre-1-0-compatibility-evolution.md)
+  records this compatibility boundary, as clarified by
+  [ADR-0014](adr/0014-separate-prepared-model-and-source-licensing.md).
 
 Research background belongs in [NOTES.md](NOTES.md). Every unfinished roadmap
 item must appear here or be owned by one linked active plan with a current next
@@ -165,6 +169,56 @@ Before tagging `1.0.0`:
    2021 case study; and
 1. publish the compatibility policy and exact declared surface with the
    release.
+
+Candidate preparation completed on 2026-08-15 includes the recursive CLI
+inventory, curated Python API inventory, persisted-schema classification,
+packaged compatibility manifest, installed-wheel semantic drift test,
+compatibility policy, bilingual Quebec 2021 installed-wheel case study,
+supported-environment and maintenance policy, verified Software Heritage
+capture, dated FAIR4RS and software-management records, full CFF validation,
+the reviewed 238-record hierarchical PUMF field-eligibility inventory, 100%
+public type completeness, a reproducibly pinned build backend, and
+distribution-safe README links. Bounded proof and restart/cache helpers were
+removed from the curated advanced API before the freeze rather than promising
+them throughout `1.x`.
+
+The post-licensing candidate passed the complete local release gate on
+2026-08-15: 1,552 Python tests passed with 6 environment-dependent tests
+skipped and 95.10% branch-aware coverage; all 339 extended-correctness cases,
+warning-clean documentation, JavaScript coverage, and all 12 browser scenarios
+passed. Fresh isolated wheel, sdist, optional model-building, and fictional
+case-study interface smokes also passed. The exact committed candidate must
+repeat these gates in CI before release.
+
+The `1.0.0` release sequence is explicit and fail-closed:
+
+1. **Scoped licensing policy — completed 2026-08-15.** Darcy Quesnel accepted
+   [ADR-0014](adr/0014-separate-prepared-model-and-source-licensing.md) as the
+   maintainer's open-by-default policy: MIT for software; Statistics Canada
+   Open Licence conditions for source Information; and CC BY 4.0 only for
+   original selection, organization, schema, documentation, and model-
+   representation rights the package author owns or controls. The layers are
+   cumulative, not alternatives, and the decision does not weaken privacy,
+   attribution, provenance, or no-endorsement obligations. External review is
+   welcome but optional and is not a `1.0.0` gate; materially conflicting
+   authoritative guidance triggers a prompt prospective policy and artifact
+   review.
+1. **Correction implementation — completed 2026-08-15.** Independent
+   adversarial review closed all three prior blockers in the tested,
+   non-overwriting executor. Its 137 focused tests, Ruff, Pyright, and diff
+   checks pass; ADR-0014's implementation marker is Completed.
+1. **Archive correction execution — pending and unauthorized.** Using the
+   reviewed executor, run and remotely verify exactly 32 metadata corrections
+   that preserve identifiers and 32 non-overwriting package versions; accept
+   exactly 32 registry updates; and preserve sanitized operation IDs, old/new
+   record/version/concept DOIs, hashes, and outcomes in a tracked
+   `docs/records/prepared-model-archive-correction-YYYY-MM-DD.md` record (with
+   machine-readable release evidence where available). Only then may the
+   separate execution marker become Completed.
+1. **Software release — pending.** Advance package, CFF, changelog, and citation
+   dates to `1.0.0`; commit the candidate; require the complete CI gate for that
+   exact commit and workflow definition; then create the annotated tag, GitHub
+   release, PyPI publication, DOI, documentation, and preservation follow-ups.
 
 The freeze covers documented CLI command paths and options, documented Python
 API symbols, and versioned persisted contracts explicitly declared supported

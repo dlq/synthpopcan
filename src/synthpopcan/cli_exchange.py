@@ -101,23 +101,24 @@ def create_bundle_command(
         )
     except (OSError, ValueError, RuntimeError) as exc:
         raise click.ClickException(str(exc)) from exc
+    artifacts = {
+        "manifest": str(result.manifest),
+        "households": str(result.households),
+        "persons": str(result.persons),
+        "linked_population": str(result.linked_population),
+        "data_dictionary": str(result.data_dictionary),
+        "provenance": str(result.provenance),
+        "validation": str(result.validation),
+    }
     payload = {
         "directory": str(result.directory),
-        "artifacts": {
-            "manifest": str(result.manifest),
-            "households": str(result.households),
-            "persons": str(result.persons),
-            "linked_population": str(result.linked_population),
-            "data_dictionary": str(result.data_dictionary),
-            "provenance": str(result.provenance),
-            "validation": str(result.validation),
-        },
+        "artifacts": artifacts,
         "validation_report": dict(result.report),
     }
     if output_format == "json":
         click.echo(json.dumps(payload, indent=2, sort_keys=True))
         return
-    for path in payload["artifacts"].values():
+    for path in artifacts.values():
         print_wrote(Path(path))
     print_success(f"Portable population bundle ready: {result.directory}")
     click.echo(result.directory)

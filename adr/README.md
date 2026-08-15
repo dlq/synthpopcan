@@ -29,6 +29,7 @@ It complements, rather than replaces, the other project records:
 | [0011](0011-simulator-neutral-population-exchange.md) | Accepted | Use a validated CSV/JSON population contribution before adding target-specific adapters. |
 | [0012](0012-retain-bounded-calibration-and-integerization-backends.md) | Accepted | Retain the production linked-calibration updater and deterministic systematic integerizer after bounded independent comparison. |
 | [0013](0013-separate-control-pack-definitions-and-counts.md) | Accepted | Keep reusable control-pack semantics separate from explicit per-run geography count tables. |
+| [0014](0014-separate-prepared-model-and-source-licensing.md) | Accepted | Use a permissive, scoped, cumulative prepared-model rights presentation while preserving source conditions, privacy, provenance, and non-destructive archive correction. |
 
 ## Recording A Decision
 

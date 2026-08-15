@@ -168,8 +168,9 @@ def test_model_payload_raises_for_non_dict_json(monkeypatch, tmp_path) -> None:
 
     with patch.object(models, "model_cache_path", return_value=list_json):
         with patch.object(Path, "exists", return_value=True):
-            with pytest.raises(ValueError, match="must be a JSON object"):
-                models.model_payload("montreal-cma-2016-all-fields")
+            with patch.object(models, "_verify_model_checksum", return_value=None):
+                with pytest.raises(ValueError, match="must be a JSON object"):
+                    models.model_payload("montreal-cma-2016-all-fields")
 
 
 def test_model_cache_dir_win32_with_localappdata(monkeypatch, tmp_path) -> None:
@@ -402,8 +403,17 @@ def test_census_derived_models_carry_the_required_statcan_attribution() -> None:
             "does not constitute an endorsement by Statistics Canada" in provenance
         ), f"{entry['id']} provenance must carry the no-endorsement statement"
         assert entry["source_licence"] == (
-            "https://www.statcan.gc.ca/en/reference/licence"
+            "https://www.statcan.gc.ca/en/terms-conditions/open-licence"
         ), f"{entry['id']} must cite the Statistics Canada Open Licence"
+        licensing = entry["licensing"]
+        assert licensing["package_basis"] == "census-derived"
+        assert licensing["presentation"]["mode"] == (
+            "cumulative-layers-not-alternatives"
+        )
+        assert licensing["policy_decision"]["status"] == "accepted"
+        assert licensing["policy_decision"]["basis"] == (
+            "maintainer-selected-permissive-default"
+        )
 
 
 def test_model_payload_carries_attribution_into_generated_artifacts() -> None:
@@ -414,6 +424,7 @@ def test_model_payload_carries_attribution_into_generated_artifacts() -> None:
 
     assert "provenance" in catalogue_metadata
     assert "source_licence" in catalogue_metadata
+    assert payload["licensing"]["package_basis"] == "synthetic-only"
 
 
 def test_archived_models_record_their_concept_doi() -> None:
