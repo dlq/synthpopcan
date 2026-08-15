@@ -96,10 +96,13 @@ artifact.
    duplicate, or extraneous asset fails the release, and no asset is clobbered.
    It attaches both distributions, the exact-CI-run record, correctness and
    coverage XML, distribution-smoke log, lock/build inputs, release evidence
-   manifest, and `SHA256SUMS` before PyPI starts. A separately permissioned job
-   publishes GitHub build-provenance attestations for both distributions.
-   External actions are pinned to reviewed full commit SHAs. Confirm the
-   workflow succeeds and PyPI reports the intended version.
+   manifest, and `SHA256SUMS` before PyPI starts. The PyPI job downloads the
+   same workflow evidence artifact again, verifies its checksums and release
+   identity, and requires the final GitHub Release asset names, sizes, and
+   SHA-256 digests to match it exactly immediately before trusted publication.
+   A separately permissioned job publishes GitHub build-provenance attestations
+   for both distributions. External actions are pinned to reviewed full commit
+   SHAs. Confirm the workflow succeeds and PyPI reports the intended version.
 
 1. Download `SHA256SUMS` and the release assets into one directory, then run
    `sha256sum --check SHA256SUMS`. Confirm `manifest.json` names the release tag

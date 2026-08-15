@@ -378,6 +378,45 @@ def test_publish_is_exact_locked_immutable_and_revalidates_before_pypi() -> None
     assert workflow.count("git/ref/tags/$RELEASE_TAG") >= 2
 
 
+def test_pypi_job_reuses_and_reverifies_exact_release_evidence_last() -> None:
+    workflow = Path(".github/workflows/publish.yml").read_text()
+    publish_job = workflow.split("\n  publish-to-pypi:\n", maxsplit=1)[1]
+    verification_step = (
+        "      - name: Reverify exact evidence, remote tag, and final release assets\n"
+    )
+    publish_action = "      - uses: pypa/gh-action-pypi-publish@"
+    evidence_download = "name: release-evidence-${{ inputs.tag }}"
+    final_asset_assertion = (
+        "          test \"$(jq 'length' "
+        '"$RUNNER_TEMP/missing-release-assets-before-pypi.json")" = "0"\n'
+    )
+
+    for requirement in (
+        evidence_download,
+        "path: release-evidence/",
+        'test "$(git rev-parse HEAD)" = "$RELEASE_COMMIT"',
+        'test "$WORKFLOW_SHA" = "$RELEASE_COMMIT"',
+        'test "$DISPATCH_SHA" = "$RELEASE_COMMIT"',
+        'test "$DISPATCH_REF" = "refs/tags/$RELEASE_TAG"',
+        ".release.commit release-evidence/manifest.json",
+        ".release.tag release-evidence/manifest.json",
+        ".release.workflow_sha release-evidence/manifest.json",
+        ".release.dispatch_sha release-evidence/manifest.json",
+        ".release.dispatch_ref release-evidence/manifest.json",
+        "sha256sum --check SHA256SUMS",
+        '--verify-release-assets "$RUNNER_TEMP/github-release.json"',
+        "--asset-dir release-evidence",
+        "missing-release-assets-before-pypi.json",
+    ):
+        assert requirement in publish_job
+
+    assert publish_job.count(verification_step) == 1
+    assert publish_job.count(publish_action) == 1
+    assert publish_job.index(evidence_download) < publish_job.index(verification_step)
+    assert publish_job.index(verification_step) < publish_job.index(publish_action)
+    assert final_asset_assertion + publish_action in publish_job
+
+
 def test_release_workflow_actions_are_pinned_to_full_commits() -> None:
     for workflow_path in (
         Path(".github/workflows/ci.yml"),
