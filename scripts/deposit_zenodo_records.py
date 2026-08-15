@@ -1482,8 +1482,15 @@ def _assert_unclaimed_draft_snapshot(
         raise ZenodoError("unclaimed draft lacks comparable source metadata")
     canonical_existing = _canonical_metadata(existing_metadata)
     canonical_draft = _canonical_metadata(draft_metadata)
-    for transient in ("doi", "conceptdoi", "prereserve_doi"):
+    for transient in ("doi", "conceptdoi"):
         canonical_existing.pop(transient, None)
+        canonical_draft.pop(transient, None)
+    # Zenodo's public-record and legacy-deposition serializers add different
+    # derived fields to the same untouched record.  Keep this directional:
+    # ``relations`` is public-only, while the DOI reservation and publisher
+    # imprint are draft-only.  A field on the other side remains substantive.
+    canonical_existing.pop("relations", None)
+    for transient in ("imprint_publisher", "prereserve_doi"):
         canonical_draft.pop(transient, None)
     if canonical_draft != canonical_existing:
         raise ZenodoError("unclaimed draft metadata is not an untouched snapshot")
@@ -1496,12 +1503,17 @@ def _assert_unclaimed_draft_snapshot(
         for item in values:
             if not isinstance(item, dict):
                 raise ZenodoError("unclaimed draft contains malformed source files")
+            checksum = item.get("checksum")
+            if isinstance(checksum, str) and re.fullmatch(
+                r"md5:[0-9a-f]{32}", checksum
+            ):
+                checksum = checksum.removeprefix("md5:")
             normalized.append(
                 json.dumps(
                     {
                         "filename": item.get("filename", item.get("key")),
                         "size": item.get("size", item.get("filesize")),
-                        "checksum": item.get("checksum"),
+                        "checksum": checksum,
                     },
                     sort_keys=True,
                     separators=(",", ":"),

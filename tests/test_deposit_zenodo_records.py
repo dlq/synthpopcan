@@ -781,6 +781,63 @@ def test_untouched_snapshot_normalizes_legacy_filesize() -> None:
     MODULE._assert_unclaimed_draft_snapshot(draft, existing)
 
 
+def test_untouched_snapshot_accepts_real_legacy_edit_draft_shape() -> None:
+    existing = _existing_record()
+    draft = json.loads(json.dumps(existing))
+    existing["metadata"]["relations"] = {
+        "version": [
+            {
+                "index": 0,
+                "is_last": True,
+                "parent": {"pid_type": "recid", "pid_value": "90"},
+            }
+        ]
+    }
+    draft["metadata"]["imprint_publisher"] = "Zenodo"
+    draft["metadata"]["prereserve_doi"] = {"doi": existing["doi"]}
+    draft["files"][0]["filesize"] = draft["files"][0].pop("size")
+    draft["files"][0]["checksum"] = draft["files"][0]["checksum"].removeprefix("md5:")
+
+    MODULE._assert_unclaimed_draft_snapshot(draft, existing)
+
+
+@pytest.mark.parametrize(
+    "draft_checksum",
+    [
+        "MD5:" + "0" * 32,
+        "sha256:" + "0" * 32,
+        "md5:" + "0" * 31,
+        "md5:" + "0" * 31 + "1",
+        "1" * 32,
+    ],
+)
+def test_unclaimed_snapshot_rejects_nonexact_or_changed_md5_forms(
+    draft_checksum,
+) -> None:
+    existing = _existing_record()
+    draft = json.loads(json.dumps(existing))
+    draft["files"][0]["checksum"] = draft_checksum
+
+    with pytest.raises(MODULE.ZenodoError, match="untouched source snapshot"):
+        MODULE._assert_unclaimed_draft_snapshot(draft, existing)
+
+
+@pytest.mark.parametrize(
+    ("side", "field"),
+    [("draft", "relations"), ("existing", "imprint_publisher")],
+)
+def test_unclaimed_snapshot_rejects_derived_fields_on_the_wrong_side(
+    side, field
+) -> None:
+    existing = _existing_record()
+    draft = json.loads(json.dumps(existing))
+    record = draft if side == "draft" else existing
+    record["metadata"][field] = {"unexpected": "substantive"}
+
+    with pytest.raises(MODULE.ZenodoError, match="not an untouched snapshot"):
+        MODULE._assert_unclaimed_draft_snapshot(draft, existing)
+
+
 @pytest.mark.parametrize("extra", ["malformed", None])
 def test_unclaimed_snapshot_rejects_extra_or_malformed_files(extra) -> None:
     existing = _existing_record()
@@ -803,6 +860,14 @@ def test_action_intent_recovers_an_untouched_edit_without_reissuing_action(
     fake.existing["links"]["latest_draft"] = (
         "https://sandbox.zenodo.org/api/deposit/depositions/100"
     )
+    fake.existing["metadata"]["relations"] = {
+        "version": [{"index": 0, "is_last": True}]
+    }
+    fake.draft["metadata"]["imprint_publisher"] = "Zenodo"
+    fake.draft["metadata"]["prereserve_doi"] = {"doi": fake.draft["doi"]}
+    fake.draft["files"][0]["checksum"] = fake.draft["files"][0][
+        "checksum"
+    ].removeprefix("md5:")
     operation_id = MODULE._operation_identity(deposition)
     resume = {
         "operation_id": operation_id,
