@@ -215,6 +215,45 @@ def test_ipf_api_upload_preflight_run_events_artifacts_and_reproduction(
     assert main(rendered[1:]) == 0
 
 
+def test_run_events_drain_terminal_event_after_manifest_transition(
+    tmp_path: Path,
+) -> None:
+    app = create_web_app(
+        static_root=get_webapp_root(),
+        workspace=tmp_path / "workspace",
+        session_secret="test-session",
+    )
+    store = app.state.run_store
+    seed = store_upload(store, "seed.csv", seed_csv())
+    controls = store_upload(store, "controls.csv", controls_csv())
+    manifest = store.create_ipf_run(ipf_request(seed, controls))
+    run_id = str(manifest["run_id"])
+    store.transition_run(run_id, "cancelled")
+
+    async def exercise() -> str:
+        transport = httpx.ASGITransport(app=app)
+        async with httpx.AsyncClient(
+            transport=transport, base_url="http://127.0.0.1"
+        ) as client:
+            await client.get("/api/app")
+
+            async def append_terminal_event() -> None:
+                await asyncio.sleep(0.05)
+                store.append_event(run_id, "cancelled", "Run cancelled")
+
+            append_task = asyncio.create_task(append_terminal_event())
+            events = await client.get(f"/api/runs/{run_id}/events")
+            await append_task
+            return events.text
+
+    try:
+        event_stream = asyncio.run(exercise())
+    finally:
+        app.state.job_manager.shutdown()
+
+    assert '"stage":"cancelled"' in event_stream
+
+
 def test_model_install_and_removal_return_bounded_catalogue_metadata(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

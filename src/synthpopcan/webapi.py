@@ -77,6 +77,8 @@ _MAX_UPLOAD_BYTES = 256 * 1024 * 1024
 _SESSION_COOKIE = "synthpopcan_session"
 _WDS_REQUEST_SLOTS = BoundedSemaphore(2)
 _LOOPBACK_HOSTS = frozenset({"127.0.0.1", "::1", "localhost"})
+_TERMINAL_RUN_STATUSES = frozenset({"succeeded", "failed", "cancelled", "interrupted"})
+_TERMINAL_EVENT_GRACE_SECONDS = 2.0
 
 
 def create_web_app(
@@ -282,6 +284,7 @@ def create_web_app(
 
         async def stream_events() -> AsyncIterator[str]:
             cursor = last_event_id
+            terminal_observed_at: float | None = None
             while True:
                 events = run_store.read_events(run_id, after_id=cursor)
                 for event in events:
@@ -292,15 +295,23 @@ def create_web_app(
                         f"data: {json.dumps(event, separators=(',', ':'))}\n\n"
                     )
                 manifest = run_store.load_run(run_id)
-                if manifest["status"] in {
-                    "succeeded",
-                    "failed",
-                    "cancelled",
-                    "interrupted",
-                }:
-                    return
                 import asyncio
 
+                terminal_status = str(manifest["status"])
+                if terminal_status in _TERMINAL_RUN_STATUSES:
+                    persisted_events = run_store.read_events(run_id)
+                    if any(
+                        event["stage"] == terminal_status for event in persisted_events
+                    ):
+                        return
+                    loop_time = asyncio.get_running_loop().time()
+                    if terminal_observed_at is None:
+                        terminal_observed_at = loop_time
+                    elif (
+                        loop_time - terminal_observed_at
+                        >= _TERMINAL_EVENT_GRACE_SECONDS
+                    ):
+                        return
                 await asyncio.sleep(0.1)
 
         return StreamingResponse(stream_events(), media_type="text/event-stream")
