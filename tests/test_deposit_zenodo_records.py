@@ -1653,6 +1653,147 @@ def test_newversion_preflight_rejects_an_unowned_concept_draft(monkeypatch) -> N
     assert not any("actions/newversion" in url for _, url in fake.calls)
 
 
+def test_newversion_preflight_ignores_exact_submitted_terminal_predecessor(
+    monkeypatch,
+) -> None:
+    deposition = _new_version_deposition()
+    fake = _FakeZenodo(deposition, new_version=True)
+    terminal_predecessor = {
+        **fake.existing,
+        "conceptrecid": 90,
+        "state": "done",
+        "submitted": True,
+    }
+
+    def request(method, url, **kwargs):
+        if method == "GET" and "/deposit/depositions?status=draft" in url:
+            return [terminal_predecessor]
+        return fake.request(method, url, **kwargs)
+
+    monkeypatch.setattr(MODULE, "_request", request)
+    monkeypatch.setattr(MODULE, "_asset_bytes", lambda item: _payload(item)[0])
+    monkeypatch.setattr(MODULE, "_verify_remote_download", lambda *args, **kwargs: None)
+
+    result = MODULE.deposit_one(
+        deposition,
+        api=MODULE.SANDBOX_API,
+        token="t",
+        publish=False,
+    )
+
+    assert result["state"] == "draft"
+    assert sum(url.endswith("/100/actions/newversion") for _, url in fake.calls) == 1
+
+
+@pytest.mark.parametrize(
+    "terminal_change",
+    [
+        {"id": 999},
+        {"doi": "10.5072/zenodo.999"},
+        {"conceptdoi": "10.5072/zenodo.999"},
+        {"conceptrecid": 999},
+        {"submitted": False},
+        {"state": "published"},
+    ],
+)
+def test_newversion_preflight_rejects_mismatched_terminal_listing_before_action(
+    terminal_change,
+    monkeypatch,
+) -> None:
+    deposition = _new_version_deposition()
+    fake = _FakeZenodo(deposition, new_version=True)
+    terminal_predecessor = {
+        **fake.existing,
+        "conceptrecid": 90,
+        "state": "done",
+        "submitted": True,
+        **terminal_change,
+    }
+
+    def request(method, url, **kwargs):
+        if method == "GET" and "/deposit/depositions?status=draft" in url:
+            return [terminal_predecessor]
+        return fake.request(method, url, **kwargs)
+
+    monkeypatch.setattr(MODULE, "_request", request)
+    monkeypatch.setattr(MODULE, "_asset_bytes", lambda item: _payload(item)[0])
+    monkeypatch.setattr(MODULE, "_verify_remote_download", lambda *args, **kwargs: None)
+
+    with pytest.raises(MODULE.ZenodoError):
+        MODULE.deposit_one(
+            deposition,
+            api=MODULE.SANDBOX_API,
+            token="t",
+            publish=False,
+        )
+
+    assert not any("actions/newversion" in url for _, url in fake.calls)
+    assert not any(method in {"PUT", "DELETE", "POST"} for method, _ in fake.calls)
+
+
+def test_newversion_preflight_rejects_duplicate_terminal_predecessor(
+    monkeypatch,
+) -> None:
+    deposition = _new_version_deposition()
+    fake = _FakeZenodo(deposition, new_version=True)
+    terminal_predecessor = {
+        **fake.existing,
+        "conceptrecid": 90,
+        "state": "done",
+        "submitted": True,
+    }
+
+    def request(method, url, **kwargs):
+        if method == "GET" and "/deposit/depositions?status=draft" in url:
+            return [terminal_predecessor, terminal_predecessor]
+        return fake.request(method, url, **kwargs)
+
+    monkeypatch.setattr(MODULE, "_request", request)
+    monkeypatch.setattr(MODULE, "_asset_bytes", lambda item: _payload(item)[0])
+    monkeypatch.setattr(MODULE, "_verify_remote_download", lambda *args, **kwargs: None)
+
+    with pytest.raises(MODULE.ZenodoError, match="unexpected terminal"):
+        MODULE.deposit_one(
+            deposition,
+            api=MODULE.SANDBOX_API,
+            token="t",
+            publish=False,
+        )
+
+    assert not any("actions/newversion" in url for _, url in fake.calls)
+
+
+def test_terminal_predecessor_does_not_mask_an_unowned_open_draft(monkeypatch) -> None:
+    deposition = _new_version_deposition()
+    fake = _FakeZenodo(deposition, new_version=True)
+    terminal_predecessor = {
+        **fake.existing,
+        "conceptrecid": 90,
+        "state": "done",
+        "submitted": True,
+    }
+
+    def request(method, url, **kwargs):
+        if method == "GET" and "/deposit/depositions?status=draft" in url:
+            return [terminal_predecessor, fake.draft]
+        return fake.request(method, url, **kwargs)
+
+    monkeypatch.setattr(MODULE, "_request", request)
+    monkeypatch.setattr(MODULE, "_asset_bytes", lambda item: _payload(item)[0])
+    monkeypatch.setattr(MODULE, "_verify_remote_download", lambda *args, **kwargs: None)
+
+    with pytest.raises(MODULE.ZenodoError, match="unowned or ambiguous"):
+        MODULE.deposit_one(
+            deposition,
+            api=MODULE.SANDBOX_API,
+            token="t",
+            publish=False,
+        )
+
+    assert not any("actions/newversion" in url for _, url in fake.calls)
+    assert not any(method in {"PUT", "DELETE", "POST"} for method, _ in fake.calls)
+
+
 def test_newversion_action_intent_with_no_remote_draft_claims_created_action(
     monkeypatch,
 ) -> None:

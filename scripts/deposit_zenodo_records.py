@@ -2080,6 +2080,8 @@ def _preflight_newversion_draft(
 
     synthpopcan = deposition["synthpopcan"]
     concept_doi = _required_string(synthpopcan, "existing_concept_doi")
+    version_doi = _required_string(synthpopcan, "existing_version_doi")
+    record_id = _required_record_id(synthpopcan, "existing_record_id")
     concept_id = _doi_record_id(concept_doi)
     response: object = _request(
         "GET",
@@ -2092,6 +2094,7 @@ def _preflight_newversion_draft(
     if not isinstance(response, list):
         raise ZenodoError("new-version draft preflight returned a malformed listing")
     matches: list[dict[str, Any]] = []
+    ignored_predecessor = False
     for item in response:
         if not isinstance(item, dict):
             raise ZenodoError("new-version draft preflight returned malformed data")
@@ -2099,6 +2102,24 @@ def _preflight_newversion_draft(
         item_concept_id = item.get("conceptrecid")
         if item_concept != concept_doi and str(item_concept_id) != concept_id:
             raise ZenodoError("new-version draft preflight escaped the bound concept")
+        if item.get("state") in {"done", "published"}:
+            if not (
+                item.get("state") == "done"
+                and item.get("submitted") is True
+                and item.get("id") == record_id
+                and _record_doi(item) == version_doi
+                and item_concept == concept_doi
+                and str(item_concept_id) == concept_id
+                and not ignored_predecessor
+            ):
+                raise ZenodoError(
+                    "new-version draft preflight returned an unexpected terminal record"
+                )
+            # Zenodo's authenticated status=draft listing can include the
+            # submitted predecessor itself. It is not an open mutable draft;
+            # ignore only this exact, already-bound terminal envelope.
+            ignored_predecessor = True
+            continue
         matches.append(item)
     if not matches:
         return None
