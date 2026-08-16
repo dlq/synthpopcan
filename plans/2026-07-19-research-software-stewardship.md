@@ -6,8 +6,8 @@ Last updated: 2026-08-16\
 Target: complete the stewardship baseline before another model publication or
 mirror; mature toward JOSS only after its public-development and research-use
 gates are met\
-Next milestone: preserve exact-commit publication gates and add a release DOI
-or Software Heritage identifier only after the public archive mints it\
+Next milestone: preserve the verified `1.0.0` DOI and Software Heritage
+identifiers while applying the same exact-commit gates to later `1.x` releases\
 Roadmap: [PLANS.md](../PLANS.md) | [Plan index](README.md)
 
 ## Purpose And Boundary
@@ -50,10 +50,11 @@ publication and preservation foundation as settled.
 
 ### Citation metadata
 
-- **Done (updated 2026-08-16).** `CITATION.cff` records the stable concept DOI
-  and current software version/date. It carries a version DOI and current
-  Software Heritage identifier only after those exact release archives exist;
-  a drift test rejects stale identifiers while they are pending.
+- **Done (updated 2026-08-16).** `CITATION.cff` records the stable concept DOI,
+  exact `1.0.0` version DOI `10.5281/zenodo.21961301`, release date, and completed
+  Software Heritage snapshot. A drift test binds the version DOI to both
+  citation blocks and keeps older preservation identifiers in their dated
+  records rather than presenting them as current.
 - **Done (2026-08-15).** Full Citation File Format schema validation now runs
   in local and CI gates without adding a runtime dependency. The existing
   release-drift test remains a separate check.
@@ -66,11 +67,10 @@ publication and preservation foundation as settled.
 ### Model licensing and archival publication
 
 - **Done (updated 2026-08-16).** GitHub releases are connected to Zenodo,
-  software releases through `0.9.0` and 32 public prepared models have archival
+  software releases through `1.0.0` and 32 public prepared models have archival
   records, and release, concept, and model DOIs are exposed through project
-  metadata, documentation, and the CLI. The `1.0.0` version DOI is a
-  post-publication metadata follow-up rather than an identifier guessed in
-  advance.
+  metadata, documentation, and the CLI. The `1.0.0` version DOI was recorded
+  only after Zenodo minted it.
 - **Done (2026-07-20).** Model deposition tooling defaults to the sandbox and
   draft state, verifies source and uploaded bytes, checkpoints partial work,
   prevents accidental redeposition, and requires explicit production and
@@ -127,6 +127,10 @@ the public model-archive decision and release presentation.
 - **Done (2026-08-15).** The captured snapshot contains the annotated `v0.7.0`
   and `v0.9.0` releases; the relevant qualified SWHIDs are linked from a dated
   preservation record.
+- **Done (2026-08-16).** A completed full visit preserves the annotated
+  `v1.0.0` release, its exact source revision, and snapshot in a separate dated
+  preservation record. The earlier capture remains available as historical
+  evidence.
 - Revisit capture after important source releases or repository moves; do not
   imply that one snapshot replaces Git tags, Zenodo release records, or model
   archives.

@@ -30,6 +30,10 @@ def test_citation_metadata_matches_release() -> None:
     )
 
     citation = Path("CITATION.cff").read_text()
+    readme = Path("README.md").read_text()
+    version_doi = "10.5281/zenodo.21961301"
+    concept_doi = "10.5281/zenodo.21461463"
+    current_snapshot = "swh:1:snp:1d4d40f874206f2abb70d434402bc9034a127845"
     versions = re.findall(r'^\s*version:\s*"([^"]+)"', citation, re.MULTILINE)
     dates = re.findall(r"^\s*date-released:\s*(\S+)", citation, re.MULTILINE)
 
@@ -68,6 +72,12 @@ def test_citation_metadata_matches_release() -> None:
         assert primary_dois == [version_identifier.group(1)] * 2, (
             "the versioned software and preferred citation should use the version DOI"
         )
+    assert version_identifier is not None
+    assert version_identifier.group(1) == version_doi
+    assert f"value: {concept_doi}" in citation
+    assert f"value: {version_doi}" in citation
+    assert f"value: {current_snapshot}" in citation
+    assert version_doi in readme
 
 
 def test_citation_schema_validation_is_a_local_and_ci_gate() -> None:
@@ -89,20 +99,44 @@ def test_dated_stewardship_records_are_public_and_preservation_is_consistent() -
     landing = Path("docs/stewardship.md").read_text()
     docs_index = Path("docs/index.rst").read_text()
     citation = Path("CITATION.cff").read_text()
-    preservation = Path("docs/records/software-heritage-2026-08-15.md").read_text()
-    snapshot = "swh:1:snp:98f7bee54900f50bc99ac5c9f000a728e80016b9"
+    prior_preservation = Path(
+        "docs/records/software-heritage-2026-08-15.md"
+    ).read_text()
+    preservation = Path("docs/records/software-heritage-2026-08-16.md").read_text()
+    prior_snapshot = "swh:1:snp:98f7bee54900f50bc99ac5c9f000a728e80016b9"
+    snapshot = "swh:1:snp:1d4d40f874206f2abb70d434402bc9034a127845"
+    release = "swh:1:rel:7152cfd62259d319a86fdcee497d76fa87667f7b"
+    revision = "swh:1:rev:a9203d8a477608d78296faf69adcf30fba2b64d7"
 
     assert re.search(r"^\s+stewardship$", docs_index, re.MULTILINE)
     for record in (
         "records/fair4rs-2026-08-15",
         "records/software-management-plan-2026-08-15",
         "records/software-heritage-2026-08-15",
+        "records/software-heritage-2026-08-16",
     ):
         assert record in landing
     assert snapshot in landing
-    assert snapshot not in citation
+    assert snapshot in citation
     assert snapshot in preservation
-    assert "swh:1:rel:6637b3aa961bbd21888da5aa847a128ac9975d3b" in (preservation)
+    assert release in landing
+    assert release in preservation
+    assert revision in landing
+    assert revision in preservation
+    assert "2026-08-16T04:13:44.106960+00:00" in preservation
+    assert "2026-08-16T04:13:53.897000+00:00" in preservation
+    assert "https://archive.softwareheritage.org/api/1/origin/save/2428948/" in (
+        preservation
+    )
+    assert (
+        "https://archive.softwareheritage.org/api/1/origin/"
+        "https://github.com/dlq/synthpopcan/visit/2/"
+    ) in preservation
+    assert prior_snapshot in landing
+    assert prior_snapshot not in citation
+    assert prior_snapshot in prior_preservation
+    assert "swh:1:rel:9b1b92b09a42a293907a733a1638c269b0819516" in (prior_preservation)
+    assert "swh:1:rel:6637b3aa961bbd21888da5aa847a128ac9975d3b" in (prior_preservation)
 
 
 def test_zenodo_metadata_is_valid_and_drift_free() -> None:

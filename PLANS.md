@@ -12,7 +12,7 @@ completed implementation plans belong in [`plans/archive/`](plans/archive/).
 
 | Order | User outcome | Done when | Owned by |
 | --- | --- | --- | --- |
-| Current: `1.0.0` stability boundary | Researchers and downstream tools can rely on a documented stable CLI, Python API, and declared persisted contracts. | The frozen interface, installed-package, field-inventory, documentation, preservation, scoped-licensing, archive-correction, and exact release-evidence gates pass together on the exact release commit before an immutable tag is created. | This roadmap, [stewardship](plans/2026-07-19-research-software-stewardship.md), [strict typing](plans/2026-08-01-strict-typing.md), [ADR-0010](adr/0010-pre-1-0-compatibility-evolution.md), and [ADR-0014](adr/0014-separate-prepared-model-and-source-licensing.md) |
+| Current: maintain the `1.x` stability boundary | Researchers and downstream tools can rely on a documented stable CLI, Python API, and declared persisted contracts. | Later `1.x` releases preserve the frozen interface and exact release-evidence gates; the `1.0.0` version DOI and completed Software Heritage capture remain bound to the tagged source. | This roadmap, [stewardship](plans/2026-07-19-research-software-stewardship.md), [strict typing](plans/2026-08-01-strict-typing.md), [ADR-0010](adr/0010-pre-1-0-compatibility-evolution.md), and [ADR-0014](adr/0014-separate-prepared-model-and-source-licensing.md) |
 | Post-`1.0` expansion | Add richer fields, family and collective-population structure, deeper uncertainty/privacy methods, building placement, and demand-backed adapters without destabilizing the frozen core. | Each addition uses the stable extension points or a separately versioned new contract and has its own evidence-backed release scope. | Active research plans and the research queue below |
 
 ## Goal And Boundaries
@@ -216,12 +216,14 @@ The `1.0.0` release sequence is explicit and fail-closed:
    resource preserve sanitized operation IDs, old/new record/version/concept
    DOIs, compressed and uncompressed hashes, outcomes, and the zero-mutable-
    draft audit. The clean-clone execution gate passes without ignored state.
-1. **Software release — exact-commit gate.** Package, CFF, changelog, and
-   citation dates identify `1.0.0`. Create or publish an annotated tag, GitHub
-   Release, or PyPI distribution only after the complete CI gate passes for
-   that exact commit and workflow definition. Record Zenodo's version DOI and
-   the post-release Software Heritage capture only after those services mint
-   their exact identifiers.
+1. **Software release and preservation — completed 2026-08-16.** The annotated
+   `v1.0.0` release identifies exact source revision
+   `a9203d8a477608d78296faf69adcf30fba2b64d7`. Zenodo minted version DOI
+   `10.5281/zenodo.21961301`; Software Heritage completed a full visit that
+   preserves snapshot `swh:1:snp:1d4d40f874206f2abb70d434402bc9034a127845`
+   and release object `swh:1:rel:7152cfd62259d319a86fdcee497d76fa87667f7b`.
+   Citation metadata and a dated preservation record retain those verified
+   identifiers without changing the release tag or `.zenodo.json`.
 
 The freeze covers documented CLI command paths and options, documented Python
 API symbols, and versioned persisted contracts explicitly declared supported

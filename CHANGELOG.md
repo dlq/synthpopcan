@@ -4,7 +4,9 @@ All notable public changes to SynthPopCan are tracked here.
 
 ## Unreleased
 
-No unreleased changes.
+- Record the minted `1.0.0` Zenodo version DOI and the completed Software
+  Heritage snapshot, release object, and source revision in citation metadata
+  and a dated preservation record.
 
 ## 1.0.0 - 2026-08-16
 
