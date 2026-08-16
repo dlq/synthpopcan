@@ -40,6 +40,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 from collections.abc import Callable
+from datetime import date
 from pathlib import Path
 from typing import Any
 
@@ -102,6 +103,24 @@ _LEGACY_STRIPPED_MARKER_STAGED_PUBLICATION_DATE = "2026-08-16"
 _LEGACY_STRIPPED_MARKER_RECOVERY_RECORD_ID = 21461527
 _LEGACY_STRIPPED_MARKER_RECOVERY_VERSION_DOI = "10.5281/zenodo.21461527"
 _LEGACY_STRIPPED_MARKER_RECOVERY_CONCEPT_DOI = "10.5281/zenodo.21461526"
+# A PEI new-version action was durably checkpointed before POST, and the POST
+# then created this exact inherited snapshot before the executor could claim
+# it. This second one-time allow-list is equally narrow: it cannot adopt any
+# other draft, concept, operation, or local checkpoint.
+_INTERRUPTED_NEWVERSION_RECOVERY_OPERATION_ID = (
+    "create-new-version:pei-2021-minimal:v1.0.0-rights.1:"
+    "0009386ef95d07fe85fdc8fcdee874d515b387aa56622ef39082479c5c451a0c:"
+    "edc75092068e1b3d0fdb67e783f35b0b67602ae6971b22278622ed6c36aeba7c"
+)
+_INTERRUPTED_NEWVERSION_RECOVERY_SOURCE_RECORD_ID = 21461527
+_INTERRUPTED_NEWVERSION_RECOVERY_SOURCE_VERSION_DOI = "10.5281/zenodo.21461527"
+_INTERRUPTED_NEWVERSION_RECOVERY_CONCEPT_DOI = "10.5281/zenodo.21461526"
+_INTERRUPTED_NEWVERSION_RECOVERY_DRAFT_ID = 21960090
+_INTERRUPTED_NEWVERSION_RECOVERY_DRAFT_DOI = "10.5281/zenodo.21960090"
+_INTERRUPTED_NEWVERSION_RECOVERY_PUBLICATION_DATE = "2026-08-16"
+_INTERRUPTED_NEWVERSION_RECOVERY_INHERITED_OWNER = (
+    _LEGACY_STRIPPED_MARKER_RECOVERY_OPERATION_ID
+)
 _CENSUS_VINTAGE_YEAR = {
     "2016 Census": 2016,
     "2021 Census": 2021,
@@ -1810,6 +1829,65 @@ def _assert_unclaimed_draft_snapshot(
     _assert_same_source_files(draft, existing)
 
 
+def _strict_iso_date(value: object, *, label: str) -> date:
+    """Parse only the extended calendar-date form emitted by Zenodo."""
+
+    if (
+        not isinstance(value, str)
+        or re.fullmatch(r"[0-9]{4}-[0-9]{2}-[0-9]{2}", value) is None
+    ):
+        raise ZenodoError(f"{label} is not a strict ISO publication date")
+    try:
+        return date.fromisoformat(value)
+    except ValueError as exc:
+        raise ZenodoError(f"{label} is not a valid publication date") from exc
+
+
+def _assert_action_created_newversion_snapshot(
+    draft: dict[str, Any], existing: dict[str, Any]
+) -> None:
+    """Verify the narrowly normalized snapshot created by newversion itself."""
+
+    draft_metadata = draft.get("metadata")
+    existing_metadata = existing.get("metadata")
+    if not isinstance(draft_metadata, dict) or not isinstance(existing_metadata, dict):
+        raise ZenodoError("new-version action snapshot lacks comparable metadata")
+    canonical_existing = _canonical_metadata(existing_metadata)
+    canonical_draft = _canonical_metadata(draft_metadata)
+    for transient in ("doi", "conceptdoi"):
+        canonical_existing.pop(transient, None)
+        canonical_draft.pop(transient, None)
+    canonical_existing.pop("relations", None)
+    for transient in ("imprint_publisher", "prereserve_doi"):
+        canonical_draft.pop(transient, None)
+
+    existing_date_value = canonical_existing.get("publication_date")
+    draft_date_value = canonical_draft.get("publication_date")
+    existing_date = _strict_iso_date(
+        existing_date_value,
+        label="predecessor publication_date",
+    )
+    draft_date = _strict_iso_date(
+        draft_date_value,
+        label="new-version action publication_date",
+    )
+    if draft_date < existing_date:
+        raise ZenodoError("new-version action publication_date precedes its source")
+    canonical_draft["publication_date"] = existing_date_value
+
+    existing_version = canonical_existing.get("version")
+    if not isinstance(existing_version, str) or not existing_version:
+        raise ZenodoError("predecessor snapshot lacks an exact package version")
+    if "version" not in canonical_draft:
+        canonical_existing.pop("version")
+    elif canonical_draft["version"] != existing_version:
+        raise ZenodoError("new-version action changed the inherited package version")
+
+    if canonical_draft != canonical_existing:
+        raise ZenodoError("new-version action metadata is not an exact source snapshot")
+    _assert_same_source_files(draft, existing)
+
+
 def _remove_exact_transport_markers(
     metadata: dict[str, Any],
     *,
@@ -2032,6 +2110,135 @@ def _assert_exact_durable_owned_recovery_claim(
         raise ZenodoError("owned legacy recovery draft metadata is not exact")
 
 
+def _interrupted_newversion_recovery_checkpoint(
+    deposition: dict[str, Any], operation_id: str
+) -> dict[str, Any]:
+    """Return the one action-intent checkpoint authorized for PEI recovery."""
+
+    synthpopcan = deposition["synthpopcan"]
+    return {
+        "operation_id": operation_id,
+        "deposit_operation": "create-new-version",
+        "model_id": synthpopcan["model_id"],
+        "package_version": deposition["metadata"]["version"],
+        "asset_sha256": _operation_asset_sha256(deposition),
+        "metadata_sha256": operation_id.rsplit(":", 1)[-1],
+        "source_record_id": synthpopcan["existing_record_id"],
+        "state": "action-intent",
+        "uploaded_bytes": 0,
+    }
+
+
+def _may_recover_interrupted_newversion(
+    deposition: dict[str, Any],
+    *,
+    operation_id: str,
+    resume: dict[str, Any] | None,
+    api: str,
+) -> bool:
+    """Limit inherited-draft adoption to the exact interrupted PEI operation."""
+
+    synthpopcan = deposition["synthpopcan"]
+    return (
+        api.rstrip("/") == PRODUCTION_API
+        and operation_id == _INTERRUPTED_NEWVERSION_RECOVERY_OPERATION_ID
+        and resume
+        == _interrupted_newversion_recovery_checkpoint(deposition, operation_id)
+        and synthpopcan.get("deposit_operation") == "create-new-version"
+        and synthpopcan.get("existing_record_id")
+        == _INTERRUPTED_NEWVERSION_RECOVERY_SOURCE_RECORD_ID
+        and synthpopcan.get("existing_version_doi")
+        == _INTERRUPTED_NEWVERSION_RECOVERY_SOURCE_VERSION_DOI
+        and synthpopcan.get("existing_concept_doi")
+        == _INTERRUPTED_NEWVERSION_RECOVERY_CONCEPT_DOI
+    )
+
+
+def _is_interrupted_newversion_summary(
+    summary: dict[str, Any],
+    *,
+    inherited_owner: str | None,
+) -> bool:
+    """Recognize only the exact list envelope of the known PEI draft."""
+
+    return (
+        inherited_owner == _INTERRUPTED_NEWVERSION_RECOVERY_INHERITED_OWNER
+        and summary.get("id") == _INTERRUPTED_NEWVERSION_RECOVERY_DRAFT_ID
+        and _record_doi(summary) == _INTERRUPTED_NEWVERSION_RECOVERY_DRAFT_DOI
+        and _concept_doi(summary) == _INTERRUPTED_NEWVERSION_RECOVERY_CONCEPT_DOI
+        and str(summary.get("conceptrecid"))
+        == _doi_record_id(_INTERRUPTED_NEWVERSION_RECOVERY_CONCEPT_DOI)
+        and summary.get("state") == "unsubmitted"
+        and summary.get("submitted") is False
+    )
+
+
+def _full_draft_from_listing(
+    summary: dict[str, Any], *, api: str, token: str
+) -> dict[str, Any]:
+    """Resolve a files-omitting authenticated list item to its full draft."""
+
+    deposition_id = _required_record_id(summary, "id")
+    full = _request(
+        "GET",
+        f"{api}/deposit/depositions/{deposition_id}",
+        token=token,
+    )
+    if full.get("id") != deposition_id:
+        raise ZenodoError("new-version draft listing resolved to a different draft")
+    return full
+
+
+def _assert_exact_interrupted_newversion_recovery(
+    draft: dict[str, Any],
+    existing: dict[str, Any],
+    deposition: dict[str, Any],
+    *,
+    operation_id: str,
+    resume: dict[str, Any] | None,
+    api: str,
+) -> None:
+    """Verify the full immutable shape of the one inherited PEI draft."""
+
+    if not _may_recover_interrupted_newversion(
+        deposition,
+        operation_id=operation_id,
+        resume=resume,
+        api=api,
+    ):
+        raise ZenodoError("interrupted new-version recovery is not authorized")
+    if not _is_interrupted_newversion_summary(
+        draft,
+        inherited_owner=_draft_ownership(draft),
+    ):
+        raise ZenodoError("interrupted new-version draft envelope is not exact")
+    if (
+        existing.get("id") != _INTERRUPTED_NEWVERSION_RECOVERY_SOURCE_RECORD_ID
+        or _record_doi(existing) != _INTERRUPTED_NEWVERSION_RECOVERY_SOURCE_VERSION_DOI
+        or _concept_doi(existing) != _INTERRUPTED_NEWVERSION_RECOVERY_CONCEPT_DOI
+        or _draft_ownership(existing)
+        != _INTERRUPTED_NEWVERSION_RECOVERY_INHERITED_OWNER
+    ):
+        raise ZenodoError("interrupted new-version predecessor binding changed")
+    draft_metadata = draft.get("metadata")
+    if (
+        not isinstance(draft_metadata, dict)
+        or draft_metadata.get("publication_date")
+        != _INTERRUPTED_NEWVERSION_RECOVERY_PUBLICATION_DATE
+        or "version" in draft_metadata
+        or "doi" in draft_metadata
+        or "conceptdoi" in draft_metadata
+        or draft_metadata.get("imprint_publisher") != "Zenodo"
+        or draft_metadata.get("prereserve_doi")
+        != {
+            "doi": _INTERRUPTED_NEWVERSION_RECOVERY_DRAFT_DOI,
+            "recid": _INTERRUPTED_NEWVERSION_RECOVERY_DRAFT_ID,
+        }
+    ):
+        raise ZenodoError("interrupted new-version metadata envelope is not exact")
+    _assert_action_created_newversion_snapshot(draft, existing)
+
+
 def _preflight_metadata_edit_draft(
     deposition: dict[str, Any],
     *,
@@ -2071,8 +2278,10 @@ def _preflight_metadata_edit_draft(
 def _preflight_newversion_draft(
     deposition: dict[str, Any],
     *,
+    existing: dict[str, Any],
     transport_metadata: dict[str, Any],
     operation_id: str,
+    resume: dict[str, Any] | None,
     api: str,
     token: str,
 ) -> dict[str, Any] | None:
@@ -2123,19 +2332,46 @@ def _preflight_newversion_draft(
         matches.append(item)
     if not matches:
         return None
-    if len(matches) != 1 or _draft_ownership(matches[0]) != operation_id:
+    if len(matches) != 1:
         raise ZenodoError("new-version concept has an unowned or ambiguous open draft")
-    _assert_draft_binding(
-        matches[0],
+    summary = matches[0]
+    summary_owner = _draft_ownership(summary)
+    if summary_owner == operation_id:
+        full = _full_draft_from_listing(summary, api=api, token=token)
+        _assert_draft_binding(
+            full,
+            deposition,
+            operation_id=operation_id,
+            require_owned=True,
+        )
+        _assert_owned_draft_metadata(
+            full,
+            transport_metadata=transport_metadata,
+        )
+        return full
+    if _may_recover_interrupted_newversion(
         deposition,
         operation_id=operation_id,
-        require_owned=True,
-    )
-    _assert_owned_draft_metadata(
-        matches[0],
-        transport_metadata=transport_metadata,
-    )
-    return matches[0]
+        resume=resume,
+        api=api,
+    ) and _is_interrupted_newversion_summary(
+        summary,
+        inherited_owner=summary_owner,
+    ):
+        full = _full_draft_from_listing(summary, api=api, token=token)
+        _assert_exact_interrupted_newversion_recovery(
+            full,
+            existing,
+            deposition,
+            operation_id=operation_id,
+            resume=resume,
+            api=api,
+        )
+        return _without_inherited_ownership(
+            full,
+            _INTERRUPTED_NEWVERSION_RECOVERY_INHERITED_OWNER,
+        )
+    raise ZenodoError("new-version concept has an unowned or ambiguous open draft")
 
 
 def _assert_new_record_action_ownership_proof(
@@ -2286,6 +2522,18 @@ def _existing_record_requirements(
         raise ZenodoError("existing Zenodo record belongs to a different concept DOI")
     if _record_doi(existing) != version_doi:
         raise ZenodoError("existing Zenodo record version DOI does not match")
+    if synthpopcan.get("deposit_operation") == "create-new-version":
+        existing_metadata = existing.get("metadata")
+        expected_package_version = _required_string(
+            synthpopcan,
+            "existing_package_version",
+        )
+        if (
+            not isinstance(existing_metadata, dict)
+            or _canonical_metadata(existing_metadata).get("version")
+            != expected_package_version
+        ):
+            raise ZenodoError("new-version predecessor package version changed")
     if synthpopcan.get("deposit_operation") == "create-new-version" and require_latest:
         _require_existing_record_is_latest(
             existing,
@@ -2969,10 +3217,13 @@ def deposit_one(
                     token=token,
                 )
             elif operation == "create-new-version":
+                assert existing is not None
                 draft = _preflight_newversion_draft(
                     deposition,
+                    existing=existing,
                     transport_metadata=transport_metadata,
                     operation_id=operation_id,
+                    resume=resume,
                     api=api,
                     token=token,
                 )
@@ -3005,7 +3256,10 @@ def deposit_one(
                         # exact untouched action snapshot is therefore the new
                         # draft created for this invocation, including when an
                         # action-intent checkpoint is being resumed.
-                        _assert_unclaimed_draft_snapshot(draft, existing)
+                        if operation == "create-new-version":
+                            _assert_action_created_newversion_snapshot(draft, existing)
+                        else:
+                            _assert_unclaimed_draft_snapshot(draft, existing)
                         if inherited_owner is not None:
                             if action_owner != inherited_owner:
                                 raise ZenodoError(
