@@ -8,7 +8,9 @@ checks to validate an installed wheel without importing the source checkout.
 from __future__ import annotations
 
 import inspect
+import io
 import json
+import tokenize
 from collections.abc import Mapping, Sequence
 from importlib import import_module
 from importlib.resources import files
@@ -549,9 +551,42 @@ def _snapshot_signature(value: Any) -> tuple[list[dict[str, Any]], str | None]:
 def _annotation_label(value: object) -> str | None:
     if value is inspect.Parameter.empty:
         return None
-    if isinstance(value, str):
-        return value
-    return inspect.formatannotation(value)
+    label = value if isinstance(value, str) else inspect.formatannotation(value)
+    return _canonical_annotation_text(label)
+
+
+def _canonical_annotation_text(label: str) -> str:
+    """Remove version-dependent standard typing-module qualification."""
+
+    line_offsets = [0]
+    for line in label.splitlines(keepends=True):
+        line_offsets.append(line_offsets[-1] + len(line))
+
+    try:
+        tokens = list(tokenize.generate_tokens(io.StringIO(label).readline))
+    except (IndentationError, tokenize.TokenError):
+        return label
+
+    removals: list[tuple[int, int]] = []
+    for index, (module, dot, member) in enumerate(
+        zip(tokens, tokens[1:], tokens[2:], strict=False)
+    ):
+        preceded_by_dot = index > 0 and tokens[index - 1].string == "."
+        if (
+            not preceded_by_dot
+            and module.type == tokenize.NAME
+            and module.string in {"typing", "typing_extensions"}
+            and dot.type == tokenize.OP
+            and dot.string == "."
+            and member.type == tokenize.NAME
+        ):
+            start = line_offsets[module.start[0] - 1] + module.start[1]
+            end = line_offsets[member.start[0] - 1] + member.start[1]
+            removals.append((start, end))
+
+    for start, end in reversed(removals):
+        label = label[:start] + label[end:]
+    return label
 
 
 def _snapshot_click_parameter(parameter: click.Parameter) -> dict[str, Any]:

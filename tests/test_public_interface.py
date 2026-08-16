@@ -4,6 +4,7 @@ import copy
 import json
 import subprocess
 import sys
+import typing
 from pathlib import Path
 
 import pytest
@@ -100,6 +101,29 @@ def test_contract_freezes_python_annotations_and_click_flag_semantics() -> None:
         for command in contract["cli"]["commands"]
         for option in command["parameters"]
         if option["kind"] == "option"
+    )
+
+
+@pytest.mark.parametrize(
+    "annotation",
+    [
+        "Annotated[str, 'scope']",
+        "typing.Annotated[str, 'scope']",
+        "typing_extensions.Annotated[str, 'scope']",
+        typing.Annotated[str, "scope"],
+    ],
+)
+def test_annotation_labels_are_canonical_across_supported_python_versions(
+    annotation: object,
+) -> None:
+    assert interface._annotation_label(annotation) == "Annotated[str, 'scope']"
+    assert (
+        interface._annotation_label("typing.Literal['typing.Annotated']")
+        == "Literal['typing.Annotated']"
+    )
+    assert (
+        interface._canonical_annotation_text("namespace.typing.Annotated[str, 'scope']")
+        == "namespace.typing.Annotated[str, 'scope']"
     )
 
 
@@ -376,6 +400,9 @@ def test_compatibility_validator_rejects_remaining_break_classes() -> None:
 def test_interface_snapshot_defensive_helpers() -> None:
     assert interface._snapshot_signature(object()) == ([], None)
     assert interface._json_default(lambda: None) == {"dynamic": True}
+    assert interface._canonical_annotation_text("typing.Annotated[") == (
+        "typing.Annotated["
+    )
     with pytest.raises(ValueError, match="must be an object"):
         interface._mapping(None, "mapping")
     with pytest.raises(ValueError, match="must be an array"):
