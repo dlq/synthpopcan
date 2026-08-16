@@ -21,6 +21,7 @@ from pathlib import Path
 from typing import Any
 from urllib.request import urlopen
 
+from synthpopcan._archive_correction import archive_correction_registry_updates
 from synthpopcan.model_licensing import (
     STATCAN_OPEN_LICENCE_URL,
     normalize_prepared_model_licensing,
@@ -40,9 +41,9 @@ _BROWSER_MODEL_MAX_UNCOMPRESSED_BYTES = 32 * 1024 * 1024
 # Statistics Canada Open Licence, which grants the right to distribute
 # "Value-added Products" derived from them. Models trained on a PUMF are such a
 # product, so the catalogue carries the licence's prescribed "Adapted from ...
-# does not constitute an endorsement" attribution notice. Corrected package
-# bytes will embed the same notice; registered historical bytes are enriched
-# only after their catalogue checksum is verified.
+# does not constitute an endorsement" attribution notice. The registered
+# corrected package bytes embed the same notice and full layered-rights object;
+# the legacy values below are replaced by the verified evidence overlay.
 _STATCAN_OPEN_LICENCE = STATCAN_OPEN_LICENCE_URL
 _PUMF_2016_LICENSING = statcan_prepared_model_licensing(2016)
 _PUMF_2021_LICENSING = statcan_prepared_model_licensing(2021)
@@ -693,6 +694,40 @@ _MODEL_CONCEPT_DOIS: dict[str, str] = {
 for _model_id, _doi in _MODEL_CONCEPT_DOIS.items():
     _MODEL_PACKAGES[_model_id]["doi"] = _doi
 
+# The completed ADR-0014 archive transaction is preserved as a tracked,
+# sanitized package resource.  Deriving these values from that evidence keeps
+# an installed wheel and a clean source checkout on the same exact 32 verified
+# version records without depending on ignored executor checkpoints.
+for _update in archive_correction_registry_updates():
+    _model_id = str(_update["model_id"])
+    _entry = _MODEL_PACKAGES.get(_model_id)
+    if _entry is None or _MODEL_CONCEPT_DOIS.get(_model_id) != _update["concept_doi"]:
+        raise RuntimeError(
+            f"verified archive correction does not match model registry {_model_id!r}"
+        )
+    _archive_filename = str(_update["filename"])
+    if not _archive_filename.endswith(".gz"):
+        raise RuntimeError(
+            f"verified archive correction filename is not gzip: {_archive_filename!r}"
+        )
+    _entry.update(
+        {
+            "archive_filename": _archive_filename,
+            "contains_embedded_licensing": True,
+            # The cache stores the verified uncompressed JSON. Including the
+            # corrected version in its name prevents a pre-correction cache hit.
+            "filename": _archive_filename.removesuffix(".gz"),
+            "record_id": _update["record_id"],
+            "release_version": _update["release_version"],
+            "sha256": _update["sha256"],
+            "size_bytes": _update["size_bytes"],
+            "uncompressed_sha256": _update["uncompressed_sha256"],
+            "uncompressed_size_bytes": _update["uncompressed_size_bytes"],
+            "url": _update["url"],
+            "version_doi": _update["version_doi"],
+        }
+    )
+
 
 def model_catalogue() -> list[dict[str, Any]]:
     """Return model packages known to SynthPopCan."""
@@ -727,6 +762,8 @@ def model_catalogue_entry(model_id: str) -> dict[str, Any]:
         "source_licence": str(metadata["source_licence"]),
         "licensing": licensing,
         "doi": metadata.get("doi"),
+        "version_doi": metadata.get("version_doi"),
+        "record_id": metadata.get("record_id"),
         "privacy": str(metadata["privacy"]),
         "privacy_review_status": str(metadata["privacy_review_status"]),
         "generation_limits": str(metadata["generation_limits"]),

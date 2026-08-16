@@ -324,4 +324,21 @@ jobs:
             --missing-output "$RUNNER_TEMP/missing-release-assets-before-pypi.json" \
             --tag "$RELEASE_TAG"
           test "$(jq 'length' "$RUNNER_TEMP/missing-release-assets-before-pypi.json")" = "0"
+
+          mapfile -d '' -t PUBLISH_DISTRIBUTIONS \
+            < <(find dist -mindepth 1 -maxdepth 1 -print0)
+          mapfile -d '' -t EVIDENCE_DISTRIBUTIONS \
+            < <(
+              find release-evidence -mindepth 1 -maxdepth 1 \
+                \( -name '*.whl' -o -name '*.tar.gz' \) -print0
+            )
+          test "${#PUBLISH_DISTRIBUTIONS[@]}" -eq 2
+          test "${#EVIDENCE_DISTRIBUTIONS[@]}" -eq 2
+          for DISTRIBUTION_PATH in "${PUBLISH_DISTRIBUTIONS[@]}"; do
+            test -f "$DISTRIBUTION_PATH"
+            DISTRIBUTION_NAME="${DISTRIBUTION_PATH##*/}"
+            EVIDENCE_PATH="release-evidence/$DISTRIBUTION_NAME"
+            test -f "$EVIDENCE_PATH"
+            cmp -- "$DISTRIBUTION_PATH" "$EVIDENCE_PATH"
+          done
       - uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # release/v1

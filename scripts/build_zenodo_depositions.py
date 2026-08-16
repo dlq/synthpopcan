@@ -13,11 +13,11 @@ through ``related_identifiers``:
   ``isDerivedFrom`` the Statistics Canada PUMF catalogue entry it was trained on;
 * the software record declares ``hasPart`` for each model concept DOI.
 
-The current registered assets are immutable historical bytes that predate the
-embedded licensing contract. Generated records therefore remain review-only:
-they describe the existing object but are not upload manifests. A later,
-separately tested correction workflow must create non-overwriting versions under
-the existing concept DOIs before any generated record becomes depositable.
+The current registered assets are the verified non-overwriting correction
+versions and embed the licensing contract. Generated records remain review-only:
+they describe already-published objects but are not upload manifests. The
+separate correction-candidate mode is retained for tests and future audited
+transactions; it cannot treat a corrected registered asset as legacy input.
 
 Usage::
 
@@ -82,9 +82,13 @@ _CREATORS = [{"name": "Quesnel, Darcy"}]
 def _archive_filename(metadata: dict[str, Any]) -> str:
     """Return the immutable compressed basename, not the local cache filename."""
 
-    filename = Path(urllib.parse.urlparse(str(metadata["url"])).path).name
+    filename = str(metadata.get("archive_filename", ""))
+    if not filename:
+        filename = Path(urllib.parse.urlparse(str(metadata["url"])).path).name
     if not filename.endswith(".json.gz"):
         raise ValueError("prepared-model release URL must name a .json.gz asset")
+    if Path(filename).name != filename:
+        raise ValueError("prepared-model release asset must be a safe basename")
     return filename
 
 
@@ -142,6 +146,12 @@ def _description(
     authored_licence = authored["licence"]
     authored_materials = ", ".join(authored_scope["materials"])
     excluded_material = ", ".join(authored["excluded_material"])
+    embedded_licensing = metadata.get("contains_embedded_licensing") is True
+    integrity_heading = (
+        "Published package integrity."
+        if embedded_licensing
+        else "Historical file integrity (review context only)."
+    )
     return "\n".join(
         [
             f"<p>{entry['description']}</p>",
@@ -176,7 +186,7 @@ def _description(
             f"<p><strong>Known limitations.</strong> {entry['known_limitations']}</p>",
             "<p><strong>Generation guidance.</strong> "
             f"{entry['generation_limits']}</p>",
-            "<p><strong>Historical file integrity (review context only).</strong> "
+            f"<p><strong>{integrity_heading}</strong> "
             f"Compressed {metadata['size_bytes']:,} bytes, "
             f"SHA-256 <code>{metadata['sha256']}</code>. "
             f"Uncompressed {metadata['uncompressed_size_bytes']:,} bytes, "
@@ -225,6 +235,26 @@ def build_deposition(model_id: str, *, concept_doi: str | None) -> dict[str, Any
     metadata = model_registry_entry(model_id)
     source = _PUMF_SOURCES[str(entry["census_vintage"])]
     licensing = validate_prepared_model_licensing(entry["licensing"])
+    embedded_licensing = metadata.get("contains_embedded_licensing") is True
+    notes = (
+        f"Package identifier: {model_id}. Fetch with "
+        f"`synthpopcan models fetch {model_id}`. Trained from "
+        f"{source['title']} ({source['catalogue']}). Rights are "
+        "layer-specific and cumulative, not alternatives. "
+    )
+    if embedded_licensing:
+        notes += (
+            "This verified non-overwriting archive version embeds the exact "
+            f"{PREPARED_MODEL_LICENSING_SCHEMA_VERSION} object at top-level "
+            "`licensing`."
+        )
+    else:
+        notes += (
+            "This historical asset predates the embedded contract and is review "
+            "context only. A corrected non-overwriting version must embed the "
+            f"{PREPARED_MODEL_LICENSING_SCHEMA_VERSION} object at top-level "
+            "`licensing` before upload."
+        )
 
     return {
         "metadata": {
@@ -245,16 +275,7 @@ def build_deposition(model_id: str, *, concept_doi: str | None) -> dict[str, Any
                 str(entry["geography"]),
             ],
             "related_identifiers": _related_identifiers(entry, concept_doi=concept_doi),
-            "notes": (
-                f"Package identifier: {model_id}. Fetch with "
-                f"`synthpopcan models fetch {model_id}`. Trained from "
-                f"{source['title']} ({source['catalogue']}). Rights are "
-                "layer-specific and cumulative, not alternatives. This historical "
-                "asset predates the embedded contract and is review context only. A "
-                "corrected non-overwriting version must embed the "
-                f"{PREPARED_MODEL_LICENSING_SCHEMA_VERSION} object at top-level "
-                "`licensing` before upload."
-            ),
+            "notes": notes,
         },
         "synthpopcan": {
             "model_id": model_id,
@@ -268,7 +289,7 @@ def build_deposition(model_id: str, *, concept_doi: str | None) -> dict[str, Any
                 "sha256": metadata["sha256"],
                 "uncompressed_size_bytes": metadata["uncompressed_size_bytes"],
                 "uncompressed_sha256": metadata["uncompressed_sha256"],
-                "contains_embedded_licensing": False,
+                "contains_embedded_licensing": embedded_licensing,
             },
             "licensing": licensing,
         },
@@ -276,12 +297,18 @@ def build_deposition(model_id: str, *, concept_doi: str | None) -> dict[str, Any
 
 
 def build_rights_correction_plan() -> dict[str, Any]:
-    """Plan non-destructive new versions for the 32 legacy model records."""
+    """Plan non-destructive versions only for still-legacy registered assets."""
 
-    entries = sorted(
+    registered = sorted(
         (entry for entry in model_catalogue() if entry["distribution"] == "download"),
         key=lambda entry: str(entry["id"]),
     )
+    entries = [
+        entry
+        for entry in registered
+        if model_registry_entry(str(entry["id"])).get("contains_embedded_licensing")
+        is not True
+    ]
     actions = []
     for entry in entries:
         licensing = validate_prepared_model_licensing(entry["licensing"])
@@ -313,13 +340,10 @@ def build_rights_correction_plan() -> dict[str, Any]:
     return {
         "schema_version": "synthpopcan-zenodo-rights-correction-plan-v1",
         "network_writes": False,
-        "current_policy_decision": (
-            actions[0]["review_candidate_top_level_licensing"]["policy_decision"][
-                "status"
-            ]
-            if actions
-            else "unresolved"
-        ),
+        "current_policy_decision": validate_prepared_model_licensing(
+            registered[0]["licensing"]
+        )["policy_decision"]["status"],
+        "corrected_record_count": len(registered) - len(actions),
         "existing_record_count": len(actions),
         "policy": {
             "legacy_license": "cc-by-4.0",
@@ -430,6 +454,12 @@ def build_correction_depositions(
     review = build_deposition(model_id, concept_doi=concept_doi)
     entry = next(item for item in model_catalogue() if item["id"] == model_id)
     historical = model_registry_entry(model_id)
+    if historical.get("contains_embedded_licensing") is True:
+        raise click.UsageError(
+            f"{model_id}: installed registry already points to a verified package "
+            "with embedded licensing; this legacy rights-insertion correction no "
+            "longer applies"
+        )
     if candidate.get("model_id") != model_id:
         raise click.UsageError(f"{model_id}: candidate model_id does not match its key")
     if candidate.get("census_vintage") != str(entry["census_vintage"]):
@@ -921,9 +951,8 @@ def main(
         f"\n{len(index)} deposition(s) written to {destination.relative_to(ROOT)}"
     )
     click.echo(
-        "Review-only metadata: do not deposit these historical assets. Build and "
-        "verify corrected non-overwriting versions under the existing concept "
-        "DOIs before enabling archive writes."
+        "Review-only metadata for already-published registered assets; no Zenodo "
+        "write is authorized by these files."
     )
 
 

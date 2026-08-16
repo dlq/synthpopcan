@@ -2,13 +2,12 @@
 
 Status: active, with a bounded stewardship baseline and gated publication work\
 Created: 2026-07-19\
-Last updated: 2026-08-15\
+Last updated: 2026-08-16\
 Target: complete the stewardship baseline before another model publication or
 mirror; mature toward JOSS only after its public-development and research-use
 gates are met\
-Next milestone: execute and preserve evidence for all 64 live archive-
-correction operations and 32 registry updates, and then advance the verified
-1.0 software release metadata\
+Next milestone: advance and validate the exact-commit 1.0 software release
+metadata\
 Roadmap: [PLANS.md](../PLANS.md) | [Plan index](README.md)
 
 ## Purpose And Boundary
@@ -98,8 +97,15 @@ publication and preservation foundation as settled.
   replacement verification, exact registry candidates, transactional execution
   indexing, and operation/version/hash-aware resume. Independent adversarial
   review closed all three prior blockers; 137 focused tests, Ruff, Pyright, and
-  diff checks pass. ADR-0014's implementation marker is Completed. No live
-  correction is recorded.
+  diff checks pass. ADR-0014's implementation marker is Completed.
+- **Correction execution completed (2026-08-16).** All 32 identifier-preserving
+  metadata corrections and 32 non-overwriting package versions remotely
+  verified, no mutable drafts remain, and the registry now selects the exact 32
+  corrected releases. The tracked
+  [transaction record](../docs/records/prepared-model-archive-correction-2026-08-16.md)
+  and packaged machine-readable evidence preserve the 64 operation identities,
+  old/new DOIs, sizes, hashes, and outcomes without credentials or private
+  executor URLs.
 - Treat review-only metadata generation and validation as candidates for
   automation. Historical assets are not eligible for sandbox upload. Preserve
   a human approval gate for irreversible production publication unless a later

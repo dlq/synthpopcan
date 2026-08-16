@@ -32,9 +32,8 @@ Preparation for the 1.0 interface and stewardship boundary.
   conditions for source Information, and CC BY 4.0 only for original rights the
   package author owns or controls. Keep those layers cumulative and scoped,
   preserve privacy and provenance safeguards, and make external review optional
-  rather than a `1.0.0` gate. Production deposition remains closed pending the
-  reviewed, non-overwriting correction and durable verification of all 32
-  existing model records.
+  rather than a `1.0.0` gate. Complete and durably record the reviewed,
+  non-overwriting correction of all 32 existing model concepts.
 - Add a strict, versioned prepared-model licensing object that distinguishes
   Census-derived, synthetic-only, and unclassified legacy packages without
   inferring an author licence from arbitrary provenance. Preserve validated
@@ -51,8 +50,10 @@ Preparation for the 1.0 interface and stewardship boundary.
   durable draft ownership, and operation/version/hash-aware resume. Historical
   assets remain ineligible for sandbox upload. Independent adversarial review
   closed all three prior executor blockers, with 137 focused tests plus Ruff,
-  Pyright, and diff checks passing. Live correction execution remains pending
-  and separately authorized.
+  Pyright, and diff checks passing. On 2026-08-16, remotely verify all 32
+  metadata corrections and 32 corrected package versions, preserve every
+  historical asset, confirm zero mutable drafts, integrate the 32 exact
+  registry updates, and add tracked sanitized clean-clone evidence.
 - Add a reproducible package-wide strict-Pyright audit configuration and move
   the exchange CLI adapter into the strict-clean regression list by separating
   its typed artifact-path mapping from the heterogeneous result payload.

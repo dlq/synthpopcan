@@ -16,10 +16,12 @@ import synthpopcan  # noqa: E402
 from synthpopcan._interface import (  # noqa: E402
     snapshot_click_interface,
     snapshot_python_symbol,
+    validate_public_interface_compatibility,
 )
 from synthpopcan.cli import cli  # noqa: E402
 
 OUTPUT_PATH = ROOT / "src/synthpopcan/contracts/public-interface-v1.json"
+BASELINE_PATH = ROOT / "src/synthpopcan/contracts/public-interface-v1-baseline.json"
 SCHEMA_PATTERN = re.compile(r"synthpopcan-[a-z0-9-]+-v[0-9]+")
 
 # These formats are accepted or emitted by documented CLI/Python workflows and
@@ -102,6 +104,10 @@ SUPPORTED_SCHEMAS: dict[str, tuple[str, str]] = {
     "synthpopcan-prepared-model-licensing-v1": (
         "layered prepared-model licensing presentation",
         "docs/tree.md",
+    ),
+    "synthpopcan-prepared-model-archive-correction-evidence-v1": (
+        "verified prepared-model archive-correction transaction",
+        "docs/records/prepared-model-archive-correction-2026-08-16.md",
     ),
     "synthpopcan-public-interface-v1": (
         "installed public-interface contract",
@@ -300,13 +306,40 @@ def build_contract() -> dict[str, Any]:
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument(
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument(
         "--check",
         action="store_true",
         help="fail instead of rewriting when the committed contract has drifted",
     )
+    mode.add_argument(
+        "--freeze-baseline",
+        action="store_true",
+        help="create the immutable 1.0 compatibility baseline exactly once",
+    )
     args = parser.parse_args()
-    rendered = json.dumps(build_contract(), indent=2, sort_keys=True) + "\n"
+    contract = build_contract()
+    rendered = json.dumps(contract, indent=2, sort_keys=True) + "\n"
+    if args.freeze_baseline:
+        if BASELINE_PATH.exists():
+            raise SystemExit(
+                "public-interface compatibility baseline already exists and must "
+                "not be replaced"
+            )
+        OUTPUT_PATH.write_text(rendered)
+        BASELINE_PATH.write_text(rendered)
+        print(f"Wrote {OUTPUT_PATH}")
+        print(f"Froze {BASELINE_PATH}")
+        return 0
+    if not BASELINE_PATH.is_file():
+        raise SystemExit(
+            "public-interface compatibility baseline is missing; use "
+            "'--freeze-baseline' only for the initial 1.0 freeze"
+        )
+    baseline_value: object = json.loads(BASELINE_PATH.read_text())
+    if not isinstance(baseline_value, dict):
+        raise SystemExit("public-interface compatibility baseline must be an object")
+    validate_public_interface_compatibility(baseline_value, contract)
     if args.check:
         if not OUTPUT_PATH.is_file() or OUTPUT_PATH.read_text() != rendered:
             raise SystemExit(

@@ -2,10 +2,10 @@
 
 - **Status:** Accepted
 - **Maintainer policy decision:** Accepted by Darcy Quesnel on 2026-08-15
-- **Production gate:** Closed pending verified live archive-correction execution
+- **Production gate:** Open after verified archive correction on 2026-08-16
 - **External review:** Optional; not a `1.0.0` or publication gate
 - **Archive correction implementation:** Completed
-- **Archive correction execution:** Pending
+- **Archive correction execution:** Completed
 - **Date:** 2026-08-15
 - **Decision owner:** Darcy Quesnel
 
@@ -140,14 +140,20 @@ non-executable; execution manifests are transactionally bound to the exact
 operation set, version, historical and candidate asset hashes, desired-metadata
 hash, and execution-index digest.
 
-The separate **Archive correction execution** marker remains `Pending` until
-all 32 production metadata corrections and all 32 corrected versions have been
-remotely verified, exactly 32 registry updates have been accepted, and their
-durable checkpoint evidence has been reviewed.
-Correction operations require Accepted status and completed implementation.
-Fresh production model records additionally require completed correction
-execution, preventing acceptance of the policy or mechanism from being mistaken
-for completion of the live archive work.
+The separate **Archive correction execution** marker became `Completed` on
+2026-08-16 after all 32 production metadata corrections and all 32 corrected
+versions were remotely verified, exactly 32 registry updates were integrated,
+and an independent read-only audit repeated the old/new identity, latest-link,
+file-set, size, SHA-256, embedded-licensing, and mutable-draft checks. The
+[tracked correction record](../docs/records/prepared-model-archive-correction-2026-08-16.md)
+and its packaged machine-readable evidence omit credentials and private
+executor state while preserving all 64 operation identities and outcomes.
+
+Correction operations still require Accepted status and completed
+implementation. Fresh production model records additionally require the
+completed execution marker, the tracked 64-operation evidence, and the exact 32
+installed registry updates. This keeps the gate reproducible in a clean clone
+without trusting ignored local checkpoints.
 
 ## Alternatives Considered
 
@@ -170,16 +176,16 @@ for completion of the live archive work.
 
 ## Consequences
 
-- Production model publication remains intentionally blocked until the
-  32-record correction execution is verified before any fresh model record.
+- Production model publication may resume only through the documented human
+  approval boundary; the 32-record correction prerequisite is now satisfied.
 - The metadata builder may continue producing review-only manifests with the
   verified `other-open` compatibility value, the full layered statement, and
   the Statistics Canada notice. Review-only manifests never authorize an
-  upload; the completed executor still requires the separate, explicitly
-  authorized live correction and its remote evidence.
-- The correction work requires updates to package construction, generated
-  provenance, registry presentation, archive metadata, release guidance, and
-  the affected live records before publication resumes.
+  upload; any future archive transaction still requires separate explicit
+  authority and new checksum-bound evidence.
+- Package construction, generated provenance, registry presentation, archive
+  metadata, release guidance, and all 32 affected model concepts now reflect
+  the completed correction.
 - This decision does not authorize publication of access-controlled source
   material or artifacts derived from sources other than the public PUMFs.
 - External review is optional ongoing risk management. Material authoritative
@@ -195,6 +201,7 @@ for completion of the live archive work.
 - [Creative Commons licensing considerations](https://creativecommons.org/share-your-work/licensing-considerations/version4/)
 - [Data and model licensing guidance](../docs/data.md#source-licensing-and-attribution)
 - [Dated licensing review record](../docs/records/prepared-model-licensing-review-2026-08-15.md)
+- [Completed archive-correction record](../docs/records/prepared-model-archive-correction-2026-08-16.md)
 - [Model release checklist](../RELEASING.md#model-package-release)
 - [Research-software stewardship plan](../plans/2026-07-19-research-software-stewardship.md)
 - [Zenodo metadata builder](../scripts/build_zenodo_depositions.py)

@@ -46,20 +46,19 @@ from typing import Any
 
 import click
 
+from synthpopcan._archive_correction import (
+    archive_correction_registry_updates,
+    load_archive_correction_evidence,
+)
 from synthpopcan.model_licensing import validate_prepared_model_licensing
+from synthpopcan.models import model_registry_entry
 
 ROOT = Path(__file__).resolve().parents[1]
 DEPOSITIONS_DIR = ROOT / "data" / "derived" / "zenodo" / "depositions"
 RESULTS_PATH = DEPOSITIONS_DIR / "deposited.json"
 REGISTRY_UPDATES_PATH = DEPOSITIONS_DIR / "verified-registry-updates.json"
-CORRECTION_EXECUTION_INDEX_PATH = (
-    DEPOSITIONS_DIR / "corrections" / "execution-index.json"
-)
 LICENSING_ADR = ROOT / "adr" / "0014-separate-prepared-model-and-source-licensing.md"
 CORRECTION_PLAN_NAME = "prepared-model-rights-correction.json"
-CORRECTION_PLAN_PATH = (
-    ROOT / "data" / "derived" / "zenodo" / "prepared-model-rights-correction.json"
-)
 _ACCEPTED_STATUS = "- **Status:** Accepted"
 _STATUS_PREFIX = "- **Status:** "
 _ARCHIVE_CORRECTION_COMPLETED = "- **Archive correction implementation:** Completed"
@@ -170,14 +169,9 @@ def _production_licensing_gates_are_complete() -> bool:
 
 
 def _archive_correction_execution_is_completed() -> bool:
-    """Require the durable marker and complete verified 32-record evidence."""
+    """Require the tracked evidence and its exact installed registry updates."""
 
-    if (
-        not LICENSING_ADR.is_file()
-        or not CORRECTION_PLAN_PATH.is_file()
-        or not CORRECTION_EXECUTION_INDEX_PATH.is_file()
-        or not REGISTRY_UPDATES_PATH.is_file()
-    ):
+    if not LICENSING_ADR.is_file():
         return False
     if not _metadata_line_is_exact(
         LICENSING_ADR.read_text().splitlines(),
@@ -185,191 +179,33 @@ def _archive_correction_execution_is_completed() -> bool:
         _ARCHIVE_EXECUTION_COMPLETED,
     ):
         return False
-    plan = json.loads(CORRECTION_PLAN_PATH.read_text())
-    actions = plan.get("actions")
-    if not isinstance(actions, list) or len(actions) != 32:
+    try:
+        evidence = load_archive_correction_evidence()
+        updates = archive_correction_registry_updates(evidence)
+    except (OSError, TypeError, ValueError):
         return False
-    expected = {
-        str(action.get("model_id"))
-        for action in actions
-        if isinstance(action, dict) and isinstance(action.get("model_id"), str)
-    }
-    if len(expected) != 32:
+    if len(updates) != 32:
         return False
-    execution_index = json.loads(CORRECTION_EXECUTION_INDEX_PATH.read_text())
-    if execution_index.get("schema_version") != (
-        "synthpopcan-zenodo-correction-execution-index-v1"
-    ):
-        return False
-    if (
-        execution_index.get("production_ready") is not True
-        or execution_index.get("build_scope") != "complete-catalogue"
-        or execution_index.get("candidate_count") != 32
-        or execution_index.get("candidate_model_ids") != sorted(expected)
-    ):
-        return False
-    envelope_sha256 = execution_index.get("candidate_envelope_sha256")
-    new_package_version = execution_index.get("new_package_version")
-    if (
-        not isinstance(envelope_sha256, str)
-        or len(envelope_sha256) != 64
-        or not isinstance(new_package_version, str)
-        or not new_package_version
-    ):
-        return False
-    indexed_operations = execution_index.get("operations")
-    if not isinstance(indexed_operations, list) or len(indexed_operations) != 64:
-        return False
-    indexed_by_id = {
-        str(operation.get("operation_id")): operation
-        for operation in indexed_operations
-        if isinstance(operation, dict)
-        and isinstance(operation.get("operation_id"), str)
-    }
-    if len(indexed_by_id) != 64:
-        return False
-    for operation_id, operation in indexed_by_id.items():
-        for digest_field in ("asset_sha256", "metadata_sha256"):
-            digest = operation.get(digest_field)
-            if not isinstance(digest, str) or len(digest) != 64:
-                return False
-        expected_operation_id = ":".join(
-            str(operation.get(field))
-            for field in (
-                "deposit_operation",
-                "model_id",
-                "package_version",
-                "asset_sha256",
-                "metadata_sha256",
-            )
-        )
-        if operation_id != expected_operation_id:
+    for update in updates:
+        try:
+            registry = model_registry_entry(str(update["model_id"]))
+        except (KeyError, TypeError):
             return False
-        if not isinstance(operation.get("existing_record_id"), int):
-            return False
-        if not all(
-            isinstance(operation.get(field), str) and operation.get(field)
-            for field in ("existing_version_doi", "existing_concept_doi")
-        ):
-            return False
-        if operation.get("deposit_operation") == "create-new-version":
-            if operation.get("package_version") != new_package_version:
-                return False
-            if operation.get("sha256") != operation.get("asset_sha256"):
-                return False
-            if not isinstance(operation.get("filename"), str):
-                return False
-            for field in ("size_bytes", "uncompressed_size_bytes"):
-                value = operation.get(field)
-                if not isinstance(value, int) or isinstance(value, bool) or value < 0:
-                    return False
-            digest = operation.get("uncompressed_sha256")
-            if not isinstance(digest, str) or len(digest) != 64:
-                return False
-    indexed_pairs = {
-        (str(operation.get("model_id")), str(operation.get("deposit_operation")))
-        for operation in indexed_by_id.values()
-    }
-    if indexed_pairs != {
-        (model_id, operation)
-        for model_id in expected
-        for operation in ("correct-existing-metadata", "create-new-version")
-    }:
-        return False
-
-    stored_production = _stored_targets().get("PRODUCTION")
-    if (
-        not isinstance(stored_production, dict)
-        or str(stored_production.get("api", "")).rstrip("/") != PRODUCTION_API
-    ):
-        return False
-    production_results = _existing_results("PRODUCTION")
-    verified_by_id = {
-        str(result.get("operation_id")): result
-        for result in production_results.values()
-        if result.get("state") == _TERMINAL_STATE
-        and result.get("verified") is True
-        and result.get("deposit_operation")
-        in {"correct-existing-metadata", "create-new-version"}
-    }
-    if set(verified_by_id) != set(indexed_by_id):
-        return False
-    for operation_id, indexed in indexed_by_id.items():
-        verified = verified_by_id[operation_id]
-        for field in (
-            "deposit_operation",
-            "model_id",
-            "package_version",
-            "asset_sha256",
-            "metadata_sha256",
-            "source_record_id",
-        ):
-            indexed_value = (
-                indexed.get("existing_record_id")
-                if field == "source_record_id"
-                else indexed.get(field)
-            )
-            if verified.get(field) != indexed_value:
-                return False
-        if verified.get("concept_doi") != indexed.get("existing_concept_doi"):
-            return False
-        if indexed.get("deposit_operation") == "correct-existing-metadata":
-            if verified.get("deposition_id") != indexed.get(
-                "existing_record_id"
-            ) or verified.get("doi") != indexed.get("existing_version_doi"):
-                return False
-        elif verified.get("deposition_id") == indexed.get(
-            "existing_record_id"
-        ) or verified.get("doi") == indexed.get("existing_version_doi"):
-            return False
-
-    registry_document = json.loads(REGISTRY_UPDATES_PATH.read_text())
-    if (
-        registry_document.get("schema_version")
-        != "synthpopcan-verified-registry-updates-v1"
-        or registry_document.get("target") != "PRODUCTION"
-        or str(registry_document.get("api", "")).rstrip("/") != PRODUCTION_API
-    ):
-        return False
-    updates = registry_document.get("updates")
-    if not isinstance(updates, list) or len(updates) != 32:
-        return False
-    updates_by_model = {
-        str(update.get("model_id")): update
-        for update in updates
-        if isinstance(update, dict) and isinstance(update.get("model_id"), str)
-    }
-    if set(updates_by_model) != expected:
-        return False
-    for operation in indexed_by_id.values():
-        if operation.get("deposit_operation") != "create-new-version":
-            continue
-        update = updates_by_model[str(operation["model_id"])]
-        verified = verified_by_id[str(operation["operation_id"])]
-        result_update = verified.get("registry_update")
-        if not isinstance(result_update, dict) or update != result_update:
-            return False
-        expected_fields = {
-            "model_id": operation["model_id"],
-            "release_version": operation["package_version"],
-            "record_id": verified.get("deposition_id"),
-            "version_doi": verified.get("doi"),
-            "concept_doi": operation["existing_concept_doi"],
-            "url": update.get("url"),
-            "filename": operation["filename"],
-            "size_bytes": operation["size_bytes"],
-            "sha256": operation["sha256"],
-            "uncompressed_size_bytes": operation["uncompressed_size_bytes"],
-            "uncompressed_sha256": operation["uncompressed_sha256"],
+        expected = {
+            "archive_filename": update["filename"],
+            "contains_embedded_licensing": True,
+            "doi": update["concept_doi"],
+            "filename": str(update["filename"]).removesuffix(".gz"),
+            "record_id": update["record_id"],
+            "release_version": update["release_version"],
+            "sha256": update["sha256"],
+            "size_bytes": update["size_bytes"],
+            "uncompressed_sha256": update["uncompressed_sha256"],
+            "uncompressed_size_bytes": update["uncompressed_size_bytes"],
+            "url": update["url"],
+            "version_doi": update["version_doi"],
         }
-        if update != expected_fields:
-            return False
-        if not isinstance(update["record_id"], int) or update["record_id"] <= 0:
-            return False
-        if not all(
-            isinstance(update[field], str) and update[field]
-            for field in ("version_doi", "concept_doi", "url", "filename")
-        ):
+        if any(registry.get(field) != value for field, value in expected.items()):
             return False
     return True
 

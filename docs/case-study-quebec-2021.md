@@ -15,27 +15,29 @@ les mises en garde sont donc identiques.
 | Item / Élément | Pinned value / Valeur fixée |
 | --- | --- |
 | Model / Modèle | `quebec-2021-all-fields` |
-| Model release / Version du modèle | `v0.6.0` |
+| Model release / Version du modèle | `v1.0.0-rights.1` |
 | Geography / Géographie | Quebec, province code 24 / Québec, code de province 24 |
 | Census vintage / Millésime du recensement | 2021 |
 | Source | [Statistics Canada, 2021 Census Hierarchical Public Use Microdata File, version 2 (98M0001X2021002)](https://www150.statcan.gc.ca/n1/en/catalogue/98M0001X2021002) / [Statistique Canada, Fichier hiérarchique de microdonnées à grande diffusion du Recensement de 2021, version 2 (98M0001X2021002)](https://www150.statcan.gc.ca/n1/fr/catalogue/98M0001X2021002) |
 | Source licence / Licence de la source | [Statistics Canada Open Licence](https://www.statcan.gc.ca/en/terms-conditions/open-licence) / [Licence ouverte de Statistique Canada](https://www.statcan.gc.ca/fr/avis/licence-ouverte) |
 | Prepared-model policy / Politique du modèle préparé | Accepted [ADR-0014](https://github.com/dlq/synthpopcan/blob/main/adr/0014-separate-prepared-model-and-source-licensing.md): scoped CC BY 4.0 for original rights the author controls, cumulative with the source conditions / ADR-0014 acceptée : CC BY 4.0 limitée aux droits originaux contrôlés par l'auteur, cumulativement avec les conditions de la source |
-| Model DOI / DOI du modèle | [10.5281/zenodo.21461615](https://doi.org/10.5281/zenodo.21461615) (concept DOI / DOI conceptuel) |
-| Downloaded gzip SHA-256 / SHA-256 du fichier gzip téléchargé | `39787ecc6449dff9ca0e99c4b6bc62d7b0eb7a45607a91f8cdadd70edcb3391f` |
-| Uncompressed JSON SHA-256 / SHA-256 du fichier JSON décompressé | `df75b07d25753a6a0e0a2d82a91ad17485f8cb4710fa5df9e3a45b27519aab48` |
+| Model concept DOI / DOI conceptuel du modèle | [10.5281/zenodo.21461615](https://doi.org/10.5281/zenodo.21461615) |
+| Exact release DOI / DOI de la version exacte | [10.5281/zenodo.21960324](https://doi.org/10.5281/zenodo.21960324) |
+| Downloaded gzip SHA-256 / SHA-256 du fichier gzip téléchargé | `58add7c06fc89512f125db9f3dd3ebc86fd1f9a019fd0631bcbecd29ccd2c499` |
+| Uncompressed JSON SHA-256 / SHA-256 du fichier JSON décompressé | `aa333fffe8fd2d35c4751c3391d6c9491adf0ed424a2ed986f341252688065a0` |
 | Random seed / Graine aléatoire | `20210921` |
 | Requested size / Taille demandée | 1,000 households / 1 000 ménages |
 | Output / Sortie | `quebec-2021-case-study/` |
 
-The concept DOI identifies the model record; the release version and both
-checksums above pin the exact artifact used here. `models fetch` verifies the
-compressed download and the uncompressed package before installing it in the
-local cache.
+The concept DOI identifies the model family; the release DOI, release version,
+and both checksums above pin the exact artifact used here. `models fetch`
+verifies the compressed download and the uncompressed package before installing
+it in the local cache.
 
-Le DOI conceptuel identifie la fiche du modèle; la version et les deux sommes de
-contrôle ci-dessus fixent l'artéfact exact utilisé ici. La commande `models fetch` vérifie le téléchargement compressé et le paquet décompressé avant de
-l'installer dans le cache local.
+Le DOI conceptuel identifie la famille du modèle; le DOI de la version, son nom
+et les deux sommes de contrôle ci-dessus fixent l'artéfact exact utilisé ici. La
+commande `models fetch` vérifie le téléchargement compressé et le paquet
+décompressé avant de l'installer dans le cache local.
 
 ## Commands / Commandes
 

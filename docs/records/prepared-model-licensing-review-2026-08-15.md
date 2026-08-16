@@ -4,8 +4,7 @@
 **Decision owner:** Darcy Quesnel\
 **Maintainer policy:** accepted on 2026-08-15\
 **ADR status:** Accepted\
-**Production publication:** blocked pending live archive correction;
-implementation completed\
+**Production publication:** correction prerequisite completed 2026-08-16\
 **External legal review:** not obtained; optional, not a `1.0.0` gate
 
 This is a dated project decision record, not legal advice or an external legal
@@ -58,9 +57,9 @@ Darcy Quesnel accepts the following project policy as of 2026-08-15:
 > the package as a whole.
 
 This policy replaces the overly broad shorthand that CC BY covers
-"SynthPopCan-authored model material." It accepts ADR-0014 while keeping
-production publication closed until the live archive-correction execution gate
-is complete.
+"SynthPopCan-authored model material." It accepted ADR-0014 while keeping
+production publication closed until the separate archive-correction execution
+gate completed on 2026-08-16.
 
 The policy is permissive about reuse, not about privacy or provenance. It does
 not authorize access to confidential source data, relax the Statistics Canada
@@ -70,11 +69,11 @@ privacy certification.
 
 ## Correction Disposition
 
-The project has prepared fail-closed package and archive-correction machinery
-for the accepted scope. Independent adversarial review completed on 2026-08-15,
+The project prepared fail-closed package and archive-correction machinery for
+the accepted scope. Independent adversarial review completed on 2026-08-15,
 closing all three prior executor blockers with 137 focused tests, Ruff, Pyright,
-and diff checks passing. The live correction remains a separate, explicitly
-authorized operation and will at minimum:
+and diff checks passing. The separately authorized live correction completed on
+2026-08-16 and did the following:
 
 1. embed the prescribed Statistics Canada notice and source-licence URL in the
    actual model-package bytes and generated-artifact provenance; embed the CC BY
@@ -94,12 +93,13 @@ authorized operation and will at minimum:
 No historical archive file will be overwritten, deleted, or silently
 relabelled.
 
-Implementation readiness and live execution are separate evidence. The former
-is complete after independent review of non-overwriting, ownership, identity,
-transaction, and resume boundaries. The latter remains pending and requires all
-32 metadata corrections, all 32 new package
-versions, exactly 32 registry updates, and a tracked sanitized record of
-operation IDs, old/new DOIs, checksums, and remote verification outcomes.
+Implementation readiness and live execution remain separate evidence. The
+former completed after independent review of non-overwriting, ownership,
+identity, transaction, and resume boundaries. The latter completed only after
+all 32 metadata corrections, all 32 new package versions, exactly 32 registry
+updates, and a tracked sanitized record of operation IDs, old/new DOIs,
+checksums, and remote verification outcomes passed. See the
+[2026-08-16 archive-correction record](prepared-model-archive-correction-2026-08-16.md).
 
 ## Optional Future Review Question
 

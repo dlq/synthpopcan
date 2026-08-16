@@ -143,6 +143,13 @@ Before publishing a model package:
    commit rather than treating this recorded review as a substitute for release
    CI.
 
+1. Confirm ADR-0014's exact **Archive correction execution** field is
+   **Completed**, the tracked 64-operation evidence validates, and the installed
+   registry exactly matches its 32 verified corrected releases. The
+   [2026-08-16 correction record](docs/records/prepared-model-archive-correction-2026-08-16.md)
+   documents the completed baseline. This clean-clone gate is required; ignored
+   executor checkpoints are not release authority.
+
 1. Confirm the package is explicitly intended for public distribution.
 
 1. Confirm the package contains no raw source rows, source row identifiers, or
@@ -300,14 +307,15 @@ checkpoints are remotely reverified on every later run rather than skipped.
 
 Production correction writes require ADR-0014 Accepted, its exact maintainer
 policy authority and date, and
-`Archive correction implementation: Completed`. Keep
-`Archive correction execution: Pending` until all 64 live operations and 32
-registry updates are verified. Only then may it become Completed; fresh
-production model records are blocked until that marker, the exact 64-operation
-index/checkpoints, and the 32 verified registry candidates agree on model,
-record/version/concept DOI, URL, filename, and compressed and uncompressed
-size/hash. A registry candidate file is emitted only for verified production
-correction versions, never for fresh records, drafts, or sandbox runs.
+`Archive correction implementation: Completed`. The 2026-08-16 transaction
+satisfied the separate execution gate after all 64 live operations and 32
+registry updates verified. Fresh production model records now require that
+Completed marker, the tracked sanitized 64-operation evidence, and the 32
+installed registry releases to agree on model, record/version/concept DOI, URL,
+filename, and compressed and uncompressed size/hash. Ignored checkpoints remain
+useful for safe resume but are not a clean-clone release dependency. A registry
+candidate file is emitted only for verified production correction versions,
+never for fresh records, drafts, or sandbox runs.
 
 Passing SynthPopCan's checks means the artifact passed the project's current
 release-readiness criteria. It is not a claim of official approval, legal

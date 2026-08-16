@@ -183,8 +183,8 @@ removed from the curated advanced API before the freeze rather than promising
 them throughout `1.x`.
 
 The post-licensing candidate passed the complete local release gate on
-2026-08-15: 1,552 Python tests passed with 6 environment-dependent tests
-skipped and 95.10% branch-aware coverage; all 339 extended-correctness cases,
+2026-08-16: 1,673 Python tests passed with 6 environment-dependent tests
+skipped and 95.04% branch-aware coverage; all 339 extended-correctness cases,
 warning-clean documentation, JavaScript coverage, and all 12 browser scenarios
 passed. Fresh isolated wheel, sdist, optional model-building, and fictional
 case-study interface smokes also passed. The exact committed candidate must
@@ -207,14 +207,15 @@ The `1.0.0` release sequence is explicit and fail-closed:
    adversarial review closed all three prior blockers in the tested,
    non-overwriting executor. Its 137 focused tests, Ruff, Pyright, and diff
    checks pass; ADR-0014's implementation marker is Completed.
-1. **Archive correction execution — pending and unauthorized.** Using the
-   reviewed executor, run and remotely verify exactly 32 metadata corrections
-   that preserve identifiers and 32 non-overwriting package versions; accept
-   exactly 32 registry updates; and preserve sanitized operation IDs, old/new
-   record/version/concept DOIs, hashes, and outcomes in a tracked
-   `docs/records/prepared-model-archive-correction-YYYY-MM-DD.md` record (with
-   machine-readable release evidence where available). Only then may the
-   separate execution marker become Completed.
+1. **Archive correction execution — completed 2026-08-16.** The reviewed
+   executor remotely verified exactly 32 identifier-preserving metadata
+   corrections and 32 non-overwriting package versions, and the registry now
+   uses exactly 32 verified corrected releases. The tracked
+   [human record](docs/records/prepared-model-archive-correction-2026-08-16.md)
+   and packaged `synthpopcan-prepared-model-archive-correction-evidence-v1`
+   resource preserve sanitized operation IDs, old/new record/version/concept
+   DOIs, compressed and uncompressed hashes, outcomes, and the zero-mutable-
+   draft audit. The clean-clone execution gate passes without ignored state.
 1. **Software release — pending.** Advance package, CFF, changelog, and citation
    dates to `1.0.0`; commit the candidate; require the complete CI gate for that
    exact commit and workflow definition; then create the annotated tag, GitHub

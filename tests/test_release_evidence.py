@@ -340,6 +340,7 @@ def test_distribution_smoke_selects_one_exact_version_and_passes_it_through() ->
     assert "SYNTHPOPCAN_EXPECTED_VERSION" in wheel_smoke
     assert 'distribution_version("synthpopcan") == expected_version' in wheel_smoke
     assert "synthpopcan.__version__ == expected_version" in wheel_smoke
+    assert '"contracts/public-interface-v1-baseline.json"' in wheel_smoke
 
 
 def test_publish_is_exact_locked_immutable_and_revalidates_before_pypi() -> None:
@@ -390,6 +391,24 @@ def test_pypi_job_reuses_and_reverifies_exact_release_evidence_last() -> None:
         "          test \"$(jq 'length' "
         '"$RUNNER_TEMP/missing-release-assets-before-pypi.json")" = "0"\n'
     )
+    distribution_binding = r"""
+          mapfile -d '' -t PUBLISH_DISTRIBUTIONS \
+            < <(find dist -mindepth 1 -maxdepth 1 -print0)
+          mapfile -d '' -t EVIDENCE_DISTRIBUTIONS \
+            < <(
+              find release-evidence -mindepth 1 -maxdepth 1 \
+                \( -name '*.whl' -o -name '*.tar.gz' \) -print0
+            )
+          test "${#PUBLISH_DISTRIBUTIONS[@]}" -eq 2
+          test "${#EVIDENCE_DISTRIBUTIONS[@]}" -eq 2
+          for DISTRIBUTION_PATH in "${PUBLISH_DISTRIBUTIONS[@]}"; do
+            test -f "$DISTRIBUTION_PATH"
+            DISTRIBUTION_NAME="${DISTRIBUTION_PATH##*/}"
+            EVIDENCE_PATH="release-evidence/$DISTRIBUTION_NAME"
+            test -f "$EVIDENCE_PATH"
+            cmp -- "$DISTRIBUTION_PATH" "$EVIDENCE_PATH"
+          done
+"""
 
     for requirement in (
         evidence_download,
@@ -414,7 +433,7 @@ def test_pypi_job_reuses_and_reverifies_exact_release_evidence_last() -> None:
     assert publish_job.count(publish_action) == 1
     assert publish_job.index(evidence_download) < publish_job.index(verification_step)
     assert publish_job.index(verification_step) < publish_job.index(publish_action)
-    assert final_asset_assertion + publish_action in publish_job
+    assert final_asset_assertion + distribution_binding + publish_action in publish_job
 
 
 def test_release_workflow_actions_are_pinned_to_full_commits() -> None:

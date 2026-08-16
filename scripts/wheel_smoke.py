@@ -35,9 +35,15 @@ assert files("synthpopcan").joinpath("web/index.html").is_file()
 assert files("synthpopcan").joinpath("contracts/public-interface-v1.json").is_file()
 assert (
     files("synthpopcan")
+    .joinpath("contracts/public-interface-v1-baseline.json")
+    .is_file()
+)
+assert (
+    files("synthpopcan")
     .joinpath("contracts/prepared-model-licensing-v1-examples.json")
     .is_file()
 )
+assert files("synthpopcan").joinpath("archive_correction_evidence_v1.json").is_file()
 validate_installed_public_interface()
 
 geography = statcan_geography_universe(2021, "da", "DAUID")

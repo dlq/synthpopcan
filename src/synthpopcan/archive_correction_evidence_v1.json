@@ -1,0 +1,1122 @@
+{
+  "api": "https://zenodo.org/api",
+  "execution_authority": {
+    "candidate_envelope_sha256": "728c7221fcb70d88eb01dad6d5e2f8602c2979dae5613eac2b586fd8b978d496",
+    "execution_index_sha256": "3ea6148f928c5159c294077ea6c999faf9fe76e91dcb4586323c39528d4d385f",
+    "executor_commit": "b72d85ee36a057cf5a235b1c743a249ea933df20",
+    "licensing_sha256_by_census_year": {
+      "2016": "21dd4bfa0014dec4295e2b9155ee54382082d984a9cab775f0863d2c52219392",
+      "2021": "efe68065a2f6ca9bb36ee3d5236743cff7e6f6be6edc75c1691a934324e814d8"
+    },
+    "new_package_version": "v1.0.0-rights.1"
+  },
+  "models": [
+    {
+      "concept_doi": "10.5281/zenodo.21461536",
+      "corrected": {
+        "asset": {
+          "filename": "alberta-2016-all-fields-package-v1.0.0-rights.1.json.gz",
+          "sha256": "608ac152a9d00bcbe9571591bdb4df329b8d3f4361bd8d447eafac9ab1af5906",
+          "size_bytes": 1010691,
+          "uncompressed_sha256": "a7b70d50606ce4753dca5399c96f4b0a65cc6d7dcca9c6152cf87988720f6e9d",
+          "uncompressed_size_bytes": 63451630
+        },
+        "metadata_sha256": "32c6cf0e409d1ba53dfacc528318c46c8330f000497c8c2c045f70a35f72016a",
+        "operation_id": "create-new-version:alberta-2016-all-fields:v1.0.0-rights.1:608ac152a9d00bcbe9571591bdb4df329b8d3f4361bd8d447eafac9ab1af5906:32c6cf0e409d1ba53dfacc528318c46c8330f000497c8c2c045f70a35f72016a",
+        "package_version": "v1.0.0-rights.1",
+        "record_id": 21960302,
+        "url": "https://zenodo.org/api/records/21960302/files/alberta-2016-all-fields-package-v1.0.0-rights.1.json.gz/content",
+        "version_doi": "10.5281/zenodo.21960302"
+      },
+      "historical": {
+        "asset": {
+          "filename": "alberta-2016-all-fields-package.json.gz",
+          "sha256": "da034db035a0ebc8d96cf012b3698fd6c14b648967389832446fe10c48b73ce8",
+          "size_bytes": 1008748,
+          "uncompressed_sha256": "0f0f61fc0a3e188b1c64ea02acc3f05fbfdb0d993ffee3a901b5b51f7fe81814",
+          "uncompressed_size_bytes": 63448287
+        },
+        "metadata_sha256": "ee203eae881ae4f5c1e16d5a78c2815dfa9036bf09581ca6114df66dc5152ee5",
+        "operation_id": "correct-existing-metadata:alberta-2016-all-fields:v0.2.1:da034db035a0ebc8d96cf012b3698fd6c14b648967389832446fe10c48b73ce8:ee203eae881ae4f5c1e16d5a78c2815dfa9036bf09581ca6114df66dc5152ee5",
+        "package_version": "v0.2.1",
+        "publication_date": "2026-07-20",
+        "record_id": 21461537,
+        "version_doi": "10.5281/zenodo.21461537"
+      },
+      "model_id": "alberta-2016-all-fields"
+    },
+    {
+      "concept_doi": "10.5281/zenodo.21461540",
+      "corrected": {
+        "asset": {
+          "filename": "alberta-2021-all-fields-package-v1.0.0-rights.1.json.gz",
+          "sha256": "f8006418a324c885a2eea0f4f28fbda70d4ffb571bc720bda23f4fb4d73a1234",
+          "size_bytes": 1092837,
+          "uncompressed_sha256": "ec113ab38f8fe53d8b849635a12dfb8db4de145516b22498bcd94103ff5a5d2e",
+          "uncompressed_size_bytes": 67523661
+        },
+        "metadata_sha256": "122cec1c57fbbad0181b33e8d34dc0a2e712e849ee01713a6123eda1de05b61a",
+        "operation_id": "create-new-version:alberta-2021-all-fields:v1.0.0-rights.1:f8006418a324c885a2eea0f4f28fbda70d4ffb571bc720bda23f4fb4d73a1234:122cec1c57fbbad0181b33e8d34dc0a2e712e849ee01713a6123eda1de05b61a",
+        "package_version": "v1.0.0-rights.1",
+        "record_id": 21960311,
+        "url": "https://zenodo.org/api/records/21960311/files/alberta-2021-all-fields-package-v1.0.0-rights.1.json.gz/content",
+        "version_doi": "10.5281/zenodo.21960311"
+      },
+      "historical": {
+        "asset": {
+          "filename": "alberta-2021-all-fields-package.json.gz",
+          "sha256": "ac288bd8bbcaaa485709997793137faa3ef3c66422d246e4373c5508e0adddde",
+          "size_bytes": 1436472,
+          "uncompressed_sha256": "494856a8c5ec501b6617da61ec967daaac4cc23511716eca91cb629f3bd1fca3",
+          "uncompressed_size_bytes": 67520274
+        },
+        "metadata_sha256": "9f5015f48585bcfc2ad5beb29b535f48db1500a4d536e2bffc61be7c19a5ac32",
+        "operation_id": "correct-existing-metadata:alberta-2021-all-fields:v0.6.0:ac288bd8bbcaaa485709997793137faa3ef3c66422d246e4373c5508e0adddde:9f5015f48585bcfc2ad5beb29b535f48db1500a4d536e2bffc61be7c19a5ac32",
+        "package_version": "v0.6.0",
+        "publication_date": "2026-07-20",
+        "record_id": 21461541,
+        "version_doi": "10.5281/zenodo.21461541"
+      },
+      "model_id": "alberta-2021-all-fields"
+    },
+    {
+      "concept_doi": "10.5281/zenodo.21461542",
+      "corrected": {
+        "asset": {
+          "filename": "bc-2016-all-fields-package-v1.0.0-rights.1.json.gz",
+          "sha256": "b26104615c118f0e7e3253fbfb099eddd122f38ca56d23225c2f03af7b202711",
+          "size_bytes": 1200966,
+          "uncompressed_sha256": "3e9b2080d752cd48f5da94b92b31f99118957df039e87195f7afc62ec419cd11",
+          "uncompressed_size_bytes": 75784719
+        },
+        "metadata_sha256": "31129b36cd9e93d8b2db2be12792a64c674cc061ac3d7b316791074181647ea0",
+        "operation_id": "create-new-version:bc-2016-all-fields:v1.0.0-rights.1:b26104615c118f0e7e3253fbfb099eddd122f38ca56d23225c2f03af7b202711:31129b36cd9e93d8b2db2be12792a64c674cc061ac3d7b316791074181647ea0",
+        "package_version": "v1.0.0-rights.1",
+        "record_id": 21960313,
+        "url": "https://zenodo.org/api/records/21960313/files/bc-2016-all-fields-package-v1.0.0-rights.1.json.gz/content",
+        "version_doi": "10.5281/zenodo.21960313"
+      },
+      "historical": {
+        "asset": {
+          "filename": "bc-2016-all-fields-package.json.gz",
+          "sha256": "13b04e77c3aab726aaf1ef9164ec5ef1c2ed16d710f275f3b3dcfa09ca476f6a",
+          "size_bytes": 1198845,
+          "uncompressed_sha256": "76e855c2d2bd6b62ef7e7073c4df5ea288fe0f8e060c5e36859c24047a56fb54",
+          "uncompressed_size_bytes": 75781376
+        },
+        "metadata_sha256": "677a8017c64bab014d89f248dfcd639c1a555cf602bdb4049eacc2f9e50d63ba",
+        "operation_id": "correct-existing-metadata:bc-2016-all-fields:v0.2.1:13b04e77c3aab726aaf1ef9164ec5ef1c2ed16d710f275f3b3dcfa09ca476f6a:677a8017c64bab014d89f248dfcd639c1a555cf602bdb4049eacc2f9e50d63ba",
+        "package_version": "v0.2.1",
+        "publication_date": "2026-07-20",
+        "record_id": 21461543,
+        "version_doi": "10.5281/zenodo.21461543"
+      },
+      "model_id": "bc-2016-all-fields"
+    },
+    {
+      "concept_doi": "10.5281/zenodo.21461544",
+      "corrected": {
+        "asset": {
+          "filename": "bc-2021-all-fields-package-v1.0.0-rights.1.json.gz",
+          "sha256": "2e623e9ff11bad7444c1f4cb9193d0aa2c590dd881f7ffc5414d6680072885a6",
+          "size_bytes": 1342413,
+          "uncompressed_sha256": "fbd332380cce1d1d5a0de8cb08d10b63abcc0795c483f31c90e1997cf88f36d4",
+          "uncompressed_size_bytes": 83477177
+        },
+        "metadata_sha256": "35e3e74011f6ed97ab8908eeb69c0bf6398ccc33f492c682df9266d3c07a1c67",
+        "operation_id": "create-new-version:bc-2021-all-fields:v1.0.0-rights.1:2e623e9ff11bad7444c1f4cb9193d0aa2c590dd881f7ffc5414d6680072885a6:35e3e74011f6ed97ab8908eeb69c0bf6398ccc33f492c682df9266d3c07a1c67",
+        "package_version": "v1.0.0-rights.1",
+        "record_id": 21960316,
+        "url": "https://zenodo.org/api/records/21960316/files/bc-2021-all-fields-package-v1.0.0-rights.1.json.gz/content",
+        "version_doi": "10.5281/zenodo.21960316"
+      },
+      "historical": {
+        "asset": {
+          "filename": "bc-2021-all-fields-package.json.gz",
+          "sha256": "94c231604e8418ca357a62f35609e59096c3e00cf64604d4c19c34afd2636012",
+          "size_bytes": 1758080,
+          "uncompressed_sha256": "b3714b8730e9a488f58747c00accb51f9bace53c5a5ccc7124b3115ba7e35c63",
+          "uncompressed_size_bytes": 83473790
+        },
+        "metadata_sha256": "ff6638024350e4c60c88b53f0e4186760f57b75eb7e855661f5685ab5d21c67a",
+        "operation_id": "correct-existing-metadata:bc-2021-all-fields:v0.6.0:94c231604e8418ca357a62f35609e59096c3e00cf64604d4c19c34afd2636012:ff6638024350e4c60c88b53f0e4186760f57b75eb7e855661f5685ab5d21c67a",
+        "package_version": "v0.6.0",
+        "publication_date": "2026-07-20",
+        "record_id": 21461545,
+        "version_doi": "10.5281/zenodo.21461545"
+      },
+      "model_id": "bc-2021-all-fields"
+    },
+    {
+      "concept_doi": "10.5281/zenodo.21461553",
+      "corrected": {
+        "asset": {
+          "filename": "calgary-cma-2016-all-fields-package-v1.0.0-rights.1.json.gz",
+          "sha256": "91c8bc8024b4455273bb00c0e0c40820e4913c10c3574127f76c453a0be68e8a",
+          "size_bytes": 393417,
+          "uncompressed_sha256": "5d067d4017f63247ed9fca13809817a3973d1d84d6160f9f0dd7c6f1c5c5bb08",
+          "uncompressed_size_bytes": 22638379
+        },
+        "metadata_sha256": "f3ac09e71508433bf944f207e70f62ce83b17b9d10dbee9bed0d20bfc3e0935d",
+        "operation_id": "create-new-version:calgary-cma-2016-all-fields:v1.0.0-rights.1:91c8bc8024b4455273bb00c0e0c40820e4913c10c3574127f76c453a0be68e8a:f3ac09e71508433bf944f207e70f62ce83b17b9d10dbee9bed0d20bfc3e0935d",
+        "package_version": "v1.0.0-rights.1",
+        "record_id": 21960257,
+        "url": "https://zenodo.org/api/records/21960257/files/calgary-cma-2016-all-fields-package-v1.0.0-rights.1.json.gz/content",
+        "version_doi": "10.5281/zenodo.21960257"
+      },
+      "historical": {
+        "asset": {
+          "filename": "calgary-cma-2016-all-fields-package.json.gz",
+          "sha256": "0ed93270044c97fbd2d6b8e6222192dc438e990f2c5f70dbeb1ed9ada51b7500",
+          "size_bytes": 391581,
+          "uncompressed_sha256": "d55fe22cfa66c5b78545b65e3275972ebc2f37e714f9a6b266040ec9a0a407a2",
+          "uncompressed_size_bytes": 22635036
+        },
+        "metadata_sha256": "726bec7cb66645cc5f343596301bec3a8cd4934dc2db57eb581f96de209a1f88",
+        "operation_id": "correct-existing-metadata:calgary-cma-2016-all-fields:v0.2.1:0ed93270044c97fbd2d6b8e6222192dc438e990f2c5f70dbeb1ed9ada51b7500:726bec7cb66645cc5f343596301bec3a8cd4934dc2db57eb581f96de209a1f88",
+        "package_version": "v0.2.1",
+        "publication_date": "2026-07-20",
+        "record_id": 21461554,
+        "version_doi": "10.5281/zenodo.21461554"
+      },
+      "model_id": "calgary-cma-2016-all-fields"
+    },
+    {
+      "concept_doi": "10.5281/zenodo.21461555",
+      "corrected": {
+        "asset": {
+          "filename": "calgary-cma-2021-all-fields-package-v1.0.0-rights.1.json.gz",
+          "sha256": "c9e28ec428bb43a0d583171424e34e37b51a78eb94340b447e2195d447d6e413",
+          "size_bytes": 435002,
+          "uncompressed_sha256": "c755a81faeb952ed87df20c2f273397a7bf2faa0fb2948400865a1012e2365cb",
+          "uncompressed_size_bytes": 24565100
+        },
+        "metadata_sha256": "a7ac44cc48ac543aa07d43a01a99bb91e12d2f53470f091a2bec027d5ac2ac5e",
+        "operation_id": "create-new-version:calgary-cma-2021-all-fields:v1.0.0-rights.1:c9e28ec428bb43a0d583171424e34e37b51a78eb94340b447e2195d447d6e413:a7ac44cc48ac543aa07d43a01a99bb91e12d2f53470f091a2bec027d5ac2ac5e",
+        "package_version": "v1.0.0-rights.1",
+        "record_id": 21960288,
+        "url": "https://zenodo.org/api/records/21960288/files/calgary-cma-2021-all-fields-package-v1.0.0-rights.1.json.gz/content",
+        "version_doi": "10.5281/zenodo.21960288"
+      },
+      "historical": {
+        "asset": {
+          "filename": "calgary-cma-2021-all-fields-package.json.gz",
+          "sha256": "2f03f4de785a6d383d7c828c5c72b52ed6e40bb0d9c7772f71cbf278872801ae",
+          "size_bytes": 567498,
+          "uncompressed_sha256": "5c3968a00eea53edb4f501d0f8dcf61674b586d3d40f4ffee8bd085fea3f21d2",
+          "uncompressed_size_bytes": 24561713
+        },
+        "metadata_sha256": "9153e4b00533c5439718e8cb325e1d929e88f814e4fbba59443bced1e4f3d9ce",
+        "operation_id": "correct-existing-metadata:calgary-cma-2021-all-fields:v0.6.0:2f03f4de785a6d383d7c828c5c72b52ed6e40bb0d9c7772f71cbf278872801ae:9153e4b00533c5439718e8cb325e1d929e88f814e4fbba59443bced1e4f3d9ce",
+        "package_version": "v0.6.0",
+        "publication_date": "2026-07-20",
+        "record_id": 21461556,
+        "version_doi": "10.5281/zenodo.21461556"
+      },
+      "model_id": "calgary-cma-2021-all-fields"
+    },
+    {
+      "concept_doi": "10.5281/zenodo.21461558",
+      "corrected": {
+        "asset": {
+          "filename": "canada-2016-all-fields-package-v1.0.0-rights.1.json.gz",
+          "sha256": "6cb54a3c4ff2801052a1e3d588a96005eac8539394a6ecfaf0eed07c0728db93",
+          "size_bytes": 8288369,
+          "uncompressed_sha256": "58da89426de71497d8a0f7a3de69b95abc8f9d83caf4989c94bed09fc897dc85",
+          "uncompressed_size_bytes": 531318323
+        },
+        "metadata_sha256": "4be0bd3bad53fc20bd283e20527f512b07193c6eeaebb5b7f9b3c179c441c891",
+        "operation_id": "create-new-version:canada-2016-all-fields:v1.0.0-rights.1:6cb54a3c4ff2801052a1e3d588a96005eac8539394a6ecfaf0eed07c0728db93:4be0bd3bad53fc20bd283e20527f512b07193c6eeaebb5b7f9b3c179c441c891",
+        "package_version": "v1.0.0-rights.1",
+        "record_id": 21960354,
+        "url": "https://zenodo.org/api/records/21960354/files/canada-2016-all-fields-package-v1.0.0-rights.1.json.gz/content",
+        "version_doi": "10.5281/zenodo.21960354"
+      },
+      "historical": {
+        "asset": {
+          "filename": "canada-2016-all-fields-package.json.gz",
+          "sha256": "2db0629d01ad91e050acfa956097ee48abb7ee07f2007a40df91786981127b04",
+          "size_bytes": 8286186,
+          "uncompressed_sha256": "ce0bffe4945ccebd962010593d3b316dc7f6d7b7b5803271a54e3da94b7073ab",
+          "uncompressed_size_bytes": 531314980
+        },
+        "metadata_sha256": "ef0fcbfbe0de86e2007891310b26263d6ec3ab11b1d1e381368467cd8b067338",
+        "operation_id": "correct-existing-metadata:canada-2016-all-fields:v0.2.1:2db0629d01ad91e050acfa956097ee48abb7ee07f2007a40df91786981127b04:ef0fcbfbe0de86e2007891310b26263d6ec3ab11b1d1e381368467cd8b067338",
+        "package_version": "v0.2.1",
+        "publication_date": "2026-07-20",
+        "record_id": 21461559,
+        "version_doi": "10.5281/zenodo.21461559"
+      },
+      "model_id": "canada-2016-all-fields"
+    },
+    {
+      "concept_doi": "10.5281/zenodo.21461577",
+      "corrected": {
+        "asset": {
+          "filename": "canada-2021-all-fields-package-v1.0.0-rights.1.json.gz",
+          "sha256": "d035c5519955c6c5a192f94d78be7f4b5a4658a62eebbfaa2b716c0eff06a881",
+          "size_bytes": 12408693,
+          "uncompressed_sha256": "145aaad91ce9cea4361bb829601d78a74f55c8ac40ec459a04d32174b3e02697",
+          "uncompressed_size_bytes": 1699090552
+        },
+        "metadata_sha256": "c287d069c018186b0fae5342e925bad163178357b85e4900c37d2b46840e26f1",
+        "operation_id": "create-new-version:canada-2021-all-fields:v1.0.0-rights.1:d035c5519955c6c5a192f94d78be7f4b5a4658a62eebbfaa2b716c0eff06a881:c287d069c018186b0fae5342e925bad163178357b85e4900c37d2b46840e26f1",
+        "package_version": "v1.0.0-rights.1",
+        "record_id": 21960375,
+        "url": "https://zenodo.org/api/records/21960375/files/canada-2021-all-fields-package-v1.0.0-rights.1.json.gz/content",
+        "version_doi": "10.5281/zenodo.21960375"
+      },
+      "historical": {
+        "asset": {
+          "filename": "canada-2021-all-fields-package.json.gz",
+          "sha256": "3708009c4b5d5fc8a663f23e4c437756a441629e7fd03c68ed10748e4580667c",
+          "size_bytes": 14669338,
+          "uncompressed_sha256": "d5117d688d0fad6789f6b41044d7c26634384cdc3e84c208d3f4252a8aa1d55c",
+          "uncompressed_size_bytes": 1699087165
+        },
+        "metadata_sha256": "2f082007154d4afaac5a014a15de7f563cc8ea3a591488ad7fbb1b71623992f9",
+        "operation_id": "correct-existing-metadata:canada-2021-all-fields:v0.6.0:3708009c4b5d5fc8a663f23e4c437756a441629e7fd03c68ed10748e4580667c:2f082007154d4afaac5a014a15de7f563cc8ea3a591488ad7fbb1b71623992f9",
+        "package_version": "v0.6.0",
+        "publication_date": "2026-07-20",
+        "record_id": 21461578,
+        "version_doi": "10.5281/zenodo.21461578"
+      },
+      "model_id": "canada-2021-all-fields"
+    },
+    {
+      "concept_doi": "10.5281/zenodo.21461579",
+      "corrected": {
+        "asset": {
+          "filename": "edmonton-cma-2016-all-fields-package-v1.0.0-rights.1.json.gz",
+          "sha256": "b58d7b949f15d9fc4a642a714f3625f8867b7476451343310fe1be375a47b891",
+          "size_bytes": 371209,
+          "uncompressed_sha256": "406cb9ad63a3f7793c5ef0c97ad9dbe5c03be99a3e1b3fd01e1cc77bf9ac32e9",
+          "uncompressed_size_bytes": 21370680
+        },
+        "metadata_sha256": "c249ca8644de042270daf118e6a88234a61a774691b6eaeacc321c0e39b291d3",
+        "operation_id": "create-new-version:edmonton-cma-2016-all-fields:v1.0.0-rights.1:b58d7b949f15d9fc4a642a714f3625f8867b7476451343310fe1be375a47b891:c249ca8644de042270daf118e6a88234a61a774691b6eaeacc321c0e39b291d3",
+        "package_version": "v1.0.0-rights.1",
+        "record_id": 21960253,
+        "url": "https://zenodo.org/api/records/21960253/files/edmonton-cma-2016-all-fields-package-v1.0.0-rights.1.json.gz/content",
+        "version_doi": "10.5281/zenodo.21960253"
+      },
+      "historical": {
+        "asset": {
+          "filename": "edmonton-cma-2016-all-fields-package.json.gz",
+          "sha256": "b600f19ffe7e257c4afbe618fb50d21a4ecadd2c498c14159c97f5179ee4d554",
+          "size_bytes": 369262,
+          "uncompressed_sha256": "c18b593c93fd02cc30ee07a956ace912b0072a8c14c6a538e94087592c27818a",
+          "uncompressed_size_bytes": 21367337
+        },
+        "metadata_sha256": "921efac6b10f624c90d40a87f93d94bfaf350500b196d8a8e39a95b1a97e91ac",
+        "operation_id": "correct-existing-metadata:edmonton-cma-2016-all-fields:v0.2.1:b600f19ffe7e257c4afbe618fb50d21a4ecadd2c498c14159c97f5179ee4d554:921efac6b10f624c90d40a87f93d94bfaf350500b196d8a8e39a95b1a97e91ac",
+        "package_version": "v0.2.1",
+        "publication_date": "2026-07-20",
+        "record_id": 21461580,
+        "version_doi": "10.5281/zenodo.21461580"
+      },
+      "model_id": "edmonton-cma-2016-all-fields"
+    },
+    {
+      "concept_doi": "10.5281/zenodo.21461581",
+      "corrected": {
+        "asset": {
+          "filename": "edmonton-cma-2021-all-fields-package-v1.0.0-rights.1.json.gz",
+          "sha256": "4f1658cb56b93c661a520de991a84755304fb712a3be064e731dc3d3e234777b",
+          "size_bytes": 409353,
+          "uncompressed_sha256": "d7bc3d9cbf9147f6a0b30ff863d7d3c2e3214aa3caccbf5e71eb144f93baff70",
+          "uncompressed_size_bytes": 23325643
+        },
+        "metadata_sha256": "4f954d855fe11a673e44674941291302d87f386e0bfdd115ddb1fbb590e057eb",
+        "operation_id": "create-new-version:edmonton-cma-2021-all-fields:v1.0.0-rights.1:4f1658cb56b93c661a520de991a84755304fb712a3be064e731dc3d3e234777b:4f954d855fe11a673e44674941291302d87f386e0bfdd115ddb1fbb590e057eb",
+        "package_version": "v1.0.0-rights.1",
+        "record_id": 21960264,
+        "url": "https://zenodo.org/api/records/21960264/files/edmonton-cma-2021-all-fields-package-v1.0.0-rights.1.json.gz/content",
+        "version_doi": "10.5281/zenodo.21960264"
+      },
+      "historical": {
+        "asset": {
+          "filename": "edmonton-cma-2021-all-fields-package.json.gz",
+          "sha256": "44abe874115a4faeb52dfc03e3e752a333c29d1b609414ad5effcf372ada8574",
+          "size_bytes": 535389,
+          "uncompressed_sha256": "99d1664f63a627a6a77f5b1a1889eb8b8b54e31c6379b98fb4dac6944172c252",
+          "uncompressed_size_bytes": 23322256
+        },
+        "metadata_sha256": "8b644348a8eeb70427859e28bf9fc54eb32da10fc2af1e38c50c582cffd3efed",
+        "operation_id": "correct-existing-metadata:edmonton-cma-2021-all-fields:v0.6.0:44abe874115a4faeb52dfc03e3e752a333c29d1b609414ad5effcf372ada8574:8b644348a8eeb70427859e28bf9fc54eb32da10fc2af1e38c50c582cffd3efed",
+        "package_version": "v0.6.0",
+        "publication_date": "2026-07-20",
+        "record_id": 21461582,
+        "version_doi": "10.5281/zenodo.21461582"
+      },
+      "model_id": "edmonton-cma-2021-all-fields"
+    },
+    {
+      "concept_doi": "10.5281/zenodo.21461583",
+      "corrected": {
+        "asset": {
+          "filename": "manitoba-2016-all-fields-package-v1.0.0-rights.1.json.gz",
+          "sha256": "9c2ad14e8a04ca942a81772a59243285055b11508ac7bc1662fa1cee81b4293e",
+          "size_bytes": 339083,
+          "uncompressed_sha256": "d5affc5d97fbd860b893b19cdc58b9c1fbb7ae4354e1497ad4c55554a1913cc5",
+          "uncompressed_size_bytes": 20189881
+        },
+        "metadata_sha256": "abae28489080f9ba93d13f8a5d87bafeed18135893e85a0f53fcd1b427650292",
+        "operation_id": "create-new-version:manitoba-2016-all-fields:v1.0.0-rights.1:9c2ad14e8a04ca942a81772a59243285055b11508ac7bc1662fa1cee81b4293e:abae28489080f9ba93d13f8a5d87bafeed18135893e85a0f53fcd1b427650292",
+        "package_version": "v1.0.0-rights.1",
+        "record_id": 21960252,
+        "url": "https://zenodo.org/api/records/21960252/files/manitoba-2016-all-fields-package-v1.0.0-rights.1.json.gz/content",
+        "version_doi": "10.5281/zenodo.21960252"
+      },
+      "historical": {
+        "asset": {
+          "filename": "manitoba-2016-all-fields-package.json.gz",
+          "sha256": "70ca5e7944ff135813d1aaff04f2f7c9a25f98bd3ecc27c069124aad784ffa6d",
+          "size_bytes": 336929,
+          "uncompressed_sha256": "82e8f03152568a3898c80de36705827f8a22101a1390a2b9f381df366a9088f4",
+          "uncompressed_size_bytes": 20186538
+        },
+        "metadata_sha256": "f6a67fcb20e34e13c9daa9e85f57386f15a71e8972d5563dea49d1c5532d4d18",
+        "operation_id": "correct-existing-metadata:manitoba-2016-all-fields:v0.2.1:70ca5e7944ff135813d1aaff04f2f7c9a25f98bd3ecc27c069124aad784ffa6d:f6a67fcb20e34e13c9daa9e85f57386f15a71e8972d5563dea49d1c5532d4d18",
+        "package_version": "v0.2.1",
+        "publication_date": "2026-07-20",
+        "record_id": 21461584,
+        "version_doi": "10.5281/zenodo.21461584"
+      },
+      "model_id": "manitoba-2016-all-fields"
+    },
+    {
+      "concept_doi": "10.5281/zenodo.21461586",
+      "corrected": {
+        "asset": {
+          "filename": "manitoba-2021-all-fields-package-v1.0.0-rights.1.json.gz",
+          "sha256": "bfe72ac98a9c9aef367ef8deb46ef6ca2ac53d619e5a2e5dc4d4e872a255f3f4",
+          "size_bytes": 260914,
+          "uncompressed_sha256": "ffb8bbd69fba1e2d5e2495af4b110359a41463ece58d96f4e8e4622491285b85",
+          "uncompressed_size_bytes": 17610348
+        },
+        "metadata_sha256": "4bb39ea47328bc6416afde80e8bd572b03ccc884b9c8812cf7977c5da47f6a78",
+        "operation_id": "create-new-version:manitoba-2021-all-fields:v1.0.0-rights.1:bfe72ac98a9c9aef367ef8deb46ef6ca2ac53d619e5a2e5dc4d4e872a255f3f4:4bb39ea47328bc6416afde80e8bd572b03ccc884b9c8812cf7977c5da47f6a78",
+        "package_version": "v1.0.0-rights.1",
+        "record_id": 21960240,
+        "url": "https://zenodo.org/api/records/21960240/files/manitoba-2021-all-fields-package-v1.0.0-rights.1.json.gz/content",
+        "version_doi": "10.5281/zenodo.21960240"
+      },
+      "historical": {
+        "asset": {
+          "filename": "manitoba-2021-all-fields-package.json.gz",
+          "sha256": "a56e0c80b468760b7a0790791c1667eed39746aac3e25ec65aad3d03441b8528",
+          "size_bytes": 331238,
+          "uncompressed_sha256": "0c77609d4ada13e0d0deb38f448a5470b04a1920c5416e9aa0f6665f39b630d5",
+          "uncompressed_size_bytes": 17606961
+        },
+        "metadata_sha256": "e7800d2b8f2e75f6b8dc7314a5c0c38346c49a517093ff632ed53958f33a3d2f",
+        "operation_id": "correct-existing-metadata:manitoba-2021-all-fields:v0.6.0:a56e0c80b468760b7a0790791c1667eed39746aac3e25ec65aad3d03441b8528:e7800d2b8f2e75f6b8dc7314a5c0c38346c49a517093ff632ed53958f33a3d2f",
+        "package_version": "v0.6.0",
+        "publication_date": "2026-07-20",
+        "record_id": 21461587,
+        "version_doi": "10.5281/zenodo.21461587"
+      },
+      "model_id": "manitoba-2021-all-fields"
+    },
+    {
+      "concept_doi": "10.5281/zenodo.21461589",
+      "corrected": {
+        "asset": {
+          "filename": "montreal-cma-2016-all-fields-package-v1.0.0-rights.1.json.gz",
+          "sha256": "729b09dc5bd05ba47bb67fb4389aaef3ef5391e67e0b878586915624fa18d19d",
+          "size_bytes": 1011428,
+          "uncompressed_sha256": "fb2861a4d6e8cb8148a9f21a11daaf1da5d1f83bf6d1e8afbe037de00a0c1211",
+          "uncompressed_size_bytes": 64238102
+        },
+        "metadata_sha256": "c6b6d7ac05d10c7f28da92105a903179d21c0d4f8deb1232e8537a7fbcf0bea0",
+        "operation_id": "create-new-version:montreal-cma-2016-all-fields:v1.0.0-rights.1:729b09dc5bd05ba47bb67fb4389aaef3ef5391e67e0b878586915624fa18d19d:c6b6d7ac05d10c7f28da92105a903179d21c0d4f8deb1232e8537a7fbcf0bea0",
+        "package_version": "v1.0.0-rights.1",
+        "record_id": 21960306,
+        "url": "https://zenodo.org/api/records/21960306/files/montreal-cma-2016-all-fields-package-v1.0.0-rights.1.json.gz/content",
+        "version_doi": "10.5281/zenodo.21960306"
+      },
+      "historical": {
+        "asset": {
+          "filename": "montreal-cma-2016-all-fields-package.json.gz",
+          "sha256": "94ff771884ead36b604d05c8e4043e36869da85c75aa1919f31adf21fd4aee97",
+          "size_bytes": 1009496,
+          "uncompressed_sha256": "ebad14c83bf2aef47e3ac6e0684c1994ea0fa8cd83df7eaeb78a76077174ef91",
+          "uncompressed_size_bytes": 64234759
+        },
+        "metadata_sha256": "3e865ebf8e18b11e2e76866ee5d6838b9fea3e3ed1eb57a99d01652eac3e5229",
+        "operation_id": "correct-existing-metadata:montreal-cma-2016-all-fields:v0.2.1:94ff771884ead36b604d05c8e4043e36869da85c75aa1919f31adf21fd4aee97:3e865ebf8e18b11e2e76866ee5d6838b9fea3e3ed1eb57a99d01652eac3e5229",
+        "package_version": "v0.2.1",
+        "publication_date": "2026-07-20",
+        "record_id": 21461590,
+        "version_doi": "10.5281/zenodo.21461590"
+      },
+      "model_id": "montreal-cma-2016-all-fields"
+    },
+    {
+      "concept_doi": "10.5281/zenodo.21461592",
+      "corrected": {
+        "asset": {
+          "filename": "montreal-cma-2021-all-fields-package-v1.0.0-rights.1.json.gz",
+          "sha256": "5b32165f972d08d4b6384cb4c883e7817e4ab2667b7f6eadcfff9dbfbc545150",
+          "size_bytes": 755858,
+          "uncompressed_sha256": "317627e0a1f1ce657075644d6e121e1515bf310fbff03456b25f7336d29dc3e0",
+          "uncompressed_size_bytes": 55586245
+        },
+        "metadata_sha256": "992292af8f8682fc793f7059dd3dd9eb5731db86fdcbb164f374ceaffbc64c10",
+        "operation_id": "create-new-version:montreal-cma-2021-all-fields:v1.0.0-rights.1:5b32165f972d08d4b6384cb4c883e7817e4ab2667b7f6eadcfff9dbfbc545150:992292af8f8682fc793f7059dd3dd9eb5731db86fdcbb164f374ceaffbc64c10",
+        "package_version": "v1.0.0-rights.1",
+        "record_id": 21960295,
+        "url": "https://zenodo.org/api/records/21960295/files/montreal-cma-2021-all-fields-package-v1.0.0-rights.1.json.gz/content",
+        "version_doi": "10.5281/zenodo.21960295"
+      },
+      "historical": {
+        "asset": {
+          "filename": "montreal-cma-2021-all-fields-package.json.gz",
+          "sha256": "b5a2c023da4a0af36824259dfeb68213242271352a1b7a597b9700db38352eea",
+          "size_bytes": 979348,
+          "uncompressed_sha256": "f66bdd4e7f6140c9ba0bd43a2485c163cfec8afd8f2eda0daf047b0a501ad9ac",
+          "uncompressed_size_bytes": 55582858
+        },
+        "metadata_sha256": "1e89d2287d540613c7473d3f62308edcc0863bd16fd39cf815e67b461b4b5167",
+        "operation_id": "correct-existing-metadata:montreal-cma-2021-all-fields:v0.6.0:b5a2c023da4a0af36824259dfeb68213242271352a1b7a597b9700db38352eea:1e89d2287d540613c7473d3f62308edcc0863bd16fd39cf815e67b461b4b5167",
+        "package_version": "v0.6.0",
+        "publication_date": "2026-07-20",
+        "record_id": 21461593,
+        "version_doi": "10.5281/zenodo.21461593"
+      },
+      "model_id": "montreal-cma-2021-all-fields"
+    },
+    {
+      "concept_doi": "10.5281/zenodo.21461595",
+      "corrected": {
+        "asset": {
+          "filename": "new-brunswick-2016-all-fields-package-v1.0.0-rights.1.json.gz",
+          "sha256": "180c370dc77b346fd0a17c4857830a11b99ef017130baf93ff1f7332191eb52d",
+          "size_bytes": 204473,
+          "uncompressed_sha256": "5ee0a68be6f472f57d47f52d45854a912568912d03b78d39b7f10eb37b858c9c",
+          "uncompressed_size_bytes": 12502446
+        },
+        "metadata_sha256": "8cf9e71cb6d904a14cf15b089fabe3be60da5a63e1fc0b002a497047a240220e",
+        "operation_id": "create-new-version:new-brunswick-2016-all-fields:v1.0.0-rights.1:180c370dc77b346fd0a17c4857830a11b99ef017130baf93ff1f7332191eb52d:8cf9e71cb6d904a14cf15b089fabe3be60da5a63e1fc0b002a497047a240220e",
+        "package_version": "v1.0.0-rights.1",
+        "record_id": 21960229,
+        "url": "https://zenodo.org/api/records/21960229/files/new-brunswick-2016-all-fields-package-v1.0.0-rights.1.json.gz/content",
+        "version_doi": "10.5281/zenodo.21960229"
+      },
+      "historical": {
+        "asset": {
+          "filename": "new-brunswick-2016-all-fields-package.json.gz",
+          "sha256": "167b5bd5a0398d48ceb50f01ef715add4c7e4d61c62713348a00f01e436787f1",
+          "size_bytes": 202698,
+          "uncompressed_sha256": "607a7a368746b755fb2e6b345a69219b6e655c3dd9f41aac670e6cbf1dd94876",
+          "uncompressed_size_bytes": 12499103
+        },
+        "metadata_sha256": "a762f7649a745cccbf22239153d9a87b8482cd03d922e5e7933ea4e2214d5581",
+        "operation_id": "correct-existing-metadata:new-brunswick-2016-all-fields:v0.2.1:167b5bd5a0398d48ceb50f01ef715add4c7e4d61c62713348a00f01e436787f1:a762f7649a745cccbf22239153d9a87b8482cd03d922e5e7933ea4e2214d5581",
+        "package_version": "v0.2.1",
+        "publication_date": "2026-07-20",
+        "record_id": 21461596,
+        "version_doi": "10.5281/zenodo.21461596"
+      },
+      "model_id": "new-brunswick-2016-all-fields"
+    },
+    {
+      "concept_doi": "10.5281/zenodo.21461597",
+      "corrected": {
+        "asset": {
+          "filename": "new-brunswick-2021-all-fields-package-v1.0.0-rights.1.json.gz",
+          "sha256": "9a24e08efa625a659ff21bc3202be1b38020b52120af4cfc516dc05f95cf817f",
+          "size_bytes": 157750,
+          "uncompressed_sha256": "0d1713bca561ba431bba1ddea8ba66a8d794f812d2c865ad0392bfadce2cebdc",
+          "uncompressed_size_bytes": 10344708
+        },
+        "metadata_sha256": "bfcb63b9e3d6573252f056bc4c1e15d0f3f0a48a59f3748d02acd09c6fa1fbd7",
+        "operation_id": "create-new-version:new-brunswick-2021-all-fields:v1.0.0-rights.1:9a24e08efa625a659ff21bc3202be1b38020b52120af4cfc516dc05f95cf817f:bfcb63b9e3d6573252f056bc4c1e15d0f3f0a48a59f3748d02acd09c6fa1fbd7",
+        "package_version": "v1.0.0-rights.1",
+        "record_id": 21960228,
+        "url": "https://zenodo.org/api/records/21960228/files/new-brunswick-2021-all-fields-package-v1.0.0-rights.1.json.gz/content",
+        "version_doi": "10.5281/zenodo.21960228"
+      },
+      "historical": {
+        "asset": {
+          "filename": "new-brunswick-2021-all-fields-package.json.gz",
+          "sha256": "929859a2a5aa7c9eb6382a9b0f75f6568c15c73556bd340b95a4cead283745b1",
+          "size_bytes": 200930,
+          "uncompressed_sha256": "38ef27f345a432d23343c71eca5be2a7083b9ee97ce35f05c5dd009915a95d54",
+          "uncompressed_size_bytes": 10341321
+        },
+        "metadata_sha256": "cff19a21d0628664a1ea81a06ad9c31adbe197e07d515fa8bf3227328f95b928",
+        "operation_id": "correct-existing-metadata:new-brunswick-2021-all-fields:v0.6.0:929859a2a5aa7c9eb6382a9b0f75f6568c15c73556bd340b95a4cead283745b1:cff19a21d0628664a1ea81a06ad9c31adbe197e07d515fa8bf3227328f95b928",
+        "package_version": "v0.6.0",
+        "publication_date": "2026-07-20",
+        "record_id": 21461598,
+        "version_doi": "10.5281/zenodo.21461598"
+      },
+      "model_id": "new-brunswick-2021-all-fields"
+    },
+    {
+      "concept_doi": "10.5281/zenodo.21461599",
+      "corrected": {
+        "asset": {
+          "filename": "newfoundland-2016-all-fields-package-v1.0.0-rights.1.json.gz",
+          "sha256": "89108da1bee0f3f58cdcac3095017998af5d619979e5b8f67689e4821080632d",
+          "size_bytes": 140539,
+          "uncompressed_sha256": "78324b0a208ebd6c2931d5fcc34a8de62075143d82713ed7c15b3bc1f85c66dd",
+          "uncompressed_size_bytes": 8540912
+        },
+        "metadata_sha256": "c1462ea378ef654d46c74651b427a44afb8fcef7fee4f528611447bd1b8956f9",
+        "operation_id": "create-new-version:newfoundland-2016-all-fields:v1.0.0-rights.1:89108da1bee0f3f58cdcac3095017998af5d619979e5b8f67689e4821080632d:c1462ea378ef654d46c74651b427a44afb8fcef7fee4f528611447bd1b8956f9",
+        "package_version": "v1.0.0-rights.1",
+        "record_id": 21960221,
+        "url": "https://zenodo.org/api/records/21960221/files/newfoundland-2016-all-fields-package-v1.0.0-rights.1.json.gz/content",
+        "version_doi": "10.5281/zenodo.21960221"
+      },
+      "historical": {
+        "asset": {
+          "filename": "newfoundland-2016-all-fields-package.json.gz",
+          "sha256": "b552c09faca4ac1e51510c3464fd480ace6a50ed60eb77e739832acdff6393f7",
+          "size_bytes": 138661,
+          "uncompressed_sha256": "c107a61c85d2f12b3c4b95656229e191287d6af927c53a7f18ad33ba8e9fe7c7",
+          "uncompressed_size_bytes": 8537569
+        },
+        "metadata_sha256": "d1a1bb371a82d3cee658940e476b5f92ae2383b1a2756c98c2446f8588a392e5",
+        "operation_id": "correct-existing-metadata:newfoundland-2016-all-fields:v0.2.1:b552c09faca4ac1e51510c3464fd480ace6a50ed60eb77e739832acdff6393f7:d1a1bb371a82d3cee658940e476b5f92ae2383b1a2756c98c2446f8588a392e5",
+        "package_version": "v0.2.1",
+        "publication_date": "2026-07-20",
+        "record_id": 21461600,
+        "version_doi": "10.5281/zenodo.21461600"
+      },
+      "model_id": "newfoundland-2016-all-fields"
+    },
+    {
+      "concept_doi": "10.5281/zenodo.21461601",
+      "corrected": {
+        "asset": {
+          "filename": "newfoundland-2021-all-fields-package-v1.0.0-rights.1.json.gz",
+          "sha256": "17a7186705751286510182b800f24cd055ee4b90def6980b0ffb12adf0b00361",
+          "size_bytes": 103630,
+          "uncompressed_sha256": "0b0145d43ce333e2d0dcd42c60c5dd0d4fdf4026295bf326156a913bdb8134fb",
+          "uncompressed_size_bytes": 6596818
+        },
+        "metadata_sha256": "2ad13e6c683143d35227b411528159be48e12e842ae5c343aecccbdfe32596b4",
+        "operation_id": "create-new-version:newfoundland-2021-all-fields:v1.0.0-rights.1:17a7186705751286510182b800f24cd055ee4b90def6980b0ffb12adf0b00361:2ad13e6c683143d35227b411528159be48e12e842ae5c343aecccbdfe32596b4",
+        "package_version": "v1.0.0-rights.1",
+        "record_id": 21960213,
+        "url": "https://zenodo.org/api/records/21960213/files/newfoundland-2021-all-fields-package-v1.0.0-rights.1.json.gz/content",
+        "version_doi": "10.5281/zenodo.21960213"
+      },
+      "historical": {
+        "asset": {
+          "filename": "newfoundland-2021-all-fields-package.json.gz",
+          "sha256": "4ef77ee62ccb30686ba3e0480c01ee54891561108a9d3a61181861e20871690a",
+          "size_bytes": 129820,
+          "uncompressed_sha256": "963efad475b7726db9d3f757dbf13957399371c1f55f194bad637aa257b7596f",
+          "uncompressed_size_bytes": 6593431
+        },
+        "metadata_sha256": "40082f187d6bc61ca5b655f0995fc09970bc8ab5eaf0d66e9fbac5c6da963c1c",
+        "operation_id": "correct-existing-metadata:newfoundland-2021-all-fields:v0.6.0:4ef77ee62ccb30686ba3e0480c01ee54891561108a9d3a61181861e20871690a:40082f187d6bc61ca5b655f0995fc09970bc8ab5eaf0d66e9fbac5c6da963c1c",
+        "package_version": "v0.6.0",
+        "publication_date": "2026-07-20",
+        "record_id": 21461602,
+        "version_doi": "10.5281/zenodo.21461602"
+      },
+      "model_id": "newfoundland-2021-all-fields"
+    },
+    {
+      "concept_doi": "10.5281/zenodo.21461603",
+      "corrected": {
+        "asset": {
+          "filename": "nova-scotia-2016-all-fields-package-v1.0.0-rights.1.json.gz",
+          "sha256": "092a0bd320ba2f96c8f45fcdc1c6b1e34c3be103354fe178cd6219ee86b07be5",
+          "size_bytes": 246010,
+          "uncompressed_sha256": "49b978e4b51ffd983654cc1d8a3c0f10b490fbcf5ad482b0a0e4deb41045fe1a",
+          "uncompressed_size_bytes": 15359909
+        },
+        "metadata_sha256": "70d84309d6dfbc89abafa871952cd48dcf2210e70d37aba6d6f92b27b9da8a19",
+        "operation_id": "create-new-version:nova-scotia-2016-all-fields:v1.0.0-rights.1:092a0bd320ba2f96c8f45fcdc1c6b1e34c3be103354fe178cd6219ee86b07be5:70d84309d6dfbc89abafa871952cd48dcf2210e70d37aba6d6f92b27b9da8a19",
+        "package_version": "v1.0.0-rights.1",
+        "record_id": 21960237,
+        "url": "https://zenodo.org/api/records/21960237/files/nova-scotia-2016-all-fields-package-v1.0.0-rights.1.json.gz/content",
+        "version_doi": "10.5281/zenodo.21960237"
+      },
+      "historical": {
+        "asset": {
+          "filename": "nova-scotia-2016-all-fields-package.json.gz",
+          "sha256": "f8212b336645225653b01f6976791efd7d58947bab4b95553978c62632686871",
+          "size_bytes": 244276,
+          "uncompressed_sha256": "70062e8d721d8ff29da0dbbfdbb455b9a9e519f9a69465898c571c6f799f06a4",
+          "uncompressed_size_bytes": 15356566
+        },
+        "metadata_sha256": "00e0e2a1c80914ccffa671007b69b145780ec41c9deb165083d5feab4fb04684",
+        "operation_id": "correct-existing-metadata:nova-scotia-2016-all-fields:v0.2.1:f8212b336645225653b01f6976791efd7d58947bab4b95553978c62632686871:00e0e2a1c80914ccffa671007b69b145780ec41c9deb165083d5feab4fb04684",
+        "package_version": "v0.2.1",
+        "publication_date": "2026-07-20",
+        "record_id": 21461604,
+        "version_doi": "10.5281/zenodo.21461604"
+      },
+      "model_id": "nova-scotia-2016-all-fields"
+    },
+    {
+      "concept_doi": "10.5281/zenodo.21461605",
+      "corrected": {
+        "asset": {
+          "filename": "nova-scotia-2021-all-fields-package-v1.0.0-rights.1.json.gz",
+          "sha256": "172cbc1026bb98ce075cf0257e3bd7f15405bc5ff5aa6dda63aa847cae68acb2",
+          "size_bytes": 269609,
+          "uncompressed_sha256": "a9b6d13f61154a5f8853c9a779cbd8a55d29e47c065d78f6ed83737eb136e561",
+          "uncompressed_size_bytes": 16640536
+        },
+        "metadata_sha256": "154c2abf86b79d77027475ca18004ec21a3522d24871c757df291b9967ae14bd",
+        "operation_id": "create-new-version:nova-scotia-2021-all-fields:v1.0.0-rights.1:172cbc1026bb98ce075cf0257e3bd7f15405bc5ff5aa6dda63aa847cae68acb2:154c2abf86b79d77027475ca18004ec21a3522d24871c757df291b9967ae14bd",
+        "package_version": "v1.0.0-rights.1",
+        "record_id": 21960241,
+        "url": "https://zenodo.org/api/records/21960241/files/nova-scotia-2021-all-fields-package-v1.0.0-rights.1.json.gz/content",
+        "version_doi": "10.5281/zenodo.21960241"
+      },
+      "historical": {
+        "asset": {
+          "filename": "nova-scotia-2021-all-fields-package.json.gz",
+          "sha256": "20307e3bbcb1b50faa2225ca48ce61689878be24e68b27f15a43a33a05a50bb1",
+          "size_bytes": 351876,
+          "uncompressed_sha256": "ce931f2a193699b90b40431197eaa43008bfb13d78ba9b0e686d293bc345c1d7",
+          "uncompressed_size_bytes": 16637149
+        },
+        "metadata_sha256": "49ff5f4ae7b05d9ab456b007d5e9295e7010f83354a6fbf9626f3dcf2625f345",
+        "operation_id": "correct-existing-metadata:nova-scotia-2021-all-fields:v0.6.0:20307e3bbcb1b50faa2225ca48ce61689878be24e68b27f15a43a33a05a50bb1:49ff5f4ae7b05d9ab456b007d5e9295e7010f83354a6fbf9626f3dcf2625f345",
+        "package_version": "v0.6.0",
+        "publication_date": "2026-07-20",
+        "record_id": 21461606,
+        "version_doi": "10.5281/zenodo.21461606"
+      },
+      "model_id": "nova-scotia-2021-all-fields"
+    },
+    {
+      "concept_doi": "10.5281/zenodo.21461607",
+      "corrected": {
+        "asset": {
+          "filename": "ontario-2016-all-fields-package-v1.0.0-rights.1.json.gz",
+          "sha256": "a10491591fcc25bdc6dbfaff24d0948a423dfdd1655a6c85b4b4ae39493b9c13",
+          "size_bytes": 3006816,
+          "uncompressed_sha256": "1ba042dfd3ec38b30a86464d0622ec03076e26cf8cee835554b55e6de1dfab84",
+          "uncompressed_size_bytes": 205760482
+        },
+        "metadata_sha256": "93a179070e54da1764c25ece2ef3d8f3897866bf1b2c962743d1c0d5a1135a74",
+        "operation_id": "create-new-version:ontario-2016-all-fields:v1.0.0-rights.1:a10491591fcc25bdc6dbfaff24d0948a423dfdd1655a6c85b4b4ae39493b9c13:93a179070e54da1764c25ece2ef3d8f3897866bf1b2c962743d1c0d5a1135a74",
+        "package_version": "v1.0.0-rights.1",
+        "record_id": 21960346,
+        "url": "https://zenodo.org/api/records/21960346/files/ontario-2016-all-fields-package-v1.0.0-rights.1.json.gz/content",
+        "version_doi": "10.5281/zenodo.21960346"
+      },
+      "historical": {
+        "asset": {
+          "filename": "ontario-2016-all-fields-package.json.gz",
+          "sha256": "7477a7161b8243aba5ef64c902a9db303290733edb5b2832210c1fd7075ff879",
+          "size_bytes": 3005146,
+          "uncompressed_sha256": "0967ba99c4179e3de1d8436a14e0b3082bd4a7353c68b9c59a4c32977711e7ed",
+          "uncompressed_size_bytes": 205757139
+        },
+        "metadata_sha256": "9e00fc5dc9164552a1746161d433f5d78ef8b702309302188fd408fec6891750",
+        "operation_id": "correct-existing-metadata:ontario-2016-all-fields:v0.2.1:7477a7161b8243aba5ef64c902a9db303290733edb5b2832210c1fd7075ff879:9e00fc5dc9164552a1746161d433f5d78ef8b702309302188fd408fec6891750",
+        "package_version": "v0.2.1",
+        "publication_date": "2026-07-20",
+        "record_id": 21461608,
+        "version_doi": "10.5281/zenodo.21461608"
+      },
+      "model_id": "ontario-2016-all-fields"
+    },
+    {
+      "concept_doi": "10.5281/zenodo.21461609",
+      "corrected": {
+        "asset": {
+          "filename": "ontario-2021-all-fields-package-v1.0.0-rights.1.json.gz",
+          "sha256": "47ff848e848bb83591ca355685ea6d655acaa97b140c2ad34e354c51556ef2ab",
+          "size_bytes": 2298699,
+          "uncompressed_sha256": "fe742995c4b5c6c354914642090462e205d56cf1270efac4b842876e6587aec3",
+          "uncompressed_size_bytes": 179554741
+        },
+        "metadata_sha256": "9fedc0dc3ca8e56bed1fd9c7c7fe3ebc14b40473c86c99abec1541892654cc25",
+        "operation_id": "create-new-version:ontario-2021-all-fields:v1.0.0-rights.1:47ff848e848bb83591ca355685ea6d655acaa97b140c2ad34e354c51556ef2ab:9fedc0dc3ca8e56bed1fd9c7c7fe3ebc14b40473c86c99abec1541892654cc25",
+        "package_version": "v1.0.0-rights.1",
+        "record_id": 21960343,
+        "url": "https://zenodo.org/api/records/21960343/files/ontario-2021-all-fields-package-v1.0.0-rights.1.json.gz/content",
+        "version_doi": "10.5281/zenodo.21960343"
+      },
+      "historical": {
+        "asset": {
+          "filename": "ontario-2021-all-fields-package.json.gz",
+          "sha256": "a799dc4b5b7af8d31464c82ccdb3862712b7938046a39f8e4059efb678d57d4f",
+          "size_bytes": 2989767,
+          "uncompressed_sha256": "4ef6bbd567cfd099c8c81f76b566b6029bb33da7caac56e2297a1d4927cec299",
+          "uncompressed_size_bytes": 179551354
+        },
+        "metadata_sha256": "53e5e9949bee7a3da12152e8350f925dd6d6686dbd56034d90c91801f83c8295",
+        "operation_id": "correct-existing-metadata:ontario-2021-all-fields:v0.6.0:a799dc4b5b7af8d31464c82ccdb3862712b7938046a39f8e4059efb678d57d4f:53e5e9949bee7a3da12152e8350f925dd6d6686dbd56034d90c91801f83c8295",
+        "package_version": "v0.6.0",
+        "publication_date": "2026-07-20",
+        "record_id": 21461610,
+        "version_doi": "10.5281/zenodo.21461610"
+      },
+      "model_id": "ontario-2021-all-fields"
+    },
+    {
+      "concept_doi": "10.5281/zenodo.21461611",
+      "corrected": {
+        "asset": {
+          "filename": "pei-2016-minimal-package-v1.0.0-rights.1.json.gz",
+          "sha256": "463ea4cf8258c461e996c42515892734d9087fb4c80968156cd43c7b805a2505",
+          "size_bytes": 5882,
+          "uncompressed_sha256": "85d4efa4a741096dc2a0c5a99282707d72027e2fbe4ac173141d2aef576145d8",
+          "uncompressed_size_bytes": 69291
+        },
+        "metadata_sha256": "93aaa9d9e40c9b9373779e3e03b8f889ddf486c690d27f534df152724e6349f0",
+        "operation_id": "create-new-version:pei-2016-minimal:v1.0.0-rights.1:463ea4cf8258c461e996c42515892734d9087fb4c80968156cd43c7b805a2505:93aaa9d9e40c9b9373779e3e03b8f889ddf486c690d27f534df152724e6349f0",
+        "package_version": "v1.0.0-rights.1",
+        "record_id": 21960199,
+        "url": "https://zenodo.org/api/records/21960199/files/pei-2016-minimal-package-v1.0.0-rights.1.json.gz/content",
+        "version_doi": "10.5281/zenodo.21960199"
+      },
+      "historical": {
+        "asset": {
+          "filename": "pei-2016-minimal-package.json.gz",
+          "sha256": "60fedf9fedddc13848338b006a70efb04cef4f6aee300c4d2f3ffd6acf1f5bcb",
+          "size_bytes": 4486,
+          "uncompressed_sha256": "b9733fb70d83020444e811b3597fbb4621164290aa4982255a940b702f31a4ff",
+          "uncompressed_size_bytes": 65948
+        },
+        "metadata_sha256": "15ac6e1777a0496437bfd84d08433a2804a789fd235d6f294695dce924e0f949",
+        "operation_id": "correct-existing-metadata:pei-2016-minimal:v0.2.1:60fedf9fedddc13848338b006a70efb04cef4f6aee300c4d2f3ffd6acf1f5bcb:15ac6e1777a0496437bfd84d08433a2804a789fd235d6f294695dce924e0f949",
+        "package_version": "v0.2.1",
+        "publication_date": "2026-07-20",
+        "record_id": 21461612,
+        "version_doi": "10.5281/zenodo.21461612"
+      },
+      "model_id": "pei-2016-minimal"
+    },
+    {
+      "concept_doi": "10.5281/zenodo.21461526",
+      "corrected": {
+        "asset": {
+          "filename": "pei-2021-minimal-package-v1.0.0-rights.1.json.gz",
+          "sha256": "0009386ef95d07fe85fdc8fcdee874d515b387aa56622ef39082479c5c451a0c",
+          "size_bytes": 6267,
+          "uncompressed_sha256": "43df5a8b3ac00b04a811e44f98f2f0219866ccc335c44f8377950aa173023979",
+          "uncompressed_size_bytes": 32875
+        },
+        "metadata_sha256": "edc75092068e1b3d0fdb67e783f35b0b67602ae6971b22278622ed6c36aeba7c",
+        "operation_id": "create-new-version:pei-2021-minimal:v1.0.0-rights.1:0009386ef95d07fe85fdc8fcdee874d515b387aa56622ef39082479c5c451a0c:edc75092068e1b3d0fdb67e783f35b0b67602ae6971b22278622ed6c36aeba7c",
+        "package_version": "v1.0.0-rights.1",
+        "record_id": 21960090,
+        "url": "https://zenodo.org/api/records/21960090/files/pei-2021-minimal-package-v1.0.0-rights.1.json.gz/content",
+        "version_doi": "10.5281/zenodo.21960090"
+      },
+      "historical": {
+        "asset": {
+          "filename": "pei-2021-minimal-package.json.gz",
+          "sha256": "d47857c9b27e8c2fb4a37e8469fe6f4afc44a7fbc5673663d8909718a6e44b85",
+          "size_bytes": 5027,
+          "uncompressed_sha256": "280523e65f88801266d351a532dc9c94d2d270295699053660a320abd40b62b1",
+          "uncompressed_size_bytes": 29488
+        },
+        "metadata_sha256": "c0ec9c938e71dca61c69fc1a5b3e2d86c4694855691695771147f6d1cee8f621",
+        "operation_id": "correct-existing-metadata:pei-2021-minimal:v0.6.0:d47857c9b27e8c2fb4a37e8469fe6f4afc44a7fbc5673663d8909718a6e44b85:c0ec9c938e71dca61c69fc1a5b3e2d86c4694855691695771147f6d1cee8f621",
+        "package_version": "v0.6.0",
+        "publication_date": "2026-07-20",
+        "record_id": 21461527,
+        "version_doi": "10.5281/zenodo.21461527"
+      },
+      "model_id": "pei-2021-minimal"
+    },
+    {
+      "concept_doi": "10.5281/zenodo.21461613",
+      "corrected": {
+        "asset": {
+          "filename": "quebec-2016-all-fields-package-v1.0.0-rights.1.json.gz",
+          "sha256": "de3cc1e5f03b219988b7bfda889a6084ecaff3f9f9a5ed60b868b71746fd5c64",
+          "size_bytes": 1772522,
+          "uncompressed_sha256": "ae53d9b0ac14f6c79a9fedaba81991bf73bcff435dd85d85c2e63174e8730077",
+          "uncompressed_size_bytes": 122082752
+        },
+        "metadata_sha256": "08ce949dc045afc29a8866e643652ff2c8f5a9d1ca43bb33982720521db34acc",
+        "operation_id": "create-new-version:quebec-2016-all-fields:v1.0.0-rights.1:de3cc1e5f03b219988b7bfda889a6084ecaff3f9f9a5ed60b868b71746fd5c64:08ce949dc045afc29a8866e643652ff2c8f5a9d1ca43bb33982720521db34acc",
+        "package_version": "v1.0.0-rights.1",
+        "record_id": 21960337,
+        "url": "https://zenodo.org/api/records/21960337/files/quebec-2016-all-fields-package-v1.0.0-rights.1.json.gz/content",
+        "version_doi": "10.5281/zenodo.21960337"
+      },
+      "historical": {
+        "asset": {
+          "filename": "quebec-2016-all-fields-package.json.gz",
+          "sha256": "1f03b9c5e72c5641f31159f0af3d4c3839e142445f17c81d3fd2f969c74a0628",
+          "size_bytes": 1770789,
+          "uncompressed_sha256": "7fbfa64e29ae5539f382475c472cb1fe48b988161e0b3a10ecd81fcaa942a7d7",
+          "uncompressed_size_bytes": 122079409
+        },
+        "metadata_sha256": "f2c0dabdf728d6b8d30b8dc1ff26166cb3e3a9995a9a63563bf06ddb3fcf18e7",
+        "operation_id": "correct-existing-metadata:quebec-2016-all-fields:v0.2.1:1f03b9c5e72c5641f31159f0af3d4c3839e142445f17c81d3fd2f969c74a0628:f2c0dabdf728d6b8d30b8dc1ff26166cb3e3a9995a9a63563bf06ddb3fcf18e7",
+        "package_version": "v0.2.1",
+        "publication_date": "2026-07-20",
+        "record_id": 21461614,
+        "version_doi": "10.5281/zenodo.21461614"
+      },
+      "model_id": "quebec-2016-all-fields"
+    },
+    {
+      "concept_doi": "10.5281/zenodo.21461615",
+      "corrected": {
+        "asset": {
+          "filename": "quebec-2021-all-fields-package-v1.0.0-rights.1.json.gz",
+          "sha256": "58add7c06fc89512f125db9f3dd3ebc86fd1f9a019fd0631bcbecd29ccd2c499",
+          "size_bytes": 1348916,
+          "uncompressed_sha256": "aa333fffe8fd2d35c4751c3391d6c9491adf0ed424a2ed986f341252688065a0",
+          "uncompressed_size_bytes": 105677829
+        },
+        "metadata_sha256": "bd7a3ecec7ec334c4baa94a1a2fc93654a288683ec2bbb874bef80c37e26f3cb",
+        "operation_id": "create-new-version:quebec-2021-all-fields:v1.0.0-rights.1:58add7c06fc89512f125db9f3dd3ebc86fd1f9a019fd0631bcbecd29ccd2c499:bd7a3ecec7ec334c4baa94a1a2fc93654a288683ec2bbb874bef80c37e26f3cb",
+        "package_version": "v1.0.0-rights.1",
+        "record_id": 21960324,
+        "url": "https://zenodo.org/api/records/21960324/files/quebec-2021-all-fields-package-v1.0.0-rights.1.json.gz/content",
+        "version_doi": "10.5281/zenodo.21960324"
+      },
+      "historical": {
+        "asset": {
+          "filename": "quebec-2021-all-fields-package.json.gz",
+          "sha256": "39787ecc6449dff9ca0e99c4b6bc62d7b0eb7a45607a91f8cdadd70edcb3391f",
+          "size_bytes": 1746083,
+          "uncompressed_sha256": "df75b07d25753a6a0e0a2d82a91ad17485f8cb4710fa5df9e3a45b27519aab48",
+          "uncompressed_size_bytes": 105674442
+        },
+        "metadata_sha256": "f7e6a3c5e251632667856582bd0291aee6867d1fe508ef76bdc91c2c26cdf052",
+        "operation_id": "correct-existing-metadata:quebec-2021-all-fields:v0.6.0:39787ecc6449dff9ca0e99c4b6bc62d7b0eb7a45607a91f8cdadd70edcb3391f:f7e6a3c5e251632667856582bd0291aee6867d1fe508ef76bdc91c2c26cdf052",
+        "package_version": "v0.6.0",
+        "publication_date": "2026-07-20",
+        "record_id": 21461616,
+        "version_doi": "10.5281/zenodo.21461616"
+      },
+      "model_id": "quebec-2021-all-fields"
+    },
+    {
+      "concept_doi": "10.5281/zenodo.21461617",
+      "corrected": {
+        "asset": {
+          "filename": "saskatchewan-2016-all-fields-package-v1.0.0-rights.1.json.gz",
+          "sha256": "635b5be860796aa0586d71db3199e06be4a473fc9ce13224f98285e5929bb1cd",
+          "size_bytes": 289324,
+          "uncompressed_sha256": "f11bbbe3dbed2f784e116420b3ce2e3093efb3a33f4ad98606acbae87a6f1698",
+          "uncompressed_size_bytes": 17461966
+        },
+        "metadata_sha256": "67ca970c55c3db983d136d8e6492038050653b8cbf44a8448f5a7dbab3c07073",
+        "operation_id": "create-new-version:saskatchewan-2016-all-fields:v1.0.0-rights.1:635b5be860796aa0586d71db3199e06be4a473fc9ce13224f98285e5929bb1cd:67ca970c55c3db983d136d8e6492038050653b8cbf44a8448f5a7dbab3c07073",
+        "package_version": "v1.0.0-rights.1",
+        "record_id": 21960249,
+        "url": "https://zenodo.org/api/records/21960249/files/saskatchewan-2016-all-fields-package-v1.0.0-rights.1.json.gz/content",
+        "version_doi": "10.5281/zenodo.21960249"
+      },
+      "historical": {
+        "asset": {
+          "filename": "saskatchewan-2016-all-fields-package.json.gz",
+          "sha256": "2b4430944d18d8161d22c2ce5dcfce0f6720aed4259197769971c62d3d320b70",
+          "size_bytes": 287123,
+          "uncompressed_sha256": "1bcb91caf412ba6c1b760fc51fb57ffcdc95608bdf20fb854237a4d5751f1a8f",
+          "uncompressed_size_bytes": 17458623
+        },
+        "metadata_sha256": "8c9713a1ae690c5095e3dd13da4873c3c654574c7897f9c110d0daf289ea8e2c",
+        "operation_id": "correct-existing-metadata:saskatchewan-2016-all-fields:v0.2.1:2b4430944d18d8161d22c2ce5dcfce0f6720aed4259197769971c62d3d320b70:8c9713a1ae690c5095e3dd13da4873c3c654574c7897f9c110d0daf289ea8e2c",
+        "package_version": "v0.2.1",
+        "publication_date": "2026-07-20",
+        "record_id": 21461618,
+        "version_doi": "10.5281/zenodo.21461618"
+      },
+      "model_id": "saskatchewan-2016-all-fields"
+    },
+    {
+      "concept_doi": "10.5281/zenodo.21461619",
+      "corrected": {
+        "asset": {
+          "filename": "saskatchewan-2021-all-fields-package-v1.0.0-rights.1.json.gz",
+          "sha256": "f72b629cb86c70528321d73464a4a21397efbdf3967fca2eb36ea5e2e435b761",
+          "size_bytes": 215945,
+          "uncompressed_sha256": "1c764273a1824694c1bf501401147d94203eecda1007de03762d3961f55bfeeb",
+          "uncompressed_size_bytes": 14736608
+        },
+        "metadata_sha256": "532ec64fcda49ce57b2d6c09a4b9e6a782802dea8834929450d75675767e0073",
+        "operation_id": "create-new-version:saskatchewan-2021-all-fields:v1.0.0-rights.1:f72b629cb86c70528321d73464a4a21397efbdf3967fca2eb36ea5e2e435b761:532ec64fcda49ce57b2d6c09a4b9e6a782802dea8834929450d75675767e0073",
+        "package_version": "v1.0.0-rights.1",
+        "record_id": 21960232,
+        "url": "https://zenodo.org/api/records/21960232/files/saskatchewan-2021-all-fields-package-v1.0.0-rights.1.json.gz/content",
+        "version_doi": "10.5281/zenodo.21960232"
+      },
+      "historical": {
+        "asset": {
+          "filename": "saskatchewan-2021-all-fields-package.json.gz",
+          "sha256": "a38bd3694d64d37e53f159aa35bd3b05b181192b353f818b6f98721a0a1c7d04",
+          "size_bytes": 274952,
+          "uncompressed_sha256": "e7023ed2e73258d0d5b9bb53ba5e4850b9f93dba63a0b57c2947e229157b9dc3",
+          "uncompressed_size_bytes": 14733221
+        },
+        "metadata_sha256": "b66fb44e4cf158bef77f3aa2190b5a2cf305a30481750c89b6ba3a2e8f7e2d02",
+        "operation_id": "correct-existing-metadata:saskatchewan-2021-all-fields:v0.6.0:a38bd3694d64d37e53f159aa35bd3b05b181192b353f818b6f98721a0a1c7d04:b66fb44e4cf158bef77f3aa2190b5a2cf305a30481750c89b6ba3a2e8f7e2d02",
+        "package_version": "v0.6.0",
+        "publication_date": "2026-07-20",
+        "record_id": 21461620,
+        "version_doi": "10.5281/zenodo.21461620"
+      },
+      "model_id": "saskatchewan-2021-all-fields"
+    },
+    {
+      "concept_doi": "10.5281/zenodo.21461621",
+      "corrected": {
+        "asset": {
+          "filename": "toronto-cma-2016-all-fields-package-v1.0.0-rights.1.json.gz",
+          "sha256": "fbf37557ea2564781916cbb741b16e112d667c04001e27a8867761a325f9a791",
+          "size_bytes": 1480545,
+          "uncompressed_sha256": "80a6d6a20ae3a1491916a2311a89d074a48ece754b6e6340ebd1d4e01a7dae94",
+          "uncompressed_size_bytes": 93388405
+        },
+        "metadata_sha256": "ae300c2b513c3e0061786a77dd5793e444c789db38d284a4382f528bc75d9bba",
+        "operation_id": "create-new-version:toronto-cma-2016-all-fields:v1.0.0-rights.1:fbf37557ea2564781916cbb741b16e112d667c04001e27a8867761a325f9a791:ae300c2b513c3e0061786a77dd5793e444c789db38d284a4382f528bc75d9bba",
+        "package_version": "v1.0.0-rights.1",
+        "record_id": 21960327,
+        "url": "https://zenodo.org/api/records/21960327/files/toronto-cma-2016-all-fields-package-v1.0.0-rights.1.json.gz/content",
+        "version_doi": "10.5281/zenodo.21960327"
+      },
+      "historical": {
+        "asset": {
+          "filename": "toronto-cma-2016-all-fields-package.json.gz",
+          "sha256": "157778bc2bd095d65b1fab91fdbcb0385ed5de76baad20abe82817211b0735c2",
+          "size_bytes": 1478757,
+          "uncompressed_sha256": "dd0caf299c852ed526861b9bc6e6a2d654bf0bbe51809d76c9b5e30da0381ae0",
+          "uncompressed_size_bytes": 93385062
+        },
+        "metadata_sha256": "e0cf22254182801c30c60b9b5fda8c6911e0ff30fc7ec16324a9f3e58f4f3118",
+        "operation_id": "correct-existing-metadata:toronto-cma-2016-all-fields:v0.2.1:157778bc2bd095d65b1fab91fdbcb0385ed5de76baad20abe82817211b0735c2:e0cf22254182801c30c60b9b5fda8c6911e0ff30fc7ec16324a9f3e58f4f3118",
+        "package_version": "v0.2.1",
+        "publication_date": "2026-07-20",
+        "record_id": 21461622,
+        "version_doi": "10.5281/zenodo.21461622"
+      },
+      "model_id": "toronto-cma-2016-all-fields"
+    },
+    {
+      "concept_doi": "10.5281/zenodo.21461623",
+      "corrected": {
+        "asset": {
+          "filename": "toronto-cma-2021-all-fields-package-v1.0.0-rights.1.json.gz",
+          "sha256": "37a46b9fd59a60b068c206d9ebc288bfc00b747394c8ce4d570647cc8a71d40c",
+          "size_bytes": 1636646,
+          "uncompressed_sha256": "45bddb0ae7520ea256c5622d32d73799c4be2711b776f22869d0714ba70539c6",
+          "uncompressed_size_bytes": 100650715
+        },
+        "metadata_sha256": "be59731867707889ec534e1288bc0b9278d585b70a860461c239dbb226dc2dea",
+        "operation_id": "create-new-version:toronto-cma-2021-all-fields:v1.0.0-rights.1:37a46b9fd59a60b068c206d9ebc288bfc00b747394c8ce4d570647cc8a71d40c:be59731867707889ec534e1288bc0b9278d585b70a860461c239dbb226dc2dea",
+        "package_version": "v1.0.0-rights.1",
+        "record_id": 21960330,
+        "url": "https://zenodo.org/api/records/21960330/files/toronto-cma-2021-all-fields-package-v1.0.0-rights.1.json.gz/content",
+        "version_doi": "10.5281/zenodo.21960330"
+      },
+      "historical": {
+        "asset": {
+          "filename": "toronto-cma-2021-all-fields-package.json.gz",
+          "sha256": "1268594489a2c15c9b73efda6dd0cacfb28430c9302dbb4c3377c7139c384641",
+          "size_bytes": 2151498,
+          "uncompressed_sha256": "5f545488c6fb20cc2a0189794abb372b347bd96b2f306c0aad7c99911a8e9a0e",
+          "uncompressed_size_bytes": 100647328
+        },
+        "metadata_sha256": "7e14fe9568c0afec4f9d36d9f15e102e2f9a93a9e25e35d7d28e2b86ba202e2c",
+        "operation_id": "correct-existing-metadata:toronto-cma-2021-all-fields:v0.6.0:1268594489a2c15c9b73efda6dd0cacfb28430c9302dbb4c3377c7139c384641:7e14fe9568c0afec4f9d36d9f15e102e2f9a93a9e25e35d7d28e2b86ba202e2c",
+        "package_version": "v0.6.0",
+        "publication_date": "2026-07-20",
+        "record_id": 21461624,
+        "version_doi": "10.5281/zenodo.21461624"
+      },
+      "model_id": "toronto-cma-2021-all-fields"
+    },
+    {
+      "concept_doi": "10.5281/zenodo.21461625",
+      "corrected": {
+        "asset": {
+          "filename": "vancouver-cma-2016-all-fields-package-v1.0.0-rights.1.json.gz",
+          "sha256": "4f63d9f16d82361534ea754921aa83de29c78512741e29ee7600ee7af0b146e2",
+          "size_bytes": 689499,
+          "uncompressed_sha256": "7f44a5c2af41b371a122ec812fafc86a237f513689fa12ef8e2b026e7b40ba46",
+          "uncompressed_size_bytes": 40940588
+        },
+        "metadata_sha256": "56980adcfc5898b66f77ccb896a35f6926524eba34cbf5af1fa6d04a69e823ca",
+        "operation_id": "create-new-version:vancouver-cma-2016-all-fields:v1.0.0-rights.1:4f63d9f16d82361534ea754921aa83de29c78512741e29ee7600ee7af0b146e2:56980adcfc5898b66f77ccb896a35f6926524eba34cbf5af1fa6d04a69e823ca",
+        "package_version": "v1.0.0-rights.1",
+        "record_id": 21960289,
+        "url": "https://zenodo.org/api/records/21960289/files/vancouver-cma-2016-all-fields-package-v1.0.0-rights.1.json.gz/content",
+        "version_doi": "10.5281/zenodo.21960289"
+      },
+      "historical": {
+        "asset": {
+          "filename": "vancouver-cma-2016-all-fields-package.json.gz",
+          "sha256": "a92cbb27f0e149bd7b83da2055b43d3a4fa1e5bc1567a29208c335f10fba49c6",
+          "size_bytes": 687436,
+          "uncompressed_sha256": "3e3565c2ba4dbfdab28bf907e256d48bb766971270dde09fde597afb57c210cf",
+          "uncompressed_size_bytes": 40937245
+        },
+        "metadata_sha256": "172e6ef3a9ba846bdab52e70ca76a605bd5cf3ed93d2338712afa684d69b0151",
+        "operation_id": "correct-existing-metadata:vancouver-cma-2016-all-fields:v0.2.1:a92cbb27f0e149bd7b83da2055b43d3a4fa1e5bc1567a29208c335f10fba49c6:172e6ef3a9ba846bdab52e70ca76a605bd5cf3ed93d2338712afa684d69b0151",
+        "package_version": "v0.2.1",
+        "publication_date": "2026-07-20",
+        "record_id": 21461626,
+        "version_doi": "10.5281/zenodo.21461626"
+      },
+      "model_id": "vancouver-cma-2016-all-fields"
+    },
+    {
+      "concept_doi": "10.5281/zenodo.21461629",
+      "corrected": {
+        "asset": {
+          "filename": "vancouver-cma-2021-all-fields-package-v1.0.0-rights.1.json.gz",
+          "sha256": "48ccf0df1cfdfdc5f3d57d690178bffc0cc1b1ccb709c298d6c3d0b01358ebd7",
+          "size_bytes": 773948,
+          "uncompressed_sha256": "313b1ca57d68358bb88b44db1b76d4953461d85a89a64355e1c43f8d985fc539",
+          "uncompressed_size_bytes": 45026310
+        },
+        "metadata_sha256": "b09990b426380360ce0f1206478ac16f42d77133083d39ea4c3fc15152b4e418",
+        "operation_id": "create-new-version:vancouver-cma-2021-all-fields:v1.0.0-rights.1:48ccf0df1cfdfdc5f3d57d690178bffc0cc1b1ccb709c298d6c3d0b01358ebd7:b09990b426380360ce0f1206478ac16f42d77133083d39ea4c3fc15152b4e418",
+        "package_version": "v1.0.0-rights.1",
+        "record_id": 21960299,
+        "url": "https://zenodo.org/api/records/21960299/files/vancouver-cma-2021-all-fields-package-v1.0.0-rights.1.json.gz/content",
+        "version_doi": "10.5281/zenodo.21960299"
+      },
+      "historical": {
+        "asset": {
+          "filename": "vancouver-cma-2021-all-fields-package.json.gz",
+          "sha256": "66eec86662d7be2ad2f21bfc4cc836643a32d892a6c1837b15bbf67ad7f2ceed",
+          "size_bytes": 1009699,
+          "uncompressed_sha256": "5b50eb14d29168f166c2b41299b9a399c0836793fd8de024d227d269d201d6ab",
+          "uncompressed_size_bytes": 45022923
+        },
+        "metadata_sha256": "989645ceed5654844d7c7c4642d6d02606fa5d7b6e326e85f4f5ee0afbf05d33",
+        "operation_id": "correct-existing-metadata:vancouver-cma-2021-all-fields:v0.6.0:66eec86662d7be2ad2f21bfc4cc836643a32d892a6c1837b15bbf67ad7f2ceed:989645ceed5654844d7c7c4642d6d02606fa5d7b6e326e85f4f5ee0afbf05d33",
+        "package_version": "v0.6.0",
+        "publication_date": "2026-07-20",
+        "record_id": 21461630,
+        "version_doi": "10.5281/zenodo.21461630"
+      },
+      "model_id": "vancouver-cma-2021-all-fields"
+    }
+  ],
+  "recorded_on": "2026-08-16",
+  "schema_version": "synthpopcan-prepared-model-archive-correction-evidence-v1",
+  "target": "PRODUCTION",
+  "verification": {
+    "candidate_assets_verified": 32,
+    "candidate_compressed_bytes": 43967253,
+    "candidate_uncompressed_bytes": 3765538331,
+    "concepts_verified": 32,
+    "historical_assets_verified": 32,
+    "historical_compressed_bytes": 49557434,
+    "historical_uncompressed_bytes": 3765430651,
+    "latest_links_verified": 32,
+    "metadata_corrections_verified": 32,
+    "mutable_drafts_found": 0,
+    "new_versions_verified": 32,
+    "operations_verified": 64,
+    "registry_updates_verified": 32,
+    "terminal_predecessor_query_artifacts": 32
+  }
+}

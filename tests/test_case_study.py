@@ -54,6 +54,7 @@ def test_case_study_pins_registry_identity_and_integrity() -> None:
         _MODEL_ID,
         metadata["release_version"],
         metadata["doi"],
+        metadata["version_doi"],
         metadata["sha256"],
         metadata["uncompressed_sha256"],
         "98M0001X2021002",

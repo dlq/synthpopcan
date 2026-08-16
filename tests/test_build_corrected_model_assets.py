@@ -219,6 +219,16 @@ def test_builder_streams_preserved_json_and_emits_compatible_candidates(
     assert new_version["synthpopcan"]["deposit_operation"] == "create-new-version"
 
 
+def test_builder_refuses_an_already_corrected_registry(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    inputs = _model_inputs(tmp_path, monkeypatch)
+    inputs["registry"]["contains_embedded_licensing"] = True
+
+    with pytest.raises(MODULE.CorrectionAssetError, match="already points"):
+        _build(tmp_path, inputs)
+
+
 def test_corrected_archives_are_deterministic_across_output_directories(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

@@ -49,7 +49,8 @@ def test_model_catalogue_marks_large_models_downloadable(
     assert montreal["distribution"] == "download"
     assert montreal["installed"] is False
     assert montreal["census_vintage"] == "2016 Census"
-    assert montreal["release_version"] == "v0.2.1"
+    assert montreal["release_version"] == "v1.0.0-rights.1"
+    assert montreal["version_doi"].startswith("10.5281/zenodo.")
     assert "human review" in montreal["privacy_review_status"]
     assert "small-area controls" in montreal["known_limitations"]
     assert "CLI" in montreal["generation_limits"]
@@ -74,13 +75,19 @@ def test_model_catalogue_includes_complete_2021_set(
     assert "montreal-cma-2021-all-fields" in models_2021
     assert models_2021["canada-2021-all-fields"]["browser_compatible"] is False
     assert models_2021["pei-2021-minimal"]["browser_compatible"] is True
-    assert all(entry["release_version"] == "v0.6.0" for entry in models_2021.values())
+    assert all(
+        entry["release_version"] == "v1.0.0-rights.1" for entry in models_2021.values()
+    )
     assert all(entry["distribution"] == "download" for entry in models_2021.values())
 
     canada = models.model_registry_entry("canada-2021-all-fields")
-    assert canada["url"].endswith("/v0.6.0/canada-2021-all-fields-package.json.gz")
-    assert canada["size_bytes"] == 14_669_338
-    assert canada["uncompressed_size_bytes"] == 1_699_087_165
+    assert canada["record_id"] == 21_960_375
+    assert canada["version_doi"] == "10.5281/zenodo.21960375"
+    assert canada["url"].endswith(
+        "/21960375/files/canada-2021-all-fields-package-v1.0.0-rights.1.json.gz/content"
+    )
+    assert canada["size_bytes"] == 12_408_693
+    assert canada["uncompressed_size_bytes"] == 1_699_090_552
 
 
 def test_fetch_model_package_downloads_and_verifies(
@@ -106,7 +113,7 @@ def test_fetch_model_package_downloads_and_verifies(
         metadata["sha256"] = original_sha
         metadata["uncompressed_sha256"] = original_uncompressed_sha
 
-    assert path == tmp_path / "montreal-cma-2016-all-fields-package.json"
+    assert path == tmp_path / str(metadata["filename"])
     assert path.read_bytes() == content
     assert models.model_is_installed("montreal-cma-2016-all-fields") is True
     assert models.remove_cached_model("montreal-cma-2016-all-fields") is True
@@ -222,7 +229,8 @@ def test_fetch_model_package_returns_cached_file_without_redownloading(
 ) -> None:
     monkeypatch.setenv("SYNTHPOPCAN_MODEL_CACHE", str(tmp_path))
     content = b'{"schema_version": "synthpopcan-linked-tree-package-v1"}'
-    cached = tmp_path / "montreal-cma-2016-all-fields-package.json"
+    metadata = models.model_registry_entry("montreal-cma-2016-all-fields")
+    cached = tmp_path / str(metadata["filename"])
     cached.write_bytes(content)
 
     with patch.object(models, "_verify_model_checksum"):
@@ -235,7 +243,8 @@ def test_fetch_model_package_replaces_corrupt_cached_file(
     monkeypatch, tmp_path
 ) -> None:
     monkeypatch.setenv("SYNTHPOPCAN_MODEL_CACHE", str(tmp_path))
-    cached = tmp_path / "montreal-cma-2016-all-fields-package.json"
+    metadata = models.model_registry_entry("montreal-cma-2016-all-fields")
+    cached = tmp_path / str(metadata["filename"])
     cached.write_bytes(b"corrupt")
 
     content = b'{"schema_version": "synthpopcan-linked-tree-package-v1"}'
@@ -245,7 +254,6 @@ def test_fetch_model_package_replaces_corrupt_cached_file(
         "urlopen",
         lambda url, timeout: FakeResponse(compressed),
     )
-    metadata = models.model_registry_entry("montreal-cma-2016-all-fields")
     original_sha = metadata["sha256"]
     original_uncompressed_sha = metadata["uncompressed_sha256"]
     metadata["sha256"] = hashlib.sha256(compressed).hexdigest()

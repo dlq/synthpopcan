@@ -90,12 +90,13 @@ are cumulative, not alternatives, and do not relax privacy, attribution,
 provenance, or no-endorsement safeguards. External review is optional and no
 external approval is claimed.
 
-Fail-closed tooling prepares byte-preserving corrected packages and
-identifier-preserving archive metadata/new-version operations. Its independent
-adversarial review is complete, but that is not evidence that the live archive
-has been corrected. Production remains blocked until all 64 correction
-operations and 32 registry updates are remotely verified, and a sanitized
-durable correction record is committed without credentials.
+Fail-closed tooling prepared byte-preserving corrected packages and
+identifier-preserving archive metadata/new-version operations. After its
+independent adversarial review, all 64 correction operations and 32 registry
+updates remotely verified on 2026-08-16. The sanitized
+[durable correction record](prepared-model-archive-correction-2026-08-16.md)
+contains no credentials or private executor state, and the clean-clone gate
+binds it to the installed registry.
 
 ## Distribution, Citation, and Preservation
 

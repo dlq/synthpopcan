@@ -67,21 +67,20 @@ private reporting boundary.
   anti-identification condition, project disclosure-risk caveats, required
   attribution, provenance, or the no-endorsement statement.
 - The fail-closed archive-correction implementation passed independent
-  adversarial review on 2026-08-15, closing all three prior blockers with 137
-  focused tests plus Ruff, Pyright, and diff checks passing. This completes the
-  implementation gate, not the live correction.
-- Before production resumes, actual model bytes must embed the scoped rights
-  and prescribed source notice; Zenodo must use scoped multiple or custom
-  rights where supported, or the verified `other-open` legacy compatibility
-  value plus the complete composite statement; and the 32 existing records
-  must receive identifier-preserving metadata corrections plus new
-  non-overwriting file versions where bytes change.
+  adversarial review on 2026-08-15. On 2026-08-16 all 32 metadata corrections,
+  32 non-overwriting versions, remote byte checks, latest-link checks, and 32
+  registry updates completed. The [archive-correction
+  record](records/prepared-model-archive-correction-2026-08-16.md) preserves
+  the sanitized evidence and interpretation boundary.
+- Current registered model bytes embed the scoped rights contract and
+  prescribed source notice. Zenodo uses the verified `other-open` compatibility
+  value plus the complete composite statement, while every historical version
+  remains available under its original identifier and checksum.
 - Zenodo publication is human-approved and irreversible. Tooling may generate
-  review-only metadata and dry-run plans, but the historical assets are not
-  eligible for sandbox or production upload until corrected versions and the
-  existing-record workflow are verified. Material authoritative guidance that
-  conflicts with the accepted policy triggers prompt prospective review and,
-  where needed, a new non-overwriting correction.
+  review-only metadata and dry-run plans; they do not authorize another archive
+  write. Material authoritative guidance that conflicts with the accepted
+  policy triggers prompt prospective review and, where needed, a new
+  non-overwriting correction.
 
 Passing a release, model, or disclosure-readiness check is not legal advice,
 official approval, privacy certification, or evidence that an output is
@@ -118,6 +117,7 @@ records/fair4rs-2026-08-15
 records/software-management-plan-2026-08-15
 records/software-heritage-2026-08-15
 records/prepared-model-licensing-review-2026-08-15
+records/prepared-model-archive-correction-2026-08-16
 ```
 
 Review the records at every major release and after a material change to

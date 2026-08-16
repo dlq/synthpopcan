@@ -112,10 +112,10 @@ under ignored paths such as `data/raw`, `data/private`, `references`, `runs`, or
 
 Reviewed model packages may be published only when they are explicitly intended
 for distribution and carry provenance, disclosure-risk metadata, and the
-validated embedded prepared-model licensing contract. Production model
-publication remains fail-closed while the live archive-correction execution
-gate in
-[`ADR-0014`](adr/0014-separate-prepared-model-and-source-licensing.md) are open.
+validated embedded prepared-model licensing contract. Publication remains
+fail-closed unless the accepted policy, completed implementation, completed
+execution, tracked evidence, and installed registry gates in
+[`ADR-0014`](adr/0014-separate-prepared-model-and-source-licensing.md) agree.
 Large packages should be uploaded as GitHub Release assets and listed in the
 model registry, not bundled into the normal Python package.
 

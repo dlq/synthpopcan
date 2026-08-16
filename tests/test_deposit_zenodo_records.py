@@ -797,14 +797,32 @@ def _production_candidate(entry: dict, *, record_id: int) -> dict:
     }
 
 
-def test_all_64_generated_correction_shapes_pass_readiness() -> None:
+def test_all_64_generated_correction_shapes_pass_readiness(monkeypatch) -> None:
     entries = [
         entry
         for entry in BUILD_MODULE.model_catalogue()
         if entry["census_vintage"] in {"2016 Census", "2021 Census"}
     ]
+    legacy_entries = []
+    legacy_registry = {}
+    for entry in entries:
+        legacy_entry = dict(entry)
+        legacy_entry["release_version"] = (
+            "v0.2.1" if entry["census_vintage"] == "2016 Census" else "v0.6.0"
+        )
+        legacy_entries.append(legacy_entry)
+        registry = BUILD_MODULE.model_registry_entry(str(entry["id"])).copy()
+        registry["release_version"] = legacy_entry["release_version"]
+        registry["contains_embedded_licensing"] = False
+        legacy_registry[str(entry["id"])] = registry
+    monkeypatch.setattr(BUILD_MODULE, "model_catalogue", lambda: legacy_entries)
+    monkeypatch.setattr(
+        BUILD_MODULE,
+        "model_registry_entry",
+        lambda model_id: legacy_registry[model_id],
+    )
     manifests = []
-    for index, entry in enumerate(entries, start=30_000_000):
+    for index, entry in enumerate(legacy_entries, start=30_000_000):
         manifests.extend(
             BUILD_MODULE.build_correction_depositions(
                 str(entry["id"]),
@@ -816,7 +834,7 @@ def test_all_64_generated_correction_shapes_pass_readiness() -> None:
             )
         )
 
-    assert len(entries) == 32
+    assert len(legacy_entries) == 32
     assert len(manifests) == 64
     for manifest in manifests:
         MODULE._validate_correction_manifest_readiness(manifest)
@@ -3497,7 +3515,7 @@ def test_registry_update_output_requires_verified_production_result(
     assert json.loads(output.read_text())["updates"] == [update]
 
 
-def test_execution_gate_requires_exact_64_operations_and_32_registry_updates(
+def test_execution_gate_uses_tracked_evidence_not_ignored_checkpoints(
     tmp_path, monkeypatch
 ) -> None:
     adr = tmp_path / "adr.md"
@@ -3506,8 +3524,10 @@ def test_execution_gate_requires_exact_64_operations_and_32_registry_updates(
     results_path = tmp_path / "deposited.json"
     registry_path = tmp_path / "registry.json"
     monkeypatch.setattr(MODULE, "LICENSING_ADR", adr)
-    monkeypatch.setattr(MODULE, "CORRECTION_PLAN_PATH", plan_path)
-    monkeypatch.setattr(MODULE, "CORRECTION_EXECUTION_INDEX_PATH", index_path)
+    monkeypatch.setattr(MODULE, "CORRECTION_PLAN_PATH", plan_path, raising=False)
+    monkeypatch.setattr(
+        MODULE, "CORRECTION_EXECUTION_INDEX_PATH", index_path, raising=False
+    )
     monkeypatch.setattr(MODULE, "RESULTS_PATH", results_path)
     monkeypatch.setattr(MODULE, "REGISTRY_UPDATES_PATH", registry_path)
     adr.write_text("- **Archive correction execution:** Completed\n")
@@ -3623,7 +3643,9 @@ def test_execution_gate_requires_exact_64_operations_and_32_registry_updates(
     first = next(iter(results.values()))
     first["metadata_sha256"] = "4" * 64
     MODULE._write_results("PRODUCTION", MODULE.PRODUCTION_API, results)
-    assert not MODULE._archive_correction_execution_is_completed()
+    # Ignored executor state is deliberately no longer part of this clean-clone
+    # gate; changing it cannot invalidate the tracked reviewed transaction.
+    assert MODULE._archive_correction_execution_is_completed()
 
 
 def test_main_revalidates_an_already_verified_operation(tmp_path, monkeypatch) -> None:

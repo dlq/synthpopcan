@@ -296,12 +296,11 @@ artifact checksums to identify the software and model bytes used in research.
 Prepared model packages are derived from Statistics Canada public use microdata
 files under the
 [Statistics Canada Open Licence](https://www.statcan.gc.ca/en/terms-conditions/open-licence).
-The catalogue and archive records carry the required attribution. Current
-runtime readers add the same machine-readable notice to checksum-verified older
-registered packages; historical direct-download bytes predate that embedded
-contract, so keep their record-level attribution with them until corrected
-non-overwriting versions are published. Newly built and corrected packages will
-carry the notice in their own bytes and in generated manifests. See
+The catalogue, archive records, and current registered package bytes carry the
+required attribution and machine-readable rights contract. Historical package
+versions remain available under their original identifiers and checksums for
+reproducibility; the registry now selects the verified non-overwriting
+`v1.0.0-rights.1` versions. See
 [`docs/data.md`](https://synthpopcan.readthedocs.io/en/latest/data.html) for the
 full attribution and licensing terms.
 The accepted open-by-default policy in
@@ -310,11 +309,12 @@ offers CC BY 4.0 only for original prepared-model rights the package author
 owns or controls. That scoped grant is cumulative with the continuing
 Statistics Canada conditions; it does not cover source Information, facts, or
 unprotectable results, and it does not relax privacy or provenance safeguards.
-The fail-closed existing-record correction implementation has passed
-independent review. Another production model publication remains blocked until
-all 32 metadata corrections, 32 non-overwriting versions, and 32 registry
-updates are remotely verified with durable evidence. External review remains
-welcome but is not a `1.0.0` gate.
+The fail-closed existing-record correction implementation passed independent
+review, and all 32 metadata corrections, 32 non-overwriting versions, remote
+byte checks, and 32 registry updates completed on 2026-08-16. The
+[durable correction record](https://synthpopcan.readthedocs.io/en/latest/records/prepared-model-archive-correction-2026-08-16.html)
+preserves sanitized evidence. External review remains welcome but is not a
+`1.0.0` gate.
 
 ## Development Acknowledgement
 

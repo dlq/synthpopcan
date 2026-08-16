@@ -527,7 +527,7 @@ def test_cli_models_list_marks_downloadable_models(
     assert quebec["installed"] is False
     canada_2021 = models["canada-2021-all-fields"]
     assert canada_2021["census_vintage"] == "2021 Census"
-    assert canada_2021["release_version"] == "v0.6.0"
+    assert canada_2021["release_version"] == "v1.0.0-rights.1"
     assert canada_2021["distribution"] == "download"
     assert canada_2021["browser_compatible"] is False
     pei_2021 = models["pei-2021-minimal"]

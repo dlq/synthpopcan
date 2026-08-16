@@ -921,6 +921,11 @@ def build_correction_candidates(
     for model_id in selected:
         entry = known[model_id]
         historical = model_registry_entry(model_id)
+        if historical.get("contains_embedded_licensing") is True:
+            raise CorrectionAssetError(
+                f"{model_id}: installed registry already points to a corrected "
+                "package with embedded licensing"
+            )
         historical_filename = _historical_filename(historical, model_id)
         historical_path = assets_dir / historical_filename
         if not historical_path.is_file():

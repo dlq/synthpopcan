@@ -56,12 +56,12 @@ def test_deposition_records_both_checksums_for_integrity() -> None:
 
     assert payload["deposit_operation"] == "review-metadata-only"
     assert payload["asset_ready"] is False
-    assert historical["contains_embedded_licensing"] is False
+    assert historical["contains_embedded_licensing"] is True
     assert len(historical["sha256"]) == 64
     assert len(historical["uncompressed_sha256"]) == 64
     assert historical["uncompressed_size_bytes"] > historical["size_bytes"]
-    assert historical["url"].endswith(".json.gz")
-    assert historical["filename"] == Path(historical["url"]).name
+    assert historical["url"].endswith(".json.gz/content")
+    assert historical["url"].endswith(f"/{historical['filename']}/content")
     assert historical["filename"].endswith(".json.gz")
 
 
@@ -137,36 +137,16 @@ def test_deposition_description_does_not_repeat_the_source_title() -> None:
     assert "local 2016" not in description
 
 
-def test_rights_correction_plan_preserves_all_32_existing_versions() -> None:
+def test_rights_correction_plan_skips_all_32_completed_versions() -> None:
     first = MODULE.build_rights_correction_plan()
     second = MODULE.build_rights_correction_plan()
 
     assert first == second
     assert first["network_writes"] is False
-    assert first["existing_record_count"] == 32
-    assert len(first["actions"]) == 32
-    assert all(item["preserve_all_existing_versions"] for item in first["actions"])
-    assert all(item["action"] == "prepare-new-version" for item in first["actions"])
-    assert not any(item["ready_for_production"] for item in first["actions"])
-    assert all(
-        item["review_candidate_top_level_licensing"]["policy_decision"]["status"]
-        == "accepted"
-        for item in first["actions"]
-    )
+    assert first["existing_record_count"] == 0
+    assert first["corrected_record_count"] == 32
+    assert first["actions"] == []
     assert first["current_policy_decision"] == "accepted"
-    assert all(
-        item["target_zenodo_metadata"]
-        == {
-            "license": "other-open",
-            "composite_scope_location": "metadata.description",
-        }
-        for item in first["actions"]
-    )
-    assert all(
-        item["required_package_licensing_location"] == "licensing"
-        for item in first["actions"]
-    )
-    assert len({item["existing_concept_doi"] for item in first["actions"]}) == 32
     assert (
         "- **Archive correction implementation:** Completed"
         in first["policy"]["production_gates"]
@@ -177,13 +157,14 @@ def test_rights_correction_plan_preserves_all_32_existing_versions() -> None:
     ]
 
 
-def test_generated_metadata_is_review_only_and_honest_about_historical_bytes() -> None:
+def test_generated_metadata_is_review_only_and_describes_corrected_bytes() -> None:
     deposition = build_deposition("ontario-2021-all-fields", concept_doi=None)
 
     assert deposition["synthpopcan"]["asset_ready"] is False
     assert "asset_url" not in deposition["synthpopcan"]
-    assert "predates the embedded contract" in deposition["metadata"]["notes"]
-    assert "review context only" in deposition["metadata"]["description"]
+    assert "verified non-overwriting archive version" in deposition["metadata"]["notes"]
+    assert "Published package integrity" in deposition["metadata"]["description"]
+    assert "review context only" not in deposition["metadata"]["description"]
 
 
 def test_correction_plan_mode_writes_only_a_no_network_plan(tmp_path: Path) -> None:
@@ -198,16 +179,20 @@ def test_correction_plan_mode_writes_only_a_no_network_plan(tmp_path: Path) -> N
     ]
     plan = json.loads((tmp_path / "prepared-model-rights-correction.json").read_text())
     assert plan["network_writes"] is False
-    assert plan["existing_record_count"] == 32
+    assert plan["existing_record_count"] == 0
+    assert plan["corrected_record_count"] == 32
 
 
 def test_candidate_mapping_builds_executable_metadata_and_new_version_manifests(
     tmp_path: Path,
+    monkeypatch,
 ) -> None:
     model_id = "ontario-2021-all-fields"
     review = build_deposition(model_id, concept_doi=None)
     entry = next(item for item in MODULE.model_catalogue() if item["id"] == model_id)
-    historical = MODULE.model_registry_entry(model_id)
+    historical = MODULE.model_registry_entry(model_id).copy()
+    historical["contains_embedded_licensing"] = False
+    monkeypatch.setattr(MODULE, "model_registry_entry", lambda unused: historical)
     filename = f"{model_id}-v1.0.0-corrected.json.gz"
     asset_url = (tmp_path / filename).resolve().as_uri()
     historical_asset = {

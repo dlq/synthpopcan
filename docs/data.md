@@ -153,10 +153,13 @@ The policy is Accepted in
 [ADR-0014](https://github.com/dlq/synthpopcan/blob/main/adr/0014-separate-prepared-model-and-source-licensing.md),
 with Darcy Quesnel as decision authority on 2026-08-15. External review is
 welcome but optional and is not a `1.0.0` gate; no Statistics Canada approval or
-legal opinion is claimed. Another production model publication remains blocked
-until the verified live archive correction is complete. The [dated review
-record](records/prepared-model-licensing-review-2026-08-15.md) records the
-decision and correction disposition.
+legal opinion is claimed. The live archive correction completed on 2026-08-16:
+the registry now selects 32 verified non-overwriting package versions whose
+bytes embed this contract, while historical versions remain available. The
+[dated review record](records/prepared-model-licensing-review-2026-08-15.md)
+records the decision, and the [archive-correction
+record](records/prepared-model-archive-correction-2026-08-16.md) records its
+execution.
 
 For Census-derived packages, the embedded `policy_decision` uses
 `status: accepted`, `basis: maintainer-selected-permissive-default`, the
