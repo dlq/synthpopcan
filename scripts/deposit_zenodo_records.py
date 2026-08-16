@@ -37,6 +37,7 @@ import json
 import os
 import re
 import urllib.error
+import urllib.parse
 import urllib.request
 from collections.abc import Callable
 from pathlib import Path
@@ -74,8 +75,33 @@ _ASSET_OPERATIONS = {"create-new-record", "create-new-version"}
 _SUPPORTED_OPERATIONS = _ASSET_OPERATIONS | {"correct-existing-metadata"}
 _TERMINAL_STATE = "verified"
 _HTTP_STATUS_KEY = "_synthpopcan_http_status"
+# The HTML authority marker is part of the immutable, reviewed manifest and
+# therefore part of every correction operation identity. Zenodo sanitizes
+# HTML comments out of ``notes``, so API payloads use the visible plain-text
+# forms below. Canonical comparison maps the durable authority form back to
+# this logical manifest form; it never rewrites the manifest itself.
 _OWNERSHIP_PREFIX = "<!-- synthpopcan-zenodo-executor:"
 _NEWVERSION_AUTHORITY_PREFIX = "<!-- synthpopcan-zenodo-newversion-authority:"
+_DURABLE_OWNERSHIP_PREFIX = "SYNTHPOPCAN-ZENODO-EXECUTOR: "
+_DURABLE_NEWVERSION_AUTHORITY_PREFIX = "SYNTHPOPCAN-ZENODO-NEWVERSION-AUTHORITY: "
+_OPERATION_MARKER = re.compile(
+    r"(?:create-new-record|create-new-version|correct-existing-metadata):"
+    r"[a-z0-9]+(?:-[a-z0-9]+)*:"
+    r"v?[0-9][A-Za-z0-9._+-]*:"
+    r"[0-9a-f]{64}:[0-9a-f]{64}\Z"
+)
+# One production edit was opened immediately before we learned that Zenodo
+# strips HTML comments. This allow-list is deliberately a single immutable
+# operation identity, not a general draft-adoption escape hatch.
+_LEGACY_STRIPPED_MARKER_RECOVERY_OPERATION_ID = (
+    "correct-existing-metadata:pei-2021-minimal:v0.6.0:"
+    "d47857c9b27e8c2fb4a37e8469fe6f4afc44a7fbc5673663d8909718a6e44b85:"
+    "c0ec9c938e71dca61c69fc1a5b3e2d86c4694855691695771147f6d1cee8f621"
+)
+_LEGACY_STRIPPED_MARKER_STAGED_PUBLICATION_DATE = "2026-08-16"
+_LEGACY_STRIPPED_MARKER_RECOVERY_RECORD_ID = 21461527
+_LEGACY_STRIPPED_MARKER_RECOVERY_VERSION_DOI = "10.5281/zenodo.21461527"
+_LEGACY_STRIPPED_MARKER_RECOVERY_CONCEPT_DOI = "10.5281/zenodo.21461526"
 _CENSUS_VINTAGE_YEAR = {
     "2016 Census": 2016,
     "2021 Census": 2021,
@@ -828,18 +854,41 @@ def _stream_uncompressed_licensing(
 def _verify_upload_response(uploaded: dict[str, Any], payload: bytes) -> None:
     """Check the file metadata returned by Zenodo when it is available."""
 
-    uploaded_size = uploaded.get("size")
+    uploaded_size = _reported_file_size(uploaded)
     if uploaded_size is not None and uploaded_size != len(payload):
         raise ZenodoError(
             f"Zenodo reports {uploaded_size:,} uploaded bytes; sent {len(payload):,}"
         )
     checksum = uploaded.get("checksum")
-    if isinstance(checksum, str) and checksum.startswith("md5:"):
+    if checksum is not None:
+        if not isinstance(checksum, str):
+            raise ZenodoError("Zenodo upload checksum is not text")
+        if re.fullmatch(r"md5:[0-9a-f]{32}", checksum):
+            reported_md5 = checksum.removeprefix("md5:")
+        elif re.fullmatch(r"[0-9a-f]{32}", checksum):
+            reported_md5 = checksum
+        else:
+            raise ZenodoError("Zenodo upload checksum is not an exact MD5")
         actual = hashlib.md5(payload, usedforsecurity=False).hexdigest()
-        if checksum != f"md5:{actual}":
+        if reported_md5 != actual:
             raise ZenodoError(
                 f"Zenodo upload checksum mismatch: expected md5:{actual}, got {checksum}"
             )
+
+
+def _reported_file_size(file_metadata: dict[str, Any]) -> int | None:
+    """Normalize the exact size fields used by public and deposition APIs."""
+
+    size = file_metadata.get("size")
+    legacy_size = file_metadata.get("filesize")
+    for name, value in (("size", size), ("filesize", legacy_size)):
+        if value is not None and (
+            not isinstance(value, int) or isinstance(value, bool) or value < 0
+        ):
+            raise ZenodoError(f"Zenodo file {name} is not an exact byte count")
+    if size is not None and legacy_size is not None and size != legacy_size:
+        raise ZenodoError("Zenodo file size and filesize fields conflict")
+    return size if size is not None else legacy_size
 
 
 def _required_string(mapping: dict[str, Any], key: str) -> str:
@@ -1247,8 +1296,116 @@ def _concept_doi(record: dict[str, Any]) -> str | None:
     return None
 
 
+def _operation_marker_value(
+    line: str,
+    *,
+    prefix: str,
+    suffix: str = "",
+    label: str,
+) -> str | None:
+    """Parse one reserved marker line without accepting near-matches."""
+
+    if not line.startswith(prefix):
+        return None
+    if suffix and not line.endswith(suffix):
+        raise ZenodoError(f"malformed {label} marker")
+    value_end = -len(suffix) if suffix else None
+    value = line[len(prefix) : value_end]
+    if _OPERATION_MARKER.fullmatch(value) is None:
+        raise ZenodoError(f"malformed {label} marker")
+    return value
+
+
+def _marker_values(
+    notes: str,
+    *,
+    prefix: str,
+    suffix: str = "",
+    label: str,
+) -> list[str]:
+    """Return all exact reserved marker values, rejecting malformed lines."""
+
+    values: list[str] = []
+    for line in notes.splitlines():
+        value = _operation_marker_value(
+            line,
+            prefix=prefix,
+            suffix=suffix,
+            label=label,
+        )
+        if value is not None:
+            values.append(value)
+    return values
+
+
+def _one_marker_value(
+    notes: str,
+    *,
+    prefix: str,
+    suffix: str = "",
+    label: str,
+) -> str | None:
+    """Return at most one exact marker value."""
+
+    values = _marker_values(notes, prefix=prefix, suffix=suffix, label=label)
+    if len(values) > 1:
+        raise ZenodoError(f"Zenodo metadata contains ambiguous {label} markers")
+    return values[0] if values else None
+
+
+def _logical_newversion_authority_marker(operation_id: str) -> str:
+    """Return the manifest marker whose bytes are bound into operation IDs."""
+
+    if _OPERATION_MARKER.fullmatch(operation_id) is None:
+        raise ZenodoError("new-version authority has a malformed operation identity")
+    return f"{_NEWVERSION_AUTHORITY_PREFIX}{operation_id} -->"
+
+
+def _durable_newversion_authority_marker(operation_id: str) -> str:
+    """Return the visible authority line sent to Zenodo."""
+
+    if _OPERATION_MARKER.fullmatch(operation_id) is None:
+        raise ZenodoError("new-version authority has a malformed operation identity")
+    return f"{_DURABLE_NEWVERSION_AUTHORITY_PREFIX}{operation_id}"
+
+
+def _metadata_for_transport(metadata: dict[str, Any]) -> dict[str, Any]:
+    """Encode logical manifest authority as Zenodo-preserved plain text."""
+
+    transported = json.loads(json.dumps(metadata))
+    notes = transported.get("notes")
+    if notes is None:
+        return transported
+    if not isinstance(notes, str):
+        raise ZenodoError("Zenodo notes must be text")
+    if any(
+        line.startswith(
+            (_DURABLE_OWNERSHIP_PREFIX, _DURABLE_NEWVERSION_AUTHORITY_PREFIX)
+        )
+        for line in notes.splitlines()
+    ):
+        raise ZenodoError("manifest notes must not contain transport markers")
+    logical_authority = _one_marker_value(
+        notes,
+        prefix=_NEWVERSION_AUTHORITY_PREFIX,
+        suffix=" -->",
+        label="logical new-version authority",
+    )
+    lines = []
+    for line in notes.splitlines():
+        if (
+            logical_authority is not None
+            and line == _logical_newversion_authority_marker(logical_authority)
+        ):
+            lines.append(_durable_newversion_authority_marker(logical_authority))
+        else:
+            lines.append(line)
+    transported["notes"] = "\n".join(lines)
+    return transported
+
+
 def _canonical_metadata(metadata: dict[str, Any]) -> dict[str, Any]:
-    """Normalize legacy-deposition input and public-record response shapes."""
+    """Normalize input/response shapes and marker transport representation."""
 
     canonical = json.loads(json.dumps(metadata))
     upload_type = canonical.pop("upload_type", None)
@@ -1270,11 +1427,35 @@ def _canonical_metadata(metadata: dict[str, Any]) -> dict[str, Any]:
         ]
     notes = canonical.get("notes")
     if isinstance(notes, str):
-        lines = [
-            line
-            for line in notes.splitlines()
-            if not (line.startswith(_OWNERSHIP_PREFIX) and line.endswith(" -->"))
-        ]
+        ownership = _one_marker_value(
+            notes,
+            prefix=_DURABLE_OWNERSHIP_PREFIX,
+            label="executor ownership",
+        )
+        durable_authority = _one_marker_value(
+            notes,
+            prefix=_DURABLE_NEWVERSION_AUTHORITY_PREFIX,
+            label="durable new-version authority",
+        )
+        logical_authority = _one_marker_value(
+            notes,
+            prefix=_NEWVERSION_AUTHORITY_PREFIX,
+            suffix=" -->",
+            label="logical new-version authority",
+        )
+        if durable_authority is not None and logical_authority is not None:
+            raise ZenodoError("Zenodo metadata contains duplicate authority forms")
+        lines: list[str] = []
+        for line in notes.splitlines():
+            if ownership is not None and line == _ownership_marker(ownership):
+                continue
+            if (
+                durable_authority is not None
+                and line == _durable_newversion_authority_marker(durable_authority)
+            ):
+                lines.append(_logical_newversion_authority_marker(durable_authority))
+            else:
+                lines.append(line)
         normalized_notes = "\n".join(lines).rstrip()
         if normalized_notes:
             canonical["notes"] = normalized_notes
@@ -1305,7 +1486,11 @@ def _assert_metadata_subset(expected: object, actual: object, *, path: str) -> N
 
 
 def _ownership_marker(operation_id: str) -> str:
-    return f"{_OWNERSHIP_PREFIX}{operation_id} -->"
+    """Return the exact visible executor-ownership line sent to Zenodo."""
+
+    if _OPERATION_MARKER.fullmatch(operation_id) is None:
+        raise ZenodoError("executor ownership has a malformed operation identity")
+    return f"{_DURABLE_OWNERSHIP_PREFIX}{operation_id}"
 
 
 def _metadata_with_ownership(
@@ -1313,12 +1498,26 @@ def _metadata_with_ownership(
 ) -> dict[str, Any]:
     """Return desired metadata carrying one durable executor ownership marker."""
 
-    claimed = json.loads(json.dumps(metadata))
+    claimed = _metadata_for_transport(metadata)
     notes = claimed.get("notes")
     if notes is not None and not isinstance(notes, str):
         raise ZenodoError("Zenodo notes must be text before executor ownership")
-    if isinstance(notes, str) and _OWNERSHIP_PREFIX in notes:
-        raise ZenodoError("desired Zenodo notes must not contain an ownership marker")
+    if isinstance(notes, str):
+        if (
+            _one_marker_value(
+                notes,
+                prefix=_DURABLE_OWNERSHIP_PREFIX,
+                label="executor ownership",
+            )
+            is not None
+        ):
+            raise ZenodoError(
+                "desired Zenodo notes must not contain an ownership marker"
+            )
+        if any(line.startswith(_OWNERSHIP_PREFIX) for line in notes.splitlines()):
+            raise ZenodoError(
+                "desired Zenodo notes must not contain a logical ownership marker"
+            )
     marker = _ownership_marker(operation_id)
     claimed["notes"] = f"{notes.rstrip()}\n\n{marker}" if notes else marker
     return claimed
@@ -1331,14 +1530,13 @@ def _draft_ownership(draft: dict[str, Any]) -> str | None:
     notes = metadata.get("notes") if isinstance(metadata, dict) else None
     if not isinstance(notes, str):
         return None
-    markers = [
-        line.removeprefix(_OWNERSHIP_PREFIX).removesuffix(" -->")
-        for line in notes.splitlines()
-        if line.startswith(_OWNERSHIP_PREFIX) and line.endswith(" -->")
-    ]
-    if len(markers) > 1:
-        raise ZenodoError("Zenodo draft contains ambiguous executor ownership")
-    return markers[0] if markers else None
+    if any(line.startswith(_OWNERSHIP_PREFIX) for line in notes.splitlines()):
+        raise ZenodoError("Zenodo draft contains non-durable executor ownership")
+    return _one_marker_value(
+        notes,
+        prefix=_DURABLE_OWNERSHIP_PREFIX,
+        label="executor ownership",
+    )
 
 
 def _require_newversion_authority(existing: dict[str, Any], operation_id: str) -> None:
@@ -1346,17 +1544,16 @@ def _require_newversion_authority(existing: dict[str, Any], operation_id: str) -
 
     metadata = existing.get("metadata")
     notes = metadata.get("notes") if isinstance(metadata, dict) else None
-    expected = f"{_NEWVERSION_AUTHORITY_PREFIX}{operation_id} -->"
-    matches = (
-        [
-            line
-            for line in notes.splitlines()
-            if line.startswith(_NEWVERSION_AUTHORITY_PREFIX)
-        ]
+    authority = (
+        _one_marker_value(
+            notes,
+            prefix=_DURABLE_NEWVERSION_AUTHORITY_PREFIX,
+            label="durable new-version authority",
+        )
         if isinstance(notes, str)
-        else []
+        else None
     )
-    if matches != [expected]:
+    if authority != operation_id:
         raise ZenodoError(
             "latest record metadata does not authorize this exact new-version operation"
         )
@@ -1377,9 +1574,10 @@ def _without_inherited_ownership(
     if not isinstance(notes, str):
         raise ZenodoError("inherited draft lacks its ownership marker")
     marker = _ownership_marker(inherited_owner)
-    metadata["notes"] = "\n".join(
-        line for line in notes.splitlines() if line != marker
-    ).rstrip()
+    lines = notes.splitlines()
+    if lines.count(marker) != 1:
+        raise ZenodoError("inherited draft lacks one exact ownership marker")
+    metadata["notes"] = "\n".join(line for line in lines if line != marker).rstrip()
     if not metadata["notes"]:
         metadata.pop("notes")
     return unowned
@@ -1431,10 +1629,87 @@ def _assert_draft_binding(
             raise ZenodoError("new-version draft lacks a distinct reserved DOI")
 
 
+def _canonical_owned_draft_metadata(
+    draft: dict[str, Any],
+    *,
+    transport_metadata: dict[str, Any],
+) -> dict[str, Any]:
+    """Normalize only exact server-derived fields on an already-owned draft."""
+
+    metadata = draft.get("metadata")
+    if not isinstance(metadata, dict):
+        raise ZenodoError("owned Zenodo draft lacks metadata")
+    canonical = _canonical_metadata(metadata)
+    expected = _canonical_metadata(transport_metadata)
+    for field, envelope_value in (
+        ("doi", _record_doi(draft)),
+        ("conceptdoi", _concept_doi(draft)),
+    ):
+        if field not in expected and field in canonical:
+            if not envelope_value or canonical[field] != envelope_value:
+                raise ZenodoError(f"owned Zenodo draft has an unexpected {field}")
+            canonical.pop(field)
+    if "publication_date" not in expected and "publication_date" in canonical:
+        value = canonical.pop("publication_date")
+        if (
+            not isinstance(value, str)
+            or re.fullmatch(r"[0-9]{4}-[0-9]{2}-[0-9]{2}", value) is None
+        ):
+            raise ZenodoError("owned Zenodo draft has a malformed publication date")
+    publisher = canonical.pop("imprint_publisher", None)
+    if publisher is not None and publisher != "Zenodo":
+        raise ZenodoError("owned Zenodo draft has an unexpected publisher imprint")
+    reserved = canonical.pop("prereserve_doi", None)
+    if reserved is not None:
+        record_id = draft.get("id")
+        if (
+            not isinstance(reserved, dict)
+            or set(reserved) not in ({"doi"}, {"doi", "recid"})
+            or reserved.get("doi") != _record_doi(draft)
+            or ("recid" in reserved and str(reserved.get("recid")) != str(record_id))
+        ):
+            raise ZenodoError("owned Zenodo draft has malformed reserved DOI data")
+    related = canonical.get("related_identifiers")
+    if isinstance(related, list):
+        normalized_related: list[object] = []
+        for item in related:
+            if not isinstance(item, dict):
+                normalized_related.append(item)
+                continue
+            normalized = item.copy()
+            scheme = normalized.pop("scheme", None)
+            if scheme is not None and scheme != _expected_identifier_scheme(
+                normalized.get("identifier")
+            ):
+                raise ZenodoError("owned Zenodo draft has an unexpected scheme")
+            normalized_related.append(normalized)
+        canonical["related_identifiers"] = normalized_related
+    if draft.get("state") in {"done", "published"}:
+        canonical.pop("relations", None)
+    return canonical
+
+
+def _assert_owned_draft_metadata(
+    draft: dict[str, Any],
+    *,
+    transport_metadata: dict[str, Any],
+) -> None:
+    """Require exact intended metadata before trusting an owner-bearing draft."""
+
+    actual = _canonical_owned_draft_metadata(
+        draft,
+        transport_metadata=transport_metadata,
+    )
+    expected = _canonical_metadata(transport_metadata)
+    if actual != expected:
+        raise ZenodoError("owned Zenodo draft metadata is not the intended payload")
+
+
 def _claim_draft(
     draft: dict[str, Any],
     deposition: dict[str, Any],
     *,
+    transport_metadata: dict[str, Any],
     operation_id: str,
     api: str,
     token: str,
@@ -1446,11 +1721,15 @@ def _claim_draft(
         _assert_draft_binding(
             draft, deposition, operation_id=operation_id, require_owned=True
         )
+        _assert_owned_draft_metadata(
+            draft,
+            transport_metadata=transport_metadata,
+        )
         return draft
     _assert_draft_binding(
         draft, deposition, operation_id=operation_id, require_owned=False
     )
-    claimed_metadata = _metadata_with_ownership(deposition["metadata"], operation_id)
+    claimed_metadata = _metadata_with_ownership(transport_metadata, operation_id)
     claimed = _request(
         "PUT",
         f"{api}/deposit/depositions/{draft['id']}",
@@ -1469,6 +1748,40 @@ def _claim_draft(
         path="metadata",
     )
     return claimed
+
+
+def _normalized_source_files(record: dict[str, Any]) -> list[str]:
+    """Return a representation shared by public and legacy draft file shapes."""
+
+    values = record.get("files")
+    if not isinstance(values, list):
+        raise ZenodoError("unclaimed draft lacks comparable source files")
+    normalized: list[str] = []
+    for item in values:
+        if not isinstance(item, dict):
+            raise ZenodoError("unclaimed draft contains malformed source files")
+        checksum = item.get("checksum")
+        if isinstance(checksum, str) and re.fullmatch(r"md5:[0-9a-f]{32}", checksum):
+            checksum = checksum.removeprefix("md5:")
+        normalized.append(
+            json.dumps(
+                {
+                    "filename": item.get("filename", item.get("key")),
+                    "size": _reported_file_size(item),
+                    "checksum": checksum,
+                },
+                sort_keys=True,
+                separators=(",", ":"),
+            )
+        )
+    return sorted(normalized)
+
+
+def _assert_same_source_files(draft: dict[str, Any], existing: dict[str, Any]) -> None:
+    """Require the draft to contain exactly the bound historical source files."""
+
+    if _normalized_source_files(draft) != _normalized_source_files(existing):
+        raise ZenodoError("unclaimed draft is not an untouched source snapshot")
 
 
 def _assert_unclaimed_draft_snapshot(
@@ -1494,35 +1807,314 @@ def _assert_unclaimed_draft_snapshot(
         canonical_draft.pop(transient, None)
     if canonical_draft != canonical_existing:
         raise ZenodoError("unclaimed draft metadata is not an untouched snapshot")
+    _assert_same_source_files(draft, existing)
 
-    def files(record: dict[str, Any]) -> list[str]:
-        values = record.get("files")
-        if not isinstance(values, list):
-            raise ZenodoError("unclaimed draft lacks comparable source files")
-        normalized: list[str] = []
-        for item in values:
-            if not isinstance(item, dict):
-                raise ZenodoError("unclaimed draft contains malformed source files")
-            checksum = item.get("checksum")
-            if isinstance(checksum, str) and re.fullmatch(
-                r"md5:[0-9a-f]{32}", checksum
-            ):
-                checksum = checksum.removeprefix("md5:")
-            normalized.append(
-                json.dumps(
-                    {
-                        "filename": item.get("filename", item.get("key")),
-                        "size": item.get("size", item.get("filesize")),
-                        "checksum": checksum,
-                    },
-                    sort_keys=True,
-                    separators=(",", ":"),
-                )
+
+def _remove_exact_transport_markers(
+    metadata: dict[str, Any],
+    *,
+    ownership_operation_id: str,
+) -> dict[str, Any]:
+    """Remove exactly one ownership and authority line for legacy comparison."""
+
+    cleaned = json.loads(json.dumps(metadata))
+    notes = cleaned.get("notes")
+    if not isinstance(notes, str):
+        raise ZenodoError("legacy recovery intended metadata lacks marker notes")
+    owner = _one_marker_value(
+        notes,
+        prefix=_DURABLE_OWNERSHIP_PREFIX,
+        label="executor ownership",
+    )
+    authority = _one_marker_value(
+        notes,
+        prefix=_DURABLE_NEWVERSION_AUTHORITY_PREFIX,
+        label="durable new-version authority",
+    )
+    if owner != ownership_operation_id or authority is None:
+        raise ZenodoError("legacy recovery intended metadata lacks exact markers")
+    removed = {
+        _ownership_marker(owner),
+        _durable_newversion_authority_marker(authority),
+    }
+    lines = notes.splitlines()
+    if sum(line in removed for line in lines) != 2:
+        raise ZenodoError("legacy recovery intended metadata has ambiguous markers")
+    normalized = "\n".join(line for line in lines if line not in removed).rstrip()
+    if normalized:
+        cleaned["notes"] = normalized
+    else:
+        cleaned.pop("notes", None)
+    return cleaned
+
+
+def _expected_identifier_scheme(identifier: object) -> str | None:
+    """Return the only legacy-deposition scheme accepted as a derived extra."""
+
+    if not isinstance(identifier, str):
+        return None
+    if re.fullmatch(r"10\.[0-9]{4,9}/\S+", identifier):
+        return "doi"
+    if identifier.startswith(("https://", "http://")):
+        return "url"
+    return None
+
+
+def _canonical_legacy_recovery_draft_metadata(
+    metadata: dict[str, Any],
+    *,
+    deposition: dict[str, Any],
+    existing: dict[str, Any],
+) -> dict[str, Any]:
+    """Remove only the observed, validated server extras from the legacy draft."""
+
+    canonical = _canonical_metadata(metadata)
+    synthpopcan = deposition["synthpopcan"]
+    draft_doi = canonical.pop("doi", None)
+    if draft_doi != synthpopcan["existing_version_doi"]:
+        raise ZenodoError("legacy recovery draft has an unexpected metadata DOI")
+    publication_date = canonical.get("publication_date")
+    existing_metadata = existing.get("metadata")
+    existing_date = (
+        existing_metadata.get("publication_date")
+        if isinstance(existing_metadata, dict)
+        else None
+    )
+    if publication_date not in {
+        existing_date,
+        _LEGACY_STRIPPED_MARKER_STAGED_PUBLICATION_DATE,
+    }:
+        raise ZenodoError("legacy recovery draft has an unexpected publication date")
+    canonical["publication_date"] = existing_date
+    publisher = canonical.pop("imprint_publisher", None)
+    if publisher != "Zenodo":
+        raise ZenodoError("legacy recovery draft has an unexpected publisher imprint")
+    reserved = canonical.pop("prereserve_doi", None)
+    if not isinstance(reserved, dict) or set(reserved) != {"doi", "recid"}:
+        raise ZenodoError("legacy recovery draft has malformed reserved DOI data")
+    if reserved.get("doi") != synthpopcan["existing_version_doi"]:
+        raise ZenodoError("legacy recovery draft reserved a different DOI")
+    if str(reserved.get("recid")) != str(synthpopcan["existing_record_id"]):
+        raise ZenodoError("legacy recovery draft reserved a different record")
+    related = canonical.get("related_identifiers")
+    if not isinstance(related, list):
+        raise ZenodoError("legacy recovery draft lacks related identifiers")
+    normalized_related: list[object] = []
+    for item in related:
+        if not isinstance(item, dict):
+            raise ZenodoError("legacy recovery draft has malformed related identifiers")
+        normalized = item.copy()
+        scheme = normalized.pop("scheme", None)
+        if scheme != _expected_identifier_scheme(normalized.get("identifier")):
+            raise ZenodoError(
+                "legacy recovery draft has an unexpected identifier scheme"
             )
-        return sorted(normalized)
+        normalized_related.append(normalized)
+    canonical["related_identifiers"] = normalized_related
+    return canonical
 
-    if files(draft) != files(existing):
-        raise ZenodoError("unclaimed draft is not an untouched source snapshot")
+
+def _legacy_recovery_checkpoint(
+    deposition: dict[str, Any], operation_id: str
+) -> dict[str, Any]:
+    """Return the single action-intent checkpoint shape accepted for recovery."""
+
+    synthpopcan = deposition["synthpopcan"]
+    return {
+        "operation_id": operation_id,
+        "deposit_operation": "correct-existing-metadata",
+        "model_id": synthpopcan["model_id"],
+        "package_version": synthpopcan["existing_package_version"],
+        "asset_sha256": synthpopcan["historical_asset"]["sha256"],
+        "metadata_sha256": operation_id.rsplit(":", 1)[-1],
+        "source_record_id": synthpopcan["existing_record_id"],
+        "state": "action-intent",
+        "uploaded_bytes": 0,
+    }
+
+
+def _may_read_direct_legacy_recovery_draft(
+    deposition: dict[str, Any],
+    *,
+    operation_id: str,
+    resume: dict[str, Any] | None,
+    api: str,
+) -> bool:
+    """Limit the direct draft probe to the exact interrupted production edit."""
+
+    synthpopcan = deposition["synthpopcan"]
+    return (
+        api.rstrip("/") == PRODUCTION_API
+        and operation_id == _LEGACY_STRIPPED_MARKER_RECOVERY_OPERATION_ID
+        and resume == _legacy_recovery_checkpoint(deposition, operation_id)
+        and synthpopcan.get("deposit_operation") == "correct-existing-metadata"
+        and synthpopcan.get("existing_record_id")
+        == _LEGACY_STRIPPED_MARKER_RECOVERY_RECORD_ID
+        and synthpopcan.get("existing_version_doi")
+        == _LEGACY_STRIPPED_MARKER_RECOVERY_VERSION_DOI
+        and synthpopcan.get("existing_concept_doi")
+        == _LEGACY_STRIPPED_MARKER_RECOVERY_CONCEPT_DOI
+    )
+
+
+def _assert_exact_legacy_stripped_marker_claim(
+    draft: dict[str, Any],
+    existing: dict[str, Any],
+    deposition: dict[str, Any],
+    *,
+    transport_metadata: dict[str, Any],
+    operation_id: str,
+    resume: dict[str, Any],
+) -> None:
+    """Authorize only the one HTML-stripped production claim already in flight."""
+
+    if operation_id != _LEGACY_STRIPPED_MARKER_RECOVERY_OPERATION_ID:
+        raise ZenodoError("legacy stripped-marker recovery is not authorized")
+    if resume != _legacy_recovery_checkpoint(deposition, operation_id):
+        raise ZenodoError("legacy recovery checkpoint is not the exact action intent")
+    if draft.get("state") != "inprogress" or draft.get("submitted") is not True:
+        raise ZenodoError("legacy recovery draft is not the exact open edit state")
+    _assert_draft_binding(
+        draft,
+        deposition,
+        operation_id=operation_id,
+        require_owned=False,
+    )
+    if _draft_ownership(draft) is not None:
+        raise ZenodoError("legacy recovery draft unexpectedly has an owner")
+    _assert_same_source_files(draft, existing)
+    intended_transport = _metadata_with_ownership(transport_metadata, operation_id)
+    expected_metadata = _canonical_metadata(
+        _remove_exact_transport_markers(
+            intended_transport,
+            ownership_operation_id=operation_id,
+        )
+    )
+    draft_metadata = draft.get("metadata")
+    if not isinstance(draft_metadata, dict):
+        raise ZenodoError("legacy recovery draft lacks metadata")
+    actual_metadata = _canonical_legacy_recovery_draft_metadata(
+        draft_metadata,
+        deposition=deposition,
+        existing=existing,
+    )
+    if actual_metadata != expected_metadata:
+        raise ZenodoError("legacy recovery draft metadata is not the intended payload")
+
+
+def _assert_exact_durable_owned_recovery_claim(
+    draft: dict[str, Any],
+    existing: dict[str, Any],
+    deposition: dict[str, Any],
+    *,
+    transport_metadata: dict[str, Any],
+    operation_id: str,
+) -> None:
+    """Verify the exact post-claim/pre-checkpoint state of the one live edit."""
+
+    _assert_draft_binding(
+        draft,
+        deposition,
+        operation_id=operation_id,
+        require_owned=True,
+    )
+    _assert_same_source_files(draft, existing)
+    draft_metadata = draft.get("metadata")
+    if not isinstance(draft_metadata, dict):
+        raise ZenodoError("owned legacy recovery draft lacks metadata")
+    actual_metadata = _canonical_legacy_recovery_draft_metadata(
+        draft_metadata,
+        deposition=deposition,
+        existing=existing,
+    )
+    expected_metadata = _canonical_metadata(transport_metadata)
+    if actual_metadata != expected_metadata:
+        raise ZenodoError("owned legacy recovery draft metadata is not exact")
+
+
+def _preflight_metadata_edit_draft(
+    deposition: dict[str, Any],
+    *,
+    transport_metadata: dict[str, Any],
+    operation_id: str,
+    api: str,
+    token: str,
+) -> dict[str, Any] | None:
+    """Distinguish a closed record from an already-open, exactly owned edit."""
+
+    record_id = _required_record_id(deposition["synthpopcan"], "existing_record_id")
+    candidate = _request(
+        "GET",
+        f"{api}/deposit/depositions/{record_id}",
+        token=token,
+    )
+    remote_state = candidate.get("state")
+    if remote_state in {"done", "published"}:
+        return None
+    if remote_state != "inprogress":
+        raise ZenodoError("metadata edit preflight returned an unexpected state")
+    if _draft_ownership(candidate) != operation_id:
+        raise ZenodoError("open metadata edit is not owned by this exact operation")
+    _assert_draft_binding(
+        candidate,
+        deposition,
+        operation_id=operation_id,
+        require_owned=True,
+    )
+    _assert_owned_draft_metadata(
+        candidate,
+        transport_metadata=transport_metadata,
+    )
+    return candidate
+
+
+def _preflight_newversion_draft(
+    deposition: dict[str, Any],
+    *,
+    transport_metadata: dict[str, Any],
+    operation_id: str,
+    api: str,
+    token: str,
+) -> dict[str, Any] | None:
+    """Prove there is no unowned draft in the concept before newversion."""
+
+    synthpopcan = deposition["synthpopcan"]
+    concept_doi = _required_string(synthpopcan, "existing_concept_doi")
+    concept_id = _doi_record_id(concept_doi)
+    response: object = _request(
+        "GET",
+        (
+            f"{api}/deposit/depositions?status=draft&"
+            f"q=conceptrecid:{concept_id}&size=100"
+        ),
+        token=token,
+    )
+    if not isinstance(response, list):
+        raise ZenodoError("new-version draft preflight returned a malformed listing")
+    matches: list[dict[str, Any]] = []
+    for item in response:
+        if not isinstance(item, dict):
+            raise ZenodoError("new-version draft preflight returned malformed data")
+        item_concept = _concept_doi(item)
+        item_concept_id = item.get("conceptrecid")
+        if item_concept != concept_doi and str(item_concept_id) != concept_id:
+            raise ZenodoError("new-version draft preflight escaped the bound concept")
+        matches.append(item)
+    if not matches:
+        return None
+    if len(matches) != 1 or _draft_ownership(matches[0]) != operation_id:
+        raise ZenodoError("new-version concept has an unowned or ambiguous open draft")
+    _assert_draft_binding(
+        matches[0],
+        deposition,
+        operation_id=operation_id,
+        require_owned=True,
+    )
+    _assert_owned_draft_metadata(
+        matches[0],
+        transport_metadata=transport_metadata,
+    )
+    return matches[0]
 
 
 def _assert_new_record_action_ownership_proof(
@@ -1584,9 +2176,72 @@ def _verify_remote_asset(
 
     uploaded = _remote_file(record, filename)
     _verify_upload_response(uploaded, payload)
-    if uploaded.get("size") is None and uploaded.get("checksum") is None:
-        raise ZenodoError("Zenodo file response lacks size and checksum evidence")
+    if _reported_file_size(uploaded) != len(payload):
+        raise ZenodoError("Zenodo file response lacks exact size evidence")
+    if uploaded.get("checksum") is None:
+        raise ZenodoError("Zenodo file response lacks exact MD5 evidence")
     return uploaded
+
+
+def _assert_only_candidate_file(
+    record: dict[str, Any], *, filename: str, payload: bytes
+) -> None:
+    """Require a version/create draft to contain exactly its candidate asset."""
+
+    files = record.get("files")
+    if not isinstance(files, list) or len(files) != 1:
+        raise ZenodoError("Zenodo record must contain exactly one candidate file")
+    _verify_remote_asset(record, filename=filename, payload=payload)
+
+
+def _bound_draft_bucket(
+    draft: dict[str, Any],
+    result: dict[str, Any],
+    *,
+    api: str,
+) -> str:
+    """Bind uploads to the current owned draft's trusted Zenodo bucket URL."""
+
+    links = draft.get("links")
+    bucket = links.get("bucket") if isinstance(links, dict) else None
+    if not isinstance(bucket, str) or not bucket:
+        raise ZenodoError("Zenodo draft lacks an upload bucket")
+    bucket_url = urllib.parse.urlsplit(bucket)
+    api_url = urllib.parse.urlsplit(api)
+    api_files_prefix = f"{api_url.path.rstrip('/')}/files/"
+    if (
+        bucket_url.scheme != "https"
+        or bucket_url.netloc != api_url.netloc
+        or not bucket_url.path.startswith(api_files_prefix)
+        or bucket_url.query
+        or bucket_url.fragment
+    ):
+        raise ZenodoError("Zenodo draft exposes an untrusted upload bucket")
+    recorded = result.get("bucket_url")
+    if recorded is not None and recorded != bucket:
+        raise ZenodoError("checkpoint upload bucket does not match the bound draft")
+    return bucket.rstrip("/")
+
+
+def _assert_pre_publish_files(
+    draft: dict[str, Any],
+    *,
+    operation: str,
+    existing: dict[str, Any] | None,
+    filename: str | None,
+    payload: bytes | None,
+) -> None:
+    """Rebind the complete mutable file set immediately before publication."""
+
+    if operation == "correct-existing-metadata":
+        if existing is None:
+            raise ZenodoError("metadata correction lost its source file binding")
+        _assert_same_source_files(draft, existing)
+        return
+    if operation in _ASSET_OPERATIONS:
+        if filename is None or payload is None:
+            raise ZenodoError("asset operation lost its candidate file binding")
+        _assert_only_candidate_file(draft, filename=filename, payload=payload)
 
 
 def _existing_record_requirements(
@@ -1595,6 +2250,7 @@ def _existing_record_requirements(
     api: str,
     token: str,
     verify_asset_bytes: bool = True,
+    require_latest: bool = True,
 ) -> tuple[dict[str, Any], int, str, str]:
     """Fetch and bind a correction to the intended record and concept."""
 
@@ -1609,31 +2265,26 @@ def _existing_record_requirements(
         raise ZenodoError("existing Zenodo record belongs to a different concept DOI")
     if _record_doi(existing) != version_doi:
         raise ZenodoError("existing Zenodo record version DOI does not match")
-    if synthpopcan.get("deposit_operation") == "create-new-version":
-        links = existing.get("links")
-        latest = links.get("latest") if isinstance(links, dict) else None
-        if not isinstance(latest, str) or not latest:
-            raise ZenodoError(
-                "existing record does not identify the latest concept version"
-            )
-        latest_record = _request("GET", latest, token=token)
-        if (
-            latest_record.get("id") != record_id
-            or _record_doi(latest_record) != version_doi
-            or _concept_doi(latest_record) != concept_doi
-        ):
-            raise ZenodoError(
-                "new-version action requires the latest record in the concept"
-            )
+    if synthpopcan.get("deposit_operation") == "create-new-version" and require_latest:
+        _require_existing_record_is_latest(
+            existing,
+            record_id=record_id,
+            version_doi=version_doi,
+            concept_doi=concept_doi,
+            token=token,
+        )
     historical = synthpopcan.get("historical_asset")
     if not isinstance(historical, dict):
         raise ZenodoError("correction must identify the historical asset")
     historical_filename = _required_string(historical, "filename")
+    existing_files = existing.get("files")
+    if not isinstance(existing_files, list) or len(existing_files) != 1:
+        raise ZenodoError("existing Zenodo record must contain one historical asset")
     remote_historical = _remote_file(existing, historical_filename)
     expected_size = historical.get("size_bytes")
     if not isinstance(expected_size, int) or expected_size < 0:
         raise ZenodoError("historical asset must declare its registered size")
-    if remote_historical.get("size") != expected_size:
+    if _reported_file_size(remote_historical) != expected_size:
         raise ZenodoError("existing Zenodo historical asset size does not match")
     expected_sha256 = historical.get("sha256")
     if not isinstance(expected_sha256, str) or len(expected_sha256) != 64:
@@ -1645,6 +2296,64 @@ def _existing_record_requirements(
             expected_sha256=expected_sha256,
         )
     return existing, record_id, concept_doi, version_doi
+
+
+def _require_existing_record_is_latest(
+    existing: dict[str, Any],
+    *,
+    record_id: int,
+    version_doi: str,
+    concept_doi: str,
+    token: str,
+) -> None:
+    """Require the bound predecessor to remain the exact concept head."""
+
+    links = existing.get("links")
+    latest = links.get("latest") if isinstance(links, dict) else None
+    if not isinstance(latest, str) or not latest:
+        raise ZenodoError(
+            "existing record does not identify the latest concept version"
+        )
+    latest_record = _request("GET", latest, token=token)
+    if (
+        latest_record.get("id") != record_id
+        or _record_doi(latest_record) != version_doi
+        or _concept_doi(latest_record) != concept_doi
+    ):
+        raise ZenodoError(
+            "new-version action requires the latest record in the concept"
+        )
+
+
+def _operation_transport_metadata(
+    deposition: dict[str, Any], existing: dict[str, Any] | None
+) -> tuple[dict[str, Any], str | None]:
+    """Carry the historical publication date on in-place metadata edits."""
+
+    metadata = json.loads(json.dumps(deposition["metadata"]))
+    operation = deposition["synthpopcan"]["deposit_operation"]
+    if operation != "correct-existing-metadata":
+        return metadata, None
+    if existing is None:
+        raise ZenodoError("metadata correction lacks its existing record")
+    existing_metadata = existing.get("metadata")
+    publication_date = (
+        existing_metadata.get("publication_date")
+        if isinstance(existing_metadata, dict)
+        else None
+    )
+    if (
+        not isinstance(publication_date, str)
+        or re.fullmatch(r"[0-9]{4}-[0-9]{2}-[0-9]{2}", publication_date) is None
+    ):
+        raise ZenodoError(
+            "existing metadata correction record lacks an exact publication date"
+        )
+    declared = metadata.get("publication_date")
+    if declared is not None and declared != publication_date:
+        raise ZenodoError("metadata correction would change the publication date")
+    metadata["publication_date"] = publication_date
+    return metadata, publication_date
 
 
 def _require_preserved_record_identity(
@@ -1775,27 +2484,92 @@ def _remove_inherited_draft_files(
         )
 
 
+def _assert_exact_inherited_draft_files(
+    draft: dict[str, Any],
+    existing: dict[str, Any],
+    *,
+    candidate_filename: str | None,
+    allow_source_subset: bool,
+) -> None:
+    """Require only the source snapshot plus an optional verified candidate."""
+
+    files = draft.get("files")
+    if not isinstance(files, list):
+        raise ZenodoError("new-version draft lacks an exact inherited file set")
+    source_view = json.loads(json.dumps(draft))
+    if candidate_filename is None:
+        source_files = files
+    else:
+        candidates = [
+            item
+            for item in files
+            if isinstance(item, dict)
+            and item.get("filename", item.get("key")) == candidate_filename
+        ]
+        if len(candidates) != 1:
+            raise ZenodoError("new-version draft lacks one exact candidate file")
+        source_files = [item for item in files if item is not candidates[0]]
+    source_view["files"] = source_files
+    if not allow_source_subset:
+        _assert_same_source_files(source_view, existing)
+        return
+    actual = _normalized_source_files(source_view)
+    expected = _normalized_source_files(existing)
+    if len(actual) != len(set(actual)) or not set(actual).issubset(expected):
+        raise ZenodoError("new-version draft contains an unexpected inherited file")
+
+
 def _verify_historical_version_unchanged(
-    deposition: dict[str, Any], *, api: str, token: str
+    deposition: dict[str, Any],
+    *,
+    api: str,
+    token: str,
+    new_record_id: int,
+    new_version_doi: str,
 ) -> None:
     """Confirm the published predecessor still resolves with its historical file."""
 
     synthpopcan = deposition["synthpopcan"]
-    historical, _, _, _ = _existing_record_requirements(
-        deposition, api=api, token=token, verify_asset_bytes=False
-    )
+    historical_record_id = _required_record_id(synthpopcan, "existing_record_id")
+    historical = _request("GET", f"{api}/records/{historical_record_id}", token=token)
+    if (
+        historical.get("id") != historical_record_id
+        or _record_doi(historical) != synthpopcan["existing_version_doi"]
+        or _concept_doi(historical) != synthpopcan["existing_concept_doi"]
+    ):
+        raise ZenodoError("published predecessor identity changed")
     historical_asset = synthpopcan["historical_asset"]
+    files = historical.get("files")
+    if not isinstance(files, list) or len(files) != 1:
+        raise ZenodoError("published predecessor file set changed")
     remote_asset = _remote_file(historical, str(historical_asset["filename"]))
     expected_size = historical_asset.get("size_bytes")
     expected_sha256 = historical_asset.get("sha256")
-    if not isinstance(expected_size, int) or remote_asset.get("size") != expected_size:
+    if (
+        not isinstance(expected_size, int)
+        or _reported_file_size(remote_asset) != expected_size
+    ):
         raise ZenodoError("published predecessor asset size changed")
     if not isinstance(expected_sha256, str) or len(expected_sha256) != 64:
         raise ZenodoError("published predecessor lacks a registered SHA-256 checksum")
-    # The same invocation streamed and verified these bytes before opening the
-    # edit/new-version action. Re-fetching identity, name, and size here proves
-    # the predecessor still resolves without downloading multi-gigabyte bytes
-    # twice in one operation. Every resume invocation repeats the pre-write hash.
+    _verify_remote_download(
+        _remote_file_url(remote_asset),
+        expected_size=expected_size,
+        expected_sha256=expected_sha256,
+    )
+    links = historical.get("links")
+    latest_url = links.get("latest") if isinstance(links, dict) else None
+    if not isinstance(latest_url, str) or not latest_url:
+        raise ZenodoError("published predecessor does not resolve the latest version")
+    latest = _request("GET", latest_url, token=token)
+    if (
+        latest.get("id") != new_record_id
+        or _record_doi(latest) != new_version_doi
+        or _concept_doi(latest) != synthpopcan["existing_concept_doi"]
+    ):
+        raise ZenodoError("newly published correction is not the concept latest")
+    # The post-publish SHA-256 stream closes the mutable-action TOCTOU window and
+    # proves that publication did not alter the registered predecessor bytes.
 
 
 def _verify_final_record(
@@ -1821,8 +2595,11 @@ def _verify_final_record(
         _canonical_metadata(metadata),
         path="metadata",
     )
+    operation_id = _operation_identity(deposition)
+    if _draft_ownership(record) != operation_id:
+        raise ZenodoError("published Zenodo record lost executor ownership")
 
-    operation = str(result["deposit_operation"])
+    operation = str(deposition["synthpopcan"]["deposit_operation"])
     doi = _record_doi(record)
     concept_doi = _concept_doi(record)
     if not doi or not concept_doi:
@@ -1833,6 +2610,24 @@ def _verify_final_record(
             raise ZenodoError("metadata correction changed the version DOI")
         if concept_doi != synthpopcan["existing_concept_doi"]:
             raise ZenodoError("metadata correction changed the concept DOI")
+        source_publication_date = result.get("source_publication_date")
+        if (
+            not isinstance(source_publication_date, str)
+            or metadata.get("publication_date") != source_publication_date
+        ):
+            raise ZenodoError("metadata correction changed the publication date")
+        historical_asset = synthpopcan["historical_asset"]
+        files = record.get("files")
+        if not isinstance(files, list) or len(files) != 1:
+            raise ZenodoError("metadata correction changed the historical file set")
+        remote_historical = _remote_file(record, str(historical_asset["filename"]))
+        if _reported_file_size(remote_historical) != historical_asset["size_bytes"]:
+            raise ZenodoError("metadata correction changed the historical file size")
+        _verify_remote_download(
+            _remote_file_url(remote_historical),
+            expected_size=historical_asset["size_bytes"],
+            expected_sha256=historical_asset["sha256"],
+        )
     elif operation == "create-new-version":
         synthpopcan = deposition["synthpopcan"]
         if concept_doi != synthpopcan["existing_concept_doi"]:
@@ -1842,7 +2637,13 @@ def _verify_final_record(
 
     remote_asset: dict[str, Any] | None = None
     if payload is not None and filename is not None:
-        remote_asset = _verify_remote_asset(record, filename=filename, payload=payload)
+        _assert_only_candidate_file(record, filename=filename, payload=payload)
+        remote_asset = _remote_file(record, filename)
+        _verify_remote_download(
+            _remote_file_url(remote_asset),
+            expected_size=len(payload),
+            expected_sha256=hashlib.sha256(payload).hexdigest(),
+        )
 
     result.update(
         {
@@ -1859,7 +2660,13 @@ def _verify_final_record(
             "record_id": synthpopcan["existing_record_id"],
             "version_doi": synthpopcan["existing_version_doi"],
         }
-        _verify_historical_version_unchanged(deposition, api=api, token=token)
+        _verify_historical_version_unchanged(
+            deposition,
+            api=api,
+            token=token,
+            new_record_id=record_id,
+            new_version_doi=doi,
+        )
     if operation in _ASSET_OPERATIONS and remote_asset is not None:
         synthpopcan = deposition["synthpopcan"]
         download_url = _remote_file_url(remote_asset)
@@ -1970,7 +2777,12 @@ def deposit_one(
             existing_record_id,
             existing_concept_doi,
             existing_version_doi,
-        ) = _existing_record_requirements(deposition, api=api, token=token)
+        ) = _existing_record_requirements(
+            deposition,
+            api=api,
+            token=token,
+            require_latest=(resume is None or resume.get("state") == "action-intent"),
+        )
     if operation == "create-new-version":
         assert existing_record_id is not None and existing_version_doi is not None
         assert existing is not None
@@ -1994,6 +2806,10 @@ def deposit_one(
         assert existing is not None
         _require_preserved_record_identity(existing, metadata)
 
+    transport_metadata, source_publication_date = _operation_transport_metadata(
+        deposition, existing
+    )
+
     result = {
         "operation_id": operation_id,
         "deposit_operation": operation,
@@ -2010,11 +2826,43 @@ def deposit_one(
     }
     if existing_record_id is not None:
         result["source_record_id"] = existing_record_id
+    if source_publication_date is not None:
+        result["source_publication_date"] = source_publication_date
 
     if resume is not None:
-        if resume.get("operation_id") != operation_id:
-            raise ZenodoError("checkpoint identity does not match this operation")
+        expected_static = result.copy()
+        static_fields = (
+            "operation_id",
+            "deposit_operation",
+            "model_id",
+            "package_version",
+            "asset_sha256",
+            "metadata_sha256",
+            "source_record_id",
+        )
+        missing = object()
+        for field in static_fields:
+            if resume.get(field, missing) != expected_static.get(field, missing):
+                raise ZenodoError(f"checkpoint {field} does not match this operation")
         result = resume.copy()
+        if (
+            operation_id == _LEGACY_STRIPPED_MARKER_RECOVERY_OPERATION_ID
+            and result.get("state") == "action-intent"
+            and result != _legacy_recovery_checkpoint(deposition, operation_id)
+        ):
+            raise ZenodoError(
+                "legacy recovery checkpoint is not the exact action intent"
+            )
+        if source_publication_date is not None:
+            recorded_date = result.get("source_publication_date")
+            legacy_action_intent = (
+                operation_id == _LEGACY_STRIPPED_MARKER_RECOVERY_OPERATION_ID
+                and result == _legacy_recovery_checkpoint(deposition, operation_id)
+            )
+            if recorded_date != source_publication_date and not legacy_action_intent:
+                raise ZenodoError(
+                    "metadata correction checkpoint changed the publication date"
+                )
         if result.get("state") == _TERMINAL_STATE:
             if result.get("verified") is not True:
                 raise ZenodoError("verified checkpoint lacks verified=true evidence")
@@ -2051,94 +2899,166 @@ def deposit_one(
             owner = _draft_ownership(advertised)
             if owner == operation_id:
                 draft = advertised
-            elif (
-                resume is not None
-                and existing is not None
-                and owner in {None, inherited_owner}
-            ):
-                _assert_unclaimed_draft_snapshot(advertised, existing)
-                draft = (
-                    _without_inherited_ownership(advertised, inherited_owner)
-                    if inherited_owner is not None and owner == inherited_owner
-                    else advertised
-                )
             else:
                 raise ZenodoError(
                     "existing Zenodo latest draft is not owned by this operation"
                 )
-        else:
-            if operation == "create-new-record":
-                action = _request(
-                    "POST", f"{api}/deposit/depositions", token=token, payload={}
-                )
-            elif operation == "create-new-version":
-                assert existing_record_id is not None
-                action = _request(
-                    "POST",
-                    f"{api}/deposit/depositions/{existing_record_id}/actions/newversion",
-                    token=token,
-                )
-            else:
-                assert existing_record_id is not None
-                action = _request(
-                    "POST",
-                    f"{api}/deposit/depositions/{existing_record_id}/actions/edit",
-                    token=token,
-                )
-            _require_created_action(action, operation)
-            draft = _draft_from_action(action, api=api, token=token)
-            action_owner = _draft_ownership(draft)
-            if action_owner != operation_id:
-                if existing is not None:
-                    # Zenodo returns HTTP 201 even when repeated newversion
-                    # hands back an already-open draft. Status is therefore
-                    # not ownership proof: only an untouched source snapshot
-                    # may be claimed after this exact action intent.
-                    _assert_unclaimed_draft_snapshot(draft, existing)
-                    if inherited_owner is not None:
-                        if action_owner != inherited_owner:
-                            raise ZenodoError(
-                                "action draft lacks the source ownership marker"
-                            )
-                        draft = _without_inherited_ownership(draft, inherited_owner)
-                    elif action_owner is not None:
-                        raise ZenodoError("action returned a draft owned elsewhere")
-                elif operation == "create-new-record":
-                    if action_owner is not None:
-                        raise ZenodoError("new-record draft is already owned")
-                    _assert_new_record_action_ownership_proof(action, draft)
-                else:  # pragma: no cover - exhaustiveness guard
-                    raise ZenodoError("action returned an unowned draft")
-        assert draft is not None
-        draft = _claim_draft(
-            draft,
+        elif _may_read_direct_legacy_recovery_draft(
             deposition,
             operation_id=operation_id,
+            resume=resume,
             api=api,
-            token=token,
-        )
-        deposition_id = _required_record_id(draft, "id")
-        if operation in {"correct-existing-metadata", "create-new-version"}:
-            # Re-read an existing-concept draft after claiming it. This closes
-            # the common stale-response/race window before any inherited file
-            # is removed or existing-record metadata is edited.
-            draft = _request(
-                "GET", f"{api}/deposit/depositions/{deposition_id}", token=token
+        ):
+            assert existing is not None and existing_record_id is not None
+            direct = _request(
+                "GET",
+                f"{api}/deposit/depositions/{existing_record_id}",
+                token=token,
             )
+            direct_owner = _draft_ownership(direct)
+            if direct_owner == operation_id:
+                _assert_exact_durable_owned_recovery_claim(
+                    direct,
+                    existing,
+                    deposition,
+                    transport_metadata=transport_metadata,
+                    operation_id=operation_id,
+                )
+            elif direct_owner is None:
+                _assert_exact_legacy_stripped_marker_claim(
+                    direct,
+                    existing,
+                    deposition,
+                    transport_metadata=transport_metadata,
+                    operation_id=operation_id,
+                    resume=resume,
+                )
+            else:
+                raise ZenodoError(
+                    "direct legacy recovery draft is owned by another operation"
+                )
+            draft = direct
+        else:
+            if operation == "correct-existing-metadata":
+                draft = _preflight_metadata_edit_draft(
+                    deposition,
+                    transport_metadata=transport_metadata,
+                    operation_id=operation_id,
+                    api=api,
+                    token=token,
+                )
+            elif operation == "create-new-version":
+                draft = _preflight_newversion_draft(
+                    deposition,
+                    transport_metadata=transport_metadata,
+                    operation_id=operation_id,
+                    api=api,
+                    token=token,
+                )
+            if draft is None:
+                if operation == "create-new-record":
+                    action = _request(
+                        "POST", f"{api}/deposit/depositions", token=token, payload={}
+                    )
+                elif operation == "create-new-version":
+                    assert existing_record_id is not None
+                    action = _request(
+                        "POST",
+                        f"{api}/deposit/depositions/{existing_record_id}/actions/newversion",
+                        token=token,
+                    )
+                else:
+                    assert existing_record_id is not None
+                    action = _request(
+                        "POST",
+                        f"{api}/deposit/depositions/{existing_record_id}/actions/edit",
+                        token=token,
+                    )
+                _require_created_action(action, operation)
+                draft = _draft_from_action(action, api=api, token=token)
+                action_owner = _draft_ownership(draft)
+                if action_owner != operation_id:
+                    if existing is not None:
+                        # The operation-specific preflight immediately above
+                        # proved there was no open draft before this POST. The
+                        # exact untouched action snapshot is therefore the new
+                        # draft created for this invocation, including when an
+                        # action-intent checkpoint is being resumed.
+                        _assert_unclaimed_draft_snapshot(draft, existing)
+                        if inherited_owner is not None:
+                            if action_owner != inherited_owner:
+                                raise ZenodoError(
+                                    "action draft lacks the source ownership marker"
+                                )
+                            draft = _without_inherited_ownership(draft, inherited_owner)
+                        elif action_owner is not None:
+                            raise ZenodoError("action returned a draft owned elsewhere")
+                    elif operation == "create-new-record":
+                        if action_owner is not None:
+                            raise ZenodoError("new-record draft is already owned")
+                        _assert_new_record_action_ownership_proof(action, draft)
+                    else:  # pragma: no cover - exhaustiveness guard
+                        raise ZenodoError("action returned an unowned draft")
+        assert draft is not None
+        deposition_id = _required_record_id(draft, "id")
+        terminal_action = draft.get("state") in {"done", "published"}
+        if terminal_action:
             _assert_draft_binding(
                 draft, deposition, operation_id=operation_id, require_owned=True
             )
+            _assert_owned_draft_metadata(
+                draft,
+                transport_metadata=transport_metadata,
+            )
+        else:
+            draft = _claim_draft(
+                draft,
+                deposition,
+                transport_metadata=transport_metadata,
+                operation_id=operation_id,
+                api=api,
+                token=token,
+            )
+            deposition_id = _required_record_id(draft, "id")
+            if operation in {"correct-existing-metadata", "create-new-version"}:
+                # Re-read an existing-concept draft after claiming it. This
+                # closes the stale-response/race window before any inherited
+                # file is removed or existing-record metadata is edited.
+                draft = _request(
+                    "GET", f"{api}/deposit/depositions/{deposition_id}", token=token
+                )
+                _assert_draft_binding(
+                    draft,
+                    deposition,
+                    operation_id=operation_id,
+                    require_owned=True,
+                )
+                _assert_owned_draft_metadata(
+                    draft,
+                    transport_metadata=transport_metadata,
+                )
         links = draft.get("links")
         result.update(
             {
                 "deposition_id": deposition_id,
                 "state": (
-                    "editing" if operation == "correct-existing-metadata" else "created"
+                    "published"
+                    if terminal_action
+                    else (
+                        "editing"
+                        if operation == "correct-existing-metadata"
+                        else "created"
+                    )
                 ),
                 "doi": _record_doi(draft),
+                "concept_doi": _concept_doi(draft) if terminal_action else None,
                 "html_url": links.get("html") if isinstance(links, dict) else None,
             }
         )
+        if not terminal_action:
+            result.pop("concept_doi", None)
+        if source_publication_date is not None:
+            result["source_publication_date"] = source_publication_date
         if isinstance(links, dict) and isinstance(links.get("bucket"), str):
             result["bucket_url"] = links["bucket"]
         _checkpoint_result(checkpoint, result)
@@ -2153,6 +3073,10 @@ def deposit_one(
             _assert_draft_binding(
                 draft, deposition, operation_id=operation_id, require_owned=True
             )
+            _assert_owned_draft_metadata(
+                draft,
+                transport_metadata=transport_metadata,
+            )
 
     assert draft is not None
     state = str(result.get("state"))
@@ -2160,18 +3084,61 @@ def deposit_one(
         _assert_draft_binding(
             draft, deposition, operation_id=operation_id, require_owned=True
         )
-    remote_already_published = state == "draft" and (
-        draft.get("submitted") is True or draft.get("state") in {"done", "published"}
+        _assert_owned_draft_metadata(
+            draft,
+            transport_metadata=transport_metadata,
+        )
+    remote_is_terminal = draft.get("state") in {"done", "published"}
+    if operation == "create-new-version" and not remote_is_terminal:
+        assert existing is not None
+        assert existing_record_id is not None
+        assert existing_version_doi is not None
+        assert existing_concept_doi is not None
+        _require_existing_record_is_latest(
+            existing,
+            record_id=existing_record_id,
+            version_doi=existing_version_doi,
+            concept_doi=existing_concept_doi,
+            token=token,
+        )
+    remote_already_published = (
+        state
+        in {
+            "created",
+            "editing",
+            "uploaded",
+            "draft",
+        }
+        and remote_is_terminal
     )
     if remote_already_published:
+        _assert_pre_publish_files(
+            draft,
+            operation=operation,
+            existing=existing,
+            filename=filename,
+            payload=payload,
+        )
         result["state"] = "published"
         result["doi"] = _record_doi(draft) or result.get("doi")
         result["concept_doi"] = _concept_doi(draft)
         _checkpoint_result(checkpoint, result)
-        state = "published"
+        _verify_final_record(
+            deposition,
+            api=api,
+            token=token,
+            result=result,
+            payload=payload,
+            filename=filename,
+        )
+        _checkpoint_result(checkpoint, result)
+        return result
     if operation in _ASSET_OPERATIONS:
         assert payload is not None and filename is not None
+        upload_bucket: str | None = None
         if state in {"created", "editing"}:
+            upload_bucket = _bound_draft_bucket(draft, result, api=api)
+            result["bucket_url"] = upload_bucket
             existing_files = draft.get("files")
             candidate_files = (
                 [
@@ -2191,6 +3158,15 @@ def deposit_one(
             if uploaded_before_checkpoint:
                 _verify_remote_asset(draft, filename=filename, payload=payload)
             if operation == "create-new-version":
+                assert existing is not None
+                _assert_exact_inherited_draft_files(
+                    draft,
+                    existing,
+                    candidate_filename=(
+                        filename if uploaded_before_checkpoint else None
+                    ),
+                    allow_source_subset=resume is not None,
+                )
                 _remove_inherited_draft_files(
                     draft,
                     api=api,
@@ -2210,26 +3186,22 @@ def deposit_one(
             else:
                 existing_files = []
         if state in {"created", "editing"}:
-            bucket = result.get("bucket_url")
-            if not isinstance(bucket, str) or not bucket:
-                links = draft.get("links")
-                bucket = links.get("bucket") if isinstance(links, dict) else None
-            if not isinstance(bucket, str) or not bucket:
-                raise ZenodoError("Zenodo draft lacks an upload bucket")
+            if upload_bucket is None:  # pragma: no cover - state invariant
+                raise ZenodoError("Zenodo draft upload bucket was not bound")
             uploaded = _request(
-                "PUT", f"{bucket.rstrip('/')}/{filename}", token=token, data=payload
+                "PUT", f"{upload_bucket}/{filename}", token=token, data=payload
             )
             _verify_upload_response(uploaded, payload)
             result["state"] = "uploaded"
             result["uploaded_bytes"] = len(payload)
-            result["bucket_url"] = bucket
+            result["bucket_url"] = upload_bucket
             _checkpoint_result(checkpoint, result)
             state = "uploaded"
         elif state in {"uploaded", "draft", "published"}:
             _verify_remote_asset(draft, filename=filename, payload=payload)
 
     if state in {"created", "editing", "uploaded"}:
-        owned_metadata = _metadata_with_ownership(metadata, operation_id)
+        owned_metadata = _metadata_with_ownership(transport_metadata, operation_id)
         updated = _request(
             "PUT",
             f"{api}/deposit/depositions/{result['deposition_id']}",
@@ -2239,23 +3211,60 @@ def deposit_one(
         updated_metadata = updated.get("metadata")
         if not isinstance(updated_metadata, dict):
             raise ZenodoError("Zenodo metadata update returned no metadata")
-        _assert_metadata_subset(
-            _canonical_metadata(owned_metadata),
-            _canonical_metadata(updated_metadata),
-            path="metadata",
+        _assert_draft_binding(
+            updated,
+            deposition,
+            operation_id=operation_id,
+            require_owned=True,
         )
+        _assert_owned_draft_metadata(
+            updated,
+            transport_metadata=transport_metadata,
+        )
+        updated = _request(
+            "GET",
+            f"{api}/deposit/depositions/{result['deposition_id']}",
+            token=token,
+        )
+        _assert_draft_binding(
+            updated,
+            deposition,
+            operation_id=operation_id,
+            require_owned=True,
+        )
+        _assert_owned_draft_metadata(
+            updated,
+            transport_metadata=transport_metadata,
+        )
+        _assert_pre_publish_files(
+            updated,
+            operation=operation,
+            existing=existing,
+            filename=filename,
+            payload=payload,
+        )
+        draft = updated
         result["state"] = "draft"
         result["doi"] = _record_doi(updated) or result.get("doi")
         _checkpoint_result(checkpoint, result)
         state = "draft"
     elif state == "draft":
-        draft_metadata = draft.get("metadata")
-        if not isinstance(draft_metadata, dict):
-            raise ZenodoError("Zenodo draft does not expose metadata")
-        _assert_metadata_subset(
-            _canonical_metadata(metadata),
-            _canonical_metadata(draft_metadata),
-            path="metadata",
+        _assert_draft_binding(
+            draft,
+            deposition,
+            operation_id=operation_id,
+            require_owned=True,
+        )
+        _assert_owned_draft_metadata(
+            draft,
+            transport_metadata=transport_metadata,
+        )
+        _assert_pre_publish_files(
+            draft,
+            operation=operation,
+            existing=existing,
+            filename=filename,
+            payload=payload,
         )
 
     if not publish:

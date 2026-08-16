@@ -79,6 +79,7 @@ def _existing_record() -> dict:
             "title": "SynthPopCan prepared model: Ontario",
             "resource_type": {"id": "dataset", "title": "Dataset"},
             "version": "0.9.0",
+            "publication_date": "2026-07-20",
             "creators": [
                 {
                     "name": "Quesnel, Darcy",
@@ -214,19 +215,132 @@ def _metadata_correction_deposition(
     return deposition
 
 
+def _correction_pair() -> tuple[dict, dict]:
+    """Return correction/new-version manifests with the real authority binding."""
+
+    new_version = _new_version_deposition()
+    new_version_operation_id = MODULE._operation_identity(new_version)
+    correction = _metadata_correction_deposition()
+    correction["metadata"]["notes"] = "\n\n".join(
+        (
+            "Rights metadata correction for this historical package.",
+            MODULE._logical_newversion_authority_marker(new_version_operation_id),
+        )
+    )
+    correction["metadata"]["related_identifiers"] = [
+        {
+            "identifier": "10.5072/zenodo.90",
+            "relation": "isPartOf",
+            "resource_type": "software",
+        },
+        {
+            "identifier": "https://example.invalid/source",
+            "relation": "isDerivedFrom",
+            "resource_type": "dataset",
+        },
+    ]
+    return correction, new_version
+
+
+def _action_intent_resume(deposition: dict) -> dict:
+    operation_id = MODULE._operation_identity(deposition)
+    synthpopcan = deposition["synthpopcan"]
+    return {
+        "operation_id": operation_id,
+        "deposit_operation": "correct-existing-metadata",
+        "model_id": synthpopcan["model_id"],
+        "package_version": synthpopcan["existing_package_version"],
+        "asset_sha256": synthpopcan["historical_asset"]["sha256"],
+        "metadata_sha256": operation_id.rsplit(":", 1)[-1],
+        "source_record_id": synthpopcan["existing_record_id"],
+        "state": "action-intent",
+        "uploaded_bytes": 0,
+    }
+
+
+def _authorize_legacy_fixture(monkeypatch, deposition: dict) -> None:
+    """Bind the production-only recovery allow-list to a synthetic test record."""
+
+    operation_id = MODULE._operation_identity(deposition)
+    synthpopcan = deposition["synthpopcan"]
+    monkeypatch.setattr(
+        MODULE,
+        "_LEGACY_STRIPPED_MARKER_RECOVERY_OPERATION_ID",
+        operation_id,
+    )
+    monkeypatch.setattr(
+        MODULE,
+        "_LEGACY_STRIPPED_MARKER_RECOVERY_RECORD_ID",
+        synthpopcan["existing_record_id"],
+    )
+    monkeypatch.setattr(
+        MODULE,
+        "_LEGACY_STRIPPED_MARKER_RECOVERY_VERSION_DOI",
+        synthpopcan["existing_version_doi"],
+    )
+    monkeypatch.setattr(
+        MODULE,
+        "_LEGACY_STRIPPED_MARKER_RECOVERY_CONCEPT_DOI",
+        synthpopcan["existing_concept_doi"],
+    )
+    monkeypatch.setattr(
+        MODULE, "_production_licensing_gates_are_complete", lambda: True
+    )
+    monkeypatch.setattr(
+        MODULE, "_require_production_correction_authority", lambda *args: None
+    )
+
+
+def _legacy_html_stripped_draft(
+    fake, deposition: dict, *, advertise: bool = True
+) -> dict:
+    """Model the exact legacy edit response observed after Zenodo sanitization."""
+
+    operation_id = MODULE._operation_identity(deposition)
+    transported = MODULE._metadata_with_ownership(deposition["metadata"], operation_id)
+    metadata = MODULE._remove_exact_transport_markers(
+        transported,
+        ownership_operation_id=operation_id,
+    )
+    metadata["doi"] = fake.existing["doi"]
+    metadata["publication_date"] = "2026-08-16"
+    metadata["imprint_publisher"] = "Zenodo"
+    metadata["prereserve_doi"] = {
+        "doi": fake.existing["doi"],
+        "recid": fake.existing["id"],
+    }
+    for item in metadata.get("related_identifiers", []):
+        item["scheme"] = MODULE._expected_identifier_scheme(item["identifier"])
+    fake.draft["metadata"] = metadata
+    fake.draft["submitted"] = True
+    fake.draft["state"] = "inprogress"
+    fake.edit_open = True
+    if advertise:
+        fake.existing["links"]["latest_draft"] = (
+            f"https://sandbox.zenodo.org/api/deposit/depositions/{fake.draft['id']}"
+        )
+    return fake.draft
+
+
 class _FakeZenodo:
     def __init__(self, deposition: dict, *, new_version: bool) -> None:
         self.deposition = deposition
         self.new_version = new_version
+        self.edit_open = False
         self.calls: list[tuple[str, str]] = []
         self.existing = _existing_record()
         if new_version:
             operation_id = MODULE._operation_identity(deposition)
-            source_owner = "correct-existing-metadata:source-operation"
+            source_owner = (
+                "correct-existing-metadata:ontario-2021-all-fields:0.9.0:"
+                + "1" * 64
+                + ":"
+                + "2" * 64
+            )
             self.existing["metadata"]["notes"] = "\n".join(
                 (
                     MODULE._ownership_marker(source_owner),
-                    f"{MODULE._NEWVERSION_AUTHORITY_PREFIX}{operation_id} -->",
+                    MODULE._durable_newversion_authority_marker(operation_id),
                 )
             )
         self.draft = {
@@ -245,9 +359,13 @@ class _FakeZenodo:
 
     def request(self, method, url, *, token, payload=None, data=None):
         self.calls.append((method, url))
+        if method == "GET" and "/deposit/depositions?status=draft" in url:
+            return []
         if method == "GET" and url.endswith("/records/100"):
             return self.existing
         if method == "GET" and url.endswith("/records/100/versions/latest"):
+            if self.new_version and self.published is not None:
+                return self.published
             return self.existing
         if method == "POST" and url.endswith("/100/actions/newversion"):
             return {
@@ -257,11 +375,16 @@ class _FakeZenodo:
                 },
             }
         if method == "POST" and url.endswith("/100/actions/edit"):
+            self.edit_open = True
+            self.draft["submitted"] = True
+            self.draft["state"] = "inprogress"
             return {**self.draft, MODULE._HTTP_STATUS_KEY: 201}
         if method == "GET" and url.endswith("/deposit/depositions/101"):
             return self.draft
         if method == "GET" and url.endswith("/deposit/depositions/100"):
-            return self.draft
+            if self.edit_open:
+                return self.draft
+            return {**self.existing, "submitted": True, "state": "done"}
         if method == "DELETE" and "/files/" in url:
             file_id = url.rsplit("/", 1)[-1]
             self.draft["files"] = [
@@ -309,6 +432,8 @@ class _FakeZenodo:
                 "id": record_id,
                 "doi": f"10.5072/zenodo.{record_id}",
                 "conceptdoi": "10.5072/zenodo.90",
+                "submitted": True,
+                "state": "done",
                 "metadata": public_metadata,
                 "links": {"html": f"https://sandbox.zenodo.org/records/{record_id}"},
             }
@@ -324,6 +449,75 @@ class _FakeZenodo:
 def test_sandbox_is_the_default_target() -> None:
     assert "sandbox.zenodo.org" in MODULE.SANDBOX_API
     assert MODULE.PRODUCTION_API == "https://zenodo.org/api"
+
+
+def test_marker_transport_preserves_manifest_authority_and_operation_identity() -> None:
+    correction, new_version = _correction_pair()
+    operation_id = MODULE._operation_identity(correction)
+    new_version_operation_id = MODULE._operation_identity(new_version)
+    logical = MODULE._logical_newversion_authority_marker(new_version_operation_id)
+
+    assert logical in correction["metadata"]["notes"]
+    transported = MODULE._metadata_with_ownership(correction["metadata"], operation_id)
+
+    assert MODULE._operation_identity(correction) == operation_id
+    assert logical not in transported["notes"]
+    assert MODULE._ownership_marker(operation_id) in transported["notes"]
+    assert (
+        MODULE._durable_newversion_authority_marker(new_version_operation_id)
+        in transported["notes"]
+    )
+    assert MODULE._canonical_metadata(transported) == MODULE._canonical_metadata(
+        correction["metadata"]
+    )
+
+
+@pytest.mark.parametrize(
+    "notes",
+    [
+        MODULE._DURABLE_OWNERSHIP_PREFIX + "forged",
+        MODULE._DURABLE_OWNERSHIP_PREFIX + "create-new-version:model:1.0:" + "0" * 64,
+    ],
+)
+def test_executor_ownership_rejects_malformed_visible_markers(notes) -> None:
+    with pytest.raises(MODULE.ZenodoError, match="malformed executor ownership"):
+        MODULE._draft_ownership({"metadata": {"notes": notes}})
+
+
+def test_executor_ownership_rejects_multiple_markers_and_ignores_forged_prose() -> None:
+    operation_id = MODULE._operation_identity(_new_version_deposition())
+    marker = MODULE._ownership_marker(operation_id)
+    with pytest.raises(MODULE.ZenodoError, match="ambiguous executor ownership"):
+        MODULE._draft_ownership({"metadata": {"notes": f"{marker}\n{marker}"}})
+
+    forged_prose = f"Not a marker: {marker}"
+    assert MODULE._draft_ownership({"metadata": {"notes": forged_prose}}) is None
+    assert MODULE._canonical_metadata({"notes": forged_prose}) == {
+        "notes": forged_prose
+    }
+
+
+def test_newversion_authority_requires_one_exact_visible_marker() -> None:
+    operation_id = MODULE._operation_identity(_new_version_deposition())
+    exact = MODULE._durable_newversion_authority_marker(operation_id)
+    existing = {"metadata": {"notes": exact}}
+    MODULE._require_newversion_authority(existing, operation_id)
+
+    existing["metadata"]["notes"] = f"{exact}\n{exact}"
+    with pytest.raises(MODULE.ZenodoError, match="ambiguous.*authority"):
+        MODULE._require_newversion_authority(existing, operation_id)
+
+    existing["metadata"]["notes"] = (
+        MODULE._DURABLE_NEWVERSION_AUTHORITY_PREFIX + "forged"
+    )
+    with pytest.raises(MODULE.ZenodoError, match="malformed.*authority"):
+        MODULE._require_newversion_authority(existing, operation_id)
+
+    existing["metadata"]["notes"] = MODULE._logical_newversion_authority_marker(
+        operation_id
+    )
+    with pytest.raises(MODULE.ZenodoError, match="does not authorize"):
+        MODULE._require_newversion_authority(existing, operation_id)
 
 
 def test_production_is_blocked_while_model_licensing_review_is_open(
@@ -629,7 +823,12 @@ def test_new_version_uses_existing_record_action_and_preserves_predecessor(
     payload = _payload(deposition)[0]
     monkeypatch.setattr(MODULE, "_request", fake.request)
     monkeypatch.setattr(MODULE, "_asset_bytes", lambda item: payload)
-    monkeypatch.setattr(MODULE, "_verify_remote_download", lambda *args, **kwargs: None)
+    historical_verifications: list[dict] = []
+    monkeypatch.setattr(
+        MODULE,
+        "_verify_remote_download",
+        lambda *args, **kwargs: historical_verifications.append(kwargs),
+    )
 
     result = MODULE.deposit_one(
         deposition, api=MODULE.SANDBOX_API, token="t", publish=True
@@ -649,6 +848,22 @@ def test_new_version_uses_existing_record_action_and_preserves_predecessor(
         "ontario-1.0.0-corrected.json.gz"
     ]
     assert result["registry_update"]["url"].endswith("/ontario-1.0.0-corrected.json.gz")
+    assert len(historical_verifications) == 3
+    assert {
+        "expected_size": len(payload),
+        "expected_sha256": hashlib.sha256(payload).hexdigest(),
+    } in historical_verifications
+    publish_index = next(
+        index
+        for index, (_, url) in enumerate(fake.calls)
+        if url.endswith("/actions/publish")
+    )
+    latest_indices = [
+        index
+        for index, (_, url) in enumerate(fake.calls)
+        if url.endswith("/records/100/versions/latest")
+    ]
+    assert latest_indices[0] < publish_index < latest_indices[-1]
 
 
 def test_metadata_correction_preserves_record_identity_and_never_fetches_asset(
@@ -657,8 +872,14 @@ def test_metadata_correction_preserves_record_identity_and_never_fetches_asset(
     deposition = _metadata_correction_deposition()
     fake = _FakeZenodo(deposition, new_version=False)
     fetched: list[bool] = []
+    historical_verifications: list[dict] = []
     monkeypatch.setattr(MODULE, "_request", fake.request)
     monkeypatch.setattr(MODULE, "_asset_bytes", lambda item: fetched.append(True))
+    monkeypatch.setattr(
+        MODULE,
+        "_verify_remote_download",
+        lambda *args, **kwargs: historical_verifications.append(kwargs),
+    )
 
     result = MODULE.deposit_one(
         deposition, api=MODULE.SANDBOX_API, token="t", publish=True
@@ -671,6 +892,7 @@ def test_metadata_correction_preserves_record_identity_and_never_fetches_asset(
     assert result["concept_doi"] == "10.5072/zenodo.90"
     assert "registry_update" not in result
     assert any(url.endswith("/100/actions/edit") for _, url in fake.calls)
+    assert len(historical_verifications) == 2
 
 
 def test_metadata_correction_rejects_unrelated_creator_change(monkeypatch) -> None:
@@ -760,7 +982,7 @@ def test_repeated_newversion_201_cannot_claim_untouched_preauthorization_draft(
     fake.draft["metadata"]["notes"] = "\n".join(
         line
         for line in notes
-        if not line.startswith(MODULE._NEWVERSION_AUTHORITY_PREFIX)
+        if not line.startswith(MODULE._DURABLE_NEWVERSION_AUTHORITY_PREFIX)
     )
     monkeypatch.setattr(MODULE, "_request", fake.request)
     monkeypatch.setattr(MODULE, "_asset_bytes", lambda item: _payload(item)[0])
@@ -852,7 +1074,7 @@ def test_unclaimed_snapshot_rejects_extra_or_malformed_files(extra) -> None:
         MODULE._assert_unclaimed_draft_snapshot(draft, existing)
 
 
-def test_action_intent_recovers_an_untouched_edit_without_reissuing_action(
+def test_action_intent_does_not_claim_an_advertised_unowned_edit(
     monkeypatch,
 ) -> None:
     deposition = _metadata_correction_deposition()
@@ -877,22 +1099,23 @@ def test_action_intent_recovers_an_untouched_edit_without_reissuing_action(
         "asset_sha256": deposition["synthpopcan"]["historical_asset"]["sha256"],
         "metadata_sha256": operation_id.rsplit(":", 1)[-1],
         "source_record_id": 100,
+        "source_publication_date": "2026-07-20",
         "state": "action-intent",
         "uploaded_bytes": 0,
     }
     monkeypatch.setattr(MODULE, "_request", fake.request)
 
-    result = MODULE.deposit_one(
-        deposition,
-        api=MODULE.SANDBOX_API,
-        token="t",
-        publish=False,
-        resume=resume,
-    )
+    with pytest.raises(MODULE.ZenodoError, match="not owned"):
+        MODULE.deposit_one(
+            deposition,
+            api=MODULE.SANDBOX_API,
+            token="t",
+            publish=False,
+            resume=resume,
+        )
 
-    assert result["state"] == "draft"
     assert not any("actions/edit" in url for _, url in fake.calls)
-    assert MODULE._draft_ownership(fake.draft) == operation_id
+    assert not any(method in {"PUT", "DELETE"} for method, _ in fake.calls)
 
 
 def test_action_intent_refuses_a_modified_unowned_edit(monkeypatch) -> None:
@@ -905,11 +1128,19 @@ def test_action_intent_refuses_a_modified_unowned_edit(monkeypatch) -> None:
     operation_id = MODULE._operation_identity(deposition)
     resume = {
         "operation_id": operation_id,
+        "deposit_operation": "correct-existing-metadata",
+        "model_id": deposition["synthpopcan"]["model_id"],
+        "package_version": deposition["synthpopcan"]["existing_package_version"],
+        "asset_sha256": deposition["synthpopcan"]["historical_asset"]["sha256"],
+        "metadata_sha256": operation_id.rsplit(":", 1)[-1],
+        "source_record_id": 100,
+        "source_publication_date": "2026-07-20",
         "state": "action-intent",
+        "uploaded_bytes": 0,
     }
     monkeypatch.setattr(MODULE, "_request", fake.request)
 
-    with pytest.raises(MODULE.ZenodoError, match="not an untouched snapshot"):
+    with pytest.raises(MODULE.ZenodoError, match="not owned"):
         MODULE.deposit_one(
             deposition,
             api=MODULE.SANDBOX_API,
@@ -919,6 +1150,577 @@ def test_action_intent_refuses_a_modified_unowned_edit(monkeypatch) -> None:
         )
 
     assert not any(method in {"PUT", "DELETE"} for method, _ in fake.calls)
+
+
+def test_exact_legacy_html_stripped_claim_is_recovered_without_an_edit_action(
+    monkeypatch,
+) -> None:
+    deposition, _ = _correction_pair()
+    fake = _FakeZenodo(deposition, new_version=False)
+    _legacy_html_stripped_draft(fake, deposition, advertise=False)
+    operation_id = MODULE._operation_identity(deposition)
+    _authorize_legacy_fixture(monkeypatch, deposition)
+    monkeypatch.setattr(MODULE, "_request", fake.request)
+
+    result = MODULE.deposit_one(
+        deposition,
+        api=MODULE.PRODUCTION_API,
+        token="t",
+        publish=False,
+        resume=_action_intent_resume(deposition),
+    )
+
+    assert result["state"] == "draft"
+    assert result["source_publication_date"] == "2026-07-20"
+    assert not any("actions/edit" in url for _, url in fake.calls)
+    assert MODULE._draft_ownership(fake.draft) == operation_id
+    assert fake.draft["metadata"]["publication_date"] == "2026-07-20"
+    new_version_operation_id = MODULE._operation_identity(_correction_pair()[1])
+    MODULE._require_newversion_authority(fake.draft, new_version_operation_id)
+
+
+def test_exact_legacy_recovery_reads_known_draft_before_any_repeat_edit(
+    monkeypatch,
+) -> None:
+    deposition, _ = _correction_pair()
+    fake = _FakeZenodo(deposition, new_version=False)
+    _legacy_html_stripped_draft(fake, deposition, advertise=False)
+    _authorize_legacy_fixture(monkeypatch, deposition)
+    monkeypatch.setattr(MODULE, "_request", fake.request)
+
+    result = MODULE.deposit_one(
+        deposition,
+        api=MODULE.PRODUCTION_API,
+        token="t",
+        publish=False,
+        resume=_action_intent_resume(deposition),
+    )
+
+    assert result["state"] == "draft"
+    assert any(
+        method == "GET" and url.endswith("/deposit/depositions/100")
+        for method, url in fake.calls
+    )
+    assert not any("actions/edit" in url for _, url in fake.calls)
+    assert fake.draft["metadata"]["publication_date"] == "2026-07-20"
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("title", "Someone else's draft"),
+        ("imprint_publisher", "Untrusted archive"),
+        ("doi", "10.5072/zenodo.999"),
+    ],
+)
+def test_legacy_recovery_refuses_any_metadata_delta(field, value, monkeypatch) -> None:
+    deposition, _ = _correction_pair()
+    fake = _FakeZenodo(deposition, new_version=False)
+    draft = _legacy_html_stripped_draft(fake, deposition, advertise=False)
+    draft["metadata"][field] = value
+    _authorize_legacy_fixture(monkeypatch, deposition)
+    monkeypatch.setattr(MODULE, "_request", fake.request)
+
+    with pytest.raises(MODULE.ZenodoError, match="legacy recovery"):
+        MODULE.deposit_one(
+            deposition,
+            api=MODULE.PRODUCTION_API,
+            token="t",
+            publish=False,
+            resume=_action_intent_resume(deposition),
+        )
+
+    assert not any(method in {"PUT", "DELETE", "POST"} for method, _ in fake.calls)
+
+
+@pytest.mark.parametrize(
+    "missing",
+    ["doi", "publication_date", "imprint_publisher", "prereserve_doi", "scheme"],
+)
+def test_legacy_recovery_requires_the_exact_observed_server_shape(
+    missing, monkeypatch
+) -> None:
+    deposition, _ = _correction_pair()
+    fake = _FakeZenodo(deposition, new_version=False)
+    draft = _legacy_html_stripped_draft(fake, deposition, advertise=False)
+    if missing == "scheme":
+        draft["metadata"]["related_identifiers"][0].pop("scheme")
+    else:
+        draft["metadata"].pop(missing)
+    _authorize_legacy_fixture(monkeypatch, deposition)
+    monkeypatch.setattr(MODULE, "_request", fake.request)
+
+    with pytest.raises(MODULE.ZenodoError, match="legacy recovery"):
+        MODULE.deposit_one(
+            deposition,
+            api=MODULE.PRODUCTION_API,
+            token="t",
+            publish=False,
+            resume=_action_intent_resume(deposition),
+        )
+
+    assert not any(method in {"PUT", "DELETE", "POST"} for method, _ in fake.calls)
+
+
+@pytest.mark.parametrize(
+    ("state", "submitted"),
+    [("done", True), ("inprogress", False), (None, True)],
+)
+def test_legacy_recovery_requires_the_exact_open_edit_envelope(
+    state, submitted, monkeypatch
+) -> None:
+    deposition, _ = _correction_pair()
+    fake = _FakeZenodo(deposition, new_version=False)
+    draft = _legacy_html_stripped_draft(fake, deposition, advertise=False)
+    draft["state"] = state
+    draft["submitted"] = submitted
+    _authorize_legacy_fixture(monkeypatch, deposition)
+    monkeypatch.setattr(MODULE, "_request", fake.request)
+
+    with pytest.raises(MODULE.ZenodoError, match="exact open edit state"):
+        MODULE.deposit_one(
+            deposition,
+            api=MODULE.PRODUCTION_API,
+            token="t",
+            publish=False,
+            resume=_action_intent_resume(deposition),
+        )
+
+    assert not any(method in {"PUT", "DELETE", "POST"} for method, _ in fake.calls)
+
+
+def test_legacy_recovery_refuses_changed_files_or_checkpoint(monkeypatch) -> None:
+    deposition, _ = _correction_pair()
+    _authorize_legacy_fixture(monkeypatch, deposition)
+
+    changed_file = _FakeZenodo(deposition, new_version=False)
+    _legacy_html_stripped_draft(changed_file, deposition, advertise=False)
+    changed_file.draft["files"][0]["size"] += 1
+    monkeypatch.setattr(MODULE, "_request", changed_file.request)
+    with pytest.raises(MODULE.ZenodoError, match="untouched source snapshot"):
+        MODULE.deposit_one(
+            deposition,
+            api=MODULE.PRODUCTION_API,
+            token="t",
+            publish=False,
+            resume=_action_intent_resume(deposition),
+        )
+    assert not any(
+        method in {"PUT", "DELETE", "POST"} for method, _ in changed_file.calls
+    )
+
+    changed_checkpoint = _FakeZenodo(deposition, new_version=False)
+    _legacy_html_stripped_draft(changed_checkpoint, deposition, advertise=False)
+    monkeypatch.setattr(MODULE, "_request", changed_checkpoint.request)
+    resume = _action_intent_resume(deposition)
+    resume["uploaded_bytes"] = 1
+    with pytest.raises(MODULE.ZenodoError, match="exact action intent"):
+        MODULE.deposit_one(
+            deposition,
+            api=MODULE.PRODUCTION_API,
+            token="t",
+            publish=False,
+            resume=resume,
+        )
+    assert not any(
+        method in {"PUT", "DELETE", "POST"} for method, _ in changed_checkpoint.calls
+    )
+
+
+def test_legacy_recovery_does_not_adopt_an_unlisted_operation(monkeypatch) -> None:
+    deposition, _ = _correction_pair()
+    fake = _FakeZenodo(deposition, new_version=False)
+    _legacy_html_stripped_draft(fake, deposition)
+    monkeypatch.setattr(MODULE, "_request", fake.request)
+
+    resume = _action_intent_resume(deposition)
+    resume["source_publication_date"] = "2026-07-20"
+    with pytest.raises(MODULE.ZenodoError, match="not owned"):
+        MODULE.deposit_one(
+            deposition,
+            api=MODULE.SANDBOX_API,
+            token="t",
+            publish=False,
+            resume=resume,
+        )
+
+    assert not any(method in {"PUT", "DELETE", "POST"} for method, _ in fake.calls)
+
+
+def test_legacy_claim_crash_resumes_from_durable_owner_without_new_edit(
+    monkeypatch,
+) -> None:
+    deposition, _ = _correction_pair()
+    fake = _FakeZenodo(deposition, new_version=False)
+    _legacy_html_stripped_draft(fake, deposition, advertise=False)
+    operation_id = MODULE._operation_identity(deposition)
+    _authorize_legacy_fixture(monkeypatch, deposition)
+    interrupted = False
+
+    class Interrupted(RuntimeError):
+        pass
+
+    def request(method, url, **kwargs):
+        nonlocal interrupted
+        response = fake.request(method, url, **kwargs)
+        if method == "PUT" and not interrupted:
+            interrupted = True
+            raise Interrupted
+        return response
+
+    monkeypatch.setattr(MODULE, "_request", request)
+    resume = _action_intent_resume(deposition)
+    with pytest.raises(Interrupted):
+        MODULE.deposit_one(
+            deposition,
+            api=MODULE.PRODUCTION_API,
+            token="t",
+            publish=False,
+            resume=resume,
+        )
+    assert MODULE._draft_ownership(fake.draft) == operation_id
+    fake.draft["metadata"]["doi"] = fake.existing["doi"]
+    fake.draft["metadata"]["imprint_publisher"] = "Zenodo"
+    fake.draft["metadata"]["prereserve_doi"] = {
+        "doi": fake.existing["doi"],
+        "recid": fake.existing["id"],
+    }
+    for item in fake.draft["metadata"]["related_identifiers"]:
+        item["scheme"] = MODULE._expected_identifier_scheme(item["identifier"])
+
+    monkeypatch.setattr(MODULE, "_request", fake.request)
+    result = MODULE.deposit_one(
+        deposition,
+        api=MODULE.PRODUCTION_API,
+        token="t",
+        publish=False,
+        resume=resume,
+    )
+
+    assert result["state"] == "draft"
+    assert not any("actions/edit" in url for _, url in fake.calls)
+
+
+def test_published_metadata_authority_enables_the_bound_newversion(monkeypatch) -> None:
+    correction, new_version = _correction_pair()
+    correction_fake = _FakeZenodo(correction, new_version=False)
+    monkeypatch.setattr(MODULE, "_request", correction_fake.request)
+    corrected = MODULE.deposit_one(
+        correction,
+        api=MODULE.SANDBOX_API,
+        token="t",
+        publish=True,
+    )
+    assert corrected["state"] == "verified"
+    new_version_operation_id = MODULE._operation_identity(new_version)
+    MODULE._require_newversion_authority(
+        correction_fake.existing, new_version_operation_id
+    )
+
+    new_fake = _FakeZenodo(new_version, new_version=True)
+    new_fake.existing = json.loads(json.dumps(correction_fake.existing))
+    new_fake.existing["links"]["latest"] = (
+        "https://sandbox.zenodo.org/api/records/100/versions/latest"
+    )
+    new_fake.draft["metadata"] = json.loads(json.dumps(new_fake.existing["metadata"]))
+    new_fake.draft["files"] = json.loads(json.dumps(new_fake.existing["files"]))
+    monkeypatch.setattr(MODULE, "_request", new_fake.request)
+    monkeypatch.setattr(MODULE, "_asset_bytes", lambda item: _payload(item)[0])
+    monkeypatch.setattr(MODULE, "_verify_remote_download", lambda *args, **kwargs: None)
+
+    versioned = MODULE.deposit_one(
+        new_version,
+        api=MODULE.SANDBOX_API,
+        token="t",
+        publish=True,
+    )
+
+    assert versioned["state"] == "verified"
+    assert versioned["concept_doi"] == "10.5072/zenodo.90"
+
+
+def test_submitted_inprogress_metadata_edit_resume_publishes_once(monkeypatch) -> None:
+    deposition = _metadata_correction_deposition()
+    fake = _FakeZenodo(deposition, new_version=False)
+    monkeypatch.setattr(MODULE, "_request", fake.request)
+    draft = MODULE.deposit_one(
+        deposition,
+        api=MODULE.SANDBOX_API,
+        token="t",
+        publish=False,
+    )
+    assert draft["state"] == "draft"
+    fake.draft["submitted"] = True
+    fake.draft["state"] = "inprogress"
+    fake.calls.clear()
+
+    verified = MODULE.deposit_one(
+        deposition,
+        api=MODULE.SANDBOX_API,
+        token="t",
+        publish=True,
+        resume=draft,
+    )
+
+    assert verified["state"] == "verified"
+    assert sum(url.endswith("/actions/publish") for _, url in fake.calls) == 1
+    assert verified["source_publication_date"] == "2026-07-20"
+
+
+def test_final_metadata_put_that_loses_owner_is_never_published(monkeypatch) -> None:
+    deposition, _ = _correction_pair()
+    fake = _FakeZenodo(deposition, new_version=False)
+
+    def request(method, url, **kwargs):
+        response = fake.request(method, url, **kwargs)
+        if method == "PUT" and "/deposit/depositions/" in url:
+            notes = fake.draft["metadata"]["notes"].splitlines()
+            fake.draft["metadata"]["notes"] = "\n".join(
+                line
+                for line in notes
+                if not line.startswith(MODULE._DURABLE_OWNERSHIP_PREFIX)
+            )
+            return fake.draft
+        return response
+
+    monkeypatch.setattr(MODULE, "_request", request)
+    with pytest.raises(MODULE.ZenodoError, match="not owned"):
+        MODULE.deposit_one(
+            deposition,
+            api=MODULE.SANDBOX_API,
+            token="t",
+            publish=True,
+        )
+
+    assert not any(url.endswith("/actions/publish") for _, url in fake.calls)
+
+
+def test_owned_newversion_with_extra_file_fails_before_mutation(monkeypatch) -> None:
+    deposition = _new_version_deposition()
+    fake = _FakeZenodo(deposition, new_version=True)
+    checkpoints: list[dict] = []
+
+    class Interrupted(RuntimeError):
+        pass
+
+    def stop_created(result):
+        checkpoints.append(result)
+        if result["state"] == "created":
+            raise Interrupted
+
+    monkeypatch.setattr(MODULE, "_request", fake.request)
+    monkeypatch.setattr(MODULE, "_asset_bytes", lambda item: _payload(item)[0])
+    with pytest.raises(Interrupted):
+        MODULE.deposit_one(
+            deposition,
+            api=MODULE.SANDBOX_API,
+            token="t",
+            publish=True,
+            checkpoint=stop_created,
+        )
+    fake.draft["files"].append(
+        {
+            "id": "unrelated",
+            "filename": "unrelated.txt",
+            "size": 1,
+            "checksum": "0" * 32,
+        }
+    )
+    fake.calls.clear()
+
+    with pytest.raises(MODULE.ZenodoError, match="unexpected inherited file"):
+        MODULE.deposit_one(
+            deposition,
+            api=MODULE.SANDBOX_API,
+            token="t",
+            publish=True,
+            resume=checkpoints[-1],
+        )
+
+    assert not any(method in {"DELETE", "PUT", "POST"} for method, _ in fake.calls)
+
+
+def test_resume_rejects_wrong_bare_candidate_md5_before_delete(monkeypatch) -> None:
+    deposition = _new_version_deposition()
+    fake = _FakeZenodo(deposition, new_version=True)
+    checkpoints: list[dict] = []
+    payload = _payload(deposition)[0]
+
+    class Interrupted(RuntimeError):
+        pass
+
+    def stop_created(result):
+        checkpoints.append(result)
+        if result["state"] == "created":
+            raise Interrupted
+
+    monkeypatch.setattr(MODULE, "_request", fake.request)
+    monkeypatch.setattr(MODULE, "_asset_bytes", lambda item: payload)
+    with pytest.raises(Interrupted):
+        MODULE.deposit_one(
+            deposition,
+            api=MODULE.SANDBOX_API,
+            token="t",
+            publish=True,
+            checkpoint=stop_created,
+        )
+    filename = deposition["synthpopcan"]["filename"]
+    fake.request(
+        "PUT",
+        f"{fake.draft['links']['bucket']}/{filename}",
+        token="t",
+        data=payload,
+    )
+    fake.draft["files"][-1]["checksum"] = "0" * 32
+    fake.calls.clear()
+
+    with pytest.raises(MODULE.ZenodoError, match="checksum mismatch"):
+        MODULE.deposit_one(
+            deposition,
+            api=MODULE.SANDBOX_API,
+            token="t",
+            publish=True,
+            resume=checkpoints[-1],
+        )
+
+    assert not any(method in {"DELETE", "PUT", "POST"} for method, _ in fake.calls)
+
+
+def test_metadata_publish_before_checkpoint_resumes_without_republishing(
+    monkeypatch,
+) -> None:
+    deposition = _metadata_correction_deposition()
+    fake = _FakeZenodo(deposition, new_version=False)
+    checkpoints: list[dict] = []
+    interrupted = False
+
+    class Interrupted(RuntimeError):
+        pass
+
+    def request(method, url, **kwargs):
+        nonlocal interrupted
+        response = fake.request(method, url, **kwargs)
+        if method == "POST" and url.endswith("/actions/publish") and not interrupted:
+            interrupted = True
+            assert fake.published is not None
+            fake.draft = {**fake.published, "submitted": True, "state": "done"}
+            raise Interrupted
+        return response
+
+    monkeypatch.setattr(MODULE, "_request", request)
+    with pytest.raises(Interrupted):
+        MODULE.deposit_one(
+            deposition,
+            api=MODULE.SANDBOX_API,
+            token="t",
+            publish=True,
+            checkpoint=lambda result: checkpoints.append(result),
+        )
+    assert checkpoints[-1]["state"] == "draft"
+
+    verified = MODULE.deposit_one(
+        deposition,
+        api=MODULE.SANDBOX_API,
+        token="t",
+        publish=True,
+        resume=checkpoints[-1],
+    )
+
+    assert verified["state"] == "verified"
+    assert sum(url.endswith("/actions/publish") for _, url in fake.calls) == 1
+    assert verified["source_publication_date"] == "2026-07-20"
+
+
+def test_newversion_preflight_rejects_an_unowned_concept_draft(monkeypatch) -> None:
+    deposition = _new_version_deposition()
+    fake = _FakeZenodo(deposition, new_version=True)
+
+    def request(method, url, **kwargs):
+        if method == "GET" and "/deposit/depositions?status=draft" in url:
+            return [fake.draft]
+        return fake.request(method, url, **kwargs)
+
+    monkeypatch.setattr(MODULE, "_request", request)
+    monkeypatch.setattr(MODULE, "_asset_bytes", lambda item: _payload(item)[0])
+    with pytest.raises(MODULE.ZenodoError, match="unowned or ambiguous"):
+        MODULE.deposit_one(
+            deposition,
+            api=MODULE.SANDBOX_API,
+            token="t",
+            publish=False,
+        )
+
+    assert not any("actions/newversion" in url for _, url in fake.calls)
+
+
+def test_newversion_action_intent_with_no_remote_draft_claims_created_action(
+    monkeypatch,
+) -> None:
+    deposition = _new_version_deposition()
+    fake = _FakeZenodo(deposition, new_version=True)
+    payload = _payload(deposition)[0]
+    operation_id = MODULE._operation_identity(deposition)
+    synthpopcan = deposition["synthpopcan"]
+    resume = {
+        "operation_id": operation_id,
+        "deposit_operation": "create-new-version",
+        "model_id": synthpopcan["model_id"],
+        "package_version": deposition["metadata"]["version"],
+        "asset_sha256": synthpopcan["sha256"],
+        "metadata_sha256": operation_id.rsplit(":", 1)[-1],
+        "source_record_id": synthpopcan["existing_record_id"],
+        "state": "action-intent",
+        "uploaded_bytes": 0,
+    }
+    monkeypatch.setattr(MODULE, "_request", fake.request)
+    monkeypatch.setattr(MODULE, "_asset_bytes", lambda item: payload)
+    monkeypatch.setattr(MODULE, "_verify_remote_download", lambda *args, **kwargs: None)
+
+    result = MODULE.deposit_one(
+        deposition,
+        api=MODULE.SANDBOX_API,
+        token="t",
+        publish=False,
+        resume=resume,
+    )
+
+    assert result["state"] == "draft"
+    assert MODULE._draft_ownership(fake.draft) == operation_id
+    assert sum(url.endswith("/100/actions/newversion") for _, url in fake.calls) == 1
+
+
+def test_resume_rejects_tampered_static_operation_before_remote_mutation(
+    monkeypatch,
+) -> None:
+    deposition = _new_version_deposition()
+    fake = _FakeZenodo(deposition, new_version=True)
+    operation_id = MODULE._operation_identity(deposition)
+    synthpopcan = deposition["synthpopcan"]
+    resume = {
+        "operation_id": operation_id,
+        "deposit_operation": "create-new-record",
+        "model_id": synthpopcan["model_id"],
+        "package_version": deposition["metadata"]["version"],
+        "asset_sha256": synthpopcan["sha256"],
+        "metadata_sha256": operation_id.rsplit(":", 1)[-1],
+        "source_record_id": synthpopcan["existing_record_id"],
+        "state": "action-intent",
+        "uploaded_bytes": 0,
+    }
+    monkeypatch.setattr(MODULE, "_request", fake.request)
+    monkeypatch.setattr(MODULE, "_asset_bytes", lambda item: _payload(item)[0])
+    monkeypatch.setattr(MODULE, "_verify_remote_download", lambda *args, **kwargs: None)
+
+    with pytest.raises(MODULE.ZenodoError, match="checkpoint deposit_operation"):
+        MODULE.deposit_one(
+            deposition,
+            api=MODULE.SANDBOX_API,
+            token="t",
+            publish=True,
+            resume=resume,
+        )
+
+    assert not any(method in {"PUT", "DELETE", "POST"} for method, _ in fake.calls)
 
 
 def test_owned_resume_rebinds_parent_before_file_mutation(monkeypatch) -> None:
@@ -957,6 +1759,48 @@ def test_owned_resume_rebinds_parent_before_file_mutation(monkeypatch) -> None:
         )
 
     assert not any(method in {"PUT", "DELETE", "POST"} for method, _ in fake.calls)
+
+
+def test_owned_resume_rejects_mismatched_bucket_before_file_mutation(
+    monkeypatch,
+) -> None:
+    deposition = _new_version_deposition()
+    fake = _FakeZenodo(deposition, new_version=True)
+    checkpoints: list[dict] = []
+
+    class Interrupted(RuntimeError):
+        pass
+
+    def stop_at_created(result):
+        checkpoints.append(result)
+        if result["state"] == "created":
+            raise Interrupted
+
+    monkeypatch.setattr(MODULE, "_request", fake.request)
+    monkeypatch.setattr(MODULE, "_asset_bytes", lambda item: _payload(item)[0])
+    with pytest.raises(Interrupted):
+        MODULE.deposit_one(
+            deposition,
+            api=MODULE.SANDBOX_API,
+            token="t",
+            publish=False,
+            checkpoint=stop_at_created,
+        )
+
+    resume = checkpoints[-1].copy()
+    resume["bucket_url"] = "https://attacker.invalid/api/files/stolen"
+    fake.calls.clear()
+    with pytest.raises(MODULE.ZenodoError, match="checkpoint upload bucket"):
+        MODULE.deposit_one(
+            deposition,
+            api=MODULE.SANDBOX_API,
+            token="t",
+            publish=False,
+            resume=resume,
+        )
+
+    assert not any(method in {"PUT", "DELETE", "POST"} for method, _ in fake.calls)
+    assert not any("attacker.invalid" in url for _, url in fake.calls)
 
 
 @pytest.mark.parametrize("interrupted_state", ["created", "uploaded"])
@@ -1002,6 +1846,60 @@ def test_new_version_resumes_interrupted_created_and_uploaded_states(
     assert sum("/api/files/new-bucket/" in url for _, url in fake.calls) == 1
 
 
+@pytest.mark.parametrize("interrupted_state", ["created", "uploaded", "draft"])
+def test_nonterminal_newversion_resume_requires_predecessor_still_latest(
+    interrupted_state,
+    monkeypatch,
+) -> None:
+    deposition = _new_version_deposition()
+    fake = _FakeZenodo(deposition, new_version=True)
+    payload = _payload(deposition)[0]
+    checkpoints: list[dict] = []
+
+    class Interrupted(RuntimeError):
+        pass
+
+    def stop_at(result):
+        checkpoints.append(result)
+        if result["state"] == interrupted_state:
+            raise Interrupted
+
+    monkeypatch.setattr(MODULE, "_request", fake.request)
+    monkeypatch.setattr(MODULE, "_asset_bytes", lambda item: payload)
+    monkeypatch.setattr(MODULE, "_verify_remote_download", lambda *args, **kwargs: None)
+    with pytest.raises(Interrupted):
+        MODULE.deposit_one(
+            deposition,
+            api=MODULE.SANDBOX_API,
+            token="t",
+            publish=True,
+            checkpoint=stop_at,
+        )
+
+    def stale_latest_request(method, url, **kwargs):
+        if method == "GET" and url.endswith("/records/100/versions/latest"):
+            fake.calls.append((method, url))
+            return {
+                "id": 999,
+                "doi": "10.5072/zenodo.999",
+                "conceptdoi": "10.5072/zenodo.90",
+            }
+        return fake.request(method, url, **kwargs)
+
+    monkeypatch.setattr(MODULE, "_request", stale_latest_request)
+    fake.calls.clear()
+    with pytest.raises(MODULE.ZenodoError, match="latest record"):
+        MODULE.deposit_one(
+            deposition,
+            api=MODULE.SANDBOX_API,
+            token="t",
+            publish=True,
+            resume=checkpoints[-1],
+        )
+
+    assert not any(method in {"PUT", "DELETE", "POST"} for method, _ in fake.calls)
+
+
 def test_resume_recovers_upload_that_preceded_its_checkpoint(monkeypatch) -> None:
     deposition = _new_version_deposition()
     fake = _FakeZenodo(deposition, new_version=True)
@@ -1021,12 +1919,16 @@ def test_resume_recovers_upload_that_preceded_its_checkpoint(monkeypatch) -> Non
         "package_version": deposition["metadata"]["version"],
         "asset_sha256": deposition["synthpopcan"]["sha256"],
         "metadata_sha256": operation_id.rsplit(":", 1)[-1],
+        "source_record_id": deposition["synthpopcan"]["existing_record_id"],
         "deposition_id": 101,
         "state": "created",
         "bucket_url": fake.draft["links"]["bucket"],
         "uploaded_bytes": 0,
     }
     filename = deposition["synthpopcan"]["filename"]
+    # Model the real crash window: inherited files were deleted, the candidate
+    # upload succeeded, and the uploaded checkpoint was not yet persisted.
+    fake.draft["files"] = []
     fake.request(
         "PUT",
         f"{fake.draft['links']['bucket']}/{filename}",
@@ -1094,6 +1996,51 @@ def test_resume_detects_publish_that_preceded_its_checkpoint(monkeypatch) -> Non
 
     assert result["state"] == "verified"
     assert sum(url.endswith("/actions/publish") for _, url in fake.calls) == 1
+
+
+@pytest.mark.parametrize(
+    ("deposition_factory", "new_version", "rolled_back_state"),
+    [
+        (_metadata_correction_deposition, False, "editing"),
+        (_metadata_correction_deposition, False, "draft"),
+        (_new_version_deposition, True, "created"),
+        (_new_version_deposition, True, "uploaded"),
+        (_new_version_deposition, True, "draft"),
+    ],
+)
+def test_terminal_remote_recovers_from_any_mutable_checkpoint_without_writes(
+    monkeypatch,
+    deposition_factory,
+    new_version,
+    rolled_back_state,
+) -> None:
+    deposition = deposition_factory()
+    fake = _FakeZenodo(deposition, new_version=new_version)
+    monkeypatch.setattr(MODULE, "_request", fake.request)
+    monkeypatch.setattr(MODULE, "_asset_bytes", lambda item: _payload(item)[0])
+    monkeypatch.setattr(MODULE, "_verify_remote_download", lambda *args, **kwargs: None)
+    verified = MODULE.deposit_one(
+        deposition,
+        api=MODULE.SANDBOX_API,
+        token="t",
+        publish=True,
+    )
+    assert fake.published is not None
+    fake.draft = {**fake.published, "submitted": True, "state": "done"}
+    resume = {**verified, "state": rolled_back_state}
+    resume.pop("verified", None)
+
+    fake.calls.clear()
+    recovered = MODULE.deposit_one(
+        deposition,
+        api=MODULE.SANDBOX_API,
+        token="t",
+        publish=True,
+        resume=resume,
+    )
+
+    assert recovered["state"] == "verified"
+    assert not any(method in {"PUT", "DELETE", "POST"} for method, _ in fake.calls)
 
 
 def test_draft_checkpoint_keeps_durable_ownership_for_resume(monkeypatch) -> None:
@@ -1212,8 +2159,50 @@ def test_historical_hash_mismatch_fails_before_edit_or_newversion(
     assert not any(method in {"PUT", "DELETE", "POST"} for method, _ in fake.calls)
 
 
+@pytest.mark.parametrize(
+    ("deposition_factory", "new_version"),
+    [
+        (_metadata_correction_deposition, False),
+        (_new_version_deposition, True),
+    ],
+)
+def test_extra_historical_file_fails_before_edit_or_newversion(
+    monkeypatch, deposition_factory, new_version
+) -> None:
+    deposition = deposition_factory()
+    fake = _FakeZenodo(deposition, new_version=new_version)
+    fake.existing["files"].append(
+        {
+            "id": "unrelated",
+            "filename": "unrelated.txt",
+            "size": 1,
+            "checksum": "md5:" + "0" * 32,
+            "links": {"download": _HISTORICAL_URL},
+        }
+    )
+    monkeypatch.setattr(MODULE, "_request", fake.request)
+    monkeypatch.setattr(MODULE, "_verify_remote_download", lambda *args, **kwargs: None)
+    if new_version:
+        monkeypatch.setattr(MODULE, "_asset_bytes", lambda item: _payload(item)[0])
+
+    with pytest.raises(MODULE.ZenodoError, match="one historical asset"):
+        MODULE.deposit_one(
+            deposition,
+            api=MODULE.SANDBOX_API,
+            token="t",
+            publish=False,
+        )
+
+    assert not any(
+        "actions/edit" in url or "actions/newversion" in url for _, url in fake.calls
+    )
+    assert not any(method in {"PUT", "DELETE", "POST"} for method, _ in fake.calls)
+
+
 def test_deposit_creates_draft_and_does_not_publish_by_default(monkeypatch) -> None:
     calls: list[tuple[str, str]] = []
+    remote_metadata: dict = {}
+    remote_file: dict = {}
 
     def fake_request(method, url, *, token, payload=None, data=None):
         calls.append((method, url))
@@ -1226,7 +2215,17 @@ def test_deposit_creates_draft_and_does_not_publish_by_default(monkeypatch) -> N
                     "html": "https://sandbox.zenodo.org/deposit/4242",
                 },
             }
+        if method == "PUT" and "/files/abc/" in url:
+            remote_file.update(
+                {
+                    "filename": url.rsplit("/", 1)[-1],
+                    "size": len(data),
+                    "checksum": hashlib.md5(data, usedforsecurity=False).hexdigest(),
+                }
+            )
+            return remote_file
         if method == "PUT" and "/deposit/depositions/4242" in url:
+            remote_metadata.update(payload["metadata"])
             return {
                 "id": 4242,
                 "links": {
@@ -1234,9 +2233,19 @@ def test_deposit_creates_draft_and_does_not_publish_by_default(monkeypatch) -> N
                     "html": "https://sandbox.zenodo.org/deposit/4242",
                 },
                 "metadata": {
-                    **payload["metadata"],
+                    **remote_metadata,
                     "prereserve_doi": {"doi": "10.5072/zenodo.4242"},
                 },
+            }
+        if method == "GET" and url.endswith("/deposit/depositions/4242"):
+            return {
+                "id": 4242,
+                "links": {"bucket": "https://sandbox.zenodo.org/api/files/abc"},
+                "metadata": {
+                    **remote_metadata,
+                    "prereserve_doi": {"doi": "10.5072/zenodo.4242"},
+                },
+                "files": [remote_file],
             }
         return {"metadata": {"prereserve_doi": {"doi": "10.5072/zenodo.4242"}}}
 
@@ -1259,19 +2268,21 @@ def test_deposit_publishes_only_when_requested(monkeypatch) -> None:
     published: list[str] = []
     remote_metadata: dict = {}
     remote_file: dict = {}
+    bucket = "https://sandbox.zenodo.org/api/files/publish-test"
 
     def fake_request(method, url, *, token, payload=None, data=None):
         if url.endswith("/deposit/depositions"):
             return {
                 "id": 7,
                 MODULE._HTTP_STATUS_KEY: 201,
-                "links": {"bucket": "b", "html": "h"},
+                "links": {"bucket": bucket, "html": "h"},
             }
-        if method == "PUT" and url.startswith("b/"):
+        if method == "PUT" and url.startswith(f"{bucket}/"):
             remote_file.update(
                 {
                     "filename": url.rsplit("/", 1)[-1],
                     "size": len(data),
+                    "checksum": hashlib.md5(data, usedforsecurity=False).hexdigest(),
                     "links": {"download": "https://sandbox.invalid/model.gz"},
                 }
             )
@@ -1280,11 +2291,21 @@ def test_deposit_publishes_only_when_requested(monkeypatch) -> None:
             remote_metadata.update(payload["metadata"])
             return {
                 "id": 7,
-                "links": {"bucket": "b", "html": "h"},
+                "links": {"bucket": bucket, "html": "h"},
                 "metadata": {
                     **remote_metadata,
                     "prereserve_doi": {"doi": "10.5072/zenodo.7"},
                 },
+            }
+        if method == "GET" and url.endswith("/deposit/depositions/7"):
+            return {
+                "id": 7,
+                "links": {"bucket": bucket, "html": "h"},
+                "metadata": {
+                    **remote_metadata,
+                    "prereserve_doi": {"doi": "10.5072/zenodo.7"},
+                },
+                "files": [remote_file],
             }
         if "actions/publish" in url:
             published.append(url)
@@ -1302,6 +2323,7 @@ def test_deposit_publishes_only_when_requested(monkeypatch) -> None:
 
     monkeypatch.setattr(MODULE, "_request", fake_request)
     monkeypatch.setattr(MODULE, "_asset_bytes", lambda d: _payload(d)[0])
+    monkeypatch.setattr(MODULE, "_verify_remote_download", lambda *args, **kwargs: None)
 
     result = MODULE.deposit_one(
         _deposition(), api=MODULE.SANDBOX_API, token="t", publish=True
@@ -1314,11 +2336,20 @@ def test_deposit_publishes_only_when_requested(monkeypatch) -> None:
 
 def test_uploads_asset_to_the_bucket_endpoint(monkeypatch) -> None:
     puts: list[str] = []
+    remote_metadata: dict = {}
+    remote_file: dict = {}
 
     def fake_request(method, url, *, token, payload=None, data=None):
         if method == "PUT" and "files" in url:
             puts.append(url)
-            return {}
+            remote_file.update(
+                {
+                    "filename": url.rsplit("/", 1)[-1],
+                    "size": len(data),
+                    "checksum": hashlib.md5(data, usedforsecurity=False).hexdigest(),
+                }
+            )
+            return remote_file
         if url.endswith("/deposit/depositions"):
             return {
                 "id": 1,
@@ -1329,13 +2360,21 @@ def test_uploads_asset_to_the_bucket_endpoint(monkeypatch) -> None:
                 },
             }
         if method == "PUT" and "/deposit/depositions/1" in url:
+            remote_metadata.update(payload["metadata"])
             return {
                 "id": 1,
                 "links": {
                     "bucket": "https://sandbox.zenodo.org/api/files/xyz",
                     "html": "h",
                 },
-                "metadata": payload["metadata"],
+                "metadata": remote_metadata,
+            }
+        if method == "GET" and url.endswith("/deposit/depositions/1"):
+            return {
+                "id": 1,
+                "links": {"bucket": "https://sandbox.zenodo.org/api/files/xyz"},
+                "metadata": remote_metadata,
+                "files": [remote_file],
             }
         return {}
 
@@ -1409,6 +2448,47 @@ def test_upload_response_must_match_the_uploaded_payload() -> None:
 
     with pytest.raises(MODULE.ZenodoError, match="checksum mismatch"):
         MODULE._verify_upload_response({"checksum": "md5:" + "0" * 32}, b"payload")
+
+
+@pytest.mark.parametrize(
+    "checksum",
+    [
+        123,
+        "MD5:" + "0" * 32,
+        "md5:" + "A" * 32,
+        "sha256:" + "0" * 64,
+        "md5:" + "0" * 31,
+    ],
+)
+def test_upload_response_rejects_non_exact_md5_forms(checksum) -> None:
+    with pytest.raises(MODULE.ZenodoError, match="checksum"):
+        MODULE._verify_upload_response({"checksum": checksum}, b"payload")
+
+
+def test_upload_response_accepts_real_legacy_filesize_and_bare_md5() -> None:
+    payload = b"payload"
+    checksum = hashlib.md5(payload, usedforsecurity=False).hexdigest()
+    uploaded = {
+        "filename": "candidate.json.gz",
+        "filesize": len(payload),
+        "checksum": checksum,
+    }
+
+    MODULE._verify_upload_response(uploaded, payload)
+    assert (
+        MODULE._verify_remote_asset(
+            {"files": [uploaded]}, filename="candidate.json.gz", payload=payload
+        )
+        is uploaded
+    )
+
+
+def test_upload_response_rejects_conflicting_size_fields() -> None:
+    with pytest.raises(MODULE.ZenodoError, match="size and filesize fields conflict"):
+        MODULE._verify_upload_response(
+            {"size": 7, "filesize": 8},
+            b"payload",
+        )
 
 
 def test_asset_is_verified_before_a_deposition_is_created(monkeypatch) -> None:
@@ -1670,21 +2750,25 @@ def test_deposit_checkpoints_every_irreversible_state(monkeypatch) -> None:
     states: list[str] = []
     remote_metadata: dict = {}
     remote_file: dict = {}
+    bucket = "https://sandbox.zenodo.org/api/files/checkpoint-test"
 
     def fake_request(method, url, *, token, payload=None, data=None):
         if url.endswith("/deposit/depositions"):
             return {
                 "id": 7,
                 MODULE._HTTP_STATUS_KEY: 201,
-                "links": {"bucket": "b", "html": "h"},
+                "links": {"bucket": bucket, "html": "h"},
             }
         if "actions/publish" in url:
             return {"doi": "10.5072/zenodo.7", "conceptdoi": "10.5072/zenodo.6"}
-        if method == "PUT" and url == "b/ontario-2021-all-fields-package.json.gz":
+        if method == "PUT" and url == (
+            f"{bucket}/ontario-2021-all-fields-package.json.gz"
+        ):
             remote_file.update(
                 {
                     "filename": "ontario-2021-all-fields-package.json.gz",
                     "size": len(data),
+                    "checksum": hashlib.md5(data, usedforsecurity=False).hexdigest(),
                     "links": {"download": "https://sandbox.invalid/model.gz"},
                 }
             )
@@ -1693,11 +2777,21 @@ def test_deposit_checkpoints_every_irreversible_state(monkeypatch) -> None:
             remote_metadata.update(payload["metadata"])
             return {
                 "id": 7,
-                "links": {"bucket": "b", "html": "h"},
+                "links": {"bucket": bucket, "html": "h"},
                 "metadata": {
                     **remote_metadata,
                     "prereserve_doi": {"doi": "10.5072/zenodo.7"},
                 },
+            }
+        if method == "GET" and url.endswith("/deposit/depositions/7"):
+            return {
+                "id": 7,
+                "links": {"bucket": bucket, "html": "h"},
+                "metadata": {
+                    **remote_metadata,
+                    "prereserve_doi": {"doi": "10.5072/zenodo.7"},
+                },
+                "files": [remote_file],
             }
         if method == "GET" and url.endswith("/records/7"):
             return {
@@ -1712,6 +2806,7 @@ def test_deposit_checkpoints_every_irreversible_state(monkeypatch) -> None:
 
     monkeypatch.setattr(MODULE, "_request", fake_request)
     monkeypatch.setattr(MODULE, "_asset_bytes", lambda d: _payload(d)[0])
+    monkeypatch.setattr(MODULE, "_verify_remote_download", lambda *args, **kwargs: None)
 
     MODULE.deposit_one(
         _deposition(),
