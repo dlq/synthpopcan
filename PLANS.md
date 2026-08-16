@@ -1,8 +1,8 @@
 # SynthPopCan Plan
 
-Status: release-phased roadmap\
-Last updated: 2026-08-15\
-Current published release: `0.9.0`
+Status: `1.x` maintenance roadmap\
+Last updated: 2026-08-16\
+Current software version: `1.0.0`
 
 ## Current Focus
 
@@ -12,7 +12,7 @@ completed implementation plans belong in [`plans/archive/`](plans/archive/).
 
 | Order | User outcome | Done when | Owned by |
 | --- | --- | --- | --- |
-| Next: `1.0.0` | Researchers and downstream tools can rely on a documented stable CLI, Python API, and declared persisted contracts. | The completed candidate interface, installed-package, field-inventory, documentation, preservation, and accepted scoped-licensing work passes the combined release gate; the tested 32-record correction executor and live correction are complete; and the version/changelog/citation/tag metadata is advanced deliberately. | This roadmap, [stewardship](plans/2026-07-19-research-software-stewardship.md), [strict typing](plans/2026-08-01-strict-typing.md), [ADR-0010](adr/0010-pre-1-0-compatibility-evolution.md), and [ADR-0014](adr/0014-separate-prepared-model-and-source-licensing.md) |
+| Current: `1.0.0` stability boundary | Researchers and downstream tools can rely on a documented stable CLI, Python API, and declared persisted contracts. | The frozen interface, installed-package, field-inventory, documentation, preservation, scoped-licensing, archive-correction, and exact release-evidence gates pass together on the exact release commit before an immutable tag is created. | This roadmap, [stewardship](plans/2026-07-19-research-software-stewardship.md), [strict typing](plans/2026-08-01-strict-typing.md), [ADR-0010](adr/0010-pre-1-0-compatibility-evolution.md), and [ADR-0014](adr/0014-separate-prepared-model-and-source-licensing.md) |
 | Post-`1.0` expansion | Add richer fields, family and collective-population structure, deeper uncertainty/privacy methods, building placement, and demand-backed adapters without destabilizing the frozen core. | Each addition uses the stable extension points or a separately versioned new contract and has its own evidence-backed release scope. | Active research plans and the research queue below |
 
 ## Goal And Boundaries
@@ -71,11 +71,12 @@ action. The [plan index](plans/README.md) records active and archived plans.
 
 ## Current Product State
 
-`0.9.0` is a published alpha release with bounded methodological evidence,
-strict control-pack and source/universe-evidence contracts, explicit Census
-geography identity, a reusable external-data enrichment framework, maintained
-Can-FED and ODEF adapters, and a stable v1 linked-population artifact contract.
-It provides:
+Version `1.0.0` combines bounded methodological
+evidence; strict control-pack and source/universe-evidence contracts; explicit
+Census geography identity; reusable enrichment and exchange frameworks;
+maintained Can-FED and ODEF adapters; a stable linked-population contract; and
+an exact machine-readable 1.x CLI, Python, and persisted-schema boundary. It
+provides:
 
 - seed/control IPF with diagnostics, compact weights, integerized records,
   reports, and validation;
@@ -117,11 +118,10 @@ Completed implementation records are archived:
 - [small-area geography](plans/archive/2026-07-22-small-area-geography.md); and
 - [external-data enrichment](plans/archive/2026-07-15-ecosystem-enrichment.md).
 
-## Path To `1.0.0` And Stability Boundary
+## `1.0.0` Stability Boundary
 
-The project should reach `1.0.0` by stabilizing the useful core, not by
-finishing every research direction. Only three bounded product tranches are on
-the pre-`1.0` path.
+The `1.0.0` line stabilizes the useful core rather than finishing every
+research direction. Three bounded product tranches formed the pre-`1.0` path.
 
 ### `0.8.0`: portable handoff — completed
 
@@ -151,9 +151,9 @@ This tranche did not require implementing every candidate control, every
 hierarchical PUMF field, a family hierarchy, collective populations, a national
 fit, full uncertainty ensembles, or a new generative-model family.
 
-### `1.0.0`: interface review and freeze
+### `1.0.0`: interface review and freeze — completed
 
-Before tagging `1.0.0`:
+The release completed these interface and evidence gates:
 
 1. inventory every documented `synthpopcan` command path, option, exit behavior,
    and machine-readable output mode;
@@ -170,7 +170,7 @@ Before tagging `1.0.0`:
 1. publish the compatibility policy and exact declared surface with the
    release.
 
-Candidate preparation completed on 2026-08-15 includes the recursive CLI
+Release preparation completed on 2026-08-15 includes the recursive CLI
 inventory, curated Python API inventory, persisted-schema classification,
 packaged compatibility manifest, installed-wheel semantic drift test,
 compatibility policy, bilingual Quebec 2021 installed-wheel case study,
@@ -182,13 +182,13 @@ distribution-safe README links. Bounded proof and restart/cache helpers were
 removed from the curated advanced API before the freeze rather than promising
 them throughout `1.x`.
 
-The post-licensing candidate passed the complete local release gate on
-2026-08-16: 1,673 Python tests passed with 6 environment-dependent tests
-skipped and 95.04% branch-aware coverage; all 339 extended-correctness cases,
+The post-licensing 1.0 source passed the complete local release gate on
+2026-08-16: 1,678 Python tests passed with 6 environment-dependent tests
+skipped and 95.05% branch-aware coverage; all 339 extended-correctness cases,
 warning-clean documentation, JavaScript coverage, and all 12 browser scenarios
 passed. Fresh isolated wheel, sdist, optional model-building, and fictional
-case-study interface smokes also passed. The exact committed candidate must
-repeat these gates in CI before release.
+case-study interface smokes also passed. Every release commit must repeat the
+complete supported-Python CI matrix before publication.
 
 The `1.0.0` release sequence is explicit and fail-closed:
 
@@ -216,10 +216,12 @@ The `1.0.0` release sequence is explicit and fail-closed:
    resource preserve sanitized operation IDs, old/new record/version/concept
    DOIs, compressed and uncompressed hashes, outcomes, and the zero-mutable-
    draft audit. The clean-clone execution gate passes without ignored state.
-1. **Software release — pending.** Advance package, CFF, changelog, and citation
-   dates to `1.0.0`; commit the candidate; require the complete CI gate for that
-   exact commit and workflow definition; then create the annotated tag, GitHub
-   release, PyPI publication, DOI, documentation, and preservation follow-ups.
+1. **Software release — exact-commit gate.** Package, CFF, changelog, and
+   citation dates identify `1.0.0`. Create or publish an annotated tag, GitHub
+   Release, or PyPI distribution only after the complete CI gate passes for
+   that exact commit and workflow definition. Record Zenodo's version DOI and
+   the post-release Software Heritage capture only after those services mint
+   their exact identifiers.
 
 The freeze covers documented CLI command paths and options, documented Python
 API symbols, and versioned persisted contracts explicitly declared supported
@@ -252,6 +254,7 @@ documented, tested, and stable enough to build upon.
 | `0.7.2` | Maintained Can-FED area-context and corrected ODEF facility-inventory adapters with pinned acquisition, normalization, validation, and complete provenance evidence; no separate `0.7.1` package was released. |
 | `0.8.0` | Simulator-neutral linked-population exchange bundle with data dictionary, provenance, reproduction, file governance, hashes, and strict independent validation. |
 | `0.9.0` | Independent bounded calibration and integerization evidence, strict 2016/2021 core private-household control packs across CSD/CT/ADA/DA, bound source/universe evidence, and linked methodological diagnostics. |
+| `1.0.0` | Frozen documented CLI, curated Python API, and supported persisted-schema contract; complete field eligibility and case-study evidence; accepted open-by-default prepared-model rights policy; and verified non-overwriting correction of all 32 prepared-model concepts. |
 
 ## Sequenced Releases
 

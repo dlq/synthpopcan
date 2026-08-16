@@ -4,9 +4,13 @@ All notable public changes to SynthPopCan are tracked here.
 
 ## Unreleased
 
-Preparation for the 1.0 interface and stewardship boundary.
+No unreleased changes.
 
-- Add a packaged, machine-readable candidate contract for the complete
+## 1.0.0 - 2026-08-16
+
+Stable public interfaces and open, durable research-software stewardship.
+
+- Add a packaged, machine-readable 1.x contract for the complete
   documented command tree, curated beginner and advanced Python APIs, and
   supported persisted schemas. Publish the corresponding 1.x compatibility,
   deprecation, output-stream, and correctness-exception policy; validate the

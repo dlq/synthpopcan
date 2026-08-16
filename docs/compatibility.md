@@ -17,9 +17,8 @@ The exact contract is shipped inside every wheel and source distribution as
   cache, benchmark, and UI-only identifiers.
 
 The manifest has schema identifier `synthpopcan-public-interface-v1` and takes
-effect with SynthPopCan `1.0.0`. Development releases before `1.0.0` may still
-revise the candidate contract. Once `1.0.0` is published, the rules below apply
-throughout the `1.x` series.
+effect with SynthPopCan `1.0.0`. The rules below apply throughout the `1.x`
+series; later releases may extend the contract only within those rules.
 
 ## Command-Line Contract
 

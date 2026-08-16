@@ -100,7 +100,7 @@ def test_dated_stewardship_records_are_public_and_preservation_is_consistent() -
     ):
         assert record in landing
     assert snapshot in landing
-    assert snapshot in citation
+    assert snapshot not in citation
     assert snapshot in preservation
     assert "swh:1:rel:6637b3aa961bbd21888da5aa847a128ac9975d3b" in (preservation)
 

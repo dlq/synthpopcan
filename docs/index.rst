@@ -4,9 +4,9 @@ SynthPopCan Documentation
 SynthPopCan is maintained research software for Canadian synthetic population
 work: control tables, iterative proportional fitting, Statistics Canada source
 inspection, census microdata adapters, linked household/person tree models, and
-validation reports. Its 1.0 candidate stabilizes the documented interfaces;
-that stability does not turn bounded statistical evidence into a universal
-fitness, privacy, or representativeness claim.
+validation reports. Version 1.0 stabilizes the documented interfaces; that
+stability does not turn bounded statistical evidence into a universal fitness,
+privacy, or representativeness claim.
 
 Most SynthPopCan workflows have the same basic shape. We begin by **inspecting
 sources** and deciding which categories, geographies, and constraints are

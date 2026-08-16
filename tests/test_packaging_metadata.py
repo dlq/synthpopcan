@@ -21,6 +21,12 @@ def test_build_backend_is_exactly_pinned_and_locked() -> None:
     assert hatchling_versions == ["1.32.0"]
 
 
+def test_source_distribution_excludes_local_editor_configuration() -> None:
+    project = tomllib.loads(Path("pyproject.toml").read_text())
+
+    assert "/.vscode/**" in project["tool"]["hatch"]["build"]["exclude"]
+
+
 def test_readme_uses_absolute_links_for_package_indexes() -> None:
     readme = Path("README.md").read_text()
     markdown_targets = re.findall(r"\]\(([^)\s]+)", readme)

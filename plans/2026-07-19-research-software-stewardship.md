@@ -6,8 +6,8 @@ Last updated: 2026-08-16\
 Target: complete the stewardship baseline before another model publication or
 mirror; mature toward JOSS only after its public-development and research-use
 gates are met\
-Next milestone: advance and validate the exact-commit 1.0 software release
-metadata\
+Next milestone: preserve exact-commit publication gates and add a release DOI
+or Software Heritage identifier only after the public archive mints it\
 Roadmap: [PLANS.md](../PLANS.md) | [Plan index](README.md)
 
 ## Purpose And Boundary
@@ -50,9 +50,10 @@ publication and preservation foundation as settled.
 
 ### Citation metadata
 
-- **Done (updated 2026-08-15).** `CITATION.cff` records the stable concept DOI
-  and the archived `0.9.0` version DOI, and a drift test checks its version,
-  date, and version DOI against package and changelog metadata.
+- **Done (updated 2026-08-16).** `CITATION.cff` records the stable concept DOI
+  and current software version/date. It carries a version DOI and current
+  Software Heritage identifier only after those exact release archives exist;
+  a drift test rejects stale identifiers while they are pending.
 - **Done (2026-08-15).** Full Citation File Format schema validation now runs
   in local and CI gates without adding a runtime dependency. The existing
   release-drift test remains a separate check.
@@ -64,10 +65,12 @@ publication and preservation foundation as settled.
 
 ### Model licensing and archival publication
 
-- **Done (updated 2026-08-15).** GitHub releases are connected to Zenodo, the
-  current `0.9.0` software release and 32 public prepared models have archival
+- **Done (updated 2026-08-16).** GitHub releases are connected to Zenodo,
+  software releases through `0.9.0` and 32 public prepared models have archival
   records, and release, concept, and model DOIs are exposed through project
-  metadata, documentation, and the CLI.
+  metadata, documentation, and the CLI. The `1.0.0` version DOI is a
+  post-publication metadata follow-up rather than an identifier guessed in
+  advance.
 - **Done (2026-07-20).** Model deposition tooling defaults to the sandbox and
   draft state, verifies source and uploaded bytes, checkpoints partial work,
   prevents accidental redeposition, and requires explicit production and

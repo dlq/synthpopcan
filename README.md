@@ -29,24 +29,24 @@ Near-term goals:
    census-vintage-specific.
 1. Maintain a local web app for configuring runs, inspecting controls, generating from prepared models, validating outputs, and downloading results.
 
-The `0.9.0` line adds bounded methodological evidence and versioned small-area
-control packs for the 2016 and 2021 Censuses at CSD, CT, ADA, and DA levels.
-It keeps public Census counts separate from reusable control definitions,
-requires source and private-household-universe evidence, and reports which
-fields were controlled, coarsened, derived, or merely carried through. An
-independent calibration oracle, integerization comparison, linked diagnostics,
-multi-scale fixtures, and a pinned aggregate Canadian comparison support the
-implemented scope without claiming that every model field is locally
-representative.
+Version `1.0.0` establishes a stable, explicitly bounded interface for
+research scripts and artifacts. Its packaged
+[1.x compatibility contract](https://synthpopcan.readthedocs.io/en/latest/compatibility.html)
+freezes the documented CLI, curated Python API, callable signatures, and
+supported persisted schemas while keeping later additive extension possible.
+It carries forward the bounded calibration and small-area evidence from
+`0.9.0` without turning that evidence into a universal representativeness,
+privacy, or fitness claim.
 
-Development toward `1.0.0` now has a reviewable
-[1.x compatibility policy](https://synthpopcan.readthedocs.io/en/latest/compatibility.html), a packaged exact
-CLI/API/schema manifest, a complete
-[2016/2021 field-eligibility inventory](https://synthpopcan.readthedocs.io/en/latest/field-eligibility.html), and a
-[bilingual Quebec 2021 case study](https://synthpopcan.readthedocs.io/en/latest/case-study-quebec-2021.html). The accepted
-prepared-model policy and remaining archive/release work are tracked in
-[PLANS.md](https://github.com/dlq/synthpopcan/blob/main/PLANS.md); the published package remains `0.9.0` until those gates
-are complete.
+It also includes a complete
+[2016/2021 field-eligibility inventory](https://synthpopcan.readthedocs.io/en/latest/field-eligibility.html), a
+[bilingual Quebec 2021 case study](https://synthpopcan.readthedocs.io/en/latest/case-study-quebec-2021.html),
+dated preservation and software-management records, and an accepted
+open-by-default prepared-model policy. All 32 public Census-derived model
+concepts now point to verified, non-overwriting versions with embedded scoped
+licensing and preserved source provenance. The release boundary and post-1.0
+research tracks are recorded in
+[PLANS.md](https://github.com/dlq/synthpopcan/blob/main/PLANS.md).
 
 Detailed documentation is published at
 <https://synthpopcan.readthedocs.io/>. The source files live under

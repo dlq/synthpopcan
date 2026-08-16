@@ -2,11 +2,11 @@
 
 Status: active\
 Created: 2026-07-12\
-Last updated: 2026-08-10\
+Last updated: 2026-08-16\
 Target: ongoing correctness and release evidence\
-Next action: run the final combined release gate, review the generated
-public-interface manifest, and freeze it only in the verified 1.0 release
-commit while maintaining the released assurance and reproduction gates\
+Next action: preserve the frozen 1.x interface, exact-commit CI, coverage,
+correctness, release-evidence, assurance, and reproduction gates in later
+releases\
 Roadmap: [PLANS.md](../PLANS.md) | [Plan index](README.md)
 
 ## Purpose And Boundaries
@@ -26,7 +26,7 @@ Passing the project gate establishes behavior only under the tested conditions.
 It does not certify source-data accuracy, statistical fitness for a particular
 study, disclosure safety, causal validity, or substantive interpretation.
 
-Before `1.0.0`, this plan gates only the bounded assurance slice named in
+For `1.0.0`, this plan gated only the bounded assurance slice named in
 [PLANS.md](../PLANS.md): calibration-oracle evidence, the integerization
 decision, core private-household control packs, representative multi-scale and
 external Canadian comparison evidence, and the compatibility fixtures needed

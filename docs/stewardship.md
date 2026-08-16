@@ -94,7 +94,9 @@ canonical citable archive for released software and prepared models. Software
 Heritage independently preserves the source history.
 
 The 2026-08-15 Software Heritage capture is recorded below. It includes the
-annotated `v0.7.0` and `v0.9.0` tags, and it is also listed in `CITATION.cff`:
+annotated `v0.7.0` and `v0.9.0` tags and remains durable historical evidence;
+current citation metadata will name a later snapshot only after the `v1.0.0`
+capture is complete:
 
 - snapshot: `swh:1:snp:98f7bee54900f50bc99ac5c9f000a728e80016b9`;
 - archived `v0.9.0` tag: `swh:1:rel:9b1b92b09a42a293907a733a1638c269b0819516`;
@@ -106,9 +108,9 @@ Zenodo release DOI, model DOI, or published checksums.
 
 ## Dated Records
 
-These records describe the `0.9.0` baseline being carried into the `1.0.0`
-release work. They are self-assessments and management records, not external
-certifications:
+These records describe the `0.9.0` baseline and the evidence used to establish
+the `1.0.0` line. They are self-assessments and management records, not
+external certifications:
 
 ```{toctree}
 :maxdepth: 1
