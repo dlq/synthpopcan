@@ -87,7 +87,7 @@ export function bindRunsWorkbench(bootstrap) {
       .querySelector(selector)
       .addEventListener("input", () => invalidatePreflight(state));
   }
-  bindLegacyTools();
+  bindLegacyTools(state);
   document.addEventListener("synthpopcan:run-created", async (event) => {
     const viewRevision = state.viewRevision;
     await refreshRuns(state);
@@ -101,9 +101,13 @@ export function bindRunsWorkbench(bootstrap) {
   refreshRuns(state, true);
 }
 
-function bindLegacyTools() {
+function bindLegacyTools(state) {
   document.querySelectorAll("[data-workflow-tab]").forEach((button) => {
     button.addEventListener("click", () => {
+      invalidateWorkbenchViewOperations(state);
+      state.viewRevision += 1;
+      state.stopEvents?.();
+      state.stopEvents = null;
       const name = button.dataset.workflowTab;
       document.querySelector(".workbench").hidden = true;
       document.querySelectorAll("[data-workflow-panel]").forEach((panel) => {

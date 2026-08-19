@@ -71,9 +71,9 @@ Candidate evidence recorded 2026-08-19:
 - public aggregate 2016 CT and 2021 ADA fixtures reproduce and reconcile all
   nine household margins, including the corrected non-subtotal dwelling-type
   mapping;
-- the locked Python gate passes 1,700 tests with 6 documented skips and 95.01%
+- the locked Python gate passes 1,701 tests with 6 documented skips and 95.01%
   combined branch coverage; the extended correctness suite passes 339 tests;
-- Ruff, Pyright, CFF, public-interface, Sphinx, Markdown, JavaScript, and all 12
+- Ruff, Pyright, CFF, public-interface, Sphinx, Markdown, JavaScript, and all 13
   browser scenarios pass; and
 - fresh wheel, sdist, optional model-build, and fictional case-study installed
   smokes pass, including the 24-pack and 14-margin broad-pack contract.

@@ -106,6 +106,33 @@ test("a new draft wins over a delayed initial run-history response", async ({
   await expect(page.getByRole("heading", { name: "Results" })).toBeHidden();
 });
 
+test("a legacy workflow wins over a delayed initial run detail", async ({ page }) => {
+  let detailRequested;
+  let releaseDetail;
+  const requestStarted = new Promise((resolve) => {
+    detailRequested = resolve;
+  });
+  const release = new Promise((resolve) => {
+    releaseDetail = resolve;
+  });
+  await page.route("**/api/runs/*", async (route) => {
+    detailRequested();
+    await release;
+    await route.continue();
+  });
+
+  await page.goto("/");
+  await requestStarted;
+  await page.getByText("Small-area workflow").click();
+  await page.getByRole("button", { name: /Prepare a small-area synthesis/ }).click();
+  releaseDetail();
+
+  await expect(page.locator("#small-area-form")).toBeVisible();
+  await page.waitForTimeout(250);
+  await expect(page.locator("#small-area-form")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Results" })).toBeHidden();
+});
+
 test("a new draft preserves a delayed initial model catalogue", async ({ page }) => {
   let catalogueRequested;
   let releaseCatalogue;
@@ -369,6 +396,11 @@ test("SCN-WEB-003 runs durable linked small-area synthesis", async ({ page }) =>
   await page.goto("/");
   await page.getByText("Small-area workflow").click();
   await page.getByRole("button", { name: /Prepare a small-area synthesis/ }).click();
+  await expect(
+    page.locator(
+      '#small-area-premade-model option[value="demo-linked-household-person"]',
+    ),
+  ).toHaveCount(1);
   await page
     .locator("#small-area-premade-model")
     .selectOption("demo-linked-household-person");
