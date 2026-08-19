@@ -157,6 +157,7 @@ jobs:
   web:
     name: Web assets
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -187,7 +188,11 @@ jobs:
         run: npm run test:web:coverage
 
       - name: Install Chromium
-        run: npx playwright install --with-deps chromium
+        timeout-minutes: 6
+        # CI runs only the default headless Chromium project. Avoid downloading
+        # the unused full browser, whose installation can hang indefinitely on
+        # hosted Ubuntu runners, and keep the remaining external step bounded.
+        run: npx playwright install --with-deps --only-shell chromium
 
       - name: Run browser scenarios
         run: npm run test:web:e2e

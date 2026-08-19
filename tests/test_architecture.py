@@ -104,6 +104,15 @@ def test_ci_exposes_a_stable_required_check_for_the_python_matrix() -> None:
     assert 'run: test "$PYTHON_MATRIX_RESULT" = "success"' in workflow
 
 
+def test_ci_browser_install_is_bounded_and_headless_only() -> None:
+    workflow = Path(".github/workflows/ci.yml").read_text()
+
+    web_job = workflow.split("  web:\n", maxsplit=1)[1]
+    assert "    timeout-minutes: 15\n" in web_job
+    assert "      - name: Install Chromium\n        timeout-minutes: 6\n" in web_job
+    assert "run: npx playwright install --with-deps --only-shell chromium" in web_job
+
+
 def test_beginner_api_does_not_depend_on_cli_or_web_adapters() -> None:
     imports = module_imports(PACKAGE_ROOT / "api.py")
 
