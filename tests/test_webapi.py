@@ -10,6 +10,7 @@ import time
 from copy import deepcopy
 from io import StringIO
 from pathlib import Path
+from typing import Any
 
 import httpx
 import pytest
@@ -252,6 +253,55 @@ def test_run_events_drain_terminal_event_after_manifest_transition(
         app.state.job_manager.shutdown()
 
     assert '"stage":"cancelled"' in event_stream
+
+
+def test_run_events_emit_terminal_event_appended_between_reads(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    app = create_web_app(
+        static_root=get_webapp_root(),
+        workspace=tmp_path / "workspace",
+        session_secret="test-session",
+    )
+    store = app.state.run_store
+    seed = store_upload(store, "seed.csv", seed_csv())
+    controls = store_upload(store, "controls.csv", controls_csv())
+    manifest = store.create_ipf_run(ipf_request(seed, controls))
+    run_id = str(manifest["run_id"])
+    original_read_events = store.read_events
+    injected_terminal_event = False
+
+    def racing_read_events(
+        requested_run_id: str,
+        *,
+        after_id: int = 0,
+    ) -> list[dict[str, Any]]:
+        nonlocal injected_terminal_event
+        events = original_read_events(requested_run_id, after_id=after_id)
+        if not injected_terminal_event:
+            injected_terminal_event = True
+            store.transition_run(run_id, "cancelled")
+            store.append_event(run_id, "cancelled", "Run cancelled")
+        return events
+
+    monkeypatch.setattr(store, "read_events", racing_read_events)
+
+    async def exercise() -> str:
+        transport = httpx.ASGITransport(app=app)
+        async with httpx.AsyncClient(
+            transport=transport, base_url="http://127.0.0.1"
+        ) as client:
+            await client.get("/api/app")
+            events = await client.get(f"/api/runs/{run_id}/events")
+            return events.text
+
+    try:
+        event_stream = asyncio.run(exercise())
+    finally:
+        app.state.job_manager.shutdown()
+
+    assert event_stream.count('"stage":"cancelled"') == 1
 
 
 def test_model_install_and_removal_return_bounded_catalogue_metadata(

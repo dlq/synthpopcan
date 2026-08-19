@@ -300,9 +300,12 @@ def create_web_app(
                 terminal_status = str(manifest["status"])
                 if terminal_status in _TERMINAL_RUN_STATUSES:
                     persisted_events = run_store.read_events(run_id)
-                    if any(
-                        event["stage"] == terminal_status for event in persisted_events
-                    ):
+                    terminal_event_ids = [
+                        int(event["id"])
+                        for event in persisted_events
+                        if event["stage"] == terminal_status
+                    ]
+                    if terminal_event_ids and cursor >= max(terminal_event_ids):
                         return
                     loop_time = asyncio.get_running_loop().time()
                     if terminal_observed_at is None:
