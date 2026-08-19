@@ -32,7 +32,7 @@ Use two explicit inputs with different responsibilities:
   to prove the declared universe reconciliation.
 
 Built-in `0.9.0` packs are definitions only. They do not bundle or download
-Census counts. The eight built-in manifests cover the 2016 and 2021 core
+Census counts. The eight initial built-in manifests cover the 2016 and 2021 core
 private-household profile at CSD, CT, ADA, and DA levels. A feasibility plan
 must validate the manifest, candidate fields and categories, linked entities,
 exact margin structure, common geography set, structural support, and supplied
@@ -83,3 +83,11 @@ control family.
 - [Explicit Census geography identity](0007-explicit-census-geography-identity.md)
 - [Versioned linked-population schema](0003-versioned-linked-population-schema.md)
 - `synthpopcan.control_packs`
+
+## 2026-08-19 Additive Implementation Note
+
+The same decision boundary now supports eight expanded-housing and eight broad
+private-household manifests, for 24 built-ins in total. The new
+packs reuse the separate count and evidence contracts; no Census counts were
+added to package definitions and the eight stable core manifests remain
+available unchanged.

@@ -72,6 +72,8 @@ _PROFILE_REVISIONS = {
     2016: "Census Profile, 2016 Census, catalogue 98-316-X2016001",
     2021: "Census Profile, 2021 Census, catalogue 98-316-X2021001",
 }
+_CURRENT_REGISTRY_REVISION = "2026-08-19"
+_SUPPORTED_REGISTRY_REVISIONS = {"2026-08-10", _CURRENT_REGISTRY_REVISION}
 
 EntityLevel = Literal["household", "person"]
 GeographyLevel = Literal["csd", "ct", "ada", "da"]
@@ -736,6 +738,679 @@ def _control_definitions() -> list[dict[str, Any]]:
                 },
             ]
         )
+        controls.extend(_housing_control_definitions(vintage))
+        controls.extend(_demographic_control_definitions(vintage))
+    return controls
+
+
+def _housing_control_definitions(vintage: int) -> list[dict[str, Any]]:
+    """Return reviewed occupied-dwelling/private-household control families."""
+
+    if vintage == 2016:
+        specifications = [
+            (
+                "dwelling-type",
+                "household.dwelling-type",
+                "DTYPE",
+                "structural_dwelling_type",
+                "41",
+                "Total - Occupied private dwellings by structural type of dwelling",
+                {
+                    "1": "single_detached",
+                    "2": "apartment",
+                    "3": "other",
+                    "8": "__missing__",
+                },
+                [
+                    ("single_detached", ["42"], ["Single-detached house"]),
+                    (
+                        "apartment",
+                        ["43", "47", "48"],
+                        [
+                            "Apartment in a building that has five or more storeys",
+                            "Apartment or flat in a duplex",
+                            "Apartment in a building that has fewer than five storeys",
+                        ],
+                    ),
+                    (
+                        "other",
+                        ["45", "46", "49", "50"],
+                        [
+                            "Semi-detached house",
+                            "Row house",
+                            "Other single-attached house",
+                            "Movable dwelling",
+                        ],
+                    ),
+                ],
+            ),
+            (
+                "condominium",
+                "household.condominium",
+                "CONDO",
+                "CONDO",
+                "1621",
+                "Total - Occupied private dwellings by condominium status",
+                {"0": "0", "1": "1", "8": "__missing__"},
+                [
+                    ("1", ["1622"], ["Condominium"]),
+                    ("0", ["1623"], ["Not condominium"]),
+                ],
+            ),
+            (
+                "bedrooms",
+                "household.bedrooms",
+                "BEDRM",
+                "bedrooms_group",
+                "1624",
+                "Total - Occupied private dwellings by number of bedrooms",
+                {
+                    "0": "0",
+                    "1": "1",
+                    "2": "2",
+                    "3": "3",
+                    "4": "4_plus",
+                    "5": "4_plus",
+                    "8": "__missing__",
+                },
+                [
+                    ("0", ["1625"], ["No bedrooms"]),
+                    ("1", ["1626"], ["1 bedroom"]),
+                    ("2", ["1627"], ["2 bedrooms"]),
+                    ("3", ["1628"], ["3 bedrooms"]),
+                    ("4_plus", ["1629"], ["4 or more bedrooms"]),
+                ],
+            ),
+            (
+                "rooms",
+                "household.rooms",
+                "ROOM",
+                "rooms_group",
+                "1630",
+                "Total - Occupied private dwellings by number of rooms",
+                {
+                    **{str(value): "1_4" for value in range(1, 5)},
+                    **{str(value): str(value) for value in range(5, 8)},
+                    **{str(value): "8_plus" for value in range(8, 12)},
+                    "88": "__missing__",
+                },
+                [
+                    ("1_4", ["1631"], ["1 to 4 rooms"]),
+                    ("5", ["1632"], ["5 rooms"]),
+                    ("6", ["1633"], ["6 rooms"]),
+                    ("7", ["1634"], ["7 rooms"]),
+                    ("8_plus", ["1635"], ["8 or more rooms"]),
+                ],
+            ),
+            (
+                "housing-suitability",
+                "household.housing-suitability",
+                "NOS",
+                "NOS",
+                "1640",
+                "Total - Private households by housing suitability",
+                {"1": "1", "2": "2", "8": "__missing__"},
+                [("1", ["1641"], ["Suitable"]), ("2", ["1642"], ["Not suitable"])],
+            ),
+            (
+                "construction-period",
+                "household.construction-period",
+                "BUILT",
+                "construction_period_group",
+                "1643",
+                "Total - Occupied private dwellings by period of construction",
+                {
+                    "1": "1960_or_before",
+                    "2": "1960_or_before",
+                    "3": "1960_or_before",
+                    "4": "1961_1980",
+                    "5": "1961_1980",
+                    "6": "1981_1990",
+                    "7": "1991_2000",
+                    "8": "1991_2000",
+                    "9": "2001_2005",
+                    "10": "2006_2010",
+                    "11": "2011_2016",
+                    "88": "__missing__",
+                },
+                [
+                    ("1960_or_before", ["1644"], ["1960 or before"]),
+                    ("1961_1980", ["1645"], ["1961 to 1980"]),
+                    ("1981_1990", ["1646"], ["1981 to 1990"]),
+                    ("1991_2000", ["1647"], ["1991 to 2000"]),
+                    ("2001_2005", ["1648"], ["2001 to 2005"]),
+                    ("2006_2010", ["1649"], ["2006 to 2010"]),
+                    ("2011_2016", ["1650"], ["2011 to 2016"]),
+                ],
+            ),
+            (
+                "repair-condition",
+                "household.repair",
+                "REPAIR",
+                "repair_group",
+                "1651",
+                "Total - Occupied private dwellings by dwelling condition",
+                {"1": "regular_minor", "2": "regular_minor", "3": "major"},
+                [
+                    (
+                        "regular_minor",
+                        ["1652"],
+                        ["Only regular maintenance or minor repairs needed"],
+                    ),
+                    ("major", ["1653"], ["Major repairs needed"]),
+                ],
+            ),
+        ]
+    else:
+        specifications = [
+            (
+                "dwelling-type",
+                "household.dwelling-type",
+                "DTYPE",
+                "structural_dwelling_type",
+                "41",
+                "Total - Occupied private dwellings by structural type of dwelling",
+                {
+                    "1": "single_detached",
+                    "2": "apartment",
+                    "3": "other",
+                    "8": "__missing__",
+                },
+                [
+                    ("single_detached", ["42"], ["Single-detached house"]),
+                    (
+                        "apartment",
+                        ["45", "46", "47"],
+                        [
+                            "Apartment or flat in a duplex",
+                            "Apartment in a building that has fewer than five storeys",
+                            "Apartment in a building that has five or more storeys",
+                        ],
+                    ),
+                    (
+                        "other",
+                        ["43", "44", "48", "49"],
+                        [
+                            "Semi-detached house",
+                            "Row house",
+                            "Other single-attached house",
+                            "Movable dwelling",
+                        ],
+                    ),
+                ],
+            ),
+            (
+                "condominium",
+                "household.condominium",
+                "CONDO",
+                "CONDO",
+                "1418",
+                "Total - Occupied private dwellings by condominium status",
+                {"0": "0", "1": "1", "8": "__missing__"},
+                [
+                    ("1", ["1419"], ["Condominium"]),
+                    ("0", ["1420"], ["Not condominium"]),
+                ],
+            ),
+            (
+                "bedrooms",
+                "household.bedrooms",
+                "BEDRM",
+                "bedrooms_group",
+                "1421",
+                "Total - Occupied private dwellings by number of bedrooms",
+                {
+                    "0": "0",
+                    "1": "1",
+                    "2": "2",
+                    "3": "3",
+                    "4": "4_plus",
+                    "5": "4_plus",
+                    "8": "__missing__",
+                },
+                [
+                    ("0", ["1422"], ["No bedrooms"]),
+                    ("1", ["1423"], ["1 bedroom"]),
+                    ("2", ["1424"], ["2 bedrooms"]),
+                    ("3", ["1425"], ["3 bedrooms"]),
+                    ("4_plus", ["1426"], ["4 or more bedrooms"]),
+                ],
+            ),
+            (
+                "rooms",
+                "household.rooms",
+                "ROOM",
+                "rooms_group",
+                "1427",
+                "Total - Occupied private dwellings by number of rooms",
+                {
+                    **{str(value): "1_4" for value in range(1, 5)},
+                    **{str(value): str(value) for value in range(5, 8)},
+                    **{str(value): "8_plus" for value in range(8, 12)},
+                },
+                [
+                    ("1_4", ["1428"], ["1 to 4 rooms"]),
+                    ("5", ["1429"], ["5 rooms"]),
+                    ("6", ["1430"], ["6 rooms"]),
+                    ("7", ["1431"], ["7 rooms"]),
+                    ("8_plus", ["1432"], ["8 or more rooms"]),
+                ],
+            ),
+            (
+                "housing-suitability",
+                "household.housing-suitability",
+                "NOS",
+                "NOS",
+                "1437",
+                "Total - Private households by housing suitability",
+                {"0": "0", "1": "1"},
+                [("1", ["1438"], ["Suitable"]), ("0", ["1439"], ["Not suitable"])],
+            ),
+            (
+                "construction-period",
+                "household.construction-period",
+                "BUILT",
+                "construction_period_group",
+                "1440",
+                "Total - Occupied private dwellings by period of construction",
+                {
+                    "1": "1960_or_before",
+                    "2": "1960_or_before",
+                    "3": "1961_1980",
+                    "4": "1961_1980",
+                    "5": "1981_1990",
+                    "6": "1991_2000",
+                    "7": "1991_2000",
+                    "8": "2001_2005",
+                    "9": "2006_2010",
+                    "10": "2011_2015",
+                    "11": "2016_2021",
+                    "88": "__missing__",
+                },
+                [
+                    ("1960_or_before", ["1441"], ["1960 or before"]),
+                    ("1961_1980", ["1442"], ["1961 to 1980"]),
+                    ("1981_1990", ["1443"], ["1981 to 1990"]),
+                    ("1991_2000", ["1444"], ["1991 to 2000"]),
+                    ("2001_2005", ["1445"], ["2001 to 2005"]),
+                    ("2006_2010", ["1446"], ["2006 to 2010"]),
+                    ("2011_2015", ["1447"], ["2011 to 2015"]),
+                    ("2016_2021", ["1448"], ["2016 to 2021"]),
+                ],
+            ),
+            (
+                "repair-condition",
+                "household.repair",
+                "REPAIR",
+                "repair_group",
+                "1449",
+                "Total - Occupied private dwellings by dwelling condition",
+                {"1": "regular_minor", "2": "regular_minor", "3": "major"},
+                [
+                    (
+                        "regular_minor",
+                        ["1450"],
+                        ["Only regular maintenance and minor repairs needed"],
+                    ),
+                    ("major", ["1451"], ["Major repairs needed"]),
+                ],
+            ),
+        ]
+
+    controls: list[dict[str, Any]] = []
+    for (
+        slug,
+        concept,
+        source_field,
+        output_field,
+        root_id,
+        root_label,
+        derivation,
+        categories,
+    ) in specifications:
+        controls.append(
+            {
+                "identifier": f"statcan.{vintage}.{slug}.v1",
+                "concept_identifier": concept,
+                "census_vintage": vintage,
+                "entity_level": "household",
+                "generated_fields": [source_field],
+                "candidate_derivations": [
+                    {
+                        "output_field": output_field,
+                        "source_field": source_field,
+                        "method": "category-crosswalk",
+                        "categories": derivation,
+                        "cap": None,
+                        "unmapped": "reject",
+                    }
+                ],
+                "source": {
+                    "product": "Statistics Canada Census Profile",
+                    "revision": _PROFILE_REVISIONS[vintage],
+                    "url": _PROFILE_URLS[vintage],
+                    "licence_url": _STATCAN_OPEN_LICENCE,
+                    "root_characteristic_id": root_id,
+                    "root_label": root_label,
+                    "estimate_type": "100%-count"
+                    if slug == "dwelling-type"
+                    else "25%-sample-count",
+                    "unit": "private-households",
+                },
+                "universe": {
+                    "identifier": "private-households",
+                    "source_label": "Occupied private dwellings/private households",
+                    "calibration_label": "Linked private households",
+                    "reference_period": f"{vintage} Census reference date",
+                    "reconciliation": "identity",
+                },
+                "geography_levels": list(_GEOGRAPHY_LEVELS),
+                "classification": "coarsened",
+                "source_axes": [
+                    {
+                        "candidate_field": output_field,
+                        "categories": [
+                            _source_category(
+                                target,
+                                labels,
+                                characteristic_ids=ids,
+                                mapping="coarsened",
+                            )
+                            for target, ids, labels in categories
+                        ],
+                    }
+                ],
+                "suppression": _suppression(tolerance=5.0),
+                "complete_mutually_exclusive_vector": True,
+                "compatible_companion_fields": ["household_size"],
+                "privacy_notes": [
+                    "Suppressed or incomplete vectors exclude the geography; "
+                    "no hidden cells are inferred."
+                ],
+                "interpretation_notes": [
+                    "One occupied private dwelling is treated as the dwelling of "
+                    "one linked private household.",
+                    "PUMF missing codes remain outside the published vector and "
+                    "receive zero fitted support when complete household margins "
+                    "reconcile.",
+                ],
+                "status": "implemented",
+                "review": {
+                    "reviewer": "SynthPopCan maintainers",
+                    "reviewed_on": "2026-08-19",
+                    "evidence": [
+                        "Vintage-specific Profile roots and child IDs were checked "
+                        "against the local official bulk products.",
+                        "PUMF categories were checked against the packaged "
+                        "field-eligibility inventory.",
+                    ],
+                },
+            }
+        )
+    return controls
+
+
+def _demographic_control_definitions(vintage: int) -> list[dict[str, Any]]:
+    """Return reviewed person controls with a private-household universe."""
+
+    if vintage == 2016:
+        specifications = [
+            (
+                "citizenship",
+                "person.citizenship",
+                "CITIZEN",
+                "citizenship_group",
+                "1135",
+                "Total - Citizenship for the population in private households",
+                {
+                    "1": "canadian",
+                    "2": "canadian",
+                    "3": "not_canadian",
+                    "8": "__missing__",
+                },
+                [
+                    ("canadian", ["1136"], ["Canadian citizens"]),
+                    ("not_canadian", ["1139"], ["Not Canadian citizens"]),
+                ],
+            ),
+            (
+                "immigration-status",
+                "person.immigration-status",
+                "IMMSTAT",
+                "immigration_status_group",
+                "1140",
+                "Total - Immigrant status and period of immigration for the "
+                "population in private households",
+                {
+                    "1": "non_immigrant",
+                    "2": "immigrant",
+                    "3": "non_permanent_resident",
+                    "8": "__missing__",
+                },
+                [
+                    ("non_immigrant", ["1141"], ["Non-immigrants"]),
+                    ("immigrant", ["1142"], ["Immigrants"]),
+                    ("non_permanent_resident", ["1150"], ["Non-permanent residents"]),
+                ],
+            ),
+            (
+                "generation-status",
+                "person.generation-status",
+                "GENSTAT",
+                "generation_status_group",
+                "1278",
+                "Total - Generation status for the population in private households",
+                {
+                    "1": "first",
+                    "2": "second",
+                    "3": "second",
+                    "4": "third_or_later",
+                    "8": "__missing__",
+                },
+                [
+                    ("first", ["1279"], ["First generation"]),
+                    ("second", ["1280"], ["Second generation"]),
+                    ("third_or_later", ["1281"], ["Third generation or more"]),
+                ],
+            ),
+            (
+                "visible-minority",
+                "person.visible-minority",
+                "VISMIN",
+                "visible_minority_group",
+                "1323",
+                "Total - Visible minority for the population in private households",
+                {
+                    "1": "visible_minority",
+                    "2": "not_visible_minority",
+                    "8": "__missing__",
+                },
+                [
+                    (
+                        "visible_minority",
+                        ["1324"],
+                        ["Total visible minority population"],
+                    ),
+                    ("not_visible_minority", ["1337"], ["Not a visible minority"]),
+                ],
+            ),
+        ]
+    else:
+        specifications = [
+            (
+                "citizenship",
+                "person.citizenship",
+                "CITIZEN",
+                "citizenship_group",
+                "1522",
+                "Total - Citizenship for the population in private households",
+                {
+                    "1": "canadian",
+                    "2": "canadian",
+                    "3": "not_canadian",
+                    "8": "__missing__",
+                },
+                [
+                    ("canadian", ["1523"], ["Canadian citizens"]),
+                    ("not_canadian", ["1526"], ["Not Canadian citizens"]),
+                ],
+            ),
+            (
+                "immigration-status",
+                "person.immigration-status",
+                "IMMSTAT",
+                "immigration_status_group",
+                "1527",
+                "Total - Immigrant status and period of immigration for the "
+                "population in private households",
+                {
+                    "1": "non_immigrant",
+                    "2": "immigrant",
+                    "3": "non_permanent_resident",
+                    "8": "__missing__",
+                },
+                [
+                    ("non_immigrant", ["1528"], ["Non-immigrants"]),
+                    ("immigrant", ["1529"], ["Immigrants"]),
+                    ("non_permanent_resident", ["1537"], ["Non-permanent residents"]),
+                ],
+            ),
+            (
+                "generation-status",
+                "person.generation-status",
+                "GENSTAT",
+                "generation_status_group",
+                "1665",
+                "Total - Generation status for the population in private households",
+                {
+                    "1": "first",
+                    "2": "second",
+                    "3": "second",
+                    "4": "third_or_later",
+                    "8": "__missing__",
+                },
+                [
+                    ("first", ["1666"], ["First generation"]),
+                    ("second", ["1667"], ["Second generation"]),
+                    ("third_or_later", ["1668"], ["Third generation or more"]),
+                ],
+            ),
+            (
+                "visible-minority",
+                "person.visible-minority",
+                "VISMIN",
+                "visible_minority_group",
+                "1683",
+                "Total - Visible minority for the population in private households",
+                {
+                    "0": "not_visible_minority",
+                    "1": "visible_minority",
+                    "8": "__missing__",
+                },
+                [
+                    (
+                        "visible_minority",
+                        ["1684"],
+                        ["Total visible minority population"],
+                    ),
+                    ("not_visible_minority", ["1697"], ["Not a visible minority"]),
+                ],
+            ),
+        ]
+
+    controls: list[dict[str, Any]] = []
+    for (
+        slug,
+        concept,
+        source_field,
+        output_field,
+        root_id,
+        root_label,
+        mapping,
+        categories,
+    ) in specifications:
+        controls.append(
+            {
+                "identifier": f"statcan.{vintage}.{slug}.v1",
+                "concept_identifier": concept,
+                "census_vintage": vintage,
+                "entity_level": "person",
+                "generated_fields": [source_field],
+                "candidate_derivations": [
+                    {
+                        "output_field": output_field,
+                        "source_field": source_field,
+                        "method": "category-crosswalk",
+                        "categories": mapping,
+                        "cap": None,
+                        "unmapped": "reject",
+                    }
+                ],
+                "source": {
+                    "product": "Statistics Canada Census Profile",
+                    "revision": _PROFILE_REVISIONS[vintage],
+                    "url": _PROFILE_URLS[vintage],
+                    "licence_url": _STATCAN_OPEN_LICENCE,
+                    "root_characteristic_id": root_id,
+                    "root_label": root_label,
+                    "estimate_type": "25%-sample-count",
+                    "unit": "persons",
+                },
+                "universe": {
+                    "identifier": "private-household-persons",
+                    "source_label": "Population in private households",
+                    "calibration_label": "People in linked private households",
+                    "reference_period": f"{vintage} Census reference date",
+                    "reconciliation": "identity",
+                },
+                "geography_levels": list(_GEOGRAPHY_LEVELS),
+                "classification": "coarsened",
+                "source_axes": [
+                    {
+                        "candidate_field": output_field,
+                        "categories": [
+                            _source_category(
+                                target,
+                                labels,
+                                characteristic_ids=characteristic_ids,
+                                mapping="coarsened",
+                            )
+                            for target, characteristic_ids, labels in categories
+                        ],
+                    }
+                ],
+                "suppression": _suppression(tolerance=5.0),
+                "complete_mutually_exclusive_vector": True,
+                "compatible_companion_fields": ["household_size"],
+                "privacy_notes": [
+                    "Use published aggregate counts only; suppressed or missing "
+                    "cells exclude the geography."
+                ],
+                "interpretation_notes": [
+                    "This family is limited to the published population in "
+                    "private households and changes whole-household weights.",
+                    "Independently rounded category counts must be reconciled "
+                    "to the common published private-household-person total "
+                    "before pack evidence is built.",
+                    *(
+                        [
+                            "The visible-minority terminology is retained from "
+                            "the Census source and must be interpreted in its "
+                            "vintage-specific statistical context."
+                        ]
+                        if slug == "visible-minority"
+                        else []
+                    ),
+                ],
+                "status": "implemented",
+                "review": _review(
+                    "Profile root and child IDs cross-checked against both "
+                    "bulk schemas.",
+                    "PUMF categories are coarsened only where the Profile "
+                    "publishes an aggregate.",
+                ),
+            }
+        )
     return controls
 
 
@@ -813,19 +1488,32 @@ def _field_inventory(controls: list[dict[str, Any]]) -> list[dict[str, Any]]:
         "person.weeks-worked": ("person", ["WKSWRK"], ["WKSWRK"]),
     }
     result = list(implemented)
+    controls_by_concept: dict[str, list[str]] = {}
+    for control in controls:
+        controls_by_concept.setdefault(control["concept_identifier"], []).append(
+            control["identifier"]
+        )
     for concept, (entity, fields_2016, fields_2021) in planned_fields.items():
+        implemented_controls = sorted(controls_by_concept.get(concept, []))
         result.append(
             {
                 "concept_identifier": concept,
                 "entity_level": entity,
                 "fields_2016": fields_2016,
                 "fields_2021": fields_2021,
-                "control_identifiers": [],
-                "status": "planned",
-                "notes": [
-                    "Candidate source family exists, but its crosswalk is outside "
-                    "the pre-1.0 control-pack cut line."
-                ],
+                "control_identifiers": implemented_controls,
+                "status": "implemented" if implemented_controls else "planned",
+                "notes": (
+                    [
+                        "Reviewed vintage-specific crosswalks are available in "
+                        "the expanded housing packs."
+                    ]
+                    if implemented_controls
+                    else [
+                        "Candidate source family exists, but its crosswalk and "
+                        "universe are not yet implemented."
+                    ]
+                ),
             }
         )
     for concept, (entity, fields_2016, fields_2021) in unavailable_fields.items():
@@ -854,7 +1542,7 @@ def load_compatibility_registry() -> ControlCompatibilityRegistry:
     return ControlCompatibilityRegistry.model_validate(
         {
             "schema_version": COMPATIBILITY_REGISTRY_SCHEMA_VERSION,
-            "revision": "2026-08-10",
+            "revision": _CURRENT_REGISTRY_REVISION,
             "fields": _field_inventory(controls),
             "controls": controls,
         }
@@ -944,6 +1632,149 @@ def _pack_payload(vintage: int, geography_level: str) -> dict[str, Any]:
     return payload
 
 
+def _expanded_housing_pack_payload(
+    vintage: int, geography_level: str
+) -> dict[str, Any]:
+    """Build an additive pack with all reviewed housing control families."""
+
+    sex_field = "SEX" if vintage == 2016 else "GENDER"
+    identifier = (
+        f"statcan-{vintage}-expanded-private-household-housing-{geography_level}-v1"
+    )
+    housing_margins = [
+        ("dwelling-type", "structural_dwelling_type"),
+        ("condominium", "CONDO"),
+        ("bedrooms", "bedrooms_group"),
+        ("rooms", "rooms_group"),
+        ("housing-suitability", "NOS"),
+        ("construction-period", "construction_period_group"),
+        ("repair-condition", "repair_group"),
+    ]
+    payload = _pack_payload(vintage, geography_level)
+    payload.update(
+        {
+            "identifier": identifier,
+            "version": "1.1.0",
+            "label": (
+                f"Statistics Canada {vintage} expanded private-household housing "
+                f"{geography_level.upper()} controls"
+            ),
+            "registry_revision": _CURRENT_REGISTRY_REVISION,
+            "required_household_fields": [
+                "household_size",
+                "TENUR",
+                "DTYPE",
+                "CONDO",
+                "BEDRM",
+                "ROOM",
+                "NOS",
+                "BUILT",
+                "REPAIR",
+            ],
+            "required_person_fields": ["AGEGRP", sex_field],
+            "margins": [
+                *payload["margins"][:2],
+                *[
+                    {
+                        "control_identifier": f"statcan.{vintage}.{slug}.v1",
+                        "entity_level": "household",
+                        "dimensions": [geography_level, dimension],
+                        "priority": "required",
+                    }
+                    for slug, dimension in housing_margins
+                ],
+                payload["margins"][2],
+            ],
+            "known_limitations": [
+                "This definition does not include Census counts; a reviewed "
+                "bounded extract must accompany every run.",
+                "All nine household vectors must describe the same linked "
+                "private-household universe and reconcile after suppression "
+                "handling.",
+                "Age-by-sex/gender is eligible only where total population equals "
+                "persons in private households.",
+                "Missing Profile cells are not imputed, and a positive control "
+                "category without candidate support fails planning.",
+                "CT coverage is limited to tracted metropolitan areas and "
+                "agglomerations.",
+                "Person characteristics beyond broad age-by-sex/gender remain "
+                "uncontrolled in this pack.",
+            ],
+            "review": {
+                "reviewer": "SynthPopCan maintainers",
+                "reviewed_on": "2026-08-19",
+                "evidence": [
+                    "Nine household control vectors and the linked-person vector "
+                    "resolve through the 2026-08-19 registry revision.",
+                    "Vintage-specific source rows and PUMF crosswalks are covered "
+                    "by extraction, derivation, planning, and calibration tests.",
+                ],
+            },
+        }
+    )
+    payload["definition_sha256"] = _pack_definition_sha256(payload)
+    return payload
+
+
+def _broad_pack_payload(vintage: int, geography_level: str) -> dict[str, Any]:
+    """Build the broadest pack whose controls share the private-household scope."""
+
+    payload = _expanded_housing_pack_payload(vintage, geography_level)
+    demographic_margins = [
+        ("citizenship", "citizenship_group"),
+        ("immigration-status", "immigration_status_group"),
+        ("generation-status", "generation_status_group"),
+        ("visible-minority", "visible_minority_group"),
+    ]
+    sex_field = "SEX" if vintage == 2016 else "GENDER"
+    payload.update(
+        {
+            "identifier": f"statcan-{vintage}-broad-{geography_level}-v1",
+            "label": (
+                f"Statistics Canada {vintage} broad private-household "
+                f"{geography_level.upper()} controls"
+            ),
+            "required_person_fields": [
+                "AGEGRP",
+                sex_field,
+                "CITIZEN",
+                "IMMSTAT",
+                "GENSTAT",
+                "VISMIN",
+            ],
+            "margins": [
+                *payload["margins"],
+                *[
+                    {
+                        "control_identifier": f"statcan.{vintage}.{slug}.v1",
+                        "entity_level": "person",
+                        "dimensions": [geography_level, dimension],
+                        "priority": "required",
+                    }
+                    for slug, dimension in demographic_margins
+                ],
+            ],
+            "known_limitations": [
+                *payload["known_limitations"],
+                "Citizenship, immigrant status, generation status, and "
+                "visible-minority status use published 25% sample counts for "
+                "people in private households.",
+                "Marital status, place of birth, education, labour, language, "
+                "work activity, and income require different conditional or "
+                "banded contracts and are intentionally excluded.",
+            ],
+            "review": _review(
+                "Four additional person vectors use an explicit population-in-"
+                "private-households universe.",
+                "All person margins refine whole-household weights without "
+                "detaching linked people.",
+            ),
+        }
+    )
+    payload["definition_sha256"] = _pack_definition_sha256(payload)
+    return payload
+
+
 def _builtin_packs() -> dict[str, ControlPackManifest]:
     packs = {}
     for vintage in _CENSUS_VINTAGES:
@@ -953,6 +1784,16 @@ def _builtin_packs() -> dict[str, ControlPackManifest]:
             )
             _validate_pack_against_registry(pack)
             packs[pack.identifier] = pack
+            expanded_pack = ControlPackManifest.model_validate(
+                _expanded_housing_pack_payload(vintage, geography_level)
+            )
+            _validate_pack_against_registry(expanded_pack)
+            packs[expanded_pack.identifier] = expanded_pack
+            broad_pack = ControlPackManifest.model_validate(
+                _broad_pack_payload(vintage, geography_level)
+            )
+            _validate_pack_against_registry(broad_pack)
+            packs[broad_pack.identifier] = broad_pack
     return packs
 
 
@@ -960,10 +1801,11 @@ def _validate_pack_against_registry(pack: ControlPackManifest) -> None:
     registry = load_compatibility_registry()
     if pack.registry_schema_version != registry.schema_version:
         raise ValueError("control pack uses an unsupported registry schema version")
-    if pack.registry_revision != registry.revision:
+    if pack.registry_revision not in _SUPPORTED_REGISTRY_REVISIONS:
         raise ValueError(
-            f"control pack requires registry revision {pack.registry_revision}, "
-            f"but this installation provides {registry.revision}"
+            f"control pack requires unsupported registry revision "
+            f"{pack.registry_revision}; this installation provides "
+            f"{registry.revision}"
         )
     if pack.geography_column != pack.geography_level:
         raise ValueError("control pack geography_column must match geography_level")
@@ -1034,7 +1876,7 @@ def _validate_pack_against_registry(pack: ControlPackManifest) -> None:
 
 
 def list_builtin_control_packs() -> tuple[dict[str, Any], ...]:
-    """List inspectable metadata for the eight built-in bounded core packs."""
+    """List inspectable metadata for the built-in core and expanded packs."""
 
     return tuple(
         {
@@ -1981,7 +2823,7 @@ def _validate_universe_evidence(
     if not requires_reconciliation:
         return {"required": False, "geographies": {}}, []
     issues: list[dict[str, Any]] = []
-    rows: dict[str, dict[str, float | bool]] = {}
+    rows: dict[str, dict[str, Any]] = {}
     evidence_geographies = set(evidence.geographies) if evidence is not None else set()
     unexpected = sorted(evidence_geographies - set(geographies))
     if unexpected:
@@ -1994,11 +2836,10 @@ def _validate_universe_evidence(
             )
         )
     person_totals = {
-        geography: sum(
-            cell.count
+        geography: {
+            margin.name: sum(cell.count for cell in margin.cells)
             for margin in controls_for_geography.margins
-            for cell in margin.cells
-        )
+        }
         for geography, controls_for_geography in controls_by_geography(
             person_controls,
             geography_dimension=pack.geography_column,
@@ -2029,12 +2870,17 @@ def _validate_universe_evidence(
             )
             continue
         zero_collective = total == private
-        matches_control = private == person_totals.get(geography)
+        geography_person_totals = person_totals.get(geography, {})
+        matches_control = bool(geography_person_totals) and all(
+            private == margin_total for margin_total in geography_person_totals.values()
+        )
+        primary_person_total = next(iter(geography_person_totals.values()), 0.0)
         rows[geography] = {
             "total_population": total,
             "persons_in_private_households": private,
             "collective_population_difference": total - private,
-            "person_control_total": person_totals.get(geography, 0.0),
+            "person_control_total": primary_person_total,
+            "person_control_totals": geography_person_totals,
             "zero_collective": zero_collective,
             "matches_person_control_total": matches_control,
         }
@@ -2057,7 +2903,7 @@ def _validate_universe_evidence(
                     "the persons-in-private-households companion count",
                     geography=geography,
                     expected=private,
-                    actual=person_totals.get(geography),
+                    actual=geography_person_totals,
                 )
             )
     return {

@@ -5,6 +5,7 @@ import hashlib
 import json
 from collections import Counter
 from copy import deepcopy
+from itertools import product
 from pathlib import Path
 
 import pytest
@@ -60,6 +61,33 @@ _GEOGRAPHY_IDS = {
     "da": "24660244",
 }
 
+_RELEASED_CORE_PACK_HASHES = {
+    "statcan-2016-core-private-household-csd-v1": (
+        "4209134e304bf7fb1d240e1d238c9e352fc7f7d6ab4cb66585a2426bd91a4820"
+    ),
+    "statcan-2016-core-private-household-ct-v1": (
+        "5bd972460b1ebb18ddfff43ad0ef9d1681eedf6250d5f5a268386b08698d88b4"
+    ),
+    "statcan-2016-core-private-household-ada-v1": (
+        "8b9cde2c15acada5941dd62f3efe050fdc923f02db1d93eb3c0fd518efaf6948"
+    ),
+    "statcan-2016-core-private-household-da-v1": (
+        "48d47e976e8ef1deef0ae080120763c7dd405e663ebcd4a5007212bda929086f"
+    ),
+    "statcan-2021-core-private-household-csd-v1": (
+        "725cb1b151c18182f76fb8c06dfab8ccb0f32ec0530663d3189f9fc5630b10ff"
+    ),
+    "statcan-2021-core-private-household-ct-v1": (
+        "65c54ab30692638bed6b98989c3b12521d1eb0798e0191bb966d96ea59babb7e"
+    ),
+    "statcan-2021-core-private-household-ada-v1": (
+        "11f0fa365b60a83b1e446df77b225265bf8822195d47c22bf28c2fac6c95fb22"
+    ),
+    "statcan-2021-core-private-household-da-v1": (
+        "0fa1e1810aebfe88799210aac5d85da22428f9ecbc405445728e8c299b5fce00"
+    ),
+}
+
 
 def _population(vintage: int) -> tuple[list[dict[str, str]], list[dict[str, str]]]:
     sex_field = "SEX" if vintage == 2016 else "GENDER"
@@ -73,7 +101,17 @@ def _population(vintage: int) -> tuple[list[dict[str, str]], list[dict[str, str]
                 "synthetic_household_id": household_id,
                 "household_size": str(size),
                 "TENUR": "1" if size % 2 else "2",
-                "DTYPE": "single" if size % 2 else "apartment",
+                "DTYPE": str((size - 1) % 3 + 1),
+                "CONDO": str(size % 2),
+                "BEDRM": str(size - 1),
+                "ROOM": str((1, 5, 6, 7, 8)[size - 1]),
+                "NOS": (
+                    str(1 if size % 2 else 2)
+                    if vintage == 2016
+                    else str(1 if size % 2 else 0)
+                ),
+                "BUILT": str((1, 4, 6, 8, 11)[size - 1]),
+                "REPAIR": str((size - 1) % 3 + 1),
             }
         )
         for _member in range(size):
@@ -86,6 +124,77 @@ def _population(vintage: int) -> tuple[list[dict[str, str]], list[dict[str, str]
                     "AGEGRP": age,
                     sex_field: sex,
                     "TOTINC": str(person_index % 4),
+                    "CITIZEN": str(person_index % 3 + 1),
+                    "IMMSTAT": str(person_index % 3 + 1),
+                    "GENSTAT": str(person_index % 4 + 1),
+                    "VISMIN": str(
+                        (1, 2)[person_index % 2]
+                        if vintage == 2016
+                        else (1, 0)[person_index % 2]
+                    ),
+                }
+            )
+            person_index += 1
+    return households, persons
+
+
+def _expanded_population(
+    vintage: int,
+) -> tuple[list[dict[str, str]], list[dict[str, str]]]:
+    """Cover every category in each reviewed expanded-pack margin."""
+
+    sex_field = "SEX" if vintage == 2016 else "GENDER"
+    sizes = (1, 2, 3, 4, 5, 1, 2, 3)
+    built_codes = (
+        ("1", "4", "6", "7", "9", "10", "11", "1")
+        if vintage == 2016
+        else ("1", "3", "5", "6", "8", "9", "10", "11")
+    )
+    households: list[dict[str, str]] = []
+    persons: list[dict[str, str]] = []
+    person_index = 0
+    for index, (size, built) in enumerate(
+        zip(sizes, built_codes, strict=True), start=1
+    ):
+        household_id = f"eh{index}"
+        households.append(
+            {
+                "synthetic_household_id": household_id,
+                "household_size": str(size),
+                "TENUR": str(1 if index % 2 else 2),
+                "DTYPE": str((index - 1) % 3 + 1),
+                "CONDO": str(index % 2),
+                "BEDRM": str((index - 1) % 5),
+                "ROOM": str((1, 5, 6, 7, 8)[(index - 1) % 5]),
+                "NOS": str(1 if index % 2 else (2 if vintage == 2016 else 0)),
+                "BUILT": built,
+                "REPAIR": str(3 if index % 3 == 0 else 1),
+            }
+        )
+        for _member in range(size):
+            age, sex = (
+                ("1", "1"),
+                ("1", "2"),
+                ("4", "1"),
+                ("4", "2"),
+                ("14", "1"),
+                ("14", "2"),
+            )[person_index % 6]
+            persons.append(
+                {
+                    "synthetic_person_id": f"ep{person_index + 1}",
+                    "synthetic_household_id": household_id,
+                    "AGEGRP": age,
+                    sex_field: sex,
+                    "TOTINC": str(person_index % 4),
+                    "CITIZEN": str(person_index % 3 + 1),
+                    "IMMSTAT": str(person_index % 3 + 1),
+                    "GENSTAT": str(person_index % 4 + 1),
+                    "VISMIN": str(
+                        (1, 2)[person_index % 2]
+                        if vintage == 2016
+                        else (1, 0)[person_index % 2]
+                    ),
                 }
             )
             person_index += 1
@@ -166,6 +275,93 @@ def _tables(
     return household_controls, person_controls
 
 
+def _expanded_tables(
+    pack_id: str,
+    households: list[dict[str, str]],
+    persons: list[dict[str, str]],
+    *,
+    geography: str,
+) -> tuple[ControlTable, ControlTable]:
+    pack = load_control_pack(pack_id)
+    definitions = {
+        control.identifier: control
+        for control in load_compatibility_registry().controls
+    }
+    derived_households, derived_persons = apply_control_pack_derivations(
+        pack, households, persons
+    )
+    household_margins: list[ControlMargin] = []
+    household_dimensions: set[str] = {pack.geography_column}
+    for margin in pack.margins:
+        if margin.entity_level != "household":
+            continue
+        dimension = margin.dimensions[1]
+        household_dimensions.add(dimension)
+        counts = Counter(row[dimension] for row in derived_households)
+        categories = tuple(
+            category.target_category
+            for category in definitions[margin.control_identifier]
+            .source_axes[0]
+            .categories
+        )
+        household_margins.append(
+            ControlMargin(
+                margin.control_identifier,
+                tuple(margin.dimensions),
+                tuple(
+                    ControlCell(
+                        {pack.geography_column: geography, dimension: category},
+                        count,
+                    )
+                    for category in categories
+                    for count in (counts[category],)
+                ),
+            )
+        )
+    person_margins: list[ControlMargin] = []
+    person_dimensions: set[str] = {pack.geography_column}
+    for margin in pack.margins:
+        if margin.entity_level != "person":
+            continue
+        dimensions = tuple(margin.dimensions[1:])
+        person_dimensions.update(dimensions)
+        counts = Counter(
+            tuple(row[dimension] for dimension in dimensions) for row in derived_persons
+        )
+        axes = definitions[margin.control_identifier].source_axes
+        categories = tuple(
+            tuple(category.target_category for category in axis.categories)
+            for axis in axes
+        )
+        person_margins.append(
+            ControlMargin(
+                margin.control_identifier,
+                tuple(margin.dimensions),
+                tuple(
+                    ControlCell(
+                        {
+                            pack.geography_column: geography,
+                            **dict(zip(dimensions, combination, strict=True)),
+                        },
+                        counts[combination],
+                    )
+                    for combination in product(*categories)
+                ),
+            )
+        )
+    person_controls = ControlTable(
+        margins=tuple(person_margins),
+        dimensions=tuple(sorted(person_dimensions)),
+    )
+    return (
+        ControlTable(
+            margins=tuple(household_margins),
+            dimensions=tuple(sorted(household_dimensions)),
+        ),
+        person_controls,
+    )
+
+
 def _evidence(
     pack_id: str,
     household_controls: ControlTable,
@@ -173,6 +369,7 @@ def _evidence(
     geographies: tuple[str, ...],
     *,
     collective_people: int = 0,
+    private_people: int = 15,
 ) -> ControlPackEvidence:
     pack = load_control_pack(pack_id)
     return build_control_pack_evidence(
@@ -181,8 +378,8 @@ def _evidence(
         person_controls,
         geographies={
             geography: {
-                "total_population": 15 + collective_people,
-                "persons_in_private_households": 15,
+                "total_population": private_people + collective_people,
+                "persons_in_private_households": private_people,
             }
             for geography in geographies
         },
@@ -215,10 +412,10 @@ def _write_rows(path: Path, rows: list[dict[str, str]]) -> None:
         writer.writerows(rows)
 
 
-def test_lists_eight_explicit_vintage_geography_packs() -> None:
+def test_lists_core_and_expanded_vintage_geography_packs() -> None:
     packs = list_builtin_control_packs()
 
-    assert len(packs) == 8
+    assert len(packs) == 24
     assert {item["census_vintage"] for item in packs} == {2016, 2021}
     assert {item["geography_level"] for item in packs} == {
         "csd",
@@ -231,6 +428,28 @@ def test_lists_eight_explicit_vintage_geography_packs() -> None:
         for item in packs
     )
     assert all(len(str(item["definition_sha256"])) == 64 for item in packs)
+    assert (
+        sum("-core-private-household-" in str(item["identifier"]) for item in packs)
+        == 8
+    )
+    assert sum("-broad-" in str(item["identifier"]) for item in packs) == 8
+    assert (
+        sum(
+            "-expanded-private-household-housing-" in str(item["identifier"])
+            for item in packs
+        )
+        == 8
+    )
+
+
+def test_released_core_pack_definitions_remain_unchanged() -> None:
+    actual = {
+        str(pack["identifier"]): str(pack["definition_sha256"])
+        for pack in list_builtin_control_packs()
+        if "-core-private-household-" in str(pack["identifier"])
+    }
+
+    assert actual == _RELEASED_CORE_PACK_HASHES
 
 
 def test_beginner_api_lists_reads_builds_plans_and_calibrates_pack(
@@ -362,6 +581,142 @@ def test_low_level_calibration_applies_passing_pack_and_records_provenance(
     }
 
 
+@pytest.mark.parametrize("vintage", [2016, 2021])
+def test_broad_pack_plans_and_calibrates_all_reviewed_margins(
+    tmp_path: Path,
+    vintage: int,
+) -> None:
+    geography = _GEOGRAPHY_IDS["da"]
+    pack_id = f"statcan-{vintage}-broad-da-v1"
+    households, persons = _expanded_population(vintage)
+    controls, person_controls = _expanded_tables(
+        pack_id, households, persons, geography=geography
+    )
+    evidence = _evidence(
+        pack_id,
+        controls,
+        person_controls,
+        (geography,),
+        private_people=len(persons),
+    )
+    plan = plan_control_pack(
+        pack_id,
+        households,
+        persons,
+        controls,
+        person_controls,
+        evidence=evidence,
+    )
+
+    assert plan["passed"] is True, [
+        (issue.get("kind"), issue.get("dimension"), issue.get("category"))
+        for issue in plan["issues"]
+    ]
+    assert len(controls.margins) == 9
+    assert len(person_controls.margins) == 5
+    derived_households, _ = apply_control_pack_derivations(
+        load_control_pack(pack_id), households, persons
+    )
+    assert {
+        "household_size_group",
+        "structural_dwelling_type",
+        "bedrooms_group",
+        "rooms_group",
+        "construction_period_group",
+        "repair_group",
+    } <= set(derived_households[0])
+    _, derived_persons = apply_control_pack_derivations(
+        load_control_pack(pack_id), households, persons
+    )
+    assert {
+        "age_group_3",
+        "citizenship_group",
+        "immigration_status_group",
+        "generation_status_group",
+        "visible_minority_group",
+    } <= set(derived_persons[0])
+
+    households_path = tmp_path / f"households-{vintage}.csv"
+    persons_path = tmp_path / f"persons-{vintage}.csv"
+    controls_path = tmp_path / f"controls-{vintage}.csv"
+    person_controls_path = tmp_path / f"person-controls-{vintage}.csv"
+    _write_rows(households_path, households)
+    _write_rows(persons_path, persons)
+    write_control_table(controls_path, controls)
+    write_control_table(person_controls_path, person_controls)
+    report = calibrate_linked_household_csvs(
+        households_path=households_path,
+        persons_path=persons_path,
+        controls_path=controls_path,
+        person_controls_path=person_controls_path,
+        control_pack=pack_id,
+        control_pack_evidence=evidence,
+        geography_dimension="da",
+        geography_column="da",
+        households_out=tmp_path / f"out-households-{vintage}.csv",
+        persons_out=tmp_path / f"out-persons-{vintage}.csv",
+    )
+
+    assert report["control_pack_plan"]["passed"] is True
+    assert report["control_pack"]["identifier"] == pack_id
+    assert report["methodological_diagnostics"]["schema_version"] == (
+        "synthpopcan-validation-profile-v1"
+    )
+
+
+def test_broad_pack_reconciles_each_person_margin_independently() -> None:
+    geography = _GEOGRAPHY_IDS["da"]
+    pack_id = "statcan-2021-broad-da-v1"
+    households, persons = _expanded_population(2021)
+    controls, person_controls = _expanded_tables(
+        pack_id, households, persons, geography=geography
+    )
+    altered_margins: list[ControlMargin] = []
+    for margin in person_controls.margins:
+        cells = list(margin.cells)
+        if "citizenship_group" in margin.dimensions:
+            first = cells[0]
+            cells[0] = ControlCell(dict(first.categories), first.count + 1)
+        altered_margins.append(
+            ControlMargin(margin.name, margin.dimensions, tuple(cells))
+        )
+    altered_person_controls = ControlTable(
+        tuple(altered_margins), person_controls.dimensions
+    )
+    evidence = _evidence(
+        pack_id,
+        controls,
+        altered_person_controls,
+        (geography,),
+        private_people=len(persons),
+    )
+
+    plan = plan_control_pack(
+        pack_id,
+        households,
+        persons,
+        controls,
+        altered_person_controls,
+        evidence=evidence,
+    )
+
+    mismatches = [
+        issue
+        for issue in plan["issues"]
+        if issue["kind"] == "person_control_universe_total_mismatch"
+    ]
+    assert plan["passed"] is False
+    assert len(mismatches) == 1
+    actual_totals = mismatches[0]["actual"]
+    citizenship_key = next(key for key in actual_totals if "citizenship" in key)
+    assert actual_totals[citizenship_key] == len(persons) + 1
+    assert all(
+        total == len(persons)
+        for key, total in actual_totals.items()
+        if key != citizenship_key
+    )
+
+
 def test_low_level_calibration_fails_closed_without_pack_evidence(
     tmp_path: Path,
 ) -> None:
@@ -485,10 +840,16 @@ def test_registry_records_reviewed_crosswalks_and_explicit_deferred_fields() -> 
     statuses = {field.concept_identifier: field.status for field in registry.fields}
 
     assert registry.schema_version == COMPATIBILITY_REGISTRY_SCHEMA_VERSION
-    assert registry.revision == "2026-08-10"
-    assert len(controls) == 6
+    assert registry.revision == "2026-08-19"
+    assert len(controls) == 28
     assert statuses["household.size"] == "implemented"
-    assert statuses["household.dwelling-type"] == "planned"
+    assert statuses["household.dwelling-type"] == "implemented"
+    assert statuses["household.rooms"] == "implemented"
+    assert statuses["household.repair"] == "implemented"
+    assert statuses["person.citizenship"] == "implemented"
+    assert statuses["person.immigration-status"] == "implemented"
+    assert statuses["person.generation-status"] == "implemented"
+    assert statuses["person.visible-minority"] == "implemented"
     assert statuses["household.dwelling-value"] == "unavailable"
     age_2021 = controls["statcan.2021.private-age-gender.v1"]
     assert age_2021.source.root_characteristic_id == "8"
@@ -502,6 +863,14 @@ def test_registry_records_reviewed_crosswalks_and_explicit_deferred_fields() -> 
         "C2_COUNT_MEN+"
     ]
     assert age_2021.suppression.suppressed_cell == "exclude-geography"
+    dwelling_type = controls["statcan.2021.dwelling-type.v1"]
+    assert dwelling_type.source.root_characteristic_id == "41"
+    assert dwelling_type.candidate_derivations[0].categories["2"] == "apartment"
+    construction = controls["statcan.2016.construction-period.v1"]
+    assert construction.candidate_derivations[0].categories["1"] == ("1960_or_before")
+    generation = controls["statcan.2021.generation-status.v1"]
+    assert generation.universe.identifier == "private-household-persons"
+    assert generation.candidate_derivations[0].categories["3"] == "second"
 
 
 def test_strict_registry_models_reject_contradictory_nested_semantics() -> None:
@@ -1092,8 +1461,22 @@ def test_bounded_core_pack_plan_and_fit_preserve_whole_households(
     assert plan["field_status"]["household"]["coarsened_derived_fields"] == [
         "household_size_group"
     ]
-    assert plan["field_status"]["household"]["uncontrolled_fields"] == ["DTYPE"]
-    assert plan["field_status"]["person"]["uncontrolled_fields"] == ["TOTINC"]
+    assert plan["field_status"]["household"]["uncontrolled_fields"] == [
+        "BEDRM",
+        "BUILT",
+        "CONDO",
+        "DTYPE",
+        "NOS",
+        "REPAIR",
+        "ROOM",
+    ]
+    assert plan["field_status"]["person"]["uncontrolled_fields"] == [
+        "CITIZEN",
+        "GENSTAT",
+        "IMMSTAT",
+        "TOTINC",
+        "VISMIN",
+    ]
     assert plan["field_status"]["person"]["coarsened_source_fields"] == ["AGEGRP"]
     raw_age = next(
         field

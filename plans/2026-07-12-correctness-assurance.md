@@ -5,7 +5,8 @@ Created: 2026-07-12\
 Last updated: 2026-08-19\
 Target: ongoing correctness and release evidence\
 Next action: preserve the frozen `1.x` interface and exact-commit assurance
-gates in later releases\
+gates; reassess Python 3.15 support after its final release and ecosystem-wheel
+availability in November 2026\
 Roadmap: [PLANS.md](../PLANS.md) | [Plan index](README.md)
 
 ## Current Contract
@@ -64,6 +65,23 @@ Later `1.x` releases must preserve:
 
 The operator sequence is in [RELEASING.md](../RELEASING.md). Release history
 belongs in [CHANGELOG.md](../CHANGELOG.md), not in this plan.
+
+## Scheduled Runtime Review
+
+Keep Python 3.11 through 3.14 as the supported, blocking CI matrix for now. In
+November 2026, after Python 3.15 final has had time to reach downstream binary
+packages, test the complete locked dependency graph and full project gate on
+3.15. Add it to the supported matrix only when runtime and `model-build`
+dependencies install without ad hoc system build requirements and the full
+suite passes.
+
+An initial local check on Python 3.15.0rc1 found no core SynthPopCan failure:
+the locked runtime installed from source, package imports and version metadata
+worked, and a bounded API/IPF/schema slice passed 100 tests. The optional
+`model-build` environment was not ready on macOS ARM64 because SciPy lacked a
+matching wheel and its source build required a separately installed OpenBLAS.
+This is useful prerelease evidence, not a support claim or a reason to expand
+the current CI matrix.
 
 ## Conditional Extensions
 

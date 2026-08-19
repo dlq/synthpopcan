@@ -64,8 +64,9 @@ The current workflow has six steps:
 
 1. **Prepare boundaries** once when we want to map the result.
 1. **Generate** candidate linked household/person rows from a model package.
-1. **Build controls** from the StatCan Census Profile (household size and tenure
-   margins per target geography).
+1. **Build controls** from the StatCan Census Profile (the compatible
+   household-size/tenure pair, or all nine reviewed household margins from an
+   expanded pack).
 1. **Estimate** the run size before launching a large calibration.
 1. **Calibrate** candidate households to household controls and, when supplied,
    linked-person controls, assigning each realized household to a CSD, CT, ADA,
@@ -77,12 +78,13 @@ their assigned household. Optional person controls refine the household weights
 using linked-person category counts; they never separate people from their
 household.
 
-The current preparer implements household size and tenure. The
+The current preparer implements household size and tenure by default and all
+nine compatible household margins when an expanded pack is selected. The
 {doc}`small-area-control-coverage` inventory records which other all-fields
 attributes have potential 2016 and 2021 Profile controls, how widely their
 source universes are available, and which fields remain uncontrolled.
 
-## Reviewed Control Packs (0.9)
+## Reviewed Control Packs
 
 A **control pack** is a reviewed definition of which margins may be fitted
 together. It records the Census vintage and geography level, source rows,
@@ -91,21 +93,40 @@ suppression policy, and known limitations. It does **not** contain Census
 counts. Household and person counts remain ordinary normalized control CSVs so
 we can inspect, cite, replace, and hash the exact values used by one study.
 
-SynthPopCan 0.9 includes eight definition-only core packs: one for each
-combination of the 2016 or 2021 Census and CSD, CT, ADA, or DA geography. Each
-combines:
+SynthPopCan includes 24 definition-only packs: eight stable core packs, eight
+additive expanded-housing packs, and eight broad packs, one of each
+for every combination of the 2016 or 2021 Census and CSD, CT, ADA, or DA
+geography. Each core pack combines:
 
 - private-household size, top-coded to the published five-or-more category;
 - private-household tenure; and
 - broad linked-person age by sex (2016) or gender (2021), coarsened to the
   reviewed common categories.
 
+Each expanded pack retains those three margins and adds dwelling type,
+condominium status, bedrooms, rooms, housing suitability, construction period,
+and repair condition. Those seven families share the private-household or
+occupied-private-dwelling universe and can be fitted together without changing
+the household-first calibration contract.
+
+Each broad pack additionally controls citizenship, immigrant status,
+generation status, and visible-minority status. Their Profile roots already
+measure people in private households, so they can refine the same whole-
+household weights without introducing an age-restricted or immigrant-only
+universe.
+
+`geo controls --control-pack` prepares the household table. Prepare the pack's
+person margins as a separate normalized `person-controls.csv`, then build the
+bound universe evidence before calibration. The command's next-step output
+shows all three required paths; it never substitutes household counts for
+person counts.
+
 List and inspect them before preparing counts:
 
 ```bash
 synthpopcan geo control-packs list
 synthpopcan geo control-packs show \
-  statcan-2021-core-private-household-da-v1
+  statcan-2021-broad-da-v1
 ```
 
 The broad age source is a total-population Profile vector, while the modelled
@@ -272,9 +293,9 @@ synthpopcan geo controls \
 Here `24` selects Quebec CSD identifiers; use the corresponding two-digit
 province or territory code for another region. Every CSD returned by the
 current 2016 and 2021 control extraction joins to its vintage's national
-boundary file. Some boundary features lack a complete household-size and
-tenure vector because of empty geographies, suppression, or unavailable
-characteristics, and are therefore intentionally omitted from calibration.
+boundary file. Some boundary features lack a complete required control vector
+because of empty geographies, suppression, or unavailable characteristics, and
+are therefore intentionally omitted from calibration.
 
 The national ADA geometry is detailed and much larger than the CT product. For
 countrywide overview maps, `--coord-precision 3` reduces conversion time and
@@ -570,11 +591,15 @@ verified package in the local model cache. Candidate generation writes
 ```
 
 The `geo controls` command reads a StatCan 2247-variable Census Profile bulk
-CSV, extracts household-size (members 52–56: 1, 2, 3, 4, 5-or-more persons) and
-tenure (members 1618–1620: owner, renter, and band housing) margins per
-geography, combines renter and band housing to match the hierarchical PUMF
-`TENUR=2` category, scales both to
-the target household count, and writes:
+CSV. By default it extracts the compatible household-size and tenure margins.
+Select an expanded pack to extract nine household margins: size, tenure,
+dwelling type, condominium, bedrooms, rooms, housing suitability, construction
+period, and repair condition. It applies each pack's vintage-specific category
+mapping, requires every root and child row, and reconciles each child vector to
+its published root within the strict worst-case bound for Statistics Canada's
+base-five randomized rounding. A subtotal can therefore never be counted again
+beside its children. It then scales every complete margin to the target
+household count and writes:
 
 - a long-format controls CSV ready for `geo calibrate`;
 - a recoded linked-population directory whose `households.csv` has a
@@ -582,8 +607,8 @@ the target household count, and writes:
   where 5, 6, 7, and larger households are grouped as `5`, matching the Census
   categories while preserving the exact `household_size` column.
 
-Geographies missing either margin are dropped automatically, preventing the IPF
-dimension-mismatch error in `geo calibrate`.
+Geographies missing any required margin are dropped automatically, preventing
+the IPF dimension-mismatch error in `geo calibrate`.
 Calibration preflight also rejects candidate category values absent from a
 control margin. Otherwise those rows would retain unconstrained weights and
 could prevent the fitted margin total from reaching its target.
@@ -594,6 +619,7 @@ synthpopcan geo controls \
   --geo-column ct \
   --geo-prefix 421 \
   --target 338000 \
+  --control-pack statcan-2016-expanded-private-household-housing-ct-v1 \
   --candidates candidates/
 ```
 
@@ -607,6 +633,7 @@ category while retaining exact `household_size`.
 | `--profile` | StatCan Census Profile bulk CSV (2247-variable form). This walkthrough fetches the CT product in Step 0. |
 | `--geo-column` | Target geography type: `ada`, `ct`, `csd`, `cd`, or `da`. Determines which `GEO_LEVEL` rows to read. |
 | `--target` | Total household count to scale controls to (338 000 for this Quebec City example). |
+| `--control-pack` | Optional reviewed core or expanded pack. Expanded housing packs extract all nine household margins; omission preserves the household-size/tenure path. |
 | `--candidates` | Linked population directory to recode; exact `household_size` is preserved and `household_size_group` is added for Census Profile controls. |
 | `--geo-prefix` | Filter to geographies whose ID starts with this prefix. Use the two-digit province code for ADAs (e.g. `35`=Ontario, `24`=Quebec) or the three-digit CMA code for CTs (e.g. `535`=Toronto, `462`=Montreal). |
 | `--controls-out` | Output controls CSV. Defaults to `<candidates-name>-controls-<target>.csv`. |
@@ -881,7 +908,8 @@ increasing concurrency or resuming the complete plan.
 
 ### `geo controls`
 
-Builds household-size and tenure controls from a Census Profile bulk CSV.
+Builds household-size and tenure controls from a Census Profile bulk CSV, or
+all reviewed household margins declared by `--control-pack`.
 When `--candidates` is supplied, it also writes a linked population directory
 whose household file includes a Census-compatible `household_size_group` column.
 
@@ -900,6 +928,8 @@ Important options:
 - `--geo-column`: target geography type, such as `ada`, `ct`, `csd`, `cd`, or
   `da`.
 - `--target`: total household count used to scale the controls.
+- `--control-pack`: optional reviewed pack identifier. Its Census vintage and
+  geography must match the Profile and `--geo-column`.
 - `--geo-prefix`: optional prefix filter. Use province codes for ADAs and CMA
   codes for CTs.
 - `--geo-level-value`: override the profile's `GEO_LEVEL` value only for a
@@ -918,7 +948,7 @@ Important options:
 Inspects and applies the reviewed definition-only pack contracts introduced in
 0.9:
 
-- `list [--format summary|json]` lists the eight built-ins;
+- `list [--format summary|json]` lists the 24 built-ins;
 - `show PACK [--out pack.json]` renders a built-in or strict local manifest;
 - `evidence PACK --controls ... --person-controls ... --universe-evidence ... --out ...` binds a pack to the exact normalized counts and companion
   private-household population evidence; and

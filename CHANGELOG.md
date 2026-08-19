@@ -4,15 +4,36 @@ All notable public changes to SynthPopCan are tracked here.
 
 ## Unreleased
 
-- Rationalized project documentation into stable workflow landing pages,
+## 1.1.0 - 2026-08-19
+
+Broader compatible small-area controls with runtime-enforced invariants.
+
+- Establish a bounded post-1.0 release train: commit the current compatible
+  control expansion to `1.1.0`, scope conditional age-15+ person controls for
+  `1.2.0`, and treat language, migration-detail, income, and approximate
+  controls in `1.3.0` as an evidence-dependent forecast rather than a promise.
+
+- Make fail-closed runtime invariants part of the `1.1.0` control-pack contract:
+  validate pack and geography identity, complete vectors, universes, counts,
+  candidate support, structural zeros, linkage, checksums, convergence, and
+  residual evidence on each actual run rather than treating them as test-only
+  assumptions. Reconcile published household child vectors to their roots
+  within the strict base-five randomized-rounding bound before scaling; retain
+  official aggregate 2016 CT and 2021 ADA slices as regression fixtures and
+  exclude subtotals that would double-count their component rows.
+
+- Add 16 expanded 2016/2021 CSD, CT, ADA, and DA control packs covering seven
+  additional housing families plus citizenship, immigrant status, generation
+  status, and visible-minority status for people in private households. Extend
+  `geo controls --control-pack` to extract and reconcile all nine reviewed
+  household margins while retaining the stable core packs and household-first
+  linked-person calibration.
+
+- Rationalize project documentation into stable workflow landing pages,
   focused advanced references, concise active maintenance plans, preserved
   dated research and plan baselines, and a classified repository-script index.
-
-- Rationalize the Markdown information architecture: keep the top-level
-  roadmap focused on current maintenance and conditional research, define a
-  lifecycle for active and archived plans, document which project record owns
-  each kind of information, and label historical research and release evidence
-  without rewriting its original context.
+  Keep the top-level roadmap focused on current maintenance and conditional
+  research, and define an explicit lifecycle for active and archived plans.
 
 - Record the minted `1.0.0` Zenodo version DOI and the completed Software
   Heritage snapshot, release object, and source revision in citation metadata

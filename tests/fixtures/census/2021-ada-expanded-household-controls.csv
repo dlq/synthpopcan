@@ -1,0 +1,50 @@
+GEO_LEVEL,DGUID,ALT_GEO_CODE,CHARACTERISTIC_ID,CHARACTERISTIC_NAME,C1_COUNT_TOTAL
+Aggregate dissemination area,2021S051610010001,10010001,41,Total - Occupied private dwellings by structural type of dwelling - 100% data,4120
+Aggregate dissemination area,2021S051610010001,10010001,42,  Single-detached house,3980
+Aggregate dissemination area,2021S051610010001,10010001,43,  Semi-detached house,10
+Aggregate dissemination area,2021S051610010001,10010001,44,  Row house,20
+Aggregate dissemination area,2021S051610010001,10010001,45,  Apartment or flat in a duplex,20
+Aggregate dissemination area,2021S051610010001,10010001,46,  Apartment in a building that has fewer than five storeys,65
+Aggregate dissemination area,2021S051610010001,10010001,47,  Apartment in a building that has five or more storeys,0
+Aggregate dissemination area,2021S051610010001,10010001,48,  Other single-attached house,0
+Aggregate dissemination area,2021S051610010001,10010001,49,  Movable dwelling,30
+Aggregate dissemination area,2021S051610010001,10010001,50,Total - Private households by household size - 100% data,4125
+Aggregate dissemination area,2021S051610010001,10010001,51,  1 person,1180
+Aggregate dissemination area,2021S051610010001,10010001,52,  2 persons,1900
+Aggregate dissemination area,2021S051610010001,10010001,53,  3 persons,535
+Aggregate dissemination area,2021S051610010001,10010001,54,  4 persons,370
+Aggregate dissemination area,2021S051610010001,10010001,55,  5 or more persons,135
+Aggregate dissemination area,2021S051610010001,10010001,1414,Total - Private households by tenure - 25% sample data,4120
+Aggregate dissemination area,2021S051610010001,10010001,1415,  Owner,3785
+Aggregate dissemination area,2021S051610010001,10010001,1416,  Renter,335
+Aggregate dissemination area,2021S051610010001,10010001,1417,"  Dwelling provided by the local government, First Nation or Indian band",0
+Aggregate dissemination area,2021S051610010001,10010001,1418,Total - Occupied private dwellings by condominium status - 25% sample data,4120
+Aggregate dissemination area,2021S051610010001,10010001,1419,  Condominium,20
+Aggregate dissemination area,2021S051610010001,10010001,1420,  Not condominium,4100
+Aggregate dissemination area,2021S051610010001,10010001,1421,Total - Occupied private dwellings by number of bedrooms - 25% sample data,4120
+Aggregate dissemination area,2021S051610010001,10010001,1422,  No bedrooms,0
+Aggregate dissemination area,2021S051610010001,10010001,1423,  1 bedroom,140
+Aggregate dissemination area,2021S051610010001,10010001,1424,  2 bedrooms,1045
+Aggregate dissemination area,2021S051610010001,10010001,1425,  3 bedrooms,2190
+Aggregate dissemination area,2021S051610010001,10010001,1426,  4 or more bedrooms,755
+Aggregate dissemination area,2021S051610010001,10010001,1427,Total - Occupied private dwellings by number of rooms - 25% sample data,4120
+Aggregate dissemination area,2021S051610010001,10010001,1428,  1 to 4 rooms,495
+Aggregate dissemination area,2021S051610010001,10010001,1429,  5 rooms,660
+Aggregate dissemination area,2021S051610010001,10010001,1430,  6 rooms,845
+Aggregate dissemination area,2021S051610010001,10010001,1431,  7 rooms,780
+Aggregate dissemination area,2021S051610010001,10010001,1432,  8 or more rooms,1340
+Aggregate dissemination area,2021S051610010001,10010001,1437,Total - Private households by housing suitability - 25% sample data,4120
+Aggregate dissemination area,2021S051610010001,10010001,1438,  Suitable,4075
+Aggregate dissemination area,2021S051610010001,10010001,1439,  Not suitable,45
+Aggregate dissemination area,2021S051610010001,10010001,1440,Total - Occupied private dwellings by period of construction - 25% sample data,4120
+Aggregate dissemination area,2021S051610010001,10010001,1441,  1960 or before,960
+Aggregate dissemination area,2021S051610010001,10010001,1442,  1961 to 1980,1305
+Aggregate dissemination area,2021S051610010001,10010001,1443,  1981 to 1990,750
+Aggregate dissemination area,2021S051610010001,10010001,1444,  1991 to 2000,455
+Aggregate dissemination area,2021S051610010001,10010001,1445,  2001 to 2005,120
+Aggregate dissemination area,2021S051610010001,10010001,1446,  2006 to 2010,185
+Aggregate dissemination area,2021S051610010001,10010001,1447,  2011 to 2015,200
+Aggregate dissemination area,2021S051610010001,10010001,1448,  2016 to 2021,140
+Aggregate dissemination area,2021S051610010001,10010001,1449,Total - Occupied private dwellings by dwelling condition - 25% sample data,4120
+Aggregate dissemination area,2021S051610010001,10010001,1450,  Only regular maintenance and minor repairs needed,3855
+Aggregate dissemination area,2021S051610010001,10010001,1451,  Major repairs needed,270

@@ -31,7 +31,7 @@ def test_citation_metadata_matches_release() -> None:
 
     citation = Path("CITATION.cff").read_text()
     readme = Path("README.md").read_text()
-    version_doi = "10.5281/zenodo.21961301"
+    prior_version_doi = "10.5281/zenodo.21961301"
     concept_doi = "10.5281/zenodo.21461463"
     current_snapshot = "swh:1:snp:1d4d40f874206f2abb70d434402bc9034a127845"
     versions = re.findall(r'^\s*version:\s*"([^"]+)"', citation, re.MULTILINE)
@@ -72,12 +72,17 @@ def test_citation_metadata_matches_release() -> None:
         assert primary_dois == [version_identifier.group(1)] * 2, (
             "the versioned software and preferred citation should use the version DOI"
         )
-    assert version_identifier is not None
-    assert version_identifier.group(1) == version_doi
     assert f"value: {concept_doi}" in citation
-    assert f"value: {version_doi}" in citation
-    assert f"value: {current_snapshot}" in citation
-    assert version_doi in readme
+    if synthpopcan.__version__ == "1.0.0":
+        assert version_identifier is not None
+        assert version_identifier.group(1) == prior_version_doi
+        assert f"value: {prior_version_doi}" in citation
+        assert f"value: {current_snapshot}" in citation
+    else:
+        assert version_identifier is None
+        assert prior_version_doi not in citation
+        assert current_snapshot not in citation
+    assert prior_version_doi in readme
 
 
 def test_citation_schema_validation_is_a_local_and_ci_gate() -> None:
@@ -117,7 +122,10 @@ def test_dated_stewardship_records_are_public_and_preservation_is_consistent() -
     ):
         assert record in landing
     assert snapshot in landing
-    assert snapshot in citation
+    if synthpopcan.__version__ == "1.0.0":
+        assert snapshot in citation
+    else:
+        assert snapshot not in citation
     assert snapshot in preservation
     assert release in landing
     assert release in preservation

@@ -1,4 +1,4 @@
-"""Contract tests for the pre-1.0 hierarchical PUMF field inventory."""
+"""Contract tests for the reviewed hierarchical PUMF field inventory."""
 
 from __future__ import annotations
 
@@ -181,7 +181,7 @@ def test_every_field_has_a_complete_review_decision(
             "provisional_defer",
         }
         assert field["control_compatibility"]["status"] in {
-            "candidate_requires_crosswalk",
+            "implemented",
             "uncontrolled",
         }
         assert field["observed"]["entity_observations"] > 0
@@ -193,6 +193,37 @@ def test_every_field_has_a_complete_review_decision(
             + field["observed"]["not_applicable_observations"]
             == field["observed"]["entity_observations"]
         )
+
+
+@pytest.mark.parametrize("vintage", [2016, 2021])
+def test_broad_pack_control_fields_are_marked_implemented(
+    inventory: dict[str, object], vintage: int
+) -> None:
+    fields = inventory["fields"]
+    assert isinstance(fields, list)
+    expected = {
+        "AGEGRP",
+        "CITIZEN",
+        "IMMSTAT",
+        "GENSTAT",
+        "VISMIN",
+        "TENUR",
+        "DTYPE",
+        "CONDO",
+        "BEDRM",
+        "ROOM",
+        "NOS",
+        "BUILT",
+        "REPAIR",
+        "SEX" if vintage == 2016 else "GENDER",
+    }
+    statuses = {
+        field["source_name"]: field["control_compatibility"]["status"]
+        for field in fields
+        if field["census_vintage"] == vintage
+    }
+
+    assert {name for name in expected if statuses[name] == "implemented"} == expected
 
 
 def test_artifact_contains_only_published_category_metadata(

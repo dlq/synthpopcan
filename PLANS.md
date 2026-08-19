@@ -2,7 +2,7 @@
 
 Status: `1.x` maintenance roadmap\
 Last updated: 2026-08-19\
-Current software version: `1.0.0`
+Current software version: `1.1.0`
 
 ## How To Use This Roadmap
 
@@ -34,9 +34,12 @@ when later evidence changes the interpretation.
 
 ## Current Priorities
 
-There is no committed feature release after `1.0.0`. The current obligation is
-to maintain the stable `1.x` boundary and accept additive work only when it has
-a concrete use, an owner, and evidence appropriate to its claims.
+The bounded `1.1.0` small-area control expansion is the current release
+candidate; its local acceptance and installed-distribution gates are complete.
+`1.2.0` has a scoped conditional-person tranche, while `1.3.0` is a forecast
+rather than a commitment. The project plans only this three-release horizon:
+one current release, one scoped successor, and one evidence-dependent forecast.
+Work beyond it remains trigger-based research.
 
 | Priority | Current commitment | Detailed owner |
 | --- | --- | --- |
@@ -44,17 +47,31 @@ a concrete use, an owner, and evidence appropriate to its claims.
 | Correctness and release evidence | Keep exact-commit CI, coverage, correctness, installed-distribution, release-evidence, and reproduction gates blocking later releases. | [Correctness assurance plan](plans/2026-07-12-correctness-assurance.md) |
 | Stewardship and publication | Preserve the verified `1.0.0` DOI and Software Heritage identifiers; retain scoped licensing, non-overwriting archives, support boundaries, and exact release provenance. | [Stewardship plan](plans/2026-07-19-research-software-stewardship.md), [ADR-0014](adr/0014-separate-prepared-model-and-source-licensing.md) |
 | Type-safety maintenance | Keep package-wide Pyright `standard` blocking and expand the strict-clean module set without weakening dynamic-data validation. | [Strict typing plan](plans/2026-08-01-strict-typing.md) |
+| Release train | Preserve the additive `1.1.0` control expansion and admit later families only through their stated universe and evidence gates. | [Post-1.0 release train](plans/2026-08-19-post-1-0-release-train.md) |
+
+## Release Horizon
+
+| Release | Confidence | Target window | Planned outcome |
+| --- | --- | --- | --- |
+| `1.1.0` | Release candidate complete | August 2026 | 24 reviewed control packs and 14 compatible control families, including broad packs that jointly apply nine household and five person margins with explicit fail-closed runtime invariants. |
+| `1.2.0` | Scoped following release | November–December 2026 | Conditional age-15+ marital-status, education, labour-force, and work-activity controls that pass explicit universe and residual gates. |
+| `1.3.0` | Forecast, not committed | First half of 2027 | Evidence-qualified language, immigrant place-of-birth, and income-band controls; approximate mortgage/subsidy only as an opt-in tier. |
+
+Patch releases remain demand-driven. Family entities, collective populations,
+richer model profiles, and breaking changes have prerequisites rather than
+dates. The detailed scope and movement rules live in the
+[post-1.0 release train](plans/2026-08-19-post-1-0-release-train.md).
 
 ## Conditional Research Tracks
 
-These plans are active as research scopes, but none is a promised release.
-Work begins only after its trigger is satisfied and a bounded first tranche is
-named.
+These plans own research beyond the committed `1.1.0` scope. A family assigned
+to provisional `1.2.0` or forecast `1.3.0` still returns here if its source,
+universe, privacy, or validation gate fails.
 
 | Track | Trigger for implementation | Plan |
 | --- | --- | --- |
 | Richer hierarchical models | A concrete research use justifies one coherent additive field family and a separately versioned profile. | [Expanded hierarchical tree models](plans/2026-08-01-expanded-hierarchical-tree-models.md) |
-| Broader small-area controls | A reviewed control family has compatible model fields, explicit source and universe evidence, suppression handling, and a bounded validation case. | [Expanded small-area controls](plans/2026-08-01-expanded-small-area-controls.md) |
+| Post-`1.1.0` small-area controls | A conditional person, economic, language, or approximate family passes the release train's explicit universe, suppression, compatibility, and bounded validation gate. | [Expanded small-area controls](plans/2026-08-01-expanded-small-area-controls.md) |
 | Uncertainty and disclosure evidence | A study requires quantified candidate-pool, control, seed, model, or privacy uncertainty beyond the released bounded evidence. | [Methodological validation and uncertainty](plans/2026-08-02-methodological-validation-and-uncertainty.md) |
 | One target adapter | A real downstream consumer supplies a pinned target contract, authorized fixture, and maintainable import smoke test. | [Simulation interoperability](plans/2026-07-15-simulation-interoperability.md) |
 

@@ -12,6 +12,12 @@ from click.testing import CliRunner
 import synthpopcan
 from synthpopcan._interface import validate_installed_public_interface
 from synthpopcan.cli import cli
+from synthpopcan.control_packs import (
+    list_builtin_control_packs,
+    load_control_pack,
+    plan_control_pack,
+)
+from synthpopcan.controls import ControlTable
 from synthpopcan.enrichment import SourceProfile, register_resource
 from synthpopcan.geography import statcan_geography_universe
 from synthpopcan.ipf import IPFMargin, fit_ipf
@@ -45,6 +51,24 @@ assert (
 )
 assert files("synthpopcan").joinpath("archive_correction_evidence_v1.json").is_file()
 validate_installed_public_interface()
+
+packs = list_builtin_control_packs()
+assert len(packs) == 24
+assert sum("-broad-" in str(pack["identifier"]) for pack in packs) == 8
+broad_pack = load_control_pack("statcan-2021-broad-da-v1")
+assert len(broad_pack.margins) == 14
+empty_controls = ControlTable(margins=(), dimensions=())
+failed_plan = plan_control_pack(
+    broad_pack,
+    [],
+    [],
+    empty_controls,
+    empty_controls,
+)
+assert failed_plan["passed"] is False
+assert "missing_control_pack_evidence" in {
+    issue["kind"] for issue in failed_plan["issues"]
+}
 
 geography = statcan_geography_universe(2021, "da", "DAUID")
 population = synthpopcan.write_linked_population(
@@ -126,5 +150,12 @@ assert synthpopcan.validate_exchange_bundle(exchange.directory)["passed"] is Tru
 help_result = CliRunner().invoke(cli, ["--help"])
 assert help_result.exit_code == 0
 assert "SynthPopCan" in help_result.output
+
+show_pack_result = CliRunner().invoke(
+    cli,
+    ["geo", "control-packs", "show", "statcan-2021-broad-da-v1"],
+)
+assert show_pack_result.exit_code == 0
+assert "statcan-2021-broad-da-v1" in show_pack_result.output
 
 print(f"Installed wheel smoke passed: {package_path}")

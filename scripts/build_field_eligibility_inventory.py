@@ -1,4 +1,4 @@
-"""Build the reviewed pre-1.0 hierarchical PUMF field inventory.
+"""Build the reviewed hierarchical PUMF field inventory.
 
 The inventory is deliberately evidence, not a new model profile.  It joins
 locally acquired public-use CSV headers and Statistics Canada metadata to the
@@ -882,14 +882,24 @@ def invariants(name: str) -> list[str]:
 
 
 def control_compatibility(name: str, vintage: int) -> dict[str, Any]:
-    """Record a reviewed control candidate or an explicit uncontrolled result."""
+    """Record an implemented control or an explicit uncontrolled result."""
 
     families = {
-        "AGEGRP": ("age", "persons_in_private_households"),
-        "SEX": ("sex", "persons_in_private_households"),
-        "GENDER": ("gender", "persons_in_private_households"),
-        "TENUR": ("tenure", "private_households"),
-        "DTYPE": ("structural_dwelling_type", "private_households"),
+        "AGEGRP": ("private-age-gender", "private-household-persons-zero-collective"),
+        "SEX": ("private-age-gender", "private-household-persons-zero-collective"),
+        "GENDER": ("private-age-gender", "private-household-persons-zero-collective"),
+        "TENUR": ("tenure", "private-households"),
+        "DTYPE": ("dwelling-type", "private-households"),
+        "CONDO": ("condominium", "private-households"),
+        "BEDRM": ("bedrooms", "private-households"),
+        "ROOM": ("rooms", "private-households"),
+        "NOS": ("housing-suitability", "private-households"),
+        "BUILT": ("construction-period", "private-households"),
+        "REPAIR": ("repair-condition", "private-households"),
+        "CITIZEN": ("citizenship", "private-household-persons"),
+        "IMMSTAT": ("immigration-status", "private-household-persons"),
+        "GENSTAT": ("generation-status", "private-household-persons"),
+        "VISMIN": ("visible-minority", "private-household-persons"),
     }
     candidate = families.get(name)
     if candidate is None:
@@ -897,14 +907,17 @@ def control_compatibility(name: str, vintage: int) -> dict[str, Any]:
             "status": "uncontrolled",
             "candidate_family": None,
             "universe": None,
-            "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+            "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         }
     family, universe = candidate
     return {
-        "status": "candidate_requires_crosswalk",
-        "candidate_family": f"statcan-{vintage}-{family}",
+        "status": "implemented",
+        "candidate_family": f"statcan.{vintage}.{family}.v1",
         "universe": universe,
-        "note": "Candidate only; local control claims require a versioned pack and evidence.",
+        "note": (
+            "Implemented in reviewed core or expanded control packs; local control "
+            "claims still require compatible pack evidence."
+        ),
     }
 
 
@@ -1010,7 +1023,7 @@ def review_decision(name: str, role: str, control: dict[str, Any]) -> dict[str, 
             "Present in the source but omitted intentionally until its entity, applicability, "
             "representation, controls, interpretation, and privacy evidence are reviewed."
         )
-    if control["status"] == "candidate_requires_crosswalk" and role != "target":
+    if control["status"] == "implemented" and role != "target":
         rationale += " A possible control family does not itself authorize modelling."
     return {
         "status": status,
@@ -1043,7 +1056,7 @@ def repo_path(path: Path) -> str:
 
 
 def main() -> None:
-    """Regenerate the committed pre-1.0 inventory."""
+    """Regenerate the committed field inventory."""
 
     payload = build_inventory()
     OUTPUT.parent.mkdir(parents=True, exist_ok=True)

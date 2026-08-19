@@ -3049,6 +3049,23 @@
             "is_flag": false,
             "kind": "option",
             "multiple": false,
+            "name": "control_pack_identifier",
+            "names": [
+              "--control-pack"
+            ],
+            "nargs": 1,
+            "required": false,
+            "type": {
+              "name": "text"
+            }
+          },
+          {
+            "count": false,
+            "default": null,
+            "flag_value": null,
+            "is_flag": false,
+            "kind": "option",
+            "multiple": false,
             "name": "candidates_path",
             "names": [
               "--candidates"

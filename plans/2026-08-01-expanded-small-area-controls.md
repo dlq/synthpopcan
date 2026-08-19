@@ -1,14 +1,18 @@
 # Expanded Small-Area Controls Plan
 
-Status: conditional research; core `0.9.0` packs completed\
+Status: `1.1.0` release candidate complete; later tranches scoped or forecast\
 Created: 2026-08-01\
 Last updated: 2026-08-19\
-Target: core private-household packs for `0.9.0`; broader controls and
-population universes after `1.0.0`\
-Next action: when a concrete research use justifies it, select one additional
-reviewed control family with a bounded source, universe, suppression, and
-validation case\
+Target: `1.1.0` broad compatible packs; conditional person controls in `1.2.0`\
+Next action: preserve the completed 24-pack/14-family gate through exact-commit
+`1.1.0` publication, then review the age-15+ marital, education, labour-force,
+and work-activity crosswalks for `1.2.0`\
 Roadmap: [PLANS.md](../PLANS.md) | [Plan index](README.md)
+
+Release sequencing and confidence are defined in the
+[post-1.0 release train](2026-08-19-post-1-0-release-train.md). This plan owns
+the control-specific method and evidence; the release-train plan owns which
+accepted tranche is targeted to which minor release.
 
 ## Outcome
 
@@ -45,7 +49,10 @@ disclosure-risk methods.
 
 ## Current Baseline
 
-The released control preparer builds household-size and tenure margins. The
+The compatible default control preparer builds household-size and tenure
+margins. Expanded packs now build nine reviewed household margins: size,
+tenure, dwelling type, condominium status, bedrooms, rooms, housing
+suitability, construction period, and repair condition. The
 linked calibration engine can already:
 
 - consume multiple normalized household margins;
@@ -64,9 +71,66 @@ levels. It identifies:
 - two lower-confidence fields derivable from rounded percentages; and
 - five fields without a matching Census Profile count distribution.
 
-That inventory is a ceiling, not an implementation list. Most candidate
-families still need reviewed child-category crosswalks, universe alignment,
-suppression handling, fixtures, and calibration evidence.
+That inventory is a ceiling, not an implementation list. Fourteen families
+covering 15 modeled fields are now implemented in core or expanded packs. The
+remaining nine count-based families still need reviewed child-category
+crosswalks, universe alignment, suppression handling, fixtures, and calibration
+evidence.
+
+Those nine families are assigned provisionally rather than left in an
+unbounded queue:
+
+- `1.2.0`: marital status, education, labour-force status, and work activity;
+- `1.3.0`: mother tongue, home language, place of birth, employment income,
+  and total income; and
+- `1.3.0` opt-in only: the percentage-derived mortgage and subsidy candidates,
+  if their approximation gate passes.
+
+Assignment is not acceptance. A family that cannot satisfy its universe,
+crosswalk, suppression, support, and residual evidence remains uncontrolled
+and returns to conditional research.
+
+## `1.1.0` Runtime Invariants
+
+The expanded control surface must enforce its scientific and structural
+assumptions while a plan or calibration is running. Tests demonstrate the
+behavior, but tests are not a substitute for validating each user's actual
+inputs. The runtime must fail closed before fitting when any of these invariants
+is false:
+
+- the pack identifier, definition hash, registry revision, Census vintage,
+  geography level, namespace, and linked-population schema agree;
+- every required margin has exactly one complete, non-duplicated category
+  vector for every admitted geography;
+- household and person controls use the same explicit geography set;
+- each household margin reconciles to the declared private-household total;
+- each person margin independently reconciles to persons in private households
+  rather than being summed across margins;
+- every count and tolerance is finite and nonnegative, and suppressed, missing,
+  zero, rounded, and not-applicable states remain distinguishable;
+- every positive target category has candidate support, every declared
+  structural zero is respected, and uncontrolled candidate categories remain
+  visible;
+- every person has one valid household link and person contributions alter only
+  whole-household weights; and
+- control tables, universe evidence, pack definitions, and admitted geography
+  sets match their recorded checksums and identities.
+
+A successful calibration must also enforce and record these postconditions:
+
+- solver convergence satisfies the requested tolerance or the run fails;
+- weights and realized multiplicities are finite and nonnegative;
+- household/person linkage and geography inheritance remain intact;
+- fractional fitted residuals and integerized realized residuals are recomputed
+  for every selected margin and geography; and
+- the run manifest records exact inputs, hashes, pack identity, derivations,
+  exclusions, tolerances, residuals, and permitted claim boundary.
+
+Acceptance: public CLI, Python, and local-web paths execute the same invariant
+checks; malformed and near-valid adversarial fixtures fail before producing a
+successful artifact; installed-distribution smoke tests exercise the invariant
+path; and no interface can silently downgrade, remove, or reinterpret a
+required margin.
 
 Future tree profiles may add fields from the 58 currently unmodeled 2016
 source-role columns and 64 corresponding 2021 columns. Presence in a generated
@@ -88,10 +152,9 @@ source and compatibility process below.
   the approximation and tolerance.
 - Never call an uncontrolled model field locally representative.
 - Do not silently discard a geography or margin to make a fit pass.
-- Preserve current household-size/tenure inputs when inexpensive, but do not
-  retain a limiting interface solely for backward compatibility before 1.0.
-  Version and document a replacement when a cleaner control-pack contract
-  requires a break.
+- Preserve the frozen `1.x` household-size/tenure inputs and core pack
+  identifiers. Add new pack identifiers and additive inputs for expanded
+  behavior; reserve an incompatible replacement for a future major release.
 
 ## Completed Pre-`1.0` Baseline
 
@@ -100,7 +163,8 @@ evidence contracts now support reviewed 2016/2021 private-household
 household-size, tenure, and broad age-by-sex/gender definitions at CSD, CT,
 ADA, and DA levels. Their shared API, CLI, and local-web extension points fail
 closed on incompatible counts, candidates, geography, or universe evidence.
-The broader families below remain post-1.0 research work.
+The compatible household and private-household-person tranches below were
+added after 1.0; conditional person and economic families remain research work.
 
 The `0.9.0` tranche implemented only:
 
@@ -114,7 +178,12 @@ The `0.9.0` tranche implemented only:
 - the generic CLI/API/web extension points needed to add later packs without
   redesigning the frozen surface.
 
-The remaining candidate control families, conditional/economic packs,
+The first post-1.0 tranche adds reviewed dwelling type, condominium, bedrooms,
+rooms, housing suitability, construction period, and repair controls to eight
+expanded packs without changing the core packs. A second eight-pack tier adds
+citizenship, immigrant status, generation status, and visible-minority status
+from direct private-household-person Profile universes. The remaining candidate
+control families, conditional/economic packs,
 family-aware controls, exhaustive geography coverage, collective/non-private
 household implementation, and broad catalogue publication move after `1.0.0`.
 The field/control inventory may continue as research, but incomplete inventory

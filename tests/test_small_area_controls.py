@@ -9,17 +9,24 @@ import pytest
 from click.exceptions import ClickException
 
 from synthpopcan.cli import main
+from synthpopcan.control_packs import load_compatibility_registry, load_control_pack
+from synthpopcan.controls import read_control_table
 from synthpopcan.small_area_controls import (
     _GEO_LEVEL_FOR_COLUMN,
     _HHSIZE_MEMBERS,
     _TENURE_MEMBERS,
     _find_col,
     extract_controls_from_profile,
+    extract_household_controls_for_pack,
     recode_household_size,
     scale_and_validate_controls,
+    scale_and_validate_pack_controls,
     write_controls_csv,
+    write_pack_controls_csv,
     write_recoded_candidates,
 )
+
+_CENSUS_FIXTURES = Path(__file__).parent / "fixtures" / "census"
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -118,6 +125,60 @@ def _write_2021_profile(path: Path) -> None:
         writer.writerows(rows)
 
 
+def _write_expanded_pack_2021_profile(
+    path: Path, *, suppressed_member: str | None = None
+) -> None:
+    pack = load_control_pack("statcan-2021-expanded-private-household-housing-ada-v1")
+    registry = load_compatibility_registry()
+    controls = {control.identifier: control for control in registry.controls}
+    rows: list[list[str]] = []
+    value = 1
+    for margin in pack.margins:
+        if margin.entity_level != "household":
+            continue
+        control = controls[margin.control_identifier]
+        control_rows: list[list[str]] = []
+        root_total = 0
+        for category in control.source_axes[0].categories:
+            for member in category.source_characteristic_ids:
+                root_total += value
+                control_rows.append(
+                    [
+                        "Aggregate dissemination area",
+                        "2021S0516G1",
+                        "G1",
+                        member,
+                        category.source_labels[0],
+                        "x" if member == suppressed_member else str(value),
+                    ]
+                )
+                value += 1
+        rows.append(
+            [
+                "Aggregate dissemination area",
+                "2021S0516G1",
+                "G1",
+                control.source.root_characteristic_id,
+                control.source.root_label,
+                str(root_total),
+            ]
+        )
+        rows.extend(control_rows)
+    with path.open("w", newline="", encoding="utf-8") as handle:
+        writer = csv.writer(handle)
+        writer.writerow(
+            [
+                "GEO_LEVEL",
+                "DGUID",
+                "ALT_GEO_CODE",
+                "CHARACTERISTIC_ID",
+                "CHARACTERISTIC_NAME",
+                "C1_COUNT_TOTAL",
+            ]
+        )
+        writer.writerows(rows)
+
+
 # ---------------------------------------------------------------------------
 # _find_col
 # ---------------------------------------------------------------------------
@@ -186,6 +247,251 @@ def test_extract_controls_reads_2021_profile_schema(tmp_path: Path) -> None:
         "5": 5.0,
     }
     assert raw["G1"]["tenure"] == {"1": 45.0, "2": 35.0}
+
+
+def test_expanded_pack_extracts_scales_and_writes_nine_household_margins(
+    tmp_path: Path,
+) -> None:
+    profile = tmp_path / "profile-2021.csv"
+    controls_path = tmp_path / "controls.csv"
+    _write_expanded_pack_2021_profile(profile)
+    pack = load_control_pack("statcan-2021-expanded-private-household-housing-ada-v1")
+
+    raw = extract_household_controls_for_pack(profile, pack)
+    scaled, dropped = scale_and_validate_pack_controls(raw, pack, 250)
+    write_pack_controls_csv(scaled, controls_path, pack)
+    table = read_control_table(controls_path)
+
+    assert dropped == []
+    assert set(raw["G1"]) == {
+        "household_size_group",
+        "TENUR",
+        "structural_dwelling_type",
+        "CONDO",
+        "bedrooms_group",
+        "rooms_group",
+        "NOS",
+        "construction_period_group",
+        "repair_group",
+    }
+    assert raw["G1"]["structural_dwelling_type"]["apartment"] > 0
+    assert len(table.margins) == 9
+    assert all(
+        sum(cell.count for cell in margin.cells) == 250 for margin in table.margins
+    )
+
+
+@pytest.mark.parametrize(
+    ("vintage", "geography", "fixture", "expected_dwelling_type"),
+    [
+        (
+            2016,
+            "0010001.00",
+            "2016-ct-expanded-household-controls.csv",
+            {"single_detached": 450.0, "apartment": 130.0, "other": 120.0},
+        ),
+        (
+            2021,
+            "10010001",
+            "2021-ada-expanded-household-controls.csv",
+            {"single_detached": 3980.0, "apartment": 85.0, "other": 60.0},
+        ),
+    ],
+)
+def test_official_profile_slices_reconcile_all_nine_household_margins(
+    vintage: int,
+    geography: str,
+    fixture: str,
+    expected_dwelling_type: dict[str, float],
+) -> None:
+    geography_level = "ct" if vintage == 2016 else "ada"
+    pack = load_control_pack(
+        f"statcan-{vintage}-expanded-private-household-housing-{geography_level}-v1"
+    )
+
+    raw = extract_household_controls_for_pack(_CENSUS_FIXTURES / fixture, pack)
+    scaled, dropped = scale_and_validate_pack_controls(raw, pack, 1_000)
+
+    assert dropped == []
+    assert len(raw[geography]) == 9
+    assert raw[geography]["structural_dwelling_type"] == expected_dwelling_type
+    assert all(sum(vector.values()) == 1_000 for vector in scaled[geography].values())
+
+
+def test_pack_extraction_rejects_root_child_vector_mismatch(tmp_path: Path) -> None:
+    source = _CENSUS_FIXTURES / "2021-ada-expanded-household-controls.csv"
+    profile = tmp_path / source.name
+    rows = list(csv.DictReader(source.open(newline="")))
+    assert rows
+    for row in rows:
+        if row["CHARACTERISTIC_ID"] == "41":
+            row["C1_COUNT_TOTAL"] = "9999"
+    with profile.open("w", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=list(rows[0]))
+        writer.writeheader()
+        writer.writerows(rows)
+    pack = load_control_pack("statcan-2021-expanded-private-household-housing-ada-v1")
+
+    raw = extract_household_controls_for_pack(profile, pack)
+
+    assert "structural_dwelling_type" not in raw["10010001"]
+    with pytest.raises(ValueError, match="No complete household control vectors"):
+        scale_and_validate_pack_controls(raw, pack, 1_000)
+
+
+@pytest.mark.parametrize(
+    ("defect", "message"),
+    [
+        ("two-axes", "one-axis margins only"),
+        ("missing-root", "requires a root characteristic ID"),
+        ("duplicate-root", "root of multiple margins"),
+        ("count-column", "requires characteristic IDs"),
+        ("duplicate-cell", "maps to multiple cells"),
+        ("root-cell-overlap", "cannot also be control cells"),
+    ],
+)
+def test_pack_profile_extraction_rejects_ambiguous_source_definitions(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    defect: str,
+    message: str,
+) -> None:
+    """Runtime extraction must not guess when source selectors are ambiguous."""
+
+    profile = tmp_path / "profile-2021.csv"
+    _write_expanded_pack_2021_profile(profile)
+    pack = load_control_pack("statcan-2021-expanded-private-household-housing-ada-v1")
+    registry = load_compatibility_registry()
+    controls = list(registry.controls)
+    first_id = pack.margins[0].control_identifier
+    second_id = pack.margins[1].control_identifier
+    first = next(control for control in controls if control.identifier == first_id)
+    second = next(control for control in controls if control.identifier == second_id)
+    axis = first.source_axes[0]
+
+    if defect == "two-axes":
+        replacement = first.model_copy(update={"source_axes": [axis, axis]})
+    elif defect == "missing-root":
+        replacement = first.model_copy(
+            update={
+                "source": first.source.model_copy(update={"root_characteristic_id": ""})
+            }
+        )
+    elif defect == "count-column":
+        category = axis.categories[0].model_copy(
+            update={"source_count_columns": ["COUNT"]}
+        )
+        replacement = first.model_copy(
+            update={"source_axes": [axis.model_copy(update={"categories": [category]})]}
+        )
+    elif defect == "duplicate-cell":
+        categories = list(axis.categories)
+        categories[1] = categories[1].model_copy(
+            update={
+                "source_characteristic_ids": categories[0].source_characteristic_ids
+            }
+        )
+        replacement = first.model_copy(
+            update={"source_axes": [axis.model_copy(update={"categories": categories})]}
+        )
+    elif defect == "root-cell-overlap":
+        replacement = first.model_copy(
+            update={
+                "source": first.source.model_copy(
+                    update={
+                        "root_characteristic_id": axis.categories[
+                            0
+                        ].source_characteristic_ids[0]
+                    }
+                )
+            }
+        )
+    else:
+        replacement = second.model_copy(
+            update={
+                "source": second.source.model_copy(
+                    update={
+                        "root_characteristic_id": first.source.root_characteristic_id
+                    }
+                )
+            }
+        )
+        first_id = second_id
+
+    mutated = [
+        replacement if control.identifier == first_id else control
+        for control in controls
+    ]
+    monkeypatch.setattr(
+        "synthpopcan.control_packs.load_compatibility_registry",
+        lambda: registry.model_copy(update={"controls": mutated}),
+    )
+
+    with pytest.raises(ValueError, match=message):
+        extract_household_controls_for_pack(profile, pack)
+
+
+def test_pack_profile_extraction_rejects_wrong_vintage_and_unknown_geography(
+    tmp_path: Path,
+) -> None:
+    profile = tmp_path / "profile-2021.csv"
+    _write_expanded_pack_2021_profile(profile)
+    pack = load_control_pack("statcan-2016-expanded-private-household-housing-ada-v1")
+
+    with pytest.raises(ValueError, match="profile is Census 2021"):
+        extract_household_controls_for_pack(profile, pack)
+
+    unknown_geography = load_control_pack(
+        "statcan-2021-expanded-private-household-housing-ada-v1"
+    ).model_copy(update={"geography_level": "unknown"})
+    with pytest.raises(ValueError, match="No Profile GEO_LEVEL mapping"):
+        extract_household_controls_for_pack(profile, unknown_geography)
+
+
+def test_expanded_pack_excludes_geography_with_suppressed_child(
+    tmp_path: Path,
+) -> None:
+    profile = tmp_path / "profile-2021.csv"
+    _write_expanded_pack_2021_profile(profile, suppressed_member="1424")
+    pack = load_control_pack("statcan-2021-expanded-private-household-housing-ada-v1")
+
+    raw = extract_household_controls_for_pack(profile, pack)
+
+    assert "bedrooms_group" not in raw["G1"]
+    with pytest.raises(ValueError, match="No complete household control vectors"):
+        scale_and_validate_pack_controls(raw, pack, 250)
+
+
+def test_controls_cli_builds_expanded_pack_household_table(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    profile = tmp_path / "profile-2021.csv"
+    controls_path = tmp_path / "controls.csv"
+    _write_expanded_pack_2021_profile(profile)
+
+    assert (
+        main(
+            [
+                "geo",
+                "controls",
+                "--profile",
+                str(profile),
+                "--geo-column",
+                "ada",
+                "--target",
+                "250",
+                "--control-pack",
+                "statcan-2021-expanded-private-household-housing-ada-v1",
+                "--controls-out",
+                str(controls_path),
+            ]
+        )
+        == 0
+    )
+    assert len(read_control_table(controls_path).margins) == 9
+    output = capsys.readouterr().out
+    assert "--person-controls person-controls.csv" in output
+    assert "--control-pack-evidence control-pack-evidence.json" in output
 
 
 def test_extract_controls_filters_by_geo_prefix(tmp_path: Path) -> None:

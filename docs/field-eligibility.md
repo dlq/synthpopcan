@@ -3,7 +3,7 @@
 SynthPopCan's current “all-fields” model profile is broad, but it does not mean
 “every column in the source file.” Before the 1.0 interface freeze, we
 classified every column in the 2016 and 2021 Statistics Canada hierarchical
-PUMF headers, reviewed its pre-1.0 role, and made each omission explicit.
+PUMF headers, reviewed its stable 1.x role, and made each omission explicit.
 
 {download}`Download the machine-readable inventory <./_static/hierarchical-pumf-field-eligibility-v1.json>`.
 
@@ -29,7 +29,7 @@ and missingness, weighted applicable support, aggregate rare-category counts,
 and within-entity constancy evidence. It also records:
 
 - a cross-vintage concept and an explicit predecessor or successor relation;
-- its only permitted pre-1.0 role and recommended representation;
+- its permitted stable role and recommended representation;
 - dependencies and consistency invariants;
 - a reviewed Census Profile control candidate or an explicit `uncontrolled`
   result;
@@ -54,10 +54,11 @@ profile.
 
 The inventory is review evidence and an extension map. It does **not** add a new
 public model profile, claim that deferred fields are locally controlled, or
-authorize sensitive attributes for generation. A possible Census Profile
-family is recorded only as `candidate_requires_crosswalk`; local
+authorize sensitive attributes for generation. Fields covered by reviewed
+core or expanded Census Profile packs are recorded as `implemented`; local
 representativeness still requires a versioned control pack, compatible source
-universe, and passing evidence.
+universe, and passing evidence. All other fields remain explicitly
+uncontrolled.
 
 Source identifiers and weights are never target fields. `PR` and `CMA` remain
 conditioning context from the public-use sample, not assigned CSD, CT, ADA, DA,

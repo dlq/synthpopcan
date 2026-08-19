@@ -402,7 +402,7 @@ def test_control_pack_catalogue_api_lists_reviewed_builtins(tmp_path: Path) -> N
 
     assert response.status_code == 200
     packs = response.json()["control_packs"]
-    assert len(packs) == 8
+    assert len(packs) == 24
     assert {item["census_vintage"] for item in packs} == {2016, 2021}
     assert {item["geography_level"] for item in packs} == {
         "csd",

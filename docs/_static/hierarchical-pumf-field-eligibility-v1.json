@@ -36,7 +36,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -152,10 +152,10 @@
       "concept_id": "agegrp",
       "consistency_invariants": [],
       "control_compatibility": {
-        "candidate_family": "statcan-2016-age",
-        "note": "Candidate only; local control claims require a versioned pack and evidence.",
-        "status": "candidate_requires_crosswalk",
-        "universe": "persons_in_private_households"
+        "candidate_family": "statcan.2016.private-age-gender.v1",
+        "note": "Implemented in reviewed core or expanded control packs; local control claims still require compatible pack evidence.",
+        "status": "implemented",
+        "universe": "private-household-persons-zero-collective"
       },
       "cross_vintage": {
         "counterpart": "AGEGRP",
@@ -274,7 +274,7 @@
       ],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -349,7 +349,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -436,10 +436,10 @@
         "value_must_be_constant_within_household"
       ],
       "control_compatibility": {
-        "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
-        "status": "uncontrolled",
-        "universe": null
+        "candidate_family": "statcan.2016.bedrooms.v1",
+        "note": "Implemented in reviewed core or expanded control packs; local control claims still require compatible pack evidence.",
+        "status": "implemented",
+        "universe": "private-households"
       },
       "cross_vintage": {
         "counterpart": "BEDRM",
@@ -513,7 +513,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -623,10 +623,10 @@
         "value_must_be_constant_within_household"
       ],
       "control_compatibility": {
-        "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
-        "status": "uncontrolled",
-        "universe": null
+        "candidate_family": "statcan.2016.construction-period.v1",
+        "note": "Implemented in reviewed core or expanded control packs; local control claims still require compatible pack evidence.",
+        "status": "implemented",
+        "universe": "private-households"
       },
       "cross_vintage": {
         "counterpart": "BUILT",
@@ -724,7 +724,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -804,7 +804,7 @@
       ],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -874,7 +874,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -943,7 +943,7 @@
       ],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -1061,7 +1061,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -1136,10 +1136,10 @@
       "concept_id": "citizen",
       "consistency_invariants": [],
       "control_compatibility": {
-        "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
-        "status": "uncontrolled",
-        "universe": null
+        "candidate_family": "statcan.2016.citizenship.v1",
+        "note": "Implemented in reviewed core or expanded control packs; local control claims still require compatible pack evidence.",
+        "status": "implemented",
+        "universe": "private-household-persons"
       },
       "cross_vintage": {
         "counterpart": "CITIZEN",
@@ -1219,7 +1219,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -1301,7 +1301,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -1369,10 +1369,10 @@
         "value_must_be_constant_within_household"
       ],
       "control_compatibility": {
-        "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
-        "status": "uncontrolled",
-        "universe": null
+        "candidate_family": "statcan.2016.condominium.v1",
+        "note": "Implemented in reviewed core or expanded control packs; local control claims still require compatible pack evidence.",
+        "status": "implemented",
+        "universe": "private-households"
       },
       "cross_vintage": {
         "counterpart": "CONDO",
@@ -1458,7 +1458,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -1557,7 +1557,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -1637,10 +1637,10 @@
         "value_must_be_constant_within_household"
       ],
       "control_compatibility": {
-        "candidate_family": "statcan-2016-structural_dwelling_type",
-        "note": "Candidate only; local control claims require a versioned pack and evidence.",
-        "status": "candidate_requires_crosswalk",
-        "universe": "private_households"
+        "candidate_family": "statcan.2016.dwelling-type.v1",
+        "note": "Implemented in reviewed core or expanded control packs; local control claims still require compatible pack evidence.",
+        "status": "implemented",
+        "universe": "private-households"
       },
       "cross_vintage": {
         "counterpart": "DTYPE",
@@ -1730,7 +1730,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -1836,7 +1836,7 @@
       ],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -1906,7 +1906,7 @@
       ],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -1974,7 +1974,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -2043,7 +2043,7 @@
       ],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -2104,7 +2104,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -2203,7 +2203,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -2265,7 +2265,7 @@
       ],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -2351,7 +2351,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -2421,7 +2421,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -2501,10 +2501,10 @@
       "concept_id": "genstat",
       "consistency_invariants": [],
       "control_compatibility": {
-        "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
-        "status": "uncontrolled",
-        "universe": null
+        "candidate_family": "statcan.2016.generation-status.v1",
+        "note": "Implemented in reviewed core or expanded control packs; local control claims still require compatible pack evidence.",
+        "status": "implemented",
+        "universe": "private-household-persons"
       },
       "cross_vintage": {
         "counterpart": "GENSTAT",
@@ -2559,7 +2559,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -2659,7 +2659,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -2727,7 +2727,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -2782,7 +2782,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -2845,7 +2845,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -2909,7 +2909,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -3009,7 +3009,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -3075,7 +3075,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -3139,7 +3139,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -3203,7 +3203,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -3307,7 +3307,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -3383,10 +3383,10 @@
       "concept_id": "immstat",
       "consistency_invariants": [],
       "control_compatibility": {
-        "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
-        "status": "uncontrolled",
-        "universe": null
+        "candidate_family": "statcan.2016.immigration-status.v1",
+        "note": "Implemented in reviewed core or expanded control packs; local control claims still require compatible pack evidence.",
+        "status": "implemented",
+        "universe": "private-household-persons"
       },
       "cross_vintage": {
         "counterpart": "IMMSTAT",
@@ -3441,7 +3441,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -3521,7 +3521,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -3607,7 +3607,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -3728,7 +3728,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -3845,7 +3845,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -3925,7 +3925,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -4003,7 +4003,7 @@
       ],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -4092,7 +4092,7 @@
       ],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -4181,7 +4181,7 @@
       ],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -4270,7 +4270,7 @@
       ],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -4359,7 +4359,7 @@
       ],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -4450,7 +4450,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -4523,7 +4523,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -4593,7 +4593,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -4663,7 +4663,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -4733,7 +4733,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -4803,7 +4803,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -4873,7 +4873,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -4963,7 +4963,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -5023,7 +5023,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -5091,7 +5091,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -5155,7 +5155,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -5255,7 +5255,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -5333,7 +5333,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -5423,7 +5423,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -5511,7 +5511,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -5621,7 +5621,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -5732,7 +5732,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -5843,7 +5843,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -5914,10 +5914,10 @@
         "value_must_be_constant_within_household"
       ],
       "control_compatibility": {
-        "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
-        "status": "uncontrolled",
-        "universe": null
+        "candidate_family": "statcan.2016.housing-suitability.v1",
+        "note": "Implemented in reviewed core or expanded control packs; local control claims still require compatible pack evidence.",
+        "status": "implemented",
+        "universe": "private-households"
       },
       "cross_vintage": {
         "counterpart": "NOS",
@@ -5995,7 +5995,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -6080,7 +6080,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -6162,7 +6162,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -6244,7 +6244,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -6338,7 +6338,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -6400,7 +6400,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -6499,7 +6499,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -6606,7 +6606,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -6714,7 +6714,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -6790,7 +6790,7 @@
       ],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -6864,7 +6864,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -6972,7 +6972,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -7047,7 +7047,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -7121,10 +7121,10 @@
         "value_must_be_constant_within_household"
       ],
       "control_compatibility": {
-        "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
-        "status": "uncontrolled",
-        "universe": null
+        "candidate_family": "statcan.2016.repair-condition.v1",
+        "note": "Implemented in reviewed core or expanded control packs; local control claims still require compatible pack evidence.",
+        "status": "implemented",
+        "universe": "private-households"
       },
       "cross_vintage": {
         "counterpart": "REPAIR",
@@ -7233,10 +7233,10 @@
         "value_must_be_constant_within_household"
       ],
       "control_compatibility": {
-        "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
-        "status": "uncontrolled",
-        "universe": null
+        "candidate_family": "statcan.2016.rooms.v1",
+        "note": "Implemented in reviewed core or expanded control packs; local control claims still require compatible pack evidence.",
+        "status": "implemented",
+        "universe": "private-households"
       },
       "cross_vintage": {
         "counterpart": "ROOM",
@@ -7309,10 +7309,10 @@
       "concept_id": "gender",
       "consistency_invariants": [],
       "control_compatibility": {
-        "candidate_family": "statcan-2016-sex",
-        "note": "Candidate only; local control claims require a versioned pack and evidence.",
-        "status": "candidate_requires_crosswalk",
-        "universe": "persons_in_private_households"
+        "candidate_family": "statcan.2016.private-age-gender.v1",
+        "note": "Implemented in reviewed core or expanded control packs; local control claims still require compatible pack evidence.",
+        "status": "implemented",
+        "universe": "private-household-persons-zero-collective"
       },
       "cross_vintage": {
         "counterpart": "GENDER",
@@ -7369,7 +7369,7 @@
       ],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -7475,7 +7475,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -7553,7 +7553,7 @@
       ],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -7632,10 +7632,10 @@
         "value_must_be_constant_within_household"
       ],
       "control_compatibility": {
-        "candidate_family": "statcan-2016-tenure",
-        "note": "Candidate only; local control claims require a versioned pack and evidence.",
-        "status": "candidate_requires_crosswalk",
-        "universe": "private_households"
+        "candidate_family": "statcan.2016.tenure.v1",
+        "note": "Implemented in reviewed core or expanded control packs; local control claims still require compatible pack evidence.",
+        "status": "implemented",
+        "universe": "private-households"
       },
       "cross_vintage": {
         "counterpart": "TENUR",
@@ -7696,7 +7696,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -7755,7 +7755,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -7816,7 +7816,7 @@
       ],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -7893,10 +7893,10 @@
       "concept_id": "vismin",
       "consistency_invariants": [],
       "control_compatibility": {
-        "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
-        "status": "uncontrolled",
-        "universe": null
+        "candidate_family": "statcan.2016.visible-minority.v1",
+        "note": "Implemented in reviewed core or expanded control packs; local control claims still require compatible pack evidence.",
+        "status": "implemented",
+        "universe": "private-household-persons"
       },
       "cross_vintage": {
         "counterpart": "VISMIN",
@@ -7954,7 +7954,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -8039,7 +8039,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -8152,7 +8152,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -8212,7 +8212,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -8264,7 +8264,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -8316,7 +8316,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -8368,7 +8368,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -8420,7 +8420,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -8472,7 +8472,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -8524,7 +8524,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -8576,7 +8576,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -8628,7 +8628,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -8680,7 +8680,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -8732,7 +8732,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -8784,7 +8784,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -8836,7 +8836,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -8888,7 +8888,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -8940,7 +8940,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -8992,7 +8992,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -9080,7 +9080,7 @@
       ],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -9167,7 +9167,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -9281,10 +9281,10 @@
       "concept_id": "agegrp",
       "consistency_invariants": [],
       "control_compatibility": {
-        "candidate_family": "statcan-2021-age",
-        "note": "Candidate only; local control claims require a versioned pack and evidence.",
-        "status": "candidate_requires_crosswalk",
-        "universe": "persons_in_private_households"
+        "candidate_family": "statcan.2021.private-age-gender.v1",
+        "note": "Implemented in reviewed core or expanded control packs; local control claims still require compatible pack evidence.",
+        "status": "implemented",
+        "universe": "private-household-persons-zero-collective"
       },
       "cross_vintage": {
         "counterpart": "AGEGRP",
@@ -9399,7 +9399,7 @@
       ],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -9478,7 +9478,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -9567,10 +9567,10 @@
         "value_must_be_constant_within_household"
       ],
       "control_compatibility": {
-        "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
-        "status": "uncontrolled",
-        "universe": null
+        "candidate_family": "statcan.2021.bedrooms.v1",
+        "note": "Implemented in reviewed core or expanded control packs; local control claims still require compatible pack evidence.",
+        "status": "implemented",
+        "universe": "private-households"
       },
       "cross_vintage": {
         "counterpart": "BEDRM",
@@ -9640,7 +9640,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -9748,10 +9748,10 @@
         "value_must_be_constant_within_household"
       ],
       "control_compatibility": {
-        "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
-        "status": "uncontrolled",
-        "universe": null
+        "candidate_family": "statcan.2021.construction-period.v1",
+        "note": "Implemented in reviewed core or expanded control packs; local control claims still require compatible pack evidence.",
+        "status": "implemented",
+        "universe": "private-households"
       },
       "cross_vintage": {
         "counterpart": "BUILT",
@@ -9849,7 +9849,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -9929,7 +9929,7 @@
       ],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -9999,7 +9999,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -10068,7 +10068,7 @@
       ],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -10190,7 +10190,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -10265,10 +10265,10 @@
       "concept_id": "citizen",
       "consistency_invariants": [],
       "control_compatibility": {
-        "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
-        "status": "uncontrolled",
-        "universe": null
+        "candidate_family": "statcan.2021.citizenship.v1",
+        "note": "Implemented in reviewed core or expanded control packs; local control claims still require compatible pack evidence.",
+        "status": "implemented",
+        "universe": "private-household-persons"
       },
       "cross_vintage": {
         "counterpart": "CITIZEN",
@@ -10348,7 +10348,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -10430,7 +10430,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -10498,10 +10498,10 @@
         "value_must_be_constant_within_household"
       ],
       "control_compatibility": {
-        "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
-        "status": "uncontrolled",
-        "universe": null
+        "candidate_family": "statcan.2021.condominium.v1",
+        "note": "Implemented in reviewed core or expanded control packs; local control claims still require compatible pack evidence.",
+        "status": "implemented",
+        "universe": "private-households"
       },
       "cross_vintage": {
         "counterpart": "CONDO",
@@ -10587,7 +10587,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -10686,7 +10686,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -10766,10 +10766,10 @@
         "value_must_be_constant_within_household"
       ],
       "control_compatibility": {
-        "candidate_family": "statcan-2021-structural_dwelling_type",
-        "note": "Candidate only; local control claims require a versioned pack and evidence.",
-        "status": "candidate_requires_crosswalk",
-        "universe": "private_households"
+        "candidate_family": "statcan.2021.dwelling-type.v1",
+        "note": "Implemented in reviewed core or expanded control packs; local control claims still require compatible pack evidence.",
+        "status": "implemented",
+        "universe": "private-households"
       },
       "cross_vintage": {
         "counterpart": "DTYPE",
@@ -10832,7 +10832,7 @@
       ],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -10949,7 +10949,7 @@
       ],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -11019,7 +11019,7 @@
       ],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -11087,7 +11087,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -11156,7 +11156,7 @@
       ],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -11217,7 +11217,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -11316,7 +11316,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -11378,7 +11378,7 @@
       ],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -11464,7 +11464,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -11534,7 +11534,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -11606,10 +11606,10 @@
       "concept_id": "gender",
       "consistency_invariants": [],
       "control_compatibility": {
-        "candidate_family": "statcan-2021-gender",
-        "note": "Candidate only; local control claims require a versioned pack and evidence.",
-        "status": "candidate_requires_crosswalk",
-        "universe": "persons_in_private_households"
+        "candidate_family": "statcan.2021.private-age-gender.v1",
+        "note": "Implemented in reviewed core or expanded control packs; local control claims still require compatible pack evidence.",
+        "status": "implemented",
+        "universe": "private-household-persons-zero-collective"
       },
       "cross_vintage": {
         "counterpart": "SEX",
@@ -11684,10 +11684,10 @@
       "concept_id": "genstat",
       "consistency_invariants": [],
       "control_compatibility": {
-        "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
-        "status": "uncontrolled",
-        "universe": null
+        "candidate_family": "statcan.2021.generation-status.v1",
+        "note": "Implemented in reviewed core or expanded control packs; local control claims still require compatible pack evidence.",
+        "status": "implemented",
+        "universe": "private-household-persons"
       },
       "cross_vintage": {
         "counterpart": "GENSTAT",
@@ -11742,7 +11742,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -11816,7 +11816,7 @@
       ],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -11920,7 +11920,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -11992,7 +11992,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -12049,7 +12049,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -12112,7 +12112,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -12176,7 +12176,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -12276,7 +12276,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -12342,7 +12342,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -12406,7 +12406,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -12470,7 +12470,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -12574,7 +12574,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -12650,10 +12650,10 @@
       "concept_id": "immstat",
       "consistency_invariants": [],
       "control_compatibility": {
-        "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
-        "status": "uncontrolled",
-        "universe": null
+        "candidate_family": "statcan.2021.immigration-status.v1",
+        "note": "Implemented in reviewed core or expanded control packs; local control claims still require compatible pack evidence.",
+        "status": "implemented",
+        "universe": "private-household-persons"
       },
       "cross_vintage": {
         "counterpart": "IMMSTAT",
@@ -12708,7 +12708,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -12788,7 +12788,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -12871,7 +12871,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -12989,7 +12989,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -13066,7 +13066,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -13142,7 +13142,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -13214,7 +13214,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -13328,7 +13328,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -13408,7 +13408,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -13482,7 +13482,7 @@
       ],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -13565,7 +13565,7 @@
       ],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -13648,7 +13648,7 @@
       ],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -13737,7 +13737,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -13810,7 +13810,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -13880,7 +13880,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -13950,7 +13950,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -14020,7 +14020,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -14090,7 +14090,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -14160,7 +14160,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -14238,7 +14238,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -14324,7 +14324,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -14410,7 +14410,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -14500,7 +14500,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -14560,7 +14560,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -14628,7 +14628,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -14692,7 +14692,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -14792,7 +14792,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -14902,7 +14902,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -15013,7 +15013,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -15124,7 +15124,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -15191,10 +15191,10 @@
         "value_must_be_constant_within_household"
       ],
       "control_compatibility": {
-        "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
-        "status": "uncontrolled",
-        "universe": null
+        "candidate_family": "statcan.2021.housing-suitability.v1",
+        "note": "Implemented in reviewed core or expanded control packs; local control claims still require compatible pack evidence.",
+        "status": "implemented",
+        "universe": "private-households"
       },
       "cross_vintage": {
         "counterpart": "NOS",
@@ -15278,7 +15278,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -15360,7 +15360,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -15442,7 +15442,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -15536,7 +15536,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -15598,7 +15598,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -15697,7 +15697,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -15800,7 +15800,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -15906,7 +15906,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -15982,7 +15982,7 @@
       ],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -16056,7 +16056,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -16140,7 +16140,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -16231,7 +16231,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -16308,7 +16308,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -16421,7 +16421,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -16492,7 +16492,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -16591,7 +16591,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -16665,10 +16665,10 @@
         "value_must_be_constant_within_household"
       ],
       "control_compatibility": {
-        "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
-        "status": "uncontrolled",
-        "universe": null
+        "candidate_family": "statcan.2021.repair-condition.v1",
+        "note": "Implemented in reviewed core or expanded control packs; local control claims still require compatible pack evidence.",
+        "status": "implemented",
+        "universe": "private-households"
       },
       "cross_vintage": {
         "counterpart": "REPAIR",
@@ -16773,10 +16773,10 @@
         "value_must_be_constant_within_household"
       ],
       "control_compatibility": {
-        "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
-        "status": "uncontrolled",
-        "universe": null
+        "candidate_family": "statcan.2021.rooms.v1",
+        "note": "Implemented in reviewed core or expanded control packs; local control claims still require compatible pack evidence.",
+        "status": "implemented",
+        "universe": "private-households"
       },
       "cross_vintage": {
         "counterpart": "ROOM",
@@ -16837,7 +16837,7 @@
       ],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -16943,7 +16943,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -17017,7 +17017,7 @@
       ],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -17099,7 +17099,7 @@
       ],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -17178,10 +17178,10 @@
         "value_must_be_constant_within_household"
       ],
       "control_compatibility": {
-        "candidate_family": "statcan-2021-tenure",
-        "note": "Candidate only; local control claims require a versioned pack and evidence.",
-        "status": "candidate_requires_crosswalk",
-        "universe": "private_households"
+        "candidate_family": "statcan.2021.tenure.v1",
+        "note": "Implemented in reviewed core or expanded control packs; local control claims still require compatible pack evidence.",
+        "status": "implemented",
+        "universe": "private-households"
       },
       "cross_vintage": {
         "counterpart": "TENUR",
@@ -17242,7 +17242,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -17301,7 +17301,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -17362,7 +17362,7 @@
       ],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -17439,10 +17439,10 @@
       "concept_id": "vismin",
       "consistency_invariants": [],
       "control_compatibility": {
-        "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
-        "status": "uncontrolled",
-        "universe": null
+        "candidate_family": "statcan.2021.visible-minority.v1",
+        "note": "Implemented in reviewed core or expanded control packs; local control claims still require compatible pack evidence.",
+        "status": "implemented",
+        "universe": "private-household-persons"
       },
       "cross_vintage": {
         "counterpart": "VISMIN",
@@ -17500,7 +17500,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -17585,7 +17585,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -17698,7 +17698,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -17758,7 +17758,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -17810,7 +17810,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -17862,7 +17862,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -17914,7 +17914,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -17966,7 +17966,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -18018,7 +18018,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -18070,7 +18070,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -18122,7 +18122,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -18174,7 +18174,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -18226,7 +18226,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -18278,7 +18278,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -18330,7 +18330,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -18382,7 +18382,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -18434,7 +18434,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -18486,7 +18486,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -18538,7 +18538,7 @@
       "consistency_invariants": [],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },
@@ -18630,7 +18630,7 @@
       ],
       "control_compatibility": {
         "candidate_family": null,
-        "note": "No reviewed Census Profile crosswalk is assigned in the pre-1.0 inventory.",
+        "note": "No reviewed Census Profile crosswalk is assigned in the current inventory.",
         "status": "uncontrolled",
         "universe": null
       },

@@ -235,8 +235,9 @@ dissemination areas, or another target geography. Select a premade model ID,
 upload a local package JSON, or upload both `households.csv` and `persons.csv`,
 then upload the household controls and optional person controls.
 
-The optional reviewed-control-pack selector loads the eight built-in 2016/2021
-CSD, CT, ADA, and DA definitions. Selecting one makes its bound evidence JSON
+The optional reviewed-control-pack selector loads the 24 built-in 2016/2021
+CSD, CT, ADA, and DA core, housing, and broad definitions. Selecting one makes its
+bound evidence JSON
 required. Preflight verifies the manifest and evidence checksums, exact control
 vectors and geography set, companion private-household universe counts, and
 candidate/model field compatibility. Uploaded candidates receive the complete

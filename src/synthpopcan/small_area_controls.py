@@ -3,18 +3,26 @@
 from __future__ import annotations
 
 __all__ = [
+    "extract_household_controls_for_pack",
     "extract_controls_from_profile",
     "recode_household_size",
+    "scale_and_validate_pack_controls",
     "scale_and_validate_controls",
+    "write_pack_controls_csv",
     "write_controls_csv",
     "write_recoded_candidates",
 ]
 
 import csv
+import math
 from collections import defaultdict
 from collections.abc import Sequence
 from itertools import chain
 from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from synthpopcan.control_packs import ControlPackManifest
 
 # Member IDs are consistent across 2016 Census Profiles (2247-variable form).
 _HHSIZE_MEMBERS: dict[str, str] = {
@@ -174,6 +182,276 @@ def extract_controls_from_profile(
                 )
 
     return dict(data)
+
+
+def extract_household_controls_for_pack(
+    profile_path: Path,
+    pack: ControlPackManifest,
+    *,
+    geo_prefix: str | None = None,
+    geo_ids: set[str] | None = None,
+    geo_level_value: str | None = None,
+) -> dict[str, dict[str, dict[str, float]]]:
+    """Extract every one-axis household margin declared by a control pack.
+
+    Suppressed, missing, or partially observed source vectors are omitted so
+    :func:`scale_and_validate_pack_controls` can exclude the geography instead
+    of silently constructing a partial margin.
+    """
+
+    from synthpopcan.control_packs import load_compatibility_registry
+
+    registry = load_compatibility_registry()
+    controls = {control.identifier: control for control in registry.controls}
+    selectors: dict[str, tuple[str, str]] = {}
+    root_selectors: dict[str, tuple[str, float]] = {}
+    expected_ids: dict[str, set[str]] = {}
+    dimensions: list[str] = []
+    for margin in pack.margins:
+        if margin.entity_level != "household":
+            continue
+        control = controls[margin.control_identifier]
+        if len(control.source_axes) != 1:
+            raise ValueError(
+                "pack household Profile extraction supports one-axis margins only"
+            )
+        axis = control.source_axes[0]
+        dimensions.append(axis.candidate_field)
+        root_id = control.source.root_characteristic_id
+        if not root_id:
+            raise ValueError(
+                "pack household Profile extraction requires a root characteristic ID"
+            )
+        if root_id in root_selectors:
+            raise ValueError(
+                f"Profile characteristic {root_id!r} is the root of multiple margins"
+            )
+        root_selectors[root_id] = (
+            axis.candidate_field,
+            max(
+                control.suppression.vector_tolerance,
+                # Profile counts are independently randomized to base 5.
+                # The root plus every published child can each differ by
+                # 2.5 before rounding, so this is the strict worst-case
+                # reconciliation bound for a complete vector.
+                2.5
+                * (
+                    1
+                    + sum(
+                        len(category.source_characteristic_ids)
+                        for category in axis.categories
+                    )
+                ),
+            ),
+        )
+        expected_ids[axis.candidate_field] = {
+            member
+            for category in axis.categories
+            for member in category.source_characteristic_ids
+        }
+        for category in axis.categories:
+            if category.source_count_columns:
+                raise ValueError(
+                    "pack household Profile extraction requires characteristic IDs"
+                )
+            for member in category.source_characteristic_ids:
+                previous = selectors.setdefault(
+                    member, (axis.candidate_field, category.target_category)
+                )
+                if previous != (axis.candidate_field, category.target_category):
+                    raise ValueError(
+                        f"Profile characteristic {member!r} maps to multiple cells"
+                    )
+    overlap = sorted(set(root_selectors) & set(selectors))
+    if overlap:
+        raise ValueError(
+            "Profile root characteristics cannot also be control cells: "
+            + ", ".join(overlap)
+        )
+
+    data: dict[str, dict[str, dict[str, float]]] = defaultdict(
+        lambda: {dimension: {} for dimension in dimensions}
+    )
+    observed: dict[str, dict[str, set[str]]] = defaultdict(
+        lambda: {dimension: set() for dimension in dimensions}
+    )
+    roots: dict[str, dict[str, float]] = defaultdict(dict)
+    with profile_path.open(newline="", encoding="latin-1") as fh:
+        header_line = fh.readline()
+        raw_fields = next(csv.reader([header_line]), [])
+        is_2021 = "CHARACTERISTIC_ID" in raw_fields
+        profile_vintage = 2021 if is_2021 else 2016
+        if profile_vintage != pack.census_vintage:
+            raise ValueError(
+                f"control pack requires Census {pack.census_vintage}, "
+                f"but the profile is Census {profile_vintage}"
+            )
+        if is_2021 and geo_ids is not None:
+            selected_lines = (
+                line
+                for line in fh
+                if len(parts := line.split(",", 3)) >= 3
+                and parts[2].strip().strip('"') in geo_ids
+            )
+            reader = csv.DictReader(chain((header_line,), selected_lines))
+        else:
+            reader = csv.DictReader(chain((header_line,), fh))
+        if is_2021:
+            mem_col = "CHARACTERISTIC_ID"
+            val_col = "C1_COUNT_TOTAL"
+            geo_col = "ALT_GEO_CODE"
+            levels = _GEO_LEVEL_FOR_COLUMN_2021
+        else:
+            mem_col = _find_col(raw_fields, "Member ID: Profile")
+            val_col = _find_col(raw_fields, "[1]: Total")
+            geo_col = _find_col(raw_fields, "GEO_CODE")
+            levels = _GEO_LEVEL_FOR_COLUMN
+        target_level = geo_level_value or levels.get(pack.geography_level)
+        if target_level is None:
+            raise ValueError(
+                f"No Profile GEO_LEVEL mapping for {pack.geography_level!r}"
+            )
+        for row in reader:
+            if row.get("GEO_LEVEL", "").strip() != target_level:
+                continue
+            geo = row[geo_col].strip()
+            if geo_prefix and not geo.startswith(geo_prefix):
+                continue
+            if geo_ids is not None and geo not in geo_ids:
+                continue
+            member = row[mem_col].strip()
+            selected = selectors.get(member)
+            selected_root = root_selectors.get(member)
+            if selected is None and selected_root is None:
+                continue
+            raw = row[val_col].strip().replace(",", "")
+            try:
+                value = float(raw)
+            except ValueError:
+                continue
+            if not math.isfinite(value) or value < 0:
+                continue
+            if selected_root is not None:
+                root_dimension, _ = selected_root
+                roots[geo][root_dimension] = value
+                continue
+            assert selected is not None
+            dimension, category = selected
+            values = data[geo][dimension]
+            values[category] = values.get(category, 0.0) + value
+            observed[geo][dimension].add(member)
+
+    for geo, by_dimension in list(data.items()):
+        for dimension in dimensions:
+            root = roots[geo].get(dimension)
+            tolerance = next(
+                tolerance
+                for root_dimension, tolerance in root_selectors.values()
+                if root_dimension == dimension
+            )
+            vector_total = sum(by_dimension.get(dimension, {}).values())
+            if (
+                observed[geo][dimension] != expected_ids[dimension]
+                or root is None
+                or abs(vector_total - root) > tolerance
+            ):
+                by_dimension.pop(dimension, None)
+        if not by_dimension:
+            data.pop(geo)
+    return dict(data)
+
+
+def scale_and_validate_pack_controls(
+    raw: dict[str, dict[str, dict[str, float]]],
+    pack: ControlPackManifest,
+    target_total: int,
+) -> tuple[dict[str, dict[str, dict[str, int]]], list[str]]:
+    """Scale all pack household margins to one exact linked-household total."""
+
+    dimensions = [
+        margin.dimensions[1]
+        for margin in pack.margins
+        if margin.entity_level == "household"
+    ]
+    if "household_size_group" not in dimensions:
+        raise ValueError("pack controls require household_size_group as the anchor")
+    complete = {
+        geo: values
+        for geo, values in raw.items()
+        if all(
+            values.get(dimension) and sum(values[dimension].values()) > 0
+            for dimension in dimensions
+        )
+    }
+    dropped = sorted(set(raw) - set(complete))
+    if target_total < 0:
+        raise ValueError("target total must be non-negative")
+    anchor_keys = [
+        (geo, category)
+        for geo in sorted(complete)
+        for category in sorted(complete[geo]["household_size_group"])
+    ]
+    if not anchor_keys:
+        raise ValueError("No complete household control vectors found in profile data.")
+    anchor_allocations = _allocate_integer_counts(
+        [
+            complete[geo]["household_size_group"][category]
+            for geo, category in anchor_keys
+        ],
+        target_total,
+    )
+    anchors = dict(zip(anchor_keys, anchor_allocations, strict=True))
+    scaled: dict[str, dict[str, dict[str, int]]] = {}
+    for geo in sorted(complete):
+        anchor = {
+            category: anchors[(geo, category)]
+            for category in sorted(complete[geo]["household_size_group"])
+        }
+        geography_total = sum(anchor.values())
+        scaled[geo] = {"household_size_group": anchor}
+        for dimension in dimensions:
+            if dimension == "household_size_group":
+                continue
+            categories = sorted(complete[geo][dimension])
+            allocations = _allocate_integer_counts(
+                [complete[geo][dimension][category] for category in categories],
+                geography_total,
+            )
+            scaled[geo][dimension] = dict(zip(categories, allocations, strict=True))
+    return scaled, dropped
+
+
+def write_pack_controls_csv(
+    scaled: dict[str, dict[str, dict[str, int]]],
+    out_path: Path,
+    pack: ControlPackManifest,
+) -> None:
+    """Write every scaled household margin in a pack-compatible long table."""
+
+    dimensions = [
+        margin.dimensions[1]
+        for margin in pack.margins
+        if margin.entity_level == "household"
+    ]
+    fieldnames = ["margin", "dimensions", pack.geography_column, *dimensions, "count"]
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    with out_path.open("w", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=fieldnames)
+        writer.writeheader()
+        for geo in sorted(scaled):
+            for dimension in dimensions:
+                for category, count in sorted(scaled[geo][dimension].items()):
+                    row: dict[str, str | int] = {field: "" for field in fieldnames}
+                    row.update(
+                        {
+                            "margin": f"{pack.geography_column} {dimension}",
+                            "dimensions": f"{pack.geography_column},{dimension}",
+                            pack.geography_column: geo,
+                            dimension: category,
+                            "count": count,
+                        }
+                    )
+                    writer.writerow(row)
 
 
 def scale_and_validate_controls(

@@ -1055,6 +1055,16 @@ def map_command(
     help="Total household count to scale controls to (e.g. 5500000).",
 )
 @click.option(
+    "--control-pack",
+    "control_pack_identifier",
+    default=None,
+    help=(
+        "Optional built-in control pack. Expanded housing packs extract and "
+        "scale every reviewed household margin; omit for the legacy household-"
+        "size and tenure preparation path."
+    ),
+)
+@click.option(
     "--candidates",
     "candidates_path",
     default=None,
@@ -1126,6 +1136,7 @@ def controls_command(
     profile_path: Path,
     geo_column: str,
     target_total: int,
+    control_pack_identifier: str | None,
     candidates_path: Path | None,
     geo_prefix: str | None,
     geo_level_value: str | None,
@@ -1136,25 +1147,45 @@ def controls_command(
 ) -> None:
     """Build IPF control tables from a StatCan Census Profile for small-area synthesis.
 
-    Reads household-size (members 52–56) and tenure (members 1618–1619) margins
-    from a 2247-variable Census Profile, scales them to the target household count,
-    and writes a long-format controls CSV ready for ``calibrate`` or
-    ``synthesize``. Household-size controls use
+    By default, reads household-size and tenure margins from a Census Profile.
+    With ``--control-pack``, reads every reviewed household margin declared by
+    that pack. It scales them to the target household count and writes a
+    long-format controls CSV ready for ``calibrate`` or ``synthesize``.
+    Household-size controls use
     household_size_group by default because Census Profile combines 5-or-more
     person households into one category.  When --candidates is supplied, also
     writes that grouped column while preserving exact household_size.
 
-    Geographies missing either margin are automatically dropped (they would cause
-    an IPF dimension mismatch in calibration).
+    Geographies missing any required margin are automatically dropped (they
+    would cause an IPF dimension mismatch in calibration).
 
     See the small-area documentation for worked examples.
     """
     from synthpopcan.small_area_controls import (
         extract_controls_from_profile,
+        extract_household_controls_for_pack,
         scale_and_validate_controls,
+        scale_and_validate_pack_controls,
         write_controls_csv,
+        write_pack_controls_csv,
         write_recoded_candidates,
     )
+
+    selected_pack = None
+    if control_pack_identifier is not None:
+        from synthpopcan.control_packs import load_control_pack
+
+        try:
+            selected_pack = load_control_pack(control_pack_identifier)
+        except (OSError, ValueError) as exc:
+            raise click_value_error(ValueError(str(exc))) from exc
+        if selected_pack.geography_level != geo_column.lower():
+            raise click_value_error(
+                ValueError(
+                    f"control pack requires {selected_pack.geography_level!r}, "
+                    f"but --geo-column is {geo_column!r}"
+                )
+            )
 
     # Default output paths
     if controls_out is None:
@@ -1177,48 +1208,78 @@ def controls_command(
 
     click.echo(f"Reading profile: {profile_path}")
     try:
-        raw = extract_controls_from_profile(
-            profile_path,
-            geo_column,
-            geo_prefix=geo_prefix,
-            geo_level_value=geo_level_value,
-        )
+        if selected_pack is None:
+            raw = extract_controls_from_profile(
+                profile_path,
+                geo_column,
+                geo_prefix=geo_prefix,
+                geo_level_value=geo_level_value,
+            )
+        else:
+            raw = extract_household_controls_for_pack(
+                profile_path,
+                selected_pack,
+                geo_prefix=geo_prefix,
+                geo_level_value=geo_level_value,
+            )
     except OSError as exc:
         raise click_file_access_error(profile_path, "read", exc) from exc
     except ValueError as exc:
         raise click_value_error(exc) from exc
 
-    n_hhsize = sum(
-        1 for d in raw.values() if d.get("hhsize") and sum(d["hhsize"].values()) > 0
-    )
-    n_tenure = sum(
-        1 for d in raw.values() if d.get("tenure") and sum(d["tenure"].values()) > 0
-    )
-    click.echo(
-        f"  {len(raw):,} {geo_column} units found  "
-        f"({n_hhsize:,} with hhsize data, {n_tenure:,} with tenure data)"
-    )
-
-    scaled, dropped = scale_and_validate_controls(raw, target_total)
+    if selected_pack is None:
+        n_hhsize = sum(
+            1 for d in raw.values() if d.get("hhsize") and sum(d["hhsize"].values()) > 0
+        )
+        n_tenure = sum(
+            1 for d in raw.values() if d.get("tenure") and sum(d["tenure"].values()) > 0
+        )
+        click.echo(
+            f"  {len(raw):,} {geo_column} units found  "
+            f"({n_hhsize:,} with hhsize data, {n_tenure:,} with tenure data)"
+        )
+        scaled, dropped = scale_and_validate_controls(raw, target_total)
+    else:
+        household_dimensions = [
+            margin.dimensions[1]
+            for margin in selected_pack.margins
+            if margin.entity_level == "household"
+        ]
+        click.echo(
+            f"  {len(raw):,} {geo_column} units found for "
+            f"{len(household_dimensions)} household margins"
+        )
+        scaled, dropped = scale_and_validate_pack_controls(
+            raw, selected_pack, target_total
+        )
     if dropped:
         click.echo(
             f"  Dropped {len(dropped):,} {geo_column} unit(s) "
-            "missing hhsize or tenure data"
+            "with incomplete or zero required control vectors"
         )
-    hhsize_total = sum(sum(m["hhsize"].values()) for m in scaled.values())
-    tenure_total = sum(sum(m["tenure"].values()) for m in scaled.values())
-    click.echo(
-        f"  Scaled {len(scaled):,} units to "
-        f"{hhsize_total:,} households (hhsize), {tenure_total:,} (tenure)"
-    )
+    if selected_pack is None:
+        hhsize_total = sum(sum(m["hhsize"].values()) for m in scaled.values())
+        tenure_total = sum(sum(m["tenure"].values()) for m in scaled.values())
+        click.echo(
+            f"  Scaled {len(scaled):,} units to "
+            f"{hhsize_total:,} households (hhsize), {tenure_total:,} (tenure)"
+        )
+    else:
+        click.echo(
+            f"  Scaled {len(scaled):,} units and all household margins to "
+            f"{target_total:,} households"
+        )
 
     try:
-        write_controls_csv(
-            scaled,
-            controls_out,
-            geo_column,
-            household_size_column=household_size_group_column,
-        )
+        if selected_pack is None:
+            write_controls_csv(
+                scaled,
+                controls_out,
+                geo_column,
+                household_size_column=household_size_group_column,
+            )
+        else:
+            write_pack_controls_csv(scaled, controls_out, selected_pack)
     except OSError as exc:
         raise click_file_access_error(controls_out, "write", exc) from exc
     print_wrote(controls_out)
@@ -1251,19 +1312,35 @@ def controls_command(
         print_wrote(output_households)
         print_wrote(output_persons)
         click.echo("\nNext step:")
+        pack_options = (
+            "    --person-controls person-controls.csv \\\n"
+            f"    --control-pack {selected_pack.identifier} \\\n"
+            "    --control-pack-evidence control-pack-evidence.json \\\n"
+            if selected_pack is not None
+            else ""
+        )
         click.echo(
             f"  synthpopcan geo calibrate {candidates_out} \\\n"
             f"    --controls {controls_out} \\\n"
+            f"{pack_options}"
             f"    --geo-dimension {geo_column} \\\n"
             f"    --pool-size 10000 \\\n"
             f"    --out calibrated-population/"
         )
     else:
         click.echo("\nNext step:")
+        pack_options = (
+            "    --person-controls person-controls.csv \\\n"
+            f"    --control-pack {selected_pack.identifier} \\\n"
+            "    --control-pack-evidence control-pack-evidence.json \\\n"
+            if selected_pack is not None
+            else ""
+        )
         click.echo(
             f"  synthpopcan geo synthesize MODEL \\\n"
             f"    --households {target_total} \\\n"
             f"    --controls {controls_out} \\\n"
+            f"{pack_options}"
             f"    --geo-dimension {geo_column} \\\n"
             f"    --max-household-size 5 \\\n"
             f"    --household-size-group-column {household_size_group_column} \\\n"

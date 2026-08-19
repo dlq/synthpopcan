@@ -83,7 +83,7 @@ def test_cli_command_tree_is_coherent() -> None:
 def test_cli_lists_and_shows_control_packs(tmp_path: Path, capsys) -> None:
     assert main(["geo", "control-packs", "list", "--format", "json"]) == 0
     packs = json.loads(capsys.readouterr().out)
-    assert len(packs) == 8
+    assert len(packs) == 24
     pack_id = "statcan-2021-core-private-household-da-v1"
     assert any(item["identifier"] == pack_id for item in packs)
 

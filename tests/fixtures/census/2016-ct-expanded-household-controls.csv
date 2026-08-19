@@ -1,0 +1,49 @@
+GEO_LEVEL,GEO_CODE (POR),Member ID: Profile of Census Tracts (2247),DIM: Profile of Census Tracts (2247),Dim: Sex (3): Member ID: [1]: Total - Sex
+2,0010001.00,41,Total - Occupied private dwellings by structural type of dwelling - 100% data,700
+2,0010001.00,42,Single-detached house,450
+2,0010001.00,43,Apartment in a building that has five or more storeys,0
+2,0010001.00,45,Semi-detached house,115
+2,0010001.00,46,Row house,0
+2,0010001.00,47,Apartment or flat in a duplex,120
+2,0010001.00,48,Apartment in a building that has fewer than five storeys,10
+2,0010001.00,49,Other single-attached house,5
+2,0010001.00,50,Movable dwelling,0
+2,0010001.00,51,Total - Private households by household size - 100% data,695
+2,0010001.00,52,1 person,175
+2,0010001.00,53,2 persons,225
+2,0010001.00,54,3 persons,160
+2,0010001.00,55,4 persons,95
+2,0010001.00,56,5 or more persons,45
+2,0010001.00,1617,Total - Private households by tenure - 25% sample data,665
+2,0010001.00,1618,Owner,405
+2,0010001.00,1619,Renter,255
+2,0010001.00,1620,Band housing,0
+2,0010001.00,1621,Total - Occupied private dwellings by condominium status - 25% sample data,660
+2,0010001.00,1622,Condominium,0
+2,0010001.00,1623,Not condominium,665
+2,0010001.00,1624,Total - Occupied private dwellings by number of bedrooms - 25% sample data,665
+2,0010001.00,1625,No bedrooms,0
+2,0010001.00,1626,1 bedroom,55
+2,0010001.00,1627,2 bedrooms,135
+2,0010001.00,1628,3 bedrooms,315
+2,0010001.00,1629,4 or more bedrooms,160
+2,0010001.00,1630,Total - Occupied private dwellings by number of rooms - 25% sample data,665
+2,0010001.00,1631,1 to 4 rooms,90
+2,0010001.00,1632,5 rooms,135
+2,0010001.00,1633,6 rooms,180
+2,0010001.00,1634,7 rooms,80
+2,0010001.00,1635,8 or more rooms,180
+2,0010001.00,1640,Total - Private households by housing suitability - 25% sample data,660
+2,0010001.00,1641,Suitable,630
+2,0010001.00,1642,Not suitable,35
+2,0010001.00,1643,Total - Occupied private dwellings by period of construction - 25% sample data,660
+2,0010001.00,1644,1960 or before,205
+2,0010001.00,1645,1961 to 1980,250
+2,0010001.00,1646,1981 to 1990,85
+2,0010001.00,1647,1991 to 2000,65
+2,0010001.00,1648,2001 to 2005,30
+2,0010001.00,1649,2006 to 2010,15
+2,0010001.00,1650,2011 to 2016,15
+2,0010001.00,1651,Total - Occupied private dwellings by dwelling condition - 25% sample data,665
+2,0010001.00,1652,Only regular maintenance or minor repairs needed,600
+2,0010001.00,1653,Major repairs needed,60

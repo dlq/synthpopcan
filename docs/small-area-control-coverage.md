@@ -1,14 +1,14 @@
 # Small-Area Control Coverage Inventory
 
-Status: source-availability screen, 2026-08-01\
+Status: source-availability screen plus reviewed implementation, 2026-08-19\
 Census vintages: 2016 and 2021\
 Geographies: census subdivision (CSD), census tract (CT), aggregate
 dissemination area (ADA), and dissemination area (DA)
 
 This inventory asks which public Census Profile families could constrain the
-fields emitted by the corresponding all-fields linked model. It is deliberately
-broader than the current `geo controls` implementation, which builds only
-household-size and tenure margins.
+fields emitted by the corresponding all-fields linked model. The default
+`geo controls` path remains the compatible household-size-and-tenure workflow;
+the reviewed expanded packs now build all nine compatible household margins.
 
 ## Answer At A Glance
 
@@ -29,6 +29,9 @@ Thus, the defensible source ceiling is **29/36 fields (80.6%)** using
 count-based candidates, or **31/36 fields (86.1%)** only if the two
 percentage-derived approximations are accepted. This is a ceiling, not the
 number implemented today and not evidence that all 29 crosswalks are ready.
+The reviewed core and expanded packs currently control **15 of 36 fields**
+through 14 families: nine household fields plus broad age by sex/gender,
+citizenship, immigrant status, generation status, and visible-minority status.
 
 ## Geography Coverage
 
@@ -75,7 +78,7 @@ control is implemented.
 |---|---|---:|---:|---|
 | `household_size` | direct/coarsened | 51 | 50 | Top-code generated size at 5+. |
 | `TENUR` | coarsened | 1617 | 1414 | Combine renter with band/local-government/First Nation housing. |
-| `DTYPE` | coarsened | 41 | 41 | Review vintage-specific dwelling categories. |
+| `DTYPE` | coarsened | 41 | 41 | Implemented with vintage-specific dwelling categories. |
 | `ROOM` | coarsened | 1630 | 1427 | Profile groups 1–4 rooms and top-codes 8+. |
 | `BEDRM` | coarsened | 1624 | 1421 | Profile top-codes 4+. |
 | `CONDO` | direct | 1621 | 1418 | Occupied-private-dwelling universe. |
@@ -84,11 +87,11 @@ control is implemented.
 | `NOS` | direct | 1640 | 1437 | Suitable versus not suitable housing. |
 | `AGEGRP` + sex/gender | joint/coarsened | 8 | 8 | Cross broad age rows with Profile sex/gender columns. |
 | marital status | coarsened | 59 | 58 | Shared population aged 15+ universe. |
-| `CITIZEN` | coarsened | 1135 | 1522 | Review multiple-citizenship categories. |
-| `IMMSTAT` | coarsened | 1140 | 1527 | Keep status distinct from immigration period. |
-| `GENSTAT` | direct | 1278 | 1665 | First, second, third-or-later generation. |
+| `CITIZEN` | coarsened | 1135 | 1522 | Implemented as Canadian citizen versus not Canadian. |
+| `IMMSTAT` | coarsened | 1140 | 1527 | Implemented; status remains distinct from immigration period. |
+| `GENSTAT` | coarsened | 1278 | 1665 | Implemented as first, second, third-or-later generation. |
 | `POB` | conditional/coarsened | 1157 | 1544 | Immigrant-only detail; combine with immigration status. |
-| `VISMIN` | coarsened | 1323 | 1683 | Review vintage-specific categories and terminology. |
+| `VISMIN` | coarsened | 1323 | 1683 | Implemented as visible-minority versus not-visible-minority status. |
 | three mother-tongue indicators | derived components | 112 | 393 | Preserve multiple responses. |
 | three home-language indicators | derived components | 381 | 735 | Preserve multiple responses. |
 | `HDGREE` | coarsened | 1683 | 1998 | Population aged 15+ universe. |
@@ -120,9 +123,10 @@ as locally calibrated.
 
 ## What This Audit Does And Does Not Establish
 
-This is a **source-availability screen**. It establishes that a potentially
-compatible Profile family is published and measures the number of geographies
-with a positive root universe. It does not yet establish:
+This began as a **source-availability screen**. For the 14 implemented
+families, the compatibility registry and packs now additionally establish
+reviewed mappings, universes, suppression policies, and executable fixtures.
+For the remaining candidates, the inventory still does not establish:
 
 - an exact, reviewed mapping of every Profile child category to every PUMF
   category;
@@ -139,15 +143,24 @@ universe and suppression policy, fixtures, independent reconciliation, and
 coverage/residual reporting. Person controls must continue to change whole
 household weights rather than detach people from households.
 
+For the implemented household families, extraction now checks every published
+root against the complete set of selected child rows before normalization. The
+allowed discrepancy is bounded by independent base-five randomized rounding
+of the root and children. Missing, suppressed, duplicated-subtotal, or
+out-of-bound vectors exclude the margin/geography rather than being rescaled
+into apparent agreement. Public 2016 CT and 2021 ADA slices are retained as
+aggregate-only regression fixtures.
+
 ## Recommended Implementation Order
 
-1. Add broad age-by-sex/gender person controls. They cover two important fields
-   jointly and use the strongest population universe.
-1. Expand household controls to dwelling type, bedrooms, rooms, repair,
-   construction period, housing suitability, and condominium status.
-1. Add reviewed immigration, citizenship, generation, visible-minority,
-   language, education, labour-force, work-activity, and income-band
-   crosswalks, with explicit universe handling.
+1. **Completed:** broad age-by-sex/gender person controls.
+1. **Completed:** dwelling type, bedrooms, rooms, repair, construction period,
+   housing suitability, and condominium status.
+1. **Completed:** citizenship, immigrant status, generation status, and
+   visible-minority status for people in private households.
+1. Add reviewed marital-status, language, place-of-birth, education,
+   labour-force, work-activity, and income-band crosswalks, with explicit
+   conditional-universe handling.
 1. Consider mortgage and subsidy only as an opt-in approximate tier with
    rounding provenance and a reconciliation tolerance.
 1. Leave the five unsupported fields explicitly uncontrolled unless another
