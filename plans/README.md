@@ -20,15 +20,15 @@ plan, but new release narrative belongs in [CHANGELOG.md](../CHANGELOG.md).
 | Plan | Ongoing responsibility | Current next action |
 | --- | --- | --- |
 | [Correctness assurance](2026-07-12-correctness-assurance.md) | Compatibility, exact-commit CI, coverage, correctness, release evidence, assurance, and reproduction gates | Preserve the frozen baseline; reassess Python 3.15 support in November 2026 after its final release and ecosystem-wheel availability. |
-| [Research-software stewardship](2026-07-19-research-software-stewardship.md) | Citation, preservation, licensing, support boundaries, publication evidence, and future scholarly-readiness gates | Preserve the verified `1.0.0` identifiers and exact-commit publication process. |
+| [Research-software stewardship](2026-07-19-research-software-stewardship.md) | Citation, preservation, licensing, support boundaries, publication evidence, and future scholarly-readiness gates | Preserve the verified `1.1.0` identifiers, earlier records, and exact-commit publication process. |
 | [Strict typing](2026-08-01-strict-typing.md) | Package-wide Pyright `standard` and an incremental strict-clean ratchet | Type shared dynamic-data boundaries without weakening runtime validation. |
-| [Post-1.0 release train](2026-08-19-post-1-0-release-train.md) | Bounded minor-release scope, confidence, sequencing, and acceptance gates | Publish the exact green `1.1.0` candidate; keep `1.2.0` scoped and `1.3.0` explicitly forecast. |
+| [Post-1.0 release train](2026-08-19-post-1-0-release-train.md) | Bounded minor-release scope, confidence, sequencing, and acceptance gates | Begin bounded `1.2.0` evidence work; keep `1.3.0` explicitly forecast. |
 
 ## Active Feature Implementation
 
 | Plan | Target release | Current next action |
 | --- | --- | --- |
-| [Expanded small-area controls](2026-08-01-expanded-small-area-controls.md) | `1.1.0` broad compatible control packs | Preserve the completed 24-pack/14-family gate through exact-commit release publication before starting the `1.2.0` public surface. |
+| [Expanded small-area controls](2026-08-01-expanded-small-area-controls.md) | `1.2.0` conditional person controls | Preserve the released 24-pack/14-family baseline while building the bounded conditional-control evidence tranche. |
 
 ## Conditional Research
 

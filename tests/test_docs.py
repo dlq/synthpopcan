@@ -32,8 +32,9 @@ def test_citation_metadata_matches_release() -> None:
     citation = Path("CITATION.cff").read_text()
     readme = Path("README.md").read_text()
     prior_version_doi = "10.5281/zenodo.21961301"
+    current_version_doi = "10.5281/zenodo.22017599"
     concept_doi = "10.5281/zenodo.21461463"
-    current_snapshot = "swh:1:snp:1d4d40f874206f2abb70d434402bc9034a127845"
+    current_snapshot = "swh:1:snp:a08674a118babe38135d20805b1bf4add98692fc"
     versions = re.findall(r'^\s*version:\s*"([^"]+)"', citation, re.MULTILINE)
     dates = re.findall(r"^\s*date-released:\s*(\S+)", citation, re.MULTILINE)
 
@@ -73,14 +74,14 @@ def test_citation_metadata_matches_release() -> None:
             "the versioned software and preferred citation should use the version DOI"
         )
     assert f"value: {concept_doi}" in citation
-    if synthpopcan.__version__ == "1.0.0":
+    if synthpopcan.__version__ == "1.1.0":
         assert version_identifier is not None
-        assert version_identifier.group(1) == prior_version_doi
-        assert f"value: {prior_version_doi}" in citation
+        assert version_identifier.group(1) == current_version_doi
+        assert f"value: {current_version_doi}" in citation
         assert f"value: {current_snapshot}" in citation
     else:
         assert version_identifier is None
-        assert prior_version_doi not in citation
+        assert current_version_doi not in citation
         assert current_snapshot not in citation
     assert prior_version_doi in readme
 
@@ -108,10 +109,16 @@ def test_dated_stewardship_records_are_public_and_preservation_is_consistent() -
         "docs/records/software-heritage-2026-08-15.md"
     ).read_text()
     preservation = Path("docs/records/software-heritage-2026-08-16.md").read_text()
-    prior_snapshot = "swh:1:snp:98f7bee54900f50bc99ac5c9f000a728e80016b9"
-    snapshot = "swh:1:snp:1d4d40f874206f2abb70d434402bc9034a127845"
-    release = "swh:1:rel:7152cfd62259d319a86fdcee497d76fa87667f7b"
-    revision = "swh:1:rev:a9203d8a477608d78296faf69adcf30fba2b64d7"
+    current_preservation = Path(
+        "docs/records/software-heritage-2026-08-19.md"
+    ).read_text()
+    historical_snapshot = "swh:1:snp:98f7bee54900f50bc99ac5c9f000a728e80016b9"
+    prior_snapshot = "swh:1:snp:1d4d40f874206f2abb70d434402bc9034a127845"
+    prior_release = "swh:1:rel:7152cfd62259d319a86fdcee497d76fa87667f7b"
+    prior_revision = "swh:1:rev:a9203d8a477608d78296faf69adcf30fba2b64d7"
+    snapshot = "swh:1:snp:a08674a118babe38135d20805b1bf4add98692fc"
+    release = "swh:1:rel:27e0a7690094a400a2851cfd1956a22e92c0a1e1"
+    revision = "swh:1:rev:662c044466d1aa98c6a4bdb19f9438077acdda24"
 
     assert re.search(r"^\s+stewardship$", docs_index, re.MULTILINE)
     for record in (
@@ -119,18 +126,35 @@ def test_dated_stewardship_records_are_public_and_preservation_is_consistent() -
         "records/software-management-plan-2026-08-15",
         "records/software-heritage-2026-08-15",
         "records/software-heritage-2026-08-16",
+        "records/software-heritage-2026-08-19",
     ):
         assert record in landing
     assert snapshot in landing
-    if synthpopcan.__version__ == "1.0.0":
+    if synthpopcan.__version__ == "1.1.0":
         assert snapshot in citation
     else:
         assert snapshot not in citation
-    assert snapshot in preservation
+    assert snapshot in current_preservation
     assert release in landing
-    assert release in preservation
+    assert release in current_preservation
     assert revision in landing
-    assert revision in preservation
+    assert revision in current_preservation
+    assert "2026-08-19T19:33:20.505914+00:00" in current_preservation
+    assert "2026-08-19T19:33:27.230000+00:00" in current_preservation
+    assert "https://archive.softwareheritage.org/api/1/origin/save/2440101/" in (
+        current_preservation
+    )
+    assert (
+        "https://archive.softwareheritage.org/api/1/origin/"
+        "https://github.com/dlq/synthpopcan/visit/3/"
+    ) in current_preservation
+    assert prior_snapshot in landing
+    assert prior_snapshot not in citation
+    assert prior_snapshot in preservation
+    assert prior_release in landing
+    assert prior_release in preservation
+    assert prior_revision in landing
+    assert prior_revision in preservation
     assert "2026-08-16T04:13:44.106960+00:00" in preservation
     assert "2026-08-16T04:13:53.897000+00:00" in preservation
     assert "https://archive.softwareheritage.org/api/1/origin/save/2428948/" in (
@@ -140,9 +164,9 @@ def test_dated_stewardship_records_are_public_and_preservation_is_consistent() -
         "https://archive.softwareheritage.org/api/1/origin/"
         "https://github.com/dlq/synthpopcan/visit/2/"
     ) in preservation
-    assert prior_snapshot in landing
-    assert prior_snapshot not in citation
-    assert prior_snapshot in prior_preservation
+    assert historical_snapshot in landing
+    assert historical_snapshot not in citation
+    assert historical_snapshot in prior_preservation
     assert "swh:1:rel:9b1b92b09a42a293907a733a1638c269b0819516" in (prior_preservation)
     assert "swh:1:rel:6637b3aa961bbd21888da5aa847a128ac9975d3b" in (prior_preservation)
 

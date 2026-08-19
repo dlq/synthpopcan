@@ -93,8 +93,15 @@ Python package; Read the Docs publishes maintained guidance; and Zenodo is the
 canonical citable archive for released software and prepared models. Software
 Heritage independently preserves the source history.
 
-The completed 2026-08-16 Software Heritage capture contains the exact annotated
-`v1.0.0` release and source revision:
+The completed 2026-08-19 Software Heritage capture contains the exact annotated
+`v1.1.0` release and source revision:
+
+- snapshot: `swh:1:snp:a08674a118babe38135d20805b1bf4add98692fc`;
+- archived `v1.1.0` tag: `swh:1:rel:27e0a7690094a400a2851cfd1956a22e92c0a1e1`;
+- tagged source revision:
+  `swh:1:rev:662c044466d1aa98c6a4bdb19f9438077acdda24`.
+
+The 2026-08-16 capture remains durable historical evidence for `v1.0.0`:
 
 - snapshot: `swh:1:snp:1d4d40f874206f2abb70d434402bc9034a127845`;
 - archived `v1.0.0` tag: `swh:1:rel:7152cfd62259d319a86fdcee497d76fa87667f7b`;
@@ -108,7 +115,7 @@ source history:
 - archived `v0.9.0` tag: `swh:1:rel:9b1b92b09a42a293907a733a1638c269b0819516`;
 - archived `v0.7.0` tag: `swh:1:rel:6637b3aa961bbd21888da5aa847a128ac9975d3b`.
 
-Use the [1.0.0 version DOI](https://doi.org/10.5281/zenodo.21961301) when
+Use the [1.1.0 version DOI](https://doi.org/10.5281/zenodo.22017599) when
 reproducing work from that release. A Software Heritage identifier pins source
 objects but does not replace the PyPI artifact, Zenodo release DOI, model DOI,
 or published checksums.
@@ -116,8 +123,8 @@ or published checksums.
 ## Dated Records
 
 These records describe the `0.9.0` baseline and the evidence used to establish
-the `1.0.0` line. They are self-assessments and management records, not
-external certifications:
+and preserve the `1.x` line. They are self-assessments and management records,
+not external certifications:
 
 ```{toctree}
 :maxdepth: 1
@@ -126,6 +133,7 @@ records/fair4rs-2026-08-15
 records/software-management-plan-2026-08-15
 records/software-heritage-2026-08-15
 records/software-heritage-2026-08-16
+records/software-heritage-2026-08-19
 records/prepared-model-licensing-review-2026-08-15
 records/prepared-model-archive-correction-2026-08-16
 ```

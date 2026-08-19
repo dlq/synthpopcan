@@ -1,12 +1,12 @@
 # Expanded Small-Area Controls Plan
 
-Status: `1.1.0` release candidate complete; later tranches scoped or forecast\
+Status: `1.1.0` released; later tranches scoped or forecast\
 Created: 2026-08-01\
 Last updated: 2026-08-19\
 Target: `1.1.0` broad compatible packs; conditional person controls in `1.2.0`\
-Next action: preserve the completed 24-pack/14-family gate through exact-commit
-`1.1.0` publication, then review the age-15+ marital, education, labour-force,
-and work-activity crosswalks for `1.2.0`\
+Next action: preserve the released 24-pack/14-family baseline while reviewing
+the age-15+ marital, education, labour-force, and work-activity crosswalks for
+`1.2.0`\
 Roadmap: [PLANS.md](../PLANS.md) | [Plan index](README.md)
 
 Release sequencing and confidence are defined in the

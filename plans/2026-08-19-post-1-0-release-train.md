@@ -1,11 +1,11 @@
 # Post-1.0 Release Train
 
-Status: `1.1.0` release candidate complete; later releases remain planned\
+Status: `1.1.0` released; later releases remain planned\
 Created: 2026-08-19\
 Last updated: 2026-08-19\
 Target: bounded `1.x` feature releases with patch releases as needed\
-Next action: publish the exact green `1.1.0` candidate, then begin the bounded
-`1.2.0` evidence tranche without expanding its public surface prematurely\
+Next action: begin the bounded `1.2.0` evidence tranche without expanding its
+public surface prematurely\
 Roadmap: [PLANS.md](../PLANS.md) | [Plan index](README.md)
 
 ## Planning Horizon
@@ -26,7 +26,7 @@ fix should not wait for the next feature release.
 ## `1.1.0` — Broad Compatible Small-Area Controls
 
 Target window: August 2026\
-Confidence: release candidate complete
+Confidence: released
 
 Ship the additive control expansion already under implementation:
 

@@ -227,6 +227,7 @@ matches what your work actually depended on.
 | You used | Cite | DOI |
 | --- | --- | --- |
 | SynthPopCan generally | The concept DOI, which always resolves to the newest release | [10.5281/zenodo.21461463](https://doi.org/10.5281/zenodo.21461463) |
+| SynthPopCan 1.1.0 | The archived 1.1.0 version DOI | [10.5281/zenodo.22017599](https://doi.org/10.5281/zenodo.22017599) |
 | SynthPopCan 1.0.0 | The archived 1.0.0 version DOI | [10.5281/zenodo.21961301](https://doi.org/10.5281/zenodo.21961301) |
 | SynthPopCan 0.9.0 | The archived 0.9.0 version DOI | [10.5281/zenodo.21876960](https://doi.org/10.5281/zenodo.21876960) |
 | SynthPopCan 0.7.0 | The archived 0.7.0 version DOI | [10.5281/zenodo.21743129](https://doi.org/10.5281/zenodo.21743129) |
@@ -241,12 +242,15 @@ Citation metadata lives in
 [`CITATION.cff`](https://github.com/dlq/synthpopcan/blob/main/CITATION.cff),
 which GitHub renders as a ready-made citation from the sidebar.
 
-The source history through `v1.0.0` is also independently preserved in
-[Software Heritage](https://archive.softwareheritage.org/swh:1:snp:1d4d40f874206f2abb70d434402bc9034a127845;origin=https://github.com/dlq/synthpopcan).
+The source history through `v1.1.0` is also independently preserved in
+[Software Heritage](https://archive.softwareheritage.org/swh:1:snp:a08674a118babe38135d20805b1bf4add98692fc;origin=https://github.com/dlq/synthpopcan).
 Use its SWHIDs to identify source objects; continue to use the release DOI and
 artifact checksums to identify the software and model bytes used in research.
-The earlier capture through `v0.9.0` remains available in the dated
-[preservation record](https://synthpopcan.readthedocs.io/en/latest/records/software-heritage-2026-08-15.html).
+The earlier captures through `v1.0.0` and `v0.9.0` remain available in the
+[2026-08-16](https://synthpopcan.readthedocs.io/en/latest/records/software-heritage-2026-08-16.html)
+and
+[2026-08-15](https://synthpopcan.readthedocs.io/en/latest/records/software-heritage-2026-08-15.html)
+preservation records.
 
 Prepared model packages are derived from Statistics Canada public use microdata
 files under the

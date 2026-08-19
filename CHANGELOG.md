@@ -4,6 +4,10 @@ All notable public changes to SynthPopCan are tracked here.
 
 ## Unreleased
 
+- Record the published `1.1.0` Zenodo version DOI and completed Software
+  Heritage snapshot, annotated release object, and exact source revision in
+  citation metadata and a dated preservation record.
+
 ## 1.1.0 - 2026-08-19
 
 Broader compatible small-area controls with runtime-enforced invariants.

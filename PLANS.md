@@ -34,18 +34,17 @@ when later evidence changes the interpretation.
 
 ## Current Priorities
 
-The bounded `1.1.0` small-area control expansion is the current release
-candidate; its local acceptance and installed-distribution gates are complete.
-`1.2.0` has a scoped conditional-person tranche, while `1.3.0` is a forecast
-rather than a commitment. The project plans only this three-release horizon:
-one current release, one scoped successor, and one evidence-dependent forecast.
-Work beyond it remains trigger-based research.
+The bounded `1.1.0` small-area control expansion is released and preserved.
+`1.2.0` is now the scoped conditional-person tranche, while `1.3.0` remains a
+forecast rather than a commitment. The project plans only this three-release
+horizon: one released baseline, one scoped successor, and one
+evidence-dependent forecast. Work beyond it remains trigger-based research.
 
 | Priority | Current commitment | Detailed owner |
 | --- | --- | --- |
 | `1.x` compatibility | Preserve the frozen documented CLI, curated Python API, and supported persisted schemas. Use additive interfaces or separately versioned contracts for new work. | [Compatibility policy](docs/compatibility.md), [ADR-0010](adr/0010-pre-1-0-compatibility-evolution.md) |
 | Correctness and release evidence | Keep exact-commit CI, coverage, correctness, installed-distribution, release-evidence, and reproduction gates blocking later releases. | [Correctness assurance plan](plans/2026-07-12-correctness-assurance.md) |
-| Stewardship and publication | Preserve the verified `1.0.0` DOI and Software Heritage identifiers; retain scoped licensing, non-overwriting archives, support boundaries, and exact release provenance. | [Stewardship plan](plans/2026-07-19-research-software-stewardship.md), [ADR-0014](adr/0014-separate-prepared-model-and-source-licensing.md) |
+| Stewardship and publication | Preserve the verified `1.1.0` DOI and Software Heritage identifiers together with earlier records; retain scoped licensing, non-overwriting archives, support boundaries, and exact release provenance. | [Stewardship plan](plans/2026-07-19-research-software-stewardship.md), [ADR-0014](adr/0014-separate-prepared-model-and-source-licensing.md) |
 | Type-safety maintenance | Keep package-wide Pyright `standard` blocking and expand the strict-clean module set without weakening dynamic-data validation. | [Strict typing plan](plans/2026-08-01-strict-typing.md) |
 | Release train | Preserve the additive `1.1.0` control expansion and admit later families only through their stated universe and evidence gates. | [Post-1.0 release train](plans/2026-08-19-post-1-0-release-train.md) |
 
@@ -53,7 +52,7 @@ Work beyond it remains trigger-based research.
 
 | Release | Confidence | Target window | Planned outcome |
 | --- | --- | --- | --- |
-| `1.1.0` | Release candidate complete | August 2026 | 24 reviewed control packs and 14 compatible control families, including broad packs that jointly apply nine household and five person margins with explicit fail-closed runtime invariants. |
+| `1.1.0` | Released | August 2026 | 24 reviewed control packs and 14 compatible control families, including broad packs that jointly apply nine household and five person margins with explicit fail-closed runtime invariants. |
 | `1.2.0` | Scoped following release | November–December 2026 | Conditional age-15+ marital-status, education, labour-force, and work-activity controls that pass explicit universe and residual gates. |
 | `1.3.0` | Forecast, not committed | First half of 2027 | Evidence-qualified language, immigrant place-of-birth, and income-band controls; approximate mortgage/subsidy only as an opt-in tier. |
 
