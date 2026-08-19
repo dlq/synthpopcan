@@ -1,470 +1,179 @@
-# SynthPopCan Plan
+# SynthPopCan Roadmap
 
 Status: `1.x` maintenance roadmap\
-Last updated: 2026-08-16\
+Last updated: 2026-08-19\
 Current software version: `1.0.0`
 
-## Current Focus
+## How To Use This Roadmap
 
-Start here, then open a linked implementation plan only for the area being
-worked on. Completed release detail belongs in [CHANGELOG.md](CHANGELOG.md);
-completed implementation plans belong in [`plans/archive/`](plans/archive/).
+This file answers three questions:
 
-| Order | User outcome | Done when | Owned by |
-| --- | --- | --- | --- |
-| Current: maintain the `1.x` stability boundary | Researchers and downstream tools can rely on a documented stable CLI, Python API, and declared persisted contracts. | Later `1.x` releases preserve the frozen interface and exact release-evidence gates; the `1.0.0` version DOI and completed Software Heritage capture remain bound to the tagged source. | This roadmap, [stewardship](plans/2026-07-19-research-software-stewardship.md), [strict typing](plans/2026-08-01-strict-typing.md), [ADR-0010](adr/0010-pre-1-0-compatibility-evolution.md), and [ADR-0014](adr/0014-separate-prepared-model-and-source-licensing.md) |
-| Post-`1.0` expansion | Add richer fields, family and collective-population structure, deeper uncertainty/privacy methods, building placement, and demand-backed adapters without destabilizing the frozen core. | Each addition uses the stable extension points or a separately versioned new contract and has its own evidence-backed release scope. | Active research plans and the research queue below |
+1. What work does the project currently maintain?
+1. Which research directions are candidates rather than commitments?
+1. Which decisions still need to be made?
 
-## Goal And Boundaries
+It is a routing document, not a second changelog or implementation log. Open
+the [implementation-plan index](plans/README.md) only when a task matches one
+of its scopes.
 
-Build and maintain a research-software library, CLI, and local web workbench
-for Canadian synthetic population generation through:
+| Question | Source of truth |
+| --- | --- |
+| What is maintained or being considered now? | This roadmap and the linked active plans |
+| What changed in a release? | [CHANGELOG.md](CHANGELOG.md) |
+| How does the current product work? | [README.md](README.md) and the [user documentation](docs/index.rst) |
+| Why was a durable technical choice made? | [Architecture decision records](adr/README.md) |
+| What correctness evidence supports current claims? | [CORRECTNESS.md](CORRECTNESS.md) |
+| How is a release or public artifact published? | [RELEASING.md](RELEASING.md) |
+| What research informed the project? | The dated historical snapshot in [NOTES.md](NOTES.md) |
+| What completed an implementation tranche? | [Archived plans](plans/archive/) and the changelog |
+
+Dated records under `docs/records/`, accepted ADRs, archived plans, and fixture
+READMEs preserve evidence in its original context. Do not rewrite them merely
+to make them sound current; add a new record or a clearly marked amendment
+when later evidence changes the interpretation.
+
+## Current Priorities
+
+There is no committed feature release after `1.0.0`. The current obligation is
+to maintain the stable `1.x` boundary and accept additive work only when it has
+a concrete use, an owner, and evidence appropriate to its claims.
+
+| Priority | Current commitment | Detailed owner |
+| --- | --- | --- |
+| `1.x` compatibility | Preserve the frozen documented CLI, curated Python API, and supported persisted schemas. Use additive interfaces or separately versioned contracts for new work. | [Compatibility policy](docs/compatibility.md), [ADR-0010](adr/0010-pre-1-0-compatibility-evolution.md) |
+| Correctness and release evidence | Keep exact-commit CI, coverage, correctness, installed-distribution, release-evidence, and reproduction gates blocking later releases. | [Correctness assurance plan](plans/2026-07-12-correctness-assurance.md) |
+| Stewardship and publication | Preserve the verified `1.0.0` DOI and Software Heritage identifiers; retain scoped licensing, non-overwriting archives, support boundaries, and exact release provenance. | [Stewardship plan](plans/2026-07-19-research-software-stewardship.md), [ADR-0014](adr/0014-separate-prepared-model-and-source-licensing.md) |
+| Type-safety maintenance | Keep package-wide Pyright `standard` blocking and expand the strict-clean module set without weakening dynamic-data validation. | [Strict typing plan](plans/2026-08-01-strict-typing.md) |
+
+## Conditional Research Tracks
+
+These plans are active as research scopes, but none is a promised release.
+Work begins only after its trigger is satisfied and a bounded first tranche is
+named.
+
+| Track | Trigger for implementation | Plan |
+| --- | --- | --- |
+| Richer hierarchical models | A concrete research use justifies one coherent additive field family and a separately versioned profile. | [Expanded hierarchical tree models](plans/2026-08-01-expanded-hierarchical-tree-models.md) |
+| Broader small-area controls | A reviewed control family has compatible model fields, explicit source and universe evidence, suppression handling, and a bounded validation case. | [Expanded small-area controls](plans/2026-08-01-expanded-small-area-controls.md) |
+| Uncertainty and disclosure evidence | A study requires quantified candidate-pool, control, seed, model, or privacy uncertainty beyond the released bounded evidence. | [Methodological validation and uncertainty](plans/2026-08-02-methodological-validation-and-uncertainty.md) |
+| One target adapter | A real downstream consumer supplies a pinned target contract, authorized fixture, and maintainable import smoke test. | [Simulation interoperability](plans/2026-07-15-simulation-interoperability.md) |
+
+The tracks may inform one another, but they have distinct ownership:
+
+- the tree-model plan owns fields, entity relationships, and profile design;
+- the controls plan owns public controls, universes, compatibility, and
+  calibration inputs;
+- the methodological plan owns independent comparisons, uncertainty,
+  statistical utility, and disclosure-risk evidence; and
+- the interoperability plan owns population handoff and target-specific
+  mappings, not simulation inside SynthPopCan.
+
+## Roadmap Boundaries
+
+SynthPopCan builds, validates, documents, enriches, and exports synthetic
+populations through two maintained approaches:
 
 1. iterative proportional fitting from Statistics Canada controls; and
-1. tree-based linked household/person generation followed, where appropriate,
-   by small-area calibration.
+1. linked household/person generation from reviewed model packages, followed
+   where appropriate by small-area calibration.
 
-The project generates, validates, documents, enriches, and exports synthetic
-populations. It does not currently implement population simulation, infer
-causal effects, certify disclosure safety, or redistribute third-party private
-data.
-
-Principles:
+Roadmap decisions must preserve these boundaries:
 
 - Keep raw, restricted, large, and generated data out of git.
-- Share Python algorithms across the API, CLI, and local web app; consolidate
-  orchestration where surface drift would prevent exact reproduction.
 - Treat `synthpopcan serve` as a local guided workbench, not a hosted service.
-- Use approachable language and defaults while preserving machine-readable
-  output and expert controls.
-- Add English/French descriptive metadata progressively, with stable
-  language-neutral identifiers and explicit translation provenance.
-- Preserve source, geography, variables, filters, model version, seeds,
-  validation evidence, and artifact checksums.
-- Build enrichment around reusable source, resource, layer, and validation
-  contracts rather than around a fixed catalogue. Treat datasets currently
-  represented under `data/private/sources`, public portal resources, and
-  future sources as possible consumers of those contracts—not as separate or
-  exhaustive categories.
-- Treat Census vintage and geography level as part of an identifier's meaning;
-  never join matching-looking codes across vintages implicitly.
+- Preserve source, Census vintage, geography, variables, filters, model
+  version, seeds, validation evidence, access classification, and hashes.
+- Never infer cross-vintage geography equivalence from matching-looking codes.
 - Distinguish software correctness, statistical fitness, disclosure-risk
   review, and substantive research validity.
-- Add a dependency, standard, catalogue integration, or platform adapter only
-  when a concrete use case justifies its maintenance cost.
-- Before `1.0.0`, allow deliberate breaking changes when they materially
-  simplify the architecture, improve correctness, or make the research model
-  more honest. Version changed schemas and packages, document the break and
-  replacement path, fail clearly on unsupported old artifacts, and provide a
-  converter when practical; backward compatibility is desirable but is not a
-  release gate. Never replace published file bytes, version identities, or
-  checksums in place. Audited, identifier-preserving descriptive-metadata
-  corrections are allowed when the archive supports them, the change is
-  disclosed, and the underlying version remains unchanged; changed bytes always
-  require a new version. [ADR-0010](adr/0010-pre-1-0-compatibility-evolution.md)
-  records this compatibility boundary, as clarified by
-  [ADR-0014](adr/0014-separate-prepared-model-and-source-licensing.md).
+- Keep external context in governed sidecar contracts rather than silently
+  rewriting a linked population.
+- Add dependencies, standards, catalogues, or platform adapters only for a
+  concrete use that justifies their maintenance cost.
+- Never replace published file bytes, version identities, or checksums in
+  place. Descriptive metadata corrections must be audited and disclosed;
+  changed bytes require a new version.
+- Add English/French descriptive metadata progressively while retaining stable
+  language-neutral identifiers and translation provenance.
 
-Research background belongs in [NOTES.md](NOTES.md). Every unfinished roadmap
-item must appear here or be owned by one linked active plan with a current next
-action. The [plan index](plans/README.md) records active and archived plans.
+The project does not currently simulate population change, infer causal
+effects, certify disclosure safety, or redistribute third-party private data.
 
-## Current Product State
+## Deferred Or Out Of Scope
 
-Version `1.0.0` combines bounded methodological
-evidence; strict control-pack and source/universe-evidence contracts; explicit
-Census geography identity; reusable enrichment and exchange frameworks;
-maintained Can-FED and ODEF adapters; a stable linked-population contract; and
-an exact machine-readable 1.x CLI, Python, and persisted-schema boundary. It
-provides:
+The following are not current commitments:
 
-- seed/control IPF with diagnostics, compact weights, integerized records,
-  reports, and validation;
-- Statistics Canada WDS discovery, Census Profile preparation, explicit 2016
-  and 2021 microdata adapters, selected matching boundaries, and geographic
-  relationship inputs;
-- linked frequency/CART training, audit, packaging, fetching, generation, and
-  validation;
-- a 33-entry prepared-model registry containing a demo plus parallel 2016 and
-  2021 packages for Canada, supported provinces, and five PUMF-coded CMAs;
-- linked small-area calibration, joint person controls, fail-closed control-pack
-  planning, independently recomputed field/weight/reuse/tail diagnostics, scale
-  estimation, residual reports, realization, and standalone maps;
-- durable local runs with bounded uploads and previews, progress, cancellation,
-  recovery, exact structured reproduction recipes, and versioned assurance
-  evidence with independently verifiable hashes, row counts, diagnostics, and
-  linkage findings; and
-- a simulator-neutral CSV/JSON population-contribution bundle with unchanged
-  linked tables, a data dictionary, provenance, access classifications,
-  reproduction evidence, strict validation, and per-file hashes.
-
-The released web, CLI, and library surfaces share Python domain algorithms.
-IPF also shares structured workflow orchestration. Model and small-area CLI
-orchestration still differs in places from the durable web workflow, so parity
-tests execute the recorded fixed-seed recipes, including model conditions,
-uploaded candidates, fitted weights, and optional map creation.
-
-The release also publishes a separately versioned `geodata-v1` catalogue of
-checksummed display-only boundaries and implements verified runtime retrieval.
-Canonical Statistics Canada geometry remains the analytical input. It moves
-scikit-learn behind the optional
-`model-build` extra: CART training needs it, while portable model reading,
-generation, and conditional-frequency training do not.
-
-Completed implementation records are archived:
-
-- [local web runtime](plans/archive/2026-07-10-local-web-application-runtime.md);
-- [linked-population schema](plans/archive/2026-07-18-linked-population-schema.md);
-- [small-area geography](plans/archive/2026-07-22-small-area-geography.md); and
-- [external-data enrichment](plans/archive/2026-07-15-ecosystem-enrichment.md).
-
-## `1.0.0` Stability Boundary
-
-The `1.0.0` line stabilizes the useful core rather than finishing every
-research direction. Three bounded product tranches formed the pre-`1.0` path.
-
-### `0.8.0`: portable handoff — completed
-
-Released on 2026-08-07. The simulator-neutral CSV/JSON bundle composes the
-linked-population and durable-run contracts without adding a simulator-specific
-adapter. A real consumer can read and independently validate the contract with
-no optional format or simulator dependency.
-
-### `0.9.0`: bounded methodological and small-area confidence — completed
-
-Released on 2026-08-10. The bounded private-household workflow now has:
-
-- generated feasible linked-calibration cases and one independent
-  solver-backed oracle;
-- a reviewed integerization comparison and backend decision;
-- versioned generic control-pack and field/control compatibility contracts;
-- reviewed 2016 and 2021 core household controls plus private-household
-  age-by-sex/gender person controls for explicitly named supported geographies;
-- bounded multi-scale validation and a pinned external Canadian comparison;
-- weight concentration, candidate reuse, rare-category, declared-zero-target,
-  and targeted-versus-uncontrolled reporting; and
-- one representative end-to-end fixture proving that the generic model-profile
-  and control-pack interfaces can accept later additive profiles without a CLI
-  redesign.
-
-This tranche did not require implementing every candidate control, every
-hierarchical PUMF field, a family hierarchy, collective populations, a national
-fit, full uncertainty ensembles, or a new generative-model family.
-
-### `1.0.0`: interface review and freeze — completed
-
-The release completed these interface and evidence gates:
-
-1. inventory every documented `synthpopcan` command path, option, exit behavior,
-   and machine-readable output mode;
-1. inventory every documented Python import and symbol intended as public;
-1. list the persisted schemas and model/control/exchange contracts supported by
-   the `1.x` line;
-1. remove, rename, or consolidate misleading pre-`1.0` interfaces while a
-   deliberate break is still allowed, with migration guidance where useful;
-1. add installed-package CLI/API compatibility fixtures and semantic snapshots
-   that ignore harmless formatting, paths, and timestamps;
-1. verify documentation, public type completeness, supported-platform claims,
-   packaging, security, citation, preservation, licensing, and the bilingual
-   2021 case study; and
-1. publish the compatibility policy and exact declared surface with the
-   release.
-
-Release preparation completed on 2026-08-15 includes the recursive CLI
-inventory, curated Python API inventory, persisted-schema classification,
-packaged compatibility manifest, installed-wheel semantic drift test,
-compatibility policy, bilingual Quebec 2021 installed-wheel case study,
-supported-environment and maintenance policy, verified Software Heritage
-capture, dated FAIR4RS and software-management records, full CFF validation,
-the reviewed 238-record hierarchical PUMF field-eligibility inventory, 100%
-public type completeness, a reproducibly pinned build backend, and
-distribution-safe README links. Bounded proof and restart/cache helpers were
-removed from the curated advanced API before the freeze rather than promising
-them throughout `1.x`.
-
-The post-licensing 1.0 source passed the complete local release gate on
-2026-08-16: 1,678 Python tests passed with 6 environment-dependent tests
-skipped and 95.05% branch-aware coverage; all 339 extended-correctness cases,
-warning-clean documentation, JavaScript coverage, and all 12 browser scenarios
-passed. Fresh isolated wheel, sdist, optional model-building, and fictional
-case-study interface smokes also passed. Every release commit must repeat the
-complete supported-Python CI matrix before publication.
-
-The `1.0.0` release sequence is explicit and fail-closed:
-
-1. **Scoped licensing policy — completed 2026-08-15.** Darcy Quesnel accepted
-   [ADR-0014](adr/0014-separate-prepared-model-and-source-licensing.md) as the
-   maintainer's open-by-default policy: MIT for software; Statistics Canada
-   Open Licence conditions for source Information; and CC BY 4.0 only for
-   original selection, organization, schema, documentation, and model-
-   representation rights the package author owns or controls. The layers are
-   cumulative, not alternatives, and the decision does not weaken privacy,
-   attribution, provenance, or no-endorsement obligations. External review is
-   welcome but optional and is not a `1.0.0` gate; materially conflicting
-   authoritative guidance triggers a prompt prospective policy and artifact
-   review.
-1. **Correction implementation — completed 2026-08-15.** Independent
-   adversarial review closed all three prior blockers in the tested,
-   non-overwriting executor. Its 137 focused tests, Ruff, Pyright, and diff
-   checks pass; ADR-0014's implementation marker is Completed.
-1. **Archive correction execution — completed 2026-08-16.** The reviewed
-   executor remotely verified exactly 32 identifier-preserving metadata
-   corrections and 32 non-overwriting package versions, and the registry now
-   uses exactly 32 verified corrected releases. The tracked
-   [human record](docs/records/prepared-model-archive-correction-2026-08-16.md)
-   and packaged `synthpopcan-prepared-model-archive-correction-evidence-v1`
-   resource preserve sanitized operation IDs, old/new record/version/concept
-   DOIs, compressed and uncompressed hashes, outcomes, and the zero-mutable-
-   draft audit. The clean-clone execution gate passes without ignored state.
-1. **Software release and preservation — completed 2026-08-16.** The annotated
-   `v1.0.0` release identifies exact source revision
-   `a9203d8a477608d78296faf69adcf30fba2b64d7`. Zenodo minted version DOI
-   `10.5281/zenodo.21961301`; Software Heritage completed a full visit that
-   preserves snapshot `swh:1:snp:1d4d40f874206f2abb70d434402bc9034a127845`
-   and release object `swh:1:rel:7152cfd62259d319a86fdcee497d76fa87667f7b`.
-   Citation metadata and a dated preservation record retain those verified
-   identifiers without changing the release tag or `.zenodo.json`.
-
-The freeze covers documented CLI command paths and options, documented Python
-API symbols, and versioned persisted contracts explicitly declared supported
-for `1.x`. Additive commands, options, symbols, and new versioned schemas may be
-introduced in later minor releases. Removing or changing the meaning of frozen
-surface requires deprecation where practical and a new major version. Internal
-modules, undocumented helpers, web presentation details, external source
-catalogues, and research findings are not frozen.
-
-`1.0.0` does not require Pyright strict mode, a monolithic national population,
-all possible controls, building-level placement, population projection,
-simulation, or a JOSS paper. It means the supported core is coherent,
-documented, tested, and stable enough to build upon.
-
-## Release History
-
-| Line | Outcome |
-| --- | --- |
-| `0.1.x` | Public package, CLI/API/web surfaces, IPF, Statistics Canada and microdata adapters, tree generation, documentation, and release automation. |
-| `0.2.x` | Linked small-area MVP, Census Profile controls, NumPy/threaded calibration, maps, and catalogue expansion. |
-| `0.3.x` | Joint person calibration, diagnostics, grouped household size, performance work, validation, and stable scenarios. |
-| `0.4.0` | Model metadata and downloads, privacy presentation, safer WDS refinement, browser small-area preparation, and CLI handoff. |
-| `0.5.0` | Consolidated CLI and Python API, linked-population directory contracts, stronger typing and provenance, and documentation cleanup. |
-| `0.5.1` | Correctness suite and public claims-to-evidence matrix, integrity fixes, retained CI reports, and hardened trusted publishing. |
-| `0.6.0` | Durable FastAPI/Uvicorn local runtime, controlled workspaces, isolated jobs, progress, cancellation, recovery, and bounded artifacts. |
-| `0.6.1` | Stable linked-population schema, explicit 2021 Census support and model catalogue, bounded execution, and browser sequencing. |
-| `0.6.2` | Statistics Canada attribution, citation and archival metadata, prepared-model DOIs, Zenodo tooling, and corrected IPF documentation. |
-| `0.6.3` | Exact portable reproduction recipes, versioned per-run assurance, permanent checksummed release evidence, and distribution provenance attestations. |
-| `0.7.0` | Explicit Census geography identity, bounded national DA/ADA workflows, reusable external-data enrichment contracts, separately versioned display geodata, and an optional CART model-building dependency. |
-| `0.7.2` | Maintained Can-FED area-context and corrected ODEF facility-inventory adapters with pinned acquisition, normalization, validation, and complete provenance evidence; no separate `0.7.1` package was released. |
-| `0.8.0` | Simulator-neutral linked-population exchange bundle with data dictionary, provenance, reproduction, file governance, hashes, and strict independent validation. |
-| `0.9.0` | Independent bounded calibration and integerization evidence, strict 2016/2021 core private-household control packs across CSD/CT/ADA/DA, bound source/universe evidence, and linked methodological diagnostics. |
-| `1.0.0` | Frozen documented CLI, curated Python API, and supported persisted-schema contract; complete field eligibility and case-study evidence; accepted open-by-default prepared-model rights policy; and verified non-overwriting correction of all 32 prepared-model concepts. |
-
-## Sequenced Releases
-
-### `0.7.0`: Geography and reusable external-data enrichment framework
-
-Released on 2026-08-01. It established explicit Census geography identity,
-bounded national DA/ADA planning and execution, and reusable source, resource,
-layer, validation, and enrichment-manifest contracts. Researchers can import a
-conforming normalized sidecar without waiting for a built-in dataset adapter,
-and synthetic fixtures prove that enrichment does not mutate the base linked
-population. See [CHANGELOG.md](CHANGELOG.md) and the archived
-[small-area geography plan](plans/archive/2026-07-22-small-area-geography.md)
-for completed implementation and evidence.
-
-This release does not include a monolithic national fit, an automatic claim
-that the broad Canada PUMF model is fit for every provincial, territorial, or
-small-area research question, 2021-to-2016 DA concordance,
-arbitrary-polygon selection, a general CKAN browser, or an automatic
-compatibility promise for every candidate source.
-
-The full-field ADA/DA control-coverage audit and linked person-control expansion
-are a parallel post-`0.7.0` correctness track. They did not block the combined
-area- and facility-sidecar implementation released in `0.7.2`, but they do
-block any new claim that a carried-through PUMF field represents an ADA- or
-DA-local distribution.
-
-With the framework released, another dataset may be integrated whenever a
-research question, access and redistribution authority, geographic and
-temporal fit, validation strategy, and maintenance case justify it. A source
-need not appear in the current repository examples or wait for every planned
-reference implementation.
-
-### `0.7.1` outcome: Can-FED v2 reference implementation
-
-Implemented and released in `0.7.2` rather than published separately.
-
-- Integrate the public general-use 1 km and 3 km Can-FED categorical measures
-  as a normalized geography/environment layer.
-- Preserve the August 2024 observation period, 2024 Business Register basis,
-  and 2021 DA identifier namespace.
-- Reject an unreviewed join to a 2016 DA population.
-- Report duplicate keys, unknown fields, missing source/base DAs, the
-  publisher-documented incomplete DA coverage, and all unmatched records.
-- Keep detailed Research Data Centre measures out of the public integration.
-- Describe the output as area-level historical food-environment context, not a
-  current outlet inventory or person-level exposure.
-
-### `0.7.2`: ODEF v3 facility reference implementation
-
-Released in the combined `0.7.2` tranche using the corrected v3.0.1 bytes
-served by the official v3.0 URL. The adapter preserves the fields actually present:
-source identifiers, provider and authority, source dates, facility type,
-grades/ISCED, language indicators, 2021 CSD context, WKT, and parsed
-coordinates. It validates duplicates, missingness, geocoding, coverage, and
-unmatched CSDs. The live source contains no CMA fields, so CMA lineage is not
-invented. The result is a facility inventory, not evidence of capacity,
-catchment, quality, eligibility, or accessibility.
-
-Can-FED and ODEF demonstrate that the framework is reusable; they do not
-define or limit its scope. The enrichment plan ranks PMD 2021, Québec
-health-service geography, Can-ALE 2.0, CANUE, ODHF, Québec education layers,
-and CanSET as later candidates. No `0.7.3` outcome is committed. Further
-integrations may land in an appropriate maintenance or feature release when
-they pass the same demand, authority, semantics, validation, and stewardship
-gates.
-
-### `0.8.0`: Simulator-neutral exchange
-
-Released on 2026-08-07. It composes the existing linked-population and
-durable-run contracts into a self-describing bundle; requires CSV
-household/person tables plus JSON manifest, data dictionary, validation,
-reproduction, access classification, and per-file hashes; preserves
-`synthetic_household_id` and `synthetic_person_id`; and remains readable and
-validatable without simulator dependencies. Parquet, GeoParquet, GeoPackage,
-RO-Crate, deterministic archives, and target adapters remain conditional later
-mappings.
-
-### `0.9.0`: Bounded methodological and small-area confidence
-
-Released on 2026-08-10. It retains the production linked multiplicative
-updater and systematic-midpoint integerizer after independent bounded
-comparisons; adds strict, definition-only 2016/2021 CSD, CT, ADA, and DA core
-control packs; binds exact normalized counts to explicit source and
-private-household-universe evidence; and carries independently recomputed
-residual, concentration, reuse, rare-cell, zero-target, and field-status
-diagnostics through the API, CLI, and local web workflow. The multi-scale and
-external Canadian evidence is bounded and descriptive, not a national
-representativeness or record-level truth claim.
-
-### Post-`1.0`: One target adapter pilot
-
-Select one external target after `1.0.0` only when there is a real user or
-reference model, a pinned supported version, an official input contract, and a
-maintainable import smoke test. The adapter must distinguish a population
-contribution from a runnable simulation and list every external network,
-land-use, schedule, behaviour, coefficient, or model input still required.
-
-ActivitySim, Starsim, Mesa, GAMA, MATSim, SUMO, Vivarium, FRED, and AnyLogic
-remain researched candidates, not simultaneous commitments. Transport-plan
-adapters remain unversioned future work until activities, locations, schedules,
-modes, and network/link mappings are justified by a concrete project.
-
-## Ongoing Assurance And Stewardship
-
-The correctness plan owns exact reproduction, the versioned assurance payload,
-routine evidence gates, zero-cell policy, cross-platform evidence, and external
-review. The dedicated
-[methodological validation and uncertainty plan](plans/2026-08-02-methodological-validation-and-uncertainty.md)
-owns calibration oracles, backend and integerization comparisons, uncertainty
-ensembles, shared multi-axis validation, external Canadian benchmarks, and
-attack-oriented disclosure evidence. Territory and broader-CMA models are
-feasibility candidates, not promised coverage: each must pass support,
-rare-category, privacy, provenance, and reproducible-build gates.
-
-Prepared-geodata releases need a deterministic catalogue audit before each
-publication: verify the expected year/geography/PRUID identity coverage,
-unique asset names, immutable release-tag URLs, and both checksum fields. A
-separate bounded remote retrieval check may exercise a representative asset,
-but routine CI must not redownload the complete boundary release.
-
-The stewardship plan owns the pre-`1.0` model-licensing decision, full CFF
-validation, Software Heritage capture, dated FAIR4RS and management records,
-and tested bilingual 2021 case study. Targeted community introduction and JOSS
-maturation remain post-`1.0` or non-blocking activities.
-
-JOSS submission is not currently ready. The repository became public in June
-2026; current JOSS screening requires more than six months of public,
-iterative development plus demonstrated research use and other readiness
-evidence. January 2027 is only the earliest plausible review point, not a
-deadline or promise.
-
-### Strict typing migration
-
-Pyright `standard` remains a package-wide blocking gate. Strict mode advances
-as a non-release-blocking ratchet through the active
-[strict typing plan](plans/2026-08-01-strict-typing.md); a numbered release is
-blocked only if it explicitly adopts a stricter typing gate.
-
-## Explicitly Deferred Or Conditional
-
-- Hosted, authenticated, multi-user, or distributed web operation.
-- Redistribution or implied availability of third-party private data.
-- Blanket adapters for repository examples, open-data portals, or any other
-  catalogue without a justified research use and maintainable contract.
-- Automatic 2016/2021 geography concordance.
-- A monolithic national DA fit.
-- Generic activity, schedule, contact-network, or intervention generation
-  without an evidence-backed research model.
-- Multiple simulator adapters before one target pilot demonstrates demand.
-- Any simulator-specific adapter before the `1.0.0` interface freeze.
-- Exhaustive implementation of every candidate small-area control or extended
-  PUMF field before `1.0.0`.
-- Chained production models, economic- or census-family entities, and
-  collective/non-private-household generation before `1.0.0`.
-- Full uncertainty ensembles and a general empirical privacy-attack framework
-  beyond the bounded evidence required for current public models before
-  `1.0.0`.
-- Building- or dwelling-level household placement before the stable population,
-  geography, and exchange contracts exist.
-- Population simulation inside SynthPopCan.
-- Claims that test passage proves substantive validity, disclosure safety, or
+- hosted, authenticated, multi-user, or distributed web operation;
+- a monolithic national small-area fit or a universal representativeness claim;
+- automatic 2016/2021 geography concordance;
+- generic activities, schedules, contact networks, interventions, or
+  population projection inside SynthPopCan;
+- multiple simulator adapters before one demand-backed pilot succeeds;
+- collective-population, economic-family, or census-family generation without
+  a separately reviewed entity and artifact contract;
+- building- or dwelling-level household placement without authoritative
+  capacity evidence, uncertainty treatment, and privacy review;
+- blanket integrations for open-data catalogues or restricted sources without
+  a research use, authority, provenance, and maintenance case; and
+- claims that passing tests proves substantive validity, disclosure safety, or
   causal validity.
 
-## Research Queue, Not Release Commitments
+## Research Queue
 
-- Design building-level residential placement after `1.0.0`. Start with a
-  bounded urban/rural Canadian case and treat it as constrained allocation of
-  whole households to compatible dwelling/building candidates—not random point
-  placement. Required evidence includes authoritative or licensed building and
-  dwelling sources, vintage and address/geography reconciliation, residential
-  capacity, vacancy, multi-unit and mixed-use handling, housing/household
-  compatibility, collective-dwelling separation, unmatched cases, spatial
-  uncertainty, privacy, and aggregation back to Census geography. Keep precise
-  coordinates optional and access-classified, and do not claim that a building
-  match is an observed residence.
-- Test official province/territory projection scenarios only after the DA
-  foundation is validated. Begin with a 2016-to-2021 backcast; distinguish
-  projected values from carried-forward attributes and never claim
-  longitudinal people or household trajectories.
-- Evaluate arbitrary-polygon geography selection only after authoritative
-  coded relationships and vintage checks are reliable.
-- Investigate cross-vintage boundary harmonization as a separately reviewed
-  method.
-- Consider household-, person-, or cohort-level attachment—including
-  restricted sources—only with current written data-use, ethics, purpose,
-  methods, privacy, and redistribution authority.
-- Periodically audit the full Statistics Canada LODE catalogue and investigate
-  whether a separately governed, reproducible refresh of aging national
-  facility inventories—starting with healthcare—would merit an independent
-  open-data product. Use the CSBP-CPSE source registries, OpenTabulate
-  descriptors, and processing repositories as revalidated prior art, not as
-  current source truth or automatic dependencies.
-- For any facility refresh, test authoritative jurisdictional records against
-  OpenStreetMap and Overture Maps as separately licensed corroboration,
-  candidate-discovery, building, address, and transport-network layers. Begin
-  with a bounded Québec metropolitan/rural comparison, preserve conflicts and
-  source-level lineage, and never treat an open-map feature as proof of
-  capacity, service availability, or official status.
+These are ideas to investigate, not scheduled work:
+
+- Start building-level residential placement with one bounded Canadian
+  urban/rural case. Allocate whole households to compatible capacity-bearing
+  candidates, keep precise coordinates optional and access-classified, and do
+  not describe a match as an observed residence.
+- Test official province/territory projection scenarios first through a
+  2016-to-2021 backcast that clearly separates projected values from
+  carried-forward attributes.
+- Evaluate arbitrary-polygon selection only after authoritative coded
+  geography relationships and vintage checks remain reliable.
+- Treat cross-vintage boundary harmonization as a separately reviewed method.
+- Consider household-, person-, or cohort-level attachment only with current
+  written data-use, ethics, purpose, methods, privacy, and redistribution
+  authority.
+- Select any next enrichment source—such as PMD, Québec health or education
+  geography, Can-ALE, CANUE, ODHF, or CanSET—only after a concrete research
+  question establishes temporal/geographic fit, reuse authority, validation,
+  and maintenance ownership.
+- Reassess aging facility inventories only as a separately governed data
+  product with revalidated official sources, licensing, lineage, and bounded
+  geographic comparisons.
 
 ## Open Decisions
 
-- Exact schema relationship between the current model-specific
-  `synthpopcan-source-provenance-v1` record and the general `0.7.0` source
-  profile.
-- Which candidate after ODEF has the strongest concrete research demand and
-  maintenance case.
-- Supported operating-system claim and the minimum Windows/macOS evidence
-  needed to make it.
-- Whether optional columnar or spatial export merits new dependencies after the
-  CSV/JSON interchange contract is proven.
-- Boundary between automated model/privacy findings and required human review.
+- How should the model-specific `synthpopcan-source-provenance-v1` record relate
+  to the general enrichment source profile?
+- Which candidate after ODEF has the strongest demonstrated research demand
+  and maintenance case?
+- What additional Windows and macOS evidence would justify expanding the
+  supported-platform claim?
+- Does a concrete consumer justify optional columnar or spatial export and its
+  dependencies?
+- Where should automated model/privacy findings stop and required human review
+  begin?
+
+## Completed Work And Historical Detail
+
+Version `1.0.0` established the stable interface boundary; it did not complete
+every research direction. Use these records instead of extending this roadmap
+with release narrative:
+
+- [CHANGELOG.md](CHANGELOG.md) for observable release history from `0.1.0`
+  through `1.0.0`;
+- [compatibility policy](docs/compatibility.md) for the exact `1.x` stability
+  promise;
+- [CORRECTNESS.md](CORRECTNESS.md) for current claims and limitations;
+- [stewardship and preservation](docs/stewardship.md) for citation, support,
+  licensing, and archive identifiers;
+- [prepared-model archive correction record](docs/records/prepared-model-archive-correction-2026-08-16.md)
+  for the completed 32-model correction evidence; and
+- [archived implementation plans](plans/archive/) for completed design and
+  acceptance detail.
+
+Every unfinished roadmap item must appear here or be owned by one linked plan
+with a current next action. When a plan is complete, record its user-visible
+outcome in the changelog and move the plan to `plans/archive/`.

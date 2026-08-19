@@ -211,15 +211,31 @@ architectural boundary.
 
 ## Documentation
 
-User-facing behavior should be documented where readers will look for it:
+Put information in the record that owns it:
 
-- `README.md` for project orientation and public-repo expectations;
-- `docs/` for workflow and API documentation;
-- `adr/` for durable architectural decisions and their rationale;
-- `PLANS.md` for open roadmap items;
-- `NOTES.md` for research notes.
+| Record | Content it owns |
+| --- | --- |
+| `README.md` | Concise project orientation, installation smoke test, and links into maintained documentation |
+| `docs/` | Current user workflows, methods, interfaces, interpretation guidance, and public policy |
+| `PLANS.md` | Current priorities, conditional research tracks, deferred scope, and open decisions |
+| `plans/` | Detailed active implementation/research scopes; completed plans move to `plans/archive/` |
+| `CHANGELOG.md` | User-visible changes grouped by released version |
+| `adr/` | Durable repository-wide decisions, alternatives, and consequences—not task lists |
+| `CORRECTNESS.md` | Current public correctness claims, their automated evidence, and limitations |
+| `RELEASING.md` | Operator procedure for software, model, and geodata publication |
+| `NOTES.md` | Index of dated historical research syntheses; do not use it as current status |
+| `scripts/README.md` | Classification, ownership, and safety boundary for repository scripts |
+| `docs/records/` | Dated evidence and self-assessments that remain true to their recorded context |
+| Fixture `README.md` files | Provenance, purpose, expected values, and regeneration boundary for that fixture only |
 
-Avoid putting long walkthroughs in the README when they belong in Sphinx docs.
+Avoid copying the same narrative between records. Link to the owning document
+and summarize only what the local reader needs. In particular:
+
+- keep walkthroughs in Sphinx rather than the README;
+- keep release history in the changelog rather than the roadmap;
+- keep active next actions in plans rather than ADRs or dated records; and
+- preserve accepted ADRs, archived plans, and dated records. Add a new record
+  or explicit amendment instead of silently rewriting historical evidence.
 
 Build the documentation with warnings treated as errors:
 

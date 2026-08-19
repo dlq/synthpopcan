@@ -1,12 +1,12 @@
 # Expanded Hierarchical Tree Models Plan
 
-Status: active post-1.0 research track; pre-1.0 inventory complete\
+Status: conditional research; pre-1.0 inventory completed\
 Created: 2026-08-01\
-Last updated: 2026-08-15\
+Last updated: 2026-08-19\
 Target: pre-`1.0` inventory and extension-contract proof only; richer profiles
 and family hierarchy after `1.0.0`\
-Next action: after the 1.0 freeze, select one coherent additive field family
-from the reviewed inventory and design a separately versioned profile\
+Next action: when a concrete research use justifies it, select one coherent
+additive field family and design a separately versioned profile\
 Roadmap: [PLANS.md](../PLANS.md) | [Plan index](README.md)
 
 ## Outcome
@@ -100,20 +100,17 @@ Out of scope without a separate approved design:
 - promising controls for a field merely because it is present in the PUMF; and
 - replacing immutable published model packages or DOI records in place.
 
-## Pre-`1.0` Cut Line
+## Completed Pre-`1.0` Baseline
 
-Before `1.0.0`, complete the machine-readable 2016/2021 field eligibility
-inventory far enough to review the existing profiles and define stable generic
-profile-inspection and control-compatibility extension contracts. Exercise one
-representative end-to-end additive or chained prototype only if needed to prove
-that those contracts can grow without changing the frozen CLI/API.
+The `1.0.0` work completed the machine-readable 2016/2021 field-eligibility
+inventory, reviewed the existing profiles, and established generic
+profile-inspection and control-compatibility extension contracts without
+adding a new public expanded profile.
 
-No new public expanded profile is required for `1.0.0`. Production chained
-blocks, the broad additive field catalogue, numeric-generation extensions,
-economic- and census-family entities, and a replacement linked-population
-schema are post-`1.0` work. They may arrive through additive public interfaces
-and separately versioned artifact contracts after the current household/person
-core is stable.
+Production chained blocks, the broad additive field catalogue,
+numeric-generation extensions, economic- and census-family entities, and a
+replacement linked-population schema remain conditional work. They require
+additive public interfaces or separately versioned artifact contracts.
 
 ## Phase 1 — Field Eligibility Inventory
 

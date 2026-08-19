@@ -276,26 +276,23 @@ def test_correctness_assurance_is_public_and_names_each_evidence_family() -> Non
         assert evidence_path in correctness_text
 
 
-def test_command_line_navigation_follows_workflow_dependencies() -> None:
+def test_documentation_navigation_follows_workflow_dependencies() -> None:
     docs_index_text = Path("docs/index.rst").read_text()
-    command_line_section = docs_index_text.split(":caption: Command Line", 1)[1]
-    command_line_section = command_line_section.split(":caption: Library", 1)[0]
+    workflow_section = docs_index_text.split(":caption: Core Workflows", 1)[1]
+    workflow_section = workflow_section.split(":caption: Advanced Data and Models", 1)[
+        0
+    ]
     expected_pages = (
-        "command-line",
         "data",
         "statcan",
         "controls",
         "ipf",
         "tree-generate",
         "small-area",
-        "geodata",
         "validate",
-        "microdata",
-        "tree",
-        "web-app",
     )
 
-    positions = [command_line_section.index(f"   {page}\n") for page in expected_pages]
+    positions = [workflow_section.index(f"   {page}\n") for page in expected_pages]
     assert positions == sorted(positions)
 
 
@@ -389,7 +386,7 @@ def documented_command_errors(
 def test_library_examples_and_companion_notebook_are_parseable() -> None:
     for path in (
         Path("docs/library-getting-started.md"),
-        Path("docs/library.md"),
+        Path("docs/library-recipes.md"),
     ):
         python_blocks = re.findall(
             r"^```python\n(.*?)^```$",
@@ -446,7 +443,7 @@ def test_geodata_and_optional_cart_dependencies_are_documented() -> None:
     assert any(value.startswith("scikit-learn") for value in extras["model-build"])
 
     installation = Path("docs/installation.md").read_text()
-    tree = Path("docs/tree.md").read_text()
+    tree = Path("docs/tree-model-development.md").read_text()
     geodata = Path("docs/geodata.md").read_text()
     docs_index = Path("docs/index.rst").read_text()
     for text in (installation, tree):
@@ -459,6 +456,48 @@ def test_geodata_and_optional_cart_dependencies_are_documented() -> None:
     ):
         assert required in geodata
     assert re.search(r"^\s+geodata$", docs_index, re.MULTILINE)
+
+
+def test_large_guides_have_stable_landing_pages_and_focused_references() -> None:
+    """Keep public entry points short without hiding the complete guidance."""
+
+    pairs = {
+        "docs/small-area.md": "docs/small-area-reference.md",
+        "docs/tree.md": "docs/tree-model-development.md",
+        "docs/library.md": "docs/library-recipes.md",
+    }
+    docs_index = Path("docs/index.rst").read_text()
+
+    for landing_name, reference_name in pairs.items():
+        landing = Path(landing_name).read_text()
+        reference = Path(reference_name).read_text()
+        assert len(landing.splitlines()) < 100
+        assert len(reference.splitlines()) > len(landing.splitlines())
+        assert Path(reference_name).name in landing
+        assert Path(reference_name).stem in docs_index
+
+
+def test_historical_notes_and_completed_plan_baselines_are_routed() -> None:
+    notes_index = Path("NOTES.md").read_text()
+    assert "notes/2026-07-31-research-synthesis.md" in notes_index
+    assert Path("notes/2026-07-31-research-synthesis.md").exists()
+
+    for active_name, baseline_name in (
+        (
+            "plans/2026-07-12-correctness-assurance.md",
+            "plans/archive/2026-07-12-correctness-assurance-baseline.md",
+        ),
+        (
+            "plans/2026-07-19-research-software-stewardship.md",
+            "plans/archive/2026-07-19-research-software-stewardship-baseline.md",
+        ),
+    ):
+        active = Path(active_name).read_text()
+        assert len(active.splitlines()) < 120
+        assert Path(baseline_name).name in active
+        assert Path(baseline_name).exists()
+
+    assert Path("scripts/README.md").exists()
 
 
 def test_beginner_notebook_code_cells_execute(tmp_path: Path, monkeypatch) -> None:

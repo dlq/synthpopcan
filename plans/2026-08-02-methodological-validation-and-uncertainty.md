@@ -1,13 +1,13 @@
 # Methodological Validation And Uncertainty Plan
 
-Status: active post-1.0 research track; bounded 0.9 tranche completed\
+Status: conditional research; bounded `0.9.0` tranche completed\
 Created: 2026-08-02\
-Last updated: 2026-08-10\
+Last updated: 2026-08-19\
 Target: bounded oracle, integerization, validation, and Canadian comparison for
 `0.9.0`; deeper ensembles and attack infrastructure after `1.0.0`\
-Next action: after the 1.0 interface freeze, design the first explicit
-candidate-pool and control-uncertainty ensemble without changing the retained
-production backend silently\
+Next action: when a study requires quantified uncertainty, design one explicit
+candidate-pool or control-uncertainty ensemble without silently changing the
+retained production backend\
 Roadmap: [PLANS.md](../PLANS.md) | [Plan index](README.md)
 
 ## Outcome
@@ -115,15 +115,15 @@ Relevant external references include:
 - A formal privacy mechanism or empirical attack result does not replace
   purpose-, source-, licence-, ethics-, and human-release review.
 
-## Pre-`1.0` Cut Line
+## Completed Pre-`1.0` Baseline
 
 Completed in `0.9.0` on 2026-08-10. The release includes the bounded generated
 oracle fixtures, retained-backend decision, independently recomputed linked
 validation profile, fitter-generated CSD/CT/ADA/DA evidence, and pinned
 aggregate-only Prédhumeau-Manley comparison described below. The remaining
-phases stay active after the 1.0 interface freeze.
+phases remain conditional research scopes.
 
-Only a bounded subset of this plan is a `0.9.0`/`1.0.0` gate:
+Only a bounded subset of this plan formed the `0.9.0`/`1.0.0` gate:
 
 - Phase 1's generated feasible linked-calibration cases, independent oracle,
   and declared applicability for the production updater;
@@ -136,15 +136,15 @@ Only a bounded subset of this plan is a `0.9.0`/`1.0.0` gate:
 
 Full ensemble infrastructure in Phase 3, the broader metric catalogue in Phase
 4, general software comparisons in Phase 5, and the comprehensive empirical
-attack framework in Phase 6 are post-`1.0` work unless a specific public model
-release needs one earlier. Before `1.0.0`, existing public models still require
-their current support, purity, raw-content, rare-signature, provenance, and
-human-review gates; this cut line does not weaken them.
+attack framework in Phase 6 remain conditional work unless a specific public
+model release requires them. Existing public models still require their
+current support, purity, raw-content, rare-signature, provenance, and
+human-review gates; the completed baseline does not weaken them.
 
-Phase 7 contributes only the interfaces and durable evidence needed by the
-bounded pre-`1.0` tranche. The frozen CLI/API should expose versioned extension
-points rather than a separate public switch for every future solver, metric,
-perturbation, or attack.
+Phase 7 contributed the interfaces and durable evidence needed by the bounded
+pre-`1.0` tranche. Future work should use versioned extension points rather
+than add a separate public switch for every solver, metric, perturbation, or
+attack.
 
 ## Phase 1 — Calibration Oracles And Applicability
 

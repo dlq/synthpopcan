@@ -3,6 +3,12 @@
 Use this checklist before publishing a package release or a public model
 artifact.
 
+This is an operator procedure, not a roadmap or publication history. Record
+planned work in [PLANS.md](PLANS.md), released outcomes in
+[CHANGELOG.md](CHANGELOG.md), and durable policy decisions in
+[`adr/`](adr/README.md). Keep irreversible archive evidence in a new dated
+record under `docs/records/`.
+
 ## Python Package Release
 
 1. Confirm the working tree is clean.

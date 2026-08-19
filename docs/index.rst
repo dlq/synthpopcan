@@ -101,41 +101,63 @@ beginner generation workflows.
    introduction
    installation
    getting-started
-   case-study-quebec-2021
    field-primer
-   field-eligibility
    glossary
-   compatibility
-   correctness
    acknowledgments
-   stewardship
 
 .. toctree::
    :maxdepth: 2
-   :caption: Command Line
+   :caption: Guided Interfaces
 
+   case-study-quebec-2021
+   web-app
    command-line
+   library-getting-started
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Core Workflows
+
    data
    statcan
    controls
    ipf
    tree-generate
-   linked-population
    small-area
-   small-area-control-coverage
-   methodological-validation
-   geodata
-   enrichment
-   exchange
    validate
-   microdata
-   tree
-   web-app
 
 .. toctree::
    :maxdepth: 2
-   :caption: Library
+   :caption: Advanced Data and Models
 
-   library-getting-started
+   microdata
+   tree
+   tree-model-development
+   linked-population
+   geodata
+   enrichment
+   exchange
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Methods, Evidence, and Policy
+
+   field-eligibility
+   small-area-control-coverage
+   methodological-validation
+   compatibility
+   correctness
+   stewardship
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Library Reference
+
    library
+   library-recipes
    api
+
+.. toctree::
+   :hidden:
+
+   small-area-reference

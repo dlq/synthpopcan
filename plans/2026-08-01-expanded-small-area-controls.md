@@ -1,13 +1,13 @@
 # Expanded Small-Area Controls Plan
 
-Status: active post-1.0 expansion track; core 0.9 packs completed\
+Status: conditional research; core `0.9.0` packs completed\
 Created: 2026-08-01\
-Last updated: 2026-08-10\
+Last updated: 2026-08-19\
 Target: core private-household packs for `0.9.0`; broader controls and
 population universes after `1.0.0`\
-Next action: after the 1.0 interface freeze, select the first additional
-reviewed control family from the coverage inventory and give it a bounded
-source, universe, suppression, and validation case\
+Next action: when a concrete research use justifies it, select one additional
+reviewed control family with a bounded source, universe, suppression, and
+validation case\
 Roadmap: [PLANS.md](../PLANS.md) | [Plan index](README.md)
 
 ## Outcome
@@ -93,7 +93,7 @@ source and compatibility process below.
   Version and document a replacement when a cleaner control-pack contract
   requires a break.
 
-## Pre-`1.0` Cut Line
+## Completed Pre-`1.0` Baseline
 
 Completed in `0.9.0` on 2026-08-10. Strict generic registry, pack, and bound
 evidence contracts now support reviewed 2016/2021 private-household

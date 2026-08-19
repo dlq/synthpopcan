@@ -1,324 +1,83 @@
-# Correctness Assurance Plan
+# Correctness Assurance Maintenance Plan
 
-Status: active\
+Status: active maintenance\
 Created: 2026-07-12\
-Last updated: 2026-08-16\
+Last updated: 2026-08-19\
 Target: ongoing correctness and release evidence\
-Next action: preserve the frozen 1.x interface, exact-commit CI, coverage,
-correctness, release-evidence, assurance, and reproduction gates in later
-releases\
+Next action: preserve the frozen `1.x` interface and exact-commit assurance
+gates in later releases\
 Roadmap: [PLANS.md](../PLANS.md) | [Plan index](README.md)
 
-## Purpose And Boundaries
+## Current Contract
 
-Maintain an auditable assurance case for SynthPopCan's numerical results,
-generated distributions, linked records, and emitted artifacts. The released
-baseline is summarized in [CORRECTNESS.md](../CORRECTNESS.md); completed
-`0.5.1` implementation history belongs in the changelog rather than this active
-plan.
+SynthPopCan must retain an auditable assurance case for numerical results,
+generated distributions, linked records, and persisted artifacts. The current
+public claims and limitations live in [CORRECTNESS.md](../CORRECTNESS.md).
 
-The assurance case combines independent reference calculations, mathematical
-and structural invariants, differential and metamorphic tests, statistical
-acceptance tests, and artifact read-back reconciliation. Production report
-builders must not be the sole validators of production output.
+Every maintained or newly released workflow must, in proportion to its risk:
+
+- test mathematical and structural invariants independently of report
+  serialization;
+- reconcile emitted evidence by reading the artifact back;
+- distinguish deterministic software correctness from statistical fitness,
+  source validity, disclosure safety, and substantive interpretation;
+- preserve exact inputs, configuration, seeds, versions, hashes, and relevant
+  environment identity;
+- fail closed on malformed, incompatible, incomplete, or unsupported evidence;
+  and
+- keep compatibility, coverage, correctness, installed-distribution, and
+  exact-release-commit gates blocking.
 
 Passing the project gate establishes behavior only under the tested conditions.
-It does not certify source-data accuracy, statistical fitness for a particular
-study, disclosure safety, causal validity, or substantive interpretation.
+It does not certify source accuracy, representativeness, disclosure safety,
+causal validity, or fitness for a particular study.
 
-For `1.0.0`, this plan gated only the bounded assurance slice named in
-[PLANS.md](../PLANS.md): calibration-oracle evidence, the integerization
-decision, core private-household control packs, representative multi-scale and
-external Canadian comparison evidence, and the compatibility fixtures needed
-to freeze the declared CLI/API and persisted contracts. Broader control
-coverage, uncertainty ensembles, general attack infrastructure, richer model
-profiles, and new population universes remain post-`1.0` work unless required
-to correct a released claim.
+## Maintenance Triggers
 
-## Released In `0.6.3`: Exact Reproduction And Durable Evidence
+Review this plan whenever a change:
 
-`0.6.3` is a maintenance release. It must not change the linked-population v1
-contract.
+- alters a numerical method, tolerance, integerization rule, stopping rule, or
+  random process;
+- adds a control family, geography level, source universe, model profile, or
+  persisted evidence schema;
+- changes linkage, reconciliation, suppression, missingness, or structural-zero
+  handling;
+- changes a released interface or installed-distribution behavior; or
+- expands a correctness, utility, privacy, or performance claim.
 
-Implementation is complete and passes the local full release gate.
-Reproduction recipes now support tested ordered command sequences; terminal durable runs embed
-`synthpopcan-assurance-v1`; and the release workflow builds, attests, checksums,
-retains, and attaches evidence to the matching GitHub Release. The assurance
-schema is additive within `run.json`: readers must ignore unknown fields.
-A future incompatible assurance change requires a new schema identifier and an
-explicit migration reader; existing evidence is never rewritten in place.
+The change must name the independent oracle, invariant, comparison, fixture,
+or bounded empirical evidence that supports it. A new claim without a matching
+gate is incomplete work.
 
-### 1. Reproduction and adapter parity
+## Ongoing Release Gate
 
-IPF and prepared-model durable runs have executable CLI checks. Small-area
-recipes now preserve model conditions and optional map creation, and parity
-tests execute both generated and uploaded-candidate forms.
+Later `1.x` releases must preserve:
 
-Implement an executable reproduction recipe that can contain an ordered command
-sequence when one command cannot recreate every artifact. The recipe must:
+1. exact source-version, lockfile, and public-interface checks;
+1. the normal test suite with the documented branch-coverage threshold;
+1. extended correctness and methodological evidence tests;
+1. warning-clean documentation and web/browser checks;
+1. fresh wheel and sdist construction plus isolated installed-package smokes;
+1. immutable, checksummed, attested release evidence bound to the exact green
+   CI commit; and
+1. read-back verification of every public artifact before a claim is recorded.
 
-- preserve the normalized workflow request and every result-affecting option;
-- represent catalogue models and uploaded model packages without substituting an
-  unverified input;
-- include model conditions, random and subsampling seeds, household-size
-  grouping, person controls, fitted-weight output, geography fields, and optional
-  map creation;
-- use managed relative input references or documented user-supplied replacements
-  rather than workspace-internal opaque upload IDs; and
-- remain shell-safe while retaining a structured, machine-readable form.
+The operator sequence is in [RELEASING.md](../RELEASING.md). Release history
+belongs in [CHANGELOG.md](../CHANGELOG.md), not in this plan.
 
-Consolidate model and small-area orchestration where practical. Where two
-adapters still call shared domain functions separately, require explicit parity
-tests so defaults and option translation cannot drift silently.
+## Conditional Extensions
 
-Acceptance:
+Broader controls and uncertainty work remain owned by their dedicated plans:
 
-- execute generated IPF, prepared-model, small-area calibration, and small-area
-  generation recipes against public fixtures;
-- compare fixed-seed rows, identifiers, reports, validation summaries, and
-  requested optional artifacts, excluding only documented path or timestamp
-  fields;
-- cover catalogue and uploaded packages plus generated and uploaded linked
-  candidates;
-- fail a test when a result-affecting request field is not represented; and
-- remove the documented small-area reproduction limitation only after these
-  tests pass.
+- [Expanded Small-Area Controls](2026-08-01-expanded-small-area-controls.md)
+- [Methodological Validation and Uncertainty](2026-08-02-methodological-validation-and-uncertainty.md)
+- [Expanded Hierarchical Tree Models](2026-08-01-expanded-hierarchical-tree-models.md)
 
-### 2. Versioned per-run assurance
+They become release work only after the trigger and bounded evidence tranche in
+the owning plan are satisfied.
 
-Extend the existing workflow reports and durable `run.json` record rather than
-creating a parallel provenance system. Define one versioned assurance object
-whose fields have a single documented owner and can be embedded in or referenced
-by those existing records.
+## Preserved Baseline
 
-The assurance object must cover, where applicable:
-
-- SynthPopCan and assurance-schema versions;
-- normalized request, model identity and checksum, random seeds, and settings;
-- input and artifact SHA-256 digests, media types, byte sizes, and row counts;
-- convergence, iteration count, tolerances, and fitted and realized residuals;
-- unsupported or structurally impossible cells and deliberate support repairs;
-- linked household/person integrity findings;
-- validation status, warnings, and explicit limitations; and
-- terminal run state without presenting failed, cancelled, or interrupted work
-  as successful output.
-
-Acceptance:
-
-- validate complete, failed, cancelled, and interrupted fixture records against
-  the versioned contract;
-- independently recompute a representative subset of digests, row counts,
-  residuals, and linkage findings from emitted artifacts;
-- reject or clearly report missing required evidence and tampered artifacts;
-- keep restricted inputs and raw training records out of the assurance payload;
-  and
-- document additive compatibility and the migration rule for any future schema
-  version.
-
-### 3. Permanent release evidence
-
-Actions artifacts are useful commit evidence but are not a permanent archive.
-For every release, preserve:
-
-- the tested tag and commit;
-- distribution and evidence-file checksums;
-- correctness and coverage reports;
-- dependency/build provenance and available attestations;
-- installed-wheel smoke results; and
-- a concise statement of tests run, known limitations, and any waived checks.
-
-Acceptance:
-
-- a release workflow verifies that evidence names the exact tag commit and built
-  distributions;
-- evidence remains downloadable from the GitHub Release, Zenodo record, or
-  another documented permanent record after Actions retention expires; and
-- a clean verifier can match the published distributions and evidence manifest
-  by checksum.
-
-## Evidence Hardening After `0.6.3`
-
-The dedicated
-[methodological validation and uncertainty plan](2026-08-02-methodological-validation-and-uncertainty.md)
-owns new calibration oracles, backend and integerization comparisons,
-uncertainty ensembles, shared multi-axis statistical validation, external
-Canadian benchmarks, and empirical disclosure-risk methods. This plan retains
-the released claims-to-evidence baseline, routine gates, reproduction,
-cross-version/platform evidence, and permanent release evidence into which
-adopted methods must be integrated.
-
-### Generated and mutation evidence
-
-- Add Hypothesis strategies that construct feasible IPF tables, record
-  permutations, category renamings, target scaling, and finite weight vectors
-  directly, with deterministic CI profiles and useful shrinking.
-- Add generated feasible linked household/person contribution matrices with
-  known weights; compare the production updater with the independent oracle
-  defined by the methodological-validation plan.
-- Add targeted mutation testing for IPF, integerization, calibration, model
-  traversal, artifact reconciliation, and report construction.
-- Record a reviewed baseline and triage every surviving mutation; do not adopt an
-  arbitrary project-wide mutation percentage.
-
-Acceptance: minimized failures are reproducible from recorded seeds, the normal
-profile remains suitable for pull requests, a larger profile runs on schedule,
-and surviving critical-kernel mutations are fixed or explicitly justified.
-
-### Cross-version and platform evidence
-
-- Freeze semantic fixtures for stable public contracts, including
-  multi-dimensional IPF, linked household/person generation, and small-area
-  realization. Avoid snapshots of harmless formatting or timestamps.
-- Declare the supported operating-system policy before promising compatibility.
-  Add macOS and Windows wheel-install, filesystem, CLI, and spawned-job smoke
-  checks, then expand only where failures justify a larger matrix.
-
-Acceptance: the current release reads supported older artifacts or emits a
-documented migration error, and each declared platform runs the named installed
-workflows without relying on a source checkout.
-
-### Full-field ADA/DA control coverage
-
-This plan owns the follow-on work transferred from the completed small-area
-geography implementation. Current national plans control household size and
-tenure. Other linked household and person fields remain candidate-pool
-attributes unless a compatible local margin is explicitly fitted.
-
-Before presenting another field as ADA- or DA-local, audit every linked-schema
-field against the 2021 Census Profile at both levels. Record the Profile
-characteristic and universe, exact or coarsened category crosswalk,
-suppression/availability conditions, geography and source revision, and an
-explicit `unavailable` or `uncontrolled` result where no defensible margin
-exists.
-
-Use the audit to prioritize suitably supported household and person margins.
-Linked person controls may change whole-household weights but must never detach
-people from their households. Each fitted field needs coverage, residual,
-support/structural-zero, suppression, and reconciliation evidence, plus updated
-documentation and claims-to-evidence records.
-
-This work runs in parallel with the Can-FED and ODEF sidecar adapters released
-in `0.7.2`, which do not claim to recalibrate base population attributes. It
-blocks only new small-area representativeness claims and any release that
-explicitly includes expanded ADA/DA controls.
-
-Acceptance: every linked-schema field has an auditable classification; every
-implemented crosswalk has independent fixtures; household-only runs remain
-reproducible; and documentation distinguishes fitted local margins from
-uncontrolled carried-through fields.
-
-The initial source-availability screen now covers both census vintages and all
-four supported calibration levels; see the
-[small-area control coverage inventory](../docs/small-area-control-coverage.md).
-It identifies 29 count-based candidate fields, two lower-confidence
-percentage-derived candidates, and five fields without matching Profile count
-distributions. Those candidates are not implemented controls until their
-category crosswalks and statistical evidence meet the acceptance criteria
-above.
-
-### Multi-margin control packs
-
-The dedicated
-[expanded small-area controls plan](2026-08-01-expanded-small-area-controls.md)
-owns the field/control registry, source screening, universe reconciliation,
-versioned packs, feasibility planner, family-aware contributions, interfaces,
-and implementation sequence. This assurance plan retains the cross-cutting
-requirements for independent fixtures, structural-zero policy, residual and
-aggregation evidence, reproducibility, privacy review, and restrained claims.
-
-Expanded controls must remain low-dimensional reviewed margins fitted against
-whole-household weights. Do not describe a field as locally controlled merely
-because it exists in a generated hierarchical population or appears in a
-source-availability inventory.
-
-## Statistical And Model Quality
-
-### Zero-cell and support policy
-
-Define a policy that distinguishes structural zeros, sampling zeros, suppressed
-values, missing categories, and genuine absence. Never repair support silently.
-
-Acceptance: every repair or category coarsening is represented in provenance;
-blocking and repairable cases have independent fixtures; reports distinguish
-fitted feasibility from realized integer output.
-
-### Multi-scale and rare-category validation
-
-Validate emitted populations at target geography and, where authoritative
-relationships exist, at CSD/CMA, province or territory, and national scales.
-Report error distributions and rare-category behavior rather than only a single
-maximum residual. The archived
-[small-area geography plan](archive/2026-07-22-small-area-geography.md) records
-the released relationship indexing and representative DA workflows.
-
-Acceptance: aggregation uses version- and namespace-matched relationships,
-reconciles independently from output rows, and reports unmatched geographies,
-suppression, denominators, and tail errors.
-
-The methodological-validation plan owns the reusable metric definitions,
-held-out multivariate comparisons, relationship signatures, effective sample
-size, weight concentration, and ensemble stability. This plan owns their
-placement in routine and release evidence once adopted.
-
-### Integerization alternatives
-
-Follow Phase 2 of the methodological-validation plan. Compare deterministic
-systematic integerization with QISI/QIWS, simultaneous optimization, and other
-reviewed candidates on public fixtures before adding another production
-backend. Measure residuals, reproducibility, runtime, memory,
-sparse-candidate behavior, household/person consistency, and parent-geography
-reconciliation.
-
-Acceptance: publish the benchmark method and decision; retain the current
-backend unless another method provides a material, reviewed benefit without
-weakening determinism or traceability.
-
-### Prepared-model assurance
-
-- Derive raw-row and likely source-identifier findings from serialized model
-  contents rather than trusting declarations alone. Treat detection as evidence,
-  not proof of absence.
-- Audit linked household and person models jointly for rare cross-level
-  combinations and align thresholds with category-coarsening guidance.
-- Define full, reduced, and minimal profile guidance by geography, sample
-  support, size, model quality, and disclosure risk.
-- Treat territory and broader-CMA packages as feasibility candidates. Publish
-  only packages that pass support, rare-category, privacy, provenance,
-  reproducible-build, checksum, generation, and archival gates.
-
-Automated privacy findings remain subordinate to documented human review.
-The methodological-validation plan owns shared copying, nearest-neighbour,
-membership-inference, attribute-inference, and baseline attack methods. Model
-profiles retain ownership of their source authority, intended use, thresholds,
-coarsening, and final human release decision.
-
-### External comparison and review
-
-- Add an opt-in comparison with a small, checksum-pinned, schema-crosswalked
-  slice of the Prédhumeau–Manley national Canadian synthetic population. Treat
-  it as a comparison artifact, not observed truth.
-- Invite an external methods/code review and publish its scope, findings,
-  limitations, and project responses.
-
-Acceptance: external data is not downloaded by the default test gate, source
-version and licence are recorded, comparison metrics and denominators are
-explicit, and review findings remain publicly traceable.
-
-The pinned crosswalk, metrics, software comparisons, and benchmark execution
-belong to Phase 5 of the methodological-validation plan; this plan retains the
-requirement that adopted findings appear in the public assurance case.
-
-## Execution Tiers
-
-- **Pull request and push:** deterministic unit, invariant, differential,
-  reference, artifact-reconciliation, architecture, documentation, browser
-  integration, and installed-wheel smoke checks on supported Python versions.
-- **Scheduled:** larger generated and multi-seed suites plus live Statistics
-  Canada interface-drift checks.
-- **Release:** the complete extended suite against the release tag, exact
-  reproduction fixtures, installed distributions, and permanent evidence
-  publication.
-
-Default tests must remain public and deterministic. Live external-service,
-large-data, restricted-data, performance, and external-comparison checks remain
-opt-in unless a bounded public fixture replaces them.
+The detailed implementation and acceptance record through `1.0.0` is preserved
+as the [Correctness Assurance Baseline](archive/2026-07-12-correctness-assurance-baseline.md).
+It is historical evidence, not the current task list.

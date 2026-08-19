@@ -1,8 +1,8 @@
 # Strict Typing Migration Plan
 
-Status: active maintenance ratchet\
+Status: active maintenance\
 Created: 2026-08-01\
-Last updated: 2026-08-15\
+Last updated: 2026-08-19\
 Target: incremental; not a numbered-release gate\
 Next action: type the shared dynamic-data boundaries in assurance, preflight,
 CLI output, national execution, run artifacts, and GeoJSON/map handling\

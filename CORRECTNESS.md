@@ -6,6 +6,13 @@ an auditable assurance case: each public correctness claim is limited, linked
 to independent evidence, rerun automatically, and paired with known
 limitations.
 
+This file is the current public assurance summary. The
+[correctness-assurance plan](https://github.com/dlq/synthpopcan/blob/main/plans/2026-07-12-correctness-assurance.md)
+owns future maintenance work;
+[CHANGELOG.md](https://github.com/dlq/synthpopcan/blob/main/CHANGELOG.md)
+records released changes; and workflow reports and release assets preserve
+commit-specific results.
+
 Passing these checks means that the tested version behaved as specified under
 the documented conditions. It does not establish that source data or chosen
 controls are accurate, that a synthetic population is statistically suitable

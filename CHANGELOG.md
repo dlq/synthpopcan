@@ -4,6 +4,16 @@ All notable public changes to SynthPopCan are tracked here.
 
 ## Unreleased
 
+- Rationalized project documentation into stable workflow landing pages,
+  focused advanced references, concise active maintenance plans, preserved
+  dated research and plan baselines, and a classified repository-script index.
+
+- Rationalize the Markdown information architecture: keep the top-level
+  roadmap focused on current maintenance and conditional research, define a
+  lifecycle for active and archived plans, document which project record owns
+  each kind of information, and label historical research and release evidence
+  without rewriting its original context.
+
 - Record the minted `1.0.0` Zenodo version DOI and the completed Software
   Heritage snapshot, release object, and source revision in citation metadata
   and a dated preservation record.

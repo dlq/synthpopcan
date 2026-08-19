@@ -20,7 +20,7 @@ SynthPopCan is an independent research-software project. It is not affiliated
 with, endorsed by, or sponsored by Statistics Canada or the Government of
 Canada.
 
-Near-term goals:
+Core workflows:
 
 1. Provide a Python library and CLI that can create synthetic populations through IPF from Statistics Canada margin/control tables.
 1. Maintain explicit 2016 and 2021 Census microdata workflows for household-
@@ -64,20 +64,17 @@ what `pip install synthpopcan` currently installs; use the
 published version. Maintained Can-FED and ODEF adapters are included in `0.7.2`
 and later.
 
-Project planning and research notes are tracked separately:
+Project records have distinct jobs:
 
-- [`PLANS.md`](https://github.com/dlq/synthpopcan/blob/main/PLANS.md): current roadmap, open work, and release sequencing.
-- [`adr/`](https://github.com/dlq/synthpopcan/tree/main/adr): accepted architecture decisions, alternatives, and
-  consequences.
-- [`NOTES.md`](https://github.com/dlq/synthpopcan/blob/main/NOTES.md): research synthesis from local materials and external
-  literature.
-- [`CHANGELOG.md`](https://github.com/dlq/synthpopcan/blob/main/CHANGELOG.md): public release notes and completed release
-  highlights.
-- [`CORRECTNESS.md`](https://github.com/dlq/synthpopcan/blob/main/CORRECTNESS.md): tested correctness claims, evidence,
-  limitations, and reproducibility commands.
-- [`docs/stewardship.md`](https://synthpopcan.readthedocs.io/en/latest/stewardship.html): supported environments,
-  maintenance expectations, preservation identifiers, and dated FAIR4RS and
-  software-management records.
+| Record | Use it for |
+| --- | --- |
+| [`PLANS.md`](https://github.com/dlq/synthpopcan/blob/main/PLANS.md) | Current maintenance priorities, conditional research tracks, deferred scope, and open decisions |
+| [`plans/`](https://github.com/dlq/synthpopcan/tree/main/plans) | Detailed active scopes and archived implementation evidence |
+| [`CHANGELOG.md`](https://github.com/dlq/synthpopcan/blob/main/CHANGELOG.md) | Observable changes grouped by public release |
+| [`adr/`](https://github.com/dlq/synthpopcan/tree/main/adr) | Durable architecture decisions, alternatives, and consequences |
+| [`CORRECTNESS.md`](https://github.com/dlq/synthpopcan/blob/main/CORRECTNESS.md) | Current tested correctness claims, evidence, limitations, and reproduction commands |
+| [`NOTES.md`](https://github.com/dlq/synthpopcan/blob/main/NOTES.md) | Index of dated historical research and design syntheses, not current project status |
+| [`docs/stewardship.md`](https://synthpopcan.readthedocs.io/en/latest/stewardship.html) | Supported environments, maintenance expectations, licensing, preservation identifiers, and dated records |
 
 ## Quick Start
 
@@ -181,7 +178,8 @@ README:
 | Train, audit, package, or use tree models | [`docs/tree.md`](https://synthpopcan.readthedocs.io/en/latest/tree.html) |
 | Validate generated outputs | [`docs/validate.md`](https://synthpopcan.readthedocs.io/en/latest/validate.html) |
 | Understand correctness evidence and limitations | [`CORRECTNESS.md`](https://github.com/dlq/synthpopcan/blob/main/CORRECTNESS.md) |
-| Check current plans and implementation notes | [`PLANS.md`](https://github.com/dlq/synthpopcan/blob/main/PLANS.md), [`CHANGELOG.md`](https://github.com/dlq/synthpopcan/blob/main/CHANGELOG.md) |
+| Check current priorities and conditional research | [`PLANS.md`](https://github.com/dlq/synthpopcan/blob/main/PLANS.md), [`plans/README.md`](https://github.com/dlq/synthpopcan/blob/main/plans/README.md) |
+| Review completed release history | [`CHANGELOG.md`](https://github.com/dlq/synthpopcan/blob/main/CHANGELOG.md) |
 
 Build the documentation locally with:
 
@@ -192,59 +190,20 @@ Build the documentation locally with:
 uv run sphinx-build -W -b html docs docs/_build/html
 ```
 
-## Developer Benchmarks
-
-Benchmark fixtures are developer tooling, not normal user workflows:
-
-**Source checkout required.** The province-scale timing run can also require
-substantial time and memory.
-
-```bash
-uv run python scripts/benchmarks.py ipf
-uv run python scripts/benchmarks.py small-area
-uv run python scripts/benchmarks.py small-area --province-scale
-uv run python scripts/benchmarks.py ipf-backends
-```
-
-Use `--seed-records` for smaller or larger IPF runs. The province-scale
-small-area timing check is opt-in because it depends on the machine. Optional
-SciPy CSR and Polars comparisons remain benchmark probes rather than runtime
-backends, and full-data tree-model smoke tests remain outside the default suite.
-The CLI, beginner Python API, and local web app call the same Python domain
-implementations; IPF also shares its file-backed workflow orchestration.
-Browser guidance and durable artifacts do not define a separate computational
-tier. Scale limits come from the selected workflow, model, output size, and
-available machine resources.
-
 ## Data Policy
 
-Large, raw, private, or access-controlled data are not tracked in git.
-
-- `data/raw/` is a local ignored cache for authoritative public inputs,
-  organized by provider, product family, and vintage.
-- `data/derived/` is a local ignored cache for reproducible conversions,
-  subsets, and durable model artifacts; it must not be mistaken for an
-  authoritative source.
-- `data/work/` is disposable project-local scratch space for model builds,
-  experiments, and other restartable intermediate files.
-- `data/private/sources/` is a local ignored cache for access-controlled or
-  sensitive source datasets; generated artifacts do not belong there.
-- `references/` is a local ignored cache for copied papers, proposals, and legacy code references.
-
-Public geography, school, healthcare, road, and environmental layers should generally be fetched from authoritative public sources such as Statistics Canada, open.canada.ca, donneesquebec.ca, and municipal/provincial open-data portals rather than stored in this repository.
-
-Local-only manifests may exist inside ignored data directories to document what is present on a development machine.
+Large, raw, private, or access-controlled data are not tracked in git. Local
+source caches, derived artifacts, and scratch work have separate roles and must
+retain their provenance and access classification. See the maintained
+[`Data and Local Workspace`](https://synthpopcan.readthedocs.io/en/latest/data.html)
+chapter for the directory contract, licensing boundary, and safe handling
+rules.
 
 ## Model Packages
 
-Reviewed model packages may be distributed with the project when they are
-explicitly intended as public research artifacts. The installed package should
-stay small: only the tiny demo model is bundled. Larger published models are
-downloaded on demand with `synthpopcan models fetch MODEL_ID`.
-
-The public catalogue includes parallel 2016 and 2021 linked packages for
-Canada, supported provinces, and the five CMAs identified in the hierarchical
-PUMF. List the exact IDs with `synthpopcan models list`; for example:
+Only the tiny fictional demo model is bundled. Larger reviewed models are
+downloaded on demand. List the current catalogue and generate from a selected
+package with:
 
 ```bash
 synthpopcan models fetch quebec-2021-all-fields
@@ -252,20 +211,11 @@ synthpopcan models generate quebec-2021-all-fields \
   --households 1000 --out quebec-2021-population/
 ```
 
-Release assets are gzip-compressed to keep downloads small. The CLI handles
-decompression and stores a normal JSON model package in the local cache.
-
-Bundled model packages are not raw Census microdata. They should still be
-treated as derived research artifacts with provenance, disclosure-risk checks,
-and limitations. A model package being marked as a publishable candidate means
-it passed the project's current checks; it is not a claim of official approval,
-legal privacy certification, or fitness for every research use.
-
-Before publishing a new model package, review
-[`docs/data.md`](https://synthpopcan.readthedocs.io/en/latest/data.html),
-[`docs/tree.md`](https://synthpopcan.readthedocs.io/en/latest/tree.html),
-[`PLANS.md`](https://github.com/dlq/synthpopcan/blob/main/PLANS.md), and
-[`CONTRIBUTING.md`](https://github.com/dlq/synthpopcan/blob/main/CONTRIBUTING.md).
+Prepared packages are derived research artifacts, not raw Census microdata or
+claims of official approval, privacy certification, or universal fitness. See
+[Generate From a Model Package](https://synthpopcan.readthedocs.io/en/latest/tree-generate.html)
+for ordinary use and [Tree Models](https://synthpopcan.readthedocs.io/en/latest/tree.html)
+for training, audit, packaging, licensing, and release guidance.
 
 ## How To Cite
 
