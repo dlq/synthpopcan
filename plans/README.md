@@ -40,6 +40,7 @@ These plans are maintained scopes, not scheduled releases.
 | [CART methodology review](2026-08-20-cart-methodology-review.md) | Interpretable CART and conditional-frequency production methods | Build one reproducible held-out scorecard before changing the retained tree method; follow with one bounded multiple-realization study. |
 | [Methodological validation and uncertainty](2026-08-02-methodological-validation-and-uncertainty.md) | Bounded oracle, integerization comparison, multi-scale validation, and Canadian comparison | A study requires a named uncertainty ensemble, utility evaluation, or disclosure-risk tranche. |
 | [Simulation interoperability](2026-07-15-simulation-interoperability.md) | Released simulator-neutral exchange bundle | A real consumer supplies a pinned target contract, authorized fixture, and maintainable import smoke test. |
+| [Family relationships and residential placement](2026-08-20-family-relationships-and-residential-placement.md) | Hierarchical PUMF family fields plus public NAR/ODB source assessment | A concrete use justifies either a versioned family-structure proof or a bounded urban/rural address-placement pilot. |
 
 ## Archived Plans
 

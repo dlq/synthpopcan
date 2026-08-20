@@ -243,6 +243,10 @@ or resource budgets.
 
 ## Phase 4 — Economic And Census Family Hierarchy
 
+The [family relationships and residential placement plan](2026-08-20-family-relationships-and-residential-placement.md)
+owns the source-adequacy crosswalk and bounded family-structure proof. This
+phase owns the model and artifact design if that evidence gate passes.
+
 Do not model family identifiers as ordinary categorical targets. If family
 structure is adopted, introduce a new linked artifact version with explicit:
 
