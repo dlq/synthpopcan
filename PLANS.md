@@ -70,6 +70,7 @@ universe, privacy, or validation gate fails.
 | Track | Trigger for implementation | Plan |
 | --- | --- | --- |
 | Richer hierarchical models | A concrete research use justifies one coherent additive field family and a separately versioned profile. | [Expanded hierarchical tree models](plans/2026-08-01-expanded-hierarchical-tree-models.md) |
+| CART methodology review | A study requires held-out selection evidence or a bounded multiple-realization analysis before changing the retained tree method. | [CART methodology review](plans/2026-08-20-cart-methodology-review.md) |
 | Post-`1.1.0` small-area controls | A conditional person, economic, language, or approximate family passes the release train's explicit universe, suppression, compatibility, and bounded validation gate. | [Expanded small-area controls](plans/2026-08-01-expanded-small-area-controls.md) |
 | Uncertainty and disclosure evidence | A study requires quantified candidate-pool, control, seed, model, or privacy uncertainty beyond the released bounded evidence. | [Methodological validation and uncertainty](plans/2026-08-02-methodological-validation-and-uncertainty.md) |
 | One target adapter | A real downstream consumer supplies a pinned target contract, authorized fixture, and maintainable import smoke test. | [Simulation interoperability](plans/2026-07-15-simulation-interoperability.md) |
@@ -77,6 +78,8 @@ universe, privacy, or validation gate fails.
 The tracks may inform one another, but they have distinct ownership:
 
 - the tree-model plan owns fields, entity relationships, and profile design;
+- the CART methodology plan owns tree-specific held-out selection and
+  interpretation evidence;
 - the controls plan owns public controls, universes, compatibility, and
   calibration inputs;
 - the methodological plan owns independent comparisons, uncertainty,
