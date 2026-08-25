@@ -1,7 +1,7 @@
 # SynthPopCan Roadmap
 
 Status: `1.x` maintenance roadmap\
-Last updated: 2026-08-19\
+Last updated: 2026-08-20\
 Current software version: `1.1.0`
 
 ## How To Use This Roadmap
@@ -70,19 +70,25 @@ universe, privacy, or validation gate fails.
 | Track | Trigger for implementation | Plan |
 | --- | --- | --- |
 | Richer hierarchical models | A concrete research use justifies one coherent additive field family and a separately versioned profile. | [Expanded hierarchical tree models](plans/2026-08-01-expanded-hierarchical-tree-models.md) |
+| CART methodology review | A study requires held-out selection evidence or a bounded multiple-realization analysis before changing the retained tree method. | [CART methodology review](plans/2026-08-20-cart-methodology-review.md) |
 | Post-`1.1.0` small-area controls | A conditional person, economic, language, or approximate family passes the release train's explicit universe, suppression, compatibility, and bounded validation gate. | [Expanded small-area controls](plans/2026-08-01-expanded-small-area-controls.md) |
 | Uncertainty and disclosure evidence | A study requires quantified candidate-pool, control, seed, model, or privacy uncertainty beyond the released bounded evidence. | [Methodological validation and uncertainty](plans/2026-08-02-methodological-validation-and-uncertainty.md) |
 | One target adapter | A real downstream consumer supplies a pinned target contract, authorized fixture, and maintainable import smoke test. | [Simulation interoperability](plans/2026-07-15-simulation-interoperability.md) |
+| Family relationships and residential placement | A concrete use justifies either a versioned economic-/census-family structure proof or a bounded urban/rural allocation of whole households to capacity-bearing address candidates. | [Family relationships and residential placement](plans/2026-08-20-family-relationships-and-residential-placement.md) |
 
 The tracks may inform one another, but they have distinct ownership:
 
 - the tree-model plan owns fields, entity relationships, and profile design;
+- the CART methodology plan owns tree-specific held-out selection and
+  interpretation evidence;
 - the controls plan owns public controls, universes, compatibility, and
   calibration inputs;
 - the methodological plan owns independent comparisons, uncertainty,
   statistical utility, and disclosure-risk evidence; and
 - the interoperability plan owns population handoff and target-specific
-  mappings, not simulation inside SynthPopCan.
+  mappings, not simulation inside SynthPopCan; and
+- the family/placement plan owns the source-adequacy proofs and bounded pilots
+  for explicit family membership and plausible residential allocation.
 
 ## Roadmap Boundaries
 
@@ -138,10 +144,8 @@ The following are not current commitments:
 
 These are ideas to investigate, not scheduled work:
 
-- Start building-level residential placement with one bounded Canadian
-  urban/rural case. Allocate whole households to compatible capacity-bearing
-  candidates, keep precise coordinates optional and access-classified, and do
-  not describe a match as an observed residence.
+- Follow the linked family/placement plan for the bounded relationship
+  crosswalk and Canadian urban/rural address-allocation evidence.
 - Test official province/territory projection scenarios first through a
   2016-to-2021 backcast that clearly separates projected values from
   carried-forward attributes.

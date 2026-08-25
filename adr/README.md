@@ -30,6 +30,8 @@ It complements, rather than replaces, the other project records:
 | [0012](0012-retain-bounded-calibration-and-integerization-backends.md) | Accepted | Retain the production linked-calibration updater and deterministic systematic integerizer after bounded independent comparison. |
 | [0013](0013-separate-control-pack-definitions-and-counts.md) | Accepted | Keep reusable control-pack semantics separate from explicit per-run geography count tables. |
 | [0014](0014-separate-prepared-model-and-source-licensing.md) | Accepted | Use a permissive, scoped, cumulative prepared-model rights presentation while preserving source conditions, privacy, provenance, and non-destructive archive correction. |
+| [0015](0015-portable-inspectable-prepared-model-runtimes.md) | Accepted | Require versioned, non-executable, inspectable prepared models whose generation runtime is independent of the training framework. |
+| [0016](0016-separate-evidence-and-claim-classes.md) | Accepted | Keep computational, numerical, statistical, uncertainty, disclosure, substantive-validity, and authority findings distinct. |
 
 ## Recording A Decision
 
