@@ -138,7 +138,7 @@ def test_job_manager_cancels_running_worker(tmp_path: Path) -> None:
     )
     try:
         manager.enqueue(run_id)
-        wait_for_status(store, run_id, "running")
+        wait_for_event_stage(store, run_id, "working")
         manager.cancel(run_id)
         manifest = wait_for_terminal(store, run_id)
     finally:
@@ -636,6 +636,17 @@ def wait_for_status(
             return
         time.sleep(0.01)
     raise AssertionError(f"run {run_id} did not reach {expected}")
+
+
+def wait_for_event_stage(
+    store: RunStore, run_id: str, expected: str, timeout: float = 5
+) -> None:
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        if any(event["stage"] == expected for event in store.read_events(run_id)):
+            return
+        time.sleep(0.01)
+    raise AssertionError(f"run {run_id} did not emit {expected}")
 
 
 def write_upload(store: RunStore, name: str, body: bytes) -> str:

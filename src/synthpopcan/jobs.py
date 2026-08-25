@@ -620,8 +620,7 @@ class JobManager:
                     self.store.append_event(run_id, "failed", str(exc))
 
     def _run_one(self, run_id: str) -> None:
-        manifest = self.store.transition_run(run_id, "running")
-        self.store.append_event(run_id, "running", "Worker process started")
+        manifest = self.store.load_run(run_id)
         messages = self._context.Queue()
         cancel_event = self._context.Event()
         process = self._context.Process(
@@ -633,7 +632,15 @@ class JobManager:
             self._current_run_id = run_id
             self._current_process = process
             self._current_cancel = cancel_event
-        process.start()
+            try:
+                process.start()
+            except BaseException:
+                self._current_run_id = None
+                self._current_process = None
+                self._current_cancel = None
+                raise
+            self.store.transition_run(run_id, "running")
+            self.store.append_event(run_id, "running", "Worker process started")
         terminal_message = False
         timed_out = False
         deadline = (
