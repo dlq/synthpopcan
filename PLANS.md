@@ -1,7 +1,7 @@
 # SynthPopCan Roadmap
 
 Status: `1.x` maintenance roadmap\
-Last updated: 2026-08-20\
+Last updated: 2026-08-26\
 Current software version: `1.1.0`
 
 ## How To Use This Roadmap
@@ -35,10 +35,12 @@ when later evidence changes the interpretation.
 ## Current Priorities
 
 The bounded `1.1.0` small-area control expansion is released and preserved.
-`1.2.0` is now the scoped conditional-person tranche, while `1.3.0` remains a
-forecast rather than a commitment. The project plans only this three-release
-horizon: one released baseline, one scoped successor, and one
-evidence-dependent forecast. Work beyond it remains trigger-based research.
+`1.2.0` is now the scoped conditional-person tranche with a parallel
+localization foundation, `1.3.0` remains an evidence-dependent forecast, and
+`1.4.0` is a provisional bilingual-completion target whose feasibility must be
+demonstrated by the earlier localization tranches. The project keeps only one
+committed next release; later entries are progressively less certain and are
+revisited after every minor release.
 
 | Priority | Current commitment | Detailed owner |
 | --- | --- | --- |
@@ -46,20 +48,25 @@ evidence-dependent forecast. Work beyond it remains trigger-based research.
 | Correctness and release evidence | Keep exact-commit CI, coverage, correctness, installed-distribution, release-evidence, and reproduction gates blocking later releases. | [Correctness assurance plan](plans/2026-07-12-correctness-assurance.md) |
 | Stewardship and publication | Preserve the verified `1.1.0` DOI and Software Heritage identifiers together with earlier records; retain scoped licensing, non-overwriting archives, support boundaries, and exact release provenance. | [Stewardship plan](plans/2026-07-19-research-software-stewardship.md), [ADR-0014](adr/0014-separate-prepared-model-and-source-licensing.md) |
 | Type-safety maintenance | Keep package-wide Pyright `standard` blocking and expand the strict-clean module set without weakening dynamic-data validation. | [Strict typing plan](plans/2026-08-01-strict-typing.md) |
+| Maintainability and approachability | Make coverage enforcement exact, reduce high-complexity orchestration incrementally, ratchet supported-surface documentation, and keep localization and archive state machinery behind explicit boundaries. | [Responsibility-boundaries plan](plans/2026-08-26-responsibility-boundaries.md), [post-1.0 release train](plans/2026-08-19-post-1-0-release-train.md), [contributor guide](CONTRIBUTING.md) |
 | Release train | Preserve the additive `1.1.0` control expansion and admit later families only through their stated universe and evidence gates. | [Post-1.0 release train](plans/2026-08-19-post-1-0-release-train.md) |
+| English/French localization | Build a locale-safe foundation in `1.2.0`, localize core CLI/web workflows in `1.3.0`, and complete the supported bilingual surface in provisional `1.4.0` without changing machine contracts. | [Bilingual localization plan](plans/2026-08-19-bilingual-localization.md) |
 
 ## Release Horizon
 
 | Release | Confidence | Target window | Planned outcome |
 | --- | --- | --- | --- |
 | `1.1.0` | Released | August 2026 | 24 reviewed control packs and 14 compatible control families, including broad packs that jointly apply nine household and five person margins with explicit fail-closed runtime invariants. |
-| `1.2.0` | Scoped following release | November–December 2026 | Conditional age-15+ marital-status, education, labour-force, and work-activity controls that pass explicit universe and residual gates. |
-| `1.3.0` | Forecast, not committed | First half of 2027 | Evidence-qualified language, immigrant place-of-birth, and income-band controls; approximate mortgage/subsidy only as an opt-in tier. |
+| `1.2.0` | Scoped following release | November–December 2026 | Conditional age-15+ marital-status, education, labour-force, and work-activity controls that pass explicit universe and residual gates; the locale-safe message-catalogue foundation; and a bounded maintainability ratchet for exact coverage, orchestration complexity, public documentation, and archive-state boundaries. |
+| `1.3.0` | Forecast, not committed | First half of 2027 | Evidence-qualified language, immigrant place-of-birth, and income-band controls plus core English/French CLI and local-web localization; approximate mortgage/subsidy only as an opt-in tier. |
+| `1.4.0` | Provisional follow-on | Second half of 2027 | Complete English/French coverage of supported CLI, local-web, and public-documentation surfaces after the `1.2.0` locale foundation proves sustainable. |
 
 Patch releases remain demand-driven. Family entities, collective populations,
 richer model profiles, and breaking changes have prerequisites rather than
 dates. The detailed scope and movement rules live in the
-[post-1.0 release train](plans/2026-08-19-post-1-0-release-train.md).
+[post-1.0 release train](plans/2026-08-19-post-1-0-release-train.md), while the
+separate [bilingual localization plan](plans/2026-08-19-bilingual-localization.md)
+owns the cross-cutting `1.2.0`–`1.4.0` language work.
 
 ## Conditional Research Tracks
 

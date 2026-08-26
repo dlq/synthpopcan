@@ -4,6 +4,11 @@ All notable public changes to SynthPopCan are tracked here.
 
 ## Unreleased
 
+- Plan staged Canadian English/French localization: establish locale-safe
+  message infrastructure in `1.2.0`, localize core CLI and local-web workflows
+  in `1.3.0`, and provisionally complete supported interface and documentation
+  coverage in `1.4.0` while preserving language-neutral machine contracts.
+
 - Record the published `1.1.0` Zenodo version DOI and completed Software
   Heritage snapshot, annotated release object, and exact source revision in
   citation metadata and a dated preservation record.
