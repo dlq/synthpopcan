@@ -8,6 +8,7 @@ implementation and research scopes; it is not a second roadmap.
 | State | Meaning |
 | --- | --- |
 | **Active maintenance** | Owns a recurring project obligation. It may have no feature release attached. |
+| **Active feature implementation** | Owns accepted work for the committed next release. Its executable work is divided into PR-sized slices. |
 | **Conditional research** | Preserves a reviewed scope, but implementation waits for the trigger named in the plan. |
 | **Archived** | Completion criteria were met and the observable outcome was recorded in the changelog. The file remains historical evidence and owns no new work. |
 
@@ -15,22 +16,52 @@ Every non-archived plan must state its status, target, and current next action
 near the top. A completed milestone may remain as context inside an active
 plan, but new release narrative belongs in [CHANGELOG.md](../CHANGELOG.md).
 
+## Required PR-Slice Format
+
+Every plan that owns work for the committed next release must contain a
+`## PR-Sized Work` section with this exact table shape:
+
+| ID | Status | Depends on | Deliverable | Acceptance |
+| --- | --- | --- | --- | --- |
+| `AREA-01` | `ready` | — | One independently reviewable behavior, contract, evidence artifact, or refactor | Objective checks that can be completed in the same pull request |
+
+Use these statuses consistently:
+
+- `ready`: prerequisites are satisfied and implementation may begin;
+- `in progress`: one pull request is actively implementing the slice;
+- `blocked`: a named dependency or evidence gate is not satisfied;
+- `done`: the deliverable and its stated acceptance checks exist in the current
+  repository state; and
+- `deferred`: the slice was deliberately moved out of the plan's current
+  release scope.
+
+Each row must have one stable ID, name explicit predecessor IDs or an external
+trigger, and be small enough to review and revert independently. Do not combine
+a statistical-method change, schema migration, interface change, and internal
+refactor merely because they share a release. A release-coordination plan may
+link to slice IDs in an owning plan instead of duplicating their details.
+
+A conditional-research plan may remain an umbrella rather than predicting
+implementation prematurely. It must then contain an explicit `## Activation Rule` requiring a dated execution plan with the same `## PR-Sized Work` table
+before production implementation begins. Discovery may precede activation only
+when its bounded artifact and decision gate are stated explicitly.
+
 ## Active Maintenance
 
 | Plan | Ongoing responsibility | Current next action |
 | --- | --- | --- |
 | [Correctness assurance](2026-07-12-correctness-assurance.md) | Compatibility, exact-commit CI, coverage, correctness, release evidence, assurance, and reproduction gates | Preserve the frozen baseline; reassess Python 3.15 support in November 2026 after its final release and ecosystem-wheel availability. |
 | [Research-software stewardship](2026-07-19-research-software-stewardship.md) | Citation, preservation, licensing, support boundaries, publication evidence, and future scholarly-readiness gates | Preserve the verified `1.1.0` identifiers, earlier records, and exact-commit publication process. |
-| [Strict typing](2026-08-01-strict-typing.md) | Package-wide Pyright `standard` and an incremental strict-clean ratchet | Type shared dynamic-data boundaries without weakening runtime validation. |
-| [Post-1.0 release train](2026-08-19-post-1-0-release-train.md) | Bounded minor-release scope, confidence, sequencing, acceptance gates, and the cross-cutting maintainability ratchet | Begin bounded `1.2.0` evidence and maintainability work; keep `1.3.0` explicitly forecast. |
-| [Responsibility boundaries](2026-08-26-responsibility-boundaries.md) | Dependency direction, orchestration extraction, supported-surface documentation, and complexity ownership | Characterize and extract the `webapi` small-area preflight and route-registration boundary without changing public behaviour. |
+| [Strict typing](2026-08-01-strict-typing.md) | Package-wide Pyright `standard` and an incremental strict-clean ratchet | Refresh `TYPE12-01`, then type each shared dynamic-data boundary as an independent slice. |
+| [Post-1.0 release train](2026-08-19-post-1-0-release-train.md) | Bounded minor-release scope, confidence, sequencing, acceptance gates, and the cross-cutting maintainability ratchet | Coordinate the committed `1.2.0` control, localization, and maintainability slice tables; keep `1.3.0` explicitly forecast. |
+| [Responsibility boundaries](2026-08-26-responsibility-boundaries.md) | Dependency direction, orchestration extraction, supported-surface documentation, and complexity ownership | Complete `RB12-02`, the characterized `webapi` small-area preflight extraction; route registration is already separated. |
 
 ## Active Feature Implementation
 
 | Plan | Target release | Current next action |
 | --- | --- | --- |
-| [Expanded small-area controls](2026-08-01-expanded-small-area-controls.md) | `1.2.0` conditional person controls | Preserve the released 24-pack/14-family baseline while building the bounded conditional-control evidence tranche. |
-| [English/French internationalization and localization](2026-08-19-bilingual-localization.md) | `1.2.0` infrastructure, `1.3.0` core product, provisional `1.4.0` completion | Inventory user-facing strings and establish the locale/message-catalogue boundary without changing machine contracts. |
+| [Expanded small-area controls](2026-08-01-expanded-small-area-controls.md) | `1.2.0` conditional person controls | Complete `SA12-01` while the four family-specific source reviews proceed independently. |
+| [English/French internationalization and localization](2026-08-19-bilingual-localization.md) | `1.2.0` infrastructure, `1.3.0` core product, provisional `1.4.0` completion | Complete `I18N12-01`, then use its inventory to select the catalogue boundary. |
 
 ## Conditional Research
 

@@ -28,7 +28,6 @@
   "extraPaths": ["src"],
   "exclude": [
     "tests",
-    "scripts",
     "docs",
     "**/.venv",
     "**/__pycache__",

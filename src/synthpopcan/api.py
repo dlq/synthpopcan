@@ -78,16 +78,12 @@ from synthpopcan.linked_schema import (
     write_linked_population_contract,
 )
 from synthpopcan.model_licensing import (
-    normalize_prepared_model_licensing,
     validate_prepared_model_licensing,
 )
 from synthpopcan.models import fetch_model_package
 from synthpopcan.odef import ODEF_V3_ARCHIVE_SHA256, OdefAdapter
-from synthpopcan.small_area_synthesis import calibrate_linked_household_csvs
 from synthpopcan.tabular import format_csv_number
 from synthpopcan.tree import (
-    CartTreeModel,
-    FrequencyTreeModel,
     generate_linked_population,
 )
 from synthpopcan.workflows.enrichment import (
@@ -95,6 +91,17 @@ from synthpopcan.workflows.enrichment import (
     run_reference_enrichment,
 )
 from synthpopcan.workflows.ipf import read_csv_records
+from synthpopcan.workflows.models import (
+    PreparedModelPackageError,
+    normalize_prepared_model_package,
+    prepared_model_models,
+    read_prepared_model_package,
+    validate_prepared_model_publishable,
+)
+from synthpopcan.workflows.small_area import (
+    SmallAreaCalibrationRequest,
+    calibrate_small_area_files,
+)
 
 _SeedInput = str | Path | Sequence[Mapping[str, object]]
 _ControlInput = str | Path | ControlTable
@@ -533,14 +540,7 @@ def read_model_package(path: str | Path) -> dict[str, Any]:
         unsupported package schema.
     """
 
-    try:
-        payload = json.loads(Path(path).read_text())
-    except json.JSONDecodeError as exc:
-        raise ValueError(f"{path} is not valid JSON") from exc
-    if not isinstance(payload, dict):
-        raise ValueError("model package must be a JSON object")
-    _validate_model_package_schema(payload)
-    return normalize_prepared_model_licensing(payload)
+    return read_prepared_model_package(Path(path), object_label="model package")
 
 
 def fetch_model(model_id: str) -> dict[str, Any]:
@@ -646,7 +646,7 @@ def generate_from_model(
         str(household_size_column or package_payload.get("household_size_column", ""))
         or "household_size"
     )
-    household_model, person_model = _package_models(package_payload)
+    household_model, person_model = prepared_model_models(package_payload)
     household_rows, person_rows = generate_linked_population(
         household_model,
         person_model,
@@ -848,14 +848,6 @@ def calibrate_small_area(
 
     destination = Path(output_dir)
     destination.mkdir(parents=True, exist_ok=True)
-    manifest_path = destination / "manifest.json"
-    output_population = LinkedPopulationFiles(
-        households=destination / "households.csv",
-        persons=destination / "persons.csv",
-        manifest=manifest_path,
-    )
-    report_path = destination / "report.json"
-    weights_path = destination / "weights.csv" if include_weights else None
     input_licensing = _linked_population_licensing(population)
 
     with TemporaryDirectory(prefix="synthpopcan-small-area-") as temporary:
@@ -886,41 +878,38 @@ def calibrate_small_area(
             if isinstance(geography_universe, Mapping)
             else geography_universe
         )
-        details = calibrate_linked_household_csvs(
-            households_path=candidate_files.households,
-            persons_path=candidate_files.persons,
-            controls_path=controls_path,
-            person_controls_path=person_controls_path,
-            control_pack=control_pack,
-            control_pack_evidence=control_pack_evidence,
-            geography_dimension=geography_dimension,
-            geography_column=geography_column or geography_dimension,
-            geography_universe=normalized_geography,
-            households_out=output_population.households,
-            persons_out=output_population.persons,
-            report_out=report_path,
-            weights_out=weights_path,
-            max_iterations=max_iterations,
-            tolerance=tolerance,
-            pool_size=pool_size,
-            subsample_seed=subsample_seed,
+        calibrated = calibrate_small_area_files(
+            SmallAreaCalibrationRequest(
+                candidate_households_path=candidate_files.households,
+                candidate_persons_path=candidate_files.persons,
+                controls_path=controls_path,
+                output_dir=destination,
+                geography_dimension=geography_dimension,
+                geography_column=geography_column or geography_dimension,
+                person_controls_path=person_controls_path,
+                control_pack=control_pack,
+                control_pack_evidence=control_pack_evidence,
+                geography_universe=normalized_geography,
+                licensing=input_licensing,
+                include_weights=include_weights,
+                max_iterations=max_iterations,
+                tolerance=tolerance,
+                pool_size=pool_size,
+                subsample_seed=subsample_seed,
+            )
         )
+        details = calibrated.details
 
-    summary = details.get("summary")
-    if not isinstance(summary, Mapping):
-        raise RuntimeError("small-area calibration returned an invalid summary")
-    write_linked_population_contract(
-        manifest_path,
-        output_population.households,
-        output_population.persons,
-        geography_column=geography_column or geography_dimension,
-        licensing=input_licensing,
-    )
+    summary = cast("Mapping[str, Any]", details["summary"])
     non_converged = int(summary.get("non_converged_count", 0))
     return SmallAreaResult(
-        population=output_population,
-        report_path=report_path,
-        weights_path=weights_path,
+        population=LinkedPopulationFiles(
+            households=calibrated.households_path,
+            persons=calibrated.persons_path,
+            manifest=calibrated.manifest_path,
+        ),
+        report_path=calibrated.report_path,
+        weights_path=calibrated.weights_path,
         assigned_households=int(details["assigned_households"]),
         assigned_persons=int(details["assigned_persons"]),
         total_geographies=int(summary["total_geographies"]),
@@ -1461,50 +1450,19 @@ def _control_table_path(
 def _model_package(package: _ModelPackageInput) -> dict[str, Any]:
     if isinstance(package, str | Path):
         return read_model_package(package)
-    payload = dict(package)
-    _validate_model_package_schema(payload)
-    return normalize_prepared_model_licensing(payload)
-
-
-def _validate_model_package_schema(package: Mapping[str, object]) -> None:
-    if package.get("schema_version") != "synthpopcan-linked-tree-package-v1":
-        raise ValueError("unsupported linked model package schema")
+    return normalize_prepared_model_package(dict(package))
 
 
 def _validate_publishable_package(package: Mapping[str, object]) -> None:
-    privacy = package.get("privacy")
-    if (
-        not isinstance(privacy, Mapping)
-        or privacy.get("publishable_candidate") is not True
-    ):
-        raise ValueError(
-            "model package is not marked as a publishable candidate; inspect the "
-            "package before generating from it"
-        )
-
-
-def _package_models(
-    package: Mapping[str, object],
-) -> tuple[FrequencyTreeModel | CartTreeModel, FrequencyTreeModel | CartTreeModel]:
-    models = package.get("models")
-    if not isinstance(models, Mapping):
-        raise ValueError("linked model package must include models")
-    household_model = _tree_model_from_payload(models.get("household"))
-    person_model = _tree_model_from_payload(models.get("person"))
-    return household_model, person_model
-
-
-def _tree_model_from_payload(payload: object) -> FrequencyTreeModel | CartTreeModel:
-    if not isinstance(payload, dict):
-        raise ValueError(
-            "linked model package must include household and person models"
-        )
-    model_type = payload.get("model_type")
-    if model_type == "conditional-frequency":
-        return FrequencyTreeModel.from_dict(payload)
-    if model_type == "cart":
-        return CartTreeModel.from_dict(payload)
-    raise ValueError("unsupported tree model type in linked package")
+    try:
+        validate_prepared_model_publishable(package)
+    except PreparedModelPackageError as exc:
+        if exc.reason == "unpublishable":
+            raise ValueError(
+                "model package is not marked as a publishable candidate; inspect the "
+                "package before generating from it"
+            ) from exc
+        raise
 
 
 def _write_rows(path: Path, rows: PopulationRows) -> None:

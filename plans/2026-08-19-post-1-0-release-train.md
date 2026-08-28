@@ -1,11 +1,11 @@
 # Post-1.0 Release Train
 
-Status: `1.1.0` released; later releases remain planned\
+Status: active maintenance; `1.1.0` released and `1.2.0` committed next\
 Created: 2026-08-19\
-Last updated: 2026-08-26\
+Last updated: 2026-08-28\
 Target: bounded `1.x` feature releases with patch releases as needed\
-Next action: begin the bounded `1.2.0` evidence tranche without expanding its
-public surface prematurely\
+Next action: complete `SA12-01`, `I18N12-01`, and `RB12-02` before expanding the
+`1.2.0` public surface\
 Roadmap: [PLANS.md](../PLANS.md) | [Plan index](README.md)
 
 ## Planning Horizon
@@ -27,6 +27,19 @@ English/French localization work crosses this train and is owned by the
 [bilingual localization plan](2026-08-19-bilingual-localization.md). Patch
 releases are cut whenever a correctness, security, packaging, or documentation
 fix should not wait for the next feature release.
+
+## PR-Sized Work
+
+This is the coordination view. Detailed acceptance belongs to the named owning
+plan; a family that fails its evidence gate becomes `deferred` rather than
+weakening that gate.
+
+| ID | Status | Depends on | Deliverable | Acceptance |
+| --- | --- | --- | --- | --- |
+| `REL12-01` | `blocked` | Terminal `done` or `deferred` status for [`SA12-01`–`SA12-15`](2026-08-01-expanded-small-area-controls.md#pr-sized-work) | Admit the individually accepted conditional-person control families to `1.2.0` | Every admitted family has accepted source, universe, runtime, residual, and interface evidence; a failed family is explicitly deferred |
+| `REL12-02` | `blocked` | Completed [`I18N12-01`–`I18N12-05`](2026-08-19-bilingual-localization.md#pr-sized-work) | Ship the locale-safe message-catalogue foundation | The packaged catalogue, locale rules, compatibility fixtures, and static guard pass without a full-localization claim |
+| `REL12-03` | `blocked` | Terminal status for [`RB12-01`–`RB12-09`](2026-08-26-responsibility-boundaries.md#pr-sized-work) and completed applicable [`TYPE12-01`–`TYPE12-08`](2026-08-01-strict-typing.md#pr-sized-work) slices | Complete the bounded maintainability ratchet | Each required boundary and documentation slice meets its local acceptance; deferred archive extraction does not enlarge the executor |
+| `REL12-04` | `blocked` | `REL12-01`, `REL12-02`, `REL12-03` | Prepare and verify the `1.2.0` release candidate | The release acceptance gate below and the exact-commit procedure in `RELEASING.md` pass |
 
 ## `1.1.0` — Broad Compatible Small-Area Controls
 
@@ -91,7 +104,7 @@ populations.
 ## `1.2.0` — Conditional Person Controls
 
 Target window: November–December 2026\
-Confidence: scoped following release
+Confidence: committed next release
 
 In parallel, establish the locale and message-catalogue infrastructure defined
 by the bilingual localization plan. This foundation must preserve
@@ -189,6 +202,22 @@ delaying unrelated accepted families.
 Mortgage and subsidy may appear only as an explicitly opt-in approximate tier.
 Their rounded percentages must retain approximation provenance, denominator
 reconciliation, and a tolerance distinct from count-quality controls.
+
+Acceptance gate for every statistical family admitted to `1.3.0`:
+
+- the vintage-specific source rows, classifications, denominators, and
+  crosswalks are independently reviewed;
+- multiple-response, immigrant-only, banded, zero/negative-income, or rounded
+  percentage semantics are represented explicitly rather than normalized away;
+- joint use with the retained broad packs passes bounded feasibility, support,
+  structural-zero, suppression, fractional-residual, and realized-residual
+  evidence;
+- approximate mortgage or subsidy controls remain opt-in, use a distinct
+  tolerance, and retain derivation provenance in every artifact;
+- interfaces, manifests, documentation, and claim limitations identify exactly
+  which families passed; and
+- a family that fails remains validation-only and does not delay unrelated
+  accepted families.
 
 ## `1.4.0` — Complete English/French Supported Surface
 

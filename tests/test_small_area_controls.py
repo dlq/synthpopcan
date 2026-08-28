@@ -318,6 +318,22 @@ def test_official_profile_slices_reconcile_all_nine_household_margins(
     assert all(sum(vector.values()) == 1_000 for vector in scaled[geography].values())
 
 
+def test_pack_profile_extraction_preserves_exact_geography_selection() -> None:
+    """Characterize pack extraction's large-profile selection fast path."""
+
+    profile = _CENSUS_FIXTURES / "2021-ada-expanded-household-controls.csv"
+    pack = load_control_pack("statcan-2021-expanded-private-household-housing-ada-v1")
+
+    selected = extract_household_controls_for_pack(
+        profile,
+        pack,
+        geo_ids={"10010001", "missing"},
+    )
+
+    assert set(selected) == {"10010001"}
+    assert extract_household_controls_for_pack(profile, pack, geo_ids={"missing"}) == {}
+
+
 def test_pack_extraction_rejects_root_child_vector_mismatch(tmp_path: Path) -> None:
     source = _CENSUS_FIXTURES / "2021-ada-expanded-household-controls.csv"
     profile = tmp_path / source.name
@@ -512,6 +528,27 @@ def test_extract_controls_filters_exact_geography_identifiers(tmp_path: Path) ->
     assert set(raw) == {"G2"}
 
 
+def test_extract_controls_combines_prefix_and_exact_geography_filters(
+    tmp_path: Path,
+) -> None:
+    """Characterize the shared geography-selection contract before refactoring."""
+
+    profile = tmp_path / "profile.csv"
+    _minimal_profile(profile)
+
+    assert extract_controls_from_profile(
+        profile,
+        "ada",
+        geo_prefix="G",
+        geo_ids={"G2", "missing"},
+    ) == {
+        "G2": {
+            "hhsize": {"1": 40.0, "2": 60.0},
+            "tenure": {"1": 70.0, "2": 30.0},
+        }
+    }
+
+
 def test_2016_da_control_fixture_remains_compatible(tmp_path: Path) -> None:
     profile = tmp_path / "profile.csv"
     rows = [
@@ -561,8 +598,13 @@ def test_extract_controls_raises_for_unknown_geography(tmp_path: Path) -> None:
     profile = tmp_path / "profile.csv"
     _minimal_profile(profile)
 
-    with pytest.raises(ValueError, match="Unknown geography"):
+    with pytest.raises(ValueError) as exc_info:
         extract_controls_from_profile(profile, "unknown_geo")
+    assert str(exc_info.value) == (
+        "Unknown geography column 'unknown_geo'. "
+        "Known values: ['ada', 'cd', 'csd', 'ct', 'da']. "
+        "Use --geo-level-value to provide the GEO_LEVEL string explicitly."
+    )
 
 
 def test_extract_controls_skips_non_numeric_values(tmp_path: Path) -> None:

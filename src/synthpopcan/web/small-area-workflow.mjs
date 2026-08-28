@@ -2,6 +2,10 @@ import { numberValue, optionalNumberValue } from "./form-utils.mjs";
 import { createOperationSequencer } from "./operation-sequencer.mjs";
 import { resultItem, revokeDownloads, showError, showStatus } from "./result-ui.mjs";
 import { createRun, listControlPacks, preflightRun, uploadCsv } from "./run-api.mjs";
+import {
+  buildSmallAreaRequest,
+  validateSmallAreaDraft,
+} from "./small-area-request.mjs";
 
 export function bindSmallAreaWorkflow() {
   const form = document.querySelector("#small-area-form");
@@ -35,7 +39,7 @@ export function bindSmallAreaWorkflow() {
     showStatus(resultBox, "Uploading and checking the planned small-area run...");
     try {
       const draft = snapshotDraft();
-      const request = await buildRequest(draft);
+      const request = await buildSmallAreaRequest(draft, uploadCsv);
       if (!operation.isCurrent()) return;
       const preflight = await preflightRun(request);
       if (!operation.isCurrent()) return;
@@ -91,29 +95,16 @@ function snapshotDraft() {
   ).files?.[0];
   const candidatePersons = document.querySelector("#small-area-candidate-persons-file")
     .files?.[0];
-  if (Boolean(candidateHouseholds) !== Boolean(candidatePersons))
-    throw new Error("Choose both candidate household and person CSV files.");
-  const hasModelSource = Boolean(packageFile || modelSelect.value);
-  const hasCandidateSource = Boolean(candidateHouseholds && candidatePersons);
-  if (hasModelSource === hasCandidateSource)
-    throw new Error("Choose one model/package or one linked candidate pair.");
   const controlsFile = document.querySelector("#small-area-controls-file").files?.[0];
-  if (!controlsFile) throw new Error("Choose household controls CSV.");
   const personControlsFile = document.querySelector("#small-area-person-controls-file")
     .files?.[0];
   const controlPackId = document.querySelector("#small-area-control-pack").value;
   const controlPackEvidenceFile = document.querySelector(
     "#small-area-control-pack-evidence-file",
   ).files?.[0];
-  if (controlPackId && !personControlsFile)
-    throw new Error("Reviewed control packs require a person controls CSV.");
-  if (Boolean(controlPackId) !== Boolean(controlPackEvidenceFile))
-    throw new Error(
-      "Choose both a reviewed control pack and its control-pack evidence JSON.",
-    );
   const boundariesFile = document.querySelector("#small-area-boundaries-file")
     .files?.[0];
-  return {
+  const draft = validateSmallAreaDraft({
     modelId: modelSelect.value,
     packageFile,
     candidateHouseholds,
@@ -123,6 +114,9 @@ function snapshotDraft() {
     controlPackId,
     controlPackEvidenceFile,
     boundariesFile,
+  });
+  return {
+    ...draft,
     options: {
       candidate_households: numberValue("#small-area-candidate-households"),
       geography_dimension: document
@@ -138,54 +132,6 @@ function snapshotDraft() {
       geography_id_field: "geo_id",
       map_title: "Synthetic Population",
     },
-  };
-}
-
-async function buildRequest(draft) {
-  const {
-    modelId,
-    packageFile,
-    candidateHouseholds,
-    candidatePersons,
-    controlsFile,
-    personControlsFile,
-    controlPackId,
-    controlPackEvidenceFile,
-    boundariesFile,
-    options,
-  } = draft;
-  const controls = await uploadCsv(controlsFile);
-  const inputs = { controls_upload_id: controls.upload_id };
-  if (candidateHouseholds && candidatePersons) {
-    const [households, persons] = await Promise.all([
-      uploadCsv(candidateHouseholds),
-      uploadCsv(candidatePersons),
-    ]);
-    inputs.candidate_households_upload_id = households.upload_id;
-    inputs.candidate_persons_upload_id = persons.upload_id;
-  } else if (packageFile) {
-    const uploaded = await uploadCsv(packageFile);
-    inputs.package_upload_id = uploaded.upload_id;
-  } else {
-    inputs.model_id = modelId;
-  }
-  if (personControlsFile) {
-    const uploaded = await uploadCsv(personControlsFile);
-    inputs.person_controls_upload_id = uploaded.upload_id;
-  }
-  if (controlPackId && controlPackEvidenceFile) {
-    const uploaded = await uploadCsv(controlPackEvidenceFile);
-    inputs.control_pack_id = controlPackId;
-    inputs.control_pack_evidence_upload_id = uploaded.upload_id;
-  }
-  if (boundariesFile) {
-    const uploaded = await uploadCsv(boundariesFile);
-    inputs.boundaries_upload_id = uploaded.upload_id;
-  }
-  return {
-    workflow: "small_area",
-    inputs,
-    options,
   };
 }
 

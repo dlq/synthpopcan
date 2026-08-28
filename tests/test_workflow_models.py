@@ -7,13 +7,17 @@ from pathlib import Path
 
 import pytest
 
+from synthpopcan.api import read_model_package
+from synthpopcan.cli_tree import package_models, read_linked_model_package
 from synthpopcan.models import model_payload
 from synthpopcan.tree import validate_linked_population_files
 from synthpopcan.workflows.models import (
     PreparedModelRequest,
     generate_prepared_model_files,
     inspect_prepared_model,
+    prepared_model_models,
     read_prepared_model_package,
+    resolve_prepared_model_package,
 )
 
 
@@ -64,19 +68,45 @@ def test_prepared_model_workflow_writes_deterministic_linked_artifacts(
         "demo-linked-household-person",
     ]
 
+    replay_dir = tmp_path / "replay"
+    replay_dir.mkdir()
     second = generate_prepared_model_files(
         PreparedModelRequest(
             **{
                 **request.__dict__,
-                "households_path": tmp_path / "households-2.csv",
-                "persons_path": tmp_path / "persons-2.csv",
-                "report_path": tmp_path / "report-2.json",
+                "households_path": replay_dir / "households.csv",
+                "persons_path": replay_dir / "persons.csv",
+                "report_path": replay_dir / "report.json",
                 "chunk_size": 3,
             }
         )
     )
     assert second.households_path.read_bytes() == result.households_path.read_bytes()
     assert second.persons_path.read_bytes() == result.persons_path.read_bytes()
+    assert second.report_path.read_bytes() == result.report_path.read_bytes()
+    assert result.report_path.read_text() == json.dumps(result.report, indent=2) + "\n"
+
+
+def test_prepared_model_adapters_share_exact_resolution_and_conversion(
+    tmp_path: Path,
+) -> None:
+    package_path = tmp_path / "package.json"
+    package_path.write_text(json.dumps(model_payload("demo-linked-household-person")))
+
+    workflow_package = read_prepared_model_package(package_path)
+    assert read_model_package(package_path) == workflow_package
+    assert read_linked_model_package(package_path) == workflow_package
+    assert package_models(workflow_package) == prepared_model_models(workflow_package)
+
+    local = resolve_prepared_model_package(str(package_path))
+    assert local.package == workflow_package
+    assert local.label == str(package_path)
+    assert local.source_path == package_path
+
+    registered = resolve_prepared_model_package("demo-linked-household-person")
+    assert registered.package == model_payload("demo-linked-household-person")
+    assert registered.label == "demo-linked-household-person"
+    assert registered.source_path is None
 
 
 def test_prepared_model_inspection_rejects_unpublishable_package() -> None:

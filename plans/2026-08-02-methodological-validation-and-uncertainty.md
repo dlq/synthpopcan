@@ -2,13 +2,23 @@
 
 Status: conditional research; bounded `0.9.0` tranche completed\
 Created: 2026-08-02\
-Last updated: 2026-08-19\
+Last updated: 2026-08-28\
 Target: bounded oracle, integerization, validation, and Canadian comparison for
 `0.9.0`; deeper ensembles and attack infrastructure after `1.0.0`\
 Next action: when a study requires quantified uncertainty, design one explicit
 candidate-pool or control-uncertainty ensemble without silently changing the
 retained production backend\
 Roadmap: [PLANS.md](../PLANS.md) | [Plan index](README.md)
+
+## Activation Rule
+
+This file is a conditional research umbrella. When a named study requires one
+uncertainty, utility, benchmark, or disclosure-risk tranche, create a dated
+execution plan with the exact `## PR-Sized Work` table required by the plan
+index before changing production behavior. Separate request/schema, executor,
+metric/report, bounded evidence, and interface/publication work; name the study,
+method, fixtures, optional dependencies, and stop/go decision. The completed
+`0.9.0` subset below remains historical evidence and is not reopened implicitly.
 
 ## Outcome
 
@@ -145,6 +155,10 @@ Phase 7 contributed the interfaces and durable evidence needed by the bounded
 pre-`1.0` tranche. Future work should use versioned extension points rather
 than add a separate public switch for every solver, metric, perturbation, or
 attack.
+
+The phase sections below describe the full research horizon. Only the bounded
+parts identified in the completed-baseline section are complete; every other
+imperative remains conditional on the activation rule above.
 
 ## Phase 1 — Calibration Oracles And Applicability
 

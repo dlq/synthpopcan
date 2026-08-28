@@ -11,11 +11,80 @@ from click.testing import CliRunner
 
 from synthpopcan.cli import cli
 from synthpopcan.geography import statcan_geography_universe
+from synthpopcan.linked_schema import write_linked_population_contract
 from synthpopcan.models import model_payload
+from synthpopcan.small_area_synthesis import calibrate_linked_household_csvs
 from synthpopcan.workflows.small_area import (
+    SmallAreaCalibrationRequest,
     SmallAreaRequest,
+    calibrate_small_area_files,
     synthesize_small_area_files,
 )
+
+
+def test_small_area_calibration_workflow_preserves_engine_artifacts(
+    tmp_path: Path,
+) -> None:
+    households_path = tmp_path / "candidate-households.csv"
+    persons_path = tmp_path / "candidate-persons.csv"
+    controls_path = tmp_path / "controls.csv"
+    households_path.write_text(
+        "synthetic_household_id,household_size,tenure\nh1,1,owner\nh2,1,renter\n"
+    )
+    persons_path.write_text(
+        "synthetic_person_id,synthetic_household_id,sex\np1,h1,F\np2,h2,M\n"
+    )
+    controls_path.write_text(
+        "margin,dimensions,tract,tenure,count\n"
+        'tenure,"tract,tenure",001,owner,1\n'
+        'tenure,"tract,tenure",001,renter,1\n'
+    )
+    expected_dir = tmp_path / "expected"
+    expected_dir.mkdir()
+    expected_details = calibrate_linked_household_csvs(
+        households_path=households_path,
+        persons_path=persons_path,
+        controls_path=controls_path,
+        geography_dimension="tract",
+        geography_column="tract",
+        households_out=expected_dir / "households.csv",
+        persons_out=expected_dir / "persons.csv",
+        report_out=expected_dir / "report.json",
+        weights_out=expected_dir / "weights.csv",
+        pool_size=2,
+        subsample_seed=7,
+    )
+    licensing = model_payload("demo-linked-household-person")["licensing"]
+    write_linked_population_contract(
+        expected_dir / "manifest.json",
+        expected_dir / "households.csv",
+        expected_dir / "persons.csv",
+        geography_column="tract",
+        licensing=licensing,
+    )
+
+    events = []
+    result = calibrate_small_area_files(
+        SmallAreaCalibrationRequest(
+            candidate_households_path=households_path,
+            candidate_persons_path=persons_path,
+            controls_path=controls_path,
+            output_dir=tmp_path / "actual",
+            geography_dimension="tract",
+            geography_column="tract",
+            licensing=licensing,
+            include_weights=True,
+            pool_size=2,
+            subsample_seed=7,
+        ),
+        progress=events.append,
+    )
+
+    assert result.details == expected_details
+    assert [event.stage for event in events] == ["calibrating"]
+    assert {
+        path.name: path.read_bytes() for path in (tmp_path / "actual").iterdir()
+    } == {path.name: path.read_bytes() for path in expected_dir.iterdir()}
 
 
 def test_small_area_workflow_generates_calibrates_and_reports(tmp_path: Path) -> None:

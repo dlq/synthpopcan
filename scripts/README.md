@@ -54,7 +54,10 @@ not imply authorization to publish.
 
 - `build_geodata_release.mjs`, `simplify_boundaries.mjs`,
   `simplify_all_boundaries.mjs`, and `simplify_csd_partitions.mjs` prepare
-  display-boundary artifacts.
+  display-boundary artifacts. Resumed simplification validates source, output,
+  and policy fingerprints before reusing work. Release builds use immutable
+  content-addressed assets, admit one writer, and publish the catalogue only
+  after the complete batch succeeds.
 - `prove_quebec_da_2021.py` and `finalize_quebec_da_2021.py` support the bounded
   Québec DA evidence workflow.
 - `reset_nonconverged_national_batches.py` is a narrow recovery tool for

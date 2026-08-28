@@ -632,7 +632,7 @@ def test_calibrate_small_area_rejects_invalid_workflow_summary(tmp_path: Path) -
         }
 
     with patch(
-        "synthpopcan.api.calibrate_linked_household_csvs",
+        "synthpopcan.workflows.small_area.calibrate_linked_household_csvs",
         side_effect=_invalid_result,
     ):
         with pytest.raises(RuntimeError, match="invalid summary"):

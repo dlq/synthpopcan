@@ -80,11 +80,12 @@ new `reproduced...` output without replacing published artifacts. IPF,
 prepared-model, generated small-area, uploaded-candidate, and mapped small-area
 recipes are executed in tests.
 
-The web app, CLI, and Python API use the same Python domain algorithms. IPF
-also shares file-backed workflow orchestration; prepared-model and small-area
-adapters still translate some options separately. Choose among the surfaces
-for guidance, automation, or notebook integration, and use the recorded
-version, inputs, seeds, and validation evidence when comparing results.
+The web app, CLI, and Python API use the same Python domain algorithms and
+canonical prepared-model interpretation and small-area calibration workflow
+logic. Adapters retain only surface-specific request preparation, path handling,
+and presentation. Choose among the surfaces for guidance, automation, or
+notebook integration, and use the recorded version, inputs, seeds, and
+validation evidence when comparing results.
 
 ## Three Short Walkthroughs
 

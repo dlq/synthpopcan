@@ -26,15 +26,15 @@ from synthpopcan.geography import GeographyUniverse, statcan_geography_universe
 from synthpopcan.linked_schema import (
     read_linked_population_contract,
     validate_linked_population_contract,
-    write_linked_population_contract,
 )
 from synthpopcan.model_licensing import validate_prepared_model_licensing
 from synthpopcan.national_small_area import CANADA_SMALL_AREA_JURISDICTIONS
-from synthpopcan.small_area_synthesis import (
-    calibrate_linked_household_csvs,
-    estimate_small_area_run,
-)
+from synthpopcan.small_area_synthesis import estimate_small_area_run
 from synthpopcan.workflows.ipf import read_csv_records
+from synthpopcan.workflows.small_area import (
+    SmallAreaCalibrationRequest,
+    calibrate_small_area_files,
+)
 
 _BOUNDARIES_HELP = (
     "StatCan boundary shapefile (.shp), pre-converted GeoJSON (.geojson), "
@@ -655,9 +655,6 @@ def calibrate_command(
             )
     input_licensing = _linked_population_licensing(households_path, persons_path)
     output_dir.mkdir(parents=True, exist_ok=True)
-    households_out, persons_out = _linked_population_paths(output_dir)
-    report_out = output_dir / "report.json"
-    weights_out = output_dir / "weights.csv" if include_weights else None
     output_geo_column = geo_column or geo_dimension
     geography_universe = _optional_geography_universe(
         census_vintage=census_vintage,
@@ -668,39 +665,38 @@ def calibrate_command(
     )
 
     try:
-        summary = calibrate_linked_household_csvs(
-            households_path=households_path,
-            persons_path=persons_path,
-            controls_path=controls_path,
-            person_controls_path=person_controls_path,
-            control_pack=control_pack,
-            control_pack_evidence=control_pack_evidence,
-            geography_dimension=geo_dimension,
-            geography_column=output_geo_column,
-            geography_universe=geography_universe,
-            households_out=households_out,
-            persons_out=persons_out,
-            weights_out=weights_out,
-            report_out=report_out,
-            max_iterations=max_iterations,
-            tolerance=tolerance,
-            pool_size=pool_size,
-            subsample_seed=subsample_seed,
+        calibrated = calibrate_small_area_files(
+            SmallAreaCalibrationRequest(
+                candidate_households_path=households_path,
+                candidate_persons_path=persons_path,
+                controls_path=controls_path,
+                output_dir=output_dir,
+                geography_dimension=geo_dimension,
+                geography_column=output_geo_column,
+                person_controls_path=person_controls_path,
+                control_pack=control_pack,
+                control_pack_evidence=control_pack_evidence,
+                geography_universe=geography_universe,
+                licensing=input_licensing,
+                include_weights=include_weights,
+                max_iterations=max_iterations,
+                tolerance=tolerance,
+                pool_size=pool_size,
+                subsample_seed=subsample_seed,
+            )
         )
+        summary = calibrated.details
     except OSError as exc:
         filename = exc.filename or households_path
         raise click_file_access_error(Path(filename), "read or write", exc) from exc
     except ValueError as exc:
         raise click_value_error(exc) from exc
 
-    manifest_out = output_dir / "manifest.json"
-    write_linked_population_contract(
-        manifest_out,
-        households_out,
-        persons_out,
-        geography_column=output_geo_column,
-        licensing=input_licensing,
-    )
+    households_out = calibrated.households_path
+    persons_out = calibrated.persons_path
+    manifest_out = calibrated.manifest_path
+    weights_out = calibrated.weights_path
+    report_out = calibrated.report_path
 
     print_wrote(households_out)
     print_wrote(persons_out)
@@ -2054,11 +2050,6 @@ def _run_national_small_area_command(
     import time
     from functools import partial
 
-    from synthpopcan.cli_tree import (
-        _read_package_path_or_id,
-        package_models,
-        validate_package_allows_generation,
-    )
     from synthpopcan.national_execution import (
         NationalBatchRunConfiguration,
         build_national_geography_summary,
@@ -2068,6 +2059,11 @@ def _run_national_small_area_command(
     )
     from synthpopcan.national_small_area import execute_canada_small_area_plan
     from synthpopcan.statcan import file_integrity
+    from synthpopcan.workflows.models import (
+        prepared_model_models,
+        resolve_prepared_model_package,
+        validate_prepared_model_publishable,
+    )
 
     selector_lookup = {
         selector.casefold(): item.pruid
@@ -2152,20 +2148,19 @@ def _run_national_small_area_command(
     else:
         package_started = time.perf_counter()
         try:
-            package, package_label, package_source_path = _read_package_path_or_id(
-                package_path
-            )
-            validate_package_allows_generation(package)
-            household_model, person_model = package_models(package)
+            resolved_package = resolve_prepared_model_package(package_path)
+            package = resolved_package.package
+            validate_prepared_model_publishable(package)
+            household_model, person_model = prepared_model_models(package)
         except OSError as exc:
             raise click_file_access_error(Path(package_path), "read", exc) from exc
         except ValueError as exc:
             raise click_value_error(exc) from exc
-        if package_source_path is not None:
+        if resolved_package.source_path is not None:
             model_evidence = {
-                "label": package_label,
-                "path": str(package_source_path),
-                **file_integrity(package_source_path),
+                "label": resolved_package.label,
+                "path": str(resolved_package.source_path),
+                **file_integrity(resolved_package.source_path),
             }
         else:
             canonical = json.dumps(
@@ -2174,7 +2169,7 @@ def _run_national_small_area_command(
                 separators=(",", ":"),
             ).encode()
             model_evidence = {
-                "label": package_label,
+                "label": resolved_package.label,
                 "schema_version": package.get("schema_version"),
                 "sha256": hashlib.sha256(canonical).hexdigest(),
                 "byte_size": len(canonical),
@@ -2658,18 +2653,14 @@ def synthesize_command(
     """
     import tempfile
 
-    from synthpopcan.cli_tree import (
-        _read_package_path_or_id,
-        package_models,
-        parse_conditions,
-        validate_package_allows_generation,
+    from synthpopcan.tree import generate_linked_population_to_csv, parse_conditions
+    from synthpopcan.workflows.models import (
+        prepared_model_models,
+        resolve_prepared_model_package,
+        validate_prepared_model_publishable,
     )
-    from synthpopcan.tree import generate_linked_population_to_csv
 
     output_dir.mkdir(parents=True, exist_ok=True)
-    households_out, persons_out = _linked_population_paths(output_dir)
-    report_out = output_dir / "report.json"
-    weights_out = output_dir / "weights.csv" if include_weights else None
     output_geo_column = geo_column or geo_dimension
     geography_universe = _optional_geography_universe(
         census_vintage=census_vintage,
@@ -2680,7 +2671,7 @@ def synthesize_command(
     )
 
     try:
-        package, _, _ = _read_package_path_or_id(package_path)
+        package = resolve_prepared_model_package(package_path).package
     except OSError as exc:
         raise click_file_access_error(Path(package_path), "read", exc) from exc
     except ValueError as exc:
@@ -2688,12 +2679,12 @@ def synthesize_command(
     input_licensing = validate_prepared_model_licensing(package.get("licensing"))
 
     try:
-        validate_package_allows_generation(package)
+        validate_prepared_model_publishable(package)
         conditions = parse_conditions(condition_values)
     except ValueError as exc:
         raise click_value_error(exc) from exc
 
-    household_model, person_model = package_models(package)
+    household_model, person_model = prepared_model_models(package)
     household_size_column = str(package.get("household_size_column", "household_size"))
 
     with tempfile.TemporaryDirectory() as tmpdir:
@@ -2731,25 +2722,27 @@ def synthesize_command(
             candidates_households = recoded_households
 
         try:
-            summary = calibrate_linked_household_csvs(
-                households_path=candidates_households,
-                persons_path=candidates_persons,
-                controls_path=controls_path,
-                person_controls_path=person_controls_path,
-                control_pack=control_pack,
-                control_pack_evidence=control_pack_evidence,
-                geography_dimension=geo_dimension,
-                geography_column=output_geo_column,
-                geography_universe=geography_universe,
-                households_out=households_out,
-                persons_out=persons_out,
-                weights_out=weights_out,
-                report_out=report_out,
-                pool_size=pool_size,
-                subsample_seed=subsample_seed,
-                max_iterations=max_iterations,
-                tolerance=tolerance,
+            calibrated = calibrate_small_area_files(
+                SmallAreaCalibrationRequest(
+                    candidate_households_path=candidates_households,
+                    candidate_persons_path=candidates_persons,
+                    controls_path=controls_path,
+                    output_dir=output_dir,
+                    geography_dimension=geo_dimension,
+                    geography_column=output_geo_column,
+                    person_controls_path=person_controls_path,
+                    control_pack=control_pack,
+                    control_pack_evidence=control_pack_evidence,
+                    geography_universe=geography_universe,
+                    licensing=input_licensing,
+                    include_weights=include_weights,
+                    pool_size=pool_size,
+                    subsample_seed=subsample_seed,
+                    max_iterations=max_iterations,
+                    tolerance=tolerance,
+                )
             )
+            summary = calibrated.details
         except OSError as exc:
             raise click_file_access_error(
                 exc.filename or controls_path,
@@ -2759,14 +2752,11 @@ def synthesize_command(
         except ValueError as exc:
             raise click_value_error(exc) from exc
 
-    manifest_out = output_dir / "manifest.json"
-    write_linked_population_contract(
-        manifest_out,
-        households_out,
-        persons_out,
-        geography_column=output_geo_column,
-        licensing=input_licensing,
-    )
+    households_out = calibrated.households_path
+    persons_out = calibrated.persons_path
+    manifest_out = calibrated.manifest_path
+    weights_out = calibrated.weights_path
+    report_out = calibrated.report_path
 
     print_wrote(households_out)
     print_wrote(persons_out)

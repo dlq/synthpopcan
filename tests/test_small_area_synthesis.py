@@ -1267,7 +1267,7 @@ def test_cli_calibrate_linked_summary_mentions_largest_residual(
     )
 
     with patch(
-        "synthpopcan.cli_geo.calibrate_linked_household_csvs",
+        "synthpopcan.workflows.small_area.calibrate_linked_household_csvs",
         return_value=summary,
     ):
         exit_code = main(
@@ -1366,7 +1366,7 @@ def test_cli_calibrate_linked_oserror(tmp_path: Path) -> None:
     f = _minimal_calibrate_files(tmp_path)
 
     with patch(
-        "synthpopcan.cli_geo.calibrate_linked_household_csvs",
+        "synthpopcan.workflows.small_area.calibrate_linked_household_csvs",
         side_effect=OSError("no space"),
     ):
         with pytest.raises(click.ClickException, match="no space"):
@@ -1395,7 +1395,7 @@ def test_cli_calibrate_linked_value_error(tmp_path: Path) -> None:
     f = _minimal_calibrate_files(tmp_path)
 
     with patch(
-        "synthpopcan.cli_geo.calibrate_linked_household_csvs",
+        "synthpopcan.workflows.small_area.calibrate_linked_household_csvs",
         side_effect=ValueError("bad controls"),
     ):
         with pytest.raises(click.ClickException, match="bad controls"):

@@ -79,9 +79,14 @@ def snapshot_click_interface(
     snapshots: list[dict[str, Any]] = []
 
     def visit(command: click.Command, path: tuple[str, ...]) -> None:
+        with click.Context(command) as context:
+            parameters = [
+                _snapshot_click_parameter(item, context=context)
+                for item in command.params
+            ]
         entry: dict[str, Any] = {
             "kind": "group" if isinstance(command, click.Group) else "command",
-            "parameters": [_snapshot_click_parameter(item) for item in command.params],
+            "parameters": parameters,
             "path": " ".join(path),
         }
         if isinstance(command, click.Group):
@@ -589,7 +594,11 @@ def _canonical_annotation_text(label: str) -> str:
     return label
 
 
-def _snapshot_click_parameter(parameter: click.Parameter) -> dict[str, Any]:
+def _snapshot_click_parameter(
+    parameter: click.Parameter,
+    *,
+    context: click.Context,
+) -> dict[str, Any]:
     entry: dict[str, Any] = {
         "kind": "option" if isinstance(parameter, click.Option) else "argument",
         "multiple": parameter.multiple,
@@ -600,11 +609,19 @@ def _snapshot_click_parameter(parameter: click.Parameter) -> dict[str, Any]:
     }
     if isinstance(parameter, click.Option):
         entry["count"] = parameter.count
-        entry["flag_value"] = _json_default(parameter.flag_value)
+        # Click 8.5 retains an internal UNSET sentinel on ``flag_value`` and
+        # ``default``.  Snapshot their public runtime semantics so the package
+        # contract is stable across supported Click versions.
+        activation_value = getattr(
+            parameter,
+            "flag_activation_value",
+            parameter.flag_value,
+        )
+        entry["flag_value"] = _json_default(activation_value)
         entry["is_flag"] = parameter.is_flag
         entry["names"] = [*parameter.opts, *parameter.secondary_opts]
         if not parameter.required:
-            entry["default"] = _json_default(parameter.default)
+            entry["default"] = _json_default(parameter.get_default(context, call=False))
     return entry
 
 

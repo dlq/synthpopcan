@@ -38,6 +38,7 @@ from synthpopcan.national_small_area import (
     small_area_specification,
 )
 from synthpopcan.statcan import file_integrity
+from synthpopcan.workflows.models import ResolvedPreparedModel
 
 
 def _parallel_test_batch(
@@ -2179,15 +2180,15 @@ def _mock_national_acceleration(
         "household_size_column": "household_size",
     }
     monkeypatch.setattr(
-        "synthpopcan.cli_tree._read_package_path_or_id",
-        lambda _value: (package, "model-id", None),
+        "synthpopcan.workflows.models.resolve_prepared_model_package",
+        lambda _value: ResolvedPreparedModel(package, "model-id", None),
     )
     monkeypatch.setattr(
-        "synthpopcan.cli_tree.validate_package_allows_generation",
+        "synthpopcan.workflows.models.validate_prepared_model_publishable",
         lambda _package: None,
     )
     monkeypatch.setattr(
-        "synthpopcan.cli_tree.package_models",
+        "synthpopcan.workflows.models.prepared_model_models",
         lambda _package: ("household-model", "person-model"),
     )
 
@@ -2298,7 +2299,7 @@ def test_cli_national_run_reuses_verified_local_pool_without_model_load(
         lambda *_args, **_options: {"10": {"rows": {"households": 10, "persons": 20}}},
     )
     monkeypatch.setattr(
-        "synthpopcan.cli_tree._read_package_path_or_id",
+        "synthpopcan.workflows.models.resolve_prepared_model_package",
         lambda _value: pytest.fail("verified cache should skip model loading"),
     )
 

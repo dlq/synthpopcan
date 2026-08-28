@@ -54,6 +54,8 @@ from rich.table import Table
 
 from synthpopcan.cli_output import (
     format_file_access_error,
+    format_licence_label,
+    format_policy_decision_label,
     read_json_object,
     split_columns,
     write_json_object,
@@ -73,10 +75,7 @@ from synthpopcan.microdata import (
     resolve_tree_column_block_pair,
 )
 from synthpopcan.model_licensing import normalize_prepared_model_licensing
-from synthpopcan.models import model_payload
 from synthpopcan.tree import (
-    CartTreeModel,
-    FrequencyTreeModel,
     TreeModel,
     TreeTrainingSample,
     audit_tree_model,
@@ -89,6 +88,14 @@ from synthpopcan.tree import (
     train_frequency_model,
     write_generated_rows,
     write_tree_model,
+)
+from synthpopcan.workflows.models import (
+    PreparedModelPackageError,
+    prepared_model_models,
+    read_prepared_model_package,
+    resolve_prepared_model_package,
+    tree_model_from_prepared_payload,
+    validate_prepared_model_publishable,
 )
 
 _PATH = click.Path(path_type=Path)
@@ -1483,10 +1490,7 @@ def read_source_provenance(path: Path) -> dict[str, Any]:
 
 
 def read_linked_model_package(path: Path) -> dict[str, Any]:
-    payload = read_json_object(path, "linked model package")
-    if payload.get("schema_version") != "synthpopcan-linked-tree-package-v1":
-        raise ValueError("unsupported linked model package schema")
-    return normalize_prepared_model_licensing(payload)
+    return read_prepared_model_package(path)
 
 
 def _read_package_path_or_id(
@@ -1494,53 +1498,27 @@ def _read_package_path_or_id(
 ) -> tuple[dict[str, Any], str, Path | None]:
     """Read a linked package from a local path or packaged model ID."""
 
-    package_path = Path(package_path_or_id)
-    if (
-        package_path.exists()
-        or package_path.is_absolute()
-        or len(package_path.parts) > 1
-        or package_path.suffix
-    ):
-        return read_linked_model_package(package_path), str(package_path), package_path
-    try:
-        package = model_payload(package_path_or_id)
-    except KeyError as exc:
-        raise ValueError(
-            f"linked package not found: {package_path_or_id}. Use a package JSON path "
-            "or a model ID from `synthpopcan models list`."
-        ) from exc
-    except FileNotFoundError as exc:
-        raise ValueError(str(exc)) from exc
-    return package, package_path_or_id, None
+    resolved = resolve_prepared_model_package(package_path_or_id)
+    return resolved.package, resolved.label, resolved.source_path
 
 
 def validate_package_allows_generation(package: dict[str, Any]) -> None:
-    privacy = _object_or_empty(package.get("privacy"))
-    if privacy.get("publishable_candidate") is not True:
-        raise ValueError(
-            "linked package is not marked as a publishable candidate; inspect the "
-            "package before generating from it"
-        )
+    validate_prepared_model_publishable(package)
 
 
 def package_models(package: dict[str, Any]) -> tuple[TreeModel, TreeModel]:
-    models = _object_or_empty(package.get("models"))
-    household_model = _object_or_empty(models.get("household"))
-    person_model = _object_or_empty(models.get("person"))
-    if not household_model or not person_model:
-        raise ValueError("linked package must include household and person models")
-    return tree_model_from_payload(household_model), tree_model_from_payload(
-        person_model
-    )
+    try:
+        return prepared_model_models(package)
+    except PreparedModelPackageError as exc:
+        if exc.reason in {"missing-model-collection", "missing-model-pair"}:
+            raise ValueError(
+                "linked package must include household and person models"
+            ) from exc
+        raise
 
 
 def tree_model_from_payload(payload: dict[str, Any]) -> TreeModel:
-    model_type = payload.get("model_type")
-    if model_type == "conditional-frequency":
-        return FrequencyTreeModel.from_dict(payload)
-    if model_type == "cart":
-        return CartTreeModel.from_dict(payload)
-    raise ValueError("unsupported tree model type in linked package")
+    return tree_model_from_prepared_payload(payload)
 
 
 def _build_linked_package_inspection(
@@ -1696,7 +1674,7 @@ def _print_linked_package_inspection_table(report: dict[str, Any]) -> None:
     _add_optional_table_row(
         table,
         "Prepared-model licence",
-        _licence_label(authored_licence),
+        format_licence_label(authored_licence),
     )
     _add_optional_table_row(
         table,
@@ -1711,7 +1689,7 @@ def _print_linked_package_inspection_table(report: dict[str, Any]) -> None:
     _add_optional_table_row(
         table,
         "Policy decision",
-        _policy_decision_label(policy_decision),
+        format_policy_decision_label(policy_decision),
     )
     _add_optional_table_row(
         table,
@@ -1721,7 +1699,7 @@ def _print_linked_package_inspection_table(report: dict[str, Any]) -> None:
     _add_optional_table_row(
         table,
         "Source licence",
-        _licence_label(source_licence),
+        format_licence_label(source_licence),
     )
     _add_optional_table_row(
         table,
@@ -1754,24 +1732,6 @@ def _add_optional_table_row(table: Table, label: str, value: object) -> None:
 
 def _format_optional(value: object) -> str:
     return "" if value is None else str(value)
-
-
-def _licence_label(licence: dict[str, Any]) -> str:
-    name = str(licence.get("name") or "")
-    spdx_id = str(licence.get("spdx_id") or "")
-    url = str(licence.get("url") or "")
-    identity = f"{name} ({spdx_id})" if name and spdx_id else name or spdx_id
-    return f"{identity}: {url}" if identity and url else identity or url
-
-
-def _policy_decision_label(policy: dict[str, Any]) -> str:
-    authority = ", ".join(
-        str(value)
-        for value in (policy.get("decided_by"), policy.get("decided_on"))
-        if value
-    )
-    values = [policy.get("status"), policy.get("basis"), authority]
-    return "; ".join(str(value) for value in values if value)
 
 
 def format_source_label(source: dict[str, Any]) -> str:

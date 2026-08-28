@@ -203,9 +203,29 @@ def write_linked_population_contract(
         geography_column=geography_column,
         licensing=licensing,
     )
+    return write_linked_population_contract_document(path, contract)
+
+
+def write_linked_population_contract_document(
+    path: Path,
+    contract: Mapping[str, object],
+    *,
+    licensing: Mapping[str, object] | None = None,
+) -> dict[str, Any]:
+    """Write an already-built contract without rescanning its CSV tables.
+
+    This internal (non-``__all__``) seam is for workflows that just obtained the
+    contract from the maintained engine after it scanned those exact outputs.
+    Ordinary callers should use :func:`write_linked_population_contract`.
+    """
+
+    document = dict(contract)
+    if licensing is not None:
+        document["licensing"] = validate_prepared_model_licensing(licensing)
+    validate_linked_population_contract(document)
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(contract, indent=2, sort_keys=True) + "\n")
-    return contract
+    path.write_text(json.dumps(document, indent=2, sort_keys=True) + "\n")
+    return document
 
 
 def read_linked_population_contract(path: Path) -> dict[str, Any]:

@@ -12,6 +12,7 @@ import shutil
 from collections import Counter
 from collections.abc import AsyncGenerator, AsyncIterator
 from contextlib import asynccontextmanager
+from dataclasses import dataclass
 from http import HTTPStatus
 from pathlib import Path
 from threading import BoundedSemaphore
@@ -24,7 +25,6 @@ from fastapi.staticfiles import StaticFiles
 from starlette.concurrency import run_in_threadpool
 from starlette.middleware.base import RequestResponseEndpoint
 
-from synthpopcan import __version__
 from synthpopcan._runtime_schemas import (
     RUN_REQUEST_ADAPTER,
     IPFRunRequest,
@@ -33,6 +33,7 @@ from synthpopcan._runtime_schemas import (
     SmallAreaRunRequest,
     WDSSeedControlsRequest,
 )
+from synthpopcan._version import __version__
 from synthpopcan.control_packs import (
     ControlPackEvidence,
     ControlPackManifest,
@@ -81,6 +82,16 @@ _TERMINAL_RUN_STATUSES = frozenset({"succeeded", "failed", "cancelled", "interru
 _TERMINAL_EVENT_GRACE_SECONDS = 2.0
 
 
+@dataclass(frozen=True, slots=True)
+class _WebAppContext:
+    """Shared application services captured by the registered route groups."""
+
+    workspace: Path
+    session_token: str
+    run_store: RunStore
+    job_manager: JobManager
+
+
 def create_web_app(
     *,
     static_root: Path,
@@ -96,14 +107,19 @@ def create_web_app(
     ).hexdigest()
     resolved_workspace = workspace.resolve()
     run_store = RunStore(resolved_workspace)
-    job_manager = JobManager(run_store)
+    context = _WebAppContext(
+        workspace=resolved_workspace,
+        session_token=session_token,
+        run_store=run_store,
+        job_manager=JobManager(run_store),
+    )
 
     @asynccontextmanager
     async def lifespan(_app: FastAPI) -> AsyncGenerator[None]:
         try:
             yield
         finally:
-            job_manager.shutdown()
+            context.job_manager.shutdown()
 
     app = FastAPI(
         title="SynthPopCan local web app",
@@ -115,8 +131,27 @@ def create_web_app(
     )
     app.state.workspace = resolved_workspace
     app.state.session_token = session_token
-    app.state.run_store = run_store
-    app.state.job_manager = job_manager
+    app.state.run_store = context.run_store
+    app.state.job_manager = context.job_manager
+
+    _register_security_and_bootstrap(app, context)
+    _register_catalogue_routes(app)
+
+    _register_run_routes(app, context)
+
+    _register_model_routes(app)
+
+    _register_data_preparation_routes(app)
+
+    _register_fallback_and_static_routes(app, static_root)
+    return app
+
+
+def _register_security_and_bootstrap(
+    app: FastAPI,
+    context: _WebAppContext,
+) -> None:
+    """Register loopback/session protection and the session bootstrap route."""
 
     @app.middleware("http")
     async def local_security(
@@ -131,7 +166,7 @@ def create_web_app(
 
         if request.url.path.startswith("/api/") and request.url.path != "/api/app":
             cookie = request.cookies.get(_SESSION_COOKIE, "")
-            if not hmac.compare_digest(cookie, app.state.session_token):
+            if not hmac.compare_digest(cookie, context.session_token):
                 return _error_response(
                     "local app session is missing or invalid", HTTPStatus.FORBIDDEN
                 )
@@ -149,18 +184,22 @@ def create_web_app(
             {
                 "name": "SynthPopCan",
                 "version": __version__,
-                "workspace": str(app.state.workspace),
+                "workspace": str(context.workspace),
             }
         )
         response.set_cookie(
             _SESSION_COOKIE,
-            app.state.session_token,
+            context.session_token,
             httponly=True,
             samesite="strict",
             secure=False,
             path="/",
         )
         return response
+
+
+def _register_catalogue_routes(app: FastAPI) -> None:
+    """Register the model and control-pack catalogue discovery routes."""
 
     @app.get("/api/models")
     async def get_models() -> Response:
@@ -169,6 +208,13 @@ def create_web_app(
     @app.get("/api/control-packs")
     async def get_control_packs() -> Response:
         return JSONResponse({"control_packs": list_builtin_control_packs()})
+
+
+def _register_run_routes(app: FastAPI, context: _WebAppContext) -> None:
+    """Register uploads, preflight, durable runs, events, and artifacts."""
+
+    run_store = context.run_store
+    job_manager = context.job_manager
 
     @app.post("/api/uploads")
     async def upload_file(request: Request) -> Response:
@@ -192,7 +238,7 @@ def create_web_app(
                     f"upload must be between 1 and {_MAX_UPLOAD_BYTES} bytes",
                     HTTPStatus.REQUEST_ENTITY_TOO_LARGE,
                 )
-            if shutil.disk_usage(app.state.workspace).free < declared_bytes * 2:
+            if shutil.disk_usage(context.workspace).free < declared_bytes * 2:
                 return _error_response(
                     "insufficient workspace disk space for upload",
                     HTTPStatus.INSUFFICIENT_STORAGE,
@@ -365,6 +411,10 @@ def create_web_app(
         except (KeyError, ValueError):
             return _error_response("artifact not found", HTTPStatus.NOT_FOUND)
 
+
+def _register_model_routes(app: FastAPI) -> None:
+    """Register model installation, removal, fetch, and payload routes."""
+
     @app.post("/api/models/{model_id}/fetch")
     async def fetch_model(model_id: str) -> Response:
         try:
@@ -437,6 +487,10 @@ def create_web_app(
                 HTTPStatus.CONFLICT,
             )
 
+
+def _register_data_preparation_routes(app: FastAPI) -> None:
+    """Register bounded WDS preparation and small-area estimation routes."""
+
     @app.post("/api/wds/seed-controls")
     async def prepare_wds_seed_controls(request: Request) -> Response:
         if not _WDS_REQUEST_SLOTS.acquire(blocking=False):
@@ -507,6 +561,10 @@ def create_web_app(
                 HTTPStatus.BAD_REQUEST,
             )
 
+
+def _register_fallback_and_static_routes(app: FastAPI, static_root: Path) -> None:
+    """Register the API fallback before the final static application mount."""
+
     @app.api_route(
         "/api/{path:path}",
         methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
@@ -515,7 +573,6 @@ def create_web_app(
         return _error_response("API endpoint not found", HTTPStatus.NOT_FOUND)
 
     app.mount("/", StaticFiles(directory=static_root, html=True), name="web")
-    return app
 
 
 async def _read_json_body(

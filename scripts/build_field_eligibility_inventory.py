@@ -303,7 +303,7 @@ def build_inventory() -> dict[str, Any]:
         metadata = load_metadata(source)
         targets = current_source_targets(source, header)
         targets_by_vintage[source.vintage] = targets
-        entities = {name: entity_level(name) for name in header}
+        entities: dict[str, EntityLevel] = {name: entity_level(name) for name in header}
         missing_codes = {
             name: classified_missing_codes(name, metadata.get(name, {}))
             for name in header

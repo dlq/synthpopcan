@@ -118,7 +118,7 @@ def main() -> int:
         generation_seconds = time.perf_counter() - generation_started
 
     runs: dict[str, dict[str, Any]] = {}
-    distributions: dict[str, dict[str, Counter[str]]] = {}
+    distributions: dict[str, dict[str, dict[str, Counter[str]]]] = {}
     for pool_size in args.pool_sizes:
         output = args.out / f"pool-{pool_size}"
         output.mkdir(exist_ok=True)

@@ -7,6 +7,7 @@ The beginner surface also supports validated enrichment sidecars without
 exposing source-specific adapter internals.
 """
 
+from synthpopcan._version import __version__
 from synthpopcan.api import (
     ControlPackEvidence,
     ControlPackManifest,
@@ -77,5 +78,3 @@ __all__ = [
     "write_population",
     "write_weights",
 ]
-
-__version__ = "1.1.0"

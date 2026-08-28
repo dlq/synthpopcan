@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pytest
 
+import synthpopcan.runs as runs_module
 from synthpopcan.assurance import verify_run_assurance
 from synthpopcan.runs import RUN_SCHEMA_VERSION, RunStore, publish_artifact
 
@@ -406,6 +407,25 @@ def test_run_creation_rolls_back_partially_claimed_uploads(
     assert store.upload_path(seed).is_file()
     assert store.upload_path(controls).is_file()
     assert list(store.runs_dir.iterdir()) == []
+
+
+def test_run_id_collision_never_removes_existing_run_directory(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    store = RunStore(tmp_path)
+    run_id = "20260828T120000Z-abcdef123456"
+    existing = store.run_dir(run_id)
+    existing.mkdir()
+    sentinel = existing / "preserve.txt"
+    sentinel.write_text("existing run")
+    monkeypatch.setattr(runs_module, "_new_run_id", lambda: run_id)
+
+    with pytest.raises(FileExistsError):
+        store.create_model_run(
+            {"inputs": {"model_id": "demo"}, "options": {"random_seed": 42}}
+        )
+
+    assert sentinel.read_text() == "existing run"
 
 
 def test_small_area_run_claims_control_pack_evidence_as_a_durable_input(

@@ -1,10 +1,22 @@
 # CART Methodology Review
 
 Status: conditional research\
-Last updated: 2026-08-20\
+Created: 2026-08-20\
+Last updated: 2026-08-28\
 Target: held-out validation and multiple realizations before any tree-method change\
-Current next action: build one reproducible held-out scorecard for a reviewed
-profile
+Next action: identify a named study and reviewed profile; if the trigger is
+accepted, create its PR-sized execution plan before building the scorecard\
+Roadmap: [PLANS.md](../PLANS.md) | [Plan index](README.md)
+
+## Activation Rule
+
+This file is a conditional methodology umbrella. A named study and reviewed
+model profile must justify activation. Before implementation, create a dated
+execution plan with the exact `## PR-Sized Work` table required by the plan
+index. Phase 1 must separate deterministic split/leakage protection, scorecard
+metric contract, evaluator/report, and one-profile evidence/decision. Phase 2
+must separately own the ensemble contract, runner, summaries, and bounded
+interpretation record. Deferred extensions are never activated by implication.
 
 ## Purpose And Boundary
 

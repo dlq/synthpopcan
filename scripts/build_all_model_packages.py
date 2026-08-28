@@ -439,8 +439,10 @@ def build_package(target: dict, sample_all, *, source: Path, year: int) -> dict:
             "contains_source_identifiers": False,
         },
     }
-    package = _relativize_paths(package)
-    return package
+    relativized = _relativize_paths(package)
+    if not isinstance(relativized, dict):
+        raise TypeError("relativized model package must remain an object")
+    return relativized
 
 
 def _train_release_ready_model(sample):

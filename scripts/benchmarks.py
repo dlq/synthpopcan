@@ -792,24 +792,32 @@ def _print_tree_summary(summary: dict[str, object]) -> None:
 
 
 def _fmt_int(v: object) -> str:
-    return f"{int(v):,}"
+    return f"{int(_numeric_value(v)):,}"
 
 
 def _fmt_float(v: object) -> str:
-    return f"{float(v):.6g}"
+    return f"{float(_numeric_value(v)):.6g}"
 
 
 def _fmt_percent(v: object) -> str:
-    return f"{float(v):.2%}"
+    return f"{float(_numeric_value(v)):.2%}"
 
 
 def _fmt_bytes(v: object) -> str:
-    b = int(v)
+    b = int(_numeric_value(v))
     for unit in ("B", "KiB", "MiB", "GiB"):
         if b < 1024 or unit == "GiB":
             return f"{b:.1f} {unit}" if unit != "B" else f"{b} B"
         b //= 1024
     raise AssertionError("unreachable")
+
+
+def _numeric_value(v: object) -> str | bytes | bytearray | int | float:
+    """Narrow report values to the scalar forms accepted by numeric formatters."""
+
+    if isinstance(v, str | bytes | bytearray | int | float):
+        return v
+    raise TypeError(f"expected a numeric report value, got {type(v).__name__}")
 
 
 def _fmt_opt_int(v: object) -> str:

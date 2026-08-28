@@ -5,14 +5,19 @@ from __future__ import annotations
 import csv
 import json
 import math
+from collections import Counter
 from collections.abc import Generator
 from contextlib import contextmanager
 from dataclasses import dataclass
 from io import StringIO, TextIOWrapper
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 from zipfile import BadZipFile, ZipFile
 
+from synthpopcan._census_profile import (
+    CensusProfileLayout,
+    open_census_profile_rows,
+)
 from synthpopcan.ipf import IPFMargin
 from synthpopcan.tabular import format_csv_number
 
@@ -120,15 +125,104 @@ class ControlMargin:
     def to_ipf_margin(self) -> IPFMargin:
         """Convert this control margin into the IPF margin representation."""
 
+        structure = _validate_control_margin_structure(self)
+        structure.require_valid(self.name)
         return IPFMargin(
             self.dimensions,
-            {
-                tuple(
-                    cell.categories[dimension] for dimension in self.dimensions
-                ): cell.count
-                for cell in self.cells
-            },
+            dict(
+                zip(
+                    structure.cell_keys,
+                    (cell.count for cell in self.cells),
+                    strict=True,
+                )
+            ),
         )
+
+
+@dataclass(frozen=True)
+class _ControlCellDimensionMismatch:
+    cell_index: int
+    missing_dimensions: tuple[str, ...]
+    extra_dimensions: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class _ControlMarginStructure:
+    dimensions_are_empty: bool
+    duplicate_dimensions: tuple[str, ...]
+    cell_dimension_mismatches: tuple[_ControlCellDimensionMismatch, ...]
+    cell_keys: tuple[tuple[str, ...], ...]
+    duplicate_cell_keys: tuple[tuple[str, ...], ...]
+
+    def require_valid(self, margin_name: str) -> None:
+        """Raise before malformed control cells can be collapsed into a mapping."""
+
+        if self.dimensions_are_empty:
+            raise ValueError(
+                f"control margin {margin_name!r} dimensions must not be empty"
+            )
+        if self.duplicate_dimensions:
+            raise ValueError(
+                f"control margin {margin_name!r} dimensions must be unique; "
+                f"duplicates: {list(self.duplicate_dimensions)!r}"
+            )
+        if self.cell_dimension_mismatches:
+            mismatch = self.cell_dimension_mismatches[0]
+            raise ValueError(
+                f"control margin {margin_name!r} cell {mismatch.cell_index} "
+                "category keys must match its dimensions exactly; "
+                f"missing: {list(mismatch.missing_dimensions)!r}; "
+                f"extra: {list(mismatch.extra_dimensions)!r}"
+            )
+        if self.duplicate_cell_keys:
+            raise ValueError(
+                f"control margin {margin_name!r} contains duplicate target "
+                f"{self.duplicate_cell_keys[0]!r}"
+            )
+
+
+def _validate_control_margin_structure(
+    margin: ControlMargin,
+) -> _ControlMarginStructure:
+    """Inspect exact dimension keys and target uniqueness without raising.
+
+    Keeping inspection separate from construction lets planning surfaces turn
+    malformed programmatic tables into structured diagnostics. Conversion to
+    :class:`IPFMargin` calls :meth:`_ControlMarginStructure.require_valid` and
+    therefore cannot silently discard malformed cells.
+    """
+
+    dimension_counts = Counter(margin.dimensions)
+    duplicate_dimensions = tuple(
+        sorted(dimension for dimension, count in dimension_counts.items() if count > 1)
+    )
+    expected_dimensions = set(margin.dimensions)
+    mismatches: list[_ControlCellDimensionMismatch] = []
+    keys: list[tuple[str, ...]] = []
+    for cell_index, cell in enumerate(margin.cells, start=1):
+        actual_dimensions = set(cell.categories)
+        missing = tuple(
+            dimension
+            for dimension in margin.dimensions
+            if dimension not in actual_dimensions
+        )
+        extra = tuple(sorted(actual_dimensions - expected_dimensions))
+        if missing or extra:
+            mismatches.append(_ControlCellDimensionMismatch(cell_index, missing, extra))
+        keys.append(
+            tuple(cell.categories.get(dimension, "") for dimension in margin.dimensions)
+        )
+    key_counts = Counter(keys)
+    duplicate_keys = tuple(
+        sorted(key for key, count in key_counts.items() if count > 1)
+    )
+    return _ControlMarginStructure(
+        dimensions_are_empty=not margin.dimensions,
+        duplicate_dimensions=duplicate_dimensions,
+        cell_dimension_mismatches=tuple(mismatches),
+        cell_keys=tuple(keys),
+        duplicate_cell_keys=duplicate_keys,
+    )
 
 
 @dataclass(frozen=True)
@@ -570,41 +664,40 @@ def read_census_profile_control_table(
     }
     used_dimensions: list[str] = []
 
-    with path.open(newline="") as handle:
-        reader = csv.DictReader(handle)
-        for row_number, row in enumerate(reader, start=2):
-            missing = [
-                column
-                for column in (geography_column, characteristic_column, count_column)
-                if column not in row
-            ]
-            if missing:
-                raise ValueError(
-                    f"Census Profile row {row_number} is missing columns: "
-                    f"{', '.join(missing)}"
-                )
-            characteristic = row[characteristic_column]
+    layout = CensusProfileLayout(
+        geography_column=geography_column,
+        characteristic_column=characteristic_column,
+        count_column=count_column,
+    )
+    with open_census_profile_rows(
+        path,
+        layout=layout,
+        validate_required_columns=True,
+    ) as (_, rows):
+        for row in rows:
+            characteristic = row.characteristic
             for margin in margin_specs:
                 categories_by_label = margin["categories"]
                 if characteristic not in categories_by_label:
                     continue
                 categories = {
-                    geography_dimension: row[geography_column],
+                    geography_dimension: cast(str, row.geography),
                     **categories_by_label[characteristic],
                 }
                 dimensions = tuple(margin["dimensions"])
                 key = tuple(categories.get(dimension, "") for dimension in dimensions)
                 if key in seen_by_margin[margin["name"]]:
                     raise ValueError(
-                        f"Census Profile row {row_number} duplicates target {key!r} "
+                        f"Census Profile row {row.row_number} duplicates target "
+                        f"{key!r} "
                         f"for dimensions {dimensions!r}"
                     )
                 seen_by_margin[margin["name"]].add(key)
                 try:
-                    count = float(row[count_column])
+                    count = float(row.count)
                 except ValueError as exc:
                     raise ValueError(
-                        f"Census Profile row {row_number} has invalid count"
+                        f"Census Profile row {row.row_number} has invalid count"
                     ) from exc
                 cells_by_margin[margin["name"]].append(ControlCell(categories, count))
                 for dimension in dimensions:
@@ -637,26 +730,24 @@ def inspect_census_profile_characteristics(
         raise ValueError("limit must be at least 1")
     search_term = search.lower() if search else None
     rows_by_characteristic: dict[str, dict[str, str]] = {}
-    with path.open(newline="") as handle:
-        reader = csv.DictReader(handle)
-        for row_number, row in enumerate(reader, start=2):
-            missing = [
-                column
-                for column in (characteristic_column, count_column)
-                if column not in row
-            ]
-            if missing:
-                raise ValueError(
-                    f"Census Profile row {row_number} is missing columns: "
-                    f"{', '.join(missing)}"
-                )
-            characteristic = row[characteristic_column]
+    layout = CensusProfileLayout(
+        geography_column=None,
+        characteristic_column=characteristic_column,
+        count_column=count_column,
+    )
+    with open_census_profile_rows(
+        path,
+        layout=layout,
+        validate_required_columns=True,
+    ) as (_, rows):
+        for row in rows:
+            characteristic = row.characteristic
             if search_term and search_term not in characteristic.lower():
                 continue
             if characteristic not in rows_by_characteristic:
                 rows_by_characteristic[characteristic] = {
                     "characteristic": characteristic,
-                    "example_count": row[count_column],
+                    "example_count": row.count,
                     "rows": "0",
                 }
             current = rows_by_characteristic[characteristic]

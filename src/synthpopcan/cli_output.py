@@ -19,7 +19,9 @@ __all__ = [
     "click_value_error",
     "format_file_access_error",
     "format_fit_value_error",
+    "format_licence_label",
     "format_nonconvergence_message",
+    "format_policy_decision_label",
     "format_report_number",
     "format_report_percent",
     "parse_columns",
@@ -42,6 +44,28 @@ __all__ = [
     "write_report",
     "write_wds_search_results",
 ]
+
+
+def format_licence_label(licence: dict[str, Any]) -> str:
+    """Format one prepared-model or source licence for terminal output."""
+
+    name = str(licence.get("name") or "")
+    spdx_id = str(licence.get("spdx_id") or "")
+    url = str(licence.get("url") or "")
+    identity = f"{name} ({spdx_id})" if name and spdx_id else name or spdx_id
+    return f"{identity}: {url}" if identity and url else identity or url
+
+
+def format_policy_decision_label(policy: dict[str, Any]) -> str:
+    """Format one licensing-policy decision for terminal output."""
+
+    authority = ", ".join(
+        str(value)
+        for value in (policy.get("decided_by"), policy.get("decided_on"))
+        if value
+    )
+    values = [policy.get("status"), policy.get("basis"), authority]
+    return "; ".join(str(value) for value in values if value)
 
 
 def format_file_access_error(path: object, action: str, exc: OSError) -> str:

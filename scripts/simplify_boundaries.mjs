@@ -10,7 +10,8 @@
  * not analysis or spatial joins.
  */
 
-import { readFile, writeFile } from "node:fs/promises";
+import { randomUUID } from "node:crypto";
+import { readFile, rename, unlink, writeFile } from "node:fs/promises";
 import { basename } from "node:path";
 
 import { feature } from "topojson-client";
@@ -20,6 +21,17 @@ import { presimplify, quantile, simplify } from "topojson-simplify";
 const DEFAULT_KEEP = 0.1;
 const DEFAULT_COORDINATE_PRECISION = 5;
 const TOPOLOGY_QUANTIZATION = 10_000_000;
+
+async function writeFileAtomic(path, contents) {
+  const temporaryPath = `${path}.${process.pid}.${randomUUID()}.tmp`;
+  try {
+    await writeFile(temporaryPath, contents, { encoding: "utf8", flag: "wx" });
+    await rename(temporaryPath, path);
+  } catch (error) {
+    await unlink(temporaryPath).catch(() => undefined);
+    throw error;
+  }
+}
 
 function usage(message) {
   if (message) process.stderr.write(`Error: ${message}\n\n`);
@@ -146,7 +158,7 @@ export async function simplifyBoundaries({
     throw new Error("simplification changed the geo_id set");
   }
 
-  await writeFile(outputPath, JSON.stringify(output), "utf8");
+  await writeFileAtomic(outputPath, JSON.stringify(output));
   const outputCoordinates = coordinateCount(output.features.map((item) => item.geometry?.coordinates));
   return {
     input: basename(inputPath),

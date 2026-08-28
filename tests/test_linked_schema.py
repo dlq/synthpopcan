@@ -15,6 +15,7 @@ from synthpopcan.linked_schema import (
     read_linked_population_contract,
     validate_linked_population_contract,
     write_linked_population_contract,
+    write_linked_population_contract_document,
 )
 from synthpopcan.microdata import (
     export_training_rows,
@@ -107,6 +108,30 @@ def test_linked_population_contract_round_trips_validated_licensing(
     assert written["licensing"] == licensing
     assert written["licensing"] is not licensing
     assert read_linked_population_contract(manifest) == written
+
+
+def test_write_existing_contract_does_not_rescan_csv_tables(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    households, persons = _write_linked_fixture(tmp_path)
+    contract = build_linked_population_contract(
+        households,
+        persons,
+        geography_column="csd",
+    )
+
+    def fail_if_rescanned(_path: Path) -> tuple[list[str], int]:
+        raise AssertionError("CSV tables were rescanned")
+
+    monkeypatch.setattr("synthpopcan.linked_schema._csv_shape", fail_if_rescanned)
+    written = write_linked_population_contract_document(
+        tmp_path / "manifest.json",
+        contract,
+        licensing=synthetic_demo_model_licensing(),
+    )
+
+    assert written["licensing"] == synthetic_demo_model_licensing()
+    assert read_linked_population_contract(tmp_path / "manifest.json") == written
 
 
 def test_linked_population_contract_strictly_validates_optional_licensing(

@@ -2,12 +2,23 @@
 
 Status: conditional research; pre-1.0 inventory completed\
 Created: 2026-08-01\
-Last updated: 2026-08-19\
+Last updated: 2026-08-28\
 Target: pre-`1.0` inventory and extension-contract proof only; richer profiles
 and family hierarchy after `1.0.0`\
 Next action: when a concrete research use justifies it, select one coherent
 additive field family and design a separately versioned profile\
 Roadmap: [PLANS.md](../PLANS.md) | [Plan index](README.md)
+
+## Activation Rule
+
+This file is a conditional research umbrella, not an executable implementation
+queue. After a concrete use selects one coherent field family and a separately
+versioned profile boundary, create a dated execution plan containing the exact
+`## PR-Sized Work` table required by the plan index. Its first slices must
+separate the profile decision/schema, vintage adapters and fixtures,
+trainer/generator work, validation/privacy evidence, interfaces, and
+packaging/documentation. No production profile work begins before that plan is
+reviewed; the completed inventory below remains historical foundation.
 
 ## Outcome
 
@@ -112,7 +123,7 @@ numeric-generation extensions, economic- and census-family entities, and a
 replacement linked-population schema remain conditional work. They require
 additive public interfaces or separately versioned artifact contracts.
 
-## Phase 1 — Field Eligibility Inventory
+## Phase 1 — Field Eligibility Inventory (Completed In `1.0.0`)
 
 Create one machine-readable inventory with a record for every 2016 and 2021
 hierarchical PUMF column. Generate its starting point from the checked-in SPSS
@@ -161,6 +172,9 @@ Acceptance:
   omission; and
 - cross-vintage mappings never erase a real definition or classification
   change.
+
+The remaining phases are capability outlines. They acquire executable status
+only through the trigger-time plan required above.
 
 ## Phase 2 — Additive Household And Person Fields
 

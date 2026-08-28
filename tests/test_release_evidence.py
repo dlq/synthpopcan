@@ -35,8 +35,9 @@ def _write_wheel(
 ) -> None:
     runtime_version = runtime_version or version
     with zipfile.ZipFile(path, "w") as archive:
+        archive.writestr("synthpopcan/__init__.py", "")
         archive.writestr(
-            "synthpopcan/__init__.py", f'__version__ = "{runtime_version}"\n'
+            "synthpopcan/_version.py", f'__version__ = "{runtime_version}"\n'
         )
         archive.writestr(
             f"synthpopcan-{version}.dist-info/METADATA",
@@ -53,7 +54,8 @@ def _write_sdist(
         f"{root}/pyproject.toml": (
             f'[project]\nname = "synthpopcan"\nversion = "{version}"\n'
         ).encode(),
-        f"{root}/src/synthpopcan/__init__.py": (
+        f"{root}/src/synthpopcan/__init__.py": b"",
+        f"{root}/src/synthpopcan/_version.py": (
             f'__version__ = "{runtime_version}"\n'
         ).encode(),
         f"{root}/PKG-INFO": (
@@ -324,8 +326,16 @@ def test_release_asset_inventory_fails_closed(
 
 def test_local_release_check_matches_locked_ci_and_web_gates() -> None:
     local_check = Path("scripts/check.sh").read_text()
+    ci = Path(".github/workflows/ci.yml").read_text()
     assert "uv lock --check" in local_check
-    assert "uv run --locked --group docs mdformat --check docs README.md" in local_check
+    for markdown_check_fragment in (
+        "git ls-files -z -- '*.md'",
+        "xargs -0 uv run --locked --group docs mdformat --check",
+    ):
+        assert markdown_check_fragment in local_check
+        assert markdown_check_fragment in ci
+    assert "uv run --locked --group docs doc8 docs" in local_check
+    assert "uv run --locked pyright src scripts" in local_check
     assert "uv run --locked pytest" in local_check
     assert "npm run test:web:coverage" in local_check
     assert "\nnpm run test:web\n" not in local_check

@@ -2,12 +2,11 @@
 
 Status: active feature implementation\
 Created: 2026-08-19\
-Last updated: 2026-08-19\
+Last updated: 2026-08-28\
 Target: infrastructure in `1.2.0`, core product localization in `1.3.0`, and
 complete supported-surface coverage in `1.4.0`\
-Next action: inventory every user-facing CLI, local-web, and documentation
-string; classify machine-stable output separately; and select the smallest
-message-catalogue implementation that supports Canadian English and French\
+Next action: complete the bounded string and machine-contract inventory in
+`I18N12-01`; use its evidence to select the catalogue boundary in `I18N12-02`\
 Roadmap: [PLANS.md](../PLANS.md) | [Plan index](README.md) |
 [Release train](2026-08-19-post-1-0-release-train.md)
 
@@ -55,6 +54,21 @@ Short `en` and `fr` inputs may be accepted as documented aliases, but persisted
 evidence records the canonical locale. Unsupported or incomplete locales fall
 back predictably to `en-CA`; missing translations fail the catalogue gate in
 CI rather than leaking message IDs to users.
+
+## PR-Sized Work
+
+Only the committed `1.2.0` foundation is executable here. Before `1.3.0` or
+`1.4.0` is promoted to the committed next release, replace its release-level
+surface list with a new table that divides CLI workflows, web workflows,
+documentation groups, and human translation review into independent slices.
+
+| ID | Status | Depends on | Deliverable | Acceptance |
+| --- | --- | --- | --- | --- |
+| `I18N12-01` | `ready` | Frozen `1.x` interface and supported-surface inventory | Classified inventory of CLI, local-web, documentation, machine-stable, historical, and verbatim-source strings | Every documented CLI path and supported web route is covered; machine keys, identifiers, logs, and source labels are separately classified |
+| `I18N12-02` | `blocked` | `I18N12-01` | Message-catalogue contract and implementation decision | A reviewed contract defines message IDs, `en-CA`/`fr-CA`, aliases, fallback, provenance, placeholders, plurals, and the boundary between domain results and presentation text |
+| `I18N12-03` | `blocked` | `I18N12-02` | Shared locale resolution, interpolation, pluralization, and human-formatting runtime | Unit tests prove canonicalization and deterministic fallback; unsupported locales and missing entries never alter machine output or expose message IDs |
+| `I18N12-04` | `blocked` | `I18N12-03` | Packaged English/French catalogue skeleton and compatibility tests | Wheel and sdist contain the catalogues; completeness, placeholder parity, plural forms, fallback, pseudo-localization, and cross-locale machine fixtures pass |
+| `I18N12-05` | `blocked` | `I18N12-01`, `I18N12-02`, `I18N12-04` | Static guard and machine-readable coverage report for covered modules | New hard-coded user-facing strings fail the guard; declared untranslated surfaces are counted and safely fall back to English |
 
 ## `1.2.0` — Internationalization Foundation
 

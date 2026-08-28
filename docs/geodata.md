@@ -30,6 +30,14 @@ province or territory, representation, immutable release URL, compressed
 SHA-256, and unpacked SHA-256. The fetcher verifies both byte representations
 before installing the GeoJSON in a user cache.
 
+Assets newly produced by the current release builder use immutable
+content-addressed filenames. Assets published by earlier builders, including
+those in the existing `geodata-v1` catalogue, may retain legacy descriptive
+filenames. Consumers should always use the exact URL and filename in the
+catalogue instead of constructing either from the year, level, or PRUID.
+Content addressing lets a future release retain older immutable assets without
+changing what an existing catalogue entry means.
+
 Start with {doc}`small-area` if we still need to choose CT, CSD, ADA, or DA,
 prepare controls, or calibrate a population. Return here when we are ready to
 prepare map geometry.

@@ -7,6 +7,7 @@ from click.exceptions import ClickException
 
 from synthpopcan.controls import (
     ControlCell,
+    ControlMargin,
     WdsSelection,
     _find_wds_csv_member,
     _values_are_numeric,
@@ -30,6 +31,39 @@ from synthpopcan.tabular import format_csv_number
 def test_control_cells_reject_invalid_counts(invalid: float) -> None:
     with pytest.raises(ValueError, match="control count"):
         ControlCell(categories={"age": "young"}, count=invalid)
+
+
+@pytest.mark.parametrize(
+    ("cells", "message"),
+    [
+        (
+            (ControlCell({"age": "young"}, 1.0),),
+            "missing: ['sex']; extra: []",
+        ),
+        (
+            (ControlCell({"age": "young", "sex": "F", "region": "1"}, 1.0),),
+            "missing: []; extra: ['region']",
+        ),
+        (
+            (
+                ControlCell({"age": "young", "sex": "F"}, 1.0),
+                ControlCell({"age": "young", "sex": "F"}, 2.0),
+            ),
+            "duplicate target ('young', 'F')",
+        ),
+    ],
+)
+def test_control_margin_conversion_rejects_ambiguous_programmatic_cells(
+    cells: tuple[ControlCell, ...],
+    message: str,
+) -> None:
+    """Malformed margins remain constructible for planners but cannot reach IPF."""
+
+    margin = ControlMargin("age-sex", ("age", "sex"), cells)
+
+    with pytest.raises(ValueError) as exc_info:
+        margin.to_ipf_margin()
+    assert message in str(exc_info.value)
 
 
 def test_reads_normalized_controls_as_control_table(tmp_path: Path) -> None:
@@ -912,8 +946,11 @@ def test_census_profile_controls_reject_bad_source_rows(tmp_path: Path) -> None:
         "1001,0 to 4 years,12\n"
     )
 
-    with pytest.raises(ValueError, match="missing columns"):
+    with pytest.raises(ValueError) as exc_info:
         read_census_profile_control_table(missing_column, mapping_path)
+    assert str(exc_info.value) == (
+        "Census Profile row 2 is missing columns: C1_COUNT_TOTAL"
+    )
     with pytest.raises(ValueError, match="duplicates target"):
         read_census_profile_control_table(duplicate, mapping_path)
     with pytest.raises(ValueError, match="invalid count"):

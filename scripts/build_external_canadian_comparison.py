@@ -7,7 +7,7 @@ import csv
 import hashlib
 import json
 from collections import Counter
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any
 
@@ -307,7 +307,9 @@ def _sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
-def _require_columns(columns: list[str] | None, required: set[str], label: str) -> None:
+def _require_columns(
+    columns: Sequence[str] | None, required: set[str], label: str
+) -> None:
     missing = sorted(required - set(columns or ()))
     if missing:
         raise ValueError(f"{label} CSV is missing columns: {', '.join(missing)}")

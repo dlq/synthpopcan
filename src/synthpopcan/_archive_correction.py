@@ -388,8 +388,10 @@ def archive_correction_registry_updates(
 ) -> list[dict[str, Any]]:
     """Derive the exact 32 runtime registry updates from verified evidence."""
 
-    document = validate_archive_correction_evidence(
-        evidence if evidence is not None else load_archive_correction_evidence()
+    document = (
+        validate_archive_correction_evidence(evidence)
+        if evidence is not None
+        else load_archive_correction_evidence()
     )
     updates: list[dict[str, Any]] = []
     for model in document["models"]:

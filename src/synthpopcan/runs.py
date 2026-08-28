@@ -17,18 +17,26 @@ import secrets
 import shutil
 import threading
 from collections.abc import Callable
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, BinaryIO
 
-from synthpopcan import __version__
 from synthpopcan._runtime_schemas import RunEvent, RunManifest, UploadMetadata
+from synthpopcan._version import __version__
 from synthpopcan.assurance import build_run_assurance, verify_run_assurance
 
 RUN_SCHEMA_VERSION = "synthpopcan-run-v1"
 _OPAQUE_ID = re.compile(r"^[a-f0-9]{32}$")
 _RUN_ID = re.compile(r"^[0-9]{8}T[0-9]{6}Z-[a-f0-9]{12}$")
 _TERMINAL_STATES = frozenset({"succeeded", "failed", "cancelled", "interrupted"})
+
+
+@dataclass(frozen=True)
+class _UploadClaimSpec:
+    metadata: dict[str, Any]
+    logical_name: str
+    filename: str
 
 
 def _utc_now() -> str:
@@ -168,6 +176,65 @@ class RunStore:
         metadata = self.get_upload(upload_id, require_unclaimed=require_unclaimed)
         return self.resolve_managed_path(str(metadata["path"]))
 
+    def _create_run_transaction(
+        self,
+        *,
+        workflow: str,
+        request: dict[str, Any],
+        upload_specs: list[_UploadClaimSpec],
+        random_seed: int | None,
+    ) -> dict[str, Any]:
+        """Create one queued run, rolling back every claimed upload on failure."""
+        run_id = _new_run_id()
+        run_dir = self.run_dir(run_id)
+        inputs_dir = run_dir / "inputs"
+        # This atomic mkdir establishes ownership.  A random-ID collision must
+        # fail before rollback is allowed to remove anything at that path.
+        run_dir.mkdir(exist_ok=False)
+        claimed_metadata: list[dict[str, Any]] = []
+        try:
+            for directory in (inputs_dir, run_dir / "artifacts", run_dir / "work"):
+                directory.mkdir(exist_ok=False)
+            claimed_inputs = []
+            for spec in upload_specs:
+                claimed_inputs.append(
+                    self._claim_upload(
+                        spec.metadata,
+                        run_id,
+                        inputs_dir,
+                        spec.logical_name,
+                        spec.filename,
+                    )
+                )
+                claimed_metadata.append(spec.metadata)
+            manifest: dict[str, Any] = {
+                "schema_version": RUN_SCHEMA_VERSION,
+                "run_id": run_id,
+                "workflow": workflow,
+                "status": "queued",
+                "created_at": _utc_now(),
+                "started_at": None,
+                "finished_at": None,
+                "synthpopcan_version": __version__,
+                "request": request,
+                "random_seed": random_seed,
+                "inputs": claimed_inputs,
+                "artifacts": [],
+                "summary": {},
+                "error": None,
+                "reproduction": None,
+                "assurance": None,
+            }
+            self._write_json_atomic(run_dir / "run.json", manifest)
+            (run_dir / "events.ndjson").touch(exist_ok=False)
+            self.append_event(run_id, "queued", "Run queued")
+            return self.load_run(run_id)
+        except Exception:
+            for metadata in reversed(claimed_metadata):
+                self._release_upload_claim(metadata)
+            shutil.rmtree(run_dir, ignore_errors=True)
+            raise
+
     def create_ipf_run(self, request: dict[str, Any]) -> dict[str, Any]:
         """Create an IPF run and atomically claim its two input uploads."""
         with self._lock:
@@ -180,60 +247,15 @@ class RunStore:
                 raise ValueError("seed and controls uploads must differ")
             seed = self.get_upload(seed_id, require_unclaimed=True)
             controls = self.get_upload(controls_id, require_unclaimed=True)
-            run_id = _new_run_id()
-            run_dir = self.run_dir(run_id)
-            inputs_dir = run_dir / "inputs"
-            for directory in (
-                inputs_dir,
-                run_dir / "artifacts",
-                run_dir / "work",
-            ):
-                directory.mkdir(parents=True, exist_ok=False)
-            claimed_metadata: list[dict[str, Any]] = []
-            try:
-                claimed_inputs = []
-                for metadata, logical_name, filename in (
-                    (seed, "seed", "seed.csv"),
-                    (controls, "controls", "controls.csv"),
-                ):
-                    claimed_inputs.append(
-                        self._claim_upload(
-                            metadata,
-                            run_id,
-                            inputs_dir,
-                            logical_name,
-                            filename,
-                        )
-                    )
-                    claimed_metadata.append(metadata)
-                now = _utc_now()
-                manifest: dict[str, Any] = {
-                    "schema_version": RUN_SCHEMA_VERSION,
-                    "run_id": run_id,
-                    "workflow": "ipf",
-                    "status": "queued",
-                    "created_at": now,
-                    "started_at": None,
-                    "finished_at": None,
-                    "synthpopcan_version": __version__,
-                    "request": request,
-                    "random_seed": None,
-                    "inputs": claimed_inputs,
-                    "artifacts": [],
-                    "summary": {},
-                    "error": None,
-                    "reproduction": None,
-                    "assurance": None,
-                }
-                self._write_json_atomic(run_dir / "run.json", manifest)
-                (run_dir / "events.ndjson").touch(exist_ok=False)
-                self.append_event(run_id, "queued", "Run queued")
-                return self.load_run(run_id)
-            except Exception:
-                for metadata in reversed(claimed_metadata):
-                    self._release_upload_claim(metadata)
-                shutil.rmtree(run_dir, ignore_errors=True)
-                raise
+            return self._create_run_transaction(
+                workflow="ipf",
+                request=request,
+                upload_specs=[
+                    _UploadClaimSpec(seed, "seed", "seed.csv"),
+                    _UploadClaimSpec(controls, "controls", "controls.csv"),
+                ],
+                random_seed=None,
+            )
 
     def create_model_run(self, request: dict[str, Any]) -> dict[str, Any]:
         """Create a prepared-model run from a catalogue ID or package upload."""
@@ -252,51 +274,16 @@ class RunStore:
                 if package_upload_id
                 else None
             )
-            run_id = _new_run_id()
-            run_dir = self.run_dir(run_id)
-            inputs_dir = run_dir / "inputs"
-            for directory in (inputs_dir, run_dir / "artifacts", run_dir / "work"):
-                directory.mkdir(parents=True, exist_ok=False)
-            try:
-                claimed_inputs = []
-                if upload is not None:
-                    claimed_inputs.append(
-                        self._claim_upload(
-                            upload,
-                            run_id,
-                            inputs_dir,
-                            "package",
-                            "package.json",
-                        )
-                    )
-                now = _utc_now()
-                manifest: dict[str, Any] = {
-                    "schema_version": RUN_SCHEMA_VERSION,
-                    "run_id": run_id,
-                    "workflow": "model",
-                    "status": "queued",
-                    "created_at": now,
-                    "started_at": None,
-                    "finished_at": None,
-                    "synthpopcan_version": __version__,
-                    "request": request,
-                    "random_seed": request.get("options", {}).get("random_seed"),
-                    "inputs": claimed_inputs,
-                    "artifacts": [],
-                    "summary": {},
-                    "error": None,
-                    "reproduction": None,
-                    "assurance": None,
-                }
-                self._write_json_atomic(run_dir / "run.json", manifest)
-                (run_dir / "events.ndjson").touch(exist_ok=False)
-                self.append_event(run_id, "queued", "Run queued")
-                return self.load_run(run_id)
-            except Exception:
-                if upload is not None and upload.get("claimed_by") == run_id:
-                    self._release_upload_claim(upload)
-                shutil.rmtree(run_dir, ignore_errors=True)
-                raise
+            return self._create_run_transaction(
+                workflow="model",
+                request=request,
+                upload_specs=(
+                    [_UploadClaimSpec(upload, "package", "package.json")]
+                    if upload is not None
+                    else []
+                ),
+                random_seed=request.get("options", {}).get("random_seed"),
+            )
 
     def create_small_area_run(self, request: dict[str, Any]) -> dict[str, Any]:
         """Create a small-area run and claim its package/control uploads."""
@@ -332,10 +319,10 @@ class RunStore:
                 )
             if control_pack_id and not person_controls_id:
                 raise ValueError("small-area control packs require person controls")
-            upload_specs: list[tuple[dict[str, Any], str, str]] = []
+            upload_specs: list[_UploadClaimSpec] = []
             if package_id:
                 upload_specs.append(
-                    (
+                    _UploadClaimSpec(
                         self.get_upload(str(package_id), require_unclaimed=True),
                         "package",
                         "package.json",
@@ -344,14 +331,14 @@ class RunStore:
             if candidate_households_id and candidate_persons_id:
                 upload_specs.extend(
                     (
-                        (
+                        _UploadClaimSpec(
                             self.get_upload(
                                 str(candidate_households_id), require_unclaimed=True
                             ),
                             "candidate_households",
                             "households.csv",
                         ),
-                        (
+                        _UploadClaimSpec(
                             self.get_upload(
                                 str(candidate_persons_id), require_unclaimed=True
                             ),
@@ -361,7 +348,7 @@ class RunStore:
                     )
                 )
             upload_specs.append(
-                (
+                _UploadClaimSpec(
                     self.get_upload(controls_id, require_unclaimed=True),
                     "controls",
                     "controls.csv",
@@ -369,7 +356,7 @@ class RunStore:
             )
             if person_controls_id:
                 upload_specs.append(
-                    (
+                    _UploadClaimSpec(
                         self.get_upload(
                             str(person_controls_id), require_unclaimed=True
                         ),
@@ -379,7 +366,7 @@ class RunStore:
                 )
             if control_pack_evidence_id:
                 upload_specs.append(
-                    (
+                    _UploadClaimSpec(
                         self.get_upload(
                             str(control_pack_evidence_id), require_unclaimed=True
                         ),
@@ -390,63 +377,21 @@ class RunStore:
             boundaries_id = inputs.get("boundaries_upload_id")
             if boundaries_id:
                 upload_specs.append(
-                    (
+                    _UploadClaimSpec(
                         self.get_upload(str(boundaries_id), require_unclaimed=True),
                         "boundaries",
                         "boundaries.geojson",
                     )
                 )
-            upload_ids = [str(metadata["upload_id"]) for metadata, _, _ in upload_specs]
+            upload_ids = [str(spec.metadata["upload_id"]) for spec in upload_specs]
             if len(upload_ids) != len(set(upload_ids)):
                 raise ValueError("small-area input uploads must differ")
-
-            run_id = _new_run_id()
-            run_dir = self.run_dir(run_id)
-            inputs_dir = run_dir / "inputs"
-            for directory in (inputs_dir, run_dir / "artifacts", run_dir / "work"):
-                directory.mkdir(parents=True, exist_ok=False)
-            claimed: list[dict[str, Any]] = []
-            try:
-                claimed_inputs = []
-                for metadata, logical_name, filename in upload_specs:
-                    claimed_inputs.append(
-                        self._claim_upload(
-                            metadata,
-                            run_id,
-                            inputs_dir,
-                            logical_name,
-                            filename,
-                        )
-                    )
-                    claimed.append(metadata)
-                now = _utc_now()
-                manifest: dict[str, Any] = {
-                    "schema_version": RUN_SCHEMA_VERSION,
-                    "run_id": run_id,
-                    "workflow": "small_area",
-                    "status": "queued",
-                    "created_at": now,
-                    "started_at": None,
-                    "finished_at": None,
-                    "synthpopcan_version": __version__,
-                    "request": request,
-                    "random_seed": request.get("options", {}).get("random_seed"),
-                    "inputs": claimed_inputs,
-                    "artifacts": [],
-                    "summary": {},
-                    "error": None,
-                    "reproduction": None,
-                    "assurance": None,
-                }
-                self._write_json_atomic(run_dir / "run.json", manifest)
-                (run_dir / "events.ndjson").touch(exist_ok=False)
-                self.append_event(run_id, "queued", "Run queued")
-                return self.load_run(run_id)
-            except Exception:
-                for metadata in reversed(claimed):
-                    self._release_upload_claim(metadata)
-                shutil.rmtree(run_dir, ignore_errors=True)
-                raise
+            return self._create_run_transaction(
+                workflow="small_area",
+                request=request,
+                upload_specs=upload_specs,
+                random_seed=request.get("options", {}).get("random_seed"),
+            )
 
     def list_runs(self) -> list[dict[str, Any]]:
         """Return newest runs first."""

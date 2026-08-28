@@ -8,9 +8,11 @@ uv run --locked python scripts/build_release_evidence.py \
   --version "$version"
 uv run --locked ruff check src tests scripts
 uv run --locked ruff format --check src tests scripts
-uv run --locked pyright src
+uv run --locked pyright src scripts
 uv run --locked cffconvert --validate
-uv run --locked --group docs mdformat --check docs README.md
+git ls-files -z -- '*.md' | \
+  xargs -0 uv run --locked --group docs mdformat --check
+uv run --locked --group docs doc8 docs
 uv run --locked pytest \
   --cov=src/synthpopcan \
   --cov-branch \

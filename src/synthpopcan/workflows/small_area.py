@@ -2,16 +2,25 @@
 
 from __future__ import annotations
 
-__all__ = ["SmallAreaRequest", "SmallAreaWorkflowResult", "synthesize_small_area_files"]
+__all__ = [
+    "SmallAreaCalibrationRequest",
+    "SmallAreaCalibrationResult",
+    "SmallAreaRequest",
+    "SmallAreaWorkflowResult",
+    "calibrate_small_area_files",
+    "synthesize_small_area_files",
+]
 
+from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, cast
+from typing import TYPE_CHECKING, Any, cast
 
 from synthpopcan.geography import GeographyUniverse
 from synthpopcan.linked_schema import (
     read_linked_population_contract,
     write_linked_population_contract,
+    write_linked_population_contract_document,
 )
 from synthpopcan.map_render import render_synthesis_map
 from synthpopcan.model_licensing import validate_prepared_model_licensing
@@ -28,6 +37,56 @@ from synthpopcan.workflows.types import (
     WorkflowProgress,
     WorkflowReproduction,
 )
+
+if TYPE_CHECKING:
+    from synthpopcan.control_packs import ControlPackEvidence, ControlPackManifest
+
+
+@dataclass(frozen=True)
+class SmallAreaCalibrationRequest:
+    """File-backed inputs and outputs for one small-area calibration.
+
+    This is the canonical adapter boundary around the in-memory/statistical
+    calibration engine.  CLI, Python, and compound synthesis workflows can
+    prepare inputs differently while sharing output names, manifest handling,
+    and calibration-option forwarding here.
+    """
+
+    candidate_households_path: Path
+    candidate_persons_path: Path
+    controls_path: Path
+    output_dir: Path
+    geography_dimension: str
+    geography_column: str
+    person_controls_path: Path | None = None
+    control_pack: str | Path | ControlPackManifest | None = None
+    control_pack_evidence: (
+        str | Path | Mapping[str, object] | ControlPackEvidence | None
+    ) = None
+    geography_universe: GeographyUniverse | None = None
+    licensing: Mapping[str, object] | None = None
+    include_weights: bool = False
+    household_id_column: str = "synthetic_household_id"
+    person_id_column: str = "synthetic_person_id"
+    weight_field: str | None = None
+    max_iterations: int = 100
+    tolerance: float = 1e-6
+    pool_size: int | None = None
+    subsample_seed: int = 42
+    n_workers: int | None = None
+    record_timing: bool = False
+
+
+@dataclass(frozen=True)
+class SmallAreaCalibrationResult:
+    """Conventional small-area artifacts and complete engine diagnostics."""
+
+    households_path: Path
+    persons_path: Path
+    manifest_path: Path
+    report_path: Path
+    weights_path: Path | None
+    details: dict[str, Any]
 
 
 @dataclass(frozen=True)
@@ -280,6 +339,78 @@ class SmallAreaWorkflowResult:
     reproduction: WorkflowReproduction
 
 
+def calibrate_small_area_files(
+    request: SmallAreaCalibrationRequest,
+    *,
+    progress: ProgressReporter | None = None,
+) -> SmallAreaCalibrationResult:
+    """Calibrate linked candidate files and write conventional artifacts."""
+
+    request.output_dir.mkdir(parents=True, exist_ok=True)
+    households_path = request.output_dir / "households.csv"
+    persons_path = request.output_dir / "persons.csv"
+    manifest_path = request.output_dir / "manifest.json"
+    report_path = request.output_dir / "report.json"
+    weights_path = (
+        request.output_dir / "weights.csv" if request.include_weights else None
+    )
+
+    _emit(progress, "calibrating", "Fitting candidates to small-area controls")
+    details = calibrate_linked_household_csvs(
+        households_path=request.candidate_households_path,
+        persons_path=request.candidate_persons_path,
+        controls_path=request.controls_path,
+        person_controls_path=request.person_controls_path,
+        control_pack=request.control_pack,
+        control_pack_evidence=request.control_pack_evidence,
+        geography_dimension=request.geography_dimension,
+        geography_column=request.geography_column,
+        geography_universe=request.geography_universe,
+        households_out=households_path,
+        persons_out=persons_path,
+        weights_out=weights_path,
+        report_out=report_path,
+        household_id_column=request.household_id_column,
+        person_id_column=request.person_id_column,
+        weight_field=request.weight_field,
+        max_iterations=request.max_iterations,
+        tolerance=request.tolerance,
+        pool_size=request.pool_size,
+        subsample_seed=request.subsample_seed,
+        n_workers=request.n_workers,
+        record_timing=request.record_timing,
+    )
+    if not isinstance(details.get("summary"), Mapping):
+        raise RuntimeError("small-area calibration returned an invalid summary")
+
+    linked_contract = details.get("linked_population")
+    if isinstance(linked_contract, Mapping):
+        write_linked_population_contract_document(
+            manifest_path,
+            cast("Mapping[str, object]", linked_contract),
+            licensing=request.licensing,
+        )
+    else:
+        # Preserve compatibility with custom/monkeypatched engines that return
+        # the older report shape.  The maintained engine always supplies the
+        # precomputed contract, avoiding another full scan of both CSV files.
+        write_linked_population_contract(
+            manifest_path,
+            households_path,
+            persons_path,
+            geography_column=request.geography_column,
+            licensing=request.licensing,
+        )
+    return SmallAreaCalibrationResult(
+        households_path=households_path,
+        persons_path=persons_path,
+        manifest_path=manifest_path,
+        report_path=report_path,
+        weights_path=weights_path,
+        details=details,
+    )
+
+
 def synthesize_small_area_files(
     request: SmallAreaRequest,
     *,
@@ -344,46 +475,33 @@ def synthesize_small_area_files(
             cap=request.max_household_size,
         )
 
-    households_path = request.output_dir / "households.csv"
-    persons_path = request.output_dir / "persons.csv"
-    manifest_path = request.output_dir / "manifest.json"
-    report_path = request.output_dir / "report.json"
-    weights_path = (
-        request.output_dir / "weights.csv" if request.include_weights else None
-    )
-    _emit(progress, "calibrating", "Fitting candidates to small-area controls")
-    details = calibrate_linked_household_csvs(
-        households_path=candidate_households,
-        persons_path=candidate_persons,
-        controls_path=request.controls_path,
-        person_controls_path=request.person_controls_path,
-        control_pack=request.control_pack,
-        control_pack_evidence=request.control_pack_evidence_path,
-        geography_dimension=request.geography_dimension,
-        geography_column=request.geography_column,
-        geography_universe=request.geography_universe,
-        households_out=households_path,
-        persons_out=persons_path,
-        report_out=report_path,
-        weights_out=weights_path,
-        pool_size=request.pool_size,
-        subsample_seed=request.subsample_seed,
-        max_iterations=request.max_iterations,
-        tolerance=request.tolerance,
-    )
-    write_linked_population_contract(
-        manifest_path,
-        households_path,
-        persons_path,
-        geography_column=request.geography_column,
-        licensing=input_licensing,
+    calibrated = calibrate_small_area_files(
+        SmallAreaCalibrationRequest(
+            candidate_households_path=candidate_households,
+            candidate_persons_path=candidate_persons,
+            controls_path=request.controls_path,
+            output_dir=request.output_dir,
+            geography_dimension=request.geography_dimension,
+            geography_column=request.geography_column,
+            person_controls_path=request.person_controls_path,
+            control_pack=request.control_pack,
+            control_pack_evidence=request.control_pack_evidence_path,
+            geography_universe=request.geography_universe,
+            licensing=input_licensing,
+            include_weights=request.include_weights,
+            pool_size=request.pool_size,
+            subsample_seed=request.subsample_seed,
+            max_iterations=request.max_iterations,
+            tolerance=request.tolerance,
+        ),
+        progress=progress,
     )
     map_path = None
     if request.boundaries_path is not None and request.map_path is not None:
         _emit(progress, "mapping", "Rendering the standalone small-area map")
         map_path = render_synthesis_map(
-            households_path=households_path,
-            persons_path=persons_path,
+            households_path=calibrated.households_path,
+            persons_path=calibrated.persons_path,
             boundaries_path=request.boundaries_path,
             geography_column=request.geography_column,
             geography_id_field=request.geography_id_field,
@@ -392,13 +510,13 @@ def synthesize_small_area_files(
         )
     _emit(progress, "completed", "Small-area synthesis completed")
     return SmallAreaWorkflowResult(
-        households_path=households_path,
-        persons_path=persons_path,
-        manifest_path=manifest_path,
-        report_path=report_path,
-        weights_path=weights_path,
+        households_path=calibrated.households_path,
+        persons_path=calibrated.persons_path,
+        manifest_path=calibrated.manifest_path,
+        report_path=calibrated.report_path,
+        weights_path=calibrated.weights_path,
         map_path=map_path,
-        details=details,
+        details=calibrated.details,
         reproduction=request.reproduction(),
     )
 

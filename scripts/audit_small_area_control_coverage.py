@@ -432,6 +432,14 @@ def _parse_profile(value: str) -> tuple[int, str, str]:
     return year, level, path
 
 
+def _integer_result(value: object, label: str) -> int:
+    """Return one integer scan result without relying on unchecked ``object`` casts."""
+
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise TypeError(f"invalid integer result for {label}")
+    return value
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -469,12 +477,16 @@ def main(argv: list[str] | None = None) -> int:
             results[key] = scanned
             continue
         current = results[key]
-        current["geographies"] = int(current["geographies"]) + int(
-            scanned["geographies"]
+        current["geographies"] = _integer_result(
+            current["geographies"], "geographies"
+        ) + _integer_result(scanned["geographies"], "geographies")
+        current["positive_population_geographies"] = _integer_result(
+            current["positive_population_geographies"],
+            "positive_population_geographies",
+        ) + _integer_result(
+            scanned["positive_population_geographies"],
+            "positive_population_geographies",
         )
-        current["positive_population_geographies"] = int(
-            current["positive_population_geographies"]
-        ) + int(scanned["positive_population_geographies"])
         current_families = current["families"]
         scanned_families = scanned["families"]
         if not isinstance(current_families, dict) or not isinstance(

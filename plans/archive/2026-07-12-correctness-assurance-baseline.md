@@ -1,13 +1,17 @@
-# Correctness Assurance Plan
+# Correctness Assurance Baseline
 
-Status: active maintenance\
+Status: archived baseline; completed through `1.0.0`\
 Created: 2026-07-12\
-Last updated: 2026-08-19\
-Target: ongoing correctness and release evidence\
-Next action: preserve the frozen 1.x interface, exact-commit CI, coverage,
-correctness, release-evidence, assurance, and reproduction gates in later
-releases\
+Last updated: 2026-08-28\
+Completed: `1.0.0`\
+Target: historical correctness and release-evidence record through `1.0.0`\
+Maintenance: the active [correctness assurance plan](../2026-07-12-correctness-assurance.md)
+owns later release obligations\
 Roadmap: [PLANS.md](../../PLANS.md) | [Plan index](../README.md)
+
+Archive note: the body below preserves the implementation language used while
+this plan was active. References to current ownership or future actions are
+historical; the maintenance plan linked above owns present work.
 
 ## Purpose And Boundaries
 

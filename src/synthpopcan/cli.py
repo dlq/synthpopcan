@@ -20,7 +20,7 @@ from rich.progress import (
     TransferSpeedColumn,
 )
 
-from synthpopcan import __version__
+from synthpopcan._version import __version__
 from synthpopcan.cli_enrichment import enrich
 from synthpopcan.cli_exchange import bundle
 from synthpopcan.cli_geo import small_area
@@ -29,6 +29,8 @@ from synthpopcan.cli_microdata import microdata
 from synthpopcan.cli_output import (
     click_file_access_error,
     click_value_error,
+    format_licence_label,
+    format_policy_decision_label,
     format_report_number,
     parse_columns,
     print_census_profile_characteristics_table,
@@ -548,37 +550,19 @@ def _model_detail_rows(model: dict[str, Any]) -> list[tuple[str, str]]:
         ("Source licence", str(model["source_licence"])),
         (
             "Prepared-model licence",
-            _licence_label(authored_licence),
+            format_licence_label(authored_licence),
         ),
         ("Prepared-model scope", str(grant_scope.get("statement") or "")),
         ("Licence layering", str(presentation.get("statement") or "")),
-        ("Source licence (contract)", _licence_label(source_licence)),
+        ("Source licence (contract)", format_licence_label(source_licence)),
         ("Source notice", str(source.get("prescribed_notice") or "")),
-        ("Policy decision", _policy_decision_label(policy)),
+        ("Policy decision", format_policy_decision_label(policy)),
         ("External legal review", str(policy.get("external_legal_review") or "")),
         ("Privacy", str(model["privacy_review_status"])),
         ("Generation guidance", str(model["generation_limits"])),
         ("Known limitations", str(model["known_limitations"])),
     ]
     return [(label, value) for label, value in rows if value]
-
-
-def _licence_label(licence: dict[str, Any]) -> str:
-    name = str(licence.get("name") or "")
-    spdx_id = str(licence.get("spdx_id") or "")
-    url = str(licence.get("url") or "")
-    identity = f"{name} ({spdx_id})" if name and spdx_id else name or spdx_id
-    return f"{identity}: {url}" if identity and url else identity or url
-
-
-def _policy_decision_label(policy: dict[str, Any]) -> str:
-    authority = ", ".join(
-        str(value)
-        for value in (policy.get("decided_by"), policy.get("decided_on"))
-        if value
-    )
-    values = [policy.get("status"), policy.get("basis"), authority]
-    return "; ".join(str(value) for value in values if value)
 
 
 @cli.group()

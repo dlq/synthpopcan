@@ -1,12 +1,12 @@
 # Expanded Small-Area Controls Plan
 
-Status: `1.1.0` released; later tranches scoped or forecast\
+Status: active feature implementation; `1.1.0` released and `1.2.0` committed\
 Created: 2026-08-01\
-Last updated: 2026-08-19\
+Last updated: 2026-08-28\
 Target: `1.1.0` broad compatible packs; conditional person controls in `1.2.0`\
-Next action: preserve the released 24-pack/14-family baseline while reviewing
-the age-15+ marital, education, labour-force, and work-activity crosswalks for
-`1.2.0`\
+Next action: complete the common `SA12-01` universe contract while the four
+independent source reviews `SA12-02`, `SA12-04`, `SA12-06`, and `SA12-08`
+proceed\
 Roadmap: [PLANS.md](../PLANS.md) | [Plan index](README.md)
 
 Release sequencing and confidence are defined in the
@@ -46,6 +46,30 @@ represent. The
 owns shared solver oracles, backend and integerization comparisons,
 uncertainty ensembles, statistical metrics, external benchmarks, and empirical
 disclosure-risk methods.
+
+## PR-Sized Work
+
+These rows are the executable `1.2.0` tranche. Source decisions may proceed in
+parallel. A family whose evidence slice does not pass becomes `deferred`; its
+runtime slice does not begin and the other families continue independently.
+
+| ID | Status | Depends on | Deliverable | Acceptance |
+| --- | --- | --- | --- | --- |
+| `SA12-01` | `ready` | Released `1.1.0` registry and runtime invariants | Versioned age-15+ universe and not-applicable/conditional-semantics contract | The contract distinguishes all-private-household persons, age-15+ denominators, under-15 states, suppression, and rounding; mismatch fixtures fail before fitting |
+| `SA12-02` | `ready` | Pinned 2016 and 2021 Profile definitions | Marital-status source decision and crosswalk | Child rows, categories, denominators, suppression rules, vintage differences, and fixture totals reproduce independently |
+| `SA12-03` | `blocked` | `SA12-01`, accepted `SA12-02`, `SA12-10` | Marital-status preparer, registry entry, and pack component | Normalized controls validate and round-trip; unsupported categories and universe mismatches fail closed |
+| `SA12-04` | `ready` | Pinned 2016 and 2021 Profile definitions | Education source decision and crosswalk | Degree categories, age universe, vintage classifications, suppression rules, and fixture totals reproduce independently |
+| `SA12-05` | `blocked` | `SA12-01`, accepted `SA12-04`, `SA12-10` | Education preparer, registry entry, and pack component | Normalized controls validate and round-trip; not-applicable and unmapped categories remain explicit |
+| `SA12-06` | `ready` | Pinned 2016 and 2021 Profile definitions | Labour-force-status source decision and crosswalk | Categories, age denominator, vintage differences, suppression rules, and fixture totals reproduce independently |
+| `SA12-07` | `blocked` | `SA12-01`, accepted `SA12-06`, `SA12-10` | Labour-force preparer, registry entry, and pack component | Normalized controls validate and round-trip; support, zero, and universe failures stop before fitting |
+| `SA12-08` | `ready` | Pinned 2016 and 2021 Profile definitions | Work-activity source decision and crosswalk | Full/part-year and full/part-time categories, applicability, suppression, and fixture totals reproduce independently |
+| `SA12-09` | `blocked` | `SA12-01`, accepted `SA12-08`, `SA12-10` | Work-activity preparer, registry entry, and pack component | Normalized controls validate and round-trip; mutually exclusive states and denominators are enforced |
+| `SA12-10` | `blocked` | `SA12-01` | Shared conditional-person reconciliation and preflight path | The common implementation represents not-applicable states or explicit conditional constraints without silently manufacturing totals; adversarial cases fail closed |
+| `SA12-11` | `blocked` | `SA12-10` and at least one accepted family runtime slice | Separately versioned conditional-person pack tier | Manifests have stable identifiers, semantic checksums, inspectable contents, and fail-closed compatibility with the retained broad packs |
+| `SA12-12` | `blocked` | `SA12-11` | Joint bounded feasibility and calibration evidence | Accepted families run jointly with broad packs on reviewed 2016/2021 CSD, CT, ADA, and DA cases; fractional and realized residuals are independently recomputed |
+| `SA12-13` | `blocked` | `SA12-12` | Python and CLI adoption through the shared workflow | Equivalent library and command requests normalize identically; public-interface and machine-output fixtures remain additive |
+| `SA12-14` | `blocked` | `SA12-12` | Local-web and durable-run adoption through the shared workflow | HTTP normalization, progress events, run evidence, resume behavior, and browser scenarios match the accepted pack semantics |
+| `SA12-15` | `blocked` | `SA12-13`, `SA12-14` | Installed-distribution evidence and public documentation | Wheel and sdist smokes pass; documentation names admitted, deferred, approximate, validation-only, and uncontrolled families |
 
 ## Current Baseline
 
@@ -223,7 +247,12 @@ population component or declares its exclusion in every complete-coverage
 claim; collective residents are never forced into private-household structure;
 and combined totals identify each component's universe and evidence.
 
-## Phase 1 — Field/Control Compatibility Registry
+The general phases below describe the reusable capability horizon, not an
+alternative `1.2.0` task list. Their released portions are identified in the
+baseline above; future collective, family, richer-profile, and national work
+remains conditional until a later plan activates it.
+
+## Phase 1 — Field/Control Compatibility Registry (Implemented, Extensible)
 
 Create a machine-readable registry joining the tree-model field eligibility
 inventory to every reviewed small-area control candidate. Use stable concept
@@ -265,7 +294,7 @@ Acceptance:
 - no runtime code relies on undocumented characteristic IDs; and
 - source revisions or category changes produce a reviewable registry diff.
 
-## Phase 2 — Source Screening For Extended Fields
+## Phase 2 — Source Screening For Extended Fields (Ongoing Research)
 
 Screen the 2016 and 2021 Census Profile—and another public source only when its
 authority, licence, vintage, geography, and maintenance case are documented—for
@@ -303,7 +332,7 @@ Acceptance: every screened field has a cited source decision; counts reproduce
 from pinned inputs; all geography discrepancies are named; and the output does
 not confuse source availability with an approved crosswalk.
 
-## Phase 3 — Universe Reconciliation
+## Phase 3 — Universe Reconciliation (Baseline Implemented, Extension Active)
 
 Define explicit full-universe representations for margins that are currently
 conditional. Examples include:
@@ -341,7 +370,7 @@ have a documented common representation or explicit conditional semantics;
 the preflight detects deliberate universe-mismatch fixtures; and no rounded or
 imputed count is presented as observed exact data.
 
-## Phase 4 — Versioned Control Packs
+## Phase 4 — Versioned Control Packs (Baseline Implemented, Extension Active)
 
 Define a versioned control-pack manifest containing:
 
@@ -384,7 +413,7 @@ detected before data loading; every artifact is checksummed; old two-margin
 inputs either remain supported or fail with a version-specific migration path;
 and pack contents can be inspected without running a fit.
 
-## Phase 5 — Feasibility Planner
+## Phase 5 — Feasibility Planner (Implemented, Extensible)
 
 Plan every multi-margin run before calibration. The planner must:
 
@@ -413,7 +442,7 @@ calibrated error bounds on representative CSD/CT/ADA/DA cases; repeated plans
 are deterministic; and the CLI, API, and web app produce the same normalized
 plan.
 
-## Phase 6 — Household, Person, And Family Contributions
+## Phase 6 — Household, Person, And Family Contributions (Family Deferred)
 
 Retain the current household-first design:
 
@@ -448,7 +477,7 @@ report; whole-household linkage survives realization; family counts reconcile
 independently; redundant and unsupported rows are reported; and backend changes
 have differential fixtures against the released behavior.
 
-## Phase 7 — Validation And Claims
+## Phase 7 — Validation And Claims (Implemented, Extensible)
 
 Produce validation at four layers:
 
@@ -487,7 +516,7 @@ failed/non-converged runs cannot appear successful; and documentation never
 extends local representativeness from controlled margins to uncontrolled
 fields.
 
-## Phase 8 — Interfaces And Researcher Workflow
+## Phase 8 — Interfaces And Researcher Workflow (Implemented, Extensible)
 
 Provide one shared Python workflow used by the library, CLI, and local web app.
 The researcher-facing sequence should be:
@@ -516,7 +545,7 @@ fixed-seed outputs and reports match; errors name the field, margin, geography,
 and remedy; and a humanities researcher can tell which results are locally
 anchored without reading implementation code.
 
-## Phase 9 — Scale, Evidence, And Publication
+## Phase 9 — Scale, Evidence, And Publication (Broader Work Conditional)
 
 Exercise bounded cases before national execution:
 

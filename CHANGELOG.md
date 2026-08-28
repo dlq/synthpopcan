@@ -4,6 +4,28 @@ All notable public changes to SynthPopCan are tracked here.
 
 ## Unreleased
 
+- Simplify internal responsibility boundaries without changing the frozen
+  `1.x` interface: centralize prepared-model interpretation, Census Profile
+  parsing, version identity, and external-comparison logic; route local
+  small-area calibration through one file-backed workflow; extract local-web
+  route registration and pure browser request models; and enforce a complete
+  package-module responsibility classification and dependency direction.
+
+- Harden prepared geodata publication with fingerprint-aware resumability,
+  atomic output writes, immutable content-addressed filenames for newly built
+  assets, an exclusive writer lock, and one catalogue commit only after the
+  complete batch succeeds. Retain compatibility with existing catalogue entries
+  and their legacy descriptive filenames.
+
+- Separate the Python 3.12 quality and coverage gates from the Python
+  3.11–3.14 behavioral matrix, keep their combined stable `Python` required
+  check, extend blocking Pyright coverage to `scripts`, and apply Markdown and
+  documentation-style checks to the complete maintained documentation surface.
+
+- Fail closed on malformed or duplicate control-margin structures and mutated
+  control-pack definitions, protect existing run directories during a random-ID
+  collision, and keep the installed interface contract stable with Click 8.5.
+
 - Plan staged Canadian English/French localization: establish locale-safe
   message infrastructure in `1.2.0`, localize core CLI and local-web workflows
   in `1.3.0`, and provisionally complete supported interface and documentation

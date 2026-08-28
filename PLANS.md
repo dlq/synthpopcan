@@ -1,7 +1,7 @@
 # SynthPopCan Roadmap
 
 Status: `1.x` maintenance roadmap\
-Last updated: 2026-08-26\
+Last updated: 2026-08-28\
 Current software version: `1.1.0`
 
 ## How To Use This Roadmap
@@ -35,12 +35,12 @@ when later evidence changes the interpretation.
 ## Current Priorities
 
 The bounded `1.1.0` small-area control expansion is released and preserved.
-`1.2.0` is now the scoped conditional-person tranche with a parallel
-localization foundation, `1.3.0` remains an evidence-dependent forecast, and
-`1.4.0` is a provisional bilingual-completion target whose feasibility must be
-demonstrated by the earlier localization tranches. The project keeps only one
-committed next release; later entries are progressively less certain and are
-revisited after every minor release.
+`1.2.0` is now the committed next release: a conditional-person tranche with a
+parallel localization foundation. `1.3.0` remains an evidence-dependent
+forecast, and `1.4.0` is a provisional bilingual-completion target whose
+feasibility must be demonstrated by the earlier localization tranches. The
+project keeps only one committed next release; later entries are progressively
+less certain and are revisited after every minor release.
 
 | Priority | Current commitment | Detailed owner |
 | --- | --- | --- |
@@ -57,7 +57,7 @@ revisited after every minor release.
 | Release | Confidence | Target window | Planned outcome |
 | --- | --- | --- | --- |
 | `1.1.0` | Released | August 2026 | 24 reviewed control packs and 14 compatible control families, including broad packs that jointly apply nine household and five person margins with explicit fail-closed runtime invariants. |
-| `1.2.0` | Scoped following release | November–December 2026 | Conditional age-15+ marital-status, education, labour-force, and work-activity controls that pass explicit universe and residual gates; the locale-safe message-catalogue foundation; and a bounded maintainability ratchet for exact coverage, orchestration complexity, public documentation, and archive-state boundaries. |
+| `1.2.0` | Committed next release | November–December 2026 | Conditional age-15+ marital-status, education, labour-force, and work-activity controls that pass explicit universe and residual gates; the locale-safe message-catalogue foundation; and a bounded maintainability ratchet for exact coverage, orchestration complexity, public documentation, and archive-state boundaries. |
 | `1.3.0` | Forecast, not committed | First half of 2027 | Evidence-qualified language, immigrant place-of-birth, and income-band controls plus core English/French CLI and local-web localization; approximate mortgage/subsidy only as an opt-in tier. |
 | `1.4.0` | Provisional follow-on | Second half of 2027 | Complete English/French coverage of supported CLI, local-web, and public-documentation surfaces after the `1.2.0` locale foundation proves sustainable. |
 
@@ -70,8 +70,8 @@ owns the cross-cutting `1.2.0`–`1.4.0` language work.
 
 ## Conditional Research Tracks
 
-These plans own research beyond the committed `1.1.0` scope. A family assigned
-to provisional `1.2.0` or forecast `1.3.0` still returns here if its source,
+These plans own research beyond the released `1.1.0` baseline. A family assigned
+to committed `1.2.0` or forecast `1.3.0` still returns here if its source,
 universe, privacy, or validation gate fails.
 
 | Track | Trigger for implementation | Plan |
@@ -190,7 +190,7 @@ every research direction. Use these records instead of extending this roadmap
 with release narrative:
 
 - [CHANGELOG.md](CHANGELOG.md) for observable release history from `0.1.0`
-  through `1.0.0`;
+  through `1.1.0`;
 - [compatibility policy](docs/compatibility.md) for the exact `1.x` stability
   promise;
 - [CORRECTNESS.md](CORRECTNESS.md) for current claims and limitations;

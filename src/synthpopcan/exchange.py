@@ -818,7 +818,7 @@ def _sha256(path: Path) -> str:
 
 
 def _synthpopcan_version() -> str:
-    from synthpopcan import __version__
+    from synthpopcan._version import __version__
 
     return __version__
 

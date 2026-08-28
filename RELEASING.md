@@ -340,11 +340,15 @@ or model-package assets. Before publishing them:
 
 1. Build the compressed assets with
    `SYNTHPOPCAN_GEODATA_RELEASE_BASE_URL` pinned to the final immutable release
-   tag URL.
+   tag URL. The builder admits only one writer, stages every asset, and commits
+   the catalogue once the complete batch succeeds. If its lock remains after an
+   interrupted build, confirm that no builder is running before removing it.
 
 1. Audit `geodata-catalogue.json`: expected year/level/PRUID coverage, unique
    IDs and filenames, exact release URLs, non-empty sizes, representation, and
-   both SHA-256 fields must be present.
+   both SHA-256 fields must be present. New assets use immutable
+   content-addressed filenames derived from their compressed SHA-256; upload the
+   exact filenames recorded by the catalogue rather than reconstructing names.
 
 1. Independently recompute the compressed checksums, decompress representative
    and edge-case assets, and verify their unpacked checksums and GeoJSON shape.

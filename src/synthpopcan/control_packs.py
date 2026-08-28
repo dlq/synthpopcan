@@ -42,7 +42,11 @@ from typing import Any, ClassVar, Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from synthpopcan.controls import ControlMargin, ControlTable
+from synthpopcan.controls import (
+    ControlMargin,
+    ControlTable,
+    _validate_control_margin_structure,
+)
 from synthpopcan.linked_schema import LINKED_POPULATION_SCHEMA_VERSION
 from synthpopcan.small_area_synthesis import (
     check_linked_person_calibration_inputs,
@@ -372,12 +376,14 @@ class ControlPackManifest(_BoundaryModel):
         margin_ids = [margin.control_identifier for margin in self.margins]
         if len(margin_ids) != len(set(margin_ids)):
             raise ValueError("pack margin controls must be unique")
-        expected_checksum = _pack_definition_sha256(self)
-        if self.definition_sha256 != expected_checksum:
-            raise ValueError(
-                "control-pack definition_sha256 does not match its semantic fields"
-            )
+        _assert_pack_definition_integrity(self)
         return self
+
+    def as_dict(self) -> dict[str, Any]:
+        """Serialize only while the frozen manifest's semantic hash is current."""
+
+        _assert_pack_definition_integrity(self)
+        return super().as_dict()
 
 
 def _pack_definition_sha256(pack: ControlPackManifest | Mapping[str, Any]) -> str:
@@ -393,6 +399,15 @@ def _pack_definition_sha256(pack: ControlPackManifest | Mapping[str, Any]) -> st
         sort_keys=True,
     ).encode()
     return hashlib.sha256(encoded).hexdigest()
+
+
+def _assert_pack_definition_integrity(pack: ControlPackManifest) -> None:
+    """Fail closed if a nested mutable value bypassed Pydantic's frozen shell."""
+
+    if pack.definition_sha256 != _pack_definition_sha256(pack):
+        raise ValueError(
+            "control-pack definition_sha256 does not match its semantic fields"
+        )
 
 
 def _source_category(
@@ -1807,6 +1822,7 @@ def _validate_pack_against_registry(pack: ControlPackManifest) -> None:
             f"{pack.registry_revision}; this installation provides "
             f"{registry.revision}"
         )
+    _assert_pack_definition_integrity(pack)
     if pack.geography_column != pack.geography_level:
         raise ValueError("control pack geography_column must match geography_level")
     expected_namespace = f"statcan:census:{pack.census_vintage}:{pack.geography_level}"
@@ -2733,20 +2749,31 @@ def _control_structure_issues(
                 if margin.dimensions == tuple(pack_margin.dimensions)
             ]
             assert len(matching) == 1
-            actual_by_geography: dict[str, set[tuple[str, ...]]] = {}
-            cell_keys: Counter[tuple[str, ...]] = Counter()
-            non_geo_dimensions = tuple(pack_margin.dimensions[1:])
-            for cell in matching[0].cells:
-                geography = cell.categories.get(pack.geography_column, "")
-                categories = tuple(
-                    cell.categories.get(dimension, "")
-                    for dimension in non_geo_dimensions
+            structure = _validate_control_margin_structure(matching[0])
+            if structure.cell_dimension_mismatches:
+                issues.append(
+                    _issue(
+                        "control_cell_structure_mismatch",
+                        f"{entity} control {pack_margin.control_identifier!r} has "
+                        "cells whose category keys do not match its dimensions",
+                        entity_level=entity,
+                        control_identifier=pack_margin.control_identifier,
+                        cells=[
+                            {
+                                "index": mismatch.cell_index,
+                                "missing_dimensions": list(mismatch.missing_dimensions),
+                                "extra_dimensions": list(mismatch.extra_dimensions),
+                            }
+                            for mismatch in structure.cell_dimension_mismatches
+                        ],
+                    )
                 )
+            actual_by_geography: dict[str, set[tuple[str, ...]]] = {}
+            for cell_key in structure.cell_keys:
+                geography = cell_key[0]
+                categories = cell_key[1:]
                 actual_by_geography.setdefault(geography, set()).add(categories)
-                cell_keys[(geography, *categories)] += 1
-            duplicate_keys = sorted(
-                key for key, count in cell_keys.items() if count > 1
-            )
+            duplicate_keys = list(structure.duplicate_cell_keys)
             if duplicate_keys:
                 issues.append(
                     _issue(

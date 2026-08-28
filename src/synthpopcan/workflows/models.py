@@ -5,20 +5,30 @@ from __future__ import annotations
 __all__ = [
     "LOCAL_RUN_MAX_HOUSEHOLDS",
     "LOCAL_RUN_MAX_PERSONS",
+    "PreparedModelPackageError",
     "PreparedModelRequest",
+    "ResolvedPreparedModel",
     "PreparedModelResult",
     "generate_prepared_model_files",
     "inspect_prepared_model",
+    "normalize_prepared_model_package",
+    "prepared_model_models",
     "read_prepared_model_package",
+    "resolve_prepared_model_package",
+    "tree_model_from_prepared_payload",
+    "validate_prepared_model_package_schema",
+    "validate_prepared_model_publishable",
 ]
 
 import json
+from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 from synthpopcan.linked_schema import build_linked_population_contract
 from synthpopcan.model_licensing import normalize_prepared_model_licensing
+from synthpopcan.models import model_payload
 from synthpopcan.tree import (
     CartTreeModel,
     FrequencyTreeModel,
@@ -35,6 +45,38 @@ from synthpopcan.workflows.types import (
 TreeModel = FrequencyTreeModel | CartTreeModel
 LOCAL_RUN_MAX_HOUSEHOLDS = 250_000
 LOCAL_RUN_MAX_PERSONS = 2_000_000
+_PREPARED_MODEL_SCHEMA_VERSION = "synthpopcan-linked-tree-package-v1"
+
+PreparedModelErrorReason = Literal[
+    "missing-model-collection",
+    "missing-model-pair",
+    "not-json-object",
+    "unpublishable",
+    "unsupported-model-type",
+    "unsupported-schema",
+]
+
+
+class PreparedModelPackageError(ValueError):
+    """A classified prepared-model contract failure.
+
+    Adapters use :attr:`reason` only to preserve their established user-facing
+    wording. Package interpretation and model conversion remain centralized in
+    this workflow module.
+    """
+
+    def __init__(self, reason: PreparedModelErrorReason, message: str) -> None:
+        super().__init__(message)
+        self.reason = reason
+
+
+@dataclass(frozen=True)
+class ResolvedPreparedModel:
+    """A normalized package plus its user-facing and on-disk identities."""
+
+    package: dict[str, Any]
+    label: str
+    source_path: Path | None
 
 
 @dataclass(frozen=True)
@@ -114,27 +156,145 @@ class PreparedModelResult:
     reproduction: WorkflowReproduction
 
 
-def read_prepared_model_package(path: Path) -> dict[str, Any]:
-    """Read and validate one linked model package JSON object."""
-    payload = json.loads(path.read_text())
+def read_prepared_model_package(
+    path: Path,
+    *,
+    object_label: str = "linked model package",
+) -> dict[str, Any]:
+    """Read, validate, and normalize one linked model package JSON object."""
+
+    try:
+        payload = json.loads(path.read_text())
+    except json.JSONDecodeError as exc:
+        raise ValueError(f"{path} is not valid JSON") from exc
     if not isinstance(payload, dict):
-        raise ValueError("linked model package must be a JSON object")
-    if payload.get("schema_version") != "synthpopcan-linked-tree-package-v1":
-        raise ValueError("unsupported linked model package schema")
-    return normalize_prepared_model_licensing(payload)
+        raise PreparedModelPackageError(
+            "not-json-object",
+            f"{object_label} must be a JSON object",
+        )
+    return normalize_prepared_model_package(payload)
+
+
+def normalize_prepared_model_package(
+    package: Mapping[str, object],
+) -> dict[str, Any]:
+    """Validate package identity and return its normalized licensing contract."""
+
+    validate_prepared_model_package_schema(package)
+    return normalize_prepared_model_licensing(package)
+
+
+def validate_prepared_model_package_schema(package: Mapping[str, object]) -> None:
+    """Reject package mappings outside the supported linked-tree schema."""
+
+    if package.get("schema_version") != _PREPARED_MODEL_SCHEMA_VERSION:
+        raise PreparedModelPackageError(
+            "unsupported-schema",
+            "unsupported linked model package schema",
+        )
+
+
+def resolve_prepared_model_package(package_path_or_id: str) -> ResolvedPreparedModel:
+    """Resolve a local package path or a registered model ID once.
+
+    Values that look path-like retain the CLI's fail-closed path semantics: a
+    missing ``model.json`` is a missing file, not an attempted catalogue ID.
+    """
+
+    package_path = Path(package_path_or_id)
+    if (
+        package_path.exists()
+        or package_path.is_absolute()
+        or len(package_path.parts) > 1
+        or package_path.suffix
+    ):
+        return ResolvedPreparedModel(
+            package=read_prepared_model_package(package_path),
+            label=str(package_path),
+            source_path=package_path,
+        )
+    try:
+        package = model_payload(package_path_or_id)
+    except KeyError as exc:
+        raise ValueError(
+            f"linked package not found: {package_path_or_id}. Use a package JSON "
+            "path or a model ID from `synthpopcan models list`."
+        ) from exc
+    except FileNotFoundError as exc:
+        raise ValueError(str(exc)) from exc
+    return ResolvedPreparedModel(
+        package=normalize_prepared_model_package(package),
+        label=package_path_or_id,
+        source_path=None,
+    )
+
+
+def validate_prepared_model_publishable(package: Mapping[str, object]) -> None:
+    """Require the package's explicit publishable-candidate privacy decision."""
+
+    privacy = package.get("privacy")
+    if (
+        not isinstance(privacy, Mapping)
+        or privacy.get("publishable_candidate") is not True
+    ):
+        raise PreparedModelPackageError(
+            "unpublishable",
+            "linked package is not marked as a publishable candidate; inspect the "
+            "package before generating from it",
+        )
+
+
+def prepared_model_models(package: Mapping[str, object]) -> tuple[TreeModel, TreeModel]:
+    """Convert the linked package's household and person model payloads."""
+
+    models = package.get("models")
+    if not isinstance(models, Mapping):
+        raise PreparedModelPackageError(
+            "missing-model-collection",
+            "linked model package must include models",
+        )
+    household_model = tree_model_from_prepared_payload(models.get("household"))
+    person_model = tree_model_from_prepared_payload(models.get("person"))
+    return household_model, person_model
+
+
+def tree_model_from_prepared_payload(payload: object) -> TreeModel:
+    """Convert one supported prepared-model payload to its runtime tree model."""
+
+    if not isinstance(payload, dict):
+        raise PreparedModelPackageError(
+            "missing-model-pair",
+            "linked model package must include household and person models",
+        )
+    model_type = payload.get("model_type")
+    if model_type == "conditional-frequency":
+        return FrequencyTreeModel.from_dict(payload)
+    if model_type == "cart":
+        return CartTreeModel.from_dict(payload)
+    raise PreparedModelPackageError(
+        "unsupported-model-type",
+        "unsupported tree model type in linked package",
+    )
 
 
 def inspect_prepared_model(package: dict[str, Any]) -> dict[str, Any]:
     """Return generation readiness, provenance, privacy, and model dimensions."""
-    if package.get("schema_version") != "synthpopcan-linked-tree-package-v1":
-        raise ValueError("unsupported linked model package schema")
-    package = normalize_prepared_model_licensing(package)
+    package = normalize_prepared_model_package(package)
     privacy = _object(package.get("privacy"))
     if privacy.get("publishable_candidate") is not True:
         raise ValueError("linked model package is not a publishable candidate")
-    models = _object(package.get("models"))
-    household_model = _tree_model(_object(models.get("household")))
-    person_model = _tree_model(_object(models.get("person")))
+    try:
+        household_model, person_model = prepared_model_models(package)
+    except PreparedModelPackageError as exc:
+        if exc.reason in {
+            "missing-model-collection",
+            "missing-model-pair",
+            "unsupported-model-type",
+        }:
+            raise ValueError(
+                "linked package must include supported household and person models"
+            ) from exc
+        raise
     provenance = _object(package.get("source_provenance") or package.get("provenance"))
     catalogue = _object(package.get("catalogue_metadata"))
     return {
@@ -183,9 +343,7 @@ def generate_prepared_model_files(
         )
     package = read_prepared_model_package(request.package_path)
     inspection = inspect_prepared_model(package)
-    models = _object(package["models"])
-    household_model = _tree_model(_object(models.get("household")))
-    person_model = _tree_model(_object(models.get("person")))
+    household_model, person_model = prepared_model_models(package)
     household_size_column = request.household_size_column or str(
         inspection["household_size_column"]
     )
@@ -244,17 +402,6 @@ def generate_prepared_model_files(
         person_count=person_count,
         report=report,
         reproduction=request.reproduction(),
-    )
-
-
-def _tree_model(payload: dict[str, Any]) -> TreeModel:
-    model_type = payload.get("model_type")
-    if model_type == "conditional-frequency":
-        return FrequencyTreeModel.from_dict(payload)
-    if model_type == "cart":
-        return CartTreeModel.from_dict(payload)
-    raise ValueError(
-        "linked package must include supported household and person models"
     )
 
 

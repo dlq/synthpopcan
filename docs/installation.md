@@ -5,7 +5,7 @@ opening a **terminal**, a text window where we type commands rather than click
 buttons. The examples in this documentation use a **Unix-style shell** on
 macOS, Linux, and Windows through the Windows Subsystem for Linux (WSL).
 Automated release checks run on Ubuntu; macOS and WSL are best-effort supported,
-and native Windows Python is not a supported 1.0 environment. See the
+and native Windows Python is not a supported 1.x environment. See the
 [support policy](stewardship.md#supported-environments) for the exact boundary.
 
 For a short introduction, start with MDN's [Command Line Crash

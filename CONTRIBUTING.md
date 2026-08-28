@@ -30,18 +30,21 @@ Run the normal checks before opening a pull request:
 ./scripts/check.sh
 ```
 
-This runs Python linting, formatting, type checks, tests, a warning-clean docs
-build, web formatting/linting, JavaScript unit tests, and the Playwright browser
-scenarios. Install the Playwright browser once with `npx playwright install chromium` if it is not already available.
+This checks the lock and release-facing version metadata, then runs Python
+linting, formatting, type checks, tests and coverage, CFF validation, Markdown
+and documentation checks, web formatting/linting, JavaScript unit tests, and
+the Playwright browser scenarios. Install the Playwright browser once with
+`npx playwright install chromium` if it is not already available.
 
 For a small documentation or Python-only change, use the relevant faster checks
 while iterating:
 
 ```bash
 uv run ruff check src tests scripts
-uv run pyright src
+uv run pyright src scripts
 uv run pytest path/to/relevant_test.py
-uv run --group docs mdformat --check README.md CONTRIBUTING.md docs
+git ls-files -z -- '*.md' | \
+  xargs -0 uv run --group docs mdformat --check
 ```
 
 Run `./scripts/check.sh` before requesting final review when practical. If a
@@ -70,25 +73,31 @@ invariant where practical.
 
 ## Module Boundaries
 
-Keep dependency direction easy to reason about:
+Keep dependency direction easy to reason about. Every package module belongs to
+one responsibility layer:
 
-- `synthpopcan.__init__` re-exports the small beginner API from
-  `synthpopcan.api`;
-- `synthpopcan.api` is the stable notebook and short-script surface for
-  beginner workflows;
-- `cli.py`, `cli_*.py`, `cli_output.py`, and `console.py` are CLI and terminal
-  adapters;
-- core workflow modules such as `ipf`, `controls`, `tree`, `microdata`,
-  `validation`, `diagnostics`, `small_area_synthesis`, `small_area_controls`,
-  `calibration`, `statcan`, `geodata`, `sources`, `localdata`, `map_render`, and
-  `benchmarks` should stay independent of CLI and UI code;
-- `webapp.py`, `web_wds.py`, and `src/synthpopcan/web/*.mjs` are local web app
-  and browser-side adapters.
+- the public façades, `synthpopcan.__init__` and `synthpopcan.api`, expose the
+  versioned beginner surface and delegate inward;
+- `cli.py`, `cli_*.py`, `cli_output.py`, `console.py`, `webapi.py`, `webapp.py`,
+  `web_wds.py`, and `src/synthpopcan/web/*.mjs` are command-line, HTTP, local-web,
+  and browser adapters;
+- `synthpopcan.workflows` coordinates file-backed use cases without depending on
+  Click, Rich, FastAPI, browser state, or run-service adapters;
+- runtime modules such as `assurance`, `jobs`, and `runs` own durable execution
+  and evidence effects behind the adapters;
+- contract modules own version, interface, licensing, Census Profile, and
+  persisted-schema interpretation; and
+- domain modules such as `ipf`, `controls`, `tree`, `microdata`, `validation`,
+  `small_area_synthesis`, `calibration`, `statcan`, `geodata`, and `map_render`
+  own research rules and algorithms without importing UI or workflow adapters.
 
-Adapters may depend on core modules, but core modules should not import Click,
-Rich, `synthpopcan.cli*`, `synthpopcan.console`, `synthpopcan.web`, or
-`synthpopcan.webapp`. The architecture checks in `tests/test_architecture.py`
-enforce these boundaries as part of the normal `uv run pytest` gate.
+Adapters may depend inward on workflows, runtime services, contracts, and
+domain modules as their use case requires. Dependencies must not point back
+outward: workflows remain independent of UI and runtime adapters, domain code
+remains independent of the application façades, and feature CLI modules do not
+import sibling feature adapters. The architecture checks in
+`tests/test_architecture.py` classify every package module and enforce these
+rules as part of the normal `uv run pytest` gate.
 
 ## Architecture Decisions
 
@@ -248,13 +257,15 @@ Check external links and source formatting separately:
 ```bash
 uv run sphinx-build -b linkcheck docs docs/_build/linkcheck
 uv run --group docs doc8 docs
-uv run --group docs mdformat --check docs README.md CONTRIBUTING.md
+git ls-files -z -- '*.md' | \
+  xargs -0 uv run --group docs mdformat --check
 ```
 
 Apply Markdown formatting with:
 
 ```bash
-uv run --group docs mdformat docs README.md CONTRIBUTING.md
+git ls-files -z -- '*.md' | \
+  xargs -0 uv run --group docs mdformat
 ```
 
 When changing examples, run the examples that are presented as runnable. Good

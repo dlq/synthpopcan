@@ -2,13 +2,24 @@
 
 Status: conditional research; `0.8.0` neutral bundle completed\
 Created: 2026-07-15\
-Last updated: 2026-08-19\
+Last updated: 2026-08-28\
 Target: `0.8.0` neutral bundle; one demand-backed adapter only after `1.0.0`\
 Next action: wait for a real consumer, pinned target contract, authorized
 fixture, and maintainable import smoke test before selecting one adapter pilot\
 Roadmap: [PLANS.md](../PLANS.md) | [Plan index](README.md) | Foundations:
 [linked-population schema](archive/2026-07-18-linked-population-schema.md) and
 [external-data enrichment](archive/2026-07-15-ecosystem-enrichment.md)
+
+## Activation Rule
+
+The simulator-neutral `0.8.0` slice is complete. This file remains a conditional
+umbrella for one adapter pilot. When the selection gate below has a real
+consumer, pinned target contract, authorized fixture, and maintainable import
+smoke, create a dated execution plan with the exact `## PR-Sized Work` table
+required by the plan index. Separate target-contract/fixture review, mapping
+specification, adapter/validator implementation, pinned import smoke, and
+documentation/reproduction; no adapter implementation begins before that plan
+is accepted.
 
 ## Purpose And Boundary
 
@@ -137,7 +148,7 @@ and validation must work from a normal SynthPopCan installation.
 
 ## Release Slices
 
-### `0.8.0`: Simulator-neutral exchange
+### `0.8.0`: Simulator-neutral exchange (Completed)
 
 Implement:
 
@@ -159,7 +170,7 @@ Validate the contract before declaring exchange schema v1 stable. If archives
 are supported, normalize file ordering and metadata so identical input produces
 identical archive bytes.
 
-### Post-`1.0`: One demand-backed adapter pilot
+### Post-`1.0`: One demand-backed adapter pilot (Conditional)
 
 After the selection gate passes:
 

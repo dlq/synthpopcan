@@ -1745,7 +1745,7 @@ def _remove_exact_transport_markers(
         prefix=_DURABLE_NEWVERSION_AUTHORITY_PREFIX,
         label="durable new-version authority",
     )
-    if owner != ownership_operation_id or authority is None:
+    if owner is None or owner != ownership_operation_id or authority is None:
         raise ZenodoError("legacy recovery intended metadata lacks exact markers")
     removed = {
         _ownership_marker(owner),
@@ -3030,6 +3030,7 @@ def deposit_one(
                     operation_id=operation_id,
                 )
             elif direct_owner is None:
+                assert resume is not None
                 _assert_exact_legacy_stripped_marker_claim(
                     direct,
                     existing,
@@ -3664,11 +3665,9 @@ def main(
     # dry-run review, but the write-authority gate below keeps it unwritable.
     for item in depositions:
         synthpopcan = item.get("synthpopcan")
-        operation = (
-            synthpopcan.get("deposit_operation")
-            if isinstance(synthpopcan, dict)
-            else None
-        )
+        if not isinstance(synthpopcan, dict):
+            continue
+        operation = synthpopcan.get("deposit_operation")
         if operation not in {"correct-existing-metadata", "create-new-version"}:
             continue
         if not production and synthpopcan.get("production_ready") is not True:

@@ -72,9 +72,9 @@ def validate_source_version(*, version: str, project_root: Path = Path(".")) -> 
     if project_version != version:
         raise ValueError("pyproject.toml version does not match the release version")
 
-    init_path = project_root / "src" / "synthpopcan" / "__init__.py"
+    version_path = project_root / "src" / "synthpopcan" / "_version.py"
     runtime_version = _declared_runtime_version(
-        init_path.read_text(), filename=str(init_path)
+        version_path.read_text(), filename=str(version_path)
     )
     if runtime_version != version:
         raise ValueError("synthpopcan.__version__ does not match the release version")
@@ -121,15 +121,15 @@ def _validate_wheel_contents(path: Path, *, version: str) -> None:
             metadata_name = _one_archive_name(
                 names, suffix=".dist-info/METADATA", archive=path.name
             )
-            init_name = _one_archive_name(
-                names, suffix="synthpopcan/__init__.py", archive=path.name
+            version_name = _one_archive_name(
+                names, suffix="synthpopcan/_version.py", archive=path.name
             )
             metadata_version = _metadata_version(
                 archive.read(metadata_name), filename=f"{path.name}:{metadata_name}"
             )
             runtime_version = _declared_runtime_version(
-                archive.read(init_name).decode("utf-8"),
-                filename=f"{path.name}:{init_name}",
+                archive.read(version_name).decode("utf-8"),
+                filename=f"{path.name}:{version_name}",
             )
     except (OSError, UnicodeDecodeError, zipfile.BadZipFile) as exc:
         raise ValueError(f"cannot inspect wheel distribution {path.name}") from exc
@@ -144,21 +144,25 @@ def _validate_sdist_contents(path: Path, *, version: str) -> None:
             pyproject_name = _one_archive_name(
                 names, suffix="/pyproject.toml", archive=path.name
             )
-            init_name = _one_archive_name(
-                names, suffix="/src/synthpopcan/__init__.py", archive=path.name
+            version_name = _one_archive_name(
+                names, suffix="/src/synthpopcan/_version.py", archive=path.name
             )
             metadata_name = _one_archive_name(
                 names, suffix="/PKG-INFO", archive=path.name
             )
             pyproject_handle = archive.extractfile(pyproject_name)
-            init_handle = archive.extractfile(init_name)
+            version_handle = archive.extractfile(version_name)
             metadata_handle = archive.extractfile(metadata_name)
-            if None in (pyproject_handle, init_handle, metadata_handle):
+            if (
+                pyproject_handle is None
+                or version_handle is None
+                or metadata_handle is None
+            ):
                 raise ValueError(f"cannot read version metadata from {path.name}")
             project = tomllib.loads(pyproject_handle.read().decode("utf-8"))
             runtime_version = _declared_runtime_version(
-                init_handle.read().decode("utf-8"),
-                filename=f"{path.name}:{init_name}",
+                version_handle.read().decode("utf-8"),
+                filename=f"{path.name}:{version_name}",
             )
             metadata_version = _metadata_version(
                 metadata_handle.read(), filename=f"{path.name}:{metadata_name}"

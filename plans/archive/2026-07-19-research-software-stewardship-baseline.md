@@ -1,13 +1,18 @@
-# Research-Software Stewardship And Publication Plan
+# Research-Software Stewardship And Publication Baseline
 
-Status: active maintenance; `1.0.0` stewardship baseline completed\
+Status: archived baseline; completed through `1.0.0`\
 Created: 2026-07-19\
-Last updated: 2026-08-19\
-Target: preserve the completed stewardship baseline in later releases; mature
-toward JOSS only after its public-development and research-use gates are met\
-Next milestone: preserve the verified `1.0.0` DOI and Software Heritage
-identifiers while applying the same exact-commit gates to later `1.x` releases\
+Last updated: 2026-08-28\
+Completed: `1.0.0`\
+Target: historical stewardship and publication record through `1.0.0`\
+Maintenance: the active
+[research-software stewardship plan](../2026-07-19-research-software-stewardship.md)
+owns later release obligations and any future JOSS readiness decision\
 Roadmap: [PLANS.md](../../PLANS.md) | [Plan index](../README.md)
+
+Archive note: the body below preserves the implementation language used while
+this plan was active. References to current ownership or future actions are
+historical; the maintenance plan linked above owns present work.
 
 ## Purpose And Boundary
 

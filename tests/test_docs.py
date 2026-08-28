@@ -8,6 +8,7 @@ import re
 import shlex
 import tomllib
 from pathlib import Path
+from urllib.parse import unquote
 
 import click
 
@@ -530,6 +531,113 @@ def test_historical_notes_and_completed_plan_baselines_are_routed() -> None:
         assert Path(baseline_name).exists()
 
     assert Path("scripts/README.md").exists()
+
+
+def test_active_release_plans_use_the_pr_slice_contract() -> None:
+    """Keep committed work independently reviewable and status-bearing."""
+
+    required_header = "| ID | Status | Depends on | Deliverable | Acceptance |"
+    allowed_statuses = {"ready", "in progress", "blocked", "done", "deferred"}
+    execution_plans = (
+        Path("plans/2026-08-01-expanded-small-area-controls.md"),
+        Path("plans/2026-08-01-strict-typing.md"),
+        Path("plans/2026-08-19-bilingual-localization.md"),
+        Path("plans/2026-08-19-post-1-0-release-train.md"),
+        Path("plans/2026-08-26-responsibility-boundaries.md"),
+    )
+    seen_ids: set[str] = set()
+
+    for path in execution_plans:
+        text = path.read_text()
+        assert "## PR-Sized Work\n" in text, f"{path} has no PR-sized work section"
+        section = text.split("## PR-Sized Work\n", maxsplit=1)[1].split(
+            "\n## ", maxsplit=1
+        )[0]
+        assert required_header in section, f"{path} uses a different slice schema"
+        rows = [
+            line
+            for line in section.splitlines()
+            if line.startswith("| `") and not line.startswith("| `AREA-")
+        ]
+        assert rows, f"{path} has no executable slices"
+        for row in rows:
+            cells = [cell.strip() for cell in row.strip("|").split("|")]
+            assert len(cells) == 5, f"{path} has a malformed slice row: {row}"
+            identifier = cells[0].strip("`")
+            status = cells[1].strip("`")
+            assert identifier not in seen_ids, f"duplicate plan slice ID {identifier}"
+            assert status in allowed_statuses, f"unsupported status {status} in {path}"
+            assert all(cells), f"{path} has an empty slice field: {row}"
+            seen_ids.add(identifier)
+
+
+def test_conditional_research_plans_require_activation_plans() -> None:
+    """Do not let research umbrellas silently become implementation queues."""
+
+    conditional_plans = (
+        Path("plans/2026-07-15-simulation-interoperability.md"),
+        Path("plans/2026-08-01-expanded-hierarchical-tree-models.md"),
+        Path("plans/2026-08-02-methodological-validation-and-uncertainty.md"),
+        Path("plans/2026-08-20-cart-methodology-review.md"),
+        Path("plans/2026-08-20-family-relationships-and-residential-placement.md"),
+    )
+
+    for path in conditional_plans:
+        text = path.read_text()
+        assert "Status: conditional research" in text
+        assert "## Activation Rule\n" in text
+        activation = text.split("## Activation Rule\n", maxsplit=1)[1].split(
+            "\n## ", maxsplit=1
+        )[0]
+        assert "## PR-Sized Work" in activation
+        assert re.search(r"execution\s+plan", activation)
+
+
+def test_archived_plan_headers_delegate_current_maintenance() -> None:
+    for path in (
+        Path("plans/archive/2026-07-12-correctness-assurance-baseline.md"),
+        Path("plans/archive/2026-07-19-research-software-stewardship-baseline.md"),
+    ):
+        header = path.read_text().split("\n## ", maxsplit=1)[0]
+        assert "Status: archived baseline" in header
+        assert "Maintenance:" in header
+        assert "Next action:" not in header
+
+
+def test_local_markdown_link_targets_exist() -> None:
+    """Check links in maintained, historical, and fixture Markdown files."""
+
+    excluded_parts = {".git", ".venv", "_build", "node_modules"}
+    errors: list[str] = []
+    for path in sorted(Path(".").rglob("*.md")):
+        if excluded_parts.intersection(path.parts):
+            continue
+        text = path.read_text()
+        for match in re.finditer(r"!?\[[^\]]*\]\(([^)]+)\)", text):
+            raw_target = match.group(1).strip()
+            if raw_target.startswith("<") and ">" in raw_target:
+                target = raw_target[1:].split(">", maxsplit=1)[0]
+            else:
+                target = raw_target.split(maxsplit=1)[0]
+            if target.startswith("#") or re.match(
+                r"^[a-z][a-z0-9+.-]*:", target, re.IGNORECASE
+            ):
+                continue
+            local_target = (
+                unquote(target).split("#", maxsplit=1)[0].split("?", maxsplit=1)[0]
+            )
+            if not local_target:
+                continue
+            resolved = (
+                Path(local_target)
+                if Path(local_target).is_absolute()
+                else path.parent / local_target
+            )
+            if not resolved.exists():
+                line = text.count("\n", 0, match.start()) + 1
+                errors.append(f"{path}:{line}: missing {target}")
+
+    assert not errors, "\n".join(errors)
 
 
 def test_beginner_notebook_code_cells_execute(tmp_path: Path, monkeypatch) -> None:

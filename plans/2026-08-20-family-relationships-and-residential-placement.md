@@ -2,12 +2,24 @@
 
 Status: conditional research\
 Created: 2026-08-20\
-Last updated: 2026-08-20\
+Last updated: 2026-08-28\
 Target: no scheduled release; one family-structure proof and one bounded
 urban/rural placement pilot after their evidence gates pass\
-Next action: write a 2021 hierarchical-PUMF relationship crosswalk and a
-National Address Register coverage/capacity assessment for two candidate areas\
+Next action: select and authorize one discovery track; before implementation,
+create its PR-sized execution plan rather than coupling the family and placement
+proofs\
 Roadmap: [PLANS.md](../PLANS.md) | [Plan index](README.md)
+
+## Activation Rule
+
+The family and placement tracks are independent conditional umbrellas. A
+concrete use must select one track before work begins. Create a dated execution
+plan with the exact `## PR-Sized Work` table required by the plan index. A family
+plan must separate relationship-crosswalk evidence, artifact schema, generator,
+independent validator, and privacy/compatibility decision. A placement plan must
+separate the two-area NAR/ODB assessment, capacity model, sidecar schema,
+allocator, independent validation, and privacy/publication decision. Activating
+one track does not activate the other.
 
 ## Outcome
 
@@ -38,7 +50,7 @@ criteria for family relationships and residential placement.
   owns public family and dwelling controls, their universes, and calibration.
 - The [methodological validation plan](2026-08-02-methodological-validation-and-uncertainty.md)
   owns shared utility, uncertainty, and disclosure-risk methods.
-- [ADR-0007](../adr/0007-explicit-geography-identity.md) governs explicit
+- [ADR-0007](../adr/0007-explicit-census-geography-identity.md) governs explicit
   geography identity and vintage.
 - [ADR-0009](../adr/0009-separate-display-and-analytical-geodata.md) keeps
   display geometry distinct from analytical allocation data.

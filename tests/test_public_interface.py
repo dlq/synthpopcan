@@ -7,6 +7,7 @@ import sys
 import typing
 from pathlib import Path
 
+import click
 import pytest
 from click.testing import CliRunner
 
@@ -407,6 +408,25 @@ def test_interface_snapshot_defensive_helpers() -> None:
         interface._mapping(None, "mapping")
     with pytest.raises(ValueError, match="must be an array"):
         interface._sequence(None, "sequence")
+
+
+def test_click_snapshot_uses_resolved_flag_semantics(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    option = click.Option(("--enabled",), is_flag=True)
+    sentinel = object()
+    monkeypatch.setattr(option, "default", sentinel)
+    monkeypatch.setattr(option, "flag_value", sentinel)
+    monkeypatch.setattr(option, "flag_activation_value", True, raising=False)
+    monkeypatch.setattr(option, "get_default", lambda _context, call=False: False)
+
+    snapshot = interface._snapshot_click_parameter(
+        option,
+        context=click.Context(click.Command("test")),
+    )
+
+    assert snapshot["default"] is False
+    assert snapshot["flag_value"] is True
 
 
 def test_contract_covers_the_complete_click_tree_and_common_process_rules(

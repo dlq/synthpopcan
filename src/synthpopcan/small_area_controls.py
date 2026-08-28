@@ -16,10 +16,15 @@ __all__ = [
 import csv
 import math
 from collections import defaultdict
-from collections.abc import Sequence
-from itertools import chain
 from pathlib import Path
 from typing import TYPE_CHECKING
+
+from synthpopcan._census_profile import (
+    GEO_LEVELS_2016,
+    GEO_LEVELS_2021,
+    find_column,
+    open_census_profile_rows,
+)
 
 if TYPE_CHECKING:
     from synthpopcan.control_packs import ControlPackManifest
@@ -53,30 +58,9 @@ _TENURE_MEMBERS_2021: dict[str, str] = {
 }
 
 # GEO_LEVEL value in each census profile that identifies the target geography rows.
-_GEO_LEVEL_FOR_COLUMN: dict[str, str] = {
-    "ada": "3",
-    "ct": "2",
-    "csd": "3",
-    "cd": "2",
-    "da": "4",
-}
-_GEO_LEVEL_FOR_COLUMN_2021: dict[str, str] = {
-    "ada": "Aggregate dissemination area",
-    "ct": "Census tract",
-    "csd": "Census subdivision",
-    "cd": "Census division",
-    "da": "Dissemination area",
-}
-
-
-def _find_col(fields: Sequence[str], fragment: str) -> str:
-    try:
-        return next(c for c in fields if fragment in c)
-    except StopIteration as err:
-        raise ValueError(
-            f"Could not find a column containing {fragment!r}. "
-            f"Available columns: {fields}"
-        ) from err
+_GEO_LEVEL_FOR_COLUMN = GEO_LEVELS_2016
+_GEO_LEVEL_FOR_COLUMN_2021 = GEO_LEVELS_2021
+_find_col = find_column
 
 
 def extract_controls_from_profile(
@@ -118,59 +102,39 @@ def extract_controls_from_profile(
 
     # StatCan profile ZIPs use a legacy single-byte encoding in both vintages;
     # 2021 geography names can contain bytes that are not valid UTF-8.
-    with profile_path.open(newline="", encoding="latin-1") as fh:
-        header_line = fh.readline()
-        raw_fields = next(csv.reader([header_line]), [])
-        is_2021 = "CHARACTERISTIC_ID" in raw_fields
-        if is_2021 and geo_ids is not None:
-            # The official 2021 bulk profile is many gigabytes. Its first three
-            # fields are fixed and comma-free (year, DGUID, ALT_GEO_CODE), so
-            # discard unselected geography rows before constructing dictionaries.
-            selected_lines = (
-                line
-                for line in fh
-                if len(parts := line.split(",", 3)) >= 3
-                and parts[2].strip().strip('"') in geo_ids
-            )
-            reader = csv.DictReader(chain((header_line,), selected_lines))
-        else:
-            reader = csv.DictReader(chain((header_line,), fh))
-        if is_2021:
-            mem_col = "CHARACTERISTIC_ID"
-            val_col = "C1_COUNT_TOTAL"
-            geo_col = "ALT_GEO_CODE"
+    with open_census_profile_rows(
+        profile_path,
+        encoding="latin-1",
+        selected_geography_ids=geo_ids,
+    ) as (layout, rows):
+        if layout.census_vintage == 2021:
             hhsize_members = _HHSIZE_MEMBERS_2021
             tenure_members = _TENURE_MEMBERS_2021
-            levels = _GEO_LEVEL_FOR_COLUMN_2021
         else:
-            # Locate 2016 columns by partial match across ADA, CT, and DA files.
-            mem_col = _find_col(raw_fields, "Member ID: Profile")
-            val_col = _find_col(raw_fields, "[1]: Total")
-            geo_col = _find_col(raw_fields, "GEO_CODE")
             hhsize_members = _HHSIZE_MEMBERS
             tenure_members = _TENURE_MEMBERS
-            levels = _GEO_LEVEL_FOR_COLUMN
 
-        target_level = geo_level_value or levels.get(geography_column.lower())
+        target_level = geo_level_value or layout.geography_levels.get(
+            geography_column.lower()
+        )
         if target_level is None:
             raise ValueError(
                 f"Unknown geography column {geography_column!r}. "
-                f"Known values: {sorted(levels)}. "
+                f"Known values: {sorted(layout.geography_levels)}. "
                 "Use --geo-level-value to provide the GEO_LEVEL string explicitly."
             )
 
-        for row in reader:
-            if row.get("GEO_LEVEL", "").strip() != target_level:
+        for row in rows:
+            if not row.matches_geography(
+                level=target_level,
+                prefix=geo_prefix,
+                identifiers=geo_ids,
+            ):
                 continue
-            geo = row[geo_col].strip()
-            if geo_prefix and not geo.startswith(geo_prefix):
-                continue
-            if geo_ids is not None and geo not in geo_ids:
-                continue
-            mid = row[mem_col].strip()
-            raw = row[val_col].strip().replace(",", "")
+            geo = row.normalized_geography
+            mid = row.normalized_characteristic
             try:
-                val = float(raw)
+                val = float(row.normalized_count)
             except ValueError:
                 continue
             if mid in hhsize_members:
@@ -276,57 +240,38 @@ def extract_household_controls_for_pack(
         lambda: {dimension: set() for dimension in dimensions}
     )
     roots: dict[str, dict[str, float]] = defaultdict(dict)
-    with profile_path.open(newline="", encoding="latin-1") as fh:
-        header_line = fh.readline()
-        raw_fields = next(csv.reader([header_line]), [])
-        is_2021 = "CHARACTERISTIC_ID" in raw_fields
-        profile_vintage = 2021 if is_2021 else 2016
-        if profile_vintage != pack.census_vintage:
+    with open_census_profile_rows(
+        profile_path,
+        encoding="latin-1",
+        selected_geography_ids=geo_ids,
+    ) as (layout, rows):
+        if layout.census_vintage != pack.census_vintage:
             raise ValueError(
                 f"control pack requires Census {pack.census_vintage}, "
-                f"but the profile is Census {profile_vintage}"
+                f"but the profile is Census {layout.census_vintage}"
             )
-        if is_2021 and geo_ids is not None:
-            selected_lines = (
-                line
-                for line in fh
-                if len(parts := line.split(",", 3)) >= 3
-                and parts[2].strip().strip('"') in geo_ids
-            )
-            reader = csv.DictReader(chain((header_line,), selected_lines))
-        else:
-            reader = csv.DictReader(chain((header_line,), fh))
-        if is_2021:
-            mem_col = "CHARACTERISTIC_ID"
-            val_col = "C1_COUNT_TOTAL"
-            geo_col = "ALT_GEO_CODE"
-            levels = _GEO_LEVEL_FOR_COLUMN_2021
-        else:
-            mem_col = _find_col(raw_fields, "Member ID: Profile")
-            val_col = _find_col(raw_fields, "[1]: Total")
-            geo_col = _find_col(raw_fields, "GEO_CODE")
-            levels = _GEO_LEVEL_FOR_COLUMN
-        target_level = geo_level_value or levels.get(pack.geography_level)
+        target_level = geo_level_value or layout.geography_levels.get(
+            pack.geography_level
+        )
         if target_level is None:
             raise ValueError(
                 f"No Profile GEO_LEVEL mapping for {pack.geography_level!r}"
             )
-        for row in reader:
-            if row.get("GEO_LEVEL", "").strip() != target_level:
+        for row in rows:
+            if not row.matches_geography(
+                level=target_level,
+                prefix=geo_prefix,
+                identifiers=geo_ids,
+            ):
                 continue
-            geo = row[geo_col].strip()
-            if geo_prefix and not geo.startswith(geo_prefix):
-                continue
-            if geo_ids is not None and geo not in geo_ids:
-                continue
-            member = row[mem_col].strip()
+            geo = row.normalized_geography
+            member = row.normalized_characteristic
             selected = selectors.get(member)
             selected_root = root_selectors.get(member)
             if selected is None and selected_root is None:
                 continue
-            raw = row[val_col].strip().replace(",", "")
             try:
-                value = float(raw)
+                value = float(row.normalized_count)
             except ValueError:
                 continue
             if not math.isfinite(value) or value < 0:

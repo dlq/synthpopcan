@@ -10,10 +10,10 @@ study.
 
 | Environment | Release status | Evidence and boundary |
 | --- | --- | --- |
-| CPython 3.11–3.14 on the current GitHub Actions Ubuntu runner | Tested | Every change runs lint, type, test, coverage, documentation, and CFF checks across the declared Python matrix; a separate Python 3.12 job tests the installed wheel. |
+| CPython 3.11–3.14 on the current GitHub Actions Ubuntu runner | Tested | Behavioral tests run on every change across the declared Python matrix. Python 3.12 separately runs coverage and the shared version, lint, formatting, type, CFF, and documentation quality checks; another Python 3.12 job tests the installed wheel. |
 | Current macOS with CPython 3.11–3.14 | Best-effort supported | The maintainer uses the project on macOS and the installation path is documented, but macOS is not an automated release matrix. Report platform-specific failures. |
 | Windows Subsystem for Linux (Ubuntu) | Best-effort supported | The documented Windows path is WSL. It follows the Unix commands, but is not an automated release matrix. |
-| Native Windows Python and PowerShell | Not a supported 1.0 environment | Shell scripts and path-sensitive workflows are not release-tested natively. Use WSL or contribute a tested native-Windows path. |
+| Native Windows Python and PowerShell | Not a supported 1.x environment | Shell scripts and path-sensitive workflows are not release-tested natively. Use WSL or contribute a tested native-Windows path. |
 | Local browser workbench in current Chromium/Chrome | Tested on Chromium | Playwright exercises Chromium on Ubuntu. Other current standards-based browsers may work but are best effort. |
 
 “Tested” means the repository release checks exercise that environment. It does

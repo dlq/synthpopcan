@@ -30,6 +30,64 @@ from synthpopcan.webapp import get_webapp_root
 from synthpopcan.workflows.models import LOCAL_RUN_MAX_HOUSEHOLDS
 
 
+def test_web_app_factory_preserves_state_and_route_order(tmp_path: Path) -> None:
+    workspace = tmp_path / "workspace"
+    app = create_web_app(
+        static_root=get_webapp_root(),
+        workspace=workspace,
+        session_secret="test-session",
+    )
+
+    try:
+        assert app.state.workspace == workspace.resolve()
+        assert app.state.session_token
+        assert app.state.run_store.root == workspace.resolve()
+        assert app.state.job_manager.store is app.state.run_store
+        assert [
+            (
+                route.path,
+                tuple(sorted(getattr(route, "methods", None) or ())),
+                route.name,
+            )
+            for route in app.routes
+        ] == [
+            ("/api/app", ("GET",), "app_bootstrap"),
+            ("/api/models", ("GET",), "get_models"),
+            ("/api/control-packs", ("GET",), "get_control_packs"),
+            ("/api/uploads", ("POST",), "upload_file"),
+            ("/api/preflight", ("POST",), "preflight_run"),
+            ("/api/runs", ("GET",), "list_runs"),
+            ("/api/runs", ("POST",), "create_run"),
+            ("/api/runs/{run_id}", ("GET",), "get_run"),
+            ("/api/runs/{run_id}/events", ("GET",), "get_run_events"),
+            ("/api/runs/{run_id}/cancel", ("POST",), "cancel_run"),
+            (
+                "/api/runs/{run_id}/artifacts/{artifact_id}/preview",
+                ("GET",),
+                "preview_artifact",
+            ),
+            (
+                "/api/runs/{run_id}/artifacts/{artifact_id}",
+                ("GET",),
+                "get_artifact",
+            ),
+            ("/api/models/{model_id}/fetch", ("POST",), "fetch_model"),
+            ("/api/models/{model_id}/install", ("POST",), "install_model"),
+            ("/api/models/{model_id}", ("DELETE",), "remove_model"),
+            ("/api/models/{model_id}", ("GET",), "get_model"),
+            ("/api/wds/seed-controls", ("POST",), "prepare_wds_seed_controls"),
+            ("/api/small-area/estimate", ("POST",), "small_area_estimate"),
+            (
+                "/api/{path:path}",
+                ("DELETE", "GET", "OPTIONS", "PATCH", "POST", "PUT"),
+                "missing_api",
+            ),
+            ("", (), "web"),
+        ]
+    finally:
+        app.state.job_manager.shutdown()
+
+
 @pytest.mark.parametrize(
     ("failure", "status", "message"),
     [

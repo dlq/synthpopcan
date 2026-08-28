@@ -1051,6 +1051,18 @@ def test_pack_json_round_trip_is_strict_and_checksum_bound(tmp_path: Path) -> No
         read_control_pack(path)
 
 
+def test_nested_manifest_mutation_fails_closed_at_use_and_serialization() -> None:
+    """Pydantic's frozen shell must not permit stale semantic checksums at use."""
+
+    pack = load_control_pack("statcan-2021-core-private-household-da-v1")
+    pack.known_limitations.append("mutation that bypasses shallow frozen=True")
+
+    with pytest.raises(ValueError, match="definition_sha256"):
+        load_control_pack(pack)
+    with pytest.raises(ValueError, match="definition_sha256"):
+        pack.as_dict()
+
+
 def test_public_pack_and_evidence_loaders_cover_paths_mappings_and_failures(
     tmp_path: Path,
 ) -> None:
@@ -1709,6 +1721,69 @@ def test_plan_rejects_duplicate_cells_before_ipf_can_overwrite_them() -> None:
 
     assert plan["passed"] is False
     assert "duplicate_control_cells" in _issue_kinds(plan)
+    issue = next(
+        item for item in plan["issues"] if item["kind"] == "duplicate_control_cells"
+    )
+    assert set(issue) == {
+        "severity",
+        "kind",
+        "message",
+        "entity_level",
+        "control_identifier",
+        "cells",
+    }
+    assert issue["cells"] == [["24660244", "1"]]
+
+
+def test_plan_reports_control_cell_keys_outside_declared_dimensions() -> None:
+    pack_id = "statcan-2021-core-private-household-da-v1"
+    households, persons = _population(2021)
+    household_controls, person_controls = _tables(
+        pack_id, households, persons, geographies=("24660244",)
+    )
+    size, tenure = household_controls.margins
+    first = size.cells[0]
+    invalid_size = ControlMargin(
+        size.name,
+        size.dimensions,
+        (
+            ControlCell({**first.categories, "unexpected": "value"}, first.count),
+            *size.cells[1:],
+        ),
+    )
+    invalid_controls = ControlTable(
+        margins=(invalid_size, tenure),
+        dimensions=household_controls.dimensions,
+    )
+    evidence = _evidence(
+        pack_id,
+        invalid_controls,
+        person_controls,
+        ("24660244",),
+    )
+
+    plan = plan_control_pack(
+        pack_id,
+        households,
+        persons,
+        invalid_controls,
+        person_controls,
+        evidence=evidence,
+    )
+
+    issue = next(
+        item
+        for item in plan["issues"]
+        if item["kind"] == "control_cell_structure_mismatch"
+    )
+    assert plan["passed"] is False
+    assert issue["cells"] == [
+        {
+            "index": 1,
+            "missing_dimensions": [],
+            "extra_dimensions": ["unexpected"],
+        }
+    ]
 
 
 def test_plan_rejects_required_margin_missing_one_geography() -> None:

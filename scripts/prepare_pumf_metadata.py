@@ -44,8 +44,9 @@ def _parse_variable_labels(text: str) -> dict[str, str]:
     for line in section.splitlines():
         match = re.match(r"\s+([A-Za-z_][A-Za-z0-9_]*)\s+('.*)", line)
         if match:
-            current = match.group(1)
-            entries[current] = [match.group(2)]
+            name = match.group(1)
+            current = name
+            entries[name] = [match.group(2)]
         elif current is not None and re.match(r"\s+'", line):
             entries[current].append(line.strip())
     output: dict[str, str] = {}
