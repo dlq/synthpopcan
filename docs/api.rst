@@ -2,7 +2,7 @@ API Reference
 =============
 
 The Python API is still early, but the objects on this page are the intended
-**public library surface** for scripts, notebooks, and reusable research workflows.
+**public library API** for scripts, notebooks, and reusable research workflows.
 For **beginner workflow examples**, start with :doc:`library-getting-started`; for
 **module-level examples**, see :doc:`library`. This page is the generated member
 reference.
@@ -31,7 +31,7 @@ declarations are implementation details unless they are listed here.
 The geography, geodata, generic enrichment, and supported national small-area
 APIs were added in ``0.7.0``. Maintained Can-FED and ODEF workflows were added
 in ``0.7.2``. Bounded Québec DA proof-building helpers remain an internal
-release-evidence surface rather than part of the 1.x API contract.
+release-evidence implementation rather than part of the 1.x API contract.
 The simulator-neutral exchange bundle was added in ``0.8.0``.
 The strict control-pack/evidence contracts and bounded methodological evidence
 were added in ``0.9.0``.
@@ -39,7 +39,7 @@ were added in ``0.9.0``.
 Top-Level Beginner API
 ----------------------
 
-The top-level package exposes a **small beginner-friendly API** for concise
+The top-level package exposes a **small beginner API** for concise
 notebooks and examples:
 
 .. code-block:: python

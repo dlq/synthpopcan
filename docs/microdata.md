@@ -11,7 +11,7 @@ we need to move from a local census file to either:
 The command group is **deliberately cautious**. It inspects structure, checks
 household-level assumptions, and writes derived CSVs without printing private
 rows by default. That matters because census microdata can be restricted,
-sensitive, or easy to misread. A derived file is **not neutral**: the chosen
+sensitive, or prone to misinterpretation. A derived file is **not neutral**: the chosen
 columns, level, geography, and row weights all become part of the research
 argument. If we export only age group and sex, the seed can only carry those
 relationships forward — household income, language, immigration status, and

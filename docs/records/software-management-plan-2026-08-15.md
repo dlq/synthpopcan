@@ -100,7 +100,7 @@ binds it to the installed registry.
 
 ## Distribution, Citation, and Preservation
 
-- GitHub is the source and release-coordination surface.
+- GitHub is the source repository and release-coordination service.
 - PyPI distributes released wheels and source distributions.
 - Read the Docs publishes maintained documentation.
 - Zenodo is the canonical citable archive for software releases and prepared
@@ -110,7 +110,7 @@ binds it to the installed registry.
   record](software-heritage-2026-08-15.md).
 
 Versioned DOIs, annotated tags, checksums, and build provenance connect these
-surfaces. Mirrors may improve discovery but cannot silently become canonical or
+distribution and preservation channels. Mirrors may improve discovery but cannot silently become canonical or
 rebuild different bytes under an existing identifier.
 
 ## Support, Resourcing, and Continuity Risk

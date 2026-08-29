@@ -24,11 +24,11 @@ SynthPopCan has several entry points because people come to synthetic
 population work with different questions. We can choose a path before learning
 all of the command names.
 
-SynthPopCan has three friendly surfaces: the **local web app**, the **command
+SynthPopCan has three main interfaces: the **local web app**, the **command
 line**, and the **beginner Python API**. They can do related work, but they
 serve different research habits.
 
-In practice, we usually start with a **research question**, choose the surface
+In practice, we usually start with a **research question**, choose the interface
 that fits our working style, and keep the generated files together with
 **validation reports** and **method notes**. A web session is good for guided
 inspection, the command line is good for reproducible runs, and a notebook is
@@ -41,7 +41,7 @@ steps.
 
 | Situation | Start Here |
 | --- | --- |
-| We want the friendliest first run | {doc}`web-app` |
+| We want a guided first run with forms and previews | {doc}`web-app` |
 | We want a reproducible terminal workflow | {doc}`command-line` |
 | We want a notebook | {doc}`library-getting-started` |
 | We have seed rows and margins | {doc}`ipf` |
@@ -86,7 +86,7 @@ Start with {doc}`library-getting-started`.
 
 The beginner Python API is designed for **Jupyter notebooks**, **classroom
 examples**, and **research notes** where code and prose live together. It
-exposes a small surface:
+exposes a small set of functions:
 
 - read seed rows;
 - read controls;

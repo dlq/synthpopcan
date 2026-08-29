@@ -82,8 +82,9 @@ recipes are executed in tests.
 
 The web app, CLI, and Python API use the same Python domain algorithms and
 canonical prepared-model interpretation and small-area calibration workflow
-logic. Adapters retain only surface-specific request preparation, path handling,
-and presentation. Choose among the surfaces for guidance, automation, or
+logic. Adapters retain only interface-specific request preparation, path handling,
+and presentation. Choose the web app, CLI, or Python API according to whether we
+need guided interaction, automation, or
 notebook integration, and use the recorded version, inputs, seeds, and
 validation evidence when comparing results.
 

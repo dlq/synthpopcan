@@ -244,7 +244,7 @@ Rounded controls may not add up exactly.
 stated." These codes should be decoded before being treated as ordinary
 numeric values.
 
-## Software Surfaces
+## Software Interfaces
 
 **Local web app**
 : A browser interface started with `synthpopcan serve`. It runs locally and is

@@ -143,8 +143,8 @@ seed = spc.read_seed(seed_path)
 len(seed), seed[0]
 ```
 
-The beginner API represents CSV rows as ordinary dictionaries. That keeps the
-data straightforward to inspect without learning a dataframe library first. This cell
+The beginner API represents CSV rows as ordinary dictionaries, so we can
+inspect keys and values without learning a dataframe library first. This cell
 lists the column names from the first row:
 
 ```python

@@ -49,7 +49,7 @@ fractional fitted weights (centre) into whole counts (right). The margins remain
 exact in this example, but that is not guaranteed after integerization.
 ```
 
-This is powerful, but it has **limits**:
+IPF can make several margins agree with their targets, but it has **limits**:
 
 - the seed must already contain every control dimension;
 - category labels must match or be mapped;

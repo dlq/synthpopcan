@@ -670,7 +670,7 @@ Estimated persons: 750,360
 Estimated output rows: 1,088,360
 Calibration pool: 10,000 of 50,000 candidates
 Fits to run: 181
-Recommended surface: CLI or Python API
+Recommended interface: CLI or Python API
 Guidance:
   - Calibration will fit 10,000 candidate households for each target geography.
   - Keep the web app for small demos; use the CLI or Python API for large linked CSV outputs.

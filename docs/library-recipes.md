@@ -2,7 +2,7 @@
 
 The Python library is for people who want to use SynthPopCan inside
 **notebooks**, **scripts**, **research pipelines**, or **teaching materials**.
-The command line remains the friendliest surface for one-off work, but the
+The command line usually requires the least setup for one-off work, while the
 library provides a **small beginner API** for common workflows and
 **lower-level modules** for research code that needs more control.
 
@@ -32,7 +32,7 @@ corresponding command-line page first:
 Start with [Getting Started With the Beginner API](library-getting-started.md)
 unless we already know we need **lower-level objects** such as `IPFMargin`,
 `ControlTable`, or `FrequencyTreeModel`. This page is the advanced guide to the
-full library surface.
+advanced library.
 
 ```{admonition} These are composable workflow fragments
 :class: note
@@ -60,7 +60,7 @@ The module imports are usually clearer in longer research code because they
 show whether a step belongs to controls, IPF, microdata, tree modelling, or
 validation.
 
-Use `synthpopcan.api` or `import synthpopcan as spc` for the beginner-friendly
+Use `synthpopcan.api` or `import synthpopcan as spc` for the beginner
 workflow functions. Use modules such as `synthpopcan.ipf`,
 `synthpopcan.controls`, and `synthpopcan.tree` when we need lower-level
 objects or advanced options.
@@ -173,7 +173,7 @@ category mappings and common normalization problems.
 
 ## IPF
 
-The IPF library surface is deliberately small. `IPFMargin` describes the target
+The public IPF API is deliberately small. `IPFMargin` describes the target
 cells, `fit_ipf` calibrates seed-record weights, and `IPFResult` stores the
 records, weights, convergence flag, iteration count, and maximum residual.
 

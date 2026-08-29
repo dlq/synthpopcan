@@ -1,10 +1,10 @@
 # Advanced Library Use
 
-This page routes Python users to the smallest maintained surface for their
+This page routes Python users to the smallest maintained API for their
 task. Start with `import synthpopcan as spc`; reach into submodules only when a
 research or contributor workflow genuinely needs the advanced objects.
 
-## Choose a Python Surface
+## Choose a Python Interface
 
 | Need | Documentation |
 | --- | --- |

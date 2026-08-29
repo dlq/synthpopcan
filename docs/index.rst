@@ -47,8 +47,8 @@ Most new readers should start with one of these generation workflows:
 **IPF from margin tables**
    Use this when we have seed rows and public control totals, or when we want
    to find a Statistics Canada WDS table and turn it into IPF inputs. The
-   friendliest surface is the local :doc:`web app <web-app>`. For scripts and
-   methods sections, use :doc:`Statistics Canada Sources <statcan>`,
+   local :doc:`web app <web-app>` provides forms, previews, and downloads. For
+   scripts and methods sections, use :doc:`Statistics Canada Sources <statcan>`,
    :doc:`Controls <controls>`, and :doc:`IPF <ipf>`.
 
 **Generate from existing model**

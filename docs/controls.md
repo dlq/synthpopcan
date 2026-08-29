@@ -144,7 +144,7 @@ have a specific research reason to preserve the correlation.
 
 For IPF to fit a margin, every category cell in that margin must be represented
 by at least one seed record. A one-way age margin only needs at least one adult
-and one child — usually easy to satisfy. A joint age × sex margin needs a record
+and one child, so even a small seed may cover it. A joint age × sex margin needs a record
 in *every* combination: adult female, adult male, child female, and child male.
 The more dimensions and finer the categories, the more likely some combinations
 will be absent from the seed ("zero coverage").

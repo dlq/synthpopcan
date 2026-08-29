@@ -10,7 +10,7 @@ fields emitted by the corresponding all-fields linked model. The default
 `geo controls` path remains the compatible household-size-and-tenure workflow;
 the reviewed expanded packs now build all nine compatible household margins.
 
-## Answer At A Glance
+## Summary
 
 The all-fields linked output has **36 substantive modeled fields** after
 excluding identifiers, province (the model condition), repeated linkage

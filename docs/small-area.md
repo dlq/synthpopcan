@@ -15,7 +15,7 @@ compatible universe, vintage, or model field.
 | Follow the complete Québec example | [Quebec 2021 Case Study](case-study-quebec-2021.md) |
 | Inspect which controls are currently supported | [Small-Area Control Coverage](small-area-control-coverage.md) |
 | Use control packs, national execution, mapping, or every `geo` command | [Execution and Command Reference](small-area-reference.md) |
-| Call the maintained Python surface | [Beginner API](library-getting-started.md) or [advanced small-area recipes](library-recipes.md#small-area-synthesis) |
+| Call the maintained Python API | [Beginner API](library-getting-started.md) or [advanced small-area recipes](library-recipes.md#small-area-synthesis) |
 
 ## Workflow Overview
 

@@ -166,8 +166,8 @@ Iterative proportional fitting, often called IPF or raking, adjusts weights on a
 seed table so that selected margins match target controls. The seed rows already
 contain the variables. IPF changes how much each row counts.
 
-This is powerful when the seed has the right columns and enough category
-coverage. It is weak when the controls ask for things the seed cannot represent.
+IPF works well when the seed has the right columns and enough category
+coverage. It cannot satisfy controls that ask for things the seed cannot represent.
 IPF cannot invent a missing variable, create a missing joint category, or fix
 controls that describe incompatible populations.
 
@@ -332,7 +332,7 @@ to make them explicit enough that readers can argue with them.
 
 Start with the command pages when we need to run a workflow:
 
-- {doc}`getting-started` when we know the task but not the right surface;
+- {doc}`getting-started` when we know the task but not the right interface;
 - {doc}`ipf` for margin-table calibration;
 - {doc}`tree-generate` for linked household/person generation from a reviewed
   package;
@@ -346,8 +346,8 @@ definition.
 
 ## Tool Reference Map
 
-This section maps field concepts to the current SynthPopCan documentation
-surface. It is deliberately short; the command pages contain the actual
+This section maps field concepts to the current SynthPopCan documentation.
+It is deliberately short; the command pages contain the actual
 commands, options, examples, and troubleshooting.
 
 - **Source visibility:** use {doc}`data` to check local data layout and inspect

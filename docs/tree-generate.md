@@ -111,8 +111,8 @@ synthpopcan models list --format json
 synthpopcan models show montreal-cma-2016-all-fields
 ```
 
-The default list is deliberately compact so model IDs, geography, vintage,
-size, and availability remain easy to scan. Use `models show MODEL_ID` for the
+The default list is deliberately compact so we can compare model IDs, geography,
+vintage, size, and availability in one table. Use `models show MODEL_ID` for the
 source, release, privacy-review status, generation guidance, and known
 limitations of one package; use JSON for automation.
 

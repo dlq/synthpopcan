@@ -3,7 +3,8 @@
 SynthPopCan `1.0.0` establishes a stable interface for research scripts,
 recorded command lines, and persisted project artifacts. The compatibility
 contract is deliberately narrower than every name or JSON object in the source
-tree: it covers the surfaces that users are expected to call, record, or keep.
+tree: it covers the interfaces and artifacts that users are expected to call,
+record, or keep.
 
 The exact contract is shipped inside every wheel and source distribution as
 `synthpopcan/contracts/public-interface-v1.json`. It inventories:
@@ -78,8 +79,8 @@ states a narrower artifact contract for it. Internal code can change in a
 minor release.
 
 In particular, `synthpopcan.da_proof` contains the bounded pre-release proof
-builder, while `synthpopcan.national_execution` contains restart, batching, and
-cache machinery behind the supported `synthpopcan.national_small_area`
+builder, while `synthpopcan.national_execution` contains the restart, batching,
+and cache implementation behind the supported `synthpopcan.national_small_area`
 workflow. Those two backend modules remain importable for maintainers but are
 not part of the 1.x Python compatibility contract.
 
@@ -117,7 +118,7 @@ household/person relationship while permitting additional demographic columns.
 
 A supported interface may be deprecated when a clearer or safer replacement is
 available. Deprecation notices must name the replacement in the changelog and
-relevant documentation. The old surface remains functional for the rest of
+relevant documentation. The old interface remains functional for the rest of
 `1.x`; removal or an incompatible semantic change waits for the next major
 release.
 
@@ -129,7 +130,7 @@ corrupt, unsafe, internally inconsistent, or falsely described research data.
 
 ## Contributor Check
 
-After intentionally changing a public surface, regenerate the candidate
+After intentionally changing a public interface, regenerate the candidate
 manifest and review the diff:
 
 ```bash

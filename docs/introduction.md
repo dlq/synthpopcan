@@ -135,8 +135,8 @@ is a row and columns are separated by commas. Any spreadsheet application can
 open one. SynthPopCan reads and writes most of its inputs and outputs as CSVs.
 
 **JSON file:** A JavaScript Object Notation file — a structured text format for
-reports, manifests, and configuration. Readable in any text editor and easy to
-process in scripts.
+reports, manifests, and configuration. It is readable in any text editor, and
+scripts can process its named fields and values.
 
 **Seed file:** The starting rows for IPF. IPF changes how much each row counts;
 it does not invent new columns.

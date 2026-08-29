@@ -69,7 +69,7 @@ privacy certification.
 
 ## Correction Disposition
 
-The project prepared fail-closed package and archive-correction machinery for
+The project prepared fail-closed package and archive-correction tools for
 the accepted scope. Independent adversarial review completed on 2026-08-15,
 closing all three prior executor blockers with 137 focused tests, Ruff, Pyright,
 and diff checks passing. The separately authorized live correction completed on

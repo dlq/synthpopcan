@@ -18,8 +18,8 @@ Treat models trained from restricted microdata as **private** unless they have b
 audited, reviewed, and packaged with provenance.
 
 SynthPopCan currently uses **transparent frequency-based** and **CART-style** tree
-models. CART models are useful here because they expose conditional splits that
-can be audited more easily than many opaque generative models, but the audit
+models. CART models are useful here because they expose conditional splits for
+direct inspection, unlike many opaque generative models, but the audit
 step is still necessary.
 
 ### What a Tree Model Is
@@ -55,8 +55,8 @@ outcome, it samples one plausible outcome given the conditioning path.
 SynthPopCan has **two tree-family model types**:
 
 - `conditional-frequency`: groups rows by the conditioning columns and samples
-  from the observed target outcomes in each group. This is transparent and straightforward
-  to audit, but sparse groups can be fragile.
+  from the observed target outcomes in each group. The groups and their counts
+  can be inspected directly, but sparse groups can be fragile.
 - `cart`: trains a **CART-style** decision tree using scikit-learn. This can merge
   or split patterns more flexibly than exact frequency groups, but it still
   needs support, purity, and validation checks.
