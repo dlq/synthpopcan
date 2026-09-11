@@ -413,11 +413,15 @@ def test_interface_snapshot_defensive_helpers() -> None:
 def test_click_snapshot_uses_resolved_flag_semantics(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    option = click.Option(("--enabled",), is_flag=True)
+    class ResolvedFlagOption(click.Option):
+        @property
+        def flag_activation_value(self) -> bool:
+            return True
+
+    option = ResolvedFlagOption(("--enabled",), is_flag=True)
     sentinel = object()
     monkeypatch.setattr(option, "default", sentinel)
     monkeypatch.setattr(option, "flag_value", sentinel)
-    monkeypatch.setattr(option, "flag_activation_value", True, raising=False)
     monkeypatch.setattr(option, "get_default", lambda _context, call=False: False)
 
     snapshot = interface._snapshot_click_parameter(
