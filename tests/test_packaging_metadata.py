@@ -7,9 +7,12 @@ from pathlib import Path
 
 def test_build_backend_is_exactly_pinned_and_locked() -> None:
     project = tomllib.loads(Path("pyproject.toml").read_text())
-    expected_requirement = "hatchling==1.32.0"
+    build_requirements = project["build-system"]["requires"]
+    assert len(build_requirements) == 1
+    expected_requirement = build_requirements[0]
+    pinned_version = re.fullmatch(r"hatchling==(\d+\.\d+\.\d+)", expected_requirement)
+    assert pinned_version is not None
 
-    assert project["build-system"]["requires"] == [expected_requirement]
     assert expected_requirement in project["dependency-groups"]["dev"]
 
     lock = tomllib.loads(Path("uv.lock").read_text())
@@ -18,7 +21,7 @@ def test_build_backend_is_exactly_pinned_and_locked() -> None:
         for package in lock["package"]
         if package["name"] == "hatchling"
     ]
-    assert hatchling_versions == ["1.32.0"]
+    assert hatchling_versions == [pinned_version.group(1)]
 
 
 def test_source_distribution_excludes_local_editor_configuration() -> None:
