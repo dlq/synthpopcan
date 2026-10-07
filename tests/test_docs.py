@@ -39,13 +39,14 @@ def test_citation_metadata_matches_release() -> None:
     versions = re.findall(r'^\s*version:\s*"([^"]+)"', citation, re.MULTILINE)
     dates = re.findall(r"^\s*date-released:\s*(\S+)", citation, re.MULTILINE)
 
-    assert versions, "CITATION.cff should declare a version"
+    assert len(versions) == 2, "both CITATION.cff blocks should declare a version"
     for version in versions:
         assert version == synthpopcan.__version__, (
             f"CITATION.cff version {version} does not match package version "
             f"{synthpopcan.__version__}"
         )
 
+    assert len(dates) == 2, "both CITATION.cff blocks should declare a release date"
     assert len(set(dates)) == 1, f"CITATION.cff release dates disagree: {dates}"
 
     changelog = Path("CHANGELOG.md").read_text()
@@ -81,10 +82,53 @@ def test_citation_metadata_matches_release() -> None:
         assert f"value: {current_version_doi}" in citation
         assert f"value: {current_snapshot}" in citation
     else:
-        assert version_identifier is None
         assert current_version_doi not in citation
         assert current_snapshot not in citation
     assert prior_version_doi in readme
+
+
+def test_zenodo_release_archive_record_matches_citation() -> None:
+    """Bind the verified archive identity to the maintained citation and guide."""
+
+    record = Path("docs/records/zenodo-2026-10-07.md").read_text()
+    evidence = dict(re.findall(r"^\| ([^|]+) \| `([^`]+)` \|$", record, re.MULTILINE))
+    landing = Path("docs/stewardship.md").read_text()
+    citation = Path("CITATION.cff").read_text()
+
+    assert evidence["Version"] == "1.1.1"
+    assert evidence["Archive version"] == f"v{evidence['Version']}"
+    assert evidence["Publication date"] == "2026-10-07"
+    assert evidence["Version DOI"] == "10.5281/zenodo.23218591"
+    assert evidence["Concept DOI"] == "10.5281/zenodo.21461463"
+    assert evidence["Source commit"] == "3b695b7a3423aaaa3ce56f0ee39cc9d8863847f4"
+    assert (
+        evidence["Archive file"] == f"dlq/synthpopcan-{evidence['Archive version']}.zip"
+    )
+    assert int(evidence["Archive bytes"]) == 7948605
+    assert evidence["Archive MD5"] == "faceda54d5a8ea2f6ac54bd012d5b75c"
+    assert evidence["Archive SHA-256"] == (
+        "6276ffebf562c623fb927fe81efe5e16f6161fd5eb951dd7a62c236ff1808abe"
+    )
+    assert (
+        f"https://github.com/dlq/synthpopcan/commit/{evidence['Source commit']}"
+        in record
+    )
+    assert (
+        f"https://github.com/dlq/synthpopcan/releases/tag/{evidence['Archive version']}"
+        in record
+    )
+    assert "records/zenodo-2026-10-07" in landing
+    assert f"https://doi.org/{evidence['Version DOI']}" in landing
+    if synthpopcan.__version__ == evidence["Version"]:
+        assert (
+            re.findall(r"^\s*doi:\s*(\S+)", citation, re.MULTILINE)
+            == [evidence["Version DOI"]] * 2
+        )
+        assert (
+            re.findall(r"^\s*date-released:\s*(\S+)", citation, re.MULTILINE)
+            == [evidence["Publication date"]] * 2
+        )
+        assert f"value: {evidence['Version DOI']}" in citation
 
 
 def test_citation_schema_validation_is_a_local_and_ci_gate() -> None:
