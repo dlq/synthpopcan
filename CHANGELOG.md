@@ -4,6 +4,10 @@ All notable public changes to SynthPopCan are tracked here.
 
 ## Unreleased
 
+## 1.1.1 - 2026-10-07
+
+Maintenance fixes, clearer internal boundaries, and dependency updates.
+
 - Simplify internal responsibility boundaries without changing the frozen
   `1.x` interface: centralize prepared-model interpretation, Census Profile
   parsing, version identity, and external-comparison logic; route local
@@ -34,6 +38,11 @@ All notable public changes to SynthPopCan are tracked here.
 - Record the published `1.1.0` Zenodo version DOI and completed Software
   Heritage snapshot, annotated release object, and exact source revision in
   citation metadata and a dated preservation record.
+
+- Update Python dependencies, web development tools, and pinned CI actions;
+  include urllib3 security fixes and verify the exact Hatchling build pin
+  against the development dependency and lockfile without hardcoding its
+  version in the packaging test.
 
 ## 1.1.0 - 2026-08-19
 

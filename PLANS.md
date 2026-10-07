@@ -1,8 +1,8 @@
 # SynthPopCan Roadmap
 
 Status: `1.x` maintenance roadmap\
-Last updated: 2026-08-28\
-Current software version: `1.1.0`
+Last updated: 2026-10-07\
+Current software version: `1.1.1`
 
 ## How To Use This Roadmap
 
@@ -190,7 +190,7 @@ every research direction. Use these records instead of extending this roadmap
 with release narrative:
 
 - [CHANGELOG.md](CHANGELOG.md) for observable release history from `0.1.0`
-  through `1.1.0`;
+  through `1.1.1`;
 - [compatibility policy](docs/compatibility.md) for the exact `1.x` stability
   promise;
 - [CORRECTNESS.md](CORRECTNESS.md) for current claims and limitations;
