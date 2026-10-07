@@ -1,5 +1,10 @@
 import { expect, test } from "@playwright/test";
 
+async function openWorkbench(page) {
+  await page.goto("/");
+  await expect(page.locator("#workspace-location")).toHaveText(/\S/);
+}
+
 async function readHorizontalLayout(page) {
   return page.evaluate(() => {
     const elements = [
@@ -40,7 +45,7 @@ test("SCN-WEB-001 runs durable demo IPF and recovers results after refresh", asy
       body: '{"models":[]}',
     }),
   );
-  await page.goto("/");
+  await openWorkbench(page);
   await expect(page).toHaveTitle("SynthPopCan");
   await expect(page.getByRole("heading", { name: "Runs" })).toBeVisible();
   await expect(page.getByRole("button", { name: "New run" })).toHaveCount(1);
@@ -97,7 +102,7 @@ test("a new draft wins over a delayed initial run-history response", async ({
     await new Promise((resolve) => setTimeout(resolve, 500));
     await route.continue();
   });
-  await page.goto("/");
+  await openWorkbench(page);
   await requestStarted;
   await page.getByRole("button", { name: "New run" }).click();
   await expect(page.locator("#ipf-seed-file")).toBeVisible();
@@ -121,7 +126,7 @@ test("a legacy workflow wins over a delayed initial run detail", async ({ page }
     await route.continue();
   });
 
-  await page.goto("/");
+  await openWorkbench(page);
   await requestStarted;
   await page.getByText("Small-area workflow").click();
   await page.getByRole("button", { name: /Prepare a small-area synthesis/ }).click();
@@ -148,7 +153,7 @@ test("a new draft preserves a delayed initial model catalogue", async ({ page })
     await route.continue();
   });
 
-  await page.goto("/");
+  await openWorkbench(page);
   await requested;
   await page.getByRole("button", { name: "New run" }).click();
   await page
@@ -179,7 +184,7 @@ test("edited IPF settings win over a delayed preflight response", async ({ page 
     await release;
     await route.continue();
   });
-  await page.goto("/");
+  await openWorkbench(page);
   await page.getByRole("button", { name: "New run" }).click();
   await page.getByRole("button", { name: /Use demo age\/sex files/ }).click();
   await page.getByRole("button", { name: "Upload and continue" }).click();
@@ -199,6 +204,10 @@ test("edited IPF settings win over a delayed preflight response", async ({ page 
 test("edited model settings win over a delayed preflight response", async ({
   page,
 }) => {
+  await page.route("**/api/app", async (route) => {
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    await route.continue();
+  });
   let preflightStarted;
   let releasePreflight;
   const started = new Promise((resolve) => {
@@ -212,7 +221,7 @@ test("edited model settings win over a delayed preflight response", async ({
     await release;
     await route.continue();
   });
-  await page.goto("/");
+  await openWorkbench(page);
   await page.getByRole("button", { name: "New run" }).click();
   await page
     .getByRole("button", { name: "Generate from a prepared model", exact: true })
@@ -243,7 +252,7 @@ test("durable IPF preflight blocks incompatible inputs", async ({ page }) => {
       body: '{"models":[]}',
     }),
   );
-  await page.goto("/");
+  await openWorkbench(page);
   await page.getByRole("button", { name: "New run" }).click();
   await page.locator("#ipf-seed-file").setInputFiles({
     name: "seed.csv",
@@ -271,7 +280,7 @@ test("active durable IPF run can be cancelled", async ({ page }) => {
       body: '{"models":[]}',
     }),
   );
-  await page.goto("/");
+  await openWorkbench(page);
   await page.getByRole("button", { name: "New run" }).click();
   await page.getByRole("button", { name: /Use demo age\/sex files/ }).click();
   await page.getByRole("button", { name: "Upload and continue" }).click();
@@ -291,7 +300,7 @@ test("SCN-WEB-002 inspects and generates from a linked model package", async ({
   page.on("console", (message) => {
     if (message.type() === "error") consoleErrors.push(message.text());
   });
-  await page.goto("/");
+  await openWorkbench(page);
   await page.getByRole("button", { name: "New run" }).click();
   await page
     .getByRole("button", { name: "Generate from a prepared model", exact: true })
@@ -352,7 +361,7 @@ test("downloadable catalogue models install without returning their payload", as
     });
   });
 
-  await page.goto("/");
+  await openWorkbench(page);
   await page.getByRole("button", { name: "New run" }).click();
   await page
     .getByRole("button", { name: "Generate from a prepared model", exact: true })
@@ -393,7 +402,7 @@ test("SCN-WEB-003 runs durable linked small-area synthesis", async ({ page }) =>
     }
     await route.continue();
   });
-  await page.goto("/");
+  await openWorkbench(page);
   await page.getByText("Small-area workflow").click();
   await page.getByRole("button", { name: /Prepare a small-area synthesis/ }).click();
   await expect(
@@ -469,7 +478,7 @@ test("reviewed control-pack selection requires bound evidence", async ({ page })
     }),
   );
 
-  await page.goto("/");
+  await openWorkbench(page);
   await page.getByText("Small-area workflow").click();
   await page.getByRole("button", { name: /Prepare a small-area synthesis/ }).click();
   const selector = page.locator("#small-area-control-pack");
@@ -500,7 +509,7 @@ test("model catalogue failure leaves both workflows usable", async ({ page }) =>
     }),
   );
 
-  await page.goto("/");
+  await openWorkbench(page);
   await page.getByRole("button", { name: "New run" }).click();
   await page
     .getByRole("button", { name: "Generate from a prepared model", exact: true })

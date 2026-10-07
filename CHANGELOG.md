@@ -44,6 +44,9 @@ Maintenance fixes, clearer internal boundaries, and dependency updates.
   against the development dependency and lockfile without hardcoding its
   version in the packaging test.
 
+- Wait for workspace initialization before browser-scenario interactions and
+  exercise delayed bootstrap explicitly in the model-preflight regression.
+
 ## 1.1.0 - 2026-08-19
 
 Broader compatible small-area controls with runtime-enforced invariants.
