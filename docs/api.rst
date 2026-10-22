@@ -103,7 +103,7 @@ Exchange, Geography, and Enrichment
              normalize_can_fed_archive
 
 .. automodule:: synthpopcan.odef
-   :members: OdefAdapter, odef_source_profile, normalize_odef_archive
+   :members: ODEFAdapter, OdefAdapter, odef_source_profile, normalize_odef_archive
 
 .. automodule:: synthpopcan.national_small_area
    :members: NationalSmallAreaJurisdiction,
@@ -142,7 +142,8 @@ Controls
 --------
 
 .. automodule:: synthpopcan.controls
-   :members: ControlCell, ControlMargin, ControlTable, read_control_table,
+   :members: ControlCell, ControlMargin, ControlTable, WDSSelection,
+             read_control_table,
              read_control_margins, read_wds_control_table, inspect_wds_zip,
              build_wds_category_mapping_template,
              read_census_profile_control_table,
@@ -227,7 +228,8 @@ Tree Models
 .. automodule:: synthpopcan.tree
    :members: TreeTrainingSample, TreeModelSpec, TreeGenerationRequest,
              FrequencyOutcome, FrequencyGroup, FrequencyTreeModel,
-             CartTreeModel, read_tree_training_sample, audit_tree_model,
+             CARTTreeModel, CartTreeModel, read_tree_training_sample,
+             audit_tree_model,
              train_cart_model, train_frequency_model, generate_tree_rows,
              generate_linked_population, validate_linked_population,
              write_tree_model, read_tree_model, read_frequency_model,

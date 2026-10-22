@@ -37,8 +37,11 @@ from synthpopcan.workflows.small_area import (
 from synthpopcan.workflows.types import IPFFitRequest, WorkflowProgress
 
 
-class _WorkerCancelled(RuntimeError):
+class _WorkerCancelledError(RuntimeError):
     pass
+
+
+_WorkerCancelled = _WorkerCancelledError
 
 
 class _MessageQueue(Protocol):
@@ -118,12 +121,12 @@ def _ipf_worker(
 
     def progress(event: WorkflowProgress) -> None:
         if cancel_event.is_set():
-            raise _WorkerCancelled
+            raise _WorkerCancelledError
         messages.put({"type": "progress", "event": event.as_dict()})
 
     def check_cancelled() -> None:
         if cancel_event.is_set():
-            raise _WorkerCancelled
+            raise _WorkerCancelledError
 
     try:
         result = fit_ipf_files(
@@ -144,7 +147,7 @@ def _ipf_worker(
             progress=progress,
         )
         if cancel_event.is_set():
-            raise _WorkerCancelled
+            raise _WorkerCancelledError
         final_weights = artifact_dir / "weights.csv"
         final_report = artifact_dir / "fit-report.json"
         artifacts = [
@@ -179,7 +182,7 @@ def _ipf_worker(
                 "reproduction": result.reproduction.as_dict(),
             }
         )
-    except _WorkerCancelled:
+    except _WorkerCancelledError:
         messages.put({"type": "cancelled"})
     except Exception as exc:  # noqa: BLE001
         messages.put(
@@ -215,12 +218,12 @@ def _model_worker(
 
     def progress(event: WorkflowProgress) -> None:
         if cancel_event.is_set():
-            raise _WorkerCancelled
+            raise _WorkerCancelledError
         messages.put({"type": "progress", "event": event.as_dict()})
 
     def check_cancelled() -> None:
         if cancel_event.is_set():
-            raise _WorkerCancelled
+            raise _WorkerCancelledError
 
     try:
         result = generate_prepared_model_files(
@@ -242,7 +245,7 @@ def _model_worker(
             progress=progress,
         )
         if cancel_event.is_set():
-            raise _WorkerCancelled
+            raise _WorkerCancelledError
         artifacts = [
             publish_artifact(
                 root,
@@ -284,7 +287,7 @@ def _model_worker(
                 "reproduction": result.reproduction.as_dict(),
             }
         )
-    except _WorkerCancelled:
+    except _WorkerCancelledError:
         messages.put({"type": "cancelled"})
     except Exception as exc:  # noqa: BLE001
         messages.put(
@@ -328,12 +331,12 @@ def _small_area_worker(
 
     def progress(event: WorkflowProgress) -> None:
         if cancel_event.is_set():
-            raise _WorkerCancelled
+            raise _WorkerCancelledError
         messages.put({"type": "progress", "event": event.as_dict()})
 
     def check_cancelled() -> None:
         if cancel_event.is_set():
-            raise _WorkerCancelled
+            raise _WorkerCancelledError
 
     try:
         geography_payload = options.get("geography_universe")
@@ -498,7 +501,7 @@ def _small_area_worker(
                 "reproduction": result.reproduction.as_dict(),
             }
         )
-    except _WorkerCancelled:
+    except _WorkerCancelledError:
         messages.put({"type": "cancelled"})
     except Exception as exc:  # noqa: BLE001
         messages.put(

@@ -1,6 +1,6 @@
 import pytest
 
-from synthpopcan.calibration import (
+from synthpopcan.control_suggestions import (
     _build_review_notes,
     _classify_controls,
     _first_search_query,

@@ -4,6 +4,11 @@ All notable public changes to SynthPopCan are tracked here.
 
 ## Unreleased
 
+- Standardize CLI callback names, provide consistent acronym class names and
+  `as_dict()` serialization, and move control advice into `control_suggestions`.
+  Preserve previous imports, class aliases, serialization hooks, CLI spellings,
+  and the 1.x interface; document and lint the naming policy.
+
 - Prepare the 1.2 conditional-person universe boundary with fail-closed
   age-15+ validation, reproducible typing/localization/complexity inventories,
   an enforced complexity ratchet, and two-decimal coverage enforcement.

@@ -194,11 +194,11 @@ def _optional_geography_universe(
 
 @click.group("geo", cls=FriendlyGroup)
 # Keep the Python object named for the field term while exposing a shorter CLI group.
-def small_area() -> None:
+def small_area_group() -> None:
     """Assign and calibrate linked households to target geographies."""
 
 
-@small_area.group("control-packs")
+@small_area_group.group("control-packs")
 def control_packs_group() -> None:
     """Inspect, bind, and plan reviewed small-area control packs."""
 
@@ -403,7 +403,7 @@ def _read_json_object(path: Path) -> dict[str, object]:
     return payload
 
 
-@small_area.command("estimate")
+@small_area_group.command("estimate")
 @click.option(
     "--controls",
     "controls_path",
@@ -497,7 +497,7 @@ def _format_surface_recommendation(recommendation: str) -> str:
     return recommendation
 
 
-@small_area.command("calibrate")
+@small_area_group.command("calibrate")
 @click.argument("population_path", metavar="POPULATION", type=_PATH)
 @click.option(
     "--persons",
@@ -779,7 +779,7 @@ def _coerce_float(value: object) -> float:
 # ---------------------------------------------------------------------------
 
 
-@small_area.command("map")
+@small_area_group.command("map")
 @click.argument("population_path", metavar="POPULATION", type=_PATH)
 @click.option(
     "--persons",
@@ -1029,7 +1029,7 @@ def map_command(
 # ---------------------------------------------------------------------------
 
 
-@small_area.command("controls")
+@small_area_group.command("controls")
 @click.option(
     "--profile",
     "profile_path",
@@ -1230,10 +1230,14 @@ def controls_command(
 
     if selected_pack is None:
         n_hhsize = sum(
-            1 for d in raw.values() if d.get("hhsize") and sum(d["hhsize"].values()) > 0
+            1
+            for margins in raw.values()
+            if margins.get("hhsize") and sum(margins["hhsize"].values()) > 0
         )
         n_tenure = sum(
-            1 for d in raw.values() if d.get("tenure") and sum(d["tenure"].values()) > 0
+            1
+            for margins in raw.values()
+            if margins.get("tenure") and sum(margins["tenure"].values()) > 0
         )
         click.echo(
             f"  {len(raw):,} {geo_column} units found  "
@@ -1356,7 +1360,7 @@ def controls_command(
 _KNOWN_GEO_LEVELS = ("ct", "ada", "da", "csd", "cd", "pr")
 
 
-@small_area.command("boundaries")
+@small_area_group.command("boundaries")
 @click.option(
     "--geo-level",
     required=True,
@@ -1511,7 +1515,7 @@ def boundaries_command(
     click.echo(geojson_path)
 
 
-@small_area.command("relationship-file")
+@small_area_group.command("relationship-file")
 @click.option(
     "--out-dir",
     "out_dir",
@@ -1544,12 +1548,12 @@ def relationship_file_command(out_dir: Path, url: str | None) -> None:
     click.echo(csv_path)
 
 
-@small_area.group("national-da")
+@small_area_group.group("national-da")
 def national_da_group() -> None:
     """Plan and execute restartable 2021 DA synthesis across Canada."""
 
 
-@small_area.group("national-ada")
+@small_area_group.group("national-ada")
 def national_ada_group() -> None:
     """Plan and execute restartable 2021 ADA synthesis across Canada."""
 
@@ -2478,7 +2482,7 @@ def _render_deferred_national_maps(
         temporary.replace(batch_path)
 
 
-@small_area.command("synthesize")
+@small_area_group.command("synthesize")
 @click.argument("package_path", metavar="MODEL")
 @click.option(
     "--households",
@@ -2780,3 +2784,7 @@ def synthesize_command(
         f"across {geo_n:,} {output_geo_column} geographies."
     )
     _print_calibrate_linked_diagnostics(summary)
+
+
+# Compatibility aliases retain existing Python imports and Click object identity.
+small_area = small_area_group

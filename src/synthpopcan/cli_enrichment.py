@@ -26,12 +26,12 @@ from synthpopcan.geography import GeographyUniverse
 _PATH = click.Path(path_type=Path)
 
 
-@click.group(cls=FriendlyGroup)
-def enrich() -> None:
+@click.group("enrich", cls=FriendlyGroup)
+def enrich_group() -> None:
     """Register sources and attach validated sidecar layers to populations."""
 
 
-@enrich.command("can-fed")
+@enrich_group.command("can-fed")
 @click.argument("population_directory", metavar="POPULATION", type=_PATH)
 @click.option(
     "--resource",
@@ -119,7 +119,7 @@ def can_fed_command(
     _print_reference_result(result, output_format)
 
 
-@enrich.command("odef")
+@enrich_group.command("odef")
 @click.argument("population_directory", metavar="POPULATION", type=_PATH)
 @click.option(
     "--resource",
@@ -197,7 +197,7 @@ def odef_command(
     _print_reference_result(result, output_format)
 
 
-@enrich.command("register-resource")
+@enrich_group.command("register-resource")
 @click.argument("resource_path", metavar="RESOURCE", type=_PATH)
 @click.option(
     "--source-profile",
@@ -261,7 +261,7 @@ def register_resource_command(
     print_wrote(output_path)
 
 
-@enrich.command("import")
+@enrich_group.command("import")
 @click.argument("population_directory", metavar="POPULATION", type=_PATH)
 @click.argument("layer_path", metavar="LAYER", type=_PATH)
 @click.option(
@@ -443,7 +443,7 @@ def import_layer_command(
         )
 
 
-@enrich.command("validate")
+@enrich_group.command("validate")
 @click.argument("manifest_path", metavar="MANIFEST", type=_PATH)
 @click.option(
     "--population",
@@ -556,3 +556,7 @@ def _print_reference_result(
         )
     else:
         click.echo(f"Validated {dataset_id}; the base population was not modified.")
+
+
+# Compatibility aliases retain existing Python imports and Click object identity.
+enrich = enrich_group

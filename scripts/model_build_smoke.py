@@ -37,7 +37,7 @@ sample = TreeTrainingSample(
     geography_column="geo",
 )
 model = train_cart_model(sample, random_seed=7, min_samples_leaf=1, max_depth=2)
-payload = model.to_dict()
+payload = model.as_dict()
 assert payload["model_type"] == "cart"
 assert payload["privacy"]["contains_raw_rows"] is False
 

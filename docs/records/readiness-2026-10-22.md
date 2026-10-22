@@ -158,3 +158,17 @@ coverage collection, passed 1,983 tests in about 26 seconds. These are local
 observations, not timing guarantees or additional performance gates. See the
 [test guide](https://github.com/dlq/synthpopcan/blob/main/tests/README.md) for the
 intended development sequence.
+
+## Naming amendment (2026-10-22)
+
+The naming cleanup moves control advice into `control_suggestions`, standardizes
+Click callback suffixes, and adds preferred acronym and serialization names.
+Previous library imports, CLI spellings, serialization override hooks, and the
+frozen 1.x interface baseline remain supported. The naming policy is maintained
+in the repository's `CONTRIBUTING.md`.
+
+The complexity inventory carries its original numeric limits forward under
+renamed function identities. Its `identity_renames_2026_10_22` map records those
+exact moves; the inventory was not regenerated from the refactored code.
+Historical module-line measurements, typing findings, and localization source
+hashes still describe the original preparation snapshot.

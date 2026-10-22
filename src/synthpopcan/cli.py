@@ -21,12 +21,12 @@ from rich.progress import (
 )
 
 from synthpopcan._version import __version__
-from synthpopcan.cli_enrichment import enrich
+from synthpopcan.cli_enrichment import enrich_group
 from synthpopcan.cli_errors import FriendlyGroup
-from synthpopcan.cli_exchange import bundle
-from synthpopcan.cli_geo import small_area
-from synthpopcan.cli_ipf import ipf
-from synthpopcan.cli_microdata import microdata
+from synthpopcan.cli_exchange import bundle_group
+from synthpopcan.cli_geo import small_area_group
+from synthpopcan.cli_ipf import ipf_group
+from synthpopcan.cli_microdata import microdata_group
 from synthpopcan.cli_output import (
     click_file_access_error,
     click_value_error,
@@ -47,9 +47,9 @@ from synthpopcan.cli_output import (
     write_wds_search_results,
 )
 from synthpopcan.cli_tree import (
-    generate_model_population,
+    generate_model_population_command,
     inspect_linked_tree_package_command,
-    model_build,
+    model_build_group,
 )
 from synthpopcan.console import (
     make_table,
@@ -121,19 +121,19 @@ def cli(ctx: click.Context) -> None:
         _print_workflow_choice_guide()
 
 
-cli.add_command(microdata)
-cli.add_command(ipf)
-cli.add_command(small_area)
-cli.add_command(enrich)
-cli.add_command(bundle)
+cli.add_command(microdata_group)
+cli.add_command(ipf_group)
+cli.add_command(small_area_group)
+cli.add_command(enrich_group)
+cli.add_command(bundle_group)
 
 
-@cli.group()
-def geodata() -> None:
+@cli.group("geodata")
+def geodata_group() -> None:
     """Fetch and inspect prepared display-boundary assets."""
 
 
-@geodata.command("fetch")
+@geodata_group.command("fetch")
 @click.argument("census_year", type=int)
 @click.argument(
     "geography_level",
@@ -150,7 +150,7 @@ def geodata() -> None:
     default=None,
     help="Local geodata catalogue JSON.",
 )
-def fetch_geodata(
+def fetch_geodata_command(
     census_year: int,
     geography_level: str,
     pruid: str | None,
@@ -171,24 +171,24 @@ def fetch_geodata(
     click.echo(path)
 
 
-@geodata.command("cache-dir")
-def geodata_cache_directory() -> None:
+@geodata_group.command("cache-dir")
+def geodata_cache_directory_command() -> None:
     """Print the local cache directory for prepared display boundaries."""
 
     click.echo(geodata_cache_dir())
 
 
-@cli.group()
-def models() -> None:
+@cli.group("models")
+def models_group() -> None:
     """Discover, fetch, generate from, and build model packages."""
 
 
-models.add_command(generate_model_population)
-models.add_command(model_build)
-model_build.add_command(inspect_linked_tree_package_command, "inspect")
+models_group.add_command(generate_model_population_command)
+models_group.add_command(model_build_group)
+model_build_group.add_command(inspect_linked_tree_package_command, "inspect")
 
 
-@models.command("list")
+@models_group.command("list")
 @click.option(
     "--format",
     "output_format",
@@ -196,7 +196,7 @@ model_build.add_command(inspect_linked_tree_package_command, "inspect")
     type=click.Choice(["json", "table"]),
     show_default=True,
 )
-def list_models(output_format: str) -> None:
+def list_models_command(output_format: str) -> None:
     """List demo and downloadable model packages."""
     catalogue = {"models": model_catalogue()}
     if output_format == "json":
@@ -219,7 +219,7 @@ def list_models(output_format: str) -> None:
     print_table(table)
 
 
-@models.command("show")
+@models_group.command("show")
 @click.argument("model_id")
 @click.option(
     "--format",
@@ -228,7 +228,7 @@ def list_models(output_format: str) -> None:
     type=click.Choice(["json", "table"]),
     show_default=True,
 )
-def show_model(model_id: str, output_format: str) -> None:
+def show_model_command(model_id: str, output_format: str) -> None:
     """Show provenance, privacy, size, and generation details for one model."""
     try:
         model = model_catalogue_entry(model_id)
@@ -245,9 +245,9 @@ def show_model(model_id: str, output_format: str) -> None:
     print_table(table)
 
 
-@models.command("fetch")
+@models_group.command("fetch")
 @click.argument("model_id")
-def fetch_model(model_id: str) -> None:
+def fetch_model_command(model_id: str) -> None:
     """Download a model package into the local cache."""
     try:
         progress_console = Console(stderr=True)
@@ -278,9 +278,9 @@ def fetch_model(model_id: str) -> None:
     click.echo(path)
 
 
-@models.command("remove")
+@models_group.command("remove")
 @click.argument("model_id")
-def remove_model(model_id: str) -> None:
+def remove_model_command(model_id: str) -> None:
     """Remove a downloaded model package from the local cache."""
     try:
         removed = remove_cached_model(model_id)
@@ -292,28 +292,28 @@ def remove_model(model_id: str) -> None:
         print_success(f"No cached downloadable model package found for {model_id}")
 
 
-@cli.group(invoke_without_command=True)
+@cli.group("guide", invoke_without_command=True)
 @click.pass_context
-def guide(ctx: click.Context) -> None:
+def guide_group(ctx: click.Context) -> None:
     """Show beginner workflow guidance."""
     if ctx.invoked_subcommand is None:
         _print_workflow_choice_guide()
 
 
-@guide.command("ipf")
-def guide_ipf() -> None:
+@guide_group.command("ipf")
+def guide_ipf_command() -> None:
     """Show the IPF from margin tables path."""
     _print_ipf_workflow_guide()
 
 
-@guide.command("model")
-def guide_model() -> None:
+@guide_group.command("model")
+def guide_model_command() -> None:
     """Show the generate from existing model path."""
     _print_model_workflow_guide()
 
 
-@guide.command("small-area")
-def guide_small_area() -> None:
+@guide_group.command("small-area")
+def guide_small_area_command() -> None:
     """Show the linked small-area synthesis path."""
     _print_small_area_workflow_guide()
 
@@ -346,7 +346,7 @@ def guide_small_area() -> None:
     type=_PATH,
     help="Managed workspace for local uploads, runs, and artifacts.",
 )
-def serve(host: str, port: int, open_browser: bool, workspace: Path) -> None:
+def serve_command(host: str, port: int, open_browser: bool, workspace: Path) -> None:
     """Serve the local SynthPopCan web app."""
     try:
         normalized_host = validate_loopback_host(host)
@@ -567,12 +567,12 @@ def _model_detail_rows(model: dict[str, Any]) -> list[tuple[str, str]]:
     return [(label, value) for label, value in rows if value]
 
 
-@cli.group()
-def validate() -> None:
+@cli.group("validate")
+def validate_group() -> None:
     """Validate IPF, linked-population, and model outputs."""
 
 
-@validate.command("ipf")
+@validate_group.command("ipf")
 @click.option(
     "--population",
     "population_path",
@@ -643,7 +643,7 @@ def validate_ipf_output_command(
         )
 
 
-@validate.command("linked")
+@validate_group.command("linked")
 @click.argument("population_dir", metavar="POPULATION", type=_PATH)
 @click.option(
     "--household-id-column",
@@ -703,7 +703,7 @@ def validate_linked_command(
         )
 
 
-@validate.command("model")
+@validate_group.command("model")
 @click.option(
     "--generated",
     "generated_path",
@@ -785,7 +785,7 @@ def data_group() -> None:
 @click.argument("name", type=click.Choice(["ipf"]))
 @click.option("--out-dir", required=True, type=_PATH)
 @click.option("--force", is_flag=True, help="Replace existing example files.")
-def write_example_data(name: str, out_dir: Path, force: bool) -> None:
+def write_example_data_command(name: str, out_dir: Path, force: bool) -> None:
     """Write small fictional teaching files for a documented workflow."""
 
     files = {
@@ -834,7 +834,7 @@ def write_example_data(name: str, out_dir: Path, force: bool) -> None:
     type=click.Choice(["json", "table"]),
     show_default=True,
 )
-def data_doctor(data_root: Path, output_format: str) -> None:
+def data_doctor_command(data_root: Path, output_format: str) -> None:
     """Check whether expected local data files are available."""
     data_root = resolve_data_root(data_root)
     checks = inspect_local_data_layout(data_root)
@@ -886,7 +886,7 @@ def _parse_optional_column_list(value: str) -> tuple[str, ...]:
     type=click.Choice(["json", "table"]),
     show_default=True,
 )
-def inspect_sources(root: Path, output_format: str) -> None:
+def inspect_sources_command(root: Path, output_format: str) -> None:
     """Summarize files under a local source root."""
     try:
         write_output(inspect_source_root(root), output_format)
@@ -903,7 +903,7 @@ def inspect_sources(root: Path, output_format: str) -> None:
     type=click.Choice(["json", "table"]),
     show_default=True,
 )
-def inspect_source_schema(path: Path, output_format: str) -> None:
+def inspect_source_schema_command(path: Path, output_format: str) -> None:
     """Inspect source file columns without printing rows."""
     try:
         write_output(read_source_schema(path), output_format)
@@ -922,7 +922,7 @@ def inspect_source_schema(path: Path, output_format: str) -> None:
     type=click.Choice(["json", "table"]),
     show_default=True,
 )
-def sample_source(
+def sample_source_command(
     path: Path, rows: int, allow_private: bool, output_format: str
 ) -> None:
     """Print a small source file sample."""
@@ -939,22 +939,22 @@ def sample_source(
         raise click_value_error(exc) from exc
 
 
-@cli.group()
-def controls() -> None:
+@cli.group("controls")
+def controls_group() -> None:
     """Normalize and validate IPF control tables."""
 
 
-@controls.group(name="census-profile")
-def census_profile_controls() -> None:
+@controls_group.group(name="census-profile")
+def census_profile_controls_group() -> None:
     """Inspect Census Profile files and mapping templates."""
 
 
-@controls.group(name="wds")
-def wds_controls() -> None:
+@controls_group.group(name="wds")
+def wds_controls_group() -> None:
     """Inspect local StatCan WDS ZIPs before normalization."""
 
 
-@controls.command("check")
+@controls_group.command("check")
 @click.argument("path", type=_PATH)
 def check_controls_command(path: Path) -> None:
     """Validate a normalized long control CSV."""
@@ -967,7 +967,7 @@ def check_controls_command(path: Path) -> None:
     print_success(f"Controls are valid: {path}")
 
 
-@controls.command("from-csv")
+@controls_group.command("from-csv")
 @click.argument("source", type=_PATH)
 @click.option(
     "--out",
@@ -976,7 +976,7 @@ def check_controls_command(path: Path) -> None:
     type=_PATH,
     help="Output normalized controls CSV.",
 )
-def normalize_controls_from_csv(source: Path, out_path: Path) -> None:
+def normalize_controls_from_csv_command(source: Path, out_path: Path) -> None:
     """Normalize a local long control CSV."""
     try:
         table = read_control_table(source)
@@ -988,7 +988,7 @@ def normalize_controls_from_csv(source: Path, out_path: Path) -> None:
     print_wrote(out_path)
 
 
-@controls.command("from-wds")
+@controls_group.command("from-wds")
 @click.argument("source", type=_PATH)
 @click.option(
     "--dimensions",
@@ -1018,7 +1018,7 @@ def normalize_controls_from_csv(source: Path, out_path: Path) -> None:
     type=_PATH,
     help="Output normalized controls CSV.",
 )
-def normalize_controls_from_wds(
+def normalize_controls_from_wds_command(
     source: Path,
     dimensions: str,
     count_column: str,
@@ -1075,7 +1075,7 @@ def format_wds_control_error(exc: ValueError, source: Path) -> str:
     return message
 
 
-@wds_controls.command("inspect")
+@wds_controls_group.command("inspect")
 @click.argument("source", type=_PATH)
 @click.option("--sample-rows", default=5, type=int, show_default=True)
 @click.option(
@@ -1085,7 +1085,9 @@ def format_wds_control_error(exc: ValueError, source: Path) -> str:
     type=click.Choice(["json", "table"]),
     show_default=True,
 )
-def inspect_wds_controls(source: Path, sample_rows: int, output_format: str) -> None:
+def inspect_wds_controls_command(
+    source: Path, sample_rows: int, output_format: str
+) -> None:
     """Inspect a local StatCan WDS ZIP and suggest a controls command."""
     try:
         report = inspect_wds_zip(source, sample_rows=sample_rows)
@@ -1096,7 +1098,7 @@ def inspect_wds_controls(source: Path, sample_rows: int, output_format: str) -> 
     write_report(report, output_format, print_wds_inspection_table)
 
 
-@wds_controls.command("mapping-template")
+@wds_controls_group.command("mapping-template")
 @click.argument("source", type=_PATH)
 @click.option(
     "--dimensions",
@@ -1111,7 +1113,7 @@ def inspect_wds_controls(source: Path, sample_rows: int, output_format: str) -> 
     help="Optionally prefill common StatCan labels.",
 )
 @click.option("--out", "out_path", required=True, type=_PATH)
-def write_wds_mapping_template(
+def write_wds_mapping_template_command(
     source: Path,
     dimensions: str,
     preset: str,
@@ -1132,7 +1134,7 @@ def write_wds_mapping_template(
     print_wrote(out_path)
 
 
-@controls.command("from-census-profile")
+@controls_group.command("from-census-profile")
 @click.argument("source", type=_PATH)
 @click.option(
     "--mapping",
@@ -1148,7 +1150,7 @@ def write_wds_mapping_template(
     type=_PATH,
     help="Output normalized controls CSV.",
 )
-def normalize_controls_from_census_profile(
+def normalize_controls_from_census_profile_command(
     source: Path,
     mapping_path: Path,
     out_path: Path,
@@ -1164,7 +1166,7 @@ def normalize_controls_from_census_profile(
     print_wrote(out_path)
 
 
-@census_profile_controls.command("inspect")
+@census_profile_controls_group.command("inspect")
 @click.argument("source", type=_PATH)
 @click.option(
     "--characteristic-column",
@@ -1187,7 +1189,7 @@ def normalize_controls_from_census_profile(
     type=click.Choice(["json", "table"]),
     show_default=True,
 )
-def inspect_census_profile_controls(
+def inspect_census_profile_controls_command(
     source: Path,
     characteristic_column: str,
     count_column: str,
@@ -1211,7 +1213,7 @@ def inspect_census_profile_controls(
     write_report(rows, output_format, print_census_profile_characteristics_table)
 
 
-@census_profile_controls.command("template")
+@census_profile_controls_group.command("template")
 @click.argument("name", type=click.Choice(["age5", "sex"]))
 @click.option(
     "--geo-column",
@@ -1238,7 +1240,7 @@ def inspect_census_profile_controls(
     help="Census Profile count column.",
 )
 @click.option("--out", "out_path", required=True, type=_PATH)
-def write_census_profile_template(
+def write_census_profile_template_command(
     name: str,
     geo_column: str,
     geo_dimension: str,
@@ -1263,23 +1265,23 @@ def write_census_profile_template(
     print_wrote(out_path)
 
 
-@cli.group()
-def statcan() -> None:
+@cli.group("statcan")
+def statcan_group() -> None:
     """Fetch Statistics Canada data."""
 
 
-@statcan.group()
-def wds() -> None:
+@statcan_group.group("wds")
+def wds_group() -> None:
     """Fetch WDS table data."""
 
 
-@wds.command("fetch")
+@wds_group.command("fetch")
 @click.argument("product_id")
 @click.option(
     "--lang", default="en", type=click.Choice(["en", "fr"]), show_default=True
 )
 @click.option("--out-dir", required=True, type=_PATH)
-def run_statcan_wds_fetch(product_id: str, out_dir: Path, lang: str) -> None:
+def statcan_wds_fetch_command(product_id: str, out_dir: Path, lang: str) -> None:
     """Download a full WDS table CSV ZIP by product ID."""
     try:
         console = Console(stderr=True)
@@ -1293,7 +1295,7 @@ def run_statcan_wds_fetch(product_id: str, out_dir: Path, lang: str) -> None:
     click.echo(zip_path)
 
 
-@wds.command("search")
+@wds_group.command("search")
 @click.argument("query")
 @click.option("--limit", default=10, type=int, show_default=True)
 @click.option(
@@ -1304,7 +1306,7 @@ def run_statcan_wds_fetch(product_id: str, out_dir: Path, lang: str) -> None:
     show_default=True,
     help="Output format for search results.",
 )
-def run_statcan_wds_search(query: str, limit: int, output_format: str) -> None:
+def statcan_wds_search_command(query: str, limit: int, output_format: str) -> None:
     """Search the WDS table inventory."""
     try:
         rows = search_wds_tables_for_cli(query, limit)
@@ -1315,10 +1317,10 @@ def run_statcan_wds_search(query: str, limit: int, output_format: str) -> None:
     write_wds_search_results(rows, output_format)
 
 
-@wds.command("metadata")
+@wds_group.command("metadata")
 @click.argument("product_id")
 @click.option("--out", "out_path", type=_PATH, help="Optional JSON output path.")
-def run_statcan_wds_metadata(product_id: str, out_path: Path | None) -> None:
+def statcan_wds_metadata_command(product_id: str, out_path: Path | None) -> None:
     """Fetch WDS cube metadata by product ID."""
     try:
         metadata = fetch_wds_metadata(product_id)
@@ -1335,7 +1337,7 @@ def run_statcan_wds_metadata(product_id: str, out_path: Path | None) -> None:
         raise click_value_error(exc) from exc
 
 
-@wds.command("explain")
+@wds_group.command("explain")
 @click.argument("product_id")
 @click.option(
     "--format",
@@ -1344,7 +1346,7 @@ def run_statcan_wds_metadata(product_id: str, out_path: Path | None) -> None:
     type=click.Choice(["json", "table"]),
     show_default=True,
 )
-def run_statcan_wds_explain(product_id: str, output_format: str) -> None:
+def statcan_wds_explain_command(product_id: str, output_format: str) -> None:
     """Explain a WDS table and show next IPF-control commands."""
     try:
         summary = summarize_wds_metadata(fetch_wds_metadata(product_id))
@@ -1357,12 +1359,12 @@ def run_statcan_wds_explain(product_id: str, output_format: str) -> None:
     write_report(summary, output_format, print_wds_metadata_explanation_table)
 
 
-@statcan.group(name="census-profile")
-def census_profile() -> None:
+@statcan_group.group(name="census-profile")
+def census_profile_group() -> None:
     """Fetch Census Profile bulk downloads."""
 
 
-@census_profile.command("fetch")
+@census_profile_group.command("fetch")
 @click.option(
     "--year",
     "census_year",
@@ -1378,7 +1380,7 @@ def census_profile() -> None:
     help="Census Profile bulk-download geography product.",
 )
 @click.option("--out-dir", required=True, type=_PATH)
-def run_statcan_census_profile_fetch(
+def statcan_census_profile_fetch_command(
     census_year: str, geo_level: str, out_dir: Path
 ) -> None:
     """Download a known Census Profile bulk CSV."""
@@ -1398,6 +1400,53 @@ def run_statcan_census_profile_fetch(
 
 def search_wds_tables_for_cli(query: str, limit: int) -> list[dict[str, str]]:
     return [result.as_dict() for result in search_wds_tables(query, limit)]
+
+
+# Compatibility aliases retain existing Python imports and Click object identity.
+model_build = model_build_group
+generate_model_population = generate_model_population_command
+microdata = microdata_group
+ipf = ipf_group
+small_area = small_area_group
+bundle = bundle_group
+enrich = enrich_group
+geodata = geodata_group
+fetch_geodata = fetch_geodata_command
+geodata_cache_directory = geodata_cache_directory_command
+models = models_group
+list_models = list_models_command
+show_model = show_model_command
+fetch_model = fetch_model_command
+remove_model = remove_model_command
+guide = guide_group
+guide_ipf = guide_ipf_command
+guide_model = guide_model_command
+guide_small_area = guide_small_area_command
+serve = serve_command
+validate = validate_group
+write_example_data = write_example_data_command
+data_doctor = data_doctor_command
+inspect_sources = inspect_sources_command
+inspect_source_schema = inspect_source_schema_command
+sample_source = sample_source_command
+controls = controls_group
+census_profile_controls = census_profile_controls_group
+wds_controls = wds_controls_group
+normalize_controls_from_csv = normalize_controls_from_csv_command
+normalize_controls_from_wds = normalize_controls_from_wds_command
+inspect_wds_controls = inspect_wds_controls_command
+write_wds_mapping_template = write_wds_mapping_template_command
+normalize_controls_from_census_profile = normalize_controls_from_census_profile_command
+inspect_census_profile_controls = inspect_census_profile_controls_command
+write_census_profile_template = write_census_profile_template_command
+statcan = statcan_group
+wds = wds_group
+run_statcan_wds_fetch = statcan_wds_fetch_command
+run_statcan_wds_search = statcan_wds_search_command
+run_statcan_wds_metadata = statcan_wds_metadata_command
+run_statcan_wds_explain = statcan_wds_explain_command
+census_profile = census_profile_group
+run_statcan_census_profile_fetch = statcan_census_profile_fetch_command
 
 
 if __name__ == "__main__":  # pragma: no cover

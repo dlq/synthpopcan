@@ -22,6 +22,7 @@ TreeLevel = Literal["household", "person"]
 _T = TypeVar("_T")
 
 __all__ = [
+    "CARTTreeModel",
     "CartTreeModel",
     "FrequencyGroup",
     "FrequencyOutcome",
@@ -130,9 +131,9 @@ class TreeModelSpec:
         """Serialize the model specification to a JSON-compatible dictionary.
 
         This is the complete spec representation embedded in a model's
-        :meth:`to_dict` output and read back by its ``from_dict``; it uses the
-        ``to_dict`` name (rather than ``as_summary``) because it is round-trip
-        serialization, not a lossy summary.
+        :meth:`as_dict` output and read back by its ``from_dict``; it is round-trip
+        serialization rather than a lossy summary. ``to_dict`` remains the
+        implementation hook for compatibility with existing subclasses.
         """
 
         return {
@@ -144,6 +145,10 @@ class TreeModelSpec:
             "weight_column": self.weight_column,
             "random_seed": self.random_seed,
         }
+
+    def as_dict(self) -> dict[str, Any]:
+        """Return the serialized dictionary, honoring legacy overrides."""
+        return self.to_dict()
 
 
 @dataclass(frozen=True)
@@ -181,6 +186,10 @@ class FrequencyOutcome:
 
         return {"values": self.values, "weight": self.weight}
 
+    def as_dict(self) -> dict[str, Any]:
+        """Return the serialized dictionary, honoring legacy overrides."""
+        return self.to_dict()
+
 
 @dataclass(frozen=True)
 class FrequencyGroup:
@@ -203,8 +212,12 @@ class FrequencyGroup:
             "conditions": self.conditions,
             "support": self.support,
             "source_rows": self.source_rows,
-            "outcomes": [outcome.to_dict() for outcome in self.outcomes],
+            "outcomes": [outcome.as_dict() for outcome in self.outcomes],
         }
+
+    def as_dict(self) -> dict[str, Any]:
+        """Return the serialized dictionary, honoring legacy overrides."""
+        return self.to_dict()
 
 
 @dataclass(frozen=True)
@@ -250,11 +263,11 @@ class FrequencyTreeModel:
             "schema_version": "synthpopcan-tree-model-v1",
             "model_type": self.model_type,
             "release_class": self.release_class,
-            "spec": self.spec.to_dict(),
+            "spec": self.spec.as_dict(),
             "source_format": self.source_format,
             "records_trained": self.records_trained,
-            "groups": [group.to_dict() for group in self.groups],
-            "global_outcomes": [outcome.to_dict() for outcome in self.global_outcomes],
+            "groups": [group.as_dict() for group in self.groups],
+            "global_outcomes": [outcome.as_dict() for outcome in self.global_outcomes],
             "privacy": {
                 "contains_raw_rows": False,
                 "contains_source_identifiers": False,
@@ -265,6 +278,10 @@ class FrequencyTreeModel:
                 "publishable": self.release_class == "publishable_candidate",
             },
         }
+
+    def as_dict(self) -> dict[str, Any]:
+        """Return the serialized dictionary, honoring legacy overrides."""
+        return self.to_dict()
 
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> FrequencyTreeModel:
@@ -320,7 +337,7 @@ class FrequencyTreeModel:
 
 
 @dataclass(frozen=True)
-class CartTreeModel:
+class CARTTreeModel:
     """Serialized scikit-learn CART classifier for synthetic row generation.
 
     The object stores the tree structure and class counts needed for generation
@@ -382,7 +399,7 @@ class CartTreeModel:
             "schema_version": "synthpopcan-tree-model-v1",
             "model_type": self.model_type,
             "release_class": self.release_class,
-            "spec": self.spec.to_dict(),
+            "spec": self.spec.as_dict(),
             "source_format": self.source_format,
             "records_trained": self.records_trained,
             "feature_categories": {
@@ -410,6 +427,10 @@ class CartTreeModel:
                 "publishable": self.release_class == "publishable_candidate",
             },
         }
+
+    def as_dict(self) -> dict[str, Any]:
+        """Return the serialized dictionary, honoring legacy overrides."""
+        return self.to_dict()
 
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> CartTreeModel:
@@ -472,6 +493,10 @@ class CartTreeModel:
             max_depth=cart_payload.get("max_depth"),  # type: ignore[arg-type]
             release_class=str(payload.get("release_class", "private_working")),
         )
+
+
+# Supported 1.x name and annotation spelling.
+CartTreeModel = CARTTreeModel
 
 
 TreeModel = FrequencyTreeModel | CartTreeModel
@@ -644,7 +669,7 @@ def audit_tree_model(
     units = audit_units(model)
     below_min_support = [unit for unit in units if unit["support"] < min_support]
     above_max_purity = [unit for unit in units if unit["purity"] > max_purity]
-    payload = model.to_dict()
+    payload = model.as_dict()
     privacy = payload.get("privacy", {})
     contains_raw_rows = bool(
         isinstance(privacy, dict) and privacy.get("contains_raw_rows", True)
@@ -868,7 +893,7 @@ def train_cart_model(
     values = tree.value
     if values.ndim == 3:
         values = values[:, 0, :]
-    return CartTreeModel(
+    return CARTTreeModel(
         spec=TreeModelSpec(
             level=sample.level,
             target_columns=sample.target_columns,
@@ -1770,7 +1795,7 @@ def iter_frequency_rows(
 
 
 def write_frequency_model(path: Path, model: FrequencyTreeModel) -> None:
-    path.write_text(json.dumps(model.to_dict(), indent=2, sort_keys=True) + "\n")
+    path.write_text(json.dumps(model.as_dict(), indent=2, sort_keys=True) + "\n")
 
 
 def write_tree_model(path: Path, model: TreeModel) -> None:
@@ -1781,7 +1806,7 @@ def write_tree_model(path: Path, model: TreeModel) -> None:
     but not raw training rows.
     """
 
-    path.write_text(json.dumps(model.to_dict(), indent=2, sort_keys=True) + "\n")
+    path.write_text(json.dumps(model.as_dict(), indent=2, sort_keys=True) + "\n")
 
 
 def read_tree_model(path: Path) -> TreeModel:
@@ -1798,7 +1823,7 @@ def read_tree_model(path: Path) -> TreeModel:
     if payload.get("model_type") == "conditional-frequency":
         return FrequencyTreeModel.from_dict(payload)
     if payload.get("model_type") == "cart":
-        return CartTreeModel.from_dict(payload)
+        return CARTTreeModel.from_dict(payload)
     raise ValueError("unsupported tree model type")
 
 
@@ -1823,7 +1848,7 @@ def read_cart_model(path: Path) -> CartTreeModel:
     """
 
     payload = read_tree_model(path)
-    if not isinstance(payload, CartTreeModel):
+    if not isinstance(payload, CARTTreeModel):
         raise ValueError("tree model is not a CART model")
     return payload
 

@@ -49,6 +49,10 @@ class SmallAreaBenchmarkBudget:
             "max_retained_weight_bytes": self.max_retained_weight_bytes,
         }
 
+    def as_dict(self) -> dict[str, int | float | str]:
+        """Return the serialized dictionary, honoring legacy overrides."""
+        return self.to_dict()
+
 
 PROVINCE_SCALE_SMALL_AREA_BUDGET = SmallAreaBenchmarkBudget(
     name="province_scale",

@@ -103,11 +103,11 @@ _PATH = click.Path(path_type=Path)
 
 
 @click.group("build", cls=FriendlyGroup)
-def model_build() -> None:
+def model_build_group() -> None:
     """Train, audit, and package model artifacts."""
 
 
-@model_build.command("train")
+@model_build_group.command("train")
 @click.argument("source", type=_PATH)
 @click.option(
     "--method",
@@ -165,7 +165,7 @@ def model_build() -> None:
     help="Minimum samples allowed in each CART leaf.",
 )
 @click.option("--max-depth", default=None, type=int, help="Optional CART max depth.")
-def train_tree_generator(
+def train_tree_generator_command(
     source: Path,
     method: str,
     level: str,
@@ -215,7 +215,7 @@ def train_tree_generator(
     print_wrote(out_path)
 
 
-@model_build.command("train-linked")
+@model_build_group.command("train-linked")
 @click.argument("source", type=_PATH)
 @click.option(
     "--input-format",
@@ -301,7 +301,7 @@ def train_tree_generator(
     help="Minimum samples allowed in each CART leaf.",
 )
 @click.option("--max-depth", default=None, type=int, help="Optional CART max depth.")
-def train_linked_tree_generator(
+def train_linked_tree_generator_command(
     source: Path,
     source_format: str,
     household_block: str,
@@ -457,7 +457,7 @@ def train_linked_tree_generator(
     print_wrote(manifest_out)
 
 
-@model_build.command("generate")
+@model_build_group.command("generate")
 @click.argument("model_path", type=_PATH)
 @click.option("--rows", required=True, type=int, help="Number of rows to generate.")
 @click.option(
@@ -476,7 +476,7 @@ def train_linked_tree_generator(
     help="Optional output JSON manifest with model and seed provenance.",
 )
 @click.option("--random-seed", default=None, type=int, help="Optional generation seed.")
-def generate_tree_population(
+def generate_tree_population_command(
     model_path: Path,
     rows: int,
     condition_values: tuple[str, ...],
@@ -527,7 +527,7 @@ def generate_tree_population(
         print_wrote(manifest_out)
 
 
-@model_build.command("generate-linked")
+@model_build_group.command("generate-linked")
 @click.option(
     "--household-model", required=True, type=_PATH, help="Household model JSON."
 )
@@ -569,7 +569,7 @@ def generate_tree_population(
     help="Optional output JSON manifest with model and seed provenance.",
 )
 @click.option("--random-seed", default=None, type=int, help="Optional generation seed.")
-def generate_linked_tree_population(
+def generate_linked_tree_population_command(
     household_model: Path,
     person_model: Path,
     households: int,
@@ -667,7 +667,7 @@ def generate_linked_tree_population(
     help="Override package household-size linkage column.",
 )
 @click.option("--random-seed", default=None, type=int, help="Optional generation seed.")
-def generate_model_population(
+def generate_model_population_command(
     package_path: str,
     households: int,
     condition_values: tuple[str, ...],
@@ -779,7 +779,7 @@ def generate_model_population(
     click.echo(output_dir)
 
 
-@model_build.command("audit")
+@model_build_group.command("audit")
 @click.argument("model_path", type=_PATH)
 @click.option(
     "--min-support",
@@ -825,7 +825,7 @@ def audit_tree_model_command(
     write_output(report, output_format, title="Tree Model Audit")
 
 
-@model_build.command("package")
+@model_build_group.command("package")
 @click.argument("model_path", type=_PATH)
 @click.option(
     "--out",
@@ -875,7 +875,7 @@ def package_tree_model_command(
         )
     package = {
         "schema_version": "synthpopcan-tree-package-v1",
-        "model": model.to_dict(),
+        "model": model.as_dict(),
         "audit": audit,
     }
     try:
@@ -887,7 +887,7 @@ def package_tree_model_command(
     print_wrote(out_path)
 
 
-@model_build.command("prepare-release")
+@model_build_group.command("prepare-release")
 @click.argument("model_path", type=_PATH)
 @click.option("--out", "out_path", required=True, type=_PATH)
 @click.option(
@@ -962,7 +962,7 @@ def prepare_tree_model_release_command(
         print_wrote(manifest_out)
 
 
-@model_build.command("check-release")
+@model_build_group.command("check-release")
 @click.option(
     "--household-model", required=True, type=_PATH, help="Household model JSON."
 )
@@ -1039,7 +1039,7 @@ def linked_tree_release_readiness_command(
     write_output(report, output_format, title="Linked Model Release Readiness")
 
 
-@model_build.command("package-linked")
+@model_build_group.command("package-linked")
 @click.option(
     "--household-model", required=True, type=_PATH, help="Household model JSON."
 )
@@ -1175,8 +1175,8 @@ def package_linked_tree_models_command(
             "person": _model_manifest_with_bytes(person_model_payload, person_model),
         },
         "models": {
-            "household": household_model_payload.to_dict(),
-            "person": person_model_payload.to_dict(),
+            "household": household_model_payload.as_dict(),
+            "person": person_model_payload.as_dict(),
         },
         "audits": {
             "household": household_audit,
@@ -2116,3 +2116,12 @@ def _effective_random_seed(model: TreeModel, random_seed: int | None) -> int:
 
 def write_tree_generation_manifest(path: Path, manifest: dict[str, Any]) -> None:
     write_json_object(path, manifest)
+
+
+# Compatibility aliases retain existing Python imports and Click object identity.
+model_build = model_build_group
+train_tree_generator = train_tree_generator_command
+train_linked_tree_generator = train_linked_tree_generator_command
+generate_tree_population = generate_tree_population_command
+generate_linked_tree_population = generate_linked_tree_population_command
+generate_model_population = generate_model_population_command

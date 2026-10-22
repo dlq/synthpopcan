@@ -106,11 +106,11 @@ def _read_statcan_sample(
 
 
 @click.group(name="microdata", cls=FriendlyGroup)
-def microdata() -> None:
+def microdata_group() -> None:
     """Inspect and normalize census microdata seed samples."""
 
 
-@microdata.command("inspect")
+@microdata_group.command("inspect")
 @click.argument("path", type=_PATH)
 @click.option(
     "--input-format",
@@ -140,7 +140,7 @@ def microdata() -> None:
     show_default=True,
     help="Output format for the inspection summary.",
 )
-def inspect_microdata(
+def inspect_microdata_command(
     path: Path,
     source_format: str,
     level: str,
@@ -169,7 +169,7 @@ def inspect_microdata(
     write_output(summary, output_format, title="Microdata Summary")
 
 
-@microdata.command("check-seed")
+@microdata_group.command("check-seed")
 @click.argument("path", type=_PATH)
 @click.option(
     "--input-format",
@@ -192,7 +192,7 @@ def inspect_microdata(
     show_default=True,
     help="Output format for the seed check.",
 )
-def check_microdata_seed(
+def check_microdata_seed_command(
     path: Path,
     source_format: str,
     columns: str,
@@ -218,7 +218,7 @@ def check_microdata_seed(
     write_report(report, output_format, print_seed_check_table)
 
 
-@microdata.command("suggest-tree-columns")
+@microdata_group.command("suggest-tree-columns")
 @click.argument("path", type=_PATH)
 @click.option(
     "--input-format",
@@ -236,7 +236,7 @@ def check_microdata_seed(
     show_default=True,
     help="Output format for the suggestions.",
 )
-def suggest_microdata_tree_columns(
+def suggest_microdata_tree_columns_command(
     path: Path,
     source_format: str,
     output_format: str,
@@ -256,7 +256,7 @@ def suggest_microdata_tree_columns(
     write_report(report, output_format, print_tree_column_suggestions_table)
 
 
-@microdata.command("feasibility")
+@microdata_group.command("feasibility")
 @click.argument("path", type=_PATH)
 @click.option(
     "--input-format",
@@ -334,7 +334,7 @@ def suggest_microdata_tree_columns(
     show_default=True,
     help="Output format for the feasibility report.",
 )
-def tree_geography_feasibility(
+def tree_geography_feasibility_command(
     path: Path,
     source_format: str,
     geo_column: str,
@@ -374,7 +374,7 @@ def tree_geography_feasibility(
     write_report(report, output_format, print_tree_geography_feasibility_table)
 
 
-@microdata.command("export-seed")
+@microdata_group.command("export-seed")
 @click.argument("path", type=_PATH)
 @click.option(
     "--input-format",
@@ -416,7 +416,7 @@ def tree_geography_feasibility(
     show_default=True,
     help="Output format for the export summary.",
 )
-def export_microdata_seed(
+def export_microdata_seed_command(
     path: Path,
     source_format: str,
     level: str | None,
@@ -462,7 +462,7 @@ def export_microdata_seed(
     _write_export_summary(summary, output_format, out_path, "Seed Export Summary")
 
 
-@microdata.command("export-training")
+@microdata_group.command("export-training")
 @click.argument("path", type=_PATH)
 @click.option(
     "--input-format",
@@ -503,7 +503,7 @@ def export_microdata_seed(
     show_default=True,
     help="Output format for the export summary.",
 )
-def export_microdata_training(
+def export_microdata_training_command(
     path: Path,
     source_format: str,
     level: str,
@@ -549,3 +549,13 @@ def write_rows(path: Path, rows: list[dict[str, str]]) -> None:
         writer = csv.DictWriter(handle, fieldnames=list(rows[0].keys()))
         writer.writeheader()
         writer.writerows(rows)
+
+
+# Compatibility aliases retain existing Python imports and Click object identity.
+microdata = microdata_group
+inspect_microdata = inspect_microdata_command
+check_microdata_seed = check_microdata_seed_command
+suggest_microdata_tree_columns = suggest_microdata_tree_columns_command
+tree_geography_feasibility = tree_geography_feasibility_command
+export_microdata_seed = export_microdata_seed_command
+export_microdata_training = export_microdata_training_command

@@ -423,8 +423,8 @@ def build_package(target: dict, sample_all, *, source: Path, year: int) -> dict:
             },
         },
         "models": {
-            "household": household_publishable.to_dict(),
-            "person": person_publishable.to_dict(),
+            "household": household_publishable.as_dict(),
+            "person": person_publishable.as_dict(),
         },
         "audits": {
             "household": household_audit,

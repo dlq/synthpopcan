@@ -5,6 +5,7 @@ from __future__ import annotations
 __all__ = [
     "ODEF_V3_ARCHIVE_SHA256",
     "ODEF_V3_ARCHIVE_URL",
+    "ODEFAdapter",
     "OdefAdapter",
     "normalize_odef_archive",
     "odef_source_profile",
@@ -110,7 +111,7 @@ _MAX_EXPANDED_BYTES = 64 * 1024 * 1024
 
 
 @dataclass(frozen=True)
-class OdefAdapter:
+class ODEFAdapter:
     """Reviewed source contract and normalizer for ODEF v3.0.1."""
 
     expected_sha256: str = ODEF_V3_ARCHIVE_SHA256
@@ -157,6 +158,10 @@ class OdefAdapter:
             "correction_notice_date": "2025-11-17",
             "coordinate_source": "geometry WKT",
         }
+
+
+# Supported 1.x name and annotation spelling.
+OdefAdapter = ODEFAdapter
 
 
 def odef_source_profile() -> SourceProfile:
@@ -210,7 +215,7 @@ def odef_source_profile() -> SourceProfile:
             "en": "Official title; project-written source summary.",
             "fr": "Official title; project translation of the source summary.",
         },
-        known_limitations=OdefAdapter.limitations,
+        known_limitations=ODEFAdapter.limitations,
     )
 
 

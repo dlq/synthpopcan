@@ -55,6 +55,7 @@ MODULE_LAYERS = {
         {
             "benchmarks",
             "calibration",
+            "control_suggestions",
             "canfed",
             "control_packs",
             "controls",
@@ -101,6 +102,7 @@ EAGER_FACADE_IMPORT_EXCEPTIONS = frozenset({"_interface"})
 CORE_MODULES = (
     "benchmarks",
     "calibration",
+    "control_suggestions",
     "controls",
     "diagnostics",
     "exchange",

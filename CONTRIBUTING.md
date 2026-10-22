@@ -74,6 +74,61 @@ artifacts, or validation must update the relevant claim and evidence in
 failure before or alongside its fix and should use an independent oracle or
 invariant where practical.
 
+## Naming
+
+Name modules for their responsibility: `control_suggestions` offers advice,
+while `ipf` and `small_area_synthesis` perform fitting. Python modules,
+functions, parameters, and local variables use `snake_case`; classes use
+`CapWords`; constants use `UPPER_SNAKE_CASE`. Ruff's `N` rules enforce the
+basic Python conventions. Match a focused test filename to its implementation
+module, or name a broader integration suite for the behaviour it exercises.
+
+Use lowercase hyphenated browser filenames, `camelCase` JavaScript functions
+and variables, and `CapWords` JavaScript classes. Maintainer scripts retain
+their existing underscore-separated filenames; shell check scripts retain
+their hyphenated names.
+
+Prefer domain names such as `characteristic_id`, `count`, and
+`controls_by_geography` over `mid`, `val`, and `data` in substantial scopes.
+Use `_path` for a filesystem path, `_id` for an identifier, `_count` for a
+count, and `_by_geography` for a geography-indexed mapping when that distinction
+helps. Short loop indices and conventional mathematical notation are fine in
+small scopes. Equation notation that conflicts with lint rules needs a narrow,
+explained suppression rather than a file-wide exemption.
+
+Keep established acronyms uppercase in Python class names, for example
+`IPFResult`, `WDSSelection`, `CARTTreeModel`, and `ODEFAdapter`. Retain established
+brand forms such as `CanFedAdapter`; JavaScript uses forms such as `buildIpfRequest`
+and `fetchJson`. Preserve source-controlled field names such as `AGEGRP`,
+`Gender`, `DAUID`, and `DGUID` exactly. Do not unify distinct concepts such as
+sex and gender, exact household size and grouped household size, or population
+universe and geography merely to make their names alike.
+
+Click callbacks use `<operation>_command` and groups use `<name>_group`;
+the established root `cli` and process entry point `main` are exceptions.
+Specify the CLI name explicitly when renaming a callback so recorded command
+paths remain stable. Exception classes end in `Error`, including internal
+control-flow exceptions.
+
+For dictionary serialization, prefer `as_dict()` paired with `from_dict()`.
+Use `as_summary()` for a deliberately incomplete summary. Existing `to_dict()`
+methods remain supported, including subclass overrides; the preferred
+`as_dict()` entry point delegates to them where necessary. Pydantic's
+`model_dump()` and third-party APIs retain their library-defined names.
+
+Use `read_*` for a specific persisted input, `load_*` when also resolving a
+registered identifier or existing object, `fetch_*` for remote acquisition,
+`build_*` for constructing an object, and `write_*` for persisting it.
+Established API meanings take precedence over retrofitting these guidelines.
+
+Follow the [1.x compatibility policy](docs/compatibility.md) for renames.
+Retain supported import paths, keyword parameters, CLI spellings, schema keys,
+and historical aliases. New internal calls should use preferred names;
+existing signature annotations may retain old alias spellings to preserve the
+interface manifest. Do not rewrite frozen interface baselines or dated source
+inventories. If a complexity-baseline function identity moves, record the exact
+old/new identity mapping and carry its original limit forward unchanged.
+
 ## Module Boundaries
 
 Keep dependency direction easy to reason about. Every package module belongs to
@@ -91,7 +146,7 @@ one responsibility layer:
 - contract modules own version, interface, licensing, Census Profile, and
   persisted-schema interpretation; and
 - domain modules such as `ipf`, `controls`, `tree`, `microdata`, `validation`,
-  `small_area_synthesis`, `calibration`, `statcan`, `geodata`, and `map_render`
+  `small_area_synthesis`, `control_suggestions`, `statcan`, `geodata`, and `map_render`
   own research rules and algorithms without importing UI or workflow adapters.
 
 Adapters may depend inward on workflows, runtime services, contracts, and

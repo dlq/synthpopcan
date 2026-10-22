@@ -7,7 +7,6 @@ from pathlib import Path
 
 import click
 
-from synthpopcan.calibration import build_control_suggestion_report
 from synthpopcan.cli_errors import FriendlyGroup
 from synthpopcan.cli_output import (
     click_file_access_error,
@@ -21,6 +20,7 @@ from synthpopcan.cli_output import (
     write_report,
 )
 from synthpopcan.console import print_wrote
+from synthpopcan.control_suggestions import build_control_suggestion_report
 from synthpopcan.workflows.ipf import (
     IPFNonConvergenceError,
     check_ipf_inputs,
@@ -45,12 +45,12 @@ __all__ = [
 ]
 
 
-@click.group(cls=FriendlyGroup)
-def ipf() -> None:
+@click.group("ipf", cls=FriendlyGroup)
+def ipf_group() -> None:
     """Run IPF workflows."""
 
 
-@ipf.command("check-inputs")
+@ipf_group.command("check-inputs")
 @click.option(
     "--seed", "seed_path", required=True, type=_PATH, help="Seed records CSV."
 )
@@ -68,7 +68,7 @@ def ipf() -> None:
     type=click.Choice(["json", "table"]),
     show_default=True,
 )
-def _check_ipf_inputs(
+def check_ipf_inputs_command(
     seed_path: Path,
     controls_path: Path,
     output_format: str,
@@ -83,7 +83,7 @@ def _check_ipf_inputs(
     write_report(report, output_format, print_ipf_input_check_table)
 
 
-@ipf.command("suggest-controls")
+@ipf_group.command("suggest-controls")
 @click.option(
     "--seed", "seed_path", required=True, type=_PATH, help="Seed records CSV."
 )
@@ -101,7 +101,7 @@ def _check_ipf_inputs(
     type=click.Choice(["json", "table"]),
     show_default=True,
 )
-def _suggest_ipf_controls(
+def suggest_ipf_controls_command(
     seed_path: Path,
     unit: str,
     output_format: str,
@@ -117,7 +117,7 @@ def _suggest_ipf_controls(
     write_report(report, output_format, print_ipf_control_suggestions_table)
 
 
-@ipf.command("fit")
+@ipf_group.command("fit")
 @click.option(
     "--seed", "seed_path", required=True, type=_PATH, help="Seed records CSV."
 )
@@ -144,7 +144,7 @@ def _suggest_ipf_controls(
     help="Write weights even when IPF does not meet the convergence tolerance.",
 )
 @click.option("--report", "report_path", type=_PATH, help="Optional JSON fit report.")
-def _fit_ipf_command(
+def fit_ipf_command(
     seed_path: Path,
     controls_path: Path,
     out_path: Path,
@@ -180,7 +180,7 @@ def _fit_ipf_command(
     print_wrote(out_path)
 
 
-@ipf.command("expand")
+@ipf_group.command("expand")
 @click.option(
     "--weights",
     "weights_path",
@@ -197,7 +197,7 @@ def _fit_ipf_command(
     show_default=True,
     help="Column containing fitted weights.",
 )
-def _expand_ipf(weights_path: Path, out_path: Path, weight_column: str) -> None:
+def expand_ipf_command(weights_path: Path, out_path: Path, weight_column: str) -> None:
     """Expand fitted weights into full synthetic rows."""
     try:
         expand_ipf_weights(
@@ -216,7 +216,7 @@ def _expand_ipf(weights_path: Path, out_path: Path, weight_column: str) -> None:
     print_wrote(out_path)
 
 
-@ipf.command("report")
+@ipf_group.command("report")
 @click.argument("path", type=_PATH)
 @click.option(
     "--format",
@@ -225,7 +225,7 @@ def _expand_ipf(weights_path: Path, out_path: Path, weight_column: str) -> None:
     type=click.Choice(["json", "table"]),
     show_default=True,
 )
-def _report_ipf(path: Path, output_format: str) -> None:
+def report_ipf_command(path: Path, output_format: str) -> None:
     """Print a fit report summary from ipf fit --report JSON."""
     try:
         report = json.loads(path.read_text())
@@ -234,3 +234,12 @@ def _report_ipf(path: Path, output_format: str) -> None:
     except json.JSONDecodeError as exc:
         raise click.ClickException(f"{path} is not valid JSON") from exc
     write_report(report, output_format, print_ipf_report_table)
+
+
+# Compatibility aliases retain existing Python imports and Click object identity.
+ipf = ipf_group
+_check_ipf_inputs = check_ipf_inputs_command
+_suggest_ipf_controls = suggest_ipf_controls_command
+_fit_ipf_command = fit_ipf_command
+_expand_ipf = expand_ipf_command
+_report_ipf = report_ipf_command

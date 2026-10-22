@@ -81,7 +81,7 @@ from synthpopcan.model_licensing import (
     validate_prepared_model_licensing,
 )
 from synthpopcan.models import fetch_model_package
-from synthpopcan.odef import ODEF_V3_ARCHIVE_SHA256, OdefAdapter
+from synthpopcan.odef import ODEF_V3_ARCHIVE_SHA256, ODEFAdapter
 from synthpopcan.tabular import format_csv_number
 from synthpopcan.tree import (
     generate_linked_population,
@@ -1090,7 +1090,7 @@ def enrich_odef(
     artifacts = run_reference_enrichment(
         _population_directory(population),
         Path(output_dir),
-        OdefAdapter(expected_sha256=ODEF_V3_ARCHIVE_SHA256),
+        ODEFAdapter(expected_sha256=ODEF_V3_ARCHIVE_SHA256),
         resource_path=Path(resource) if resource is not None else None,
         cache_directory=Path(cache_dir) if cache_dir is not None else None,
         acquired_at=acquired_at,

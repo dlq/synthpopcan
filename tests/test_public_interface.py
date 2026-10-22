@@ -56,7 +56,14 @@ def test_contract_covers_every_documented_advanced_api_member() -> None:
     advanced = contract["python"]["advanced"]
 
     assert [item["name"] for item in top_level] == synthpopcan.__all__
-    assert len(advanced) == 166
+    assert len(advanced) == 169
+    assert {
+        "synthpopcan.tree.CARTTreeModel",
+        "synthpopcan.tree.CartTreeModel",
+        "synthpopcan.odef.ODEFAdapter",
+        "synthpopcan.odef.OdefAdapter",
+        "synthpopcan.controls.WDSSelection",
+    } <= {item["import_path"] for item in advanced}
     assert len({item["import_path"] for item in advanced}) == len(advanced)
     assert all(item["module"].startswith("synthpopcan.") for item in advanced)
     modules = {item["module"] for item in advanced}

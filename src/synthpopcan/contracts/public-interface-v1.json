@@ -10780,6 +10780,22 @@
         "return_annotation": "dict[str, object]"
       },
       {
+        "import_path": "synthpopcan.odef.ODEFAdapter",
+        "kind": "class",
+        "module": "synthpopcan.odef",
+        "name": "ODEFAdapter",
+        "parameters": [
+          {
+            "annotation": "str",
+            "default": "a9ead09cc099fc36534a0e1da94883f18c8b3e814e4688dc2c5e191285f6d765",
+            "kind": "positional_or_keyword",
+            "name": "expected_sha256",
+            "required": false
+          }
+        ],
+        "return_annotation": "None"
+      },
+      {
         "import_path": "synthpopcan.odef.OdefAdapter",
         "kind": "class",
         "module": "synthpopcan.odef",
@@ -12123,6 +12139,29 @@
             "default": null,
             "kind": "positional_or_keyword",
             "name": "dimensions",
+            "required": true
+          }
+        ],
+        "return_annotation": "None"
+      },
+      {
+        "import_path": "synthpopcan.controls.WDSSelection",
+        "kind": "class",
+        "module": "synthpopcan.controls",
+        "name": "WDSSelection",
+        "parameters": [
+          {
+            "annotation": "str | None",
+            "default": null,
+            "kind": "positional_or_keyword",
+            "name": "reference_period",
+            "required": true
+          },
+          {
+            "annotation": "dict[str, tuple[str, ...]]",
+            "default": null,
+            "kind": "positional_or_keyword",
+            "name": "categories",
             "required": true
           }
         ],
@@ -14969,6 +15008,127 @@
           {
             "annotation": "str",
             "default": "conditional-frequency",
+            "kind": "positional_or_keyword",
+            "name": "model_type",
+            "required": false
+          }
+        ],
+        "return_annotation": "None"
+      },
+      {
+        "import_path": "synthpopcan.tree.CARTTreeModel",
+        "kind": "class",
+        "module": "synthpopcan.tree",
+        "name": "CARTTreeModel",
+        "parameters": [
+          {
+            "annotation": "TreeModelSpec",
+            "default": null,
+            "kind": "positional_or_keyword",
+            "name": "spec",
+            "required": true
+          },
+          {
+            "annotation": "dict[str, tuple[str, ...]]",
+            "default": null,
+            "kind": "positional_or_keyword",
+            "name": "feature_categories",
+            "required": true
+          },
+          {
+            "annotation": "tuple[dict[str, str], ...]",
+            "default": null,
+            "kind": "positional_or_keyword",
+            "name": "target_classes",
+            "required": true
+          },
+          {
+            "annotation": "tuple[int, ...]",
+            "default": null,
+            "kind": "positional_or_keyword",
+            "name": "children_left",
+            "required": true
+          },
+          {
+            "annotation": "tuple[int, ...]",
+            "default": null,
+            "kind": "positional_or_keyword",
+            "name": "children_right",
+            "required": true
+          },
+          {
+            "annotation": "tuple[int, ...]",
+            "default": null,
+            "kind": "positional_or_keyword",
+            "name": "feature",
+            "required": true
+          },
+          {
+            "annotation": "tuple[float, ...]",
+            "default": null,
+            "kind": "positional_or_keyword",
+            "name": "threshold",
+            "required": true
+          },
+          {
+            "annotation": "tuple[tuple[float, ...], ...]",
+            "default": null,
+            "kind": "positional_or_keyword",
+            "name": "value",
+            "required": true
+          },
+          {
+            "annotation": "tuple[int, ...]",
+            "default": null,
+            "kind": "positional_or_keyword",
+            "name": "n_node_samples",
+            "required": true
+          },
+          {
+            "annotation": "tuple[float, ...]",
+            "default": null,
+            "kind": "positional_or_keyword",
+            "name": "weighted_n_node_samples",
+            "required": true
+          },
+          {
+            "annotation": "str",
+            "default": null,
+            "kind": "positional_or_keyword",
+            "name": "source_format",
+            "required": true
+          },
+          {
+            "annotation": "int",
+            "default": null,
+            "kind": "positional_or_keyword",
+            "name": "records_trained",
+            "required": true
+          },
+          {
+            "annotation": "int",
+            "default": null,
+            "kind": "positional_or_keyword",
+            "name": "min_samples_leaf",
+            "required": true
+          },
+          {
+            "annotation": "int | None",
+            "default": null,
+            "kind": "positional_or_keyword",
+            "name": "max_depth",
+            "required": true
+          },
+          {
+            "annotation": "str",
+            "default": "private_working",
+            "kind": "positional_or_keyword",
+            "name": "release_class",
+            "required": false
+          },
+          {
+            "annotation": "str",
+            "default": "cart",
             "kind": "positional_or_keyword",
             "name": "model_type",
             "required": false

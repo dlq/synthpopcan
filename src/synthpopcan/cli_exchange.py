@@ -17,12 +17,12 @@ from synthpopcan.geography import GeographyUniverse
 _PATH = click.Path(path_type=Path)
 
 
-@click.group(cls=FriendlyGroup)
-def bundle() -> None:
+@click.group("bundle", cls=FriendlyGroup)
+def bundle_group() -> None:
     """Create and verify portable household/person exchange bundles."""
 
 
-@bundle.command("create")
+@bundle_group.command("create")
 @click.argument("population", type=_PATH)
 @click.option("--out", "output_dir", required=True, type=_PATH)
 @click.option("--census-vintage", type=int, default=None)
@@ -125,7 +125,7 @@ def create_bundle_command(
     click.echo(result.directory)
 
 
-@bundle.command("validate")
+@bundle_group.command("validate")
 @click.argument("bundle_dir", metavar="BUNDLE", type=_PATH)
 @click.option(
     "--format",
@@ -180,3 +180,7 @@ def _geography_universe(
         identifier_namespace=identifier_namespace,
         identifier_column=geography_column,
     )
+
+
+# Compatibility aliases retain existing Python imports and Click object identity.
+bundle = bundle_group

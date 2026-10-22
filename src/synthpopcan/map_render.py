@@ -43,7 +43,7 @@ def _lcc_to_wgs84(x: np.ndarray, y: np.ndarray) -> tuple[np.ndarray, np.ndarray]
     phi1 = math.radians(49.0)
     phi2 = math.radians(77.0)
     lam0 = math.radians(-91.86666666666666)
-    E0, N0 = 6_200_000.0, 3_000_000.0
+    E0, N0 = 6_200_000.0, 3_000_000.0  # noqa: N806 - projection notation
 
     def _m(phi: float) -> float:
         return math.cos(phi) / math.sqrt(1 - e2 * math.sin(phi) ** 2)
@@ -56,7 +56,7 @@ def _lcc_to_wgs84(x: np.ndarray, y: np.ndarray) -> tuple[np.ndarray, np.ndarray]
     m1, m2 = _m(phi1), _m(phi2)
     t1, t2 = _t(phi1), _t(phi2)
     n = math.log(m1 / m2) / math.log(t1 / t2)
-    F = m1 / (n * t1**n)
+    F = m1 / (n * t1**n)  # noqa: N806 - projection notation
     rho0 = a * F * _t(phi0) ** n
 
     dx = x - E0

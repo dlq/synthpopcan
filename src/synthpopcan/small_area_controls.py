@@ -96,7 +96,7 @@ def extract_controls_from_profile(
     dict
         ``{geo_id: {"hhsize": {cat: count}, "tenure": {cat: count}}}``
     """
-    data: dict[str, dict[str, dict[str, float]]] = defaultdict(
+    controls_by_geography: dict[str, dict[str, dict[str, float]]] = defaultdict(
         lambda: {"hhsize": {}, "tenure": {}}
     )
 
@@ -131,21 +131,24 @@ def extract_controls_from_profile(
                 identifiers=geo_ids,
             ):
                 continue
-            geo = row.normalized_geography
-            mid = row.normalized_characteristic
+            geography_id = row.normalized_geography
+            characteristic_id = row.normalized_characteristic
             try:
-                val = float(row.normalized_count)
+                count = float(row.normalized_count)
             except ValueError:
                 continue
-            if mid in hhsize_members:
-                data[geo]["hhsize"][hhsize_members[mid]] = val
-            elif mid in tenure_members:
-                category = tenure_members[mid]
-                data[geo]["tenure"][category] = (
-                    data[geo]["tenure"].get(category, 0.0) + val
+            if characteristic_id in hhsize_members:
+                controls_by_geography[geography_id]["hhsize"][
+                    hhsize_members[characteristic_id]
+                ] = count
+            elif characteristic_id in tenure_members:
+                category = tenure_members[characteristic_id]
+                controls_by_geography[geography_id]["tenure"][category] = (
+                    controls_by_geography[geography_id]["tenure"].get(category, 0.0)
+                    + count
                 )
 
-    return dict(data)
+    return dict(controls_by_geography)
 
 
 def extract_household_controls_for_pack(
@@ -233,7 +236,7 @@ def extract_household_controls_for_pack(
             + ", ".join(overlap)
         )
 
-    data: dict[str, dict[str, dict[str, float]]] = defaultdict(
+    controls_by_geography: dict[str, dict[str, dict[str, float]]] = defaultdict(
         lambda: {dimension: {} for dimension in dimensions}
     )
     observed: dict[str, dict[str, set[str]]] = defaultdict(
@@ -264,7 +267,7 @@ def extract_household_controls_for_pack(
                 identifiers=geo_ids,
             ):
                 continue
-            geo = row.normalized_geography
+            geography_id = row.normalized_geography
             member = row.normalized_characteristic
             selected = selectors.get(member)
             selected_root = root_selectors.get(member)
@@ -278,17 +281,17 @@ def extract_household_controls_for_pack(
                 continue
             if selected_root is not None:
                 root_dimension, _ = selected_root
-                roots[geo][root_dimension] = value
+                roots[geography_id][root_dimension] = value
                 continue
             assert selected is not None
             dimension, category = selected
-            values = data[geo][dimension]
+            values = controls_by_geography[geography_id][dimension]
             values[category] = values.get(category, 0.0) + value
-            observed[geo][dimension].add(member)
+            observed[geography_id][dimension].add(member)
 
-    for geo, by_dimension in list(data.items()):
+    for geography_id, by_dimension in list(controls_by_geography.items()):
         for dimension in dimensions:
-            root = roots[geo].get(dimension)
+            root = roots[geography_id].get(dimension)
             tolerance = next(
                 tolerance
                 for root_dimension, tolerance in root_selectors.values()
@@ -296,14 +299,14 @@ def extract_household_controls_for_pack(
             )
             vector_total = sum(by_dimension.get(dimension, {}).values())
             if (
-                observed[geo][dimension] != expected_ids[dimension]
+                observed[geography_id][dimension] != expected_ids[dimension]
                 or root is None
                 or abs(vector_total - root) > tolerance
             ):
                 by_dimension.pop(dimension, None)
         if not by_dimension:
-            data.pop(geo)
-    return dict(data)
+            controls_by_geography.pop(geography_id)
+    return dict(controls_by_geography)
 
 
 def scale_and_validate_pack_controls(
@@ -409,49 +412,52 @@ def scale_and_validate_controls(
     are dropped and reported so the caller can warn the user.
     """
     complete = {
-        geo: d
-        for geo, d in raw.items()
-        if d.get("hhsize")
-        and sum(d["hhsize"].values()) > 0
-        and d.get("tenure")
-        and sum(d["tenure"].values()) > 0
+        geography_id: margins
+        for geography_id, margins in raw.items()
+        if margins.get("hhsize")
+        and sum(margins["hhsize"].values()) > 0
+        and margins.get("tenure")
+        and sum(margins["tenure"].values()) > 0
     }
     dropped = [g for g in raw if g not in complete]
 
-    hhsize_grand = sum(sum(d["hhsize"].values()) for d in complete.values())
+    hhsize_grand = sum(sum(margins["hhsize"].values()) for margins in complete.values())
     if hhsize_grand == 0:
         raise ValueError("No household-size totals found in profile data.")
     if target_total < 0:
         raise ValueError("target total must be non-negative")
 
     household_keys = [
-        (geo, category)
-        for geo in sorted(complete)
-        for category in sorted(complete[geo]["hhsize"])
+        (geography_id, category)
+        for geography_id in sorted(complete)
+        for category in sorted(complete[geography_id]["hhsize"])
     ]
     household_allocations = _allocate_integer_counts(
-        [complete[geo]["hhsize"][category] for geo, category in household_keys],
+        [
+            complete[geography_id]["hhsize"][category]
+            for geography_id, category in household_keys
+        ],
         target_total,
     )
     allocated_households = dict(zip(household_keys, household_allocations, strict=True))
 
     scaled: dict[str, dict[str, dict[str, int]]] = {}
-    for geo in sorted(complete):
-        hhsize_cats = complete[geo]["hhsize"]
+    for geography_id in sorted(complete):
+        hhsize_cats = complete[geography_id]["hhsize"]
         hhsize_scaled = {
-            category: allocated_households[(geo, category)]
+            category: allocated_households[(geography_id, category)]
             for category in sorted(hhsize_cats)
         }
         hhsize_total = sum(hhsize_scaled.values())
 
-        tenure_cats = complete[geo]["tenure"]
+        tenure_cats = complete[geography_id]["tenure"]
         tenure_keys = sorted(tenure_cats)
         tenure_allocations = _allocate_integer_counts(
             [tenure_cats[category] for category in tenure_keys], hhsize_total
         )
         tenure_scaled = dict(zip(tenure_keys, tenure_allocations, strict=True))
 
-        scaled[geo] = {"hhsize": hhsize_scaled, "tenure": tenure_scaled}
+        scaled[geography_id] = {"hhsize": hhsize_scaled, "tenure": tenure_scaled}
 
     return scaled, dropped
 

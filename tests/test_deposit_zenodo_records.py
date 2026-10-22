@@ -1559,7 +1559,7 @@ def test_legacy_claim_crash_resumes_from_durable_owner_without_new_edit(
     _authorize_legacy_fixture(monkeypatch, deposition)
     interrupted = False
 
-    class Interrupted(RuntimeError):
+    class SimulatedInterruptionError(RuntimeError):
         pass
 
     def request(method, url, **kwargs):
@@ -1567,12 +1567,12 @@ def test_legacy_claim_crash_resumes_from_durable_owner_without_new_edit(
         response = fake.request(method, url, **kwargs)
         if method == "PUT" and not interrupted:
             interrupted = True
-            raise Interrupted
+            raise SimulatedInterruptionError
         return response
 
     monkeypatch.setattr(MODULE, "_request", request)
     resume = _action_intent_resume(deposition)
-    with pytest.raises(Interrupted):
+    with pytest.raises(SimulatedInterruptionError):
         MODULE.deposit_one(
             deposition,
             api=MODULE.PRODUCTION_API,
@@ -1702,17 +1702,17 @@ def test_owned_newversion_with_extra_file_fails_before_mutation(monkeypatch) -> 
     fake = _FakeZenodo(deposition, new_version=True)
     checkpoints: list[dict] = []
 
-    class Interrupted(RuntimeError):
+    class SimulatedInterruptionError(RuntimeError):
         pass
 
     def stop_created(result):
         checkpoints.append(result)
         if result["state"] == "created":
-            raise Interrupted
+            raise SimulatedInterruptionError
 
     monkeypatch.setattr(MODULE, "_request", fake.request)
     monkeypatch.setattr(MODULE, "_asset_bytes", lambda item: _payload(item)[0])
-    with pytest.raises(Interrupted):
+    with pytest.raises(SimulatedInterruptionError):
         MODULE.deposit_one(
             deposition,
             api=MODULE.SANDBOX_API,
@@ -1748,17 +1748,17 @@ def test_resume_rejects_wrong_bare_candidate_md5_before_delete(monkeypatch) -> N
     checkpoints: list[dict] = []
     payload = _payload(deposition)[0]
 
-    class Interrupted(RuntimeError):
+    class SimulatedInterruptionError(RuntimeError):
         pass
 
     def stop_created(result):
         checkpoints.append(result)
         if result["state"] == "created":
-            raise Interrupted
+            raise SimulatedInterruptionError
 
     monkeypatch.setattr(MODULE, "_request", fake.request)
     monkeypatch.setattr(MODULE, "_asset_bytes", lambda item: payload)
-    with pytest.raises(Interrupted):
+    with pytest.raises(SimulatedInterruptionError):
         MODULE.deposit_one(
             deposition,
             api=MODULE.SANDBOX_API,
@@ -1796,7 +1796,7 @@ def test_metadata_publish_before_checkpoint_resumes_without_republishing(
     checkpoints: list[dict] = []
     interrupted = False
 
-    class Interrupted(RuntimeError):
+    class SimulatedInterruptionError(RuntimeError):
         pass
 
     def request(method, url, **kwargs):
@@ -1806,11 +1806,11 @@ def test_metadata_publish_before_checkpoint_resumes_without_republishing(
             interrupted = True
             assert fake.published is not None
             fake.draft = {**fake.published, "submitted": True, "state": "done"}
-            raise Interrupted
+            raise SimulatedInterruptionError
         return response
 
     monkeypatch.setattr(MODULE, "_request", request)
-    with pytest.raises(Interrupted):
+    with pytest.raises(SimulatedInterruptionError):
         MODULE.deposit_one(
             deposition,
             api=MODULE.SANDBOX_API,
@@ -2010,7 +2010,7 @@ def test_exact_interrupted_newversion_fetches_full_summary_then_claims(
     summary = _draft_listing_summary(fake.draft)
     checkpoints: list[dict] = []
 
-    class Interrupted(RuntimeError):
+    class SimulatedInterruptionError(RuntimeError):
         pass
 
     def request(method, url, **kwargs):
@@ -2021,13 +2021,13 @@ def test_exact_interrupted_newversion_fetches_full_summary_then_claims(
     def stop_after_claim(result):
         checkpoints.append(result)
         if result["state"] == "created":
-            raise Interrupted
+            raise SimulatedInterruptionError
 
     monkeypatch.setattr(MODULE, "_request", request)
     monkeypatch.setattr(MODULE, "_asset_bytes", lambda item: _payload(item)[0])
     monkeypatch.setattr(MODULE, "_verify_remote_download", lambda *args, **kwargs: None)
 
-    with pytest.raises(Interrupted):
+    with pytest.raises(SimulatedInterruptionError):
         MODULE.deposit_one(
             deposition,
             api=MODULE.PRODUCTION_API,
@@ -2076,7 +2076,7 @@ def test_current_owner_newversion_summary_is_refetched_before_resume(
     fake.draft["submitted"] = False
     summary = _draft_listing_summary(fake.draft)
 
-    class Interrupted(RuntimeError):
+    class SimulatedInterruptionError(RuntimeError):
         pass
 
     def request(method, url, **kwargs):
@@ -2086,13 +2086,13 @@ def test_current_owner_newversion_summary_is_refetched_before_resume(
 
     def stop_at_created(result):
         if result["state"] == "created":
-            raise Interrupted
+            raise SimulatedInterruptionError
 
     monkeypatch.setattr(MODULE, "_request", request)
     monkeypatch.setattr(MODULE, "_asset_bytes", lambda item: _payload(item)[0])
     monkeypatch.setattr(MODULE, "_verify_remote_download", lambda *args, **kwargs: None)
 
-    with pytest.raises(Interrupted):
+    with pytest.raises(SimulatedInterruptionError):
         MODULE.deposit_one(
             deposition,
             api=MODULE.SANDBOX_API,
@@ -2280,17 +2280,17 @@ def test_owned_resume_rebinds_parent_before_file_mutation(monkeypatch) -> None:
     fake = _FakeZenodo(deposition, new_version=True)
     checkpoints: list[dict] = []
 
-    class Interrupted(RuntimeError):
+    class SimulatedInterruptionError(RuntimeError):
         pass
 
     def stop_at_created(result):
         checkpoints.append(result)
         if result["state"] == "created":
-            raise Interrupted
+            raise SimulatedInterruptionError
 
     monkeypatch.setattr(MODULE, "_request", fake.request)
     monkeypatch.setattr(MODULE, "_asset_bytes", lambda item: _payload(item)[0])
-    with pytest.raises(Interrupted):
+    with pytest.raises(SimulatedInterruptionError):
         MODULE.deposit_one(
             deposition,
             api=MODULE.SANDBOX_API,
@@ -2320,17 +2320,17 @@ def test_owned_resume_rejects_mismatched_bucket_before_file_mutation(
     fake = _FakeZenodo(deposition, new_version=True)
     checkpoints: list[dict] = []
 
-    class Interrupted(RuntimeError):
+    class SimulatedInterruptionError(RuntimeError):
         pass
 
     def stop_at_created(result):
         checkpoints.append(result)
         if result["state"] == "created":
-            raise Interrupted
+            raise SimulatedInterruptionError
 
     monkeypatch.setattr(MODULE, "_request", fake.request)
     monkeypatch.setattr(MODULE, "_asset_bytes", lambda item: _payload(item)[0])
-    with pytest.raises(Interrupted):
+    with pytest.raises(SimulatedInterruptionError):
         MODULE.deposit_one(
             deposition,
             api=MODULE.SANDBOX_API,
@@ -2367,15 +2367,15 @@ def test_new_version_resumes_interrupted_created_and_uploaded_states(
     monkeypatch.setattr(MODULE, "_asset_bytes", lambda item: payload)
     monkeypatch.setattr(MODULE, "_verify_remote_download", lambda *args, **kwargs: None)
 
-    class Interrupted(RuntimeError):
+    class SimulatedInterruptionError(RuntimeError):
         pass
 
     def stop_at(result):
         checkpoints.append(result)
         if result["state"] == interrupted_state:
-            raise Interrupted
+            raise SimulatedInterruptionError
 
-    with pytest.raises(Interrupted):
+    with pytest.raises(SimulatedInterruptionError):
         MODULE.deposit_one(
             deposition,
             api=MODULE.SANDBOX_API,
@@ -2408,18 +2408,18 @@ def test_nonterminal_newversion_resume_requires_predecessor_still_latest(
     payload = _payload(deposition)[0]
     checkpoints: list[dict] = []
 
-    class Interrupted(RuntimeError):
+    class SimulatedInterruptionError(RuntimeError):
         pass
 
     def stop_at(result):
         checkpoints.append(result)
         if result["state"] == interrupted_state:
-            raise Interrupted
+            raise SimulatedInterruptionError
 
     monkeypatch.setattr(MODULE, "_request", fake.request)
     monkeypatch.setattr(MODULE, "_asset_bytes", lambda item: payload)
     monkeypatch.setattr(MODULE, "_verify_remote_download", lambda *args, **kwargs: None)
-    with pytest.raises(Interrupted):
+    with pytest.raises(SimulatedInterruptionError):
         MODULE.deposit_one(
             deposition,
             api=MODULE.SANDBOX_API,
@@ -2507,7 +2507,7 @@ def test_resume_detects_publish_that_preceded_its_checkpoint(monkeypatch) -> Non
     checkpoints: list[dict] = []
     publish_interrupted = False
 
-    class Interrupted(RuntimeError):
+    class SimulatedInterruptionError(RuntimeError):
         pass
 
     def request(method, url, **kwargs):
@@ -2521,14 +2521,14 @@ def test_resume_detects_publish_that_preceded_its_checkpoint(monkeypatch) -> Non
             publish_interrupted = True
             assert fake.published is not None
             fake.draft = {**fake.published, "submitted": True, "state": "done"}
-            raise Interrupted
+            raise SimulatedInterruptionError
         return response
 
     monkeypatch.setattr(MODULE, "_request", request)
     monkeypatch.setattr(MODULE, "_asset_bytes", lambda item: payload)
     monkeypatch.setattr(MODULE, "_verify_remote_download", lambda *args, **kwargs: None)
 
-    with pytest.raises(Interrupted):
+    with pytest.raises(SimulatedInterruptionError):
         MODULE.deposit_one(
             deposition,
             api=MODULE.SANDBOX_API,

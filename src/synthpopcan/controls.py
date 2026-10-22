@@ -45,6 +45,7 @@ __all__ = [
     "ControlCell",
     "ControlMargin",
     "ControlTable",
+    "WDSSelection",
     "WdsSelection",
     "build_wds_category_mapping_template",
     "census_profile_template",
@@ -70,11 +71,15 @@ class _MarginGroup:
 
 
 @dataclass(frozen=True)
-class WdsSelection:
+class WDSSelection:
     """Category filters for one reproducible WDS table snapshot."""
 
     reference_period: str | None
     categories: dict[str, tuple[str, ...]]
+
+
+# Supported 1.x name and annotation spelling.
+WdsSelection = WDSSelection
 
 
 @dataclass(frozen=True)
@@ -508,7 +513,7 @@ def read_wds_selection(path: Path) -> WdsSelection:
         if len(values) != len(raw_values) or not values:
             raise ValueError("WDS selection category arrays must contain strings")
         categories[column] = values
-    return WdsSelection(reference_period=reference_period, categories=categories)
+    return WDSSelection(reference_period=reference_period, categories=categories)
 
 
 def _wds_row_matches_selection(row: dict[str, str], selection: WdsSelection) -> bool:
