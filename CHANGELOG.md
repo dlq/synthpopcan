@@ -4,6 +4,8 @@ All notable public changes to SynthPopCan are tracked here.
 
 ## Unreleased
 
+## 1.1.2 - 2026-10-22
+
 - Fix broad-pack web reconciliation, reject conflicting small-area sources and
   invalid validation tolerances, enforce record/weight alignment, and avoid
   false IPF convergence after numerical overflow. Map statistics retain missing
