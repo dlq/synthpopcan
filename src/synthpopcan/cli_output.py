@@ -12,6 +12,11 @@ from typing import Any
 import click
 from rich.table import Table
 
+from synthpopcan.cli_errors import (
+    click_file_access_error,
+    click_value_error,
+    format_file_access_error,
+)
 from synthpopcan.console import make_table, print_summary_table, print_table
 
 __all__ = [
@@ -66,36 +71,6 @@ def format_policy_decision_label(policy: dict[str, Any]) -> str:
     )
     values = [policy.get("status"), policy.get("basis"), authority]
     return "; ".join(str(value) for value in values if value)
-
-
-def format_file_access_error(path: object, action: str, exc: OSError) -> str:
-    """Build a friendly CLI message for input/output file access failures."""
-
-    reason = getattr(exc, "strerror", None) or str(exc)
-    return (
-        f"Could not {action} {path}: {reason}. "
-        "Check that the path is correct and that SynthPopCan has permission "
-        "to access it."
-    )
-
-
-def click_file_access_error(
-    path: object,
-    action: str,
-    exc: OSError,
-) -> click.ClickException:
-    """Wrap a file access failure in a user-facing Click exception."""
-
-    return click.ClickException(format_file_access_error(path, action, exc))
-
-
-def click_value_error(
-    exc: ValueError,
-    formatter: Callable[[ValueError], str] = str,
-) -> click.ClickException:
-    """Wrap a domain validation error in a Click exception."""
-
-    return click.ClickException(formatter(exc))
 
 
 def read_csv_rows(path: Path) -> list[dict[str, str]]:

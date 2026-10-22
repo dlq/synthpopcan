@@ -10,6 +10,7 @@ from pathlib import Path
 import click
 
 from synthpopcan.api import EnrichmentResult, enrich_can_fed, enrich_odef
+from synthpopcan.cli_errors import FriendlyGroup
 from synthpopcan.cli_output import click_file_access_error, click_value_error
 from synthpopcan.console import print_wrote
 from synthpopcan.enrichment import (
@@ -25,7 +26,7 @@ from synthpopcan.geography import GeographyUniverse
 _PATH = click.Path(path_type=Path)
 
 
-@click.group()
+@click.group(cls=FriendlyGroup)
 def enrich() -> None:
     """Register sources and attach validated sidecar layers to populations."""
 

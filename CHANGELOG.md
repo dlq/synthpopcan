@@ -4,6 +4,12 @@ All notable public changes to SynthPopCan are tracked here.
 
 ## Unreleased
 
+- Give CLI failures actionable messages for unavailable remote services,
+  malformed or incomplete inputs, filesystem problems, missing dependencies,
+  and unexpected exceptions. Explain WDS outage pages instead of exposing
+  JSON-parser errors, and support opt-in traceback diagnostics with
+  `SYNTHPOPCAN_DEBUG=1` while retaining CLI arguments, output streams, and exit codes.
+
 ## 1.1.1 - 2026-10-07
 
 Maintenance fixes, clearer internal boundaries, and dependency updates.

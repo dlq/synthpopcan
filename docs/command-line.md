@@ -254,6 +254,20 @@ Read the first error before changing the invocation. Common causes include a
 misspelled path, a missing column, incompatible controls, a private-data guard,
 or an unavailable network source.
 
+Errors are written to standard error. Input and operational failures exit with
+status `1`; incorrect command syntax exits with status `2` and a usage hint.
+Messages identify common network, file, encoding, and input-format problems
+and suggest a next step. A Statistics Canada outage page is reported as an
+unavailable API response, rather than a JSON-parser failure. Retry a remote
+request later if the service is unavailable; do not change valid input data to
+work around a service outage.
+
+Unexpected exceptions show a short error and an issue-reporting link. Set
+`SYNTHPOPCAN_DEBUG=1` when invoking the command to let unexpected exceptions
+produce their full Python traceback. For example, prefix the command with
+`SYNTHPOPCAN_DEBUG=1` in a POSIX shell. Include the command, SynthPopCan version,
+and relevant diagnostic details in a bug report.
+
 Use `--help` to check the command shape, then use the **Troubleshooting** section
 of the relevant chapter. In particular:
 

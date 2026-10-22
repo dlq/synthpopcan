@@ -52,6 +52,7 @@ from rich.progress import (
 )
 from rich.table import Table
 
+from synthpopcan.cli_errors import FriendlyCommand, FriendlyGroup
 from synthpopcan.cli_output import (
     format_file_access_error,
     format_licence_label,
@@ -101,7 +102,7 @@ from synthpopcan.workflows.models import (
 _PATH = click.Path(path_type=Path)
 
 
-@click.group("build")
+@click.group("build", cls=FriendlyGroup)
 def model_build() -> None:
     """Train, audit, and package model artifacts."""
 
@@ -639,7 +640,7 @@ def generate_linked_tree_population(
         print_wrote(manifest_out)
 
 
-@click.command("generate")
+@click.command("generate", cls=FriendlyCommand)
 @click.argument("package_path", metavar="MODEL")
 @click.option(
     "--households",
@@ -1200,7 +1201,7 @@ def package_linked_tree_models_command(
     print_wrote(out_path)
 
 
-@click.command("inspect")
+@click.command("inspect", cls=FriendlyCommand)
 @click.argument("package_path", metavar="PACKAGE")
 @click.option(
     "--format",

@@ -9,6 +9,7 @@ from pathlib import Path
 
 import click
 
+from synthpopcan.cli_errors import FriendlyGroup
 from synthpopcan.console import print_success, print_wrote
 from synthpopcan.exchange import create_exchange_bundle, validate_exchange_bundle
 from synthpopcan.geography import GeographyUniverse
@@ -16,7 +17,7 @@ from synthpopcan.geography import GeographyUniverse
 _PATH = click.Path(path_type=Path)
 
 
-@click.group()
+@click.group(cls=FriendlyGroup)
 def bundle() -> None:
     """Create and verify portable household/person exchange bundles."""
 

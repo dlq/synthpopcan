@@ -22,6 +22,7 @@ from rich.progress import (
 
 from synthpopcan._version import __version__
 from synthpopcan.cli_enrichment import enrich
+from synthpopcan.cli_errors import FriendlyGroup
 from synthpopcan.cli_exchange import bundle
 from synthpopcan.cli_geo import small_area
 from synthpopcan.cli_ipf import ipf
@@ -107,6 +108,7 @@ def main(argv: list[str] | None = None) -> int:
 
 
 @click.group(
+    cls=FriendlyGroup,
     context_settings={"help_option_names": ["-h", "--help"]},
     invoke_without_command=True,
     no_args_is_help=False,

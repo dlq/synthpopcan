@@ -10,6 +10,7 @@ from pathlib import Path
 
 import click
 
+from synthpopcan.cli_errors import FriendlyGroup
 from synthpopcan.cli_output import click_file_access_error, click_value_error
 from synthpopcan.console import print_wrote
 from synthpopcan.control_packs import (
@@ -191,7 +192,7 @@ def _optional_geography_universe(
         raise click_value_error(exc) from exc
 
 
-@click.group("geo")
+@click.group("geo", cls=FriendlyGroup)
 # Keep the Python object named for the field term while exposing a shorter CLI group.
 def small_area() -> None:
     """Assign and calibrate linked households to target geographies."""
@@ -1008,7 +1009,11 @@ def map_command(
         filename = exc.filename or households_path
         raise click_file_access_error(Path(filename), "process", exc) from exc
     except KeyError as exc:
-        raise click.ClickException(str(exc)) from exc
+        raise click.ClickException(
+            f"Required map field {str(exc)} was not found. "
+            "Check that --geo-column matches the population CSV and "
+            "--geo-id-field matches a field in the boundary data."
+        ) from exc
     except ValueError as exc:
         raise click_value_error(exc) from exc
 

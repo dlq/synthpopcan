@@ -1004,7 +1004,7 @@ def _census_profile_csv_members(names: list[str]) -> list[str]:
 
 def fetch_json(url: str) -> Any:
     with urlopen(url, timeout=_STATCAN_TIMEOUT_SECONDS) as response:
-        return json.loads(response.read().decode("utf-8"))
+        return _decode_wds_json(response.read())
 
 
 def post_json(url: str, payload: Any) -> Any:
@@ -1015,7 +1015,32 @@ def post_json(url: str, payload: Any) -> Any:
         method="POST",
     )
     with urlopen(request, timeout=_STATCAN_TIMEOUT_SECONDS) as response:
-        return json.loads(response.read().decode("utf-8"))
+        return _decode_wds_json(response.read())
+
+
+def _decode_wds_json(data: bytes) -> Any:
+    """Explain unavailable or malformed WDS responses without exposing their body."""
+
+    try:
+        text = data.decode("utf-8-sig")
+    except UnicodeDecodeError as exc:
+        raise ValueError(
+            "Statistics Canada WDS returned data that is not valid UTF-8. "
+            "The service response could not be read. Please try again later."
+        ) from exc
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError as exc:
+        if text.lstrip().startswith("<"):
+            detail = (
+                "Statistics Canada WDS returned HTML instead of API data. "
+                "The service may be temporarily unavailable."
+            )
+        elif not text.strip():
+            detail = "Statistics Canada WDS returned an empty response."
+        else:
+            detail = "Statistics Canada WDS returned invalid JSON data."
+        raise ValueError(f"{detail} Please try again later.") from exc
 
 
 def download_url(

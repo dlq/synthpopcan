@@ -8,6 +8,7 @@ from pathlib import Path
 import click
 
 from synthpopcan.calibration import build_control_suggestion_report
+from synthpopcan.cli_errors import FriendlyGroup
 from synthpopcan.cli_output import (
     click_file_access_error,
     click_value_error,
@@ -44,7 +45,7 @@ __all__ = [
 ]
 
 
-@click.group()
+@click.group(cls=FriendlyGroup)
 def ipf() -> None:
     """Run IPF workflows."""
 

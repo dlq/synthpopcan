@@ -10,6 +10,7 @@ from typing import Any
 
 import click
 
+from synthpopcan.cli_errors import FriendlyGroup
 from synthpopcan.cli_output import (
     click_file_access_error,
     click_value_error,
@@ -104,7 +105,7 @@ def _read_statcan_sample(
     )
 
 
-@click.group(name="microdata")
+@click.group(name="microdata", cls=FriendlyGroup)
 def microdata() -> None:
     """Inspect and normalize census microdata seed samples."""
 
