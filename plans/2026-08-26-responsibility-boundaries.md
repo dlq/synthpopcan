@@ -4,8 +4,8 @@ Status: active maintenance\
 Created: 2026-08-26\
 Last updated: 2026-10-22\
 Target: initial bounded tranche in `1.2.0`, then an ongoing `1.x` ratchet\
-Next action: complete `RB12-02`, extracting the characterized small-area
-preflight responsibility now that `RB12-01` route registration is separated\
+Next action: complete `RB12-06` documentation and `RB12-07` archive-state
+review slices; the preflight and national workflow extractions are complete\
 Roadmap: [PLANS.md](../PLANS.md) | [Plan index](README.md) |
 [Release train](2026-08-19-post-1-0-release-train.md)
 
@@ -46,8 +46,8 @@ dictionary is itself a supported versioned artifact.
 | ID | Status | Depends on | Deliverable | Acceptance |
 | --- | --- | --- | --- | --- |
 | `RB12-01` | `done` | Existing route-order and application-state behavior | Explicit `webapi` composition context and cohesive route-registration helpers | Factory state and exact route order are characterized; supported HTTP paths and handler behavior remain unchanged |
-| `RB12-02` | `ready` | `RB12-01` | Small-area preflight request/result and orchestration boundary | Success, rejection, event ordering, and durable-run behavior are characterized; the route delegates without owning calibration or persistence policy |
-| `RB12-03` | `blocked` | `RB12-04`; active `1.2.0` feature pressure | One selected `cli_geo` or `control_packs` responsibility extraction | The selected adapter becomes thinner, its supported façade remains compatible, and focused behavior plus forbidden-import tests pass |
+| `RB12-02` | `done` | `RB12-01` | Small-area preflight request/result and orchestration boundary | Success, rejection, event ordering, and durable-run behavior are characterized; the route delegates without owning calibration or persistence policy |
+| `RB12-03` | `done` | `RB12-04`; active `1.2.0` feature pressure | One selected `cli_geo` or `control_packs` responsibility extraction | The selected adapter becomes thinner, its supported façade remains compatible, and focused behavior plus forbidden-import tests pass |
 | `RB12-04` | `done` | Current source tree | Reproducible function-complexity and module-concentration baseline | The command, inputs, exclusions, and result are recorded; changed functions cannot silently raise the baseline |
 | `RB12-05` | `done` | Current coverage configuration | Exact two-decimal coverage comparison and candidate headroom | A result below `95.00%` fails without integer rounding; the release candidate reaches `95.25%` or the release remains blocked |
 | `RB12-06` | `ready` | Supported beginner/advanced surface inventories | Beginner-export documentation and changed-symbol docstring ratchet | Every beginner export is documented; changed supported symbols have docstrings; the measured undocumented count does not increase |
@@ -57,8 +57,10 @@ dictionary is itself a supported versioned artifact.
 
 The [2026-10-22 preparation record](../docs/records/readiness-2026-10-22.md)
 binds the current complexity baseline and enforced ratchet. Two-decimal
-coverage enforcement and local candidate headroom are verified at 95.26%;
-that headroom must still hold for the eventual release candidate.
+coverage enforcement initially recorded 95.26%. The
+[correctness/refactoring amendment](../docs/records/correctness-refactor-2026-10-22.md)
+records 95.47% after the workflow extractions; candidate headroom must still
+hold for the eventual release candidate.
 
 ## Initial Hotspots And Intended Boundaries
 
@@ -79,9 +81,11 @@ research-policy decisions.
 
 The route-registration slice is complete: `create_web_app` now constructs a
 shared application context and delegates cohesive route groups, with exact
-route-order and application-state characterization. The next slice is the
-small-area preflight. Preserve event ordering and durable run behaviour while
-moving its orchestration behind a narrow request/result boundary.
+route-order and application-state characterization. The small-area preflight extraction is also complete: typed workflow stages
+own source, control, support, and geography decisions while the HTTP adapter
+retains parsing and response translation. Regression checks preserve event
+ordering and durable run behaviour. See the
+[correctness and refactoring record](../docs/records/correctness-refactor-2026-10-22.md).
 
 ### Geography CLI
 

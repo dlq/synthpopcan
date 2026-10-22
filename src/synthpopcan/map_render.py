@@ -26,6 +26,8 @@ from typing import Any
 
 import numpy as np
 
+from synthpopcan._map_statistics import compute_geo_statistics
+
 # ---------------------------------------------------------------------------
 # Projection: StatCan Lambert → WGS-84
 # Both ADA and CT boundary shapefiles use NAD83 / Statistics Canada Lambert.
@@ -827,143 +829,8 @@ def _compute_geo_stats(
     geography_column: str,
     persons_path: Path | None = None,
 ) -> dict[str, dict[str, Any]]:
-    """Compute per-geography stats from synthesis CSVs.
-
-    Household-level variables (always computed):
-        n_households, avg_hh_size, pct_owner, pct_detached,
-        median_shelter_cost, pct_major_repairs
-
-    Person-level variables (requires *persons_path*):
-        n_persons, pct_child, pct_senior, pct_immigrant,
-        pct_vismin, median_hh_income
-    """
-    # --- household pass ---
-    hh_geo: dict[str, str] = {}  # hh_id → geo
-    counts: dict[str, int] = {}
-    owners: dict[str, int] = {}
-    detached: dict[str, int] = {}
-    maj_rep: dict[str, int] = {}
-    shelter: dict[str, list[float]] = {}
-    sizes: dict[str, list[int]] = {}
-    hh_id_col = "synthetic_household_id"
-
-    with households_path.open(newline="") as fh:
-        for row in csv.DictReader(fh):
-            geo = row.get(geography_column, "").strip()
-            if not geo:
-                continue
-            hh_id = row.get(hh_id_col, "")
-            hh_geo[hh_id] = geo
-
-            counts[geo] = counts.get(geo, 0) + 1
-            if row.get("TENUR") == "1":
-                owners[geo] = owners.get(geo, 0) + 1
-            if row.get("DTYPE") == "1":
-                detached[geo] = detached.get(geo, 0) + 1
-            if row.get("REPAIR") == "3":
-                maj_rep[geo] = maj_rep.get(geo, 0) + 1
-            try:
-                sc = int(row.get("SHELCO", 0) or 0)
-                if 1 <= sc < _SENTINEL:
-                    shelter.setdefault(geo, []).append(sc)
-            except ValueError:
-                pass
-            try:
-                sz = int(row.get("household_size", 0) or 0)
-                if sz > 0:
-                    sizes.setdefault(geo, []).append(sz)
-            except ValueError:
-                pass
-
-    stats: dict[str, dict[str, Any]] = {}
-    for geo, n in counts.items():
-        sc_med = _median(shelter.get(geo, []))
-        sz_lst = sizes.get(geo, [])
-        avg_sz = round(sum(sz_lst) / len(sz_lst), 2) if sz_lst else None
-        stats[geo] = {
-            "n_households": n,
-            "avg_hh_size": avg_sz,
-            "pct_owner": _pct_of(owners, geo, n),
-            "pct_detached": _pct_of(detached, geo, n),
-            "median_shelter_cost": round(sc_med) if sc_med is not None else None,
-            "pct_major_repairs": _pct_of(maj_rep, geo, n),
-        }
-
-    if persons_path is None:
-        return stats
-
-    # --- person pass ---
-    n_persons: dict[str, int] = {}
-    children: dict[str, int] = {}
-    seniors: dict[str, int] = {}
-    immigrants: dict[str, int] = {}
-    vismin: dict[str, int] = {}
-    hh_inc_lists: dict[str, list[float]] = {}  # hh_id → person incomes
-
-    with persons_path.open(newline="") as fh:
-        for row in csv.DictReader(fh):
-            geo = row.get(geography_column, "").strip()
-            if not geo or geo not in stats:
-                continue
-            hh_id = row.get(hh_id_col, "")
-
-            n_persons[geo] = n_persons.get(geo, 0) + 1
-
-            try:
-                age = int(row.get("AGEGRP", 0) or 0)
-                if 1 <= age <= 4:
-                    children[geo] = children.get(geo, 0) + 1
-                # 88 = 65+ (collapsed senior category in linked-model recode)
-                if age == 88 or age >= 14:
-                    seniors[geo] = seniors.get(geo, 0) + 1
-            except ValueError:
-                pass
-
-            try:
-                immstat = int(row.get("IMMSTAT", 0) or 0)
-                if immstat in (2, 3):  # immigrant or non-permanent resident
-                    immigrants[geo] = immigrants.get(geo, 0) + 1
-            except ValueError:
-                pass
-
-            try:
-                vm = int(row.get("VISMIN", 0) or 0)
-                # In linked-model recode: 1=visible minority, 2=not visible minority
-                # (collapsed from PUMF's 2–13 groups into a single indicator)
-                if vm == 1:
-                    vismin[geo] = vismin.get(geo, 0) + 1
-            except ValueError:
-                pass
-
-            try:
-                inc = int(row.get("TOTINC", 0) or 0)
-                if abs(inc) < _SENTINEL:
-                    hh_inc_lists.setdefault(hh_id, []).append(inc)
-            except ValueError:
-                pass
-
-    # Aggregate per-household income into per-geography medians
-    hh_income_by_geo: dict[str, list[float]] = {}
-    for hh_id, incomes in hh_inc_lists.items():
-        geo = hh_geo.get(hh_id)
-        if geo and geo in stats:
-            hh_income_by_geo.setdefault(geo, []).append(sum(incomes))
-
-    for geo in stats:
-        np_ = n_persons.get(geo, 0)
-        med_inc = round(_median(hh_income_by_geo.get(geo, [])) or 0)
-        stats[geo].update(
-            {
-                "n_persons": np_,
-                "pct_child": _pct_of(children, geo, np_),
-                "pct_senior": _pct_of(seniors, geo, np_),
-                "pct_immigrant": _pct_of(immigrants, geo, np_),
-                "pct_vismin": _pct_of(vismin, geo, np_),
-                "median_hh_income": med_inc,
-            }
-        )
-
-    return stats
+    """Compute observed statistics through the shared map-statistics boundary."""
+    return compute_geo_statistics(households_path, geography_column, persons_path)
 
 
 # ---------------------------------------------------------------------------

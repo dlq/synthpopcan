@@ -4,6 +4,13 @@ All notable public changes to SynthPopCan are tracked here.
 
 ## Unreleased
 
+- Fix broad-pack web reconciliation, reject conflicting small-area sources and
+  invalid validation tolerances, enforce record/weight alignment, and avoid
+  false IPF convergence after numerical overflow. Map statistics retain missing
+  values and distinguish immigrants from non-permanent residents. Extract
+  small-area preflight and national execution workflows and share worker
+  cancellation, progress, artifact publication, and terminal reporting.
+
 - Standardize CLI callback names, provide consistent acronym class names and
   `as_dict()` serialization, and move control advice into `control_suggestions`.
   Preserve previous imports, class aliases, serialization hooks, CLI spellings,

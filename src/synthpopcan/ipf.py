@@ -124,6 +124,8 @@ def expand_records(
         missing, the one-based record index is used.
     """
 
+    _validate_weight_count(records, weights)
+
     reserved = {"synthetic_id", "seed_id"}
     conflicting = sorted(
         reserved.intersection(str(key) for record in records for key in record)
@@ -254,23 +256,40 @@ def fit_ipf(
         for indexed_margin in indexed_margins:
             for key, target in indexed_margin.margin.targets.items():
                 indexes = indexed_margin.record_indexes.get(key, ())
-                current = sum(weights[index] for index in indexes)
-                if current == 0.0:
-                    if target == 0.0:
-                        continue
-                    raise ValueError(
-                        f"margin {indexed_margin.margin.dimensions!r} target {key!r} "
-                        "has no seed records"
-                    )
-                ratio = target / current
-                for index in indexes:
-                    weights[index] *= ratio
+                _adjust_scalar_cell(
+                    weights, indexes, target, indexed_margin.margin, key
+                )
 
         max_abs_error = _calculate_indexed_max_abs_error(weights, indexed_margins)
         if max_abs_error <= tolerance:
             return IPFResult(records, weights, True, iteration, max_abs_error)
 
     return IPFResult(records, weights, False, max_iterations, max_abs_error)
+
+
+def _adjust_scalar_cell(
+    weights: list[float],
+    indexes: tuple[int, ...],
+    target: float,
+    margin: IPFMargin,
+    key: CategoryKey,
+) -> None:
+    current = sum(weights[index] for index in indexes)
+    if current == 0.0:
+        if target == 0.0:
+            return
+        raise ValueError(
+            f"margin {margin.dimensions!r} target {key!r} has no seed records"
+        )
+    if not math.isfinite(current):
+        raise ValueError("accumulated weights must be finite")
+    ratio = target / current
+    for index in indexes:
+        weights[index] = (
+            weights[index] * ratio
+            if math.isfinite(ratio) and (ratio != 0 or target == 0)
+            else (weights[index] / current) * target
+        )
 
 
 @dataclass(frozen=True)
@@ -403,19 +422,7 @@ class NumpyIPFIndex:
             for enc, t, targeted in zip(
                 self.encodings, t_arrays, target_masks, strict=True
             ):
-                current = np.bincount(
-                    enc.cat_ids, weights=weights, minlength=enc.n_cats
-                )
-                # Unlike fit_ipf, a positive target whose supporting records
-                # have all been driven to zero weight is left unadjusted
-                # (ratio 1.0) and surfaces as non-convergence instead of
-                # raising. This is intentional: per-geography fits run in a
-                # thread pool, and one degenerate geography should produce a
-                # non-converged report rather than abort the whole run.
-                adjustable = targeted & (current > 0)
-                ratio = np.ones(enc.n_cats, dtype=np.float64)
-                ratio[adjustable] = t[adjustable] / current[adjustable]
-                weights *= ratio[enc.cat_ids]
+                _adjust_numpy_weights(weights, enc, t, targeted)
 
             max_abs_error = max(
                 (
@@ -438,6 +445,7 @@ class NumpyIPFIndex:
                     self.encodings, t_arrays, target_masks, strict=True
                 )
             )
+            _require_finite(max_abs_error, "IPF residuals")
             if max_abs_error <= tolerance:
                 return weights, True, iteration, max_abs_error
 
@@ -461,6 +469,34 @@ class NumpyIPFIndex:
                 key: float(current[idx]) for key, idx in enc.key_to_id.items()
             }
         return out
+
+
+def _adjust_numpy_weights(
+    weights: np.ndarray,
+    enc: _NumpyEncoding,
+    t: np.ndarray,
+    targeted: np.ndarray,
+) -> None:
+    current = np.bincount(enc.cat_ids, weights=weights, minlength=enc.n_cats)
+    # Unlike fit_ipf, a positive target whose supporting records
+    # have all been driven to zero weight is left unadjusted
+    # (ratio 1.0) and surfaces as non-convergence instead of
+    # raising. This is intentional: per-geography fits run in a
+    # thread pool, and one degenerate geography should produce a
+    # non-converged report rather than abort the whole run.
+    if not np.all(np.isfinite(current)):
+        raise ValueError("accumulated weights must be finite")
+    adjustable = targeted & (current > 0)
+    ratio = np.ones(enc.n_cats, dtype=np.float64)
+    with np.errstate(over="ignore"):
+        ratio[adjustable] = t[adjustable] / current[adjustable]
+    underflowed = adjustable & (t > 0) & (ratio == 0)
+    if np.all(np.isfinite(ratio)) and not np.any(underflowed):
+        weights *= ratio[enc.cat_ids]
+    else:
+        selected = adjustable[enc.cat_ids]
+        category_ids = enc.cat_ids[selected]
+        weights[selected] = weights[selected] / current[category_ids] * t[category_ids]
 
 
 def fit_ipf_numpy(
@@ -574,6 +610,7 @@ def weighted_totals(
             raise ValueError("weights must be non-negative")
         key = _category_key(record, dimensions)
         totals[key] = totals.get(key, 0.0) + weight
+        _require_finite(totals[key], "accumulated weights")
     return totals
 
 
@@ -606,6 +643,7 @@ def _calculate_indexed_max_abs_error(
             total = sum(
                 weights[index] for index in indexed_margin.record_indexes.get(key, ())
             )
+            _require_finite(total, "IPF residuals")
             max_abs_error = max(max_abs_error, abs(total - target))
     return max_abs_error
 
@@ -621,3 +659,13 @@ def _category_key(record: Record, dimensions: Iterable[str]) -> CategoryKey:
             raise ValueError(f"record is missing dimension {dimension!r}") from exc
         key.append(str(value))
     return tuple(key)
+
+
+def _require_finite(value: float, description: str) -> None:
+    if not math.isfinite(value):
+        raise ValueError(f"{description} must be finite")
+
+
+def _validate_weight_count(records: Sequence[Record], weights: Sequence[float]) -> None:
+    if len(records) != len(weights):
+        raise ValueError("weights must match the number of records")

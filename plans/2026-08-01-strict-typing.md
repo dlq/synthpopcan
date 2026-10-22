@@ -5,7 +5,7 @@ Created: 2026-08-01\
 Last updated: 2026-10-22\
 Target: incremental; not a numbered-release gate\
 Next action: use the refreshed `TYPE12-01` baseline for the independent
-boundary slices below; preflight typing still waits for `RB12-02`\
+boundary slices below; `TYPE12-02` can now use the extracted preflight workflow\
 Roadmap: [PLANS.md](../PLANS.md) | [Plan index](README.md)
 
 ## Purpose And Boundary
@@ -63,7 +63,7 @@ unchecked casts does not satisfy acceptance.
 | ID | Status | Depends on | Deliverable | Acceptance |
 | --- | --- | --- | --- | --- |
 | `TYPE12-01` | `done` | Current source tree and strict configuration | Reproducible current strict diagnostic baseline by module and rule | The command, date, source denominator, strict-clean paths, and diagnostic counts are recorded without weakening `standard` or exclusions |
-| `TYPE12-02` | `blocked` | `TYPE12-01`, `RB12-02` | Typed small-area preflight request/result boundary | The selected modules are strict-clean or have only named framework exceptions; malformed runtime data still fails validation |
+| `TYPE12-02` | `ready` | `TYPE12-01`, `RB12-02` | Typed small-area preflight request/result boundary | The selected modules are strict-clean or have only named framework exceptions; malformed runtime data still fails validation |
 | `TYPE12-03` | `ready` | `TYPE12-01` | Typed assurance report structures | Persisted and computed assurance fields narrow at one boundary; malformed evidence still fails validation and compatibility fixtures pass |
 | `TYPE12-04` | `ready` | `TYPE12-01` | Typed CLI output and presentation structures | CLI output helpers avoid unknown dictionaries, retain byte-stable machine fixtures, and pass focused CLI plus strict checks |
 | `TYPE12-05` | `ready` | `TYPE12-01` | Typed national-execution manifest and worker-message structures | Persisted/worker inputs validate at the boundary; resume and failure fixtures plus strict checks pass |

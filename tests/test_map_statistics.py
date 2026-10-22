@@ -406,7 +406,7 @@ def test_compute_geo_stats_pct_immigrant(tmp_path: Path) -> None:
     _write_persons(
         persons,
         [
-            # IMMSTAT 2 = immigrant, 3 = non-permanent resident (both count)
+            # IMMSTAT 2 = immigrant; 3 = non-permanent resident is distinct.
             {
                 "synthetic_person_id": "p1",
                 "synthetic_household_id": "h1",
@@ -439,7 +439,7 @@ def test_compute_geo_stats_pct_immigrant(tmp_path: Path) -> None:
 
     stats = _compute_geo_stats(hh, "ct", persons_path=persons)
 
-    assert stats["G1"]["pct_immigrant"] == pytest.approx(66.7, abs=0.05)
+    assert stats["G1"]["pct_immigrant"] == pytest.approx(33.3, abs=0.05)
 
 
 def test_compute_geo_stats_skips_rows_with_no_geo(tmp_path: Path) -> None:
@@ -502,8 +502,8 @@ def test_compute_geo_stats_non_numeric_agegrp_skipped(tmp_path: Path) -> None:
 
     stats = _compute_geo_stats(hh, "ct", persons_path=persons)
 
-    assert stats["G1"]["pct_senior"] == 0.0
-    assert stats["G1"]["pct_child"] == 0.0
+    assert stats["G1"]["pct_senior"] is None
+    assert stats["G1"]["pct_child"] is None
 
 
 def test_compute_geo_stats_non_numeric_immstat_skipped(tmp_path: Path) -> None:
@@ -514,7 +514,7 @@ def test_compute_geo_stats_non_numeric_immstat_skipped(tmp_path: Path) -> None:
 
     stats = _compute_geo_stats(hh, "ct", persons_path=persons)
 
-    assert stats["G1"]["pct_immigrant"] == 0.0
+    assert stats["G1"]["pct_immigrant"] is None
 
 
 def test_compute_geo_stats_non_numeric_vismin_skipped(tmp_path: Path) -> None:
@@ -525,7 +525,7 @@ def test_compute_geo_stats_non_numeric_vismin_skipped(tmp_path: Path) -> None:
 
     stats = _compute_geo_stats(hh, "ct", persons_path=persons)
 
-    assert stats["G1"]["pct_vismin"] == 0.0
+    assert stats["G1"]["pct_vismin"] is None
 
 
 def test_compute_geo_stats_non_numeric_totinc_skipped(tmp_path: Path) -> None:
@@ -536,4 +536,39 @@ def test_compute_geo_stats_non_numeric_totinc_skipped(tmp_path: Path) -> None:
 
     stats = _compute_geo_stats(hh, "ct", persons_path=persons)
 
-    assert stats["G1"]["median_hh_income"] == 0
+    assert stats["G1"]["median_hh_income"] is None
+
+
+def test_absent_map_fields_remain_unknown_and_are_not_offered(tmp_path):
+    from synthpopcan.map_render import _map_variable_specs
+
+    households = tmp_path / "households.csv"
+    persons = tmp_path / "persons.csv"
+    households.write_text("synthetic_household_id,ct,household_size\nh1,G1,1\n")
+    persons.write_text("synthetic_person_id,synthetic_household_id,ct\np1,h1,G1\n")
+    stats = _compute_geo_stats(households, "ct", persons)
+    assert stats["G1"]["median_hh_income"] is None
+    assert stats["G1"]["pct_immigrant"] is None
+    assert stats["G1"]["pct_owner"] is None
+    assert {variable["field"] for variable in _map_variable_specs(stats)} == {
+        "n_households",
+        "n_persons",
+        "avg_hh_size",
+    }
+
+
+def test_partial_household_income_is_unknown_but_observed_zero_is_zero(tmp_path):
+    households = tmp_path / "households.csv"
+    persons = tmp_path / "persons.csv"
+    households.write_text("synthetic_household_id,ct,household_size\nh1,G1,2\n")
+    persons.write_text(
+        "synthetic_person_id,synthetic_household_id,ct,TOTINC\n"
+        "p1,h1,G1,100\np2,h1,G1,\n"
+    )
+    assert (
+        _compute_geo_stats(households, "ct", persons)["G1"]["median_hh_income"] is None
+    )
+    persons.write_text(
+        "synthetic_person_id,synthetic_household_id,ct,TOTINC\np1,h1,G1,0\np2,h1,G1,0\n"
+    )
+    assert _compute_geo_stats(households, "ct", persons)["G1"]["median_hh_income"] == 0

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from collections.abc import Sequence
 from typing import Any
 
@@ -140,6 +141,7 @@ def build_tree_output_validation_report(
     distribution shifts beyond ``tolerance`` are reported as warnings.
     """
 
+    _validate_tolerance(tolerance)
     if not training_rows:
         raise ValueError("training rows are required")
     if not generated_rows:
@@ -302,3 +304,8 @@ def safe_proportion(count: float, total: float) -> float:
     if total == 0:
         return 0.0
     return count / total
+
+
+def _validate_tolerance(tolerance: float) -> None:
+    if not math.isfinite(tolerance) or tolerance < 0:
+        raise ValueError("tolerance must be finite and non-negative")

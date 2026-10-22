@@ -54,7 +54,7 @@ when its bounded artifact and decision gate are stated explicitly.
 | [Research-software stewardship](2026-07-19-research-software-stewardship.md) | Citation, preservation, licensing, support boundaries, publication evidence, and future scholarly-readiness gates | Preserve the verified `1.1.1` DOI, `1.1.0` Software Heritage identifiers, earlier records, and exact-commit publication process. |
 | [Strict typing](2026-08-01-strict-typing.md) | Package-wide Pyright `standard` and an incremental strict-clean ratchet | Use the refreshed `TYPE12-01` baseline to type each shared dynamic-data boundary independently. |
 | [Post-1.0 release train](2026-08-19-post-1-0-release-train.md) | Bounded minor-release scope, confidence, sequencing, acceptance gates, and the cross-cutting maintainability ratchet | Coordinate the committed `1.2.0` control, localization, and maintainability slice tables; keep `1.3.0` explicitly forecast. |
-| [Responsibility boundaries](2026-08-26-responsibility-boundaries.md) | Dependency direction, orchestration extraction, supported-surface documentation, and complexity ownership | Complete `RB12-02`, the characterized `webapi` small-area preflight extraction; route registration is already separated. |
+| [Responsibility boundaries](2026-08-26-responsibility-boundaries.md) | Dependency direction, orchestration extraction, supported-surface documentation, and complexity ownership | Complete `RB12-06` documentation and `RB12-07` archive-state review; preflight and national workflows are now extracted. |
 
 ## Active Feature Implementation
 

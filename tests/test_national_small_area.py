@@ -2608,3 +2608,52 @@ def test_cli_national_run_reports_plan_io_errors(
                 str(plan),
             ]
         )
+
+
+def test_national_workflow_preserves_batch_map_before_summary_order(
+    tmp_path, monkeypatch
+):
+    from synthpopcan.workflows import national
+
+    events = []
+    request = national.NationalRunRequest(
+        package_path="model",
+        plan_path=tmp_path / "plan.json",
+        limit=None,
+        jurisdiction_values=(),
+        random_seed=42,
+        condition_by_jurisdiction=False,
+        continue_on_error=False,
+        candidate_pool_size=10,
+        workers=1,
+        fit_workers=1,
+        force_candidate_pools=False,
+        allow_low_disk=False,
+        expected_geography_level="da",
+    )
+    monkeypatch.setattr(
+        national, "_plan_identity", lambda request: ("DAUID", "namespace")
+    )
+    monkeypatch.setattr(national, "_candidate_pools", lambda *args: {})
+
+    def execute(*args, **kwargs):
+        events.append("execute")
+        return {"status": "completed"}
+
+    def summarize(path):
+        events.append("summary")
+        return {}
+
+    monkeypatch.setattr(
+        national_small_area_module, "execute_canada_small_area_plan", execute
+    )
+    monkeypatch.setattr(
+        national_execution_module, "build_national_geography_summary", summarize
+    )
+    result = national.run_national_small_area_files(
+        request,
+        progress=lambda message: None,
+        after_batches=lambda plan, jurisdictions, column: events.append("maps"),
+    )
+    assert result.plan["status"] == "completed"
+    assert events == ["execute", "maps", "summary"]

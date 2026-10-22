@@ -430,3 +430,95 @@ def test_small_area_preflight_rejects_invalid_control_vectors(
         )
     assert store.list_runs() == []
     assert store.upload_path(bad_id, require_unclaimed=True).read_bytes() == body
+
+
+@pytest.mark.parametrize("vintage", [2016, 2021])
+def test_web_preflight_accepts_each_broad_person_margin_independently(
+    tmp_path, vintage
+):
+    from support.control_pack_fixtures import (
+        _GEOGRAPHY_IDS,
+        _evidence,
+        _expanded_population,
+        _expanded_tables,
+        _write_rows,
+    )
+
+    from synthpopcan.control_packs import plan_control_pack
+    from synthpopcan.controls import write_control_table
+
+    pack_id = f"statcan-{vintage}-broad-da-v1"
+    geography = _GEOGRAPHY_IDS["da"]
+    households, persons = _expanded_population(vintage)
+    controls, person_controls = _expanded_tables(
+        pack_id, households, persons, geography=geography
+    )
+    evidence = _evidence(
+        pack_id, controls, person_controls, (geography,), private_people=len(persons)
+    )
+    assert plan_control_pack(
+        pack_id, households, persons, controls, person_controls, evidence=evidence
+    )["passed"]
+    store = RunStore(tmp_path / "workspace")
+    inputs = {"control_pack_id": pack_id}
+    for name, rows in [
+        ("candidate_households", households),
+        ("candidate_persons", persons),
+    ]:
+        path = tmp_path / f"{name}.csv"
+        _write_rows(path, rows)
+        inputs[f"{name}_upload_id"] = store_upload(store, path.name, path.read_bytes())
+    for name, table in [("controls", controls), ("person_controls", person_controls)]:
+        path = tmp_path / f"{name}.csv"
+        write_control_table(path, table)
+        inputs[f"{name}_upload_id"] = store_upload(store, path.name, path.read_bytes())
+    inputs["control_pack_evidence_upload_id"] = store_upload(
+        store, "evidence.json", evidence.model_dump_json().encode()
+    )
+    result = _preflight_small_area_run(
+        store,
+        {
+            "workflow": "small_area",
+            "inputs": inputs,
+            "options": {"geography_dimension": "da"},
+        },
+    )
+    assert result["ready"] is True
+    assert result["control_pack_plan"]["passed"] is True
+    assert result["request"]["options"]["candidate_households"] == len(households)
+
+
+@pytest.mark.parametrize(
+    "selected",
+    [
+        (),
+        ("households",),
+        ("persons",),
+        ("model", "package"),
+        ("model", "households"),
+        ("model", "persons"),
+        ("package", "households"),
+        ("package", "persons"),
+        ("model", "package", "households"),
+        ("model", "package", "persons"),
+        ("model", "households", "persons"),
+        ("package", "households", "persons"),
+        ("model", "package", "households", "persons"),
+    ],
+    ids=lambda selected: "+".join(selected) or "no-source",
+)
+def test_small_area_rejects_all_ambiguous_or_incomplete_sources(
+    small_area_preflight_inputs, selected
+):
+    store, request = small_area_preflight_inputs
+    fields = {
+        "model": "model_id",
+        "package": "package_upload_id",
+        "households": "candidate_households_upload_id",
+        "persons": "candidate_persons_upload_id",
+    }
+    for field in fields.values():
+        request["inputs"].pop(field, None)
+    request["inputs"].update({fields[name]: "unused-source" for name in selected})
+    with pytest.raises(ValueError, match="provide"):
+        _preflight_small_area_run(store, request)

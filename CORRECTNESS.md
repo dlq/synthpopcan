@@ -45,6 +45,14 @@ for every inference, or that disclosure risk has been eliminated.
 
 ## How the evidence runs
 
+The [2026-10-22 correctness/refactoring record](https://github.com/dlq/synthpopcan/blob/main/docs/records/correctness-refactor-2026-10-22.md)
+documents boundary failures found beyond the previous green suite and their
+regressions. The additional checks cover an independent 2×2 odds-ratio IPF
+oracle, finite arithmetic, aligned expansion weights, finite validation
+tolerances, every invalid source-selection combination, multi-margin web/domain
+parity, and missing map observations. Passing a fitter alone does not validate
+downstream summaries or presentation semantics.
+
 - The [normal CI workflow](https://github.com/dlq/synthpopcan/actions/workflows/ci.yml)
   runs deterministic correctness tests on every pull request and push to
   `main`, across the supported Python 3.11 through 3.14 versions. It retains a

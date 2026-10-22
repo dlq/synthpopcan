@@ -3003,3 +3003,55 @@ def _margin_for_dimensions(
         margin for margin in table.margins if margin.dimensions == tuple(dimensions)
     ]
     return matches[0] if len(matches) == 1 else None
+
+
+def validate_control_pack_tables(
+    pack: ControlPackManifest,
+    household_controls: ControlTable,
+    person_controls: ControlTable,
+) -> set[str]:
+    """Validate table structure and exact totals using the planner's policies."""
+    issues = _control_structure_issues(pack, household_controls, person_controls)
+    households = _safe_geographies(
+        household_controls, pack.geography_column, unit="household", issues=issues
+    )
+    persons = _safe_geographies(
+        person_controls, pack.geography_column, unit="person", issues=issues
+    )
+    if issues:
+        raise ValueError(str(issues[0]["message"]))
+    if not households or households != persons:
+        raise ValueError(
+            "every required control-pack margin must cover the same geographies"
+        )
+    _, reconciliation_issues = _margin_total_reconciliation(
+        pack, household_controls, person_controls
+    )
+    if reconciliation_issues:
+        raise ValueError(str(reconciliation_issues[0]["message"]))
+    return households
+
+
+def validate_control_pack_evidence_binding(
+    pack: ControlPackManifest,
+    evidence: ControlPackEvidence,
+    household_controls: ControlTable,
+    person_controls: ControlTable,
+    geographies: set[str],
+) -> None:
+    """Bind evidence and reconcile each person margin independently."""
+    issues = _evidence_binding_issues(
+        pack, evidence, household_controls, person_controls
+    )
+    if issues:
+        issue = issues[0]
+        label = str(issue["field"]).replace("_sha256", "_checksum").replace("_", " ")
+        raise ValueError(
+            f"control-pack evidence {label} does not match the selected "
+            "pack or normalized controls"
+        )
+    _, universe_issues = _validate_universe_evidence(
+        pack, person_controls, sorted(geographies), evidence
+    )
+    if universe_issues:
+        raise ValueError(str(universe_issues[0]["message"]))

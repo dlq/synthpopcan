@@ -9,7 +9,9 @@ import multiprocessing
 import queue
 import threading
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
+from contextlib import contextmanager
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Protocol
 
@@ -107,28 +109,18 @@ def _ipf_worker(
     cancel_event: _CancelEvent,
 ) -> None:
     """Execute one IPF workflow in an isolated spawned process."""
-    root = Path(workspace)
-    run_dir = root / "runs" / run_id
-    input_paths = {
-        str(item["logical_name"]): root / str(item["path"])
-        for item in manifest["inputs"]
-    }
-    work_dir = run_dir / "work"
-    artifact_dir = run_dir / "artifacts"
-    work_weights = work_dir / "weights.csv"
-    work_report = work_dir / "fit-report.json"
-    options = manifest["request"].get("options", {})
-
-    def progress(event: WorkflowProgress) -> None:
-        if cancel_event.is_set():
-            raise _WorkerCancelledError
-        messages.put({"type": "progress", "event": event.as_dict()})
-
-    def check_cancelled() -> None:
-        if cancel_event.is_set():
-            raise _WorkerCancelledError
-
-    try:
+    with _worker_session(Path(workspace), messages, cancel_event) as session:
+        root = Path(workspace)
+        run_dir = root / "runs" / run_id
+        input_paths = {
+            str(item["logical_name"]): root / str(item["path"])
+            for item in manifest["inputs"]
+        }
+        work_dir = run_dir / "work"
+        artifact_dir = run_dir / "artifacts"
+        work_weights = work_dir / "weights.csv"
+        work_report = work_dir / "fit-report.json"
+        options = manifest["request"].get("options", {})
         result = fit_ipf_files(
             IPFFitRequest(
                 seed_path=input_paths["seed"],
@@ -136,7 +128,7 @@ def _ipf_worker(
                 output_path=work_weights,
                 weight_column=options.get("weight_column"),
                 max_iterations=int(options.get("max_iterations", 100)),
-                tolerance=float(options.get("tolerance", 1e-6)),
+                tolerance=float(options.get("tolerance", 1e-06)),
                 allow_nonconverged=bool(options.get("allow_nonconverged", False)),
                 report_path=work_report,
                 seed_reference="inputs/seed.csv",
@@ -144,52 +136,35 @@ def _ipf_worker(
                 output_reference="reproduced-weights.csv",
                 report_reference="reproduced-fit-report.json",
             ),
-            progress=progress,
+            progress=session.progress,
         )
-        if cancel_event.is_set():
-            raise _WorkerCancelledError
+        session.check_cancelled()
         final_weights = artifact_dir / "weights.csv"
         final_report = artifact_dir / "fit-report.json"
         artifacts = [
-            publish_artifact(
-                root,
+            session.publish(
                 work_weights,
                 final_weights,
                 logical_name="weights",
                 media_type="text/csv",
                 row_count=int(result.report["seed_records"]),
-                cancel_check=check_cancelled,
             ),
-            publish_artifact(
-                root,
+            session.publish(
                 work_report,
                 final_report,
                 logical_name="fit_report",
                 media_type="application/json",
-                cancel_check=check_cancelled,
             ),
         ]
-        messages.put(
+        session.succeed(
+            artifacts,
             {
-                "type": "succeeded",
-                "artifacts": artifacts,
-                "summary": {
-                    "converged": result.report["converged"],
-                    "iterations": result.report["iterations"],
-                    "max_abs_error": result.report["max_abs_error"],
-                    "seed_records": result.report["seed_records"],
-                },
-                "reproduction": result.reproduction.as_dict(),
-            }
-        )
-    except _WorkerCancelledError:
-        messages.put({"type": "cancelled"})
-    except Exception as exc:  # noqa: BLE001
-        messages.put(
-            {
-                "type": "failed",
-                "error": {"kind": type(exc).__name__, "message": str(exc)},
-            }
+                "converged": result.report["converged"],
+                "iterations": result.report["iterations"],
+                "max_abs_error": result.report["max_abs_error"],
+                "seed_records": result.report["seed_records"],
+            },
+            result.reproduction.as_dict(),
         )
 
 
@@ -201,31 +176,21 @@ def _model_worker(
     cancel_event: _CancelEvent,
 ) -> None:
     """Execute prepared-model generation in the spawned worker."""
-    root = Path(workspace)
-    run_dir = root / "runs" / run_id
-    work_dir = run_dir / "work"
-    artifact_dir = run_dir / "artifacts"
-    inputs = manifest["request"]["inputs"]
-    options = manifest["request"].get("options", {})
-    package_reference: str
-    if inputs.get("model_id"):
-        package_reference = str(inputs["model_id"])
-        package_path = work_dir / "package.json"
-        package_path.write_text(json.dumps(model_payload(package_reference)))
-    else:
-        package_reference = "inputs/package.json"
-        package_path = run_dir / "inputs" / "package.json"
-
-    def progress(event: WorkflowProgress) -> None:
-        if cancel_event.is_set():
-            raise _WorkerCancelledError
-        messages.put({"type": "progress", "event": event.as_dict()})
-
-    def check_cancelled() -> None:
-        if cancel_event.is_set():
-            raise _WorkerCancelledError
-
-    try:
+    with _worker_session(Path(workspace), messages, cancel_event) as session:
+        root = Path(workspace)
+        run_dir = root / "runs" / run_id
+        work_dir = run_dir / "work"
+        artifact_dir = run_dir / "artifacts"
+        inputs = manifest["request"]["inputs"]
+        options = manifest["request"].get("options", {})
+        package_reference: str
+        if inputs.get("model_id"):
+            package_reference = str(inputs["model_id"])
+            package_path = work_dir / "package.json"
+            package_path.write_text(json.dumps(model_payload(package_reference)))
+        else:
+            package_reference = "inputs/package.json"
+            package_path = run_dir / "inputs" / "package.json"
         result = generate_prepared_model_files(
             PreparedModelRequest(
                 package_path=package_path,
@@ -242,59 +207,40 @@ def _model_worker(
                 max_persons=LOCAL_RUN_MAX_PERSONS,
                 output_dir_reference="reproduced",
             ),
-            progress=progress,
+            progress=session.progress,
         )
-        if cancel_event.is_set():
-            raise _WorkerCancelledError
+        session.check_cancelled()
         artifacts = [
-            publish_artifact(
-                root,
+            session.publish(
                 result.households_path,
                 artifact_dir / "households.csv",
                 logical_name="households",
                 media_type="text/csv",
                 row_count=result.household_count,
-                cancel_check=check_cancelled,
             ),
-            publish_artifact(
-                root,
+            session.publish(
                 result.persons_path,
                 artifact_dir / "persons.csv",
                 logical_name="persons",
                 media_type="text/csv",
                 row_count=result.person_count,
-                cancel_check=check_cancelled,
             ),
-            publish_artifact(
-                root,
+            session.publish(
                 result.report_path,
                 artifact_dir / "generation-report.json",
                 logical_name="generation_report",
                 media_type="application/json",
-                cancel_check=check_cancelled,
             ),
         ]
-        messages.put(
+        session.succeed(
+            artifacts,
             {
-                "type": "succeeded",
-                "artifacts": artifacts,
-                "summary": {
-                    "generated_households": result.household_count,
-                    "generated_persons": result.person_count,
-                    "linked_validation_passed": result.report["validation"]["passed"],
-                    "package": result.report["package"],
-                },
-                "reproduction": result.reproduction.as_dict(),
-            }
-        )
-    except _WorkerCancelledError:
-        messages.put({"type": "cancelled"})
-    except Exception as exc:  # noqa: BLE001
-        messages.put(
-            {
-                "type": "failed",
-                "error": {"kind": type(exc).__name__, "message": str(exc)},
-            }
+                "generated_households": result.household_count,
+                "generated_persons": result.person_count,
+                "linked_validation_passed": result.report["validation"]["passed"],
+                "package": result.report["package"],
+            },
+            result.reproduction.as_dict(),
         )
 
 
@@ -306,39 +252,29 @@ def _small_area_worker(
     cancel_event: _CancelEvent,
 ) -> None:
     """Execute linked generation and small-area calibration in one worker."""
-    root = Path(workspace)
-    run_dir = root / "runs" / run_id
-    work_dir = run_dir / "work"
-    artifact_dir = run_dir / "artifacts"
-    request_inputs = manifest["request"]["inputs"]
-    options = manifest["request"].get("options", {})
-    input_paths = {
-        str(item["logical_name"]): root / str(item["path"])
-        for item in manifest["inputs"]
-    }
-    package_reference: str | None
-    package_path: Path | None
-    if request_inputs.get("model_id"):
-        package_reference = str(request_inputs["model_id"])
-        package_path = work_dir / "package.json"
-        package_path.write_text(json.dumps(model_payload(package_reference)))
-    elif request_inputs.get("package_upload_id"):
-        package_reference = "inputs/package.json"
-        package_path = input_paths["package"]
-    else:
-        package_reference = None
-        package_path = None
-
-    def progress(event: WorkflowProgress) -> None:
-        if cancel_event.is_set():
-            raise _WorkerCancelledError
-        messages.put({"type": "progress", "event": event.as_dict()})
-
-    def check_cancelled() -> None:
-        if cancel_event.is_set():
-            raise _WorkerCancelledError
-
-    try:
+    with _worker_session(Path(workspace), messages, cancel_event) as session:
+        root = Path(workspace)
+        run_dir = root / "runs" / run_id
+        work_dir = run_dir / "work"
+        artifact_dir = run_dir / "artifacts"
+        request_inputs = manifest["request"]["inputs"]
+        options = manifest["request"].get("options", {})
+        input_paths = {
+            str(item["logical_name"]): root / str(item["path"])
+            for item in manifest["inputs"]
+        }
+        package_reference: str | None
+        package_path: Path | None
+        if request_inputs.get("model_id"):
+            package_reference = str(request_inputs["model_id"])
+            package_path = work_dir / "package.json"
+            package_path.write_text(json.dumps(model_payload(package_reference)))
+        elif request_inputs.get("package_upload_id"):
+            package_reference = "inputs/package.json"
+            package_path = input_paths["package"]
+        else:
+            package_reference = None
+            package_path = None
         geography_payload = options.get("geography_universe")
         geography_universe = (
             GeographyUniverse.from_dict(geography_payload)
@@ -350,15 +286,13 @@ def _small_area_worker(
                 package_path=package_path,
                 controls_path=input_paths["controls"],
                 person_controls_path=input_paths.get("person_controls"),
-                control_pack=(
-                    str(request_inputs["control_pack_id"])
-                    if request_inputs.get("control_pack_id")
-                    else None
-                ),
+                control_pack=str(request_inputs["control_pack_id"])
+                if request_inputs.get("control_pack_id")
+                else None,
                 control_pack_evidence_path=input_paths.get("control_pack_evidence"),
                 candidates_dir=work_dir / "candidates",
                 output_dir=work_dir / "output",
-                candidate_households=int(options.get("candidate_households", 10_000)),
+                candidate_households=int(options.get("candidate_households", 10000)),
                 geography_dimension=str(options["geography_dimension"]),
                 geography_column=str(
                     options.get("geography_column") or options["geography_dimension"]
@@ -378,132 +312,163 @@ def _small_area_worker(
                 include_weights=bool(options.get("include_weights", False)),
                 chunk_size=int(options.get("chunk_size", 1000)),
                 boundaries_path=input_paths.get("boundaries"),
-                map_path=(
-                    work_dir / "output" / "map.html"
-                    if "boundaries" in input_paths
-                    else None
-                ),
+                map_path=work_dir / "output" / "map.html"
+                if "boundaries" in input_paths
+                else None,
                 geography_id_field=str(options.get("geography_id_field", "geo_id")),
                 map_title=str(options.get("map_title", "Synthetic Population")),
                 max_candidate_households=LOCAL_RUN_MAX_HOUSEHOLDS,
                 max_candidate_persons=LOCAL_RUN_MAX_PERSONS,
                 controls_reference="inputs/controls.csv",
-                person_controls_reference=(
-                    "inputs/person-controls.csv"
-                    if "person_controls" in input_paths
-                    else None
-                ),
-                control_pack_reference=(
-                    str(request_inputs["control_pack_id"])
-                    if request_inputs.get("control_pack_id")
-                    else None
-                ),
-                control_pack_evidence_reference=(
-                    "inputs/control-pack-evidence.json"
-                    if "control_pack_evidence" in input_paths
-                    else None
-                ),
-                candidate_households_reference=(
-                    "inputs/households.csv"
-                    if "candidate_households" in input_paths
-                    else None
-                ),
-                candidate_persons_reference=(
-                    "inputs/persons.csv" if "candidate_persons" in input_paths else None
-                ),
-                boundaries_reference=(
-                    "inputs/boundaries.geojson" if "boundaries" in input_paths else None
-                ),
+                person_controls_reference="inputs/person-controls.csv"
+                if "person_controls" in input_paths
+                else None,
+                control_pack_reference=str(request_inputs["control_pack_id"])
+                if request_inputs.get("control_pack_id")
+                else None,
+                control_pack_evidence_reference="inputs/control-pack-evidence.json"
+                if "control_pack_evidence" in input_paths
+                else None,
+                candidate_households_reference="inputs/households.csv"
+                if "candidate_households" in input_paths
+                else None,
+                candidate_persons_reference="inputs/persons.csv"
+                if "candidate_persons" in input_paths
+                else None,
+                boundaries_reference="inputs/boundaries.geojson"
+                if "boundaries" in input_paths
+                else None,
                 output_dir_reference="reproduced",
             ),
-            progress=progress,
+            progress=session.progress,
         )
-        check_cancelled()
+        session.check_cancelled()
         artifacts = [
-            publish_artifact(
-                root,
+            session.publish(
                 result.households_path,
                 artifact_dir / "households.csv",
                 logical_name="households",
                 media_type="text/csv",
                 row_count=int(result.details["assigned_households"]),
-                cancel_check=check_cancelled,
             ),
-            publish_artifact(
-                root,
+            session.publish(
                 result.persons_path,
                 artifact_dir / "persons.csv",
                 logical_name="persons",
                 media_type="text/csv",
                 row_count=int(result.details["assigned_persons"]),
-                cancel_check=check_cancelled,
             ),
-            publish_artifact(
-                root,
+            session.publish(
                 result.manifest_path,
                 artifact_dir / "manifest.json",
                 logical_name="linked_population_manifest",
                 media_type="application/json",
-                cancel_check=check_cancelled,
             ),
-            publish_artifact(
-                root,
+            session.publish(
                 result.report_path,
                 artifact_dir / "report.json",
                 logical_name="small_area_report",
                 media_type="application/json",
-                cancel_check=check_cancelled,
             ),
         ]
         if result.weights_path is not None:
             artifacts.append(
-                publish_artifact(
-                    root,
+                session.publish(
                     result.weights_path,
                     artifact_dir / "weights.csv",
                     logical_name="weights",
                     media_type="text/csv",
-                    cancel_check=check_cancelled,
                 )
             )
         if result.map_path is not None:
             artifacts.append(
-                publish_artifact(
-                    root,
+                session.publish(
                     result.map_path,
                     artifact_dir / "map.html",
                     logical_name="map",
                     media_type="text/html",
-                    cancel_check=check_cancelled,
                 )
             )
         summary = result.details["summary"]
-        messages.put(
+        session.succeed(
+            artifacts,
+            {
+                "assigned_households": result.details["assigned_households"],
+                "assigned_persons": result.details["assigned_persons"],
+                "total_geographies": summary["total_geographies"],
+                "non_converged_count": summary["non_converged_count"],
+                "max_abs_error": summary["max_abs_error"],
+                "realized_max_abs_error": summary["realized_max_abs_error"],
+                "largest_residuals": summary["largest_residuals"],
+                "suggested_next_steps": result.details["suggested_next_steps"],
+                "calibration_mode": result.details["calibration_mode"],
+                "control_pack": result.details.get("control_pack_plan", {}).get("pack")
+                if isinstance(result.details.get("control_pack_plan"), dict)
+                else None,
+            },
+            result.reproduction.as_dict(),
+        )
+
+
+@dataclass(frozen=True)
+class _WorkerSession:
+    root: Path
+    messages: _MessageQueue
+    cancel_event: _CancelEvent
+
+    def check_cancelled(self) -> None:
+        if self.cancel_event.is_set():
+            raise _WorkerCancelledError
+
+    def progress(self, event: WorkflowProgress) -> None:
+        self.check_cancelled()
+        self.messages.put({"type": "progress", "event": event.as_dict()})
+
+    def publish(
+        self,
+        source: Path,
+        destination: Path,
+        *,
+        logical_name: str,
+        media_type: str,
+        row_count: int | None = None,
+    ) -> dict[str, Any]:
+        return publish_artifact(
+            self.root,
+            source,
+            destination,
+            logical_name=logical_name,
+            media_type=media_type,
+            row_count=row_count,
+            cancel_check=self.check_cancelled,
+        )
+
+    def succeed(
+        self,
+        artifacts: list[dict[str, Any]],
+        summary: dict[str, Any],
+        reproduction: dict[str, object],
+    ) -> None:
+        self.check_cancelled()
+        self.messages.put(
             {
                 "type": "succeeded",
                 "artifacts": artifacts,
-                "summary": {
-                    "assigned_households": result.details["assigned_households"],
-                    "assigned_persons": result.details["assigned_persons"],
-                    "total_geographies": summary["total_geographies"],
-                    "non_converged_count": summary["non_converged_count"],
-                    "max_abs_error": summary["max_abs_error"],
-                    "realized_max_abs_error": summary["realized_max_abs_error"],
-                    "largest_residuals": summary["largest_residuals"],
-                    "suggested_next_steps": result.details["suggested_next_steps"],
-                    "calibration_mode": result.details["calibration_mode"],
-                    "control_pack": (
-                        result.details.get("control_pack_plan", {}).get("pack")
-                        if isinstance(result.details.get("control_pack_plan"), dict)
-                        else None
-                    ),
-                },
-                "reproduction": result.reproduction.as_dict(),
+                "summary": summary,
+                "reproduction": reproduction,
             }
         )
+
+
+@contextmanager
+def _worker_session(
+    root: Path, messages: _MessageQueue, cancel_event: _CancelEvent
+) -> Iterator[_WorkerSession]:
+    try:
+        yield _WorkerSession(root, messages, cancel_event)
     except _WorkerCancelledError:
         messages.put({"type": "cancelled"})
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         messages.put(
             {
                 "type": "failed",

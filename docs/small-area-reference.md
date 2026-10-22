@@ -1075,6 +1075,14 @@ Important options:
 
 Writes a self-contained HTML map from calibrated household/person outputs.
 
+Map percentages require complete observations for the relevant field in each
+geography. Missing or invalid demographic fields remain unknown, and variables
+with no observed values are omitted from the selector. Unknown income is not
+zero income: the median household income remains unknown when a household's
+person-income observations are incomplete. Observed zero income remains zero.
+The immigrant percentage counts the immigrant category only; non-permanent
+residents are a separate source category.
+
 ```bash
 synthpopcan geo map synthetic-population/ \
   --boundaries data/derived/statcan/census/2016/boundaries/2016-boundary-ct.geojson \

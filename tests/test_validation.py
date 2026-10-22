@@ -601,3 +601,46 @@ def write_csv(path: Path, fieldnames: list[str], rows: list[dict[str, str]]) -> 
         writer = csv.DictWriter(handle, fieldnames=fieldnames)
         writer.writeheader()
         writer.writerows(rows)
+
+
+@pytest.mark.parametrize("tolerance", [float("nan"), float("inf"), -0.1])
+def test_tree_validation_rejects_invalid_tolerance(tolerance):
+    with pytest.raises(ValueError, match="finite and non-negative"):
+        build_tree_output_validation_report(
+            training_rows=[{"category": "a"}, {"category": "b"}],
+            generated_rows=[{"category": "a"}] * 10,
+            target_columns=("category",),
+            conditioning_columns=(),
+            tolerance=tolerance,
+        )
+
+
+def test_cli_model_validation_rejects_nan_instead_of_passing(tmp_path):
+    from click.testing import CliRunner
+
+    from synthpopcan.cli import cli
+
+    training = tmp_path / "training.csv"
+    generated = tmp_path / "generated.csv"
+    training.write_text("category\na\nb\n")
+    generated.write_text("category\n" + "a\n" * 10)
+    result = CliRunner().invoke(
+        cli,
+        [
+            "validate",
+            "model",
+            "--training",
+            str(training),
+            "--generated",
+            str(generated),
+            "--target-columns",
+            "category",
+            "--tolerance",
+            "nan",
+            "--format",
+            "json",
+        ],
+    )
+    assert result.exit_code == 1
+    assert result.stdout == ""
+    assert "finite and non-negative" in result.stderr

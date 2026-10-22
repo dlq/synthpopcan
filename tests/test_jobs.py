@@ -664,3 +664,13 @@ def ipf_request(seed_upload_id: str, controls_upload_id: str) -> dict:
         },
         "options": {},
     }
+
+
+@pytest.mark.parametrize("worker", [_ipf_worker, _model_worker, _small_area_worker])
+def test_worker_preparation_failures_have_one_terminal_message(tmp_path, worker):
+    messages = queue.SimpleQueue()
+    worker(str(tmp_path), "run-id", {}, messages, threading.Event())
+    terminal = messages.get_nowait()
+    assert terminal["type"] == "failed"
+    assert terminal["error"]["kind"] == "KeyError"
+    assert messages.empty()

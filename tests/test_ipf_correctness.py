@@ -340,3 +340,97 @@ def test_integerized_expansion_reproduces_counts_and_unique_traceable_ids() -> N
 def test_integerization_rejects_non_finite_weights(invalid: list[float]) -> None:
     with pytest.raises(ValueError, match="finite"):
         integerize_weights(invalid)
+
+
+@pytest.mark.parametrize("weight_count", [1, 3])
+def test_expansion_rejects_mismatched_record_and_weight_counts(weight_count):
+    records = [{"category": "a"}, {"category": "b"}]
+    with pytest.raises(ValueError, match="weights.*match.*records"):
+        expand_records(records, [1.0] * weight_count)
+
+
+@pytest.mark.parametrize("initial,target", [(1e-308, 1e308), (1e308, 1e-308)])
+def test_scalar_ipf_handles_extreme_finite_feasible_targets(initial, target):
+    records = [{"category": "a", "weight": str(initial)}]
+    margin = IPFMargin(("category",), {("a",): target})
+    result = fit_ipf(records, [margin], weight_field="weight", tolerance=1e-320)
+    assert result.converged
+    assert result.weights == [target]
+    assert math.isfinite(result.max_abs_error)
+    assert result.max_abs_error == 0.0
+
+
+@pytest.mark.parametrize("initial,target", [(1e-308, 1e308), (1e308, 1e-308)])
+def test_vector_ipf_handles_extreme_finite_feasible_targets(initial, target):
+    records = [{"category": "a"}]
+    margin = IPFMargin(("category",), {("a",): target})
+    weights, converged, _, error = NumpyIPFIndex.build(records, [margin]).fit(
+        [margin], initial_weights=np.array([initial]), tolerance=1e-320
+    )
+    assert converged
+    assert weights.tolist() == [target]
+    assert error == 0.0
+
+
+def test_ipf_rejects_nonfinite_accumulated_weight_totals():
+    records = [{"category": "a", "weight": "1e308"}] * 2
+    margin = IPFMargin(("category",), {("a",): 1.0})
+    with pytest.raises(ValueError, match="finite"):
+        fit_ipf(records, [margin], weight_field="weight")
+    with pytest.raises(ValueError, match="finite"):
+        weighted_totals(records, [1e308, 1e308], ("category",))
+
+
+@pytest.mark.parametrize("seed", range(12))
+def test_both_ipf_backends_match_independent_two_by_two_oracle(seed):
+    from decimal import Decimal, localcontext
+
+    rng = random.Random(seed)
+    initial = [rng.randint(1, 30) for _ in range(4)]
+    row_one, col_one = Decimal(rng.randint(1, 99)), Decimal(rng.randint(1, 99))
+    row_two = Decimal(100) - row_one
+    # IPF preserves the seed odds ratio. Solve that invariant with fixed
+    # marginals independently of either fitting implementation.
+    with localcontext() as context:
+        context.prec = 60
+        odds = Decimal(initial[0] * initial[3]) / Decimal(initial[1] * initial[2])
+        lower, upper = max(Decimal(0), col_one - row_two), min(row_one, col_one)
+        for _ in range(220):
+            value = (lower + upper) / 2
+            residual = value * (row_two - col_one + value) - (
+                odds * (row_one - value) * (col_one - value)
+            )
+            if residual > 0:
+                upper = value
+            else:
+                lower = value
+        value = (lower + upper) / 2
+        expected = [
+            float(x)
+            for x in (
+                value,
+                row_one - value,
+                col_one - value,
+                row_two - col_one + value,
+            )
+        ]
+    records = [
+        {"row": str(i // 2), "column": str(i % 2), "weight": str(weight)}
+        for i, weight in enumerate(initial)
+    ]
+    margins = [
+        IPFMargin(("row",), {("0",): float(row_one), ("1",): float(row_two)}),
+        IPFMargin(("column",), {("0",): float(col_one), ("1",): 100 - float(col_one)}),
+    ]
+    scalar = fit_ipf(
+        records, margins, weight_field="weight", tolerance=1e-10, max_iterations=10_000
+    )
+    weights, converged, _, _ = NumpyIPFIndex.build(records, margins).fit(
+        margins,
+        initial_weights=np.asarray(initial, dtype=float),
+        tolerance=1e-10,
+        max_iterations=10_000,
+    )
+    assert scalar.converged and converged
+    assert scalar.weights == pytest.approx(expected, abs=1e-7)
+    assert weights.tolist() == pytest.approx(expected, abs=1e-7)
