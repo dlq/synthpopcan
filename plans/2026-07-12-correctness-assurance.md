@@ -2,11 +2,12 @@
 
 Status: active maintenance\
 Created: 2026-07-12\
-Last updated: 2026-08-19\
+Last updated: 2026-10-22\
 Target: ongoing correctness and release evidence\
 Next action: preserve the frozen `1.x` interface and exact-commit assurance
-gates; reassess Python 3.15 support after its final release and ecosystem-wheel
-availability in November 2026\
+gates; implement the shared local/CI test selections for `1.2.0`, and reassess
+Python 3.15 support after its final release and ecosystem-wheel availability
+in November 2026\
 Roadmap: [PLANS.md](../PLANS.md) | [Plan index](README.md)
 
 ## Current Contract
@@ -65,6 +66,22 @@ Later `1.x` releases must preserve:
 
 The operator sequence is in [RELEASING.md](../RELEASING.md). Release history
 belongs in [CHANGELOG.md](../CHANGELOG.md), not in this plan.
+
+## PR-Sized Work
+
+These tooling slices are scheduled for `1.2.0`; they do not change the `1.1.2`
+release harness.
+
+| ID | Status | Depends on | Deliverable | Acceptance |
+| --- | --- | --- | --- | --- |
+| `ASSURE12-01` | `ready` | Current pytest organization and release gates | One lightweight runner with named test selections and conservative selection from changed files | Local and CI invocations resolve the same named selection; dry-run output explains selected tests; shared or unmapped changes fall back to the full suite; selection regressions verify omissions and fallback without adding a heavyweight dependency |
+| `ASSURE12-02` | `blocked` | `ASSURE12-01` | GitHub CI integration and contributor guidance | Pull requests can use affected selections through the shared runner; main and release workflows retain full supported-Python, coverage, correctness, web, and distribution gates; required checks cannot report success merely because selection is empty or an upstream job failed; equivalent local commands and measured runtime are documented |
+
+Keep ordinary development focused on affected behaviour. Coverage thresholds
+apply to full-suite runs, not partial selections. Extended numerical and
+installed-distribution checks remain available as explicit selections and
+mandatory release gates. Prefer a small explicit mapping with safe fallback
+over a new test framework or an opaque dependency-discovery service.
 
 ## Scheduled Runtime Review
 
