@@ -1,12 +1,12 @@
 # Research-Software Stewardship Maintenance Plan
 
-Status: active maintenance; `1.1.0` release preserved\
+Status: active maintenance; `1.1.1` release archived on Zenodo\
 Created: 2026-07-19\
-Last updated: 2026-08-19\
+Last updated: 2026-10-22\
 Target: preserve citation, archives, licensing, support, and publication
 evidence in later releases\
-Next action: retain the verified `1.1.0` DOI and Software Heritage identifiers,
-the earlier preservation records, and the exact-commit publication process for
+Next action: retain the verified `1.1.1` DOI, `1.1.0` Software Heritage identifiers,
+earlier preservation records, and the exact-commit publication process for
 later `1.x` releases\
 Roadmap: [PLANS.md](../PLANS.md) | [Plan index](README.md)
 

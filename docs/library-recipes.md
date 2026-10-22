@@ -699,7 +699,8 @@ between display and analytical geometry.
 ## Tree Models
 
 The tree library exposes two model families: `FrequencyTreeModel`, which stores
-conditional aggregate outcomes, and `CartTreeModel`, which stores a serialized
+conditional aggregate outcomes, and `CartTreeModel` (also available as
+`CARTTreeModel` on the development branch), which stores a serialized
 scikit-learn CART classifier. The command-line [Tree Models](tree.md) chapter
 discusses the methodological risks; the library API gives us the objects needed
 to train, audit, serialize, and generate from those models.

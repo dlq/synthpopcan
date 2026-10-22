@@ -11,8 +11,10 @@ post private data, raw Census microdata rows, credentials, or controlled files.
 
 ## Development Setup
 
-Install Python 3.11 or newer, `uv`, and Node.js 24. Then install the Python and
-documentation dependencies:
+Use a supported Python version (3.11–3.14), `uv`, and Node.js 24. Python 3.12
+matches the quality and coverage jobs; newer Python versions await the runtime
+review described in the correctness-assurance plan. Then install the Python
+and documentation dependencies:
 
 ```bash
 uv sync --group dev --group docs

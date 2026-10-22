@@ -11,7 +11,7 @@ promise command-line compatibility across releases.
 | --- | --- |
 | `check.sh` | Main local source, test, typing, formatting, documentation, and web gate |
 | `check-correctness.sh` | Extended correctness and methodological evidence gate |
-| `check-wheel.sh` | Fresh wheel/sdist and installed-distribution smoke gate |
+| `check-wheel.sh` | Verify an already-built wheel and sdist through isolated installation smokes; run `uv build` first |
 | `wheel_smoke.py` | Installed-package interface and bundled-resource checks |
 | `model_build_smoke.py` | Installed model-building smoke check |
 | `case_study_wheel_smoke.py` | Installed fictional case-study interface smoke check |

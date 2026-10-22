@@ -31,6 +31,19 @@ name is already known, and the recipe collection when an example needs
 lower-level controls, microdata adapters, geography objects, enrichment,
 tree-model training, or validation intermediates.
 
+## Development Naming Updates
+
+The development branch provides the preferred names `CARTTreeModel`,
+`ODEFAdapter`, and `WDSSelection`. Existing imports of `CartTreeModel`,
+`OdefAdapter`, and `WdsSelection` remain aliases to the same classes. These
+additions are unreleased; use the older spellings with published version 1.1.1.
+
+New dictionary-serialization calls use `as_dict()`. Existing `to_dict()` calls
+and subclass overrides remain supported; `as_summary()` denotes an incomplete
+summary. Control-advice helpers now live in `synthpopcan.control_suggestions`;
+the previous `synthpopcan.calibration.build_control_suggestion_report` import
+continues to work. These changes preserve command spellings and saved formats.
+
 ## Evidence and Output Contracts
 
 Library calls follow the same provenance, schema, validation, and licensing

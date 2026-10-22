@@ -94,10 +94,11 @@ Run the larger numerical and artifact suite directly with:
 sh scripts/check-correctness.sh
 ```
 
-Verify a locally built wheel independently of the checkout with:
+Build both distributions and verify their installation independently of the
+checkout with:
 
 ```bash
-uv build --wheel
+uv build
 sh scripts/check-wheel.sh
 ```
 
