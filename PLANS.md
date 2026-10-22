@@ -1,7 +1,7 @@
 # SynthPopCan Roadmap
 
 Status: `1.x` maintenance roadmap\
-Last updated: 2026-10-07\
+Last updated: 2026-10-22\
 Current software version: `1.1.1`
 
 ## How To Use This Roadmap
@@ -51,6 +51,9 @@ less certain and are revisited after every minor release.
 | Maintainability and approachability | Make coverage enforcement exact, reduce high-complexity orchestration incrementally, ratchet supported-surface documentation, and keep localization and archive state machinery behind explicit boundaries. | [Responsibility-boundaries plan](plans/2026-08-26-responsibility-boundaries.md), [post-1.0 release train](plans/2026-08-19-post-1-0-release-train.md), [contributor guide](CONTRIBUTING.md) |
 | Release train | Preserve the additive `1.1.0` control expansion and admit later families only through their stated universe and evidence gates. | [Post-1.0 release train](plans/2026-08-19-post-1-0-release-train.md) |
 | English/French localization | Build a locale-safe foundation in `1.2.0`, localize core CLI/web workflows in `1.3.0`, and complete the supported bilingual surface in provisional `1.4.0` without changing machine contracts. | [Bilingual localization plan](plans/2026-08-19-bilingual-localization.md) |
+
+Current foundation evidence and remaining acceptance work are recorded in the
+[2026-10-22 preparation record](docs/records/readiness-2026-10-22.md).
 
 ## Release Horizon
 

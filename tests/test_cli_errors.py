@@ -225,14 +225,18 @@ def _leaf_commands(group, path=()):
 
 
 @pytest.mark.parametrize(("path", "command"), list(_leaf_commands(cli)))
-def test_every_cli_command_presents_uncaught_failures(path, command, monkeypatch):
+def test_every_registered_leaf_wraps_callback_errors(path, command, monkeypatch):
     def fail(**kwargs):
         raise ValueError("required input column is missing")
 
     monkeypatch.setattr(command, "callback", fail)
     parent = click.Context(cli, info_name="synthpopcan")
+    registered = cli
     for name in path:
-        parent = click.Context(command, info_name=name, parent=parent)
+        assert isinstance(registered, click.Group)
+        registered = registered.commands[name]
+        parent = click.Context(registered, info_name=name, parent=parent)
+    assert registered is command
     with pytest.raises(click.ClickException) as error:
         command.invoke(parent)
     assert "required input column" in str(error.value)
@@ -251,20 +255,36 @@ def test_unexpected_failure_keeps_traceback_available_in_debug_mode(monkeypatch)
     assert result.stderr == ""
 
 
-def test_click_usage_cancellation_and_explicit_exits_are_preserved(monkeypatch):
-    assert CliRunner().invoke(cli, ["--unknown-option"]).exit_code == 2
-    assert CliRunner().invoke(cli, ["models", "show"]).exit_code == 2
-    for error in (click.Abort(), KeyboardInterrupt(), click.exceptions.Exit(7)):
+@pytest.mark.parametrize(
+    "arguments",
+    [
+        pytest.param(["--unknown-option"], id="unknown-option"),
+        pytest.param(["models", "show"], id="missing-argument"),
+    ],
+)
+def test_click_usage_errors_keep_exit_code_two(arguments):
+    result = CliRunner().invoke(cli, arguments)
+    assert result.exit_code == 2
+    assert "Usage:" in result.stderr
+    assert "Unexpected" not in result.stderr
 
-        def fail(error=error):
-            raise error
 
-        monkeypatch.setattr("synthpopcan.cli.model_catalogue", fail)
-        result = CliRunner().invoke(cli, ["models", "list"])
-        assert result.exit_code == (
-            7 if isinstance(error, click.exceptions.Exit) else 1
-        )
-        assert "Unexpected" not in result.output
+@pytest.mark.parametrize(
+    "error,exit_code",
+    [
+        pytest.param(click.Abort(), 1, id="click-abort"),
+        pytest.param(KeyboardInterrupt(), 1, id="keyboard-interrupt"),
+        pytest.param(click.exceptions.Exit(7), 7, id="explicit-exit-code"),
+    ],
+)
+def test_cancellation_and_explicit_exits_are_preserved(monkeypatch, error, exit_code):
+    def fail():
+        raise error
+
+    monkeypatch.setattr("synthpopcan.cli.model_catalogue", fail)
+    result = CliRunner().invoke(cli, ["models", "list"])
+    assert result.exit_code == exit_code
+    assert "Unexpected" not in result.output
 
 
 def test_field_validation_has_locations_but_no_raw_input(monkeypatch):
@@ -316,8 +336,16 @@ def test_named_json_errors_keep_the_location_and_do_not_duplicate_advice(
     assert result.stderr.count("Check JSON syntax") == 1
 
 
-@pytest.mark.parametrize("root", [True, False])
-def test_field_error_details_are_bounded_and_handle_root_values(root, monkeypatch):
+@pytest.mark.parametrize(
+    "root,expected",
+    [
+        pytest.param(True, "input:", id="root-field-location"),
+        pytest.param(False, "1 more errors", id="bounded-detail-count"),
+    ],
+)
+def test_field_error_details_are_bounded_and_handle_root_values(
+    root, expected, monkeypatch
+):
     model = (
         RootModel[int]
         if root
@@ -333,7 +361,7 @@ def test_field_error_details_are_bounded_and_handle_root_values(root, monkeypatc
     result = CliRunner().invoke(cli, ["models", "list"])
     assert result.exit_code == 1
     assert "PRIVATE" not in result.stderr
-    assert "input:" in result.stderr if root else "1 more errors" in result.stderr
+    assert expected in result.stderr
 
 
 def test_failed_national_batch_points_to_preserved_status(monkeypatch):
@@ -360,3 +388,56 @@ def test_broken_pipe_retains_click_behavior(monkeypatch):
     result = CliRunner().invoke(cli, ["models", "list"])
     assert result.exit_code == 1
     assert "Unexpected" not in result.output
+
+
+# These go through Click parsing and real nested group contexts. Only the leaf
+# callback is replaced, so no source files, network or server are required.
+FAMILY_INVOCATIONS = [
+    (("microdata", "inspect"), ["input.csv", "--input-format", "fixture-v1"]),
+    (("ipf", "report"), ["report.json"]),
+    (("geo", "control-packs", "list"), []),
+    (("enrich", "validate"), ["manifest.json", "--population", "population"]),
+    (("bundle", "validate"), ["bundle"]),
+    (("geodata", "cache-dir"), []),
+    (("models", "list"), []),
+    (("guide", "ipf"), []),
+    (("serve",), []),
+    (("validate", "linked"), ["population"]),
+    (("data", "schema"), ["input.csv"]),
+    (("controls", "check"), ["controls.csv"]),
+    (("statcan", "wds", "search"), ["population"]),
+]
+
+
+def test_invocation_cases_cover_every_top_level_command_family():
+    assert {path[0] for path, _ in FAMILY_INVOCATIONS} == set(cli.commands)
+
+
+@pytest.mark.parametrize(
+    "path,arguments",
+    FAMILY_INVOCATIONS,
+    ids=["-".join(path) for path, _ in FAMILY_INVOCATIONS],
+)
+def test_real_click_invocations_wrap_callback_errors_in_each_family(
+    path, arguments, monkeypatch, tmp_path
+):
+    command = cli
+    for name in path:
+        command = command.commands[name]
+    invoked = []
+
+    def fail(**_kwargs):
+        invoked.append(True)
+        raise ValueError("required input column is missing")
+
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(command, "callback", fail)
+    result = CliRunner().invoke(cli, [*path, *arguments])
+    assert invoked == [True], result.output
+    assert result.exit_code == 1
+    assert result.stdout == ""
+    assert "required input column" in result.stderr
+    assert f"synthpopcan {' '.join(path)} --help" in result.stderr
+    assert result.stderr.count("For command options") == 1
+    assert "Traceback" not in result.stderr
+    assert list(tmp_path.iterdir()) == []

@@ -43,6 +43,11 @@ jobs:
       - name: Check Python types
         run: uv run --locked pyright src scripts
 
+      - name: Check complexity ratchet
+        run: >-
+          uv run --locked python scripts/audit_release_readiness.py complexity
+          --baseline docs/records/readiness-2026-10-22/complexity.json
+
       - name: Validate citation metadata against the CFF schema
         run: uv run --locked cffconvert --validate
 
@@ -92,7 +97,11 @@ jobs:
 
       - name: Run compatibility tests
         if: matrix.python-version != '3.12'
-        run: uv run --locked pytest --junitxml=correctness-report.xml
+        # Coverage-tool integration belongs to the 3.12 coverage job above.
+        # Keep the full application behaviour suite on every supported Python.
+        run: >-
+          uv run --locked pytest -m 'not coverage_gate'
+          --junitxml=correctness-report.xml
 
       - name: Retain machine-readable correctness report
         if: always()

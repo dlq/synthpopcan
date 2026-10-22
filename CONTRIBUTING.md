@@ -51,6 +51,9 @@ Run `./scripts/check.sh` before requesting final review when practical. If a
 local check cannot run on your machine, say which check and why in the pull
 request instead of leaving reviewers to infer it.
 
+Test organization, fixture ownership, assertion quality, and integration
+boundaries are described in the [test guide](tests/README.md).
+
 ## Pull Requests
 
 Before opening a pull request, search existing issues and pull requests, keep

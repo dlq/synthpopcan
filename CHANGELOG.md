@@ -4,6 +4,11 @@ All notable public changes to SynthPopCan are tracked here.
 
 ## Unreleased
 
+- Prepare the 1.2 conditional-person universe boundary with fail-closed
+  age-15+ validation, reproducible typing/localization/complexity inventories,
+  an enforced complexity ratchet, and two-decimal coverage enforcement.
+  Existing control packs and machine contracts remain unchanged.
+
 - Give CLI failures actionable messages for unavailable remote services,
   malformed or incomplete inputs, filesystem problems, missing dependencies,
   and unexpected exceptions. Explain WDS outage pages instead of exposing

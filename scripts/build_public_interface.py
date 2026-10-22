@@ -157,6 +157,7 @@ SUPPORTED_SCHEMAS: dict[str, tuple[str, str]] = {
 # artifacts self-describing. They are audited here so none can be mistaken for
 # an undocumented stable interchange format.
 INTERNAL_SCHEMAS: dict[str, str] = {
+    "synthpopcan-conditional-person-universe-v1": "internal age-15+ preparation contract; no admitted control family",
     "synthpopcan-boundary-partition-v1": "derived geodata build record",
     "synthpopcan-boundary-subset-v1": "derived geodata build record",
     "synthpopcan-canada-small-area-batch-v1": "restartable execution detail",

@@ -4,7 +4,9 @@
   "pythonVersion": "3.12",
   "typeCheckingMode": "standard",
   "strict": [
+    "scripts/audit_release_readiness.py",
     "src/synthpopcan/__init__.py",
+    "src/synthpopcan/_conditional_universe.py",
     "src/synthpopcan/_interface.py",
     "src/synthpopcan/_runtime_schemas.py",
     "src/synthpopcan/benchmarks.py",

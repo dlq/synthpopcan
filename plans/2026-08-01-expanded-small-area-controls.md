@@ -2,9 +2,9 @@
 
 Status: active feature implementation; `1.1.0` released and `1.2.0` committed\
 Created: 2026-08-01\
-Last updated: 2026-08-28\
+Last updated: 2026-10-22\
 Target: `1.1.0` broad compatible packs; conditional person controls in `1.2.0`\
-Next action: complete the common `SA12-01` universe contract while the four
+Next action: integrate the `SA12-01` universe contract through `SA12-10` while the four
 independent source reviews `SA12-02`, `SA12-04`, `SA12-06`, and `SA12-08`
 proceed\
 Roadmap: [PLANS.md](../PLANS.md) | [Plan index](README.md)
@@ -55,7 +55,7 @@ runtime slice does not begin and the other families continue independently.
 
 | ID | Status | Depends on | Deliverable | Acceptance |
 | --- | --- | --- | --- | --- |
-| `SA12-01` | `ready` | Released `1.1.0` registry and runtime invariants | Versioned age-15+ universe and not-applicable/conditional-semantics contract | The contract distinguishes all-private-household persons, age-15+ denominators, under-15 states, suppression, and rounding; mismatch fixtures fail before fitting |
+| `SA12-01` | `done` | Released `1.1.0` registry and runtime invariants | Versioned age-15+ universe and not-applicable/conditional-semantics contract | The contract distinguishes all-private-household persons, age-15+ denominators, under-15 states, suppression, and rounding; mismatch fixtures fail before fitting |
 | `SA12-02` | `ready` | Pinned 2016 and 2021 Profile definitions | Marital-status source decision and crosswalk | Child rows, categories, denominators, suppression rules, vintage differences, and fixture totals reproduce independently |
 | `SA12-03` | `blocked` | `SA12-01`, accepted `SA12-02`, `SA12-10` | Marital-status preparer, registry entry, and pack component | Normalized controls validate and round-trip; unsupported categories and universe mismatches fail closed |
 | `SA12-04` | `ready` | Pinned 2016 and 2021 Profile definitions | Education source decision and crosswalk | Degree categories, age universe, vintage classifications, suppression rules, and fixture totals reproduce independently |
@@ -64,12 +64,16 @@ runtime slice does not begin and the other families continue independently.
 | `SA12-07` | `blocked` | `SA12-01`, accepted `SA12-06`, `SA12-10` | Labour-force preparer, registry entry, and pack component | Normalized controls validate and round-trip; support, zero, and universe failures stop before fitting |
 | `SA12-08` | `ready` | Pinned 2016 and 2021 Profile definitions | Work-activity source decision and crosswalk | Full/part-year and full/part-time categories, applicability, suppression, and fixture totals reproduce independently |
 | `SA12-09` | `blocked` | `SA12-01`, accepted `SA12-08`, `SA12-10` | Work-activity preparer, registry entry, and pack component | Normalized controls validate and round-trip; mutually exclusive states and denominators are enforced |
-| `SA12-10` | `blocked` | `SA12-01` | Shared conditional-person reconciliation and preflight path | The common implementation represents not-applicable states or explicit conditional constraints without silently manufacturing totals; adversarial cases fail closed |
+| `SA12-10` | `ready` | `SA12-01` | Shared conditional-person reconciliation and preflight path | The common implementation represents not-applicable states or explicit conditional constraints without silently manufacturing totals; adversarial cases fail closed |
 | `SA12-11` | `blocked` | `SA12-10` and at least one accepted family runtime slice | Separately versioned conditional-person pack tier | Manifests have stable identifiers, semantic checksums, inspectable contents, and fail-closed compatibility with the retained broad packs |
 | `SA12-12` | `blocked` | `SA12-11` | Joint bounded feasibility and calibration evidence | Accepted families run jointly with broad packs on reviewed 2016/2021 CSD, CT, ADA, and DA cases; fractional and realized residuals are independently recomputed |
 | `SA12-13` | `blocked` | `SA12-12` | Python and CLI adoption through the shared workflow | Equivalent library and command requests normalize identically; public-interface and machine-output fixtures remain additive |
 | `SA12-14` | `blocked` | `SA12-12` | Local-web and durable-run adoption through the shared workflow | HTTP normalization, progress events, run evidence, resume behavior, and browser scenarios match the accepted pack semantics |
 | `SA12-15` | `blocked` | `SA12-13`, `SA12-14` | Installed-distribution evidence and public documentation | Wheel and sdist smokes pass; documentation names admitted, deferred, approximate, validation-only, and uncontrolled families |
+
+The internal universe contract and rejection fixtures are recorded in the
+[2026-10-22 preparation record](../docs/records/readiness-2026-10-22.md).
+No conditional family or pack is admitted by that contract alone.
 
 ## Current Baseline
 

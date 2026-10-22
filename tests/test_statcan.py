@@ -521,7 +521,7 @@ def test_cli_wds_search_helper_uses_statcan_results(monkeypatch) -> None:
 
 def test_cli_parse_columns() -> None:
     assert parse_cli_columns(" age , sex ") == ("age", "sex")
-    with pytest.raises(Exception, match="at least one column"):
+    with pytest.raises(ClickException, match="at least one column"):
         parse_cli_columns(" , ")
 
 

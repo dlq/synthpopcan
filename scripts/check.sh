@@ -9,6 +9,8 @@ uv run --locked python scripts/build_release_evidence.py \
 uv run --locked ruff check src tests scripts
 uv run --locked ruff format --check src tests scripts
 uv run --locked pyright src scripts
+uv run --locked python scripts/audit_release_readiness.py complexity \
+  --baseline docs/records/readiness-2026-10-22/complexity.json
 uv run --locked cffconvert --validate
 git ls-files -z -- '*.md' | \
   xargs -0 uv run --locked --group docs mdformat --check

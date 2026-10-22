@@ -21,7 +21,8 @@ repos:
         types: [python]
 
       - id: pytest
-        name: pytest
+        name: pytest (manual full suite)
+        stages: [manual]
         entry: uv run pytest -q
         language: system
         pass_filenames: false

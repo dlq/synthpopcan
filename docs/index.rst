@@ -161,3 +161,4 @@ beginner generation workflows.
    :hidden:
 
    small-area-reference
+   records/readiness-2026-10-22

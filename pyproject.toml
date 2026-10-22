@@ -88,6 +88,7 @@ exclude = [
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 markers = [
+  "coverage_gate: tooling integration exercised once by the Python 3.12 coverage job",
   "live_statcan: opt-in tests that call live Statistics Canada services",
   "performance: opt-in timing-sensitive tests for local performance checks",
   "scenario(id): stable acceptance-scenario ID documented in tests/SCENARIOS.md",
@@ -98,6 +99,7 @@ branch = true
 source = ["synthpopcan"]
 
 [tool.coverage.report]
+precision = 2
 fail_under = 95
 show_missing = true
 skip_covered = true

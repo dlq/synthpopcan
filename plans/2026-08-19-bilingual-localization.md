@@ -2,7 +2,7 @@
 
 Status: active feature implementation\
 Created: 2026-08-19\
-Last updated: 2026-08-28\
+Last updated: 2026-10-22\
 Target: infrastructure in `1.2.0`, core product localization in `1.3.0`, and
 complete supported-surface coverage in `1.4.0`\
 Next action: complete the bounded string and machine-contract inventory in
@@ -64,11 +64,16 @@ documentation groups, and human translation review into independent slices.
 
 | ID | Status | Depends on | Deliverable | Acceptance |
 | --- | --- | --- | --- | --- |
-| `I18N12-01` | `ready` | Frozen `1.x` interface and supported-surface inventory | Classified inventory of CLI, local-web, documentation, machine-stable, historical, and verbatim-source strings | Every documented CLI path and supported web route is covered; machine keys, identifiers, logs, and source labels are separately classified |
+| `I18N12-01` | `in progress` | Frozen `1.x` interface and supported-surface inventory | Classified inventory of CLI, local-web, documentation, machine-stable, historical, and verbatim-source strings | Every documented CLI path and supported web route is covered; machine keys, identifiers, logs, and source labels are separately classified |
 | `I18N12-02` | `blocked` | `I18N12-01` | Message-catalogue contract and implementation decision | A reviewed contract defines message IDs, `en-CA`/`fr-CA`, aliases, fallback, provenance, placeholders, plurals, and the boundary between domain results and presentation text |
 | `I18N12-03` | `blocked` | `I18N12-02` | Shared locale resolution, interpolation, pluralization, and human-formatting runtime | Unit tests prove canonicalization and deterministic fallback; unsupported locales and missing entries never alter machine output or expose message IDs |
 | `I18N12-04` | `blocked` | `I18N12-03` | Packaged English/French catalogue skeleton and compatibility tests | Wheel and sdist contain the catalogues; completeness, placeholder parity, plural forms, fallback, pseudo-localization, and cross-locale machine fixtures pass |
 | `I18N12-05` | `blocked` | `I18N12-01`, `I18N12-02`, `I18N12-04` | Static guard and machine-readable coverage report for covered modules | New hard-coded user-facing strings fail the guard; declared untranslated surfaces are counted and safely fall back to English |
+
+The [2026-10-22 inventory](../docs/records/readiness-2026-10-22.md) enumerates
+CLI surfaces, web routes, file ownership and Python literal locations. The
+individual web-prose and ambiguous-role review remains open before this slice
+is complete.
 
 ## `1.2.0` — Internationalization Foundation
 

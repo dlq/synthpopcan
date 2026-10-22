@@ -5,6 +5,7 @@ import importlib.util
 import json
 from pathlib import Path
 
+import click
 import pytest
 from click.testing import CliRunner
 
@@ -2944,7 +2945,7 @@ def test_load_depositions_rejects_unknown_model_ids(tmp_path, monkeypatch) -> No
     monkeypatch.setattr(MODULE, "DEPOSITIONS_DIR", tmp_path)
     (tmp_path / "known.json").write_text(json.dumps(_deposition()))
 
-    with pytest.raises(Exception, match="Unknown model IDs"):
+    with pytest.raises(click.UsageError, match="Unknown model IDs"):
         MODULE._load_depositions(("does-not-exist",))
 
 

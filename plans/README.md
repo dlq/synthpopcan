@@ -52,7 +52,7 @@ when its bounded artifact and decision gate are stated explicitly.
 | --- | --- | --- |
 | [Correctness assurance](2026-07-12-correctness-assurance.md) | Compatibility, exact-commit CI, coverage, correctness, release evidence, assurance, and reproduction gates | Preserve the frozen baseline; reassess Python 3.15 support in November 2026 after its final release and ecosystem-wheel availability. |
 | [Research-software stewardship](2026-07-19-research-software-stewardship.md) | Citation, preservation, licensing, support boundaries, publication evidence, and future scholarly-readiness gates | Preserve the verified `1.1.0` identifiers, earlier records, and exact-commit publication process. |
-| [Strict typing](2026-08-01-strict-typing.md) | Package-wide Pyright `standard` and an incremental strict-clean ratchet | Refresh `TYPE12-01`, then type each shared dynamic-data boundary as an independent slice. |
+| [Strict typing](2026-08-01-strict-typing.md) | Package-wide Pyright `standard` and an incremental strict-clean ratchet | Use the refreshed `TYPE12-01` baseline to type each shared dynamic-data boundary independently. |
 | [Post-1.0 release train](2026-08-19-post-1-0-release-train.md) | Bounded minor-release scope, confidence, sequencing, acceptance gates, and the cross-cutting maintainability ratchet | Coordinate the committed `1.2.0` control, localization, and maintainability slice tables; keep `1.3.0` explicitly forecast. |
 | [Responsibility boundaries](2026-08-26-responsibility-boundaries.md) | Dependency direction, orchestration extraction, supported-surface documentation, and complexity ownership | Complete `RB12-02`, the characterized `webapi` small-area preflight extraction; route registration is already separated. |
 
@@ -60,8 +60,8 @@ when its bounded artifact and decision gate are stated explicitly.
 
 | Plan | Target release | Current next action |
 | --- | --- | --- |
-| [Expanded small-area controls](2026-08-01-expanded-small-area-controls.md) | `1.2.0` conditional person controls | Complete `SA12-01` while the four family-specific source reviews proceed independently. |
-| [English/French internationalization and localization](2026-08-19-bilingual-localization.md) | `1.2.0` infrastructure, `1.3.0` core product, provisional `1.4.0` completion | Complete `I18N12-01`, then use its inventory to select the catalogue boundary. |
+| [Expanded small-area controls](2026-08-01-expanded-small-area-controls.md) | `1.2.0` conditional person controls | Integrate the completed universe contract through `SA12-10`; continue independent family source reviews. |
+| [English/French internationalization and localization](2026-08-19-bilingual-localization.md) | `1.2.0` infrastructure, `1.3.0` core product, provisional `1.4.0` completion | Finish web-prose and ambiguous-role review of the initial `I18N12-01` inventory, then select the catalogue boundary. |
 
 ## Conditional Research
 

@@ -24,6 +24,10 @@ These regenerate reviewed, deterministic repository evidence or compatibility
 contracts. Their corresponding tests normally provide a `--check`-style drift
 gate.
 
+- `audit_release_readiness.py` reproduces offline typing, localization and
+  complexity inventories and checks the reviewed complexity baseline. It writes
+  only a requested local output path; see the
+  [preparation record](../docs/records/readiness-2026-10-22.md).
 - `audit_small_area_control_coverage.py`
 - `build_external_canadian_comparison.py`
 - `build_field_eligibility_inventory.py`

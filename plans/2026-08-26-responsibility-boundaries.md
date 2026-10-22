@@ -2,7 +2,7 @@
 
 Status: active maintenance\
 Created: 2026-08-26\
-Last updated: 2026-08-28\
+Last updated: 2026-10-22\
 Target: initial bounded tranche in `1.2.0`, then an ongoing `1.x` ratchet\
 Next action: complete `RB12-02`, extracting the characterized small-area
 preflight responsibility now that `RB12-01` route registration is separated\
@@ -48,12 +48,17 @@ dictionary is itself a supported versioned artifact.
 | `RB12-01` | `done` | Existing route-order and application-state behavior | Explicit `webapi` composition context and cohesive route-registration helpers | Factory state and exact route order are characterized; supported HTTP paths and handler behavior remain unchanged |
 | `RB12-02` | `ready` | `RB12-01` | Small-area preflight request/result and orchestration boundary | Success, rejection, event ordering, and durable-run behavior are characterized; the route delegates without owning calibration or persistence policy |
 | `RB12-03` | `blocked` | `RB12-04`; active `1.2.0` feature pressure | One selected `cli_geo` or `control_packs` responsibility extraction | The selected adapter becomes thinner, its supported façade remains compatible, and focused behavior plus forbidden-import tests pass |
-| `RB12-04` | `ready` | Current source tree | Reproducible function-complexity and module-concentration baseline | The command, inputs, exclusions, and result are recorded; changed functions cannot silently raise the baseline |
-| `RB12-05` | `ready` | Current coverage configuration | Exact two-decimal coverage comparison and candidate headroom | A result below `95.00%` fails without integer rounding; the release candidate reaches `95.25%` or the release remains blocked |
+| `RB12-04` | `done` | Current source tree | Reproducible function-complexity and module-concentration baseline | The command, inputs, exclusions, and result are recorded; changed functions cannot silently raise the baseline |
+| `RB12-05` | `done` | Current coverage configuration | Exact two-decimal coverage comparison and candidate headroom | A result below `95.00%` fails without integer rounding; the release candidate reaches `95.25%` or the release remains blocked |
 | `RB12-06` | `ready` | Supported beginner/advanced surface inventories | Beginner-export documentation and changed-symbol docstring ratchet | Every beginner export is documented; changed supported symbols have docstrings; the measured undocumented count does not increase |
 | `RB12-07` | `ready` | Existing archive fault and recovery fixtures | Archive state/action matrix and proceed-or-defer decision | Every current transition, refusal, recovery state, and effect boundary is characterized; the decision either admits `RB12-08` or marks `RB12-08` and `RB12-09` deferred for `1.2.0` |
 | `RB12-08` | `blocked` | `RB12-07` proceed decision | Pure archive transition component | Given validated manifest, checkpoint, and remote state, the component selects the next permitted action without HTTP, prompts, or checkpoint effects |
 | `RB12-09` | `blocked` | `RB12-08` | Existing executor integration and fault/recovery verification | Fail-closed identity, authorization, recovery, checksum, remote verification, and no-overwrite behavior remain unchanged; no new archive operation enlarges the executor |
+
+The [2026-10-22 preparation record](../docs/records/readiness-2026-10-22.md)
+binds the current complexity baseline and enforced ratchet. Two-decimal
+coverage enforcement and local candidate headroom are verified at 95.26%;
+that headroom must still hold for the eventual release candidate.
 
 ## Initial Hotspots And Intended Boundaries
 

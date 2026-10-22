@@ -8995,6 +8995,10 @@
         "purpose": "adapter diagnostic report"
       },
       {
+        "identifier": "synthpopcan-conditional-person-universe-v1",
+        "purpose": "internal age-15+ preparation contract; no admitted control family"
+      },
+      {
         "identifier": "synthpopcan-control-pack-compatibility-v1",
         "purpose": "derived compatibility report"
       },

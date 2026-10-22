@@ -41,6 +41,7 @@ MODULE_LAYERS = {
     "contract": frozenset(
         {
             "_archive_correction",
+            "_conditional_universe",
             "_census_profile",
             "_interface",
             "_version",

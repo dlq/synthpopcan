@@ -2,9 +2,9 @@
 
 Status: active maintenance; `1.1.0` released and `1.2.0` committed next\
 Created: 2026-08-19\
-Last updated: 2026-08-28\
+Last updated: 2026-10-22\
 Target: bounded `1.x` feature releases with patch releases as needed\
-Next action: complete `SA12-01`, `I18N12-01`, and `RB12-02` before expanding the
+Next action: integrate `SA12-10`, finish `I18N12-01`, and complete `RB12-02` before expanding the
 `1.2.0` public surface\
 Roadmap: [PLANS.md](../PLANS.md) | [Plan index](README.md)
 
