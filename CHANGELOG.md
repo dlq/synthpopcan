@@ -4,6 +4,8 @@ All notable public changes to SynthPopCan are tracked here.
 
 ## Unreleased
 
+## 1.1.3 - 2026-11-01
+
 - Update Python, web-development, and GitHub Actions dependencies. Use scoped
   coverage-tool overrides for patched glob and minimatch dependencies while
   preserving the same measured source files and coverage results.

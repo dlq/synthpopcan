@@ -29,13 +29,13 @@ Core workflows:
    census-vintage-specific.
 1. Maintain a local web app for configuring runs, inspecting controls, generating from prepared models, validating outputs, and downloading results.
 
-Version `1.1.2` preserves the stable, explicitly bounded interface established by
+Version `1.1.3` preserves the stable, explicitly bounded interface established by
 `1.0.0`. Its packaged
 [1.x compatibility contract](https://synthpopcan.readthedocs.io/en/latest/compatibility.html)
 freezes the documented CLI, curated Python API, callable signatures, and
 supported persisted schemas while permitting additive extension. This maintenance
-release includes actionable CLI errors, numerical and map-statistics fixes,
-stronger validation, and simpler internal workflow boundaries. It retains
+release adds bounded StatCan rate-limit handling, actionable retry timing,
+and security dependency updates. It retains
 24 reviewed 2016/2021 small-area control packs: eight stable core packs,
 eight expanded-housing packs, and eight broad packs that can apply nine
 household and five person margins together with explicit runtime invariants.
