@@ -39,6 +39,7 @@ MODULE_LAYERS = {
             "workflows.types",
         }
     ),
+    "infrastructure": frozenset({"_http"}),
     "runtime": frozenset({"_runtime_schemas", "assurance", "jobs", "runs"}),
     "contract": frozenset(
         {

@@ -13,6 +13,8 @@ from typing import Any
 from urllib.request import Request, urlopen
 from zipfile import BadZipFile, ZipFile
 
+from synthpopcan._http import open_with_rate_limit_retry
+
 _WDS_BASE_URL = "https://www150.statcan.gc.ca/t1/wds/rest"
 _CENSUS_PROFILE_2016_BASE_URL = (
     "https://www12.statcan.gc.ca/census-recensement/2016/dp-pd/prof/"
@@ -1003,7 +1005,9 @@ def _census_profile_csv_members(names: list[str]) -> list[str]:
 
 
 def fetch_json(url: str) -> Any:
-    with urlopen(url, timeout=_STATCAN_TIMEOUT_SECONDS) as response:
+    with open_with_rate_limit_retry(
+        urlopen, url, timeout=_STATCAN_TIMEOUT_SECONDS
+    ) as response:
         return _decode_wds_json(response.read())
 
 
@@ -1014,7 +1018,12 @@ def post_json(url: str, payload: Any) -> Any:
         headers={"Content-Type": "application/json"},
         method="POST",
     )
-    with urlopen(request, timeout=_STATCAN_TIMEOUT_SECONDS) as response:
+    with open_with_rate_limit_retry(
+        urlopen,
+        request,
+        timeout=_STATCAN_TIMEOUT_SECONDS,
+        read_only_post=url == wds_metadata_url(),
+    ) as response:
         return _decode_wds_json(response.read())
 
 
@@ -1055,7 +1064,7 @@ def download_url(
     destination.parent.mkdir(parents=True, exist_ok=True)
     temporary = _temporary_sibling(destination, ".download")
     try:
-        with urlopen(url, timeout=timeout) as response:
+        with open_with_rate_limit_retry(urlopen, url, timeout=timeout) as response:
             headers = getattr(response, "headers", {})
             content_length = (
                 headers.get("Content-Length") if hasattr(headers, "get") else None

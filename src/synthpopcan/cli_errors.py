@@ -18,6 +18,7 @@ from zipfile import BadZipFile
 import click
 from pydantic import ValidationError
 
+from synthpopcan._http import retry_after
 from synthpopcan._version import __version__
 
 __all__ = [
@@ -228,9 +229,7 @@ def _network_error(exc: BaseException) -> str | None:
             host = "remote service"
         prefix = f"Could not fetch data from {host} (HTTP {exc.code})."
         if exc.code == 429:
-            return (
-                f"{prefix} The service is rate-limiting requests. Wait and try again."
-            )
+            return _rate_limit_error(exc, prefix)
         if exc.code in {408, 425} or exc.code >= 500:
             return (
                 f"{prefix} The service may be temporarily unavailable. Try again later."
@@ -273,6 +272,36 @@ def _network_error(exc: BaseException) -> str | None:
             "Try again later."
         )
     return None
+
+
+def _rate_limit_error(exc: HTTPError, prefix: str) -> str:
+    delay = retry_after(exc)
+    if delay is None:
+        guidance = (
+            "The service did not provide a usable Retry-After time. "
+            "Wait a few minutes before rerunning this command."
+        )
+    elif delay.seconds == 0:
+        guidance = (
+            "The service's Retry-After time has passed, but the request is still "
+            "rate-limited. Wait a few minutes before rerunning this command."
+        )
+    else:
+        deadline = (
+            f" (not before {delay.deadline:%Y-%m-%d %H:%M:%S} UTC)"
+            if delay.deadline is not None
+            else ""
+        )
+        guidance = (
+            f"Retry-After asks you to wait at least {delay.seconds} seconds{deadline} "
+            "before rerunning this command."
+        )
+    return (
+        f"{prefix} The service is rate-limiting requests. {guidance} "
+        "Pause other requests to this service and avoid repeated retries. "
+        "If this persists after waiting, check the provider's service status "
+        "or contact its support."
+    )
 
 
 def format_file_access_error(path: object, action: str, exc: OSError) -> str:

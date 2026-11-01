@@ -1,5 +1,7 @@
 import json
+from io import BytesIO
 from pathlib import Path
+from urllib.error import HTTPError
 from zipfile import ZipFile
 
 import pytest
@@ -1251,3 +1253,66 @@ def test_extract_census_profile_csv_raises_when_no_csv_in_zip(
 
     with pytest.raises(ValueError, match="Census Profile ZIP did not contain"):
         extract_census_profile_csv(zip_path, tmp_path / "out.csv")
+
+
+@pytest.mark.parametrize("method", ["get", "metadata", "post"])
+def test_rate_limited_json_requests_only_replay_read_operations(method, monkeypatch):
+    requests = []
+    sleeps = []
+
+    def opener(request, **kwargs):
+        requests.append(request)
+        if len(requests) == 1:
+            raise HTTPError(
+                "https://example.test", 429, "busy", {"Retry-After": "2"}, None
+            )
+        return BytesIO(b'{"status":"SUCCESS"}')
+
+    monkeypatch.setattr("synthpopcan.statcan.urlopen", opener)
+    monkeypatch.setattr("synthpopcan._http.time.sleep", sleeps.append)
+    if method == "get":
+        result = fetch_json("https://example.test/api")
+    elif method == "metadata":
+        from synthpopcan.statcan import wds_metadata_url
+
+        result = post_json(wds_metadata_url(), [{"productId": 98100001}])
+        assert requests[0].data == b'[{"productId": 98100001}]'
+    else:
+        with pytest.raises(HTTPError):
+            post_json("https://example.test/write", {"value": "change"})
+        assert len(requests) == 1
+        assert sleeps == []
+        return
+    assert result == {"status": "SUCCESS"}
+    assert len(requests) == 2
+    assert requests[0] is requests[1]
+    assert sleeps == [2]
+
+
+@pytest.mark.parametrize("retry_succeeds", [True, False])
+def test_download_throttling_preserves_atomic_output_and_cleans_temporary_files(
+    retry_succeeds, monkeypatch, tmp_path
+):
+    destination = tmp_path / "table.zip"
+    destination.write_bytes(b"existing cached file")
+    calls = []
+    sleeps = []
+
+    def opener(url, *, timeout):
+        calls.append((url, timeout))
+        if len(calls) == 1 or not retry_succeeds:
+            raise HTTPError(url, 429, "busy", {"Retry-After": "1"}, None)
+        return BytesIO(b"complete new download")
+
+    monkeypatch.setattr("synthpopcan.statcan.urlopen", opener)
+    monkeypatch.setattr("synthpopcan._http.time.sleep", sleeps.append)
+    if retry_succeeds:
+        download_url("https://example.test/table.zip", destination, timeout=17)
+        assert destination.read_bytes() == b"complete new download"
+    else:
+        with pytest.raises(HTTPError):
+            download_url("https://example.test/table.zip", destination, timeout=17)
+        assert destination.read_bytes() == b"existing cached file"
+    assert calls == [("https://example.test/table.zip", 17)] * 2
+    assert sleeps == [1]
+    assert list(tmp_path.iterdir()) == [destination]

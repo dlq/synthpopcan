@@ -441,3 +441,84 @@ def test_real_click_invocations_wrap_callback_errors_in_each_family(
     assert result.stderr.count("For command options") == 1
     assert "Traceback" not in result.stderr
     assert list(tmp_path.iterdir()) == []
+
+
+@pytest.mark.parametrize("command", WDS_COMMANDS)
+def test_wds_throttling_reports_retry_after_without_retrying_early_or_leaking_data(
+    command, monkeypatch, tmp_path
+):
+    monkeypatch.chdir(tmp_path)
+    calls = []
+
+    def throttled(*args, **kwargs):
+        calls.append(args)
+        raise HTTPError(
+            "https://user:SECRET@www150.statcan.gc.ca/api?token=PRIVATE",
+            429,
+            "private server detail",
+            {"Retry-After": "120"},
+            BytesIO(b"PRIVATE response body"),
+        )
+
+    monkeypatch.setattr("synthpopcan.statcan.urlopen", throttled)
+    monkeypatch.setattr(
+        "synthpopcan._http.time.sleep",
+        lambda _: pytest.fail("must not shorten the wait"),
+    )
+    result = CliRunner().invoke(cli, command)
+    assert result.exit_code == 1
+    assert result.stdout == ""
+    assert "www150.statcan.gc.ca (HTTP 429)" in result.stderr
+    assert "Retry-After" in result.stderr
+    assert "wait at least 120 seconds" in result.stderr
+    assert "rerunning this command" in result.stderr
+    assert "Pause other requests" in result.stderr
+    assert "Traceback" not in result.stderr
+    assert "SECRET" not in result.stderr
+    assert "PRIVATE" not in result.stderr
+    assert "private server detail" not in result.stderr
+    assert len(calls) == 1
+    assert list(tmp_path.iterdir()) == []
+
+
+@pytest.mark.parametrize("value", [None, "malformed PRIVATE", "0"])
+def test_cli_rate_limit_without_a_future_deadline_discourages_immediate_retries(
+    value, monkeypatch
+):
+    headers = {} if value is None else {"Retry-After": value}
+
+    def fail(*args, **kwargs):
+        raise HTTPError("https://example.test", 429, "busy", headers, None)
+
+    monkeypatch.setattr("synthpopcan.statcan.urlopen", fail)
+    monkeypatch.setattr("synthpopcan._http.time.sleep", lambda _: None)
+    result = CliRunner().invoke(cli, WDS_COMMANDS[0])
+    assert result.exit_code == 1
+    assert "Wait a few minutes" in result.stderr
+    assert "avoid repeated retries" in result.stderr
+    assert "PRIVATE" not in result.stderr
+
+
+def test_cli_http_date_retry_after_is_actionable_in_utc(monkeypatch):
+    from datetime import UTC, datetime
+
+    class Clock(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return datetime(2026, 11, 1, 12, 0, tzinfo=UTC)
+
+    def fail(*args, **kwargs):
+        raise HTTPError(
+            "https://example.test",
+            429,
+            "busy",
+            {"Retry-After": "Sun, 01 Nov 2026 12:10:00 GMT"},
+            None,
+        )
+
+    monkeypatch.setattr("synthpopcan._http.datetime", Clock)
+    monkeypatch.setattr("synthpopcan.statcan.urlopen", fail)
+    result = CliRunner().invoke(cli, WDS_COMMANDS[0])
+    assert result.exit_code == 1
+    assert "wait at least 600 seconds" in result.stderr
+    assert "not before 2026-11-01 12:10:00 UTC" in result.stderr

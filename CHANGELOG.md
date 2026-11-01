@@ -4,6 +4,11 @@ All notable public changes to SynthPopCan are tracked here.
 
 ## Unreleased
 
+- Handle StatCan HTTP 429 responses with one bounded retry for short, explicit
+  `Retry-After` waits. Support seconds and HTTP dates without shortening long
+  waits, preserve failed-download caches, and give CLI users actionable retry
+  timing without exposing request credentials or response bodies.
+
 ## 1.1.2 - 2026-10-22
 
 - Fix broad-pack web reconciliation, reject conflicting small-area sources and

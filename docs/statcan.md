@@ -55,6 +55,30 @@ Statistics Canada tables are official aggregate sources, but the work of
 researcher. A table that is appropriate for one geography or population
 universe may be misleading for another.
 
+## Rate Limits And Retry Timing
+
+An HTTP **429 (Too Many Requests)** means the service is refusing requests
+under its rate-limit policy; it does not establish a general service outage.
+SynthPopCan's StatCan JSON and file-download helpers recognize `Retry-After`
+as either a nonnegative number of seconds or an HTTP date, following
+[RFC 9110](https://www.rfc-editor.org/rfc/rfc9110.html#name-retry-after).
+
+A read request is retried **once**, only when the server supplies a usable wait
+of **five seconds or less**. The complete delay is observed before retrying.
+WDS metadata uses a read-only POST and follows the same policy; arbitrary POST
+requests are not replayed. If the second attempt fails, its error is reported.
+HTTP-date delays round up and account conservatively for the response's `Date`
+header when client and server clocks differ.
+
+Longer waits stop the command instead of shortening the delay or leaving it
+sleeping indefinitely. The CLI reports HTTP 429, the service hostname, and the
+minimum wait; date-based instructions also show the deadline in UTC. Missing
+or invalid headers stop without an automatic retry, with advice to wait a few
+minutes. Pause other requests to that service and avoid repeatedly rerunning
+the command. If throttling persists after the requested wait, check the
+provider's service status or contact its support. Existing downloaded files
+remain intact when a replacement download fails.
+
 ## Getting Started
 
 **Network required.** These commands query or download from Statistics Canada's
