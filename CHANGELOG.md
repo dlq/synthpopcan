@@ -4,6 +4,10 @@ All notable public changes to SynthPopCan are tracked here.
 
 ## Unreleased
 
+- Update Python, web-development, and GitHub Actions dependencies. Use scoped
+  coverage-tool overrides for patched glob and minimatch dependencies while
+  preserving the same measured source files and coverage results.
+
 - Handle StatCan HTTP 429 responses with one bounded retry for short, explicit
   `Retry-After` waits. Support seconds and HTTP dates without shortening long
   waits, preserve failed-download caches, and give CLI users actionable retry

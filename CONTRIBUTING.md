@@ -26,6 +26,13 @@ Install web tooling:
 npm ci
 ```
 
+The coverage tool's `test-exclude` dependencies currently use scoped npm
+`overrides` for patched `glob` and `minimatch` versions. These address
+[glob cancellation](https://github.com/advisories/GHSA-3g3m-2fjr-6pw4) and
+[minimatch pattern amplification](https://github.com/advisories/GHSA-g3hv-75wg-m249).
+Remove the overrides once upstream dependency ranges admit patched versions;
+verify that coverage file selection and metrics remain unchanged.
+
 Run the normal checks before opening a pull request:
 
 ```bash
