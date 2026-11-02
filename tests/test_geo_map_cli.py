@@ -454,3 +454,121 @@ def test_cli_prepare_boundaries_download_value_error(tmp_path: Path) -> None:
                     str(tmp_path),
                 ]
             )
+
+
+@pytest.mark.parametrize("input_mode", ["directory", "csv", "default-output"])
+def test_cli_map_both_writes_distinct_household_and_person_views(tmp_path, input_mode):
+    from click.testing import CliRunner
+    from support.map_fixtures import _write_fake_geojson
+
+    from synthpopcan.cli import cli
+
+    population = tmp_path / "population"
+    population.mkdir()
+    households = population / "households.csv"
+    households.write_text("synthetic_household_id,ct,household_size,TENUR\nh1,G1,2,1\n")
+    persons = population / "persons.csv"
+    persons.write_text(
+        "synthetic_person_id,synthetic_household_id,ct,AGEGRP,HDGREE,TOTINC\n"
+        "p1,h1,G1,4,7,10000\np2,h1,G1,12,1,30000\n"
+    )
+    boundaries = tmp_path / "boundaries.geojson"
+    _write_fake_geojson(boundaries, ["G1"])
+    args = [
+        "geo",
+        "map",
+        str(households if input_mode == "csv" else population),
+        "--both",
+        "--person-profile",
+        "statcan-hierarchical-2021",
+        "--boundaries",
+        str(boundaries),
+        "--geo-column",
+        "ct",
+        "--title",
+        "Example",
+    ]
+    if input_mode == "csv":
+        args += ["--persons", str(persons)]
+    base = (
+        population / "map"
+        if input_mode == "default-output"
+        else tmp_path / "example.v1"
+    )
+    if input_mode != "default-output":
+        args += ["--out", str(base.with_name(base.name + ".html"))]
+    result = CliRunner().invoke(cli, args)
+    assert result.exit_code == 0, result.output
+    household_map = base.with_name(base.name + "-households.html")
+    population_map = base.with_name(base.name + "-population.html")
+    household_html = household_map.read_text()
+    population_html = population_map.read_text()
+    assert '"n_households":1' in household_html
+    assert '"pct_owner":100.0' in household_html
+    assert '"n_persons":2' in population_html
+    assert '"median_personal_income":20000.0' in population_html
+    assert '"pct_bachelor_plus":50.0' in population_html
+    assert '"n_households"' not in population_html
+    assert "Example — households" in household_html
+    assert "Example — population" in population_html
+    assert str(household_map) in result.output
+    assert str(population_map) in result.output
+    assert not base.with_name(base.name + ".html").exists()
+
+
+@pytest.mark.parametrize(
+    "problem,expected_code,message",
+    [
+        ("profile", 2, "--both requires --person-profile"),
+        ("persons-option", 2, "household CSV with --persons"),
+        ("persons-file", 1, "persons.csv"),
+        ("person-schema", 1, "AGEGRP"),
+    ],
+)
+def test_cli_map_both_validates_person_inputs_before_writing_maps(
+    tmp_path, problem, expected_code, message
+):
+    from click.testing import CliRunner
+    from support.map_fixtures import _write_fake_geojson
+
+    from synthpopcan.cli import cli
+
+    households = tmp_path / "households.csv"
+    households.write_text("synthetic_household_id,ct,household_size\nh1,G1,1\n")
+    persons = tmp_path / "persons.csv"
+    if problem == "person-schema":
+        persons.write_text("ct\nG1\n")
+    boundaries = tmp_path / "boundaries.geojson"
+    _write_fake_geojson(boundaries, ["G1"])
+    args = [
+        "geo",
+        "map",
+        str(households),
+        "--both",
+        "--boundaries",
+        str(boundaries),
+        "--geo-column",
+        "ct",
+        "--out",
+        str(tmp_path / "map.html"),
+    ]
+    if problem != "profile":
+        args += ["--person-profile", "statcan-hierarchical-2021"]
+    if problem != "persons-option":
+        args += ["--persons", str(persons)]
+    result = CliRunner().invoke(cli, args)
+    assert result.exit_code == expected_code, result.output
+    assert message in result.output
+    assert not list(tmp_path.glob("*.html"))
+
+
+def test_cli_map_both_rejects_national_plan(tmp_path):
+    from click.testing import CliRunner
+
+    from synthpopcan.cli import cli
+
+    plan = tmp_path / "plan.json"
+    plan.write_text("{}")
+    result = CliRunner().invoke(cli, ["geo", "map", str(plan), "--both"])
+    assert result.exit_code == 2
+    assert "rather than a national plan" in result.output

@@ -1991,3 +1991,23 @@ def test_write_weights_csv_fallback_integerizes_without_precomputed(tmp_path) ->
         == "target_geography,source_candidate_household_id,weight,integer_weight"
     )
     assert len(lines) == 3
+
+
+@pytest.mark.parametrize("middle", [1.0, 0.5])
+def test_joint_fit_recovers_known_weights_with_repeated_contributions(
+    middle: float,
+) -> None:
+    contributions = np.array([[1, 1, 1], [0, middle, 2], [0, 0, 1]])
+    expected = np.array([2.0, 3.0, 1.0])
+    targets = contributions @ expected
+    weights, converged, _, error = _fit_joint_constraints(
+        contributions,
+        targets,
+        initial_weights=np.ones(3),
+        max_iterations=1000,
+        tolerance=1e-9,
+    )
+    assert converged
+    assert error <= 1e-9
+    np.testing.assert_allclose(weights, expected, atol=1e-8, rtol=0)
+    np.testing.assert_allclose(contributions @ weights, targets, atol=1e-9, rtol=0)

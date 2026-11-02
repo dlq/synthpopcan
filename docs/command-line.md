@@ -262,6 +262,14 @@ unavailable API response, rather than a JSON-parser failure. Retry a remote
 request later if the service is unavailable; do not change valid input data to
 work around a service outage.
 
+A response marked `cf-mitigated: challenge` is a browser security check. The
+CLI reports that explicitly and does not retry the HTTP 403. Open the source
+website in a normal browser; if it grants access, download and extract the
+file there. Downstream commands can use the local CSV directly, for example
+`geo controls --profile /path/to/profile.csv ...`. Existing verified cached
+inputs can also be reused. A browser challenge does not establish that a
+service has been retired or explain why the provider enabled the check.
+
 Unexpected exceptions show a short error and an issue-reporting link. Set
 `SYNTHPOPCAN_DEBUG=1` when invoking the command to let unexpected exceptions
 produce their full Python traceback. For example, prefix the command with

@@ -788,12 +788,27 @@ The resulting file opens directly in any browser. It requires an internet
 connection to fetch base-map tiles from [OpenFreeMap](https://openfreemap.org/) but otherwise embeds all
 data inline.
 
+Polygon maps offer **People per km²** (the default when available) and
+**Households per km²** when the boundary attributes contain a finite, positive
+`LANDAREA` in km². Densities use that published land area, rather than the
+area of simplified display polygons. Missing or invalid land area leaves
+density unknown; those features are transparent on the selected density layer.
+Density colours use a logarithmic `log(1 + density)` scale to show rural
+and urban variation together, while retaining genuine zeros. The legend
+labels this scale and shows ticks in the original people/households per km²
+units. Tooltips retain the original density values; other variables keep
+linear colour scales over each variable’s observed range, as labelled in the
+legend. Colours show relative variation within the selected variable; they
+cannot be compared numerically between different variables.
+Maps without person data default to household density when available, then
+fall back to totals if land area is unavailable.
+
 Variables shown (household-level, always): household count, average household
 size, % homeowners, % detached dwellings, % needing major repairs, median
 shelter cost.
 
 Variables shown (person-level, when `--persons` is supplied): person count,
-% children (≤14), % seniors (≥65), % immigrants, % visible minority, median
+% people under 20, % seniors (≥65), % immigrants, % visible minority, median
 household income.
 
 ## Command Reference
@@ -1075,13 +1090,22 @@ Important options:
 
 Writes a self-contained HTML map from calibrated household/person outputs.
 
-Map percentages require complete observations for the relevant field in each
-geography. Missing or invalid demographic fields remain unknown, and variables
+In the combined household/person view, percentages require complete
+observations for the relevant field in each geography. Missing or invalid demographic fields remain unknown, and variables
 with no observed values are omitted from the selector. Unknown income is not
 zero income: the median household income remains unknown when a household's
 person-income observations are incomplete. Observed zero income remains zero.
+Observed zero shelter costs remain in shelter-cost medians. Income codes
+`88888888` (unavailable) and `99999999` (not applicable) remain unknown.
 The immigrant percentage counts the immigrant category only; non-permanent
 residents are a separate source category.
+
+For source-specific coding, supply binary `age_under_20`, `age_65_plus`, and
+`visible_minority` person columns. These take precedence over the legacy
+`AGEGRP` and `VISMIN` interpretations; blank or invalid supplied indicators
+remain unknown. In particular, hierarchical PUMF age codes use 13 substantive
+bands and require explicit indicators for these map statistics. Raw source
+fields can be retained alongside the indicators.
 
 ```bash
 synthpopcan geo map synthetic-population/ \
@@ -1090,9 +1114,70 @@ synthpopcan geo map synthetic-population/ \
   --out synthetic-ct-map.html
 ```
 
+#### Person attributes by census tract
+
+Use `--person-profile statcan-hierarchical-2021` to aggregate the **person
+records directly**, with the explicit 2021 hierarchical PUMF codebook. This
+view accepts `persons.csv` as the population input and does not require a
+household table:
+
+```bash
+synthpopcan geo map synthetic-population/persons.csv \
+  --person-profile statcan-hierarchical-2021 \
+  --boundaries data/derived/statcan/census/2021/boundaries/2021-boundary-ct.geojson \
+  --geo-column ct \
+  --census-vintage 2021 --geo-level ct --geo-namespace statcan:census:2021:ct \
+  --out population-attributes-map.html
+```
+
+The selector includes population density and totals, age bands, women+/men+,
+citizenship, immigrant status, generation, visible-minority share, marital
+status, education, labour-force rates, personal and employment income, and
+mother-tongue/home-language components. It defaults to people per km² where
+published land area is available.
+
+Education, labour, marital-status, and income measures use people aged 15+.
+Unemployment uses known labour-force participants as its denominator. Income
+medians use individual income in 2020, including observed zero and negative
+values. Missing and inapplicable codes are excluded; they do not become zeros.
+The selected measure's note states its denominator, and its tooltip shows the
+number of valid records, the denominator, and the age-eligible population.
+Language responses can overlap. Age remains in published bands; exact ages
+are not inferred. These layers describe synthetic records; agreement with
+local Census data depends on the calibration controls used.
+
+The profile is explicit because the legacy map's raw age/gender coding differs
+from the hierarchical 2021 PUMF. Ordinary `geo map` calls retain their existing
+combined household/person view. Person-profile views currently support a
+single linked population or person CSV, rather than a national-plan input.
+
+To generate both household and population views in one invocation, use
+`--both` with a linked population directory and the explicit person profile:
+
+```bash
+synthpopcan geo map synthetic-population/ --both \
+  --person-profile statcan-hierarchical-2021 \
+  --boundaries data/derived/statcan/census/2021/boundaries/2021-boundary-ct.geojson \
+  --geo-column ct \
+  --census-vintage 2021 --geo-level ct --geo-namespace statcan:census:2021:ct \
+  --out synthetic-ct-map.html
+```
+
+This writes `synthetic-ct-map-households.html` (the existing combined
+household/person view) and `synthetic-ct-map-population.html` (person attributes
+only). Both paths are reported. Without `--out`, a population directory gets
+`map-households.html` and `map-population.html`. A household CSV is also
+accepted when paired with `--persons persons.csv`; its default output stem is
+`<households-stem>-map`. An explicit `--title` gets a household/population suffix
+to distinguish the views. National plans do not currently support `--both`.
+
 Important options:
 
 - `POPULATION`: calibrated population directory, or an assigned household CSV.
+- `--both`: generate household and population views together; requires
+  `--person-profile` and linked household/person CSVs.
+- `--person-profile statcan-hierarchical-2021`: use a person-attribute view;
+  `POPULATION` may then be an assigned person CSV directly.
 - `--persons`: optional assigned person CSV for person-level map variables.
 - `--boundaries`: StatCan shapefile, directory containing a shapefile, or
   prepared GeoJSON.
@@ -1102,7 +1187,8 @@ Important options:
 - `--census-vintage`, `--geo-level`, `--geo-namespace`, and
   `--geo-dguid-column`: explicit geography identity embedded in a single-run
   map. A national plan supplies these values itself.
-- `--out`: destination HTML file.
+- `--out`: destination HTML file; with `--both`, its stem is the shared prefix
+  for the two suffixed HTML filenames.
 - `--title`: title shown in the map panel.
 - `--coord-precision`: output coordinate precision.
 - `--jurisdiction`: one or more completed province/territory codes when

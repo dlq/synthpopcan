@@ -1041,6 +1041,18 @@ def _constraint_spec_key(
     return spec.unit, spec.margin, spec.dimensions, spec.categories
 
 
+def _encode_linked_contributions(
+    contributions: np.ndarray,
+) -> list[tuple[np.ndarray, np.ndarray]]:
+    """Cache lookup codes and fixed exponents for repeated contribution counts."""
+    encoded = []
+    for row in contributions:
+        values, codes = np.unique(row, return_inverse=True)
+        exponents = values / max(float(np.max(values, initial=0)), 1.0)
+        encoded.append((codes, exponents))
+    return encoded
+
+
 def _fit_joint_constraints(
     contributions: np.ndarray,
     targets: np.ndarray,
@@ -1060,6 +1072,11 @@ def _fit_joint_constraints(
     if np.any(weights < 0):
         raise ValueError("initial household weights must be non-negative")
 
+    # Linked contributions repeat a few counts (usually 0/1 for households).
+    # Evaluate the same exponential once per distinct count, then look it up,
+    # instead of recomputing it for every candidate on every iteration.
+    encoded_contributions = _encode_linked_contributions(contributions)
+
     for row, target in zip(contributions, targets, strict=True):
         if target == 0:
             weights[row > 0] = 0.0
@@ -1072,15 +1089,16 @@ def _fit_joint_constraints(
 
     max_abs_error = float("inf")
     for iteration in range(1, max_iterations + 1):
-        for row, target in zip(contributions, targets, strict=True):
+        for row, target, (codes, exponents) in zip(
+            contributions, targets, encoded_contributions, strict=True
+        ):
             if target == 0:
                 continue
             current = float(row @ weights)
             if current <= 0:
                 continue
             log_ratio = np.clip(np.log(target / current), -50.0, 50.0)
-            exponent = row / max(float(np.max(row)), 1.0)
-            weights *= np.exp(log_ratio * exponent)
+            weights *= np.exp(log_ratio * exponents)[codes]
         max_abs_error = float(np.max(np.abs(contributions @ weights - targets)))
         if max_abs_error <= tolerance:
             return weights, True, iteration, max_abs_error

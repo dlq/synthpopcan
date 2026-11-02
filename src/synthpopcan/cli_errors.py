@@ -240,10 +240,7 @@ def _network_error(exc: BaseException) -> str | None:
                 "the requested resource was not found."
             )
         if exc.code in {401, 403}:
-            return (
-                f"{prefix} The service refused access. Check the source's access "
-                "requirements and your network or proxy settings."
-            )
+            return _access_error(exc, prefix)
         return f"{prefix} Check the source URL and the service's availability."
     reason = exc.reason if isinstance(exc, URLError) else exc
     if isinstance(reason, ssl.SSLError):
@@ -272,6 +269,27 @@ def _network_error(exc: BaseException) -> str | None:
             "Try again later."
         )
     return None
+
+
+def _access_error(exc: HTTPError, prefix: str) -> str:
+    challenged = any(
+        name.lower() == "cf-mitigated"
+        and isinstance(value, str)
+        and value.strip().lower() == "challenge"
+        for name, value in (exc.headers or {}).items()
+    )
+    if exc.code == 403 and challenged:
+        return (
+            f"{prefix} The service returned a browser security challenge that "
+            "the CLI cannot complete. Open the source website in a browser and, "
+            "if access is granted, download the file manually. Use the local "
+            "input file or a verified cached copy. Repeating this CLI request "
+            "will not complete the browser challenge."
+        )
+    return (
+        f"{prefix} The service refused access. Check the source's access "
+        "requirements and your network or proxy settings."
+    )
 
 
 def _rate_limit_error(exc: HTTPError, prefix: str) -> str:

@@ -4,6 +4,36 @@ All notable public changes to SynthPopCan are tracked here.
 
 ## Unreleased
 
+- Add `geo map --both` to generate household and population HTML views in one
+  invocation, using the explicit person profile and distinct output filenames.
+
+- Correct non-official-language category mappings in person maps, validate all
+  mapped categorical codes against the source codebook, and label linear
+  legends as using the observed range.
+
+- Use a labelled logarithmic colour scale for density layers, with legend
+  ticks in original units so dense outliers do not wash out other tracts.
+
+- Add CLI person-attribute maps from a person CSV using the explicit 2021
+  hierarchical PUMF profile. Include demographic, education, labour, personal
+  income and language layers with known-value counts and eligible denominators.
+
+- Add household and population density map layers using published land area
+  in km², and default polygon maps to population density when available.
+
+- Recognize HTTP 403 browser security challenges and explain how to continue
+  with a browser download or verified local input, preserving cached data.
+
+- Preserve observed zero shelter costs in map medians and exclude Census
+  unavailable-income codes from household-income statistics.
+
+- Cache repeated contribution exponents during linked small-area fitting,
+  reducing repeated computation while preserving the calibration update rule.
+
+- Let map statistics use explicit binary `age_under_20`, `age_65_plus`, and
+  `visible_minority` columns when supplied, preserving unknown values and
+  compatibility with legacy raw-code maps.
+
 ## 1.1.3 - 2026-11-01
 
 - Update Python, web-development, and GitHub Actions dependencies. Use scoped

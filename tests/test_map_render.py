@@ -329,3 +329,92 @@ def test_render_synthesis_map_with_geojson_boundaries(tmp_path: Path) -> None:
 
     assert out.exists()
     assert geo_id in out.read_text()
+
+
+@pytest.mark.parametrize("boundary_format", ["geojson", "shapefile"])
+def test_map_densities_use_published_land_area_and_default_to_people(
+    tmp_path: Path, boundary_format: str
+) -> None:
+    import json
+    import re
+
+    geo_id = "G1"
+    if boundary_format == "shapefile":
+        pytest.importorskip("shapefile")
+        boundaries = _write_fake_shapefile(tmp_path, geo_id, landarea=0.5)
+    else:
+        boundaries = tmp_path / "boundary.geojson"
+        _write_fake_geojson(boundaries, [geo_id])
+        data = json.loads(boundaries.read_text())
+        data["features"][0]["properties"]["LANDAREA"] = 0.5
+        boundaries.write_text(json.dumps(data))
+    households = tmp_path / "households.csv"
+    households.write_text(
+        "synthetic_household_id,ct,household_size\nh1,G1,2\nh2,G1,1\n"
+    )
+    persons = tmp_path / "persons.csv"
+    persons.write_text(
+        "synthetic_person_id,synthetic_household_id,ct\np1,h1,G1\np2,h1,G1\np3,h2,G1\n"
+    )
+    out = tmp_path / "map.html"
+    render_synthesis_map(
+        households_path=households,
+        persons_path=persons,
+        boundaries_path=boundaries,
+        geography_column="ct",
+        geography_id_field="CTUID",
+        out_path=out,
+    )
+    html = out.read_text()
+    data = json.loads(re.search(r"const GEOJSON = (.*);", html)[1])
+    props = data["features"][0]["properties"]
+    assert props["households_per_km2"] == 4
+    assert props["persons_per_km2"] == 6
+    assert 'const VARIABLES = [{"field":"persons_per_km2"' in html
+    assert json.dumps("People per km²") in html
+    assert json.dumps("Households per km²") in html
+
+
+@pytest.mark.parametrize("area", [None, "", "invalid", 0, -1, "NaN", "Infinity", True])
+def test_missing_or_invalid_land_area_does_not_become_zero_density(area):
+    from synthpopcan.map_render import _add_density_statistics, _map_variable_specs
+
+    summary = {"n_households": 2, "n_persons": 3}
+    _add_density_statistics(summary, area)
+    assert "persons_per_km2" not in summary
+    assert "households_per_km2" not in summary
+    assert _map_variable_specs({"G1": summary})[0]["field"] == "n_households"
+
+
+def test_household_density_is_available_without_person_rows():
+    from synthpopcan.map_render import _add_density_statistics, _map_variable_specs
+
+    summary = {"n_households": 0}
+    _add_density_statistics(summary, "2.5")
+    assert summary["households_per_km2"] == 0
+    assert "persons_per_km2" not in summary
+    assert _map_variable_specs({"G1": summary})[0]["field"] == "households_per_km2"
+
+
+@pytest.mark.parametrize("field", ["persons_per_km2", "households_per_km2"])
+def test_density_scale_preserves_values_and_labels_logarithmic_intervals(field):
+    from synthpopcan.map_render import _map_variable_specs
+
+    specs = _map_variable_specs(
+        {"A": {field: 0, "n_persons": 1}, "B": {field: 9999, "n_persons": 2}}
+    )
+    density = next(v for v in specs if v["field"] == field)
+    assert density["min"] == 0
+    assert density["max"] == 9999
+    assert density["scale"] == "log1p"
+    assert density["legendTicks"] == pytest.approx([0, 9, 99, 999, 9999])
+    counts = next(v for v in specs if v["field"] == "n_persons")
+    assert "scale" not in counts
+
+
+def test_constant_density_has_one_legend_value():
+    from synthpopcan.map_render import _map_variable_specs
+
+    spec = _map_variable_specs({"A": {"persons_per_km2": 0}})[0]
+    assert spec["legendTicks"] == [0]
+    assert spec["min"] == spec["max"] == 0

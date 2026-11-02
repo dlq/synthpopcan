@@ -137,3 +137,21 @@ smallest shareable reproducer, SynthPopCan version, command or API call, random
 seed, expected result, and actual result. Do not attach restricted microdata or
 other private inputs. Security or disclosure-sensitive findings should instead
 use [private vulnerability reporting](https://github.com/dlq/synthpopcan/security/advisories/new).
+
+### Source-specific map and age-control coding
+
+The hierarchical 2016/2021 PUMF uses 13 substantive `AGEGRP` bands; codes
+12 and 13 represent ages 65+, and 88 is unavailable. The released v1
+age-control derivation assumes 18 bands and must not be applied directly to
+these hierarchical fields. The 2021 hierarchical `GENDER` codes are also
+1 = Women+ and 2 = Men+, while the released age/gender control source axes
+reverse those labels. Until a versioned replacement is available, prepare
+`age_group_3` and gender targets using the source codebook and use generic
+calibration with
+compatible private-household age controls.
+
+Map callers can supply binary `age_under_20`, `age_65_plus`, and
+`visible_minority` indicators derived from their source codebook. A supplied
+blank or invalid indicator remains unobserved. Without these columns the
+legacy raw-code interpretation remains in effect; it is not suitable for every
+PUMF schema.

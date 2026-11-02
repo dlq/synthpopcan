@@ -129,7 +129,7 @@ def test_render_geography_summary_polygon_map_quantizes_display_boundaries(
                 "features": [
                     {
                         "type": "Feature",
-                        "properties": {"geo_id": "1001"},
+                        "properties": {"geo_id": "1001", "LANDAREA": 2.5},
                         "geometry": {
                             "type": "Polygon",
                             "coordinates": [
@@ -190,6 +190,10 @@ def test_render_geography_summary_polygon_map_quantizes_display_boundaries(
     assert display["features"][1]["geometry"]["coordinates"][0][-1] == [1.0, 0.0]
     assert display["features"][0]["properties"]["avg_hh_size"] == 2.5
     html = html_path.read_text()
+    assert display["features"][0]["properties"]["persons_per_km2"] == 2
+    assert display["features"][0]["properties"]["households_per_km2"] == 0.8
+    assert "persons_per_km2" not in display["features"][1]["properties"]
+    assert 'const VARIABLES = [{"field":"persons_per_km2"' in html
     assert "syn-fill" in html
     assert "Avg Household Size" in html
 

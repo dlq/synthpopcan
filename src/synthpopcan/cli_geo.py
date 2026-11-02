@@ -5,8 +5,9 @@ from __future__ import annotations
 __all__ = ["small_area"]
 
 import json
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from pathlib import Path
+from typing import Any
 
 import click
 
@@ -779,8 +780,138 @@ def _coerce_float(value: object) -> float:
 # ---------------------------------------------------------------------------
 
 
+def _validate_national_map_person_options(
+    persons_path, person_profile, both=False
+) -> None:
+    if both:
+        raise click.UsageError(
+            "--both requires a linked population directory or household CSV, "
+            "rather than a national plan."
+        )
+    if person_profile is not None:
+        raise click.UsageError(
+            "--person-profile requires a person CSV or linked population directory, "
+            "rather than a national plan."
+        )
+    if persons_path is not None:
+        raise click.UsageError(
+            "--persons must be omitted when POPULATION is a national plan"
+        )
+
+
+def _map_population_renderer(
+    households_path: Path,
+    persons_path: Path | None,
+    population_path: Path,
+    geography_column: str,
+    person_profile: str | None,
+    census_vintage: int | None,
+) -> tuple[Callable[..., Path], dict[str, Any]]:
+    from synthpopcan.map_render import _render_statistics_map, render_synthesis_map
+
+    if person_profile is None:
+        return render_synthesis_map, {
+            "households_path": households_path,
+            "persons_path": persons_path,
+            "geography_column": geography_column,
+        }
+    if census_vintage not in (None, 2021):
+        raise ValueError("statcan-hierarchical-2021 requires Census vintage 2021.")
+    from synthpopcan._person_map_statistics import compute_person_statistics
+
+    return _render_statistics_map, {
+        "stats": compute_person_statistics(
+            persons_path or population_path, geography_column
+        ),
+        "person_attributes": True,
+    }
+
+
+def _population_map_jobs(
+    households_path: Path,
+    persons_path: Path | None,
+    population_path: Path,
+    geography_column: str,
+    person_profile: str | None,
+    census_vintage: int | None,
+    out_path: Path,
+    title: str,
+    both: bool,
+) -> list[tuple[Callable[..., Path], dict[str, Any]]]:
+    """Prepare both views before rendering, including person-input validation."""
+    views = [(person_profile, out_path, title)]
+    if both:
+        if person_profile is None:
+            raise click.UsageError(
+                "--both requires --person-profile statcan-hierarchical-2021."
+            )
+        if persons_path is None:
+            raise click.UsageError(
+                "--both requires a linked population directory or a household CSV "
+                "with --persons pointing to its person CSV."
+            )
+        views = [
+            (
+                None,
+                out_path.with_name(out_path.stem + "-households.html"),
+                title + " — households",
+            ),
+            (
+                person_profile,
+                out_path.with_name(out_path.stem + "-population.html"),
+                title + " — population",
+            ),
+        ]
+    jobs = []
+    for profile, destination, view_title in views:
+        renderer, arguments = _map_population_renderer(
+            households_path,
+            persons_path,
+            population_path,
+            geography_column,
+            profile,
+            census_vintage,
+        )
+        jobs.append(
+            (renderer, {**arguments, "out_path": destination, "title": view_title})
+        )
+    return jobs
+
+
+def _report_population_maps(
+    jobs: list[tuple[Callable[..., Path], dict[str, Any]]],
+) -> None:
+    for _, arguments in jobs:
+        destination = arguments["out_path"]
+        print_wrote(destination)
+        click.echo(
+            f"Open {destination} in a browser to explore the synthesis results.",
+            err=True,
+        )
+        click.echo(destination)
+
+
 @small_area_group.command("map")
 @click.argument("population_path", metavar="POPULATION", type=_PATH)
+@click.option(
+    "--both",
+    is_flag=True,
+    help=(
+        "Write household and population HTML maps together. Requires --person-profile "
+        "and linked household/person CSVs. Appends -households.html and "
+        "-population.html to the --out stem."
+    ),
+)
+@click.option(
+    "--person-profile",
+    type=click.Choice(["statcan-hierarchical-2021"]),
+    default=None,
+    help=(
+        "Render person attributes by geography using this explicit source codebook. "
+        "Accepts a person CSV directly or persons.csv in a population directory; "
+        "includes age, gender, education, labour, personal income and language."
+    ),
+)
 @click.option(
     "--persons",
     "persons_path",
@@ -806,7 +937,7 @@ def _coerce_float(value: object) -> float:
     "--geo-column",
     default=None,
     help=(
-        "Column in the household CSV that holds the geography ID (e.g. ct or ada). "
+        "Column in the population CSV that holds the geography ID (e.g. ct or ada). "
         "Inferred from a completed national plan."
     ),
 )
@@ -844,7 +975,8 @@ def _coerce_float(value: object) -> float:
     type=_PATH,
     help=(
         "Destination HTML file. Defaults to <households-stem>-map.html for a "
-        "CSV and national-map.html beside a national plan."
+        "CSV and national-map.html beside a national plan. With --both, the stem "
+        "gets -households.html and -population.html suffixes."
     ),
 )
 @click.option(
@@ -863,6 +995,8 @@ def _coerce_float(value: object) -> float:
 )
 def map_command(
     population_path: Path,
+    both: bool,
+    person_profile: str | None,
     persons_path: Path | None,
     boundaries_path: Path | None,
     geo_column: str | None,
@@ -905,10 +1039,7 @@ def map_command(
         )
     )
     if national_plan_path is not None:
-        if persons_path is not None:
-            raise click.UsageError(
-                "--persons must be omitted when POPULATION is a national plan"
-            )
+        _validate_national_map_person_options(persons_path, person_profile, both)
         from synthpopcan.api import render_small_area_map
 
         selector_lookup = {
@@ -960,8 +1091,6 @@ def map_command(
         raise click.UsageError("--geo-column is required for a population CSV")
     coord_precision = 5 if coord_precision is None else coord_precision
 
-    from synthpopcan.map_render import render_synthesis_map
-
     if population_path.is_dir():
         households_path, inferred_persons = _linked_population_paths(population_path)
         if persons_path is None:
@@ -988,19 +1117,29 @@ def map_command(
     )
 
     try:
-        render_synthesis_map(
-            households_path=households_path,
-            persons_path=persons_path,
-            boundaries_path=boundaries_path,
-            geography_column=geo_column,
-            geography_id_field=geo_id_field,
-            out_path=out_path,
-            title=title,
-            coord_precision=coord_precision,
-            geography_context=(
-                geography_universe.as_dict() if geography_universe is not None else None
-            ),
+        jobs = _population_map_jobs(
+            households_path,
+            persons_path,
+            population_path,
+            geo_column,
+            person_profile,
+            census_vintage,
+            out_path,
+            title,
+            both,
         )
+        for render_map, arguments in jobs:
+            render_map(
+                **arguments,
+                boundaries_path=boundaries_path,
+                geography_id_field=geo_id_field,
+                coord_precision=coord_precision,
+                geography_context=(
+                    geography_universe.as_dict()
+                    if geography_universe is not None
+                    else None
+                ),
+            )
     except ImportError as exc:
         raise click.ClickException(
             f"Missing dependency: {exc}. Install pyshp: pip install pyshp"
@@ -1017,11 +1156,7 @@ def map_command(
     except ValueError as exc:
         raise click_value_error(exc) from exc
 
-    print_wrote(out_path)
-    click.echo(
-        f"Open {out_path} in a browser to explore the synthesis results.", err=True
-    )
-    click.echo(out_path)
+    _report_population_maps(jobs)
 
 
 # ---------------------------------------------------------------------------

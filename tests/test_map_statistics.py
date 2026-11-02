@@ -572,3 +572,64 @@ def test_partial_household_income_is_unknown_but_observed_zero_is_zero(tmp_path)
         "synthetic_person_id,synthetic_household_id,ct,TOTINC\np1,h1,G1,0\np2,h1,G1,0\n"
     )
     assert _compute_geo_stats(households, "ct", persons)["G1"]["median_hh_income"] == 0
+
+
+@pytest.mark.parametrize(
+    "indicator, statistic",
+    [
+        ("age_under_20", "pct_child"),
+        ("age_65_plus", "pct_senior"),
+        ("visible_minority", "pct_vismin"),
+    ],
+)
+@pytest.mark.parametrize(
+    "value, expected", [("0", 0.0), ("1", 100.0), ("", None), ("8", None)]
+)
+def test_explicit_person_indicators_override_legacy_codes(
+    tmp_path: Path,
+    indicator: str,
+    statistic: str,
+    value: str,
+    expected: float | None,
+) -> None:
+    """Prepared indicators carry source-specific codebooks, including unknowns."""
+    households = tmp_path / "households.csv"
+    persons = tmp_path / "persons.csv"
+    _write_households(households, [{"synthetic_household_id": "h1", "ct": "G1"}])
+    _write_persons(
+        persons,
+        [
+            {
+                "synthetic_household_id": "h1",
+                "synthetic_person_id": "p1",
+                "ct": "G1",
+                "AGEGRP": "88",
+                "VISMIN": "1",
+                indicator: value,
+            }
+        ],
+    )
+    result = _compute_geo_stats(households, "ct", persons_path=persons)
+    assert result["G1"][statistic] == expected
+
+
+@pytest.mark.parametrize("income", ["88888888", "99999999"])
+def test_special_income_codes_do_not_become_household_income(
+    tmp_path: Path, income: str
+) -> None:
+    households = tmp_path / "households.csv"
+    persons = tmp_path / "persons.csv"
+    _write_households(households, [_hh_row("h1", "G1")])
+    _write_persons(persons, [_person_row("p1", "h1", "G1", totinc=income)])
+    assert (
+        _compute_geo_stats(households, "ct", persons)["G1"]["median_hh_income"] is None
+    )
+
+
+def test_zero_shelter_cost_is_an_observation(tmp_path: Path) -> None:
+    households = tmp_path / "households.csv"
+    rows = [_hh_row("h1", "G1"), _hh_row("h2", "G1")]
+    rows[0]["SHELCO"] = "0"
+    rows[1]["SHELCO"] = "1000"
+    _write_households(households, rows)
+    assert _compute_geo_stats(households, "ct")["G1"]["median_shelter_cost"] == 500

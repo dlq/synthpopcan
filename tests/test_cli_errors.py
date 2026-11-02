@@ -522,3 +522,70 @@ def test_cli_http_date_retry_after_is_actionable_in_utc(monkeypatch):
     assert result.exit_code == 1
     assert "wait at least 600 seconds" in result.stderr
     assert "not before 2026-11-01 12:10:00 UTC" in result.stderr
+
+
+@pytest.mark.parametrize(
+    "header_name", ["cf-mitigated", "Cf-Mitigated", "CF-MITIGATED"]
+)
+def test_profile_browser_challenge_is_actionable_and_preserves_cache(
+    header_name, monkeypatch, tmp_path
+) -> None:
+    cached = tmp_path / "2021-census-profile-ct.csv"
+    cached.write_bytes(b"verified cached profile")
+    manifest = tmp_path / "2021-census-profile-ct.json"
+    manifest.write_bytes(b'{"cached":true}')
+    calls = []
+
+    def challenged(url, **_kwargs):
+        calls.append(url)
+        raise HTTPError(
+            "https://user:SECRET@www12.statcan.gc.ca/file?token=PRIVATE",
+            403,
+            "Forbidden",
+            {header_name: " challenge "},
+            BytesIO(b"PRIVATE RESPONSE BODY"),
+        )
+
+    monkeypatch.setattr("synthpopcan.statcan.urlopen", challenged)
+    result = CliRunner().invoke(
+        cli,
+        [
+            "statcan",
+            "census-profile",
+            "fetch",
+            "--year",
+            "2021",
+            "--geo-level",
+            "ct",
+            "--out-dir",
+            str(tmp_path),
+        ],
+    )
+    assert result.exit_code == 1
+    assert result.stdout == ""
+    assert len(calls) == 1
+    assert "www12.statcan.gc.ca (HTTP 403)" in result.stderr
+    assert "browser security challenge" in result.stderr
+    assert "download the file manually" in result.stderr
+    assert "verified cached copy" in result.stderr
+    assert "SECRET" not in result.stderr
+    assert "PRIVATE" not in result.stderr
+    assert "Traceback" not in result.stderr
+    assert cached.read_bytes() == b"verified cached profile"
+    assert manifest.read_bytes() == b'{"cached":true}'
+    assert set(tmp_path.iterdir()) == {cached, manifest}
+
+
+@pytest.mark.parametrize(
+    "headers",
+    [{"Server": "cloudflare"}, {"Cf-Mitigated": "other"}, {"Cf-Mitigated": None}],
+)
+def test_access_refusal_requires_an_explicit_challenge_marker(headers, monkeypatch):
+    def refused():
+        raise HTTPError("https://example.test/file", 403, "Forbidden", headers, None)
+
+    monkeypatch.setattr("synthpopcan.cli.model_catalogue", refused)
+    result = CliRunner().invoke(cli, ["models", "list"])
+    assert result.exit_code == 1
+    assert "refused access" in result.stderr
+    assert "browser security challenge" not in result.stderr

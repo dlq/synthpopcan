@@ -83,6 +83,15 @@ def _lcc_to_wgs84(x: np.ndarray, y: np.ndarray) -> tuple[np.ndarray, np.ndarray]
 # ---------------------------------------------------------------------------
 
 
+def _shapefile_property_indices(
+    field_names: Sequence[str], property_fields: Sequence[str]
+) -> dict[str, int]:
+    indices = {name: field_names.index(name) for name in property_fields}
+    if "LANDAREA" in field_names:
+        indices.setdefault("LANDAREA", field_names.index("LANDAREA"))
+    return indices
+
+
 def _read_shapefile_geojson(
     shp_path: Path,
     id_field: str,
@@ -105,7 +114,7 @@ def _read_shapefile_geojson(
     with shapefile.Reader(str(shp_path), encoding="latin1") as sf:
         field_names = [f[0] for f in sf.fields[1:]]  # type: ignore[attr-defined]
         id_idx = field_names.index(id_field)
-        property_indices = {name: field_names.index(name) for name in property_fields}
+        property_indices = _shapefile_property_indices(field_names, property_fields)
 
         for sr in sf.iterShapeRecords():  # type: ignore[attr-defined]
             geo_id = str(sr.record[id_idx]).strip()
@@ -864,6 +873,9 @@ _TEMPLATE = """\
     #leg-title{{font-size:11px;font-weight:600;color:#444;margin-bottom:6px}}
     #leg-bar{{height:9px;border-radius:4px;margin-bottom:4px}}
     #leg-labels{{display:flex;justify-content:space-between;font-size:10px;color:#666}}
+    #leg-ticks{{position:relative;height:16px;font-size:10px;color:#666}}
+    #leg-ticks span{{position:absolute;transform:translateX(-50%)}}
+    #leg-scale{{font-size:10px;color:#666;margin-top:3px}}
     #tip{{position:absolute;pointer-events:none;z-index:9;
       background:rgba(15,15,30,.88);color:#f0f0f0;border-radius:8px;
       padding:9px 13px;font-size:12px;box-shadow:0 2px 12px rgba(0,0,0,.4);
@@ -881,12 +893,16 @@ _TEMPLATE = """\
   <h3>{title}</h3>
   <label for="var-select">Variable</label>
   <select id="var-select"></select>
+  <p id="variable-note" hidden
+     style="font-size:12px;max-width:380px;line-height:1.4"></p>
 </div>
 
 <div id="legend">
   <div id="leg-title"></div>
   <div id="leg-bar"></div>
   <div id="leg-labels"><span id="leg-lo"></span><span id="leg-hi"></span></div>
+  <div id="leg-ticks" hidden></div>
+  <div id="leg-scale" hidden>Logarithmic density scale</div>
 </div>
 
 <div id="tip"></div>
@@ -902,14 +918,25 @@ const COLORS = [
 ];
 
 function makeInterp(v) {{
+  if (v.min === v.max) return COLORS[Math.floor(COLORS.length / 2)];
   const n = COLORS.length - 1;
+  const logarithmic = v.scale === 'log1p';
+  const low = logarithmic ? Math.log1p(v.min) : v.min;
+  const high = logarithmic ? Math.log1p(v.max) : v.max;
+  const raw = ['coalesce',['get', v.field], v.min];
+  const input = logarithmic ? ['ln', ['+', 1, ['max', 0, raw]]] : raw;
   return ['interpolate',['linear'],
-    ['coalesce',['get', v.field], v.min],
-    ...COLORS.flatMap((c,i) => [v.min + (v.max - v.min)*i/n, c])
+    input,
+    ...COLORS.flatMap((c,i) => [low + (high - low)*i/n, c])
   ];
 }}
 
 let current = VARIABLES[0];
+
+function makeOpacity(v) {{
+  return ['case', ['==', ['get', v.field], null], 0,
+    ['case', ['boolean', ['feature-state','hover'], false], 0.92, 0.72]];
+}}
 
 const map = new maplibregl.Map({{
   container: 'map',
@@ -922,11 +949,42 @@ map.addControl(new maplibregl.NavigationControl(), 'top-right');
 map.addControl(new maplibregl.ScaleControl({{unit:'metric'}}), 'bottom-right');
 
 function setLegend(v) {{
+  const note = document.getElementById('variable-note');
+  note.textContent = v.note || '';
+  note.hidden = !v.note;
   document.getElementById('leg-title').textContent = v.label;
   document.getElementById('leg-bar').style.background =
-    'linear-gradient(to right,' + COLORS.join(',') + ')';
+    v.min === v.max ? COLORS[Math.floor(COLORS.length / 2)]
+      : 'linear-gradient(to right,' + COLORS.join(',') + ')';
   document.getElementById('leg-lo').textContent = v.fmtLo;
   document.getElementById('leg-hi').textContent = v.fmtHi;
+  setDensityLegend(v);
+}}
+
+function setDensityLegend(v) {{
+  const logarithmic = v.scale === 'log1p';
+  document.getElementById('leg-labels').hidden = logarithmic;
+  document.getElementById('leg-labels').style.display = logarithmic ? 'none' : 'flex';
+  const scaleLabel = document.getElementById('leg-scale');
+  scaleLabel.hidden = false;
+  scaleLabel.textContent = v.min === v.max ? 'Constant value across mapped tracts'
+    : logarithmic ? 'Logarithmic density scale' : 'Linear scale · observed range';
+  document.getElementById('legend').style.minWidth = logarithmic ? '300px' : '170px';
+  const ticks = document.getElementById('leg-ticks');
+  ticks.hidden = !logarithmic;
+  ticks.replaceChildren();
+  if (!logarithmic) return;
+  v.legendTicks.forEach((value, i) => {{
+    const label = document.createElement('span');
+    const position = v.legendTicks.length === 1 ? 50 : 100*i/(v.legendTicks.length-1);
+    label.style.left = position + '%';
+    if (v.legendTicks.length > 1) {{
+      if (i === 0) label.style.transform = 'none';
+      if (i === v.legendTicks.length-1) label.style.transform = 'translateX(-100%)';
+    }}
+    label.textContent = value.toLocaleString(undefined, {{maximumFractionDigits: 0}});
+    ticks.appendChild(label);
+  }});
 }}
 
 map.on('load', () => {{
@@ -936,7 +994,7 @@ map.on('load', () => {{
     id:'syn-fill', type:'fill', source:'syn',
     paint:{{
       'fill-color': makeInterp(current),
-      'fill-opacity': ['case',['boolean',['feature-state','hover'],false], 0.92, 0.72],
+      'fill-opacity': makeOpacity(current),
     }}
   }});
 
@@ -959,6 +1017,7 @@ map.on('load', () => {{
   sel.addEventListener('change', () => {{
     current = VARIABLES[+sel.value];
     map.setPaintProperty('syn-fill', 'fill-color', makeInterp(current));
+    map.setPaintProperty('syn-fill', 'fill-opacity', makeOpacity(current));
     setLegend(current);
   }});
 
@@ -979,7 +1038,10 @@ map.on('load', () => {{
     const heading = document.createElement('strong');
     heading.textContent = String(p.geo_id ?? '');
     tip.appendChild(heading);
-    VARIABLES.forEach(v => {{
+    const shown = VARIABLES.some(v => v.note)
+      ? VARIABLES.filter(v => v.field === current.field || v.field === 'n_persons')
+      : VARIABLES;
+    shown.forEach(v => {{
       const row = document.createElement('div');
       row.className = 'tip-row';
       const label = document.createElement('span');
@@ -991,6 +1053,17 @@ map.on('load', () => {{
       row.append(label, value);
       tip.appendChild(row);
     }});
+    if (p[current.field + '_n'] != null) {{
+      const detail = document.createElement('div');
+      detail.style.fontSize = '12px';
+      const denominator = Number(p[current.field + '_n']).toLocaleString();
+      const known = Number(p[current.field + '_known']).toLocaleString();
+      const eligible = Number(p[current.field + '_eligible']).toLocaleString();
+      detail.textContent = 'Denominator: ' + denominator
+        + ' · Valid source records: ' + known + ' / ' + eligible
+        + ' age-eligible people';
+      tip.appendChild(detail);
+    }}
     tip.style.display = 'block';
     tip.style.left = (e.point.x + 16) + 'px';
     tip.style.top  = (e.point.y - 10) + 'px';
@@ -1035,15 +1108,34 @@ def _variable_spec(
     fmt_lo: str,
     fmt_hi: str,
 ) -> dict[str, Any]:
-    return {
-        "field": field,
-        "label": label,
-        "min": min(values) if values else 0.0,
-        "max": max(values) if values else 100.0,
-        "fmt": fmt_js,
-        "fmtLo": fmt_lo,
-        "fmtHi": fmt_hi,
-    }
+    return _with_density_scale(
+        {
+            "field": field,
+            "label": label,
+            "min": min(values) if values else 0.0,
+            "max": max(values) if values else 100.0,
+            "fmt": fmt_js,
+            "fmtLo": fmt_lo,
+            "fmtHi": fmt_hi,
+        }
+    )
+
+
+def _with_density_scale(spec: dict[str, Any]) -> dict[str, Any]:
+    if spec["field"] in {"persons_per_km2", "households_per_km2"}:
+        spec.update(_density_scale(spec["min"], spec["max"]))
+    return spec
+
+
+def _density_scale(low: float, high: float) -> dict[str, Any]:
+    """Match logarithmic colour spacing with ticks in original density units."""
+    if low == high:
+        ticks = [low]
+    else:
+        start, stop = math.log1p(low), math.log1p(high)
+        ticks = [math.expm1(start + (stop - start) * i / 4) for i in range(5)]
+        ticks[0], ticks[-1] = low, high
+    return {"scale": "log1p", "legendTicks": ticks}
 
 
 def _pct_spec(field: str, label: str, values: list[float]) -> dict[str, Any]:
@@ -1103,6 +1195,29 @@ def render_synthesis_map(
 
     # 1. Compute per-geography stats
     stats = _compute_geo_stats(households_path, geography_column, persons_path)
+    return _render_statistics_map(
+        stats=stats,
+        boundaries_path=boundaries_path,
+        geography_id_field=geography_id_field,
+        out_path=out_path,
+        title=title,
+        coord_precision=coord_precision,
+        geography_context=geography_context,
+    )
+
+
+def _render_statistics_map(
+    *,
+    stats: dict[str, dict[str, Any]],
+    boundaries_path: Path,
+    geography_id_field: str,
+    out_path: Path,
+    title: str,
+    coord_precision: int,
+    geography_context: Mapping[str, object] | None,
+    person_attributes: bool = False,
+) -> Path:
+    """Join either household/person or person-only statistics to boundaries."""
     keep_ids = set(stats)
 
     # 2. Read + reproject + simplify boundaries
@@ -1125,10 +1240,14 @@ def render_synthesis_map(
     # 3. Join stats into feature properties
     for feature in geojson["features"]:
         geo_id = feature["properties"]["geo_id"]
+        _add_density_statistics(stats[geo_id], feature["properties"].get("LANDAREA"))
         feature["properties"].update(stats.get(geo_id, {}))
 
     # 4. Build variable specs for the UI
-    variables = _map_variable_specs(stats)
+    if person_attributes:
+        variables = _person_variable_specs(stats)
+    else:
+        variables = _map_variable_specs(stats)
 
     # 5. Serialise — compact JSON (no whitespace) keeps file small
     geojson_js = _json_for_inline_script(geojson)
@@ -1294,6 +1413,7 @@ def render_geography_summary_polygon_map(
             extent[1] = min(extent[1], bounds[1])
             extent[2] = max(extent[2], bounds[2])
             extent[3] = max(extent[3], bounds[3])
+            _add_density_statistics(summaries[identifier], properties.get("LANDAREA"))
             features.append(
                 {
                     "type": "Feature",
@@ -1675,10 +1795,101 @@ def _read_geography_summaries(
     return summaries
 
 
+def _add_density_statistics(summary: dict[str, Any], land_area: object) -> None:
+    """Use published land area in km², never area from simplified display geometry."""
+    if isinstance(land_area, bool):
+        return
+    try:
+        area = float(land_area)  # type: ignore[arg-type]
+    except (TypeError, ValueError):
+        return
+    if not math.isfinite(area) or area <= 0:
+        return
+    for count_field, density_field in (
+        ("n_households", "households_per_km2"),
+        ("n_persons", "persons_per_km2"),
+    ):
+        count = summary.get(count_field)
+        if isinstance(count, (int, float)) and math.isfinite(count) and count >= 0:
+            summary[density_field] = count / area
+
+
+def _person_variable_spec(name, label, values, formatter):
+    if formatter == _FMT_PCT:
+        return _pct_spec(name, label, values)
+    prefix = "$" if formatter == _FMT_DOLLAR else ""
+    decimals = 0 if formatter in (_FMT_DOLLAR, _FMT_INT) else 2
+    return _variable_spec(
+        name,
+        label,
+        values,
+        formatter,
+        f"{prefix}{min(values):,.{decimals}f}",
+        f"{prefix}{max(values):,.{decimals}f}",
+    )
+
+
+def _person_variable_specs(
+    summaries: dict[str, dict[str, Any]],
+) -> list[dict[str, Any]]:
+    from synthpopcan._person_map_statistics import _INCOMES, _METRICS
+
+    definitions = [
+        (
+            "persons_per_km2",
+            "People per km²",
+            _FMT_F2,
+            "People divided by published land area in km².",
+        ),
+        (
+            "n_persons",
+            "Total people",
+            _FMT_INT,
+            "Synthetic people in private households, counted from person records.",
+        ),
+        *[
+            (
+                m.name,
+                m.label,
+                _FMT_PCT,
+                f"Denominator: {m.universe}. Missing and inapplicable values excluded.",
+            )
+            for m in _METRICS
+        ],
+        *[
+            (
+                name,
+                label,
+                _FMT_DOLLAR,
+                "Known income among people aged 15+. Includes observed zero and "
+                "negative income; excludes unavailable/inapplicable codes.",
+            )
+            for _, name, label in _INCOMES
+        ],
+    ]
+    variables = []
+    for name, label, formatter, note in definitions:
+        values = [
+            float(s[name])
+            for s in summaries.values()
+            if isinstance(s.get(name), (int, float)) and math.isfinite(s[name])
+        ]
+        if not values:
+            continue
+        spec = _person_variable_spec(name, label, values, formatter)
+        if name.startswith(("pct_mother_tongue_", "pct_home_language_")):
+            note += " Multiple language responses may overlap."
+        spec["note"] = note
+        variables.append(spec)
+    return variables
+
+
 def _map_variable_specs(
     summaries: Mapping[str, Mapping[str, object]],
 ) -> list[dict[str, Any]]:
     scalar_definitions = (
+        ("persons_per_km2", "People per km²", _FMT_F2),
+        ("households_per_km2", "Households per km²", _FMT_F2),
         ("n_households", "Households", _FMT_INT),
         ("n_persons", "Persons", _FMT_INT),
         ("avg_hh_size", "Avg Household Size", _FMT_F2),

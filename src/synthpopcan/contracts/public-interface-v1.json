@@ -3338,6 +3338,44 @@
           },
           {
             "count": false,
+            "default": false,
+            "flag_value": true,
+            "is_flag": true,
+            "kind": "option",
+            "multiple": false,
+            "name": "both",
+            "names": [
+              "--both"
+            ],
+            "nargs": 1,
+            "required": false,
+            "type": {
+              "name": "boolean"
+            }
+          },
+          {
+            "count": false,
+            "default": null,
+            "flag_value": null,
+            "is_flag": false,
+            "kind": "option",
+            "multiple": false,
+            "name": "person_profile",
+            "names": [
+              "--person-profile"
+            ],
+            "nargs": 1,
+            "required": false,
+            "type": {
+              "case_sensitive": true,
+              "choices": [
+                "statcan-hierarchical-2021"
+              ],
+              "name": "choice"
+            }
+          },
+          {
+            "count": false,
             "default": null,
             "flag_value": null,
             "is_flag": false,

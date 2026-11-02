@@ -73,6 +73,7 @@ MODULE_LAYERS = {
             "localdata",
             "map_render",
             "_map_statistics",
+            "_person_map_statistics",
             "methodological_validation",
             "methodology",
             "microdata",

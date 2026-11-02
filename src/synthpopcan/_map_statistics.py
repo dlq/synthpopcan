@@ -45,19 +45,44 @@ def _household_observation(row: dict[str, str], values: _Observations) -> None:
     if size is not None and size > 0:
         values.sizes.append(size)
     cost = _integer(row, "SHELCO")
-    if cost is not None and 1 <= cost < 99_999_999:
+    if cost is not None and 0 <= cost < 99_999_999:
         values.shelter_costs.append(cost)
 
 
 def _person_observation(row: dict[str, str], values: _Observations) -> None:
     values.total += 1
-    age = _integer(row, "AGEGRP")
+    _age_observation(row, values)
+    values.category("immigrant", _integer(row, "IMMSTAT"), {1, 2, 3}, {2})
+    _indicator_observation(
+        row, values, "vismin", "visible_minority", "VISMIN", {1, 2}, {1}
+    )
+
+
+def _indicator_observation(
+    row: dict[str, str],
+    values: _Observations,
+    name: str,
+    indicator: str,
+    raw: str,
+    valid: set[int],
+    yes: set[int],
+) -> None:
+    """Prefer an explicit binary indicator; missing indicators stay unobserved."""
+    if indicator in row:
+        values.category(name, _integer(row, indicator), {0, 1}, {1})
+    else:
+        values.category(name, _integer(row, raw), valid, yes)
+
+
+def _age_observation(row: dict[str, str], values: _Observations) -> None:
     # 88 is retained for older linked models with a collapsed 65+ category.
     ages = {*range(1, 19), 88}
-    values.category("child", age, ages, set(range(1, 5)))
-    values.category("senior", age, ages, {*range(14, 19), 88})
-    values.category("immigrant", _integer(row, "IMMSTAT"), {1, 2, 3}, {2})
-    values.category("vismin", _integer(row, "VISMIN"), {1, 2}, {1})
+    _indicator_observation(
+        row, values, "child", "age_under_20", "AGEGRP", ages, set(range(1, 5))
+    )
+    _indicator_observation(
+        row, values, "senior", "age_65_plus", "AGEGRP", ages, {*range(14, 19), 88}
+    )
 
 
 def _household_summary(values: _Observations) -> dict[str, Any]:
@@ -89,6 +114,13 @@ def _households(path: Path, geography_column: str):
     return observations, household_geographies
 
 
+def _person_income(row: dict[str, str]) -> int | None:
+    income = _integer(row, "TOTINC")
+    if income is None or abs(income) == 88_888_888 or abs(income) >= 99_999_999:
+        return None
+    return income
+
+
 def _persons(path: Path, geography_column: str, geographies: set[str]):
     observations: dict[str, _Observations] = defaultdict(_Observations)
     incomes: dict[str, list[int]] = defaultdict(list)
@@ -100,8 +132,8 @@ def _persons(path: Path, geography_column: str, geographies: set[str]):
                 continue
             _person_observation(row, observations[geography])
             household = row.get("synthetic_household_id", "")
-            income = _integer(row, "TOTINC")
-            if income is None or abs(income) >= 99_999_999:
+            income = _person_income(row)
+            if income is None:
                 incomplete.add(household)
             else:
                 incomes[household].append(income)
