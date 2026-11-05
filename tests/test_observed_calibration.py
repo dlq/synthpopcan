@@ -80,7 +80,10 @@ def test_indistinguishable_donors_keep_prior_ratios_and_fractional_total():
     total = 127.25
     result = fit(matrix, [50, 77.25], initial, total=total, tolerance=1e-3)
     weights = result[0]
-    assert result[1] and weights.sum() == total
+    assert result[1]
+    # Floating reductions vary slightly between CPU/BLAS implementations.
+    assert weights.sum() == pytest.approx(total, rel=0, abs=4 * np.spacing(total))
+    assert result[4]["household_total_error"] == abs(float(weights.sum()) - total)
     assert np.all(weights > 0)
     for parity in (0, 1):
         ratios = weights[parity::2] / initial[parity::2]
