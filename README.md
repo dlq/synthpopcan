@@ -237,6 +237,7 @@ matches what your work actually depended on.
 | You used | Cite | DOI |
 | --- | --- | --- |
 | SynthPopCan generally | The concept DOI, which always resolves to the newest release | [10.5281/zenodo.21461463](https://doi.org/10.5281/zenodo.21461463) |
+| SynthPopCan 1.1.4 | The archived 1.1.4 version DOI | [10.5281/zenodo.23970428](https://doi.org/10.5281/zenodo.23970428) |
 | SynthPopCan 1.1.3 | The archived 1.1.3 version DOI | [10.5281/zenodo.23868905](https://doi.org/10.5281/zenodo.23868905) |
 | SynthPopCan 1.1.2 | The archived 1.1.2 version DOI | [10.5281/zenodo.23573231](https://doi.org/10.5281/zenodo.23573231) |
 | SynthPopCan 1.1.1 | The archived 1.1.1 version DOI | [10.5281/zenodo.23218591](https://doi.org/10.5281/zenodo.23218591) |
