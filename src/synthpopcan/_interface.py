@@ -518,8 +518,25 @@ def _index_contract_items(
     return indexed
 
 
+# Maintainer-requested CLI policy change, 2026-11-04. The immutable 1.0
+# baseline stays intact; only these exact default transitions are permitted.
+_REVIEWED_DEFAULT_TRANSITIONS = {
+    "cli.commands[synthpopcan geo calibrate].options[max_iterations].default": (
+        100,
+        16,
+    ),
+    "cli.commands[synthpopcan geo synthesize].options[max_iterations].default": (
+        100,
+        16,
+    ),
+}
+
+
 def _require_compatible_equal(baseline: object, candidate: object, path: str) -> None:
-    if candidate != baseline:
+    if candidate != baseline and _REVIEWED_DEFAULT_TRANSITIONS.get(path) != (
+        baseline,
+        candidate,
+    ):
         _compatibility_break(path, f"changed from {baseline!r} to {candidate!r}")
 
 

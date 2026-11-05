@@ -155,3 +155,198 @@ Map callers can supply binary `age_under_20`, `age_65_plus`, and
 blank or invalid indicator remains unobserved. Without these columns the
 legacy raw-code interpretation remains in effect; it is not suitable for every
 PUMF schema.
+
+The composable CLI preparation commands provide this source-specific path
+without custom scripts: `geo prepare-controls` reads observed 2021 CMA/CT
+Profile counts, and `geo prepare-candidates` derives the hierarchical age and
+gender fields before generic `geo calibrate`. Normalization and incomplete
+geography exclusions are explicit choices and recorded. The CLI leaves frozen
+v1 pack definitions unchanged and retains realized residuals for independent
+`geo audit` checks. See the complete CLI workflow in the small-area reference.
+
+## Accelerated linked fitting
+
+Identical contribution columns may be grouped by summing their initial weights.
+Multiplicative fitting preserves each group's relative weights, which are used
+to expand the fitted totals back to every original household. Original control
+matrices independently verify convergence after expansion.
+
+The optional hybrid solver minimizes generalized relative entropy through its
+convex dual: weights have the form `w0 * exp(A.T @ lambda)`. It accepts only
+solutions meeting the original absolute residual tolerance and retains exact
+structural zeros and initially zero support. Failed, infeasible or ill-conditioned
+attempts are discarded; IPU then starts from the unchanged original weights.
+Integer realization is independently audited and can still introduce residuals.
+
+Support LPs retain their full variables and constraints when presolve is disabled.
+Numerical failures retry with presolve enabled. An alternative equivalent LP
+basis can change added candidate supports; seeded generation itself preserves
+its draw sequence when caching CART leaf distributions and cumulative weights.
+
+## CSV and fallback optimization safeguards
+
+Maintained writers and completed validators can supply measured headers and
+record counts to the internal contract builder. Counts from an unvalidated
+manifest are never used to bypass actual-file validation. Combination still
+reads back the output to validate unique IDs, linkage, household sizes and counts,
+and the control audit independently aggregates the emitted CSV records. Projected
+CSV readers retain quoted-newline, blank-record, duplicate-header and short-record
+semantics.
+
+IPU lookup tables are read-only and shared across geographies. Permanently zero
+weights may be omitted from repeated updates, but exponent normalization comes
+from the original full rows and every convergence decision uses the full matrix.
+Geography-specific support masks never mutate shared lookup tables.
+
+Map acceleration counts raw values in bounded chunks, then applies the existing
+integer-code and eligibility rules. Exact weighted income medians replace lists
+of repeated values. Missing and inapplicable observations retain their original
+denominators; a faster map is not permitted to zero-fill unknown values.
+
+The optional `performance` extra compiles sequential IPU updates without fast
+math and retains the original BLAS reductions, exponent normalization,
+structural-zero rules and full-system residual checks. Prepared encodings belong
+to the calibration system; each concurrent fit owns its mutable weights. Missing
+or incompatible native compiler/BLAS support falls back to NumPy. Tiny fits do
+not compile. Differential and concurrency tests live in
+`tests/test_numba_ipu.py`.
+
+Bounded Polars audit/map paths reread actual population CSVs in 4 MiB buffers.
+Quoting, ambiguous null/empty values, unusual record syntax and unsafe numeric
+ranges restart the reference operation, discarding partial native aggregation.
+Duplicate headers, source-order diagnostics, exact income medians and rounding
+retain their reference behavior. Focused differential fixtures live in
+`tests/test_columnar_audit.py` and `tests/test_polars_map_statistics.py`;
+`scripts/performance_smoke.py` verifies actual native execution from an installed
+wheel. Reference fallbacks are tested even when the extra is installed. Backend
+rounding may depend on the platform's BLAS implementation; per-platform parity
+checks accompany the independent mathematical tests.
+
+Provincial ADA preparation uses each area's published occupied-private-dwelling
+count, with an independently observed provincial root. Missing or suppressed
+area counts are never treated as zero or redistributed. Plans expose excluded
+areas, known household shortfalls and unknown household counts, while keeping
+rounded area private-person totals separate from provincial totals. The
+age/gender universe policy is identical to the CMA path. Province-source and
+coverage fixtures are in `tests/test_province_profile_preparation.py`; a real
+CLI preparation/calibration/dual-map fixture is in `tests/test_geo_preparation.py`.
+
+An explicit observed policy first attempts the structural fit. Unsupported
+zero constraints, exhausted strict budgets, or stationary strict weights can
+instead use a fixed-household-total
+entropy/least-squares fit against every original count, including zero targets.
+The original prior is recovered before household-stage zero exclusions; genuine
+prior zeros remain zero. Approximation never edits targets or equates optimizer
+success with control convergence. The loss, regularization, stopping reason,
+zero-cell error and requested/effective policy are recorded. The approximate
+optimizer has a separate 100-step budget, independent of strict sweep limits.
+Centering uses the exact household total; orthogonal projection removes constant
+loss directions, with discarded-direction error bounded in original count units.
+A trust-region Newton step avoids softmax saturation from ill-conditioned
+curvature. Original count residuals still determine control convergence. Independent
+analytic fixtures are in `tests/test_observed_calibration.py`; linked and CLI
+fixtures are in `tests/test_observed_linked_calibration.py` and
+`tests/test_cli_observed_calibration.py`. Whole-household witness retention and
+its lack of a feasibility guarantee are checked in
+`tests/test_candidate_witness_support.py`.
+
+CSV combination uses bounded row batches, retaining independent output read-back
+validation. Validation projects identifiers and sizes as tuples while preserving
+short-row and duplicate-header semantics. CSV integrity uses buffered UTF-8
+bytes for both writing and SHA-256, avoiding a second encoding pass; Unicode
+and multiline-record byte equivalence is covered in
+`tests/test_population_performance.py`. The writer's reviewed complexity
+baseline rises from one to two for its buffer threshold and empty-flush guard.
+
+The optional compiled categorical household IPF loop preserves targeted and
+untargeted categories, zero priors, sequential updates and overflow/underflow
+handling. It uses float64 without fastmath; unavailable compilation falls back
+without modifying the NumPy starting state. Differential cases are in
+`tests/test_numba_ipu.py`. Its reviewed complexity of 18 reflects numerical
+guards and margin/category/record loops; backend dispatch adds one branch to
+`NumpyIPFIndex.fit`. The linked observed path checks strict weights at 150 and
+300 sweeps when budget permits, retains the remaining budget when weights move,
+and reports approximation separately from convergence. Stage iteration counts
+are retained independently. Structural defaults keep their strict fit policy.
+
+Large plain CSV combination uses bounded native string frames, preserves union
+column order and geography inheritance, and independently validates the emitted
+files. Quoting or ambiguous native parsing restarts the current table after
+truncating its partial output and restoring household assignment state. File
+linkage validation similarly restarts both files with a fresh disposable database
+when native projection needs reference parsing. Missing foreign keys remain
+unknown references; their explicit counter permits a single-index count table.
+The SQLite page cache is bounded at 256 MiB and grows on demand.
+
+Weight diagnostics use float64 reductions and partitioning with the same metric
+definitions; harmless last-bit differences are assessed with floating tolerances.
+Reuse counts retain Python integer semantics when fixed-width sums might overflow.
+The reviewed complexity increases in fractional validation (3 to 4) and reuse
+(1 to 2) are the coercion/shape guard and unbounded-integer fallback. CSV fallback,
+error ordering, integer overflow and analytic metric fixtures are covered in
+`test_population_performance.py`, `test_linked_csv_validation.py` and
+`test_methodological_validation.py`.
+
+Plain-record safety scans now compare native newline offsets while retaining
+quote, NUL, BOM, carriage-return and field-limit fallback. Audits skip a geography
+filter only when that margin covers the entire validated geography universe.
+Map integer parsing checks unusual syntax only among failed native conversions;
+both map views share boundary geometry but copy feature properties per view.
+CART restoration uses the same `float()` coercion through a native iterator.
+
+Large typed-string realization tables can use bounded 65,536-row native CSV
+serialization. Numeric/object tables, unsupported values, missing-value conversion
+and unusual carriage returns fall back to pandas, reopening the output so partial
+native bytes never survive. Unicode, quoting, empty strings, late fallback and
+exact SHA-256/byte counts are covered by the CSV performance fixtures. The
+reviewed writer complexity changes from one to two for optional backend dispatch.
+Experiments with native text buffering, multi-value SQL insertion, categorical-only
+audit grouping and larger validation batches were rejected after measurement.
+The retained native audit accumulator instead merges at most sixteen reduced
+chunks per dimension group, preserving minimum source ordinals and margin
+ordering. Per-operation categorical keys avoid retaining source string buffers.
+
+Native linkage projection now extracts tuple lists directly from frame slices,
+maintaining exact 4,096-record boundaries across parser buffers. This avoids
+per-record Python yielding/appending while retaining first-seen insertion,
+ordered duplicate replay and whole-validation reference restart.
+
+Native population combination compiles ID and geography enum expressions once
+per source, then matches whole buffers by integer codes. Household duplicates
+still use their last geography assignment before independent final-file checks.
+The original Python lookup is released after native index construction; unusual
+person CSV restores it before restarting the reference copier. Completed source
+lookups are released before final-file validation on either backend. Tests cover
+leading zeros, whitespace/Unicode labels, unknown links, duplicate assignments,
+late person-record fallback and exact batch boundaries.
+
+Native CSV reads use 8 MiB buffers. Carriage-return checks compare adjacent
+bytes with NumPy, accepting a trailing CR only until the next buffer arrives;
+the final-file guard still rejects a bare trailing CR. Exhaustive short-input
+tests cover repeated CRs and split CRLF sequences. SQLite scratch indexes use
+16 KiB pages with the same 256 MiB cache bound, savepoints and duplicate replay.
+
+The six-part responsibility refactor retains public façades and model class
+locations. National serial and process executors share lazy batch selection,
+attempt initialization, interruption recovery and plan persistence. Their
+scheduling and exception behavior remain explicit. Map geometry and boundary
+I/O live in `_map_boundaries`, with checksum-bound national preparation in
+`_national_map_statistics`; `map_render` retains its existing import paths.
+CSV/SQLite linkage implementation lives in `_linked_validation`, and catalogue
+payload builders live in `_control_pack_catalogue`. All 24 built-in pack
+payloads/hashes and the compatibility-registry payload match the prior bytes.
+
+Archive execution separates validated immutable inputs, checkpoint recovery,
+owned draft preparation, publication recovery, asset upload, metadata binding
+and explicit publication. Four identical verify/checkpoint sequences share one
+helper; intermediate publication checkpoints retain their original positions.
+The existing mocked transport, ownership, fault and resume fixtures verify the
+same operations and refusals. No archive state, gate or real publication is
+added. Web upload, preflight, manifest, event, cancellation and artifact route
+groups retain registration order and the existing security/lifecycle context.
+
+Complexity ceilings follow relocated functions without increases. The reviewed
+archive phase split replaces the entry point's score of 70 with 3; its largest
+phase scores 27. Existing orchestrator ceilings are tightened after extraction.
+This phase decomposition does not implement the separately planned pure
+archive transition selector or remove any of its review gates.

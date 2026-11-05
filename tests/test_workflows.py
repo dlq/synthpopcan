@@ -621,9 +621,12 @@ def test_tracked_model_output_to_ipf_tutorial_fixture_workflow(
 
 
 @pytest.mark.scenario("SCN-SMALLAREA-001")
+@pytest.mark.parametrize("limit,expected_nonconverged", [(None, 1), (100, 0)])
 def test_linked_candidates_to_small_area_artifacts_workflow(
     tmp_path: Path,
     capsys,
+    limit,
+    expected_nonconverged,
 ) -> None:
     candidates = tmp_path / "candidates"
     candidates.mkdir()
@@ -674,6 +677,7 @@ def test_linked_candidates_to_small_area_artifacts_workflow(
                 "tract",
                 "--out",
                 str(output),
+                *(["--max-iterations", str(limit)] if limit is not None else []),
                 "--format",
                 "json",
             ]
@@ -686,7 +690,7 @@ def test_linked_candidates_to_small_area_artifacts_workflow(
     person_rows = list(csv.DictReader(persons_out.open(newline="")))
 
     assert command_report["calibration_mode"] == "household_and_person"
-    assert report["summary"]["non_converged_count"] == 0
+    assert report["summary"]["non_converged_count"] == expected_nonconverged
     assert report["summary"]["realized_max_abs_error"] == 0
     assert len(household_rows) == 4
     assert len(person_rows) == 7

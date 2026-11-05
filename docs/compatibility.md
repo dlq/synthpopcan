@@ -141,3 +141,10 @@ Normal checks use `--check` and fail when CLI parameters, curated Python names,
 callable parameter shapes, or schema classifications drift. The wheel smoke
 test performs the same semantic comparison from an isolated installation, so a
 source checkout cannot mask missing package data or exports.
+
+The maintainer-approved 2026-11-04 exception changes only the CLI
+`geo calibrate` and `geo synthesize` `--max-iterations` defaults from 100 to
+16\. Explicit higher limits remain available. The immutable baseline is retained;
+the compatibility validator permits only these exact transitions and rejects
+other default changes. Low-level Python and workflow request defaults retain
+their existing values.

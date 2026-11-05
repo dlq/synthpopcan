@@ -1070,3 +1070,39 @@ def test_external_archive_failed_download_is_removed_and_md5_cache_is_supported(
             downloader=wrong_download,
         )
     assert not (failed_cache / ".archive.bin.download").exists()
+
+
+def test_vector_weight_diagnostics_match_independent_analytic_definitions():
+    from synthpopcan.methodological_validation import (
+        _candidate_reuse,
+        _weight_concentration,
+    )
+
+    concentration = _weight_concentration([0.0, 0.5, 1.5, 2.0, 6.0])
+    assert concentration["total_weight"] == 10
+    assert concentration["positive_weight_candidates"] == 4
+    assert concentration["zero_weight_candidates"] == 1
+    assert concentration["minimum_positive_weight"] == 0.5
+    assert concentration["kish_effective_sample_size"] == pytest.approx(100 / 42.5)
+    assert concentration["herfindahl_concentration"] == pytest.approx(0.425)
+    assert concentration["top_10_percent_candidate_count"] == 1
+    assert concentration["top_10_percent_weight_share"] == 0.6
+    reuse = _candidate_reuse([0, 1, 1, 2, 4])
+    assert reuse["realized_records"] == 8
+    assert reuse["selected_candidates"] == 4
+    assert reuse["reused_candidates"] == 2
+    assert reuse["additional_copies_from_reuse"] == 4
+    assert reuse["unique_copy_share"] == 0.25
+    assert reuse["realized_share_from_reused_candidates"] == 0.75
+    assert reuse["copy_count_histogram"] == {"0": 1, "1": 2, "2": 1, "4": 1}
+
+
+@pytest.mark.parametrize("large", [2**62, 2**70])
+def test_reuse_preserves_unbounded_integer_totals_without_overflow(large):
+    from synthpopcan.methodological_validation import _candidate_reuse
+
+    result = _candidate_reuse([0, 1, large, large])
+    assert result["realized_records"] == 2 * large + 1
+    assert result["additional_copies_from_reuse"] == 2 * large - 2
+    assert result["maximum_copies_of_one_candidate"] == large
+    assert result["copy_count_histogram"] == {"0": 1, "1": 1, str(large): 2}

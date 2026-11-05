@@ -5,8 +5,6 @@ from __future__ import annotations
 import csv
 import json
 import random
-import sqlite3
-import tempfile
 from bisect import bisect_left
 from collections import Counter, defaultdict
 from collections.abc import Callable, Iterable, Iterator, Sequence
@@ -16,6 +14,39 @@ from typing import Any, Literal, TypeVar
 
 import numpy as np
 
+from synthpopcan._linked_validation import (
+    _VALIDATION_BATCH_ROWS as _VALIDATION_BATCH_ROWS,
+)
+from synthpopcan._linked_validation import (
+    _insert_validation_batch as _insert_validation_batch,
+)
+from synthpopcan._linked_validation import (
+    _load_validation_households as _load_validation_households,
+)
+from synthpopcan._linked_validation import (
+    _load_validation_persons as _load_validation_persons,
+)
+from synthpopcan._linked_validation import (
+    _parse_household_size as _parse_household_size,
+)
+from synthpopcan._linked_validation import (
+    _project_validation_batches as _project_validation_batches,
+)
+from synthpopcan._linked_validation import (
+    _require_csv_columns as _require_csv_columns,
+)
+from synthpopcan._linked_validation import (
+    _validate_linked_files as _validate_linked_files,
+)
+from synthpopcan._linked_validation import (
+    _validation_batches as _validation_batches,
+)
+from synthpopcan._linked_validation import (
+    _validation_file_batches as _validation_file_batches,
+)
+from synthpopcan._linked_validation import (
+    _validation_rows as _validation_rows,
+)
 from synthpopcan.tabular import validate_columns
 
 TreeLevel = Literal["household", "person"]
@@ -225,6 +256,12 @@ class _FrequencySelection:
     groups: tuple[FrequencyGroup, ...]
     group_cumulative_weights: tuple[float, ...]
     outcome_cumulative_weights_by_group: dict[int, tuple[float, ...]]
+
+
+@dataclass(frozen=True)
+class _CartLeafSelection:
+    outcomes: tuple[dict[str, str], ...]
+    cumulative_weights: tuple[float, ...]
 
 
 @dataclass(frozen=True)
@@ -478,8 +515,7 @@ class CARTTreeModel:
             feature=tuple(int(value) for value in cart_payload["feature"]),
             threshold=tuple(float(value) for value in cart_payload["threshold"]),
             value=tuple(
-                tuple(float(class_value) for class_value in node_value)
-                for node_value in cart_payload["value"]
+                tuple(map(float, node_value)) for node_value in cart_payload["value"]
             ),
             n_node_samples=tuple(
                 int(value) for value in cart_payload["n_node_samples"]
@@ -558,7 +594,8 @@ def _validate_cart_tree_structure(model: CartTreeModel) -> None:
         node_values = model.value[node_id]
         if len(node_values) != len(model.target_classes):
             raise ValueError("CART node values must match target classes")
-        if any(not np.isfinite(value) or value < 0 for value in node_values):
+        numeric_values = np.asarray(node_values, dtype=np.float64)
+        if not np.all(np.isfinite(numeric_values)) or np.any(numeric_values < 0):
             raise ValueError("CART node values must be finite and non-negative")
         if model.n_node_samples[node_id] < 0:
             raise ValueError("CART node sample counts must be non-negative")
@@ -908,10 +945,7 @@ def train_cart_model(
         children_right=tuple(int(value) for value in tree.children_right.tolist()),
         feature=tuple(int(value) for value in tree.feature.tolist()),
         threshold=tuple(float(value) for value in tree.threshold.tolist()),
-        value=tuple(
-            tuple(float(class_value) for class_value in node_value)
-            for node_value in values.tolist()
-        ),
+        value=tuple(tuple(map(float, node_value)) for node_value in values.tolist()),
         n_node_samples=tuple(int(value) for value in tree.n_node_samples.tolist()),
         weighted_n_node_samples=tuple(
             float(value) for value in tree.weighted_n_node_samples.tolist()
@@ -1181,6 +1215,7 @@ def _iter_linked_population_rows(
     )
     seed_rng = random.Random(effective_random_seed)
     person_selection_cache: dict[tuple[tuple[str, str], ...], _FrequencySelection] = {}
+    cart_selection_cache: dict[int, _CartLeafSelection] = {}
     next_person_id = 1
 
     household_rows = iter_tree_rows(
@@ -1214,6 +1249,7 @@ def _iter_linked_population_rows(
             conditions=person_conditions,
             rng=seed_rng,
             selection_cache=person_selection_cache,
+            cart_selection_cache=cart_selection_cache,
         )
         person_rows: list[dict[str, str]] = []
         for generated_person in generated_persons:
@@ -1235,13 +1271,15 @@ def iter_person_rows_for_household(
     conditions: dict[str, str],
     rng: random.Random,
     selection_cache: dict[tuple[tuple[str, str], ...], _FrequencySelection],
+    cart_selection_cache: dict[int, _CartLeafSelection] | None = None,
 ) -> Iterator[dict[str, str]]:
     if not isinstance(person_model, FrequencyTreeModel):
-        yield from iter_tree_rows(
+        yield from _iter_cached_cart_rows(
             person_model,
-            rows=rows,
-            conditions=conditions,
-            random_seed=rng.randrange(1, 2**31),
+            rows,
+            conditions,
+            random.Random(rng.randrange(1, 2**31)),
+            cart_selection_cache if cart_selection_cache is not None else {},
         )
         return
     if rows <= 0:
@@ -1439,233 +1477,22 @@ def validate_linked_population_files(
     every input row.
     """
 
-    if max_issue_details < 0:
-        raise ValueError("max issue details must not be negative")
-    scratch = tempfile.NamedTemporaryFile(
-        prefix=".linked-validation-",
-        suffix=".sqlite3",
-        dir=households_path.parent,
-        delete=False,
+    from synthpopcan._columnar_csv import BoundedCSVFallbackError, should_use_polars
+
+    options = dict(
+        household_id_column=household_id_column,
+        person_household_id_column=person_household_id_column,
+        person_id_column=person_id_column,
+        household_size_column=household_size_column,
+        max_issue_details=max_issue_details,
     )
-    scratch_path = Path(scratch.name)
-    scratch.close()
-    connection = sqlite3.connect(scratch_path)
-    issues: list[dict[str, Any]] = []
-    household_count = 0
-    person_count = 0
-    missing_household_ids = 0
-    missing_person_ids = 0
-    duplicate_household_ids = 0
-    duplicate_person_ids = 0
-    invalid_household_sizes = 0
-
-    def add_issue(issue: dict[str, Any]) -> None:
-        if len(issues) < max_issue_details:
-            issues.append(issue)
-
+    native = should_use_polars(households_path, persons_path)
     try:
-        connection.executescript(
-            """
-            CREATE TABLE households (
-                identifier TEXT PRIMARY KEY,
-                expected_persons INTEGER
-            );
-            CREATE TABLE person_ids (identifier TEXT PRIMARY KEY);
-            CREATE TABLE household_counts (
-                identifier TEXT PRIMARY KEY,
-                person_count INTEGER NOT NULL
-            );
-            """
-        )
-        with households_path.open(newline="") as handle:
-            reader = csv.DictReader(handle)
-            _require_csv_columns(
-                reader.fieldnames,
-                (
-                    (household_id_column, household_size_column)
-                    if household_size_column is not None
-                    else (household_id_column,)
-                ),
-                "household",
-            )
-            for household in reader:
-                household_count += 1
-                identifier = household.get(household_id_column, "")
-                if not identifier:
-                    missing_household_ids += 1
-                    continue
-                expected_persons = None
-                if household_size_column is not None:
-                    try:
-                        expected_persons = read_household_size(
-                            household, household_size_column
-                        )
-                    except ValueError as exc:
-                        invalid_household_sizes += 1
-                        add_issue(
-                            {
-                                "severity": "error",
-                                "kind": "invalid_household_size",
-                                "household_id": identifier,
-                                "message": str(exc),
-                            }
-                        )
-                try:
-                    connection.execute(
-                        "INSERT INTO households VALUES (?, ?)",
-                        (identifier, expected_persons),
-                    )
-                except sqlite3.IntegrityError:
-                    duplicate_household_ids += 1
-                    add_issue(
-                        {
-                            "severity": "error",
-                            "kind": "duplicate_household_identifier",
-                            "identifier": identifier,
-                            "message": "household identifiers must be unique.",
-                        }
-                    )
-
-        with persons_path.open(newline="") as handle:
-            reader = csv.DictReader(handle)
-            _require_csv_columns(
-                reader.fieldnames,
-                (person_id_column, person_household_id_column),
-                "person",
-            )
-            for person in reader:
-                person_count += 1
-                person_id = person.get(person_id_column, "")
-                household_id = person.get(person_household_id_column, "")
-                if not person_id:
-                    missing_person_ids += 1
-                else:
-                    try:
-                        connection.execute(
-                            "INSERT INTO person_ids VALUES (?)", (person_id,)
-                        )
-                    except sqlite3.IntegrityError:
-                        duplicate_person_ids += 1
-                        add_issue(
-                            {
-                                "severity": "error",
-                                "kind": "duplicate_person_identifier",
-                                "identifier": person_id,
-                                "message": "person identifiers must be unique.",
-                            }
-                        )
-                connection.execute(
-                    """
-                    INSERT INTO household_counts VALUES (?, 1)
-                    ON CONFLICT(identifier) DO UPDATE
-                    SET person_count = person_count + 1
-                    """,
-                    (household_id,),
-                )
-        connection.commit()
-
-        unknown_person_households = int(
-            connection.execute(
-                """
-                SELECT COALESCE(SUM(c.person_count), 0)
-                FROM household_counts AS c
-                LEFT JOIN households AS h ON h.identifier = c.identifier
-                WHERE h.identifier IS NULL
-                """
-            ).fetchone()[0]
-        )
-        size_mismatches = 0
-        for identifier, expected, actual in connection.execute(
-            """
-            SELECT h.identifier, h.expected_persons, COALESCE(c.person_count, 0)
-            FROM households AS h
-            LEFT JOIN household_counts AS c ON c.identifier = h.identifier
-            WHERE h.expected_persons IS NOT NULL
-              AND h.expected_persons != COALESCE(c.person_count, 0)
-            """
-        ):
-            size_mismatches += 1
-            add_issue(
-                {
-                    "severity": "error",
-                    "kind": "household_size_mismatch",
-                    "household_id": identifier,
-                    "expected_persons": expected,
-                    "actual_persons": actual,
-                    "message": (
-                        f"household {identifier} expected {expected} persons "
-                        f"but has {actual}."
-                    ),
-                }
-            )
-
-        for count, kind, message in (
-            (
-                missing_household_ids,
-                "missing_household_identifier",
-                f"{missing_household_ids} household rows have no identifier.",
-            ),
-            (
-                missing_person_ids,
-                "missing_person_identifier",
-                f"{missing_person_ids} person rows have no identifier.",
-            ),
-            (
-                unknown_person_households,
-                "unknown_person_household",
-                (
-                    f"{unknown_person_households} person rows reference unknown "
-                    "households."
-                ),
-            ),
-        ):
-            if count:
-                add_issue(
-                    {
-                        "severity": "error",
-                        "kind": kind,
-                        "rows": count,
-                        "message": message,
-                    }
-                )
-
-        issue_count = (
-            missing_household_ids
-            + missing_person_ids
-            + duplicate_household_ids
-            + duplicate_person_ids
-            + invalid_household_sizes
-            + unknown_person_households
-            + size_mismatches
-        )
-        return {
-            "passed": issue_count == 0,
-            "summary": {
-                "households": household_count,
-                "persons": person_count,
-                "households_with_size_mismatches": size_mismatches,
-                "persons_with_unknown_households": unknown_person_households,
-                "issue_count": issue_count,
-                "issue_details_truncated": issue_count > len(issues),
-            },
-            "household_id_column": household_id_column,
-            "person_household_id_column": person_household_id_column,
-            "household_size_column": household_size_column,
-            "issues": issues,
-        }
-    finally:
-        connection.close()
-        scratch_path.unlink(missing_ok=True)
-
-
-def _require_csv_columns(
-    fieldnames: Sequence[str] | None,
-    required: tuple[str, ...],
-    label: str,
-) -> None:
-    missing = [column for column in required if column not in (fieldnames or [])]
-    if missing:
-        raise ValueError(f"{label} CSV is missing columns: {', '.join(missing)}")
+        return _validate_linked_files(households_path, persons_path, options, native)
+    except BoundedCSVFallbackError:
+        # The first attempt closes/unlinks its scratch database. Restart both
+        # files so duplicate ordering and bounded issue details stay identical.
+        return _validate_linked_files(households_path, persons_path, options, False)
 
 
 def strip_synthetic_id(row: dict[str, str]) -> dict[str, str]:
@@ -1674,15 +1501,7 @@ def strip_synthetic_id(row: dict[str, str]) -> dict[str, str]:
 
 def read_household_size(row: dict[str, str], household_size_column: str) -> int:
     value = row.get(household_size_column)
-    if value is None:
-        raise ValueError(f"missing household size column: {household_size_column}")
-    try:
-        household_size = int(value)
-    except ValueError as exc:
-        raise ValueError(f"household size {value!r} is not a whole number") from exc
-    if household_size <= 0:
-        raise ValueError("household size must be greater than zero")
-    return household_size
+    return _parse_household_size(value, household_size_column)
 
 
 def household_conditions_for_person_model(
@@ -1728,39 +1547,50 @@ def iter_cart_rows(
     conditions: dict[str, str] | None = None,
     random_seed: int | None = None,
 ) -> Iterator[dict[str, str]]:
-    if rows <= 0:
-        raise ValueError("rows must be greater than zero")
-    requested_conditions = conditions or {}
-    validate_condition_columns(model.spec.conditioning_columns, requested_conditions)
-    rng = random.Random(model.spec.random_seed if random_seed is None else random_seed)
-    feature_row = {
-        column: requested_conditions.get(column, "")
-        for column in model.spec.conditioning_columns
-    }
-    encoded = encode_conditions(
-        feature_row,
-        model.spec.conditioning_columns,
-        model.feature_categories,
+    yield from _iter_cached_cart_rows(
+        model,
+        rows,
+        conditions or {},
+        random.Random(model.spec.random_seed if random_seed is None else random_seed),
+        {},
     )
-    leaf_id = cart_leaf_id(model, encoded)
-    outcomes = tuple(
-        FrequencyOutcome(values=target_class, weight=weight)
-        for target_class, weight in zip(
-            model.target_classes,
-            model.value[leaf_id],
-            strict=True,
+
+
+def _cart_leaf_selection(model: CartTreeModel, leaf_id: int) -> _CartLeafSelection:
+    positive = [
+        (target, weight)
+        for target, weight in zip(
+            model.target_classes, model.value[leaf_id], strict=True
         )
         if weight > 0
-    )
-    if not outcomes:
+    ]
+    if not positive:
         raise ValueError("selected CART leaf has no positive target probabilities")
+    return _CartLeafSelection(
+        tuple(target for target, _weight in positive),
+        cumulative_weights(weight for _target, weight in positive),
+    )
+
+
+def _iter_cached_cart_rows(model, rows, conditions, rng, cache):
+    if rows <= 0:
+        raise ValueError("rows must be greater than zero")
+    validate_condition_columns(model.spec.conditioning_columns, conditions)
+    feature_row = {
+        column: conditions.get(column, "") for column in model.spec.conditioning_columns
+    }
+    encoded = encode_conditions(
+        feature_row, model.spec.conditioning_columns, model.feature_categories
+    )
+    leaf_id = cart_leaf_id(model, encoded)
+    if leaf_id not in cache:
+        cache[leaf_id] = _cart_leaf_selection(model, leaf_id)
+    selection = cache[leaf_id]
     for index in range(1, rows + 1):
-        outcome = choose_outcome(outcomes, rng)
-        yield {
-            "synthetic_id": str(index),
-            **feature_row,
-            **outcome.values,
-        }
+        outcome = weighted_choice_from_cumulative(
+            selection.outcomes, selection.cumulative_weights, rng
+        )
+        yield {"synthetic_id": str(index), **feature_row, **outcome}
 
 
 def generate_frequency_rows(

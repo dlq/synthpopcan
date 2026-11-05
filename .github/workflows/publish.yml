@@ -106,10 +106,10 @@ jobs:
           ' "$RUNNER_TEMP/release-ci-runs.json" \
             > "$RUNNER_TEMP/release-ci-run.json"
           test "$(jq -r .head_sha "$RUNNER_TEMP/release-ci-run.json")" = "$RELEASE_COMMIT"
-      - run: uv sync --locked --group dev
+      - run: uv sync --locked --group dev --extra performance
       - name: Run full suite with release coverage
         run: >-
-          uv run --locked pytest
+          uv run --locked --extra performance pytest
           --junitxml=release-test-report.xml
           --cov=src/synthpopcan
           --cov-branch

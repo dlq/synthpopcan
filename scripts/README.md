@@ -13,6 +13,7 @@ promise command-line compatibility across releases.
 | `check-correctness.sh` | Extended correctness and methodological evidence gate |
 | `check-wheel.sh` | Verify an already-built wheel and sdist through isolated installation smokes; run `uv build` first |
 | `wheel_smoke.py` | Installed-package interface and bundled-resource checks |
+| `performance_smoke.py` | Installed optional Numba/Polars backend execution and parity checks |
 | `model_build_smoke.py` | Installed model-building smoke check |
 | `case_study_wheel_smoke.py` | Installed fictional case-study interface smoke check |
 
@@ -85,3 +86,22 @@ When adding a script, classify it here, link its owning procedure, state
 whether it can write external state, and add a test appropriate to its risk.
 Prefer a package module or maintained CLI command when users are expected to
 depend on the behavior.
+
+## Local workflow profiling
+
+`profile_cli_workflow.sh FRESH_RUN_DIR SOURCE_RUN_DIR` reproduces the full
+Montréal four-stage CLI workflow against cached official inputs. Install the
+optional `profiling` dependency group and `performance` extra first (the latter
+also supplies SciPy for support augmentation).
+It records stage timings, CLI logs and CPU sampling profiles, including both
+fitting workers. It does not optimize or relax the calibration settings.
+Profiles stay local; numerical code has no profiler dependency.
+
+Set `SYNTHPOPCAN_PROFILE=0` for an unprofiled timed run of the same four stages.
+The harness defaults to the hybrid joint solver and two fitting threads per
+batch; override `SYNTHPOPCAN_JOINT_SOLVER` and `SYNTHPOPCAN_FIT_WORKERS` to
+compare configurations. Unless `POLARS_MAX_THREADS` is already set, the harness
+uses four Polars threads for audits and two for maps. It bounds native thread
+counts for repeatable measurements; library calls honor the process's Polars
+configuration. Use fresh output directories and run configurations
+sequentially to avoid competing benchmark processes.

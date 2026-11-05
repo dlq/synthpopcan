@@ -498,6 +498,26 @@ def _format_surface_recommendation(recommendation: str) -> str:
     return recommendation
 
 
+def _validate_zero_target_cli(controls_path, person_controls_path, zero_target_policy):
+    if (
+        zero_target_policy == "observed"
+        and not controls_path.is_dir()
+        and person_controls_path is None
+    ):
+        raise click.UsageError(
+            "--zero-target-policy observed requires --person-controls or a "
+            "prepared control directory."
+        )
+
+
+def _calibrate_cli_files(request: SmallAreaCalibrationRequest):
+    if request.controls_path.is_dir():
+        return calibrate_small_area_files(
+            request, progress=lambda event: click.echo(event.message, err=True)
+        )
+    return calibrate_small_area_files(request)
+
+
 @small_area_group.command("calibrate")
 @click.argument("population_path", metavar="POPULATION", type=_PATH)
 @click.option(
@@ -511,7 +531,7 @@ def _format_surface_recommendation(recommendation: str) -> str:
     "controls_path",
     required=True,
     type=_PATH,
-    help="Normalized controls with one target geography dimension.",
+    help="Normalized controls CSV, or the directory from geo prepare-controls.",
 )
 @click.option(
     "--person-controls",
@@ -578,7 +598,7 @@ def _format_surface_recommendation(recommendation: str) -> str:
 )
 @click.option(
     "--max-iterations",
-    default=100,
+    default=16,
     type=int,
     show_default=True,
     help="Maximum IPF iterations per target geography.",
@@ -597,9 +617,8 @@ def _format_surface_recommendation(recommendation: str) -> str:
     type=int,
     help=(
         "Maximum candidate households to use. "
-        "5 000–10 000 reproduces aggregate statistics with near-identical "
-        "accuracy to the full pool and runs ~10× faster. "
-        "Omit when individual-household uniqueness matters."
+        "A smaller pool reduces fitting work but can lose category support "
+        "and change residuals. Omit to retain the complete candidate pool."
     ),
 )
 @click.option(
@@ -612,6 +631,39 @@ def _format_surface_recommendation(recommendation: str) -> str:
         "Seed for the --pool-size candidate subsample. Vary it to check how "
         "sensitive results are to which candidates are drawn. Ignored without "
         "--pool-size."
+    ),
+)
+@click.option(
+    "--workers",
+    type=click.IntRange(1, 8),
+    default=None,
+    help="Fitting threads per batch; defaults to at most eight.",
+)
+@click.option(
+    "--joint-solver",
+    type=click.Choice(["ipu", "hybrid"]),
+    default="ipu",
+    show_default=True,
+    help="Hybrid tries an entropy-dual solve, with IPU fallback.",
+)
+@click.option(
+    "--zero-target-policy",
+    type=click.Choice(["structural", "observed"]),
+    default="structural",
+    show_default=True,
+    help=(
+        "Structural zeros forbid contributing households. Observed zeros remain "
+        "targets but allow an explicitly reported approximate fit when strict "
+        "fitting fails; its numerical optimizer has a separate 100-step budget."
+    ),
+)
+@click.option(
+    "--augment-support",
+    is_flag=True,
+    help=(
+        "With prepared controls and --pool-size, retain additional whole-household "
+        "support. Structural mode uses age/gender LP bases; observed mode retains "
+        "category witnesses in both batches."
     ),
 )
 @click.option(
@@ -642,8 +694,14 @@ def calibrate_command(
     pool_size: int | None,
     subsample_seed: int,
     output_format: str,
+    augment_support: bool,
+    workers: int | None,
+    joint_solver: str,
+    zero_target_policy: str,
 ) -> None:
     """Calibrate linked household/person candidates to geography controls."""
+
+    _validate_zero_target_cli(controls_path, person_controls_path, zero_target_policy)
 
     if population_path.is_dir():
         households_path, inferred_persons = _linked_population_paths(population_path)
@@ -667,7 +725,7 @@ def calibrate_command(
     )
 
     try:
-        calibrated = calibrate_small_area_files(
+        calibrated = _calibrate_cli_files(
             SmallAreaCalibrationRequest(
                 candidate_households_path=households_path,
                 candidate_persons_path=persons_path,
@@ -685,6 +743,10 @@ def calibrate_command(
                 tolerance=tolerance,
                 pool_size=pool_size,
                 subsample_seed=subsample_seed,
+                augment_support=augment_support,
+                n_workers=workers,
+                joint_solver=joint_solver,
+                zero_target_policy=zero_target_policy,
             )
         )
         summary = calibrated.details
@@ -700,6 +762,8 @@ def calibrate_command(
     weights_out = calibrated.weights_path
     report_out = calibrated.report_path
 
+    _print_observed_zero_policy(summary)
+    _print_calibration_completion(summary, report_out)
     print_wrote(households_out)
     print_wrote(persons_out)
     print_wrote(manifest_out)
@@ -717,6 +781,61 @@ def calibrate_command(
         f"across {geo_n:,} {output_geo_column} geographies."
     )
     _print_calibrate_linked_diagnostics(summary)
+
+
+def _print_calibration_completion(summary, report_path):
+    click.echo(
+        "Completed: population files written. Exit status 0 means completion, "
+        "not exact calibration.",
+        err=True,
+    )
+    fits = summary.get("summary", {})
+    converged = fits.get("converged_count", 0)
+    incomplete = fits.get("non_converged_count", 0)
+    click.echo(
+        f"Convergence: {converged:,}/{converged + incomplete:,} fractional "
+        f"area fits converged; {incomplete:,} did not converge.",
+        err=True,
+    )
+    plan = summary.get("prepared_control_plan", {})
+    for entity, target_key, actual_key in (
+        ("Households", "target_households", "assigned_households"),
+        ("People", "target_persons", "assigned_persons"),
+    ):
+        target = plan.get(target_key)
+        if target is not None:
+            actual = summary[actual_key]
+            click.echo(
+                f"{entity}: target {target:,}; generated {actual:,}; "
+                f"difference {actual - target:+,} (generated minus target).",
+                err=True,
+            )
+    audit = summary.get("realized_control_audit", {})
+    if audit:
+        click.echo(
+            f"Realized controls: {audit['matched_exactly']:,}/"
+            f"{audit['control_cells']:,} cells match exactly; "
+            f"largest absolute residual {audit['max_abs_error']:g}.",
+            err=True,
+        )
+    click.echo(f"Review convergence and residuals in {report_path}.", err=True)
+
+
+def _print_observed_zero_policy(summary):
+    policy = summary.get("zero_target_policy")
+    if not isinstance(policy, dict):
+        return
+    counts = policy.get("effective_counts")
+    if not isinstance(counts, dict):
+        return
+    approximate = int(counts.get("observed", 0) or 0)
+    if approximate:
+        click.echo(
+            f"Approximate control fitting was used in {approximate:,} "
+            "geographies. Published targets are unchanged; review the reported "
+            "residuals and convergence status.",
+            err=True,
+        )
 
 
 def _print_calibrate_linked_diagnostics(summary: dict[str, object]) -> None:
@@ -850,18 +969,14 @@ def _population_map_jobs(
                 "--both requires a linked population directory or a household CSV "
                 "with --persons pointing to its person CSV."
             )
-        views = [
-            (
-                None,
-                out_path.with_name(out_path.stem + "-households.html"),
-                title + " — households",
-            ),
-            (
-                person_profile,
-                out_path.with_name(out_path.stem + "-population.html"),
-                title + " — population",
-            ),
-        ]
+        return _linked_population_map_jobs(
+            households_path,
+            persons_path,
+            geography_column,
+            census_vintage,
+            out_path,
+            title,
+        )
     jobs = []
     for profile, destination, view_title in views:
         renderer, arguments = _map_population_renderer(
@@ -876,6 +991,36 @@ def _population_map_jobs(
             (renderer, {**arguments, "out_path": destination, "title": view_title})
         )
     return jobs
+
+
+def _linked_population_map_jobs(
+    households_path, persons_path, geography_column, census_vintage, out_path, title
+):
+    from synthpopcan._map_statistics import compute_linked_statistics
+    from synthpopcan.map_render import _render_statistics_map
+
+    if census_vintage not in (None, 2021):
+        raise ValueError("statcan-hierarchical-2021 requires Census vintage 2021.")
+    households, persons = compute_linked_statistics(
+        households_path, persons_path, geography_column
+    )
+    boundary_cache = {}
+    return [
+        (
+            _render_statistics_map,
+            {
+                "stats": stats,
+                "person_attributes": person_attributes,
+                "_boundary_cache": boundary_cache,
+                "out_path": out_path.with_name(out_path.stem + suffix),
+                "title": title + title_suffix,
+            },
+        )
+        for stats, person_attributes, suffix, title_suffix in (
+            (households, False, "-households.html", " — households"),
+            (persons, True, "-population.html", " — population"),
+        )
+    ]
 
 
 def _report_population_maps(
@@ -2576,7 +2721,7 @@ def _render_deferred_national_maps(
 )
 @click.option(
     "--max-iterations",
-    default=100,
+    default=16,
     type=int,
     show_default=True,
     help="Maximum IPF iterations per target geography.",

@@ -40,6 +40,8 @@ import urllib.error
 import urllib.parse
 import urllib.request
 from collections.abc import Callable
+from dataclasses import dataclass
+from dataclasses import field as dataclass_field
 from datetime import date
 from pathlib import Path
 from typing import Any
@@ -2799,18 +2801,29 @@ def _checkpoint_result(
         checkpoint(result.copy())
 
 
-def deposit_one(
-    deposition: dict[str, Any],
-    *,
-    api: str,
-    token: str,
-    publish: bool,
-    checkpoint: Callable[[dict[str, Any]], None] | None = None,
-    resume: dict[str, Any] | None = None,
-    execution_index: dict[str, Any] | None = None,
-) -> dict[str, Any]:
-    """Apply one deposit/correction operation, resuming a matching checkpoint."""
+@dataclass(frozen=True)
+class _DepositOperation:
+    """Validated immutable inputs shared by ordered deposit phases."""
 
+    deposition: dict[str, Any]
+    api: str
+    token: str = dataclass_field(repr=False)
+    model_id: str
+    operation: str
+    operation_id: str
+    payload: bytes | None
+    filename: str | None
+    existing: dict[str, Any] | None
+    existing_record_id: int | None
+    existing_concept_doi: str | None
+    existing_version_doi: str | None
+    transport_metadata: dict[str, Any]
+    source_publication_date: str | None
+    package_version: Any
+
+
+def _prepare_deposit_operation(deposition, *, api, token, resume, execution_index):
+    """Validate gates and source/asset identity before any draft mutation."""
     synthpopcan = deposition.get("synthpopcan")
     if not isinstance(synthpopcan, dict):
         raise ZenodoError("deposition must carry SynthPopCan metadata")
@@ -2915,24 +2928,58 @@ def deposit_one(
         deposition, existing
     )
 
-    result = {
-        "operation_id": operation_id,
-        "deposit_operation": operation,
-        "model_id": model_id,
-        "package_version": (
+    return _DepositOperation(
+        deposition=deposition,
+        api=api,
+        token=token,
+        model_id=model_id,
+        operation=operation,
+        operation_id=operation_id,
+        payload=payload,
+        filename=filename,
+        existing=existing,
+        existing_record_id=existing_record_id,
+        existing_concept_doi=existing_concept_doi,
+        existing_version_doi=existing_version_doi,
+        transport_metadata=transport_metadata,
+        source_publication_date=source_publication_date,
+        package_version=(
             metadata.get("version")
             if operation in _ASSET_OPERATIONS
             else synthpopcan.get("existing_package_version")
         ),
-        "asset_sha256": _operation_asset_sha256(deposition),
-        "metadata_sha256": operation_id.rsplit(":", 1)[-1],
+    )
+
+
+def _verify_and_checkpoint_deposit(context, result, checkpoint):
+    """Verify the final remote record before persisting completion evidence."""
+    _verify_final_record(
+        context.deposition,
+        api=context.api,
+        token=context.token,
+        result=result,
+        payload=context.payload,
+        filename=context.filename,
+    )
+    _checkpoint_result(checkpoint, result)
+
+
+def _resume_deposit_checkpoint(context, resume, checkpoint):
+    """Reconcile durable identity and finish already published checkpoints."""
+    result = {
+        "operation_id": context.operation_id,
+        "deposit_operation": context.operation,
+        "model_id": context.model_id,
+        "package_version": (context.package_version),
+        "asset_sha256": _operation_asset_sha256(context.deposition),
+        "metadata_sha256": context.operation_id.rsplit(":", 1)[-1],
         "state": "action-intent",
         "uploaded_bytes": 0,
     }
-    if existing_record_id is not None:
-        result["source_record_id"] = existing_record_id
-    if source_publication_date is not None:
-        result["source_publication_date"] = source_publication_date
+    if context.existing_record_id is not None:
+        result["source_record_id"] = context.existing_record_id
+    if context.source_publication_date is not None:
+        result["source_publication_date"] = context.source_publication_date
 
     if resume is not None:
         expected_static = result.copy()
@@ -2951,92 +2998,92 @@ def deposit_one(
                 raise ZenodoError(f"checkpoint {field} does not match this operation")
         result = resume.copy()
         if (
-            operation_id == _LEGACY_STRIPPED_MARKER_RECOVERY_OPERATION_ID
+            context.operation_id == _LEGACY_STRIPPED_MARKER_RECOVERY_OPERATION_ID
             and result.get("state") == "action-intent"
-            and result != _legacy_recovery_checkpoint(deposition, operation_id)
+            and result
+            != _legacy_recovery_checkpoint(context.deposition, context.operation_id)
         ):
             raise ZenodoError(
                 "legacy recovery checkpoint is not the exact action intent"
             )
-        if source_publication_date is not None:
+        if context.source_publication_date is not None:
             recorded_date = result.get("source_publication_date")
             legacy_action_intent = (
-                operation_id == _LEGACY_STRIPPED_MARKER_RECOVERY_OPERATION_ID
-                and result == _legacy_recovery_checkpoint(deposition, operation_id)
+                context.operation_id == _LEGACY_STRIPPED_MARKER_RECOVERY_OPERATION_ID
+                and result
+                == _legacy_recovery_checkpoint(context.deposition, context.operation_id)
             )
-            if recorded_date != source_publication_date and not legacy_action_intent:
+            if (
+                recorded_date != context.source_publication_date
+                and not legacy_action_intent
+            ):
                 raise ZenodoError(
                     "metadata correction checkpoint changed the publication date"
                 )
         if result.get("state") == _TERMINAL_STATE:
             if result.get("verified") is not True:
                 raise ZenodoError("verified checkpoint lacks verified=true evidence")
-            _verify_final_record(
-                deposition,
-                api=api,
-                token=token,
-                result=result,
-                payload=payload,
-                filename=filename,
-            )
-            _checkpoint_result(checkpoint, result)
-            return result
+            _verify_and_checkpoint_deposit(context, result, checkpoint)
+            return result, True
         if result.get("state") == "published":
-            _verify_final_record(
-                deposition,
-                api=api,
-                token=token,
-                result=result,
-                payload=payload,
-                filename=filename,
-            )
-            _checkpoint_result(checkpoint, result)
-            return result
+            _verify_and_checkpoint_deposit(context, result, checkpoint)
+            return result, True
     else:
         _checkpoint_result(checkpoint, result)
 
+    return result, False
+
+
+def _prepare_deposit_draft(context, result, resume, checkpoint):
+    """Recover or claim an owned draft and persist its action checkpoint."""
     state = str(result.get("state"))
     draft: dict[str, Any] | None = None
     if state == "action-intent":
-        advertised = _advertised_draft(existing, api=api, token=token)
-        inherited_owner = _draft_ownership(existing) if existing is not None else None
+        advertised = _advertised_draft(
+            context.existing, api=context.api, token=context.token
+        )
+        inherited_owner = (
+            _draft_ownership(context.existing) if context.existing is not None else None
+        )
         if advertised is not None:
             owner = _draft_ownership(advertised)
-            if owner == operation_id:
+            if owner == context.operation_id:
                 draft = advertised
             else:
                 raise ZenodoError(
                     "existing Zenodo latest draft is not owned by this operation"
                 )
         elif _may_read_direct_legacy_recovery_draft(
-            deposition,
-            operation_id=operation_id,
+            context.deposition,
+            operation_id=context.operation_id,
             resume=resume,
-            api=api,
+            api=context.api,
         ):
-            assert existing is not None and existing_record_id is not None
+            assert (
+                context.existing is not None and context.existing_record_id is not None
+            )
             direct = _request(
                 "GET",
-                f"{api}/deposit/depositions/{existing_record_id}",
-                token=token,
+                f"{context.api}/deposit/depositions/{context.existing_record_id}",
+                token=context.token,
             )
             direct_owner = _draft_ownership(direct)
-            if direct_owner == operation_id:
+            if direct_owner == context.operation_id:
                 _assert_exact_durable_owned_recovery_claim(
                     direct,
-                    existing,
-                    deposition,
-                    transport_metadata=transport_metadata,
-                    operation_id=operation_id,
+                    context.existing,
+                    context.deposition,
+                    transport_metadata=context.transport_metadata,
+                    operation_id=context.operation_id,
                 )
             elif direct_owner is None:
                 assert resume is not None
                 _assert_exact_legacy_stripped_marker_claim(
                     direct,
-                    existing,
-                    deposition,
-                    transport_metadata=transport_metadata,
-                    operation_id=operation_id,
+                    context.existing,
+                    context.deposition,
+                    transport_metadata=context.transport_metadata,
+                    operation_id=context.operation_id,
                     resume=resume,
                 )
             else:
@@ -3045,58 +3092,63 @@ def deposit_one(
                 )
             draft = direct
         else:
-            if operation == "correct-existing-metadata":
+            if context.operation == "correct-existing-metadata":
                 draft = _preflight_metadata_edit_draft(
-                    deposition,
-                    transport_metadata=transport_metadata,
-                    operation_id=operation_id,
-                    api=api,
-                    token=token,
+                    context.deposition,
+                    transport_metadata=context.transport_metadata,
+                    operation_id=context.operation_id,
+                    api=context.api,
+                    token=context.token,
                 )
-            elif operation == "create-new-version":
-                assert existing is not None
+            elif context.operation == "create-new-version":
+                assert context.existing is not None
                 draft = _preflight_newversion_draft(
-                    deposition,
-                    existing=existing,
-                    transport_metadata=transport_metadata,
-                    operation_id=operation_id,
+                    context.deposition,
+                    existing=context.existing,
+                    transport_metadata=context.transport_metadata,
+                    operation_id=context.operation_id,
                     resume=resume,
-                    api=api,
-                    token=token,
+                    api=context.api,
+                    token=context.token,
                 )
             if draft is None:
-                if operation == "create-new-record":
-                    action = _request(
-                        "POST", f"{api}/deposit/depositions", token=token, payload={}
-                    )
-                elif operation == "create-new-version":
-                    assert existing_record_id is not None
+                if context.operation == "create-new-record":
                     action = _request(
                         "POST",
-                        f"{api}/deposit/depositions/{existing_record_id}/actions/newversion",
-                        token=token,
+                        f"{context.api}/deposit/depositions",
+                        token=context.token,
+                        payload={},
+                    )
+                elif context.operation == "create-new-version":
+                    assert context.existing_record_id is not None
+                    action = _request(
+                        "POST",
+                        f"{context.api}/deposit/depositions/{context.existing_record_id}/actions/newversion",
+                        token=context.token,
                     )
                 else:
-                    assert existing_record_id is not None
+                    assert context.existing_record_id is not None
                     action = _request(
                         "POST",
-                        f"{api}/deposit/depositions/{existing_record_id}/actions/edit",
-                        token=token,
+                        f"{context.api}/deposit/depositions/{context.existing_record_id}/actions/edit",
+                        token=context.token,
                     )
-                _require_created_action(action, operation)
-                draft = _draft_from_action(action, api=api, token=token)
+                _require_created_action(action, context.operation)
+                draft = _draft_from_action(action, api=context.api, token=context.token)
                 action_owner = _draft_ownership(draft)
-                if action_owner != operation_id:
-                    if existing is not None:
+                if action_owner != context.operation_id:
+                    if context.existing is not None:
                         # The operation-specific preflight immediately above
                         # proved there was no open draft before this POST. The
                         # exact untouched action snapshot is therefore the new
                         # draft created for this invocation, including when an
                         # action-intent checkpoint is being resumed.
-                        if operation == "create-new-version":
-                            _assert_action_created_newversion_snapshot(draft, existing)
+                        if context.operation == "create-new-version":
+                            _assert_action_created_newversion_snapshot(
+                                draft, context.existing
+                            )
                         else:
-                            _assert_unclaimed_draft_snapshot(draft, existing)
+                            _assert_unclaimed_draft_snapshot(draft, context.existing)
                         if inherited_owner is not None:
                             if action_owner != inherited_owner:
                                 raise ZenodoError(
@@ -3105,7 +3157,7 @@ def deposit_one(
                             draft = _without_inherited_ownership(draft, inherited_owner)
                         elif action_owner is not None:
                             raise ZenodoError("action returned a draft owned elsewhere")
-                    elif operation == "create-new-record":
+                    elif context.operation == "create-new-record":
                         if action_owner is not None:
                             raise ZenodoError("new-record draft is already owned")
                         _assert_new_record_action_ownership_proof(action, draft)
@@ -3116,38 +3168,43 @@ def deposit_one(
         terminal_action = draft.get("state") in {"done", "published"}
         if terminal_action:
             _assert_draft_binding(
-                draft, deposition, operation_id=operation_id, require_owned=True
+                draft,
+                context.deposition,
+                operation_id=context.operation_id,
+                require_owned=True,
             )
             _assert_owned_draft_metadata(
                 draft,
-                transport_metadata=transport_metadata,
+                transport_metadata=context.transport_metadata,
             )
         else:
             draft = _claim_draft(
                 draft,
-                deposition,
-                transport_metadata=transport_metadata,
-                operation_id=operation_id,
-                api=api,
-                token=token,
+                context.deposition,
+                transport_metadata=context.transport_metadata,
+                operation_id=context.operation_id,
+                api=context.api,
+                token=context.token,
             )
             deposition_id = _required_record_id(draft, "id")
-            if operation in {"correct-existing-metadata", "create-new-version"}:
+            if context.operation in {"correct-existing-metadata", "create-new-version"}:
                 # Re-read an existing-concept draft after claiming it. This
                 # closes the stale-response/race window before any inherited
                 # file is removed or existing-record metadata is edited.
                 draft = _request(
-                    "GET", f"{api}/deposit/depositions/{deposition_id}", token=token
+                    "GET",
+                    f"{context.api}/deposit/depositions/{deposition_id}",
+                    token=context.token,
                 )
                 _assert_draft_binding(
                     draft,
-                    deposition,
-                    operation_id=operation_id,
+                    context.deposition,
+                    operation_id=context.operation_id,
                     require_owned=True,
                 )
                 _assert_owned_draft_metadata(
                     draft,
-                    transport_metadata=transport_metadata,
+                    transport_metadata=context.transport_metadata,
                 )
         links = draft.get("links")
         result.update(
@@ -3158,7 +3215,7 @@ def deposit_one(
                     if terminal_action
                     else (
                         "editing"
-                        if operation == "correct-existing-metadata"
+                        if context.operation == "correct-existing-metadata"
                         else "created"
                     )
                 ),
@@ -3169,49 +3226,62 @@ def deposit_one(
         )
         if not terminal_action:
             result.pop("concept_doi", None)
-        if source_publication_date is not None:
-            result["source_publication_date"] = source_publication_date
+        if context.source_publication_date is not None:
+            result["source_publication_date"] = context.source_publication_date
         if isinstance(links, dict) and isinstance(links.get("bucket"), str):
             result["bucket_url"] = links["bucket"]
         _checkpoint_result(checkpoint, result)
     else:
         deposition_id = _required_record_id(result, "deposition_id")
         draft = _request(
-            "GET", f"{api}/deposit/depositions/{deposition_id}", token=token
+            "GET",
+            f"{context.api}/deposit/depositions/{deposition_id}",
+            token=context.token,
         )
         if draft.get("id") != deposition_id:
             raise ZenodoError("checkpoint draft ID does not match Zenodo")
         if state in {"created", "editing", "uploaded"}:
             _assert_draft_binding(
-                draft, deposition, operation_id=operation_id, require_owned=True
+                draft,
+                context.deposition,
+                operation_id=context.operation_id,
+                require_owned=True,
             )
             _assert_owned_draft_metadata(
                 draft,
-                transport_metadata=transport_metadata,
+                transport_metadata=context.transport_metadata,
             )
 
+    return draft
+
+
+def _recover_published_deposit(context, draft, result, checkpoint):
+    """Verify a publication that completed before its checkpoint was saved."""
     assert draft is not None
     state = str(result.get("state"))
     if state == "draft":
         _assert_draft_binding(
-            draft, deposition, operation_id=operation_id, require_owned=True
+            draft,
+            context.deposition,
+            operation_id=context.operation_id,
+            require_owned=True,
         )
         _assert_owned_draft_metadata(
             draft,
-            transport_metadata=transport_metadata,
+            transport_metadata=context.transport_metadata,
         )
     remote_is_terminal = draft.get("state") in {"done", "published"}
-    if operation == "create-new-version" and not remote_is_terminal:
-        assert existing is not None
-        assert existing_record_id is not None
-        assert existing_version_doi is not None
-        assert existing_concept_doi is not None
+    if context.operation == "create-new-version" and not remote_is_terminal:
+        assert context.existing is not None
+        assert context.existing_record_id is not None
+        assert context.existing_version_doi is not None
+        assert context.existing_concept_doi is not None
         _require_existing_record_is_latest(
-            existing,
-            record_id=existing_record_id,
-            version_doi=existing_version_doi,
-            concept_doi=existing_concept_doi,
-            token=token,
+            context.existing,
+            record_id=context.existing_record_id,
+            version_doi=context.existing_version_doi,
+            concept_doi=context.existing_concept_doi,
+            token=context.token,
         )
     remote_already_published = (
         state
@@ -3226,30 +3296,29 @@ def deposit_one(
     if remote_already_published:
         _assert_pre_publish_files(
             draft,
-            operation=operation,
-            existing=existing,
-            filename=filename,
-            payload=payload,
+            operation=context.operation,
+            existing=context.existing,
+            filename=context.filename,
+            payload=context.payload,
         )
         result["state"] = "published"
         result["doi"] = _record_doi(draft) or result.get("doi")
         result["concept_doi"] = _concept_doi(draft)
         _checkpoint_result(checkpoint, result)
-        _verify_final_record(
-            deposition,
-            api=api,
-            token=token,
-            result=result,
-            payload=payload,
-            filename=filename,
-        )
-        _checkpoint_result(checkpoint, result)
-        return result
-    if operation in _ASSET_OPERATIONS:
-        assert payload is not None and filename is not None
+        _verify_and_checkpoint_deposit(context, result, checkpoint)
+        return True
+
+    return False
+
+
+def _upload_deposit_asset(context, draft, result, resume, checkpoint):
+    """Validate inherited files and checkpoint a verified candidate upload."""
+    state = str(result.get("state"))
+    if context.operation in _ASSET_OPERATIONS:
+        assert context.payload is not None and context.filename is not None
         upload_bucket: str | None = None
         if state in {"created", "editing"}:
-            upload_bucket = _bound_draft_bucket(draft, result, api=api)
+            upload_bucket = _bound_draft_bucket(draft, result, api=context.api)
             result["bucket_url"] = upload_bucket
             existing_files = draft.get("files")
             candidate_files = (
@@ -3257,7 +3326,7 @@ def deposit_one(
                     item
                     for item in existing_files
                     if isinstance(item, dict)
-                    and item.get("filename", item.get("key")) == filename
+                    and item.get("filename", item.get("key")) == context.filename
                 ]
                 if isinstance(existing_files, list)
                 else []
@@ -3268,22 +3337,26 @@ def deposit_one(
                 resume is not None and len(candidate_files) == 1
             )
             if uploaded_before_checkpoint:
-                _verify_remote_asset(draft, filename=filename, payload=payload)
-            if operation == "create-new-version":
-                assert existing is not None
+                _verify_remote_asset(
+                    draft, filename=context.filename, payload=context.payload
+                )
+            if context.operation == "create-new-version":
+                assert context.existing is not None
                 _assert_exact_inherited_draft_files(
                     draft,
-                    existing,
+                    context.existing,
                     candidate_filename=(
-                        filename if uploaded_before_checkpoint else None
+                        context.filename if uploaded_before_checkpoint else None
                     ),
                     allow_source_subset=resume is not None,
                 )
                 _remove_inherited_draft_files(
                     draft,
-                    api=api,
-                    token=token,
-                    preserve_filename=filename if uploaded_before_checkpoint else None,
+                    api=context.api,
+                    token=context.token,
+                    preserve_filename=context.filename
+                    if uploaded_before_checkpoint
+                    else None,
                 )
             elif candidate_files and not uploaded_before_checkpoint:
                 raise ZenodoError(
@@ -3291,7 +3364,7 @@ def deposit_one(
                 )
             if uploaded_before_checkpoint:
                 result["state"] = "uploaded"
-                result["uploaded_bytes"] = len(payload)
+                result["uploaded_bytes"] = len(context.payload)
                 _checkpoint_result(checkpoint, result)
                 state = "uploaded"
                 existing_files = []
@@ -3301,23 +3374,34 @@ def deposit_one(
             if upload_bucket is None:  # pragma: no cover - state invariant
                 raise ZenodoError("Zenodo draft upload bucket was not bound")
             uploaded = _request(
-                "PUT", f"{upload_bucket}/{filename}", token=token, data=payload
+                "PUT",
+                f"{upload_bucket}/{context.filename}",
+                token=context.token,
+                data=context.payload,
             )
-            _verify_upload_response(uploaded, payload)
+            _verify_upload_response(uploaded, context.payload)
             result["state"] = "uploaded"
-            result["uploaded_bytes"] = len(payload)
+            result["uploaded_bytes"] = len(context.payload)
             result["bucket_url"] = upload_bucket
             _checkpoint_result(checkpoint, result)
             state = "uploaded"
         elif state in {"uploaded", "draft", "published"}:
-            _verify_remote_asset(draft, filename=filename, payload=payload)
+            _verify_remote_asset(
+                draft, filename=context.filename, payload=context.payload
+            )
 
+
+def _update_deposit_metadata(context, draft, result, checkpoint):
+    """Bind metadata/files and checkpoint a publishable owned draft."""
+    state = str(result.get("state"))
     if state in {"created", "editing", "uploaded"}:
-        owned_metadata = _metadata_with_ownership(transport_metadata, operation_id)
+        owned_metadata = _metadata_with_ownership(
+            context.transport_metadata, context.operation_id
+        )
         updated = _request(
             "PUT",
-            f"{api}/deposit/depositions/{result['deposition_id']}",
-            token=token,
+            f"{context.api}/deposit/depositions/{result['deposition_id']}",
+            token=context.token,
             payload={"metadata": owned_metadata},
         )
         updated_metadata = updated.get("metadata")
@@ -3325,35 +3409,35 @@ def deposit_one(
             raise ZenodoError("Zenodo metadata update returned no metadata")
         _assert_draft_binding(
             updated,
-            deposition,
-            operation_id=operation_id,
+            context.deposition,
+            operation_id=context.operation_id,
             require_owned=True,
         )
         _assert_owned_draft_metadata(
             updated,
-            transport_metadata=transport_metadata,
+            transport_metadata=context.transport_metadata,
         )
         updated = _request(
             "GET",
-            f"{api}/deposit/depositions/{result['deposition_id']}",
-            token=token,
+            f"{context.api}/deposit/depositions/{result['deposition_id']}",
+            token=context.token,
         )
         _assert_draft_binding(
             updated,
-            deposition,
-            operation_id=operation_id,
+            context.deposition,
+            operation_id=context.operation_id,
             require_owned=True,
         )
         _assert_owned_draft_metadata(
             updated,
-            transport_metadata=transport_metadata,
+            transport_metadata=context.transport_metadata,
         )
         _assert_pre_publish_files(
             updated,
-            operation=operation,
-            existing=existing,
-            filename=filename,
-            payload=payload,
+            operation=context.operation,
+            existing=context.existing,
+            filename=context.filename,
+            payload=context.payload,
         )
         draft = updated
         result["state"] = "draft"
@@ -3363,30 +3447,34 @@ def deposit_one(
     elif state == "draft":
         _assert_draft_binding(
             draft,
-            deposition,
-            operation_id=operation_id,
+            context.deposition,
+            operation_id=context.operation_id,
             require_owned=True,
         )
         _assert_owned_draft_metadata(
             draft,
-            transport_metadata=transport_metadata,
+            transport_metadata=context.transport_metadata,
         )
         _assert_pre_publish_files(
             draft,
-            operation=operation,
-            existing=existing,
-            filename=filename,
-            payload=payload,
+            operation=context.operation,
+            existing=context.existing,
+            filename=context.filename,
+            payload=context.payload,
         )
 
+
+def _publish_deposit(context, result, publish, checkpoint):
+    """Publish only on request, then verify the durable remote record."""
+    state = str(result.get("state"))
     if not publish:
         return result
 
     if state == "draft":
         published = _request(
             "POST",
-            f"{api}/deposit/depositions/{result['deposition_id']}/actions/publish",
-            token=token,
+            f"{context.api}/deposit/depositions/{result['deposition_id']}/actions/publish",
+            token=context.token,
         )
         result["state"] = "published"
         result["doi"] = _record_doi(published) or result.get("doi")
@@ -3395,16 +3483,38 @@ def deposit_one(
     elif state != "published":
         raise ZenodoError(f"cannot publish checkpoint in unexpected state {state!r}")
 
-    _verify_final_record(
+    _verify_and_checkpoint_deposit(context, result, checkpoint)
+    return result
+
+
+def deposit_one(
+    deposition: dict[str, Any],
+    *,
+    api: str,
+    token: str,
+    publish: bool,
+    checkpoint: Callable[[dict[str, Any]], None] | None = None,
+    resume: dict[str, Any] | None = None,
+    execution_index: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Apply one deposit/correction operation, resuming a matching checkpoint."""
+
+    context = _prepare_deposit_operation(
         deposition,
         api=api,
         token=token,
-        result=result,
-        payload=payload,
-        filename=filename,
+        resume=resume,
+        execution_index=execution_index,
     )
-    _checkpoint_result(checkpoint, result)
-    return result
+    result, completed = _resume_deposit_checkpoint(context, resume, checkpoint)
+    if completed:
+        return result
+    draft = _prepare_deposit_draft(context, result, resume, checkpoint)
+    if _recover_published_deposit(context, draft, result, checkpoint):
+        return result
+    _upload_deposit_asset(context, draft, result, resume, checkpoint)
+    _update_deposit_metadata(context, draft, result, checkpoint)
+    return _publish_deposit(context, result, publish, checkpoint)
 
 
 def _load_depositions(

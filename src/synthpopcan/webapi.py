@@ -228,8 +228,17 @@ def _register_catalogue_routes(app: FastAPI) -> None:
 def _register_run_routes(app: FastAPI, context: _WebAppContext) -> None:
     """Register uploads, preflight, durable runs, events, and artifacts."""
 
+    _register_upload_routes(app, context)
+    _register_preflight_routes(app, context)
+    _register_run_manifest_routes(app, context)
+    _register_run_event_routes(app, context)
+    _register_run_cancellation_routes(app, context)
+    _register_run_artifact_routes(app, context)
+
+
+def _register_upload_routes(app: FastAPI, context: _WebAppContext) -> None:
+    """Bounded uploads and their cleanup on invalid or failed writes."""
     run_store = context.run_store
-    job_manager = context.job_manager
 
     @app.post("/api/uploads")
     async def upload_file(request: Request) -> Response:
@@ -286,6 +295,11 @@ def _register_run_routes(app: FastAPI, context: _WebAppContext) -> None:
                 HTTPStatus.INSUFFICIENT_STORAGE,
             )
 
+
+def _register_preflight_routes(app: FastAPI, context: _WebAppContext) -> None:
+    """Preflight validation before durable run creation."""
+    run_store = context.run_store
+
     @app.post("/api/preflight")
     async def preflight_run(request: Request) -> Response:
         try:
@@ -297,6 +311,12 @@ def _register_run_routes(app: FastAPI, context: _WebAppContext) -> None:
                 "preflight request is invalid",
                 HTTPStatus.BAD_REQUEST,
             )
+
+
+def _register_run_manifest_routes(app: FastAPI, context: _WebAppContext) -> None:
+    """Run listing, creation and manifest retrieval."""
+    run_store = context.run_store
+    job_manager = context.job_manager
 
     @app.get("/api/runs")
     async def list_runs() -> Response:
@@ -334,6 +354,11 @@ def _register_run_routes(app: FastAPI, context: _WebAppContext) -> None:
             return JSONResponse(run_store.load_run(run_id))
         except (KeyError, ValueError):
             return _error_response("run not found", HTTPStatus.NOT_FOUND)
+
+
+def _register_run_event_routes(app: FastAPI, context: _WebAppContext) -> None:
+    """Durable event replay and bounded terminal streaming."""
+    run_store = context.run_store
 
     @app.get("/api/runs/{run_id}/events")
     async def get_run_events(run_id: str, request: Request) -> Response:
@@ -380,6 +405,12 @@ def _register_run_routes(app: FastAPI, context: _WebAppContext) -> None:
 
         return StreamingResponse(stream_events(), media_type="text/event-stream")
 
+
+def _register_run_cancellation_routes(app: FastAPI, context: _WebAppContext) -> None:
+    """Cancellation with explicit lifecycle and conflict responses."""
+    run_store = context.run_store
+    job_manager = context.job_manager
+
     @app.post("/api/runs/{run_id}/cancel")
     async def cancel_run(run_id: str) -> Response:
         try:
@@ -393,6 +424,11 @@ def _register_run_routes(app: FastAPI, context: _WebAppContext) -> None:
                 "run cannot be cancelled in its current state",
                 HTTPStatus.CONFLICT,
             )
+
+
+def _register_run_artifact_routes(app: FastAPI, context: _WebAppContext) -> None:
+    """Bounded CSV previews and immutable artifact downloads."""
+    run_store = context.run_store
 
     @app.get("/api/runs/{run_id}/artifacts/{artifact_id}/preview")
     async def preview_artifact(

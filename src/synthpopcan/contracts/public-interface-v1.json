@@ -2188,6 +2188,116 @@
         ],
         "parameters": [
           {
+            "kind": "argument",
+            "multiple": false,
+            "name": "population",
+            "nargs": 1,
+            "required": true,
+            "type": {
+              "dir_okay": true,
+              "exists": true,
+              "file_okay": true,
+              "name": "path",
+              "readable": true,
+              "writable": false
+            }
+          },
+          {
+            "count": false,
+            "default": {
+              "type": "Sentinel"
+            },
+            "flag_value": null,
+            "is_flag": false,
+            "kind": "option",
+            "multiple": true,
+            "name": "controls",
+            "names": [
+              "--controls"
+            ],
+            "nargs": 1,
+            "required": false,
+            "type": {
+              "dir_okay": true,
+              "exists": true,
+              "file_okay": true,
+              "name": "path",
+              "readable": true,
+              "writable": false
+            }
+          },
+          {
+            "count": false,
+            "default": {
+              "type": "Sentinel"
+            },
+            "flag_value": null,
+            "is_flag": false,
+            "kind": "option",
+            "multiple": true,
+            "name": "person_controls",
+            "names": [
+              "--person-controls"
+            ],
+            "nargs": 1,
+            "required": false,
+            "type": {
+              "dir_okay": true,
+              "exists": true,
+              "file_okay": true,
+              "name": "path",
+              "readable": true,
+              "writable": false
+            }
+          },
+          {
+            "count": false,
+            "default": "ct",
+            "flag_value": null,
+            "is_flag": false,
+            "kind": "option",
+            "multiple": false,
+            "name": "geo_column",
+            "names": [
+              "--geo-column"
+            ],
+            "nargs": 1,
+            "required": false,
+            "type": {
+              "name": "text"
+            }
+          },
+          {
+            "count": false,
+            "flag_value": null,
+            "is_flag": false,
+            "kind": "option",
+            "multiple": false,
+            "name": "output",
+            "names": [
+              "--out"
+            ],
+            "nargs": 1,
+            "required": true,
+            "type": {
+              "dir_okay": true,
+              "exists": false,
+              "file_okay": true,
+              "name": "path",
+              "readable": true,
+              "writable": false
+            }
+          }
+        ],
+        "path": "synthpopcan geo audit"
+      },
+      {
+        "kind": "command",
+        "output_modes": [
+          "human"
+        ],
+        "parameters": [
+          {
             "count": false,
             "flag_value": null,
             "is_flag": false,
@@ -2563,7 +2673,7 @@
           },
           {
             "count": false,
-            "default": 100,
+            "default": 16,
             "flag_value": null,
             "is_flag": false,
             "kind": "option",
@@ -2631,6 +2741,89 @@
           },
           {
             "count": false,
+            "default": null,
+            "flag_value": null,
+            "is_flag": false,
+            "kind": "option",
+            "multiple": false,
+            "name": "workers",
+            "names": [
+              "--workers"
+            ],
+            "nargs": 1,
+            "required": false,
+            "type": {
+              "clamp": false,
+              "max": 8,
+              "max_open": false,
+              "min": 1,
+              "min_open": false,
+              "name": "integer range"
+            }
+          },
+          {
+            "count": false,
+            "default": "ipu",
+            "flag_value": null,
+            "is_flag": false,
+            "kind": "option",
+            "multiple": false,
+            "name": "joint_solver",
+            "names": [
+              "--joint-solver"
+            ],
+            "nargs": 1,
+            "required": false,
+            "type": {
+              "case_sensitive": true,
+              "choices": [
+                "ipu",
+                "hybrid"
+              ],
+              "name": "choice"
+            }
+          },
+          {
+            "count": false,
+            "default": "structural",
+            "flag_value": null,
+            "is_flag": false,
+            "kind": "option",
+            "multiple": false,
+            "name": "zero_target_policy",
+            "names": [
+              "--zero-target-policy"
+            ],
+            "nargs": 1,
+            "required": false,
+            "type": {
+              "case_sensitive": true,
+              "choices": [
+                "structural",
+                "observed"
+              ],
+              "name": "choice"
+            }
+          },
+          {
+            "count": false,
+            "default": false,
+            "flag_value": true,
+            "is_flag": true,
+            "kind": "option",
+            "multiple": false,
+            "name": "augment_support",
+            "names": [
+              "--augment-support"
+            ],
+            "nargs": 1,
+            "required": false,
+            "type": {
+              "name": "boolean"
+            }
+          },
+          {
+            "count": false,
             "default": "summary",
             "flag_value": null,
             "is_flag": false,
@@ -2653,6 +2846,68 @@
           }
         ],
         "path": "synthpopcan geo calibrate"
+      },
+      {
+        "kind": "command",
+        "output_modes": [
+          "human"
+        ],
+        "parameters": [
+          {
+            "kind": "argument",
+            "multiple": false,
+            "name": "populations",
+            "nargs": -1,
+            "required": true,
+            "type": {
+              "dir_okay": true,
+              "exists": true,
+              "file_okay": true,
+              "name": "path",
+              "readable": true,
+              "writable": false
+            }
+          },
+          {
+            "count": false,
+            "default": "ct",
+            "flag_value": null,
+            "is_flag": false,
+            "kind": "option",
+            "multiple": false,
+            "name": "geo_column",
+            "names": [
+              "--geo-column"
+            ],
+            "nargs": 1,
+            "required": false,
+            "type": {
+              "name": "text"
+            }
+          },
+          {
+            "count": false,
+            "flag_value": null,
+            "is_flag": false,
+            "kind": "option",
+            "multiple": false,
+            "name": "output",
+            "names": [
+              "--out"
+            ],
+            "nargs": 1,
+            "required": true,
+            "type": {
+              "dir_okay": true,
+              "exists": false,
+              "file_okay": true,
+              "name": "path",
+              "readable": true,
+              "writable": false
+            }
+          }
+        ],
+        "path": "synthpopcan geo combine"
       },
       {
         "invoke_without_command": false,
@@ -4577,6 +4832,409 @@
         ],
         "parameters": [
           {
+            "kind": "argument",
+            "multiple": false,
+            "name": "population",
+            "nargs": 1,
+            "required": true,
+            "type": {
+              "dir_okay": true,
+              "exists": true,
+              "file_okay": true,
+              "name": "path",
+              "readable": true,
+              "writable": false
+            }
+          },
+          {
+            "count": false,
+            "flag_value": null,
+            "is_flag": false,
+            "kind": "option",
+            "multiple": false,
+            "name": "source_profile",
+            "names": [
+              "--source-profile"
+            ],
+            "nargs": 1,
+            "required": true,
+            "type": {
+              "case_sensitive": true,
+              "choices": [
+                "statcan-hierarchical-2021"
+              ],
+              "name": "choice"
+            }
+          },
+          {
+            "count": false,
+            "default": false,
+            "flag_value": true,
+            "is_flag": true,
+            "kind": "option",
+            "multiple": false,
+            "name": "require_gender",
+            "names": [
+              "--require-gender"
+            ],
+            "nargs": 1,
+            "required": false,
+            "type": {
+              "name": "boolean"
+            }
+          },
+          {
+            "count": false,
+            "default": null,
+            "flag_value": null,
+            "is_flag": false,
+            "kind": "option",
+            "multiple": false,
+            "name": "pool_size",
+            "names": [
+              "--pool-size"
+            ],
+            "nargs": 1,
+            "required": false,
+            "type": {
+              "clamp": false,
+              "max": null,
+              "max_open": false,
+              "min": 1,
+              "min_open": false,
+              "name": "integer range"
+            }
+          },
+          {
+            "count": false,
+            "default": 42,
+            "flag_value": null,
+            "is_flag": false,
+            "kind": "option",
+            "multiple": false,
+            "name": "subsample_seed",
+            "names": [
+              "--subsample-seed"
+            ],
+            "nargs": 1,
+            "required": false,
+            "type": {
+              "name": "integer"
+            }
+          },
+          {
+            "count": false,
+            "default": false,
+            "flag_value": true,
+            "is_flag": true,
+            "kind": "option",
+            "multiple": false,
+            "name": "augment_support",
+            "names": [
+              "--augment-support"
+            ],
+            "nargs": 1,
+            "required": false,
+            "type": {
+              "name": "boolean"
+            }
+          },
+          {
+            "count": false,
+            "default": null,
+            "flag_value": null,
+            "is_flag": false,
+            "kind": "option",
+            "multiple": false,
+            "name": "controls",
+            "names": [
+              "--controls"
+            ],
+            "nargs": 1,
+            "required": false,
+            "type": {
+              "dir_okay": true,
+              "exists": true,
+              "file_okay": true,
+              "name": "path",
+              "readable": true,
+              "writable": false
+            }
+          },
+          {
+            "count": false,
+            "default": null,
+            "flag_value": null,
+            "is_flag": false,
+            "kind": "option",
+            "multiple": false,
+            "name": "person_controls",
+            "names": [
+              "--person-controls"
+            ],
+            "nargs": 1,
+            "required": false,
+            "type": {
+              "dir_okay": true,
+              "exists": true,
+              "file_okay": true,
+              "name": "path",
+              "readable": true,
+              "writable": false
+            }
+          },
+          {
+            "count": false,
+            "default": "ct",
+            "flag_value": null,
+            "is_flag": false,
+            "kind": "option",
+            "multiple": false,
+            "name": "geo_dimension",
+            "names": [
+              "--geo-dimension"
+            ],
+            "nargs": 1,
+            "required": false,
+            "type": {
+              "name": "text"
+            }
+          },
+          {
+            "count": false,
+            "flag_value": null,
+            "is_flag": false,
+            "kind": "option",
+            "multiple": false,
+            "name": "output",
+            "names": [
+              "--out"
+            ],
+            "nargs": 1,
+            "required": true,
+            "type": {
+              "dir_okay": true,
+              "exists": false,
+              "file_okay": true,
+              "name": "path",
+              "readable": true,
+              "writable": false
+            }
+          }
+        ],
+        "path": "synthpopcan geo prepare-candidates"
+      },
+      {
+        "kind": "command",
+        "output_modes": [
+          "human"
+        ],
+        "parameters": [
+          {
+            "kind": "argument",
+            "multiple": false,
+            "name": "profile",
+            "nargs": 1,
+            "required": true,
+            "type": {
+              "dir_okay": true,
+              "exists": true,
+              "file_okay": true,
+              "name": "path",
+              "readable": true,
+              "writable": false
+            }
+          },
+          {
+            "count": false,
+            "default": {
+              "type": "Sentinel"
+            },
+            "flag_value": null,
+            "is_flag": false,
+            "kind": "option",
+            "multiple": false,
+            "name": "cma",
+            "names": [
+              "--cma"
+            ],
+            "nargs": 1,
+            "required": false,
+            "type": {
+              "name": "text"
+            }
+          },
+          {
+            "count": false,
+            "default": false,
+            "flag_value": true,
+            "is_flag": true,
+            "kind": "option",
+            "multiple": false,
+            "name": "canada",
+            "names": [
+              "--canada"
+            ],
+            "nargs": 1,
+            "required": false,
+            "type": {
+              "name": "boolean"
+            }
+          },
+          {
+            "count": false,
+            "default": {
+              "type": "Sentinel"
+            },
+            "flag_value": null,
+            "is_flag": false,
+            "kind": "option",
+            "multiple": false,
+            "name": "province",
+            "names": [
+              "--province"
+            ],
+            "nargs": 1,
+            "required": false,
+            "type": {
+              "name": "text"
+            }
+          },
+          {
+            "count": false,
+            "default": {
+              "type": "Sentinel"
+            },
+            "flag_value": null,
+            "is_flag": false,
+            "kind": "option",
+            "multiple": false,
+            "name": "province_profile",
+            "names": [
+              "--province-profile",
+              "--national-profile"
+            ],
+            "nargs": 1,
+            "required": false,
+            "type": {
+              "dir_okay": true,
+              "exists": true,
+              "file_okay": true,
+              "name": "path",
+              "readable": true,
+              "writable": false
+            }
+          },
+          {
+            "count": false,
+            "flag_value": null,
+            "is_flag": false,
+            "kind": "option",
+            "multiple": false,
+            "name": "source_profile",
+            "names": [
+              "--source-profile"
+            ],
+            "nargs": 1,
+            "required": true,
+            "type": {
+              "case_sensitive": true,
+              "choices": [
+                "statcan-hierarchical-2021"
+              ],
+              "name": "choice"
+            }
+          },
+          {
+            "count": false,
+            "flag_value": null,
+            "is_flag": false,
+            "kind": "option",
+            "multiple": false,
+            "name": "normalization",
+            "names": [
+              "--normalization"
+            ],
+            "nargs": 1,
+            "required": true,
+            "type": {
+              "case_sensitive": true,
+              "choices": [
+                "observed-proportional"
+              ],
+              "name": "choice"
+            }
+          },
+          {
+            "count": false,
+            "default": null,
+            "flag_value": null,
+            "is_flag": false,
+            "kind": "option",
+            "multiple": false,
+            "name": "profile_sha256",
+            "names": [
+              "--profile-sha256"
+            ],
+            "nargs": 1,
+            "required": false,
+            "type": {
+              "name": "text"
+            }
+          },
+          {
+            "count": false,
+            "default": "error",
+            "flag_value": null,
+            "is_flag": false,
+            "kind": "option",
+            "multiple": false,
+            "name": "incomplete_geographies",
+            "names": [
+              "--incomplete-geographies"
+            ],
+            "nargs": 1,
+            "required": false,
+            "type": {
+              "case_sensitive": true,
+              "choices": [
+                "error",
+                "exclude"
+              ],
+              "name": "choice"
+            }
+          },
+          {
+            "count": false,
+            "flag_value": null,
+            "is_flag": false,
+            "kind": "option",
+            "multiple": false,
+            "name": "output",
+            "names": [
+              "--out"
+            ],
+            "nargs": 1,
+            "required": true,
+            "type": {
+              "dir_okay": true,
+              "exists": false,
+              "file_okay": true,
+              "name": "path",
+              "readable": true,
+              "writable": false
+            }
+          }
+        ],
+        "path": "synthpopcan geo prepare-controls"
+      },
+      {
+        "kind": "command",
+        "output_modes": [
+          "human"
+        ],
+        "parameters": [
+          {
             "count": false,
             "flag_value": null,
             "is_flag": false,
@@ -4979,7 +5637,7 @@
           },
           {
             "count": false,
-            "default": 100,
+            "default": 16,
             "flag_value": null,
             "is_flag": false,
             "kind": "option",
@@ -14034,6 +14692,20 @@
             "kind": "keyword_only",
             "name": "n_workers",
             "required": false
+          },
+          {
+            "annotation": "str",
+            "default": "ipu",
+            "kind": "keyword_only",
+            "name": "joint_solver",
+            "required": false
+          },
+          {
+            "annotation": "str",
+            "default": "structural",
+            "kind": "keyword_only",
+            "name": "zero_target_policy",
+            "required": false
           }
         ],
         "return_annotation": "GeographyHouseholdFit"
@@ -14291,6 +14963,20 @@
             "default": false,
             "kind": "keyword_only",
             "name": "record_timing",
+            "required": false
+          },
+          {
+            "annotation": "str",
+            "default": "ipu",
+            "kind": "keyword_only",
+            "name": "joint_solver",
+            "required": false
+          },
+          {
+            "annotation": "str",
+            "default": "structural",
+            "kind": "keyword_only",
+            "name": "zero_target_policy",
             "required": false
           }
         ],

@@ -3836,3 +3836,42 @@ def test_iter_cart_rows_raises_when_leaf_has_no_positive_probabilities() -> None
 
     with pytest.raises(ValueError, match="no positive target probabilities"):
         list(iter_cart_rows(model, rows=1))
+
+
+def test_cart_cache_preserves_seeded_draws_and_current_household_conditions():
+    import random
+    from dataclasses import replace
+
+    from synthpopcan.tree import iter_person_rows_for_household
+
+    model = replace(
+        _minimal_cart_model(),
+        target_classes=({"age": "adult"}, {"age": "child"}),
+        value=((1.0, 3.0),),
+    )
+    seed_rng = random.Random(37)
+    oracle_rng = random.Random(37)
+    cache = {}
+    for geo, count in [("ON", 7), ("QC", 3), ("ON", 2)]:
+        oracle = random.Random(oracle_rng.randrange(1, 2**31))
+        expected = [
+            {
+                "synthetic_id": str(i),
+                "geo": geo,
+                "age": "adult" if oracle.uniform(0, 4) <= 1 else "child",
+            }
+            for i in range(1, count + 1)
+        ]
+        actual = list(
+            iter_person_rows_for_household(
+                model,
+                rows=count,
+                conditions={"geo": geo},
+                rng=seed_rng,
+                selection_cache={},
+                cart_selection_cache=cache,
+            )
+        )
+        assert actual == expected
+    assert len(cache) == 1  # Same leaf; household-specific conditions stay fresh.
+    assert seed_rng.getstate() == oracle_rng.getstate()

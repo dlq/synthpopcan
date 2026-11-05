@@ -119,6 +119,31 @@ checkout's development environment includes it through `uv sync`.
 
 ````
 
+### Optional acceleration for large populations
+
+The development version provides a `performance` extra for large linked
+calibration, independent control audits and household/person map statistics:
+
+```bash
+python -m pip install "synthpopcan[performance]"
+```
+
+In a source checkout, use `uv sync --extra performance`; keep that extra on
+subsequent `uv sync` commands. The existing CLI commands automatically use
+Numba for sufficiently large IPU and repeated household IPF fits and Polars for large population CSVs.
+The extra includes SciPy because Numba's compiled matrix products need its
+BLAS interface and optional `--augment-support` linear-feasibility checks.
+The supported extras are `performance` and `model-build`; the former
+`calibration-support` extra has been consolidated into `performance`.
+Small inputs retain their ordinary paths and avoid compiler
+startup. The first large fit in each worker includes compilation time.
+
+CSV parsing uses 8 MiB input buffers. Exact income samples and household
+mappings still grow with population size. Ambiguous CSV syntax and unsupported
+numeric values use the reference readers, preserving diagnostics, missing-value
+rules and rounding. An unavailable compiler or compatible BLAS interface uses
+NumPy. The extra does not change targets, iteration limits or tolerances.
+
 For notebook work, install SynthPopCan into the same Python environment that
 [Jupyter](https://jupyter.org/) uses. A minimal notebook smoke test is:
 

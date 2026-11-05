@@ -588,6 +588,58 @@ def estimate_national_da_storage(
     return estimate_national_small_area_storage(batches)
 
 
+def _pending_batches(root, records, jurisdiction_pruids):
+    """Validate and select batches lazily, retaining serial read/error order."""
+    for record in records:
+        if not isinstance(record, Mapping) or not isinstance(
+            record.get("manifest"), str
+        ):
+            raise ValueError("national small-area plan batch record is invalid")
+        if (
+            jurisdiction_pruids is not None
+            and record.get("jurisdiction_pruid") not in jurisdiction_pruids
+        ):
+            continue
+        batch_path = root / record["manifest"]
+        batch = _read_json(batch_path)
+        if batch.get("schema_version") != _BATCH_SCHEMA:
+            raise ValueError(f"unsupported batch schema in {batch_path}")
+        if batch.get("status") != "completed":
+            yield batch_path, batch
+
+
+def _begin_batch(batch_path, batch):
+    attempts = batch.get("attempts", 0)
+    if not isinstance(attempts, int):
+        raise ValueError(f"batch attempts must be an integer in {batch_path}")
+    batch["status"] = "running"
+    batch["attempts"] = attempts + 1
+    batch.pop("error", None)
+    _write_json(batch_path, batch)
+
+
+def _interrupt_batch(batch_path, batch):
+    batch["status"] = "planned"
+    batch["interrupted_attempt"] = batch["attempts"]
+    _write_json(batch_path, batch)
+
+
+def _save_plan(plan_path, plan):
+    _refresh_plan_status(plan, plan_path.parent)
+    _write_json(plan_path, plan)
+
+
+def _finish_execution(plan_path, plan, attempted, failures, *, workers=None):
+    plan["last_execution"] = {
+        "attempted_batches": attempted,
+        "failed_batches": failures,
+        "status_counts": _refresh_plan_status(plan, plan_path.parent),
+    }
+    if workers is not None:
+        plan["last_execution"]["workers"] = workers
+    _write_json(plan_path, plan)
+
+
 def execute_canada_small_area_plan(
     plan_path: Path,
     run_batch: Callable[[Mapping[str, object], Path], Mapping[str, object]],
@@ -630,38 +682,16 @@ def execute_canada_small_area_plan(
         )
     attempted = 0
     failures: list[str] = []
-    for record in records:
-        if not isinstance(record, Mapping) or not isinstance(
-            record.get("manifest"), str
-        ):
-            raise ValueError("national small-area plan batch record is invalid")
-        record_pruid = record.get("jurisdiction_pruid")
-        if jurisdiction_pruids is not None and record_pruid not in jurisdiction_pruids:
-            continue
-        batch_path = root / record["manifest"]
-        batch = _read_json(batch_path)
-        if batch.get("schema_version") != _BATCH_SCHEMA:
-            raise ValueError(f"unsupported batch schema in {batch_path}")
-        if batch.get("status") == "completed":
-            continue
+    for batch_path, batch in _pending_batches(root, records, jurisdiction_pruids):
         if limit is not None and attempted >= limit:
             break
         attempted += 1
-        attempts = batch.get("attempts", 0)
-        if not isinstance(attempts, int):
-            raise ValueError(f"batch attempts must be an integer in {batch_path}")
-        batch["status"] = "running"
-        batch["attempts"] = attempts + 1
-        batch.pop("error", None)
-        _write_json(batch_path, batch)
+        _begin_batch(batch_path, batch)
         try:
             result = dict(run_batch(batch, root))
         except KeyboardInterrupt:
-            batch["status"] = "planned"
-            batch["interrupted_attempt"] = batch["attempts"]
-            _write_json(batch_path, batch)
-            _refresh_plan_status(plan, root)
-            _write_json(plan_path, plan)
+            _interrupt_batch(batch_path, batch)
+            _save_plan(plan_path, plan)
             raise
         except Exception as exc:
             batch["status"] = "failed"
@@ -670,23 +700,15 @@ def execute_canada_small_area_plan(
             batch_id = str(batch.get("batch_id", batch_path))
             failures.append(batch_id)
             if not continue_on_error:
-                _refresh_plan_status(plan, root)
-                _write_json(plan_path, plan)
+                _save_plan(plan_path, plan)
                 raise
         else:
             batch["status"] = "completed"
             batch["result"] = result
             _write_json(batch_path, batch)
-            _refresh_plan_status(plan, root)
-            _write_json(plan_path, plan)
+            _save_plan(plan_path, plan)
 
-    status_counts = _refresh_plan_status(plan, root)
-    plan["last_execution"] = {
-        "attempted_batches": attempted,
-        "failed_batches": failures,
-        "status_counts": status_counts,
-    }
-    _write_json(plan_path, plan)
+    _finish_execution(plan_path, plan, attempted, failures)
     return plan
 
 
@@ -705,23 +727,7 @@ def _execute_canada_small_area_plan_parallel(
 
     root = plan_path.parent
     candidates: list[tuple[Path, dict[str, object]]] = []
-    for record in records:
-        if not isinstance(record, Mapping) or not isinstance(
-            record.get("manifest"),
-            str,
-        ):
-            raise ValueError("national small-area plan batch record is invalid")
-        if (
-            jurisdiction_pruids is not None
-            and record.get("jurisdiction_pruid") not in jurisdiction_pruids
-        ):
-            continue
-        batch_path = root / str(record["manifest"])
-        batch = _read_json(batch_path)
-        if batch.get("schema_version") != _BATCH_SCHEMA:
-            raise ValueError(f"unsupported batch schema in {batch_path}")
-        if batch.get("status") == "completed":
-            continue
+    for batch_path, batch in _pending_batches(root, records, jurisdiction_pruids):
         candidates.append((batch_path, batch))
         if limit is not None and len(candidates) >= limit:
             break
@@ -744,13 +750,7 @@ def _execute_canada_small_area_plan_parallel(
         except StopIteration:
             return False
         batch_id = str(batch.get("batch_id", batch_path))
-        attempts = batch.get("attempts", 0)
-        if not isinstance(attempts, int):
-            raise ValueError(f"batch attempts must be an integer in {batch_path}")
-        batch["status"] = "running"
-        batch["attempts"] = attempts + 1
-        batch.pop("error", None)
-        _write_json(batch_path, batch)
+        _begin_batch(batch_path, batch)
         process = context.Process(
             target=_parallel_batch_entry,
             args=(run_batch, batch, root, batch_id, result_queue),
@@ -811,8 +811,7 @@ def _execute_canada_small_area_plan_parallel(
                 if not continue_on_error:
                     stop_scheduling = True
             _write_json(batch_path, batch)
-            _refresh_plan_status(plan, root)
-            _write_json(plan_path, plan)
+            _save_plan(plan_path, plan)
             while len(active) < workers and start_next():
                 pass
     except KeyboardInterrupt:
@@ -821,24 +820,14 @@ def _execute_canada_small_area_plan_parallel(
                 process.terminate()
         for process, batch_path, batch in active.values():
             process.join()
-            batch["status"] = "planned"
-            batch["interrupted_attempt"] = batch["attempts"]
-            _write_json(batch_path, batch)
-        _refresh_plan_status(plan, root)
-        _write_json(plan_path, plan)
+            _interrupt_batch(batch_path, batch)
+        _save_plan(plan_path, plan)
         raise
     finally:
         result_queue.close()
         result_queue.join_thread()
 
-    status_counts = _refresh_plan_status(plan, root)
-    plan["last_execution"] = {
-        "attempted_batches": attempted,
-        "failed_batches": failures,
-        "status_counts": status_counts,
-        "workers": workers,
-    }
-    _write_json(plan_path, plan)
+    _finish_execution(plan_path, plan, attempted, failures, workers=workers)
     if failures and not continue_on_error:
         raise RuntimeError(failure_messages[0])
     return plan

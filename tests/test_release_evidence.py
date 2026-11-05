@@ -25,6 +25,7 @@ _SMOKE_MARKERS = (
     "Installed wheel smoke command completed.",
     "Installed sdist smoke command completed.",
     "Installed model-build smoke command completed.",
+    "Installed performance-extra smoke command completed.",
     "Installed-wheel fictional case-study interface smoke command completed.",
 )
 _COMMIT = "a" * 40
@@ -143,6 +144,10 @@ def test_release_evidence_names_exact_release_and_hashes_files(
     assert (
         wheel_evidence["sha256"]
         == hashlib.sha256(evidence["wheel"].read_bytes()).hexdigest()
+    )
+    assert (
+        "installed-wheel performance-extra smoke test in an isolated environment"
+        in manifest["checks"]
     )
     assert manifest["waived_checks"] == []
     assert "installed-sdist smoke test in an isolated environment" in manifest["checks"]
@@ -336,7 +341,7 @@ def test_local_release_check_matches_locked_ci_and_web_gates() -> None:
         assert markdown_check_fragment in ci
     assert "uv run --locked --group docs doc8 docs" in local_check
     assert "uv run --locked pyright src scripts" in local_check
-    assert "uv run --locked pytest" in local_check
+    assert "uv run --locked --extra performance pytest" in local_check
     assert "npm run test:web:coverage" in local_check
     assert "\nnpm run test:web\n" not in local_check
 
@@ -364,8 +369,8 @@ def test_publish_is_exact_locked_immutable_and_revalidates_before_pypi() -> None
         'test "$WORKFLOW_SHA" = "$RELEASE_COMMIT"',
         'test "$DISPATCH_REF" = "refs/tags/$RELEASE_TAG"',
         'git cat-file -t "$RELEASE_TAG"',
-        "uv sync --locked --group dev",
-        "uv run --locked pytest",
+        "uv sync --locked --group dev --extra performance",
+        "uv run --locked --extra performance pytest",
         "uv lock --check",
         "actions: read",
         'git merge-base --is-ancestor "$RELEASE_COMMIT" origin/main',

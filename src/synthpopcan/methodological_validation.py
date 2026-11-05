@@ -408,7 +408,7 @@ def build_linked_calibration_validation_profile(
             "realized_max_abs_error": realized_max_abs_error,
             "targets_assessed": len(targets),
             "weight_concentration": _weight_concentration(
-                fractional_matrix[geography_index].tolist()
+                fractional_matrix[geography_index]
             ),
             "candidate_reuse": _candidate_reuse(integer_rows[geography_index]),
             "rare_threshold": rare_threshold,
@@ -725,10 +725,15 @@ def _validated_fractional_weights(
 ) -> list[float]:
     if len(weights) != expected:
         raise ValueError("fractional weights must match candidate records")
-    values = [float(weight) for weight in weights]
-    if any(not math.isfinite(weight) or weight < 0 for weight in values):
+    array = np.asarray(weights)
+    if array.ndim != 1 or array.dtype.kind not in "biuf":
+        # Preserve float() coercion/errors for strings, objects and complex data.
+        array = np.asarray([float(weight) for weight in weights], dtype=np.float64)
+    else:
+        array = array.astype(np.float64, copy=False)
+    if not np.all(np.isfinite(array)) or np.any(array < 0):
         raise ValueError("fractional weights must be finite and non-negative")
-    return values
+    return array.tolist()
 
 
 def _validated_integer_weights(weights: Sequence[int], expected: int) -> list[int]:
@@ -742,31 +747,71 @@ def _validated_integer_weights(weights: Sequence[int], expected: int) -> list[in
     return values
 
 
-def _weight_concentration(weights: Sequence[float]) -> dict[str, Any]:
-    total = sum(weights)
-    sum_squares = sum(weight * weight for weight in weights)
-    positive = [weight for weight in weights if weight > 0]
+def _weight_concentration(weights) -> dict[str, Any]:
+    values = np.asarray(weights, dtype=np.float64)
+    total = float(values.sum())
+    sum_squares = float(np.dot(values, values))
+    positive = values > 0
+    positive_count = int(np.count_nonzero(positive))
     effective_sample_size = total * total / sum_squares
-    top_count = max(1, math.ceil(len(weights) * 0.1))
-    top_share = sum(sorted(weights, reverse=True)[:top_count]) / total
+    top_count = max(1, math.ceil(len(values) * 0.1))
+    top = np.partition(values, len(values) - top_count)[-top_count:]
+    maximum = float(values.max())
     return {
-        "candidate_count": len(weights),
-        "positive_weight_candidates": len(positive),
-        "zero_weight_candidates": len(weights) - len(positive),
+        "candidate_count": len(values),
+        "positive_weight_candidates": positive_count,
+        "zero_weight_candidates": len(values) - positive_count,
         "total_weight": total,
-        "minimum_positive_weight": min(positive),
-        "maximum_weight": max(weights),
-        "mean_weight": total / len(weights),
+        "minimum_positive_weight": float(values[positive].min()),
+        "maximum_weight": maximum,
+        "mean_weight": total / len(values),
         "kish_effective_sample_size": effective_sample_size,
-        "effective_sample_share": effective_sample_size / len(weights),
+        "effective_sample_share": effective_sample_size / len(values),
         "herfindahl_concentration": sum_squares / (total * total),
-        "largest_candidate_weight_share": max(weights) / total,
+        "largest_candidate_weight_share": maximum / total,
         "top_10_percent_candidate_count": top_count,
-        "top_10_percent_weight_share": top_share,
+        "top_10_percent_weight_share": float(top.sum()) / total,
     }
 
 
 def _candidate_reuse(weights: Sequence[int]) -> dict[str, Any]:
+    values = np.asarray(weights)
+    # Public diagnostics retain Python's unbounded integer semantics. Only use
+    # fixed-width reductions when even the worst-case sum fits signed int64.
+    if values.dtype.kind not in "iu" or int(values.max(initial=0)) > (
+        np.iinfo(np.int64).max // max(1, len(values))
+    ):
+        return _candidate_reuse_reference(weights)
+    values = values.astype(np.int64, copy=False)
+    total = int(values.sum())
+    selected = int(np.count_nonzero(values > 0))
+    repeated = values > 1
+    repeated_count = int(np.count_nonzero(repeated))
+    repeated_total = int(values[repeated].sum())
+    copies, counts = np.unique(values, return_counts=True)
+    return {
+        "candidate_count": len(values),
+        "realized_records": total,
+        "selected_candidates": selected,
+        "unselected_candidates": len(values) - selected,
+        "reused_candidates": repeated_count,
+        "additional_copies_from_reuse": repeated_total - repeated_count,
+        "maximum_copies_of_one_candidate": int(values.max()),
+        "candidate_selection_share": selected / len(values),
+        "unique_copy_share": int(np.count_nonzero(values == 1)) / total
+        if total
+        else 0.0,
+        "realized_share_from_reused_candidates": repeated_total / total
+        if total
+        else 0.0,
+        "copy_count_histogram": {
+            str(count): int(frequency)
+            for count, frequency in zip(copies, counts, strict=True)
+        },
+    }
+
+
+def _candidate_reuse_reference(weights: Sequence[int]) -> dict[str, Any]:
     total = sum(weights)
     selected = [weight for weight in weights if weight > 0]
     repeated = [weight for weight in weights if weight > 1]

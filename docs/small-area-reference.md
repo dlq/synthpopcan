@@ -1114,6 +1114,172 @@ synthpopcan geo map synthetic-population/ \
   --out synthetic-ct-map.html
 ```
 
+#### A complete workflow using CLI commands only
+
+The source checkout supports four main CLI stages: prepare controls, generate
+candidates, calibrate/assign, and generate both maps. No custom Python scripts
+are needed. The initial supported source is the **2021 hierarchical PUMF**
+with **2021 Census tracts selected by CMA**, or **province-wide aggregate
+dissemination areas (ADAs)**.
+
+The Profile input is an official CT Profile ZIP containing one
+`English_CSV_data.csv` member, or an extracted CSV with both the CMA and CT
+rows. Download it with `statcan census-profile fetch`, or supply a verified
+local file if the website returns a browser security challenge. Preparation
+records its SHA-256; `--profile-sha256` can enforce a known digest.
+
+Fetch the model and boundaries once, then use a fresh output directory:
+
+```bash
+CLI=.venv/bin/synthpopcan
+R=runs/montreal-cli
+PROFILE=/absolute/path/to/98-401-X2021007_eng_CSV.zip
+
+$CLI geo prepare-controls "$PROFILE" --cma 462 \
+  --source-profile statcan-hierarchical-2021 \
+  --normalization observed-proportional --incomplete-geographies exclude \
+  --out "$R/controls"
+$CLI models generate montreal-cma-2021-all-fields \
+  --households 100000 --random-seed 20211102 --out "$R/candidates"
+$CLI geo calibrate "$R/candidates" --controls "$R/controls" \
+  --geo-dimension ct --pool-size 20000 --subsample-seed 42 --augment-support \
+  --workers 2 --joint-solver hybrid \
+  --max-iterations 3000 --tolerance 0.01 --out "$R/population"
+$CLI geo map "$R/population" --both \
+  --person-profile statcan-hierarchical-2021 \
+  --boundaries /absolute/path/to/2021-ct-boundaries.geojson --geo-column ct \
+  --census-vintage 2021 --geo-level ct --geo-namespace statcan:census:2021:ct \
+  --out "$R/montreal.html"
+```
+
+Passing the prepared controls directory makes `geo calibrate` screen whole
+households, prepare the age/gender subset, fit each universe-specific batch,
+combine assignments, validate linkage and independently audit the realized
+controls. It infers Census 2021 CT identity and retains batch reports under
+`population/work/`. `workflow.json` records completion or failure. The optional
+support augmentation requires `synthpopcan[performance]` and adds
+feasible whole-household supports to the age/gender pool without subsequently
+subsampling it. The other batch uses the requested random pool size.
+
+Install `synthpopcan[performance]` to automatically accelerate large IPU fits,
+independent audits and linked map statistics with Numba and bounded Polars.
+It includes the SciPy dependency needed for support augmentation. Existing
+commands and fitting settings stay the same; the first eligible fit in each
+worker pays its compilation cost. Without the extra, the NumPy and streaming
+CSV implementations remain available. See [installation](installation.md).
+
+`--workers` sets one to eight fitting threads per batch. `--joint-solver hybrid`
+tries up to 50 damped entropy-dual Newton steps (bounded by `--max-iterations`).
+It accepts a result only when every original household/person constraint meets
+`--tolerance`; otherwise it discards that attempt and starts the existing IPU
+fit from its original initial weights. `ipu` remains the default for compatibility.
+The report records the requested and effective method for each geography.
+
+Identical household control-contribution profiles are fitted as summed weights
+and expanded in their initial proportions. Every original household remains
+available for integer selection; grouping does not merge their attributes.
+The optional HiGHS support stage disables expensive presolve, retrying with
+presolve when a numerical or incomplete solve requires it. Feasibility status
+and effective presolve settings are retained. Equivalent LP bases can select
+different extra supports, so optimized runs need not reproduce old row hashes.
+
+For a whole province, use `--province` instead of `--cma`. Census tracts do
+not cover rural Québec; ADAs provide a province-wide geography. The ADA Profile
+product contains no provincial root, so also supply the official
+Canada/provinces/territories Profile CSV or ZIP with `--province-profile`:
+
+```bash
+$CLI geo prepare-controls /absolute/path/to/98-401-X2021012_eng_CSV.zip \
+  --province 24 \
+  --province-profile /absolute/path/to/98-401-X2021001_English_CSV_data.csv \
+  --source-profile statcan-hierarchical-2021 \
+  --normalization observed-proportional --incomplete-geographies exclude \
+  --out "$R/controls"
+$CLI models generate quebec-2021-all-fields \
+  --households 500000 --random-seed 20211102 --out "$R/candidates"
+$CLI geo calibrate "$R/candidates" --controls "$R/controls" \
+  --geo-dimension ada --pool-size 20000 --subsample-seed 42 --augment-support \
+  --workers 2 --joint-solver hybrid --zero-target-policy observed \
+  --max-iterations 3000 --tolerance 0.01 --out "$R/population"
+$CLI geo map "$R/population" --both \
+  --person-profile statcan-hierarchical-2021 \
+  --boundaries /absolute/path/to/2021-boundary-ada-qc-display-topo.geojson \
+  --geo-column ada --geo-id-field geo_id --census-vintage 2021 --geo-level ada \
+  --geo-namespace statcan:census:2021:ada --out "$R/quebec.html"
+```
+
+For independently rounded Census counts, an explicit
+`--zero-target-policy observed` on `geo calibrate` keeps all targets unchanged
+and first tries the normal structural-zero fit. If zero exclusions leave a
+positive target unsupported, or strict fitting does not converge, a
+fixed-household-total entropy/least-squares fit
+can return an approximate population and report every residual, including at
+zero targets. Optimizer success is not control convergence. The default
+`structural` policy still rejects unsupported hard zeros. Initial zero donor
+weights remain zero under either policy.
+
+With observed mode and `--augment-support`, both candidate pools retain
+whole-household witnesses for rare positive categories. Zero-compatible
+witnesses are preferred; any observed-only witness and its conflicting zero
+cells are recorded. This is category-support evidence, not an LP feasibility
+certificate. Structural mode retains its existing age/gender LP route.
+
+The provincial path retains each ADA's published occupied-private-dwelling
+count. Other complete observed category vectors are normalized to that area's
+household or private-person total. Unavailable areas are reported explicitly;
+their households are never redistributed into other ADAs. The plan records the
+provincial totals, observed-area coverage, unknown household counts and any
+known target shortfall. Summed rounded private-person counts can differ from
+the province's private-person total. Unknown counts remain unknown.
+
+For advanced stage-by-stage operation, the separate `geo prepare-candidates`,
+`geo combine` and `geo audit` commands remain available; `geo calibrate` still
+accepts an individual normalized CSV with `--person-controls`. Use only the
+batches present in `controls/plan.json` and combine disjoint assignments.
+
+The candidate household count is a **pool size**, not the final number of
+households. The CMA's occupied-private-dwelling count supplies the household
+target. Complete observed tract household vectors are proportionally allocated
+to that common total; private-person vectors use each tract's published
+private-household-person total. `--normalization observed-proportional` is
+explicit because this adjusts prepared targets. Raw rows remain in
+`selected-profile.csv`, with each original and normalized vector in the batch's
+`normalization.json`. Missing/suppressed counts are never imputed. The default
+`--incomplete-geographies error` stops preparation; the example explicitly uses
+`exclude` to omit unavailable tracts and record every exclusion in `plan.json`.
+The CMA household target is allocated over the retained tracts, so inspect
+that coverage and allocation before interpreting the result.
+
+Nine household control dimensions cover size, tenure, dwelling type,
+condominium, bedrooms, rooms, suitability, construction period and repair.
+Four person control dimensions cover citizenship, immigration, generation and
+visible-minority status. Age-by-gender is added only where the all-person and
+private-household-person roots are equal. The preparation code uses the
+hierarchical 2021 age/gender codes explicitly and leaves frozen v1 pack
+definitions unchanged. Education, employment, language and income remain
+modelled attributes rather than additional calibration claims.
+
+`prepare-candidates` excludes whole households containing unknown control
+values and records exclusions and their reasons. This can change the candidate
+distribution. Omitting `--pool-size` retains all complete households. For a
+smaller random pool, use `--pool-size` and `--subsample-seed`. An optional
+`--augment-support` adds whole-household nonnegative linear-feasibility supports
+for supplied `--controls` and `--person-controls`; install
+`synthpopcan[performance]` first. This diagnostic does not generate final
+weights or alter infeasible targets. Its report retains infeasible geographies.
+Use the augmented pool without further subsampling during calibration.
+
+Combination checks disjoint geography sets, compatible licensing, unique IDs
+and household/person linkage. It retains source calibration reports, including
+non-convergence. The independent audit writes every realized cell's residual
+and reports unexpected categories. Neither command makes infeasible integer
+constraints exact or silently adjusts the prepared targets.
+
+Preparation, combination and audit publish their output directories only on
+success and refuse to overwrite completed results. Each writes
+`preparation.json` with the CLI arguments, input hashes and output hashes.
+Completed stages can be reused by running the next CLI command directly.
+
 #### Person attributes by census tract
 
 Use `--person-profile statcan-hierarchical-2021` to aggregate the **person
@@ -1453,3 +1619,82 @@ guarantees a good result.
   DA synthesis and validates a projected 2021 population at DA, city, and
   national scales; its [dataset record](https://doi.org/10.5281/zenodo.7572117)
   documents the released years, scenarios, files, and licence.
+
+### Completion, convergence and coverage
+
+`geo prepare-controls --incomplete-geographies exclude` prints a concise warning
+on stderr and points to `plan.json` for individual exclusions. Province coverage
+also reports known omitted households and areas with unknown household counts;
+unknown counts are not treated as zero. The default remains `error`.
+
+`geo calibrate` reports completion separately from fractional-fit convergence.
+For prepared controls it prints household and person targets, generated counts,
+and signed differences (generated minus target). The independent realized audit
+reports exact control-cell matches separately: a converged fractional fit does
+not guarantee an exact integer population. Detailed residuals and area statuses
+remain in the report. These messages use stderr, preserving JSON stdout.
+
+Exit status zero means the command completed and wrote its outputs. It does not
+mean every geography converged or every realized control matched. Non-converged
+outputs remain available for inspection and map generation. Invalid inputs,
+unsupported strict controls and invalid household/person linkage still fail.
+The default zero-target policy remains `structural`; `observed` explicitly permits
+reported approximation without changing the prepared targets.
+
+### Broad Canada-wide ADA workflow
+
+`geo prepare-controls --canada` selects ADAs across every province and territory.
+Supply the separate Canada/province Census Profile using `--national-profile`.
+The country root is observed directly (ALT_GEO_CODE `01`, DGUID
+`2021A000011124`); rounded ADA totals never replace it. Use the published
+`canada-2021-all-fields` model, then the same `geo calibrate` and `geo map --both`
+stages as for a province. Explicit `--incomplete-geographies exclude` and
+`--zero-target-policy observed` retain the same warnings and residual reporting.
+The resulting population covers private households, with coverage gaps stated
+in the plan; it does not synthesize residents of collective dwellings.
+
+### Iteration limits and observed approximation
+
+`geo calibrate` and `geo synthesize` default to 16 strict iterations per stage. Use
+`--max-iterations 1000` (or another positive value) for a larger budget. The
+limit applies to the preliminary household fit as well as the linked fit;
+`household_stage` records preliminary convergence, iterations and residuals
+separately. A low budget is not proof that a non-converged system is infeasible.
+
+With explicit `--zero-target-policy observed`, strict non-convergence can now
+use the fixed-household-total entropy/least-squares approximation, keeping all
+original targets and prior zeros. At higher budgets, a strict attempt compares
+weights after 150 and 300 sweeps; stationary weights trigger reported
+approximation, while moving weights retain the remaining requested budget.
+The approximate solver has a separate 100-step trust-region Newton budget;
+`--max-iterations` controls strict fitting, not this numerical optimizer. Centered
+orthogonal coordinates remove redundant control directions without changing
+the original objective or targets. The report records both budgets, strict
+iteration counts, the fallback reason and optimizer termination. Optimizer
+success remains separate from control convergence. The structural policy stays
+strict and does not opt into this approximation.
+
+Large plain CSV combination and linkage projection can use the optional
+`performance` extra's bounded native parser. Unusual CSV records retain the
+reference parser's validation and error semantics. Final files are independently
+checked for identifier uniqueness, household links and sizes; combination also
+checks inherited geography. SQLite validation uses an on-demand cache bounded
+at 256 MiB. Weight diagnostic definitions are unchanged; float64 reductions may
+differ in the last few bits from scalar sums. Unbounded integer reuse totals
+retain their reference calculation when necessary.
+
+With the optional performance extra, large pandas string tables can be written
+in bounded 65,536-row native chunks. Other dtypes and unsupported values retain
+pandas serialization. The emitted CSV bytes and integrity accounting follow the
+same contract. Paired HTML views share geometry within that invocation while
+keeping their feature properties independent. No process-wide geometry cache
+is retained.
+
+Native linkage validation extracts bounded 4,096-record batches directly from
+parsed buffers. Population combination matches household/person geography with
+per-source native lookup expressions. Reference fallback and final-file checks
+remain active; completed source lookup tables are released before validation.
+
+Native readers use bounded 8 MiB input buffers and NumPy carriage-return safety
+checks. The scratch validation database uses 16 KiB pages within the existing
+256 MiB cache bound; duplicate recovery and ordered diagnostics are unchanged.

@@ -29,6 +29,13 @@ from typing import TYPE_CHECKING, Any, TypeVar, cast
 import numpy as np
 import pandas as pd
 
+from synthpopcan._joint_calibration import (
+    IPUSupport,
+    JointCalibrationSystem,
+    StructuralZeroSupportError,
+    encode_ipu_contributions,
+)
+from synthpopcan._numba_ipu import IPUBackendCache
 from synthpopcan.controls import (
     ControlCell,
     ControlMargin,
@@ -44,7 +51,10 @@ from synthpopcan.ipf import (
     calculate_max_abs_error,
     integerize_weights,
 )
-from synthpopcan.linked_schema import build_linked_population_contract
+from synthpopcan.linked_schema import (
+    build_linked_population_contract,
+    build_linked_population_contract_from_shapes,
+)
 from synthpopcan.methodological_validation import (
     build_linked_calibration_validation_profile,
 )
@@ -906,6 +916,8 @@ def fit_linked_by_geography(
     max_iterations: int = 100,
     tolerance: float = 1e-6,
     n_workers: int | None = None,
+    joint_solver: str = "ipu",
+    zero_target_policy: str = "structural",
 ) -> GeographyHouseholdFit:
     """Fit household and linked-person controls with household weights.
 
@@ -913,7 +925,16 @@ def fit_linked_by_geography(
     proportional updating pass then adjusts those same household weights using
     household indicators and linked-person category counts. Selecting a
     household therefore always selects all people linked to it.
+
+    ``zero_target_policy='observed'`` first attempts the structural-zero fit.
+    If zero controls remove support for a positive target, an approximate fit
+    restarts from the original household prior and reports every residual
+    against the unchanged published controls.
     """
+    _validate_zero_target_policy(zero_target_policy)
+    original_prior = _observed_initial_prior(
+        households, weight_field, zero_target_policy
+    )
     household_fit = fit_households_by_geography(
         households,
         household_controls,
@@ -952,6 +973,8 @@ def fit_linked_by_geography(
         household_id_column=household_id_column,
     )
 
+    system = JointCalibrationSystem.build(index.contributions)
+
     def _fit_geography(
         geography: str,
     ) -> tuple[str, list[float], dict[str, Any]]:
@@ -963,12 +986,19 @@ def fit_linked_by_geography(
             household_fit.weights_by_geography[geography],
             dtype=np.float64,
         )
-        weights, converged, iterations, max_abs_error = _fit_joint_constraints(
-            index.contributions,
-            targets,
-            initial_weights=initial_weights,
-            max_iterations=max_iterations,
-            tolerance=tolerance,
+        weights, converged, iterations, max_abs_error, solver_details = (
+            _fit_linked_system_for_geography(
+                system,
+                geography,
+                targets,
+                initial_weights,
+                max_iterations=max_iterations,
+                tolerance=tolerance,
+                solver=joint_solver,
+                zero_target_policy=zero_target_policy,
+                original_prior=original_prior,
+                household_total=_first_margin_total(household_by_geography[geography]),
+            )
         )
         fitted = index.contributions @ weights
         integer_weights = np.asarray(
@@ -985,6 +1015,8 @@ def fit_linked_by_geography(
             max_abs_error=max_abs_error,
             seed_records=len(households),
         )
+        report["joint_solver"] = solver_details
+        _attach_zero_target_policy(report, zero_target_policy, solver_details)
         report["household_stage"] = household_fit.reports[geography]
         report["realized"] = _linked_constraint_report(
             index.specs,
@@ -1003,6 +1035,214 @@ def fit_linked_by_geography(
         sorted(household_by_geography),
         worker_count=_resolve_worker_count(n_workers),
     )
+
+
+def _fit_linked_system_for_geography(
+    system: JointCalibrationSystem,
+    geography: str,
+    targets: np.ndarray,
+    initial_weights: np.ndarray,
+    *,
+    max_iterations: int,
+    tolerance: float,
+    solver: str,
+    zero_target_policy: str = "structural",
+    original_prior: np.ndarray | None = None,
+    household_total: float | None = None,
+) -> tuple[np.ndarray, bool, int, float, dict[str, Any]]:
+    """Retain the affected area's identity when its linked fit rejects controls."""
+    try:
+        return _fit_linked_system_with_zero_policy(
+            system,
+            targets,
+            initial_weights,
+            max_iterations=max_iterations,
+            tolerance=tolerance,
+            solver=solver,
+            zero_target_policy=zero_target_policy,
+            original_prior=original_prior,
+            household_total=household_total,
+        )
+    except ValueError as exc:
+        raise ValueError(
+            f"Linked calibration failed for geography {geography!r}: {exc}"
+        ) from exc
+
+
+def _validate_zero_target_policy(
+    zero_target_policy: str, *, has_person_controls: bool = True
+) -> None:
+    if zero_target_policy not in {"structural", "observed"}:
+        raise ValueError("zero_target_policy must be 'structural' or 'observed'")
+    if zero_target_policy == "observed" and not has_person_controls:
+        raise ValueError("zero_target_policy='observed' requires person_controls_path")
+
+
+def _observed_initial_prior(
+    households: Sequence[HouseholdRow],
+    weight_field: str | None,
+    zero_target_policy: str,
+) -> np.ndarray | None:
+    if zero_target_policy == "structural":
+        return None
+    return np.asarray(_initial_weights(households, weight_field), dtype=np.float64)
+
+
+def _attach_zero_target_policy(
+    report: dict[str, Any], requested: str, solver_details: dict[str, Any]
+) -> None:
+    if requested == "observed":
+        report["zero_target_policy"] = {
+            "requested": requested,
+            "effective": solver_details.get("zero_target_policy", "structural"),
+        }
+
+
+def _attach_zero_target_policy_summary(
+    summary: dict[str, Any], requested: str, reports: Mapping[str, dict[str, Any]]
+) -> None:
+    if requested == "observed":
+        effective = Counter(
+            report["zero_target_policy"]["effective"] for report in reports.values()
+        )
+        summary["zero_target_policy"] = {
+            "requested": requested,
+            "effective_counts": {
+                "structural": effective["structural"],
+                "observed": effective["observed"],
+            },
+        }
+        for geography, report in reports.items():
+            summary["geographies"][geography]["zero_target_policy"] = report[
+                "zero_target_policy"
+            ]
+
+
+def _fit_linked_system_with_zero_policy(
+    system: JointCalibrationSystem,
+    targets: np.ndarray,
+    initial_weights: np.ndarray,
+    *,
+    max_iterations: int,
+    tolerance: float,
+    solver: str,
+    zero_target_policy: str,
+    original_prior: np.ndarray | None,
+    household_total: float | None,
+) -> tuple[np.ndarray, bool, int, float, dict[str, Any]]:
+    strict_budget = max_iterations
+    try:
+        strict, reason, strict_iterations = _observed_strict_attempt(
+            system,
+            targets,
+            initial_weights,
+            max_iterations,
+            tolerance,
+            solver,
+            zero_target_policy == "observed",
+        )
+        if strict[1] or zero_target_policy != "observed":
+            return strict
+    except StructuralZeroSupportError as exc:
+        if zero_target_policy != "observed":
+            raise
+        reason = str(exc)
+        strict_iterations = 0
+    if original_prior is None or household_total is None:
+        raise ValueError(
+            "observed fallback requires the original prior and household total"
+        )
+    from synthpopcan._observed_calibration import fit_observed_constraints
+
+    result = fit_observed_constraints(
+        system.original,
+        targets,
+        original_prior,
+        household_total=household_total,
+        # This solves a different objective from the strict fit. Its bounded
+        # numerical budget must not inherit the short strict sweep limit.
+        max_iterations=100,
+        tolerance=tolerance,
+    )
+    result[4].update(
+        requested=solver,
+        candidate_households=system.original.shape[1],
+        control_profiles=system.contributions.shape[1],
+        fallback_reason=reason,
+        strict_iteration_budget=strict_budget,
+        strict_iterations=strict_iterations,
+    )
+    return result
+
+
+def _observed_strict_attempt(
+    system, targets, initial, maximum, tolerance, solver, observed
+):
+    first_budget = min(maximum, 150) if observed else maximum
+    first = system.fit(
+        targets,
+        initial,
+        max_iterations=first_budget,
+        tolerance=tolerance,
+        solver=solver,
+        legacy=_fit_joint_constraints,
+    )
+    if first[1] or not observed or first_budget == maximum:
+        return first, "strict iteration budget exhausted", first[2]
+    second_budget = min(maximum - first_budget, 150)
+    second = system.fit(
+        targets,
+        first[0],
+        max_iterations=second_budget,
+        tolerance=tolerance,
+        solver="ipu",
+        legacy=_fit_joint_constraints,
+    )
+    spent = first[2] + second[2]
+    scale = max(1.0, float(np.max(np.abs(second[0]))))
+    stalled = float(np.max(np.abs(second[0] - first[0]))) <= 1e-10 * scale
+    if second[1]:
+        return (
+            _strict_iteration_result(second, spent, solver),
+            "strict fit converged",
+            spent,
+        )
+    if stalled:
+        return (
+            _strict_iteration_result(second, spent, solver),
+            f"strict weights stagnated after {spent} iterations",
+            spent,
+        )
+    remaining = maximum - spent
+    if remaining:
+        second = system.fit(
+            targets,
+            second[0],
+            max_iterations=remaining,
+            tolerance=tolerance,
+            solver="ipu",
+            legacy=_fit_joint_constraints,
+        )
+        spent += second[2]
+    return (
+        _strict_iteration_result(second, spent, solver),
+        "strict iteration budget exhausted",
+        spent,
+    )
+
+
+def _attach_household_stage_summary(summary, reports):
+    for geography, report in reports.items():
+        stage = report.get("household_stage")
+        if isinstance(stage, dict):
+            summary["geographies"][geography]["household_stage"] = {
+                key: stage[key] for key in ("converged", "iterations", "max_abs_error")
+            }
+
+
+def _strict_iteration_result(result, spent, solver):
+    details = {**result[4], "requested": solver, "strict_iterations": spent}
+    return result[0], result[1], spent, result[3], details
 
 
 def _constraint_specs(
@@ -1043,14 +1283,9 @@ def _constraint_spec_key(
 
 def _encode_linked_contributions(
     contributions: np.ndarray,
-) -> list[tuple[np.ndarray, np.ndarray]]:
-    """Cache lookup codes and fixed exponents for repeated contribution counts."""
-    encoded = []
-    for row in contributions:
-        values, codes = np.unique(row, return_inverse=True)
-        exponents = values / max(float(np.max(values, initial=0)), 1.0)
-        encoded.append((codes, exponents))
-    return encoded
+) -> tuple[tuple[np.ndarray, np.ndarray], ...]:
+    """Compatibility helper for the shared immutable IPU lookup tables."""
+    return encode_ipu_contributions(contributions)
 
 
 def _fit_joint_constraints(
@@ -1060,6 +1295,8 @@ def _fit_joint_constraints(
     initial_weights: np.ndarray,
     max_iterations: int,
     tolerance: float,
+    encoded_contributions: Sequence[tuple[np.ndarray, np.ndarray]] | None = None,
+    backend_cache: IPUBackendCache | None = None,
 ) -> tuple[np.ndarray, bool, int, float]:
     """Run iterative proportional updating over household contribution rows."""
     if max_iterations < 1:
@@ -1075,34 +1312,55 @@ def _fit_joint_constraints(
     # Linked contributions repeat a few counts (usually 0/1 for households).
     # Evaluate the same exponential once per distinct count, then look it up,
     # instead of recomputing it for every candidate on every iteration.
-    encoded_contributions = _encode_linked_contributions(contributions)
+    encoded_contributions = (
+        _encode_linked_contributions(contributions)
+        if encoded_contributions is None
+        else encoded_contributions
+    )
 
     for row, target in zip(contributions, targets, strict=True):
         if target == 0:
             weights[row > 0] = 0.0
     for row, target in zip(contributions, targets, strict=True):
         if target > 0 and float(row @ weights) <= 0:
-            raise ValueError(
+            raise StructuralZeroSupportError(
                 "a positive linked calibration target has no household support "
                 "after applying structural-zero controls"
             )
 
+    support = IPUSupport.prepare(contributions, weights, encoded_contributions)
+    if backend_cache is not None:
+        accelerated = backend_cache.fit(
+            support,
+            targets,
+            encoded_contributions,
+            max_iterations=max_iterations,
+            tolerance=tolerance,
+        )
+        if accelerated is not None:
+            return accelerated
+    return _fit_ipu_numpy(support, targets, max_iterations, tolerance)
+
+
+def _fit_ipu_numpy(support, targets, max_iterations, tolerance):
+    """Reference sequential updates, also used when optional compilation fails."""
+    weights = support.weights
     max_abs_error = float("inf")
     for iteration in range(1, max_iterations + 1):
         for row, target, (codes, exponents) in zip(
-            contributions, targets, encoded_contributions, strict=True
+            support.matrix, targets, support.encoding, strict=True
         ):
             if target == 0:
                 continue
             current = float(row @ weights)
             if current <= 0:
                 continue
-            log_ratio = np.clip(np.log(target / current), -50.0, 50.0)
+            log_ratio = min(max(np.log(target / current), -50.0), 50.0)
             weights *= np.exp(log_ratio * exponents)[codes]
-        max_abs_error = float(np.max(np.abs(contributions @ weights - targets)))
+        max_abs_error = support.max_error(targets)
         if max_abs_error <= tolerance:
-            return weights, True, iteration, max_abs_error
-    return weights, False, max_iterations, max_abs_error
+            return support.full_weights, True, iteration, max_abs_error
+    return support.full_weights, False, max_iterations, max_abs_error
 
 
 def _linked_constraint_report(
@@ -1269,6 +1527,8 @@ def calibrate_linked_household_csvs(
     subsample_seed: int = 42,
     n_workers: int | None = None,
     record_timing: bool = False,
+    joint_solver: str = "ipu",
+    zero_target_policy: str = "structural",
 ) -> dict[str, Any]:
     """Calibrate linked household/person CSVs to geography controls.
 
@@ -1294,6 +1554,9 @@ def calibrate_linked_household_csvs(
         Disabled by default so otherwise identical reports remain byte stable.
     """
 
+    _validate_zero_target_policy(
+        zero_target_policy, has_person_controls=person_controls_path is not None
+    )
     if control_pack is None and control_pack_evidence is not None:
         raise ValueError("control_pack_evidence requires control_pack")
 
@@ -1435,6 +1698,8 @@ def calibrate_linked_household_csvs(
             max_iterations=max_iterations,
             tolerance=tolerance,
             n_workers=n_workers,
+            joint_solver=joint_solver,
+            zero_target_policy=zero_target_policy,
         )
     else:
         timing_seconds["input_validation"] = time.perf_counter() - phase_started
@@ -1499,6 +1764,8 @@ def calibrate_linked_household_csvs(
         household_input_report=household_input_report,
         person_input_report=person_input_report,
     )
+    _attach_zero_target_policy_summary(summary, zero_target_policy, fit.reports)
+    _attach_household_stage_summary(summary, fit.reports)
     summary["subsample"] = {
         "applied": subsampled,
         "pool_size": pool_size,
@@ -1508,10 +1775,8 @@ def calibrate_linked_household_csvs(
         "selected_households": len(households),
         "selected_persons": len(persons),
     }
-    summary["linked_population"] = build_linked_population_contract(
-        households_out,
-        persons_out,
-        geography_column=geography_column,
+    summary["linked_population"] = _realization_contract(
+        realization, households_out, persons_out, geography_column
     )
     summary["geography_universe"] = (
         geography_universe.as_dict() if geography_universe is not None else None
@@ -1546,6 +1811,23 @@ def calibrate_linked_household_csvs(
         report_out.parent.mkdir(parents=True, exist_ok=True)
         report_out.write_text(json.dumps(summary, indent=2, sort_keys=True))
     return summary
+
+
+def _realization_contract(realization, households_path, persons_path, geography_column):
+    shapes = realization.get("table_shapes")
+    if shapes is None:
+        return build_linked_population_contract(
+            households_path, persons_path, geography_column=geography_column
+        )
+    return build_linked_population_contract_from_shapes(
+        households_path,
+        persons_path,
+        household_columns=shapes["households"][0],
+        household_rows=shapes["households"][1],
+        person_columns=shapes["persons"][0],
+        person_rows=shapes["persons"][1],
+        geography_column=geography_column,
+    )
 
 
 def _attach_household_realization_reports(
@@ -1828,6 +2110,7 @@ def _write_realized_population_to_csv(
         }
 
     return {
+        "table_shapes": _realized_table_shapes(realized),
         "assigned_households": realized.assigned_households,
         "assigned_persons": realized.assigned_persons,
         "geographies": realized.assigned_by_geography,
@@ -1840,21 +2123,43 @@ def _write_realized_population_to_csv(
     }
 
 
+def _realized_table_shapes(realized: _RealizedPopulation):
+    if realized.person_frame is None:
+        return None
+    return {
+        "households": (
+            list(realized.household_frame.columns),
+            realized.assigned_households,
+        ),
+        "persons": (list(realized.person_frame.columns), realized.assigned_persons),
+    }
+
+
 class _HashingTextWriter:
-    """Record UTF-8 integrity while forwarding text to a file handle."""
+    """Buffer text and hash the exact UTF-8 bytes sent to a binary handle."""
 
     def __init__(self, handle: Any) -> None:
         self._handle = handle
         self._digest = hashlib.sha256()
         self.byte_size = 0
+        self._pending: list[str] = []
+        self._characters = 0
 
     def write(self, value: str) -> int:
-        encoded = value.encode("utf-8")
-        self._digest.update(encoded)
-        self.byte_size += len(encoded)
-        return self._handle.write(value)
+        self._pending.append(value)
+        self._characters += len(value)
+        if self._characters >= 1048576:
+            self.flush()
+        return len(value)
 
     def flush(self) -> None:
+        if self._pending:
+            encoded = "".join(self._pending).encode("utf-8")
+            self._handle.write(encoded)
+            self._digest.update(encoded)
+            self.byte_size += len(encoded)
+            self._pending.clear()
+            self._characters = 0
         self._handle.flush()
 
     @property
@@ -1862,13 +2167,75 @@ class _HashingTextWriter:
         return self._digest.hexdigest()
 
 
+_NATIVE_WRITE_ROWS = 10_000
+_NATIVE_WRITE_CHUNK_ROWS = 65_536
+
+
+def _try_write_string_frame(frame, path):
+    """Bound conversion memory; restart pandas output on unsupported values."""
+    if len(frame) < _NATIVE_WRITE_ROWS or len(frame.columns) < 2:
+        return None
+    if any(
+        not isinstance(name, str) or not isinstance(dtype, pd.StringDtype)
+        for name, dtype in frame.dtypes.items()
+    ):
+        return None
+    from synthpopcan._columnar_csv import BoundedCSVFallbackError, load_polars
+
+    pl = load_polars()
+    if pl is None:
+        return None
+    try:
+        return _write_string_chunks(frame, path, pl)
+    except (TypeError, BoundedCSVFallbackError, pl.exceptions.PolarsError):
+        return None
+
+
+def _write_string_chunks(frame, path, pl):
+    from synthpopcan._columnar_csv import BoundedCSVFallbackError
+
+    schema = {name: pl.String for name in frame.columns}
+    unusual_value = pl.any_horizontal(pl.all().str.contains(r"[\r\x00]")).any()
+    empty_as_null = pl.all().replace("", None)
+    with path.open("wb") as handle:
+        writer = _HashingTextWriter(handle)
+        if any("\r" in name or "\x00" in name for name in frame.columns):
+            raise BoundedCSVFallbackError("unusual CSV serialization value")
+        for start in range(0, len(frame), _NATIVE_WRITE_CHUNK_ROWS):
+            block = pl.DataFrame(
+                {
+                    name: frame[name]
+                    .iloc[start : start + _NATIVE_WRITE_CHUNK_ROWS]
+                    .to_numpy(copy=False)
+                    for name in frame.columns
+                },
+                schema=schema,
+                strict=True,
+            )
+            if block.select(unusual_value).item():
+                raise BoundedCSVFallbackError("unusual CSV serialization value")
+            writer.write(
+                block.with_columns(empty_as_null).write_csv(
+                    include_header=start == 0,
+                    line_terminator=os.linesep,
+                    quote_style="necessary",
+                )
+            )
+        writer.flush()
+    return {"sha256": writer.sha256, "byte_size": writer.byte_size}
+
+
 def _write_frame_with_integrity(
     frame: pd.DataFrame,
     path: Path,
 ) -> dict[str, object]:
-    with path.open("w", encoding="utf-8", newline="") as handle:
+    native = _try_write_string_frame(frame, path)
+    if native is not None:
+        return native
+    with path.open("wb") as handle:
         hashing_handle = _HashingTextWriter(handle)
         frame.to_csv(cast(Any, hashing_handle), index=False)
+        hashing_handle.flush()
     return {
         "sha256": hashing_handle.sha256,
         "byte_size": hashing_handle.byte_size,
@@ -1982,6 +2349,7 @@ def _small_area_report(
             geography: {
                 "converged": report["converged"],
                 "iterations": report["iterations"],
+                "joint_solver": report.get("joint_solver"),
                 "max_abs_error": report["max_abs_error"],
                 "assigned_households": assigned_households_by_geography.get(
                     geography,

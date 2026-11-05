@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 from importlib.metadata import version as distribution_version
 from importlib.resources import files
+from importlib.util import find_spec
 from pathlib import Path
 
 from click.testing import CliRunner
@@ -30,6 +31,10 @@ if source_root in package_path.parents:
 assert "site-packages" in package_path.parts
 assert distribution_version("synthpopcan") == expected_version
 assert synthpopcan.__version__ == expected_version
+for optional_dependency in ("numba", "polars", "scipy"):
+    assert find_spec(optional_dependency) is None, (
+        f"base distribution unexpectedly installed {optional_dependency}"
+    )
 
 result = fit_ipf(
     [{"age": "young"}, {"age": "old"}],

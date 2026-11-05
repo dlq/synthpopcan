@@ -75,6 +75,9 @@ class SmallAreaCalibrationRequest:
     subsample_seed: int = 42
     n_workers: int | None = None
     record_timing: bool = False
+    augment_support: bool = False
+    joint_solver: str = "ipu"
+    zero_target_policy: str = "structural"
 
 
 @dataclass(frozen=True)
@@ -346,6 +349,28 @@ def calibrate_small_area_files(
 ) -> SmallAreaCalibrationResult:
     """Calibrate linked candidate files and write conventional artifacts."""
 
+    workflow = _calibration_file_workflow(request)
+    return workflow(request, progress=progress)
+
+
+def _calibration_file_workflow(request: SmallAreaCalibrationRequest):
+    if request.controls_path.is_dir():
+        from synthpopcan.workflows.prepared_calibration import (
+            calibrate_prepared_controls,
+        )
+
+        return calibrate_prepared_controls
+    if request.augment_support:
+        raise ValueError("--augment-support requires a prepared controls directory.")
+    return _calibrate_normalized_control_files
+
+
+def _calibrate_normalized_control_files(
+    request: SmallAreaCalibrationRequest,
+    *,
+    progress: ProgressReporter | None = None,
+) -> SmallAreaCalibrationResult:
+    """Fit conventional normalized control CSVs without source preparation."""
     request.output_dir.mkdir(parents=True, exist_ok=True)
     households_path = request.output_dir / "households.csv"
     persons_path = request.output_dir / "persons.csv"
@@ -379,6 +404,8 @@ def calibrate_small_area_files(
         subsample_seed=request.subsample_seed,
         n_workers=request.n_workers,
         record_timing=request.record_timing,
+        joint_solver=request.joint_solver,
+        zero_target_policy=request.zero_target_policy,
     )
     if not isinstance(details.get("summary"), Mapping):
         raise RuntimeError("small-area calibration returned an invalid summary")

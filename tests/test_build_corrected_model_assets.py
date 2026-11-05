@@ -2,6 +2,7 @@ import gzip
 import hashlib
 import importlib.util
 import json
+import sys
 from pathlib import Path
 from typing import Any
 
@@ -30,6 +31,7 @@ DEPOSITOR_SPEC = importlib.util.spec_from_file_location(
 )
 assert DEPOSITOR_SPEC is not None and DEPOSITOR_SPEC.loader is not None
 DEPOSITOR_MODULE = importlib.util.module_from_spec(DEPOSITOR_SPEC)
+sys.modules[DEPOSITOR_SPEC.name] = DEPOSITOR_MODULE
 DEPOSITOR_SPEC.loader.exec_module(DEPOSITOR_MODULE)
 
 

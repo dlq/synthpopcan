@@ -572,3 +572,81 @@ def test_cli_map_both_rejects_national_plan(tmp_path):
     result = CliRunner().invoke(cli, ["geo", "map", str(plan), "--both"])
     assert result.exit_code == 2
     assert "rather than a national plan" in result.output
+
+
+def test_cli_shared_maps_match_separate_html_and_read_people_once(
+    tmp_path, monkeypatch
+):
+    from click.testing import CliRunner
+    from support.map_fixtures import _write_fake_geojson
+
+    from synthpopcan.cli import cli
+
+    households = tmp_path / "households.csv"
+    households.write_text("synthetic_household_id,ct,household_size,TENUR\nh1,G1,2,1\n")
+    persons = tmp_path / "persons.csv"
+    persons.write_text(
+        "synthetic_person_id,synthetic_household_id,ct,AGEGRP,HDGREE,TOTINC\n"
+        "p1,h1,G1,4,7,10000\np2,h1,G1,12,1,30000\n"
+    )
+    boundary = tmp_path / "boundaries.geojson"
+    _write_fake_geojson(boundary, ["G1"])
+    base = [
+        "geo",
+        "map",
+        str(households),
+        "--persons",
+        str(persons),
+        "--boundaries",
+        str(boundary),
+        "--geo-column",
+        "ct",
+    ]
+    for suffix, profile in [
+        ("households", []),
+        ("population", ["--person-profile", "statcan-hierarchical-2021"]),
+    ]:
+        result = CliRunner().invoke(
+            cli,
+            [
+                *base,
+                *profile,
+                "--title",
+                f"Pair — {suffix}",
+                "--out",
+                str(tmp_path / f"separate-{suffix}.html"),
+            ],
+        )
+        assert result.exit_code == 0, result.output
+    original = Path.open
+    reads = []
+    geometry_reads = []
+
+    def open_path(path, *args, **kwargs):
+        if path == persons:
+            reads.append(path)
+        if path == boundary:
+            geometry_reads.append(path)
+        return original(path, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "open", open_path)
+    result = CliRunner().invoke(
+        cli,
+        [
+            *base,
+            "--both",
+            "--person-profile",
+            "statcan-hierarchical-2021",
+            "--title",
+            "Pair",
+            "--out",
+            str(tmp_path / "shared.html"),
+        ],
+    )
+    assert result.exit_code == 0, result.output
+    assert reads == [persons]
+    assert geometry_reads == [boundary]
+    for suffix in ("households", "population"):
+        assert (tmp_path / f"shared-{suffix}.html").read_bytes() == (
+            tmp_path / f"separate-{suffix}.html"
+        ).read_bytes()

@@ -38,8 +38,9 @@ esac
 smoke_dir=$(mktemp -d "${TMPDIR:-/tmp}/synthpopcan-wheel-smoke.XXXXXX")
 sdist_smoke_dir=$(mktemp -d "${TMPDIR:-/tmp}/synthpopcan-sdist-smoke.XXXXXX")
 model_smoke_dir=$(mktemp -d "${TMPDIR:-/tmp}/synthpopcan-model-build-smoke.XXXXXX")
+performance_smoke_dir=$(mktemp -d "${TMPDIR:-/tmp}/synthpopcan-performance-smoke.XXXXXX")
 case_study_smoke_dir=$(mktemp -d "${TMPDIR:-/tmp}/synthpopcan-case-study-smoke.XXXXXX")
-trap 'rm -rf "$smoke_dir" "$sdist_smoke_dir" "$model_smoke_dir" "$case_study_smoke_dir"' EXIT
+trap 'rm -rf "$smoke_dir" "$sdist_smoke_dir" "$model_smoke_dir" "$performance_smoke_dir" "$case_study_smoke_dir"' EXIT
 cp scripts/wheel_smoke.py "$smoke_dir/wheel_smoke.py"
 cd "$smoke_dir"
 UV_CACHE_DIR="${SYNTHPOPCAN_WHEEL_CACHE:-/tmp/synthpopcan-wheel-cache}" \
@@ -67,6 +68,18 @@ UV_CACHE_DIR="${SYNTHPOPCAN_WHEEL_CACHE:-/tmp/synthpopcan-wheel-cache}" \
     --with "synthpopcan[model-build] @ file://$root/$wheel" \
     python model_build_smoke.py
 echo "Installed model-build smoke command completed."
+
+cp "$root/scripts/performance_smoke.py" "$performance_smoke_dir/performance_smoke.py"
+cd "$performance_smoke_dir"
+UV_CACHE_DIR="${SYNTHPOPCAN_WHEEL_CACHE:-/tmp/synthpopcan-wheel-cache}" \
+  SYNTHPOPCAN_EXPECTED_VERSION="$version" \
+  SYNTHPOPCAN_SOURCE_ROOT="$root" \
+  OPENBLAS_NUM_THREADS=1 VECLIB_MAXIMUM_THREADS=1 OMP_NUM_THREADS=1 \
+  NUMBA_NUM_THREADS=1 POLARS_MAX_THREADS=2 \
+  uv run --isolated \
+    --with "synthpopcan[performance] @ file://$root/$wheel" \
+    python performance_smoke.py
+echo "Installed performance-extra smoke command completed."
 
 cp "$root/scripts/case_study_wheel_smoke.py" \
   "$case_study_smoke_dir/case_study_wheel_smoke.py"

@@ -37,6 +37,14 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+# Large IPU fits, independent audits/maps and optional linear-feasibility support.
+# Numba's BLAS dot lowering needs SciPy; ordinary installations keep NumPy paths.
+performance = [
+    "numba>=0.68.1",
+    "polars>=2.1.0",
+    "scipy>=1.11",
+]
+
 # CART training is an authoring workflow.  Reading its portable JSON output and
 # generating populations do not require scikit-learn.
 model-build = [
@@ -53,6 +61,7 @@ Issues = "https://github.com/dlq/synthpopcan/issues"
 synthpopcan = "synthpopcan.cli:cli"
 
 [dependency-groups]
+profiling = ["scalene>=2.2"]
 dev = [
   "cffconvert>=2.0.0",
   # Keep the isolated build backend in the locked release environment too.

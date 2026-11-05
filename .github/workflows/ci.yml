@@ -81,13 +81,13 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Install dependencies
-        run: uv sync --locked --group dev
+      - name: Install dependencies including optional performance backends
+        run: uv sync --locked --group dev --extra performance
 
       - name: Run tests with enforced coverage
         if: matrix.python-version == '3.12'
         run: >-
-          uv run --locked pytest
+          uv run --locked --extra performance pytest
           --junitxml=correctness-report.xml
           --cov=src/synthpopcan
           --cov-branch
@@ -100,7 +100,7 @@ jobs:
         # Coverage-tool integration belongs to the 3.12 coverage job above.
         # Keep the full application behaviour suite on every supported Python.
         run: >-
-          uv run --locked pytest -m 'not coverage_gate'
+          uv run --locked --extra performance pytest -m 'not coverage_gate'
           --junitxml=correctness-report.xml
 
       - name: Retain machine-readable correctness report
@@ -151,6 +151,11 @@ jobs:
         run: |
           python -m venv .smoke-venv
           .smoke-venv/bin/pip install dist/*.whl
+
+      - name: Verify performance dependencies remain optional
+        run: >-
+          .smoke-venv/bin/python -c
+          "import importlib.util; assert all(importlib.util.find_spec(name) is None for name in ('numba', 'polars', 'scipy'))"
 
       - name: Verify CART training dependency is not installed at runtime
         run: >-

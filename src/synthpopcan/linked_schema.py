@@ -15,7 +15,7 @@ __all__ = [
 
 import csv
 import json
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any
 
@@ -76,6 +76,37 @@ def build_linked_population_contract(
 
     household_columns, household_rows = _csv_shape(households_path)
     person_columns, person_rows = _csv_shape(persons_path)
+    return build_linked_population_contract_from_shapes(
+        households_path,
+        persons_path,
+        household_columns=household_columns,
+        household_rows=household_rows,
+        person_columns=person_columns,
+        person_rows=person_rows,
+        geography_column=geography_column,
+        licensing=licensing,
+    )
+
+
+def build_linked_population_contract_from_shapes(
+    households_path: Path,
+    persons_path: Path,
+    *,
+    household_columns: Sequence[str],
+    household_rows: int,
+    person_columns: Sequence[str],
+    person_rows: int,
+    geography_column: str | None = None,
+    licensing: Mapping[str, object] | None = None,
+) -> dict[str, Any]:
+    """Describe shapes already measured by a maintained writer or validator.
+
+    This internal, non-``__all__`` seam avoids recounting freshly written or
+    independently validated CSVs. It must not trust counts copied from an
+    unvalidated manifest. Ordinary callers use the file-scanning builder.
+    """
+    household_columns = list(household_columns)
+    person_columns = list(person_columns)
     _require_columns(
         household_columns,
         (HOUSEHOLD_ID_COLUMN,),

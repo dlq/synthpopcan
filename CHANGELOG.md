@@ -4,6 +4,97 @@ All notable public changes to SynthPopCan are tracked here.
 
 ## Unreleased
 
+- Share national batch lifecycle rules; separate map boundary processing,
+  national map statistics, file linkage validation and control-pack catalogue
+  definitions. Split archive execution into explicit ordered phases and web
+  run routes into cohesive groups while preserving supported façades, pack
+  hashes, checkpoints, HTTP behavior and model class locations.
+
+- Consolidate the SciPy-only `calibration-support` extra into `performance`;
+  update CLI installation guidance and retain `model-build` for model authors.
+
+- Share optional Numba compiler settings between both fitting kernels, separate
+  household-kernel loading from fitting, and reuse native writer setup across
+  chunks without changing numerical or CSV fallback behavior.
+
+- Increase bounded native CSV read buffers to 8 MiB, vectorize carriage-return
+  safety checks, and use 16 KiB SQLite scratch-index pages while retaining the
+  256 MiB cache bound and reference validation behavior.
+
+- Extract native linkage-validation batches directly and vectorize household /
+  person geography matching with cached enum expressions. Preserve reference
+  fallback and diagnostic order; release completed household lookups before
+  independent final-file validation.
+
+- Accelerate plain-CSV record checks, avoid redundant audit filters, merge audit counts natively, and serialize
+  large string tables in bounded native chunks with exact pandas fallback.
+  Share immutable boundary geometry between paired maps, reduce redundant map
+  integer-syntax checks, and restore CART value tuples with native iteration.
+
+- Accelerate bounded plain-CSV combination and linkage projection with optional
+  Polars while preserving reference fallback, geography checks and independent
+  validation. Remove the household reference-count table's redundant index,
+  explicitly retain missing-reference counts, and use a bounded 256 MiB SQLite
+  cache. Vectorize weight diagnostics with overflow-safe integer fallback.
+
+- Stabilize observed-control approximation with centered orthogonal coordinates
+  and trust-region Newton updates. Keep its 100-step numerical budget separate
+  from the CLI's 16 strict fitting iterations and report both budgets.
+
+- Default `geo calibrate` and `geo synthesize` to 16 iterations per stage;
+  retain explicit higher limits. Permit this specific maintainer-approved
+  default change without replacing the immutable compatibility baseline.
+
+- Compile large/repeated household IPF fits with optional Numba, vectorize
+  CART value validation, and remove the redundant household-ID SQLite index.
+  In explicit observed mode, report fixed-total approximation after strict
+  exhaustion or stationary weights; preserve moving fits' remaining budget.
+  Report preliminary household and final solver iterations separately.
+
+- Add an explicit observed-zero fitting policy for independently rounded
+  controls. Preserve all targets, report approximate zero-cell residuals and
+  convergence honestly, retain rare whole-household witnesses, and identify
+  the failing geography in strict support errors.
+
+- Extend broad observed CLI control preparation to province-wide 2021 ADAs,
+  with an independently supplied provincial Profile root, exact per-area
+  household targets, explicit incomplete coverage and ADA support fitting.
+
+- Add an optional `performance` extra that automatically uses Numba for large
+  IPU fits and bounded Polars for independent control audits and linked map
+  statistics. Preserve reference fallbacks, numerical settings, CSV diagnostics
+  and exact map rounding; keep ordinary installations lightweight.
+
+- Filter national Census CSV records before materializing selected source rows,
+  preserving existing header and record semantics. Avoid discarded intermediate
+  reports during prepared calibration while retaining standalone combine reports
+  and independent linkage and control audits.
+
+- Batch SQLite linkage checks with exact duplicate/error recovery and generate
+  both map views from a shared person-file pass.
+
+- Reuse measured CSV shapes during realization and combination, validate only
+  required columns, and accelerate independent auditing without skipping file
+  read-back. Aggregate map categories and incomes in bounded chunks with exact
+  missing-value coverage and weighted medians. Cache immutable IPU lookup tables
+  and omit permanently zero support while retaining original update exponents
+  and full-system convergence checks.
+
+- Cache CART leaf distributions and cumulative weights without changing seeded
+  draws. Group identical linked control profiles, add opt-in entropy-dual fitting
+  with verified convergence and IPU fallback, expose fitting worker counts, and
+  avoid repeated HiGHS presolve with a numerical-failure retry. Retain per-tract
+  solver diagnostics and independent integer residual audits.
+
+- Accept prepared control directories in `geo calibrate` to screen candidates,
+  fit universe-specific batches, combine assignments, validate linkage and audit
+  residuals as one stage. Add optional local workflow profiling tooling.
+
+- Add composable CLI commands for observed CMA/CT control preparation, whole-
+  household candidate screening and optional feasibility support, disjoint batch
+  combination, and independent realized-control audits. Record input/output
+  hashes and normalization decisions; preserve unknowns and source targets.
+
 - Add `geo map --both` to generate household and population HTML views in one
   invocation, using the explicit person profile and distinct output filenames.
 

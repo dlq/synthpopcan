@@ -25,6 +25,7 @@ from synthpopcan.cli_enrichment import enrich_group
 from synthpopcan.cli_errors import FriendlyGroup
 from synthpopcan.cli_exchange import bundle_group
 from synthpopcan.cli_geo import small_area_group
+from synthpopcan.cli_geo_prepare import GEO_PREPARATION_COMMANDS
 from synthpopcan.cli_ipf import ipf_group
 from synthpopcan.cli_microdata import microdata_group
 from synthpopcan.cli_output import (
@@ -123,6 +124,8 @@ def cli(ctx: click.Context) -> None:
 
 cli.add_command(microdata_group)
 cli.add_command(ipf_group)
+for preparation_command in GEO_PREPARATION_COMMANDS:
+    small_area_group.add_command(preparation_command)
 cli.add_command(small_area_group)
 cli.add_command(enrich_group)
 cli.add_command(bundle_group)

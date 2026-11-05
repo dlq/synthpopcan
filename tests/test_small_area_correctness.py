@@ -295,3 +295,25 @@ def test_nonconverged_artifacts_report_independently_observed_residuals(
     assert report["summary"]["non_converged_geographies"] == ["G1"]
     assert report["summary"]["max_abs_error"] == independently_observed_error
     assert report["summary"]["realized_max_abs_error"] == independently_observed_error
+
+
+def test_fresh_writer_contract_uses_measured_shapes_without_output_recount(
+    tmp_path, monkeypatch
+):
+    import json
+
+    from synthpopcan.linked_schema import build_linked_population_contract
+
+    def forbid_recount(*args, **kwargs):
+        raise AssertionError("freshly written CSV was unnecessarily recounted")
+
+    monkeypatch.setattr(
+        "synthpopcan.small_area_synthesis.build_linked_population_contract",
+        forbid_recount,
+    )
+    paths = _run_household_calibration(tmp_path / "run", n_workers=1)
+    report = json.loads(paths["report"].read_text())
+    expected = build_linked_population_contract(
+        paths["households"], paths["persons"], geography_column="tract"
+    )
+    assert report["linked_population"] == expected

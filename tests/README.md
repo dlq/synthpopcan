@@ -76,6 +76,11 @@ launch all Python tests. Invoke it explicitly when useful:
 uv run --locked pre-commit run pytest --hook-stage manual --all-files
 ```
 
+Use `uv run --locked --extra performance pytest` when checking optional Numba
+and Polars paths. Their focused parity tests assert real native execution and
+cover reference fallback. The standard gate installs the extra; no timing
+thresholds or large Census downloads are part of deterministic tests.
+
 CI runs the coverage-tool integration cases once in its Python 3.12 coverage
 job. Application behaviour tests still run on Python 3.11–3.14. The
 `coverage_gate` marker is only for testing the coverage tool itself; it does

@@ -324,6 +324,14 @@ class NumpyIPFIndex:
     ) -> None:
         self.records = records
         self.encodings = encodings
+        self._compiled_codes = (
+            np.ascontiguousarray(np.stack([enc.cat_ids for enc in encodings]))
+            if encodings
+            else np.empty((0, len(records)), dtype=np.int32)
+        )
+        self._compiled_offsets = np.concatenate(
+            ([0], np.cumsum([enc.n_cats for enc in encodings]))
+        ).astype(np.int64)
 
     @classmethod
     def build(
@@ -416,6 +424,20 @@ class NumpyIPFIndex:
             weights = np.ones(len(self.records), dtype=np.float64)
         else:
             weights = starting.copy()
+
+        from synthpopcan._numba_ipu import fit_household_compiled
+
+        accelerated = fit_household_compiled(
+            self._compiled_codes,
+            self._compiled_offsets,
+            t_arrays,
+            target_masks,
+            weights,
+            max_iterations,
+            tolerance,
+        )
+        if accelerated is not None:
+            return accelerated
 
         max_abs_error = float("inf")
         for iteration in range(1, max_iterations + 1):

@@ -2,7 +2,7 @@
 
 Status: active maintenance\
 Created: 2026-08-26\
-Last updated: 2026-10-22\
+Last updated: 2026-11-04\
 Target: initial bounded tranche in `1.2.0`, then an ongoing `1.x` ratchet\
 Next action: complete `RB12-06` documentation and `RB12-07` archive-state
 review slices; the preflight and national workflow extractions are complete\
@@ -216,6 +216,25 @@ in the changelog. Archive this plan only when responsibility ownership is part
 of normal contribution practice and any remaining hotspots are explicitly
 owned by successor plans.
 
+## Dependency Rationalization Follow-up
+
+Requested 2026-11-02; queued for after the current performance work, with no
+release assigned. Review all direct dependencies and their transitive trees,
+including core runtime, optional features, model authoring, profiling, testing,
+documentation, and build tooling. SciPy remains optional in the consolidated
+`performance` extra, which now covers linear-feasibility support as well as
+Numba's BLAS interface and adds Numba/llvmlite and Polars; include their measured gains, compile/startup costs and bounded-reader
+memory tradeoffs in the same inventory.
+
+| ID | Status | Depends on | Deliverable | Acceptance |
+| --- | --- | --- | --- | --- |
+| `DEP-01` | `blocked` | Current performance work complete; later scheduling | Full dependency inventory and keep, remove, replace, or reclassify recommendations | Every direct dependency has concrete callsites and supported features, transitive costs, licensing and maintenance implications, measured installation/startup/runtime costs where material, alternatives, and a justified core/extra/development classification. Measure SciPy's calibration benefit with and without support augmentation using the same candidate pool, targets, and seeds; compare feasibility, fractional and integer residuals, runtime, and memory. |
+| `DEP-02` | `blocked` | `DEP-01` reviewed decisions | Independently reviewable dependency simplifications | Each change preserves supported workflows, numerical and statistical acceptance evidence, Python compatibility, licensing, and machine contracts. Core and affected optional installations pass clean-environment smoke tests; lockfile, packaging, CI, and documentation agree. |
+
+Do not treat the presence of a dependency, or a possible standard-library
+replacement, as sufficient evidence for keeping or removing it. Record the
+benefit and cost before changing a supported workflow.
+
 ## Non-Goals
 
 - no package-wide rewrite or simultaneous module split;
@@ -226,3 +245,27 @@ owned by successor plans.
   adapter helpers; and
 - no weakening of runtime validation, provenance, privacy, or archive safety to
   make extraction easier.
+
+## November 4 Simplification Tranche
+
+Completed the six user-requested refactors in order:
+
+1. Shared lazy national batch selection, attempt/interruption updates and plan
+   persistence across serial and parallel execution.
+1. Extracted boundary/geometry handling and national statistics preparation
+   from the supported map façade.
+1. Extracted file linkage validation from tree models without moving public
+   model classes or changing their import/pickle locations.
+1. Decomposed the archive executor into explicit ordered phases, retaining
+   identity, authorization, ownership, checkpoints and final verification.
+1. Separated reviewed catalogue payload builders from control-pack schemas,
+   evidence checks and planning; all built-in payloads/hashes are unchanged.
+1. Split web run registration into upload, preflight, manifest, event,
+   cancellation and artifact groups with unchanged route order.
+
+The architecture ratchet covers the four new private modules. Function
+complexity ceilings follow unchanged relocations; reviewed phase extractions
+have explicit ceilings, and existing orchestration ceilings are tightened.
+The archive changes are executor-phase extraction, not the pure transition
+selector in `RB12-08`. The state/action review and pure-selector work in
+`RB12-07`–`RB12-09` remain separate planned deliverables.

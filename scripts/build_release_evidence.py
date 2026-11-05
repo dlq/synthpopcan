@@ -19,6 +19,7 @@ _DISTRIBUTION_SMOKE_MARKERS = (
     "Installed wheel smoke command completed.",
     "Installed sdist smoke command completed.",
     "Installed model-build smoke command completed.",
+    "Installed performance-extra smoke command completed.",
     "Installed-wheel fictional case-study interface smoke command completed.",
 )
 
@@ -346,6 +347,7 @@ def build_manifest(
             "installed-wheel smoke test in an isolated environment",
             "installed-sdist smoke test in an isolated environment",
             "installed-wheel model-build-extra smoke test in an isolated environment",
+            "installed-wheel performance-extra smoke test in an isolated environment",
             "installed-wheel fictional case-study interface smoke test in an isolated environment",
             "release tag, commit, and package-version identity checks",
         ],

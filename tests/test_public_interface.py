@@ -542,3 +542,19 @@ def test_public_compatibility_policy_names_each_frozen_surface() -> None:
         "Exit status",
     ):
         assert phrase in normalized_policy
+
+
+def test_iteration_default_exception_is_narrow():
+    contract = copy.deepcopy(load_public_interface_contract())
+    command = next(
+        c
+        for c in contract["cli"]["commands"]
+        if c["path"] == "synthpopcan geo calibrate"
+    )
+    option = next(p for p in command["parameters"] if p["name"] == "max_iterations")
+    assert option["default"] == 16
+    option["default"] = 17
+    with pytest.raises(RuntimeError, match="max_iterations.*default"):
+        validate_public_interface_compatibility(
+            load_public_interface_baseline(), contract
+        )

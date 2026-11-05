@@ -15,7 +15,7 @@ uv run --locked cffconvert --validate
 git ls-files -z -- '*.md' | \
   xargs -0 uv run --locked --group docs mdformat --check
 uv run --locked --group docs doc8 docs
-uv run --locked pytest \
+uv run --locked --extra performance pytest \
   --cov=src/synthpopcan \
   --cov-branch \
   --cov-report=term-missing:skip-covered \

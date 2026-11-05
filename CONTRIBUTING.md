@@ -17,7 +17,7 @@ review described in the correctness-assurance plan. Then install the Python
 and documentation dependencies:
 
 ```bash
-uv sync --group dev --group docs
+uv sync --group dev --group docs --extra performance
 ```
 
 Install web tooling:
@@ -25,6 +25,11 @@ Install web tooling:
 ```bash
 npm ci
 ```
+
+The optional `performance` extra exercises the compiled fitting and bounded
+columnar readers. Ordinary installations keep the reference paths; the clean
+wheel smoke checks that these dependencies remain optional. CI exercises the
+extra in the existing Python 3.11–3.14 jobs.
 
 The coverage tool's `test-exclude` dependencies currently use scoped npm
 `overrides` for patched `glob` and `minimatch` versions. These address
