@@ -156,6 +156,7 @@ records/software-heritage-2026-08-16
 records/software-heritage-2026-08-19
 records/zenodo-2026-10-07
 records/zenodo-2026-10-22
+records/zenodo-2026-11-05
 records/zenodo-2026-11-01
 records/prepared-model-licensing-review-2026-08-15
 records/prepared-model-archive-correction-2026-08-16
