@@ -1034,8 +1034,8 @@ Important options:
   fit.
 - `--subsample-seed`: reproducible seed for the `--pool-size` candidate
   subsample.
-- `--max-iterations`: maximum IPF iterations for each geography; the default is
-  `100`.
+- `--max-iterations`: maximum strict iterations per fitting stage for each
+  geography; the CLI default is `16`.
 - `--tolerance`: convergence tolerance for each geography; the default is
   `1e-6`.
 - `--format summary|json`: printed report format.
@@ -1116,13 +1116,16 @@ synthpopcan geo map synthetic-population/ \
 
 #### A complete workflow using CLI commands only
 
-The source checkout supports four main CLI stages: prepare controls, generate
+Version `1.1.4` and later support four main CLI stages: prepare controls, generate
 candidates, calibrate/assign, and generate both maps. No custom Python scripts
 are needed. The initial supported source is the **2021 hierarchical PUMF**
 with **2021 Census tracts selected by CMA**, or **province-wide aggregate
-dissemination areas (ADAs)**.
+dissemination areas (ADAs)**, or **Canada-wide ADAs**.
 
-The Profile input is an official CT Profile ZIP containing one
+From the source checkout, install the optional acceleration and feasibility
+dependencies with `uv sync --extra performance` before running these examples.
+
+For a CMA/CT run, the Profile input is an official CT Profile ZIP containing one
 `English_CSV_data.csv` member, or an extracted CSV with both the CMA and CT
 rows. Download it with `statcan census-profile fetch`, or supply a verified
 local file if the website returns a browser security challenge. Preparation
@@ -1144,7 +1147,7 @@ $CLI models generate montreal-cma-2021-all-fields \
 $CLI geo calibrate "$R/candidates" --controls "$R/controls" \
   --geo-dimension ct --pool-size 20000 --subsample-seed 42 --augment-support \
   --workers 2 --joint-solver hybrid \
-  --max-iterations 3000 --tolerance 0.01 --out "$R/population"
+  --max-iterations 16 --tolerance 0.01 --out "$R/population"
 $CLI geo map "$R/population" --both \
   --person-profile statcan-hierarchical-2021 \
   --boundaries /absolute/path/to/2021-ct-boundaries.geojson --geo-column ct \
@@ -1189,6 +1192,8 @@ product contains no provincial root, so also supply the official
 Canada/provinces/territories Profile CSV or ZIP with `--province-profile`:
 
 ```bash
+R=runs/quebec-cli
+
 $CLI geo prepare-controls /absolute/path/to/98-401-X2021012_eng_CSV.zip \
   --province 24 \
   --province-profile /absolute/path/to/98-401-X2021001_English_CSV_data.csv \
@@ -1200,7 +1205,7 @@ $CLI models generate quebec-2021-all-fields \
 $CLI geo calibrate "$R/candidates" --controls "$R/controls" \
   --geo-dimension ada --pool-size 20000 --subsample-seed 42 --augment-support \
   --workers 2 --joint-solver hybrid --zero-target-policy observed \
-  --max-iterations 3000 --tolerance 0.01 --out "$R/population"
+  --max-iterations 16 --tolerance 0.01 --out "$R/population"
 $CLI geo map "$R/population" --both \
   --person-profile statcan-hierarchical-2021 \
   --boundaries /absolute/path/to/2021-boundary-ada-qc-display-topo.geojson \
@@ -1652,6 +1657,36 @@ stages as for a province. Explicit `--incomplete-geographies exclude` and
 `--zero-target-policy observed` retain the same warnings and residual reporting.
 The resulting population covers private households, with coverage gaps stated
 in the plan; it does not synthesize residents of collective dwellings.
+
+A complete national example, using a fresh output directory and verified local
+inputs, is:
+
+```bash
+CLI=.venv/bin/synthpopcan
+R=runs/canada-cli
+
+$CLI geo prepare-controls /absolute/path/to/98-401-X2021012_eng_CSV.zip \
+  --canada \
+  --national-profile /absolute/path/to/98-401-X2021001_English_CSV_data.csv \
+  --source-profile statcan-hierarchical-2021 \
+  --normalization observed-proportional --incomplete-geographies exclude \
+  --out "$R/controls"
+$CLI models generate canada-2021-all-fields \
+  --households 500000 --random-seed 20211102 --out "$R/candidates"
+$CLI geo calibrate "$R/candidates" --controls "$R/controls" \
+  --geo-dimension ada --pool-size 20000 --subsample-seed 42 --augment-support \
+  --workers 2 --joint-solver hybrid --zero-target-policy observed \
+  --max-iterations 16 --tolerance 0.01 --out "$R/population"
+$CLI geo map "$R/population" --both \
+  --person-profile statcan-hierarchical-2021 \
+  --boundaries /absolute/path/to/2021-boundary-ada-display-topo.geojson \
+  --geo-column ada --geo-id-field geo_id --census-vintage 2021 --geo-level ada \
+  --geo-namespace statcan:census:2021:ada --out "$R/canada.html"
+```
+
+The 500,000 generated households are the candidate pool. The retained published
+household controls determine the final population size; exclusions and realized
+person-target differences remain in the reports.
 
 ### Iteration limits and observed approximation
 

@@ -4,6 +4,12 @@ All notable public changes to SynthPopCan are tracked here.
 
 ## Unreleased
 
+## 1.1.4 - 2026-11-05
+
+- Refresh CLI-only national examples, source-checkout acceleration installation
+  and documented buffer/iteration defaults. Let the maintained profiling harness
+  use the current CLI iteration default instead of an older explicit budget.
+
 - Share national batch lifecycle rules; separate map boundary processing,
   national map statistics, file linkage validation and control-pack catalogue
   definitions. Split archive execution into explicit ordered phases and web

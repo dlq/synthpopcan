@@ -121,20 +121,24 @@ checkout's development environment includes it through `uv sync`.
 
 ### Optional acceleration for large populations
 
-The development version provides a `performance` extra for large linked
+Version `1.1.4` and later provide a `performance` extra for large linked
 calibration, independent control audits and household/person map statistics:
+
+Install the optional acceleration dependencies:
 
 ```bash
 python -m pip install "synthpopcan[performance]"
 ```
 
-In a source checkout, use `uv sync --extra performance`; keep that extra on
+In a source checkout, use `uv sync --extra performance`.
+For a pip-managed source environment, use `python -m pip install ".[performance]"`
+in the checkout. Keep `--extra performance` on
 subsequent `uv sync` commands. The existing CLI commands automatically use
 Numba for sufficiently large IPU and repeated household IPF fits and Polars for large population CSVs.
 The extra includes SciPy because Numba's compiled matrix products need its
 BLAS interface and optional `--augment-support` linear-feasibility checks.
-The supported extras are `performance` and `model-build`; the former
-`calibration-support` extra has been consolidated into `performance`.
+The supported extras are `performance` and `model-build`; feasibility support
+and native acceleration share the `performance` extra.
 Small inputs retain their ordinary paths and avoid compiler
 startup. The first large fit in each worker includes compilation time.
 

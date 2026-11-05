@@ -53,7 +53,7 @@ fi
 export POLARS_MAX_THREADS=${POLARS_THREADS:-4}
 run calibrate geo calibrate "$R/candidates" --controls "$R/controls" \
   --geo-dimension ct --geo-column ct --pool-size 20000 --subsample-seed 42 \
-  --augment-support --workers "$WORKERS" --joint-solver "$SOLVER" --max-iterations 3000 --tolerance 0.01 --out "$R/population"
+  --augment-support --workers "$WORKERS" --joint-solver "$SOLVER" --tolerance 0.01 --out "$R/population"
 unset SYNTHPOPCAN_PROFILE_WORKERS
 export POLARS_MAX_THREADS=${POLARS_THREADS:-2}
 run maps geo map "$R/population" --both --person-profile statcan-hierarchical-2021 \

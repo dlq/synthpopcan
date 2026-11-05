@@ -92,10 +92,20 @@ depend on the behavior.
 `profile_cli_workflow.sh FRESH_RUN_DIR SOURCE_RUN_DIR` reproduces the full
 Montréal four-stage CLI workflow against cached official inputs. Install the
 optional `profiling` dependency group and `performance` extra first (the latter
-also supplies SciPy for support augmentation).
+also supplies SciPy for support augmentation):
+
+```bash
+uv sync --group profiling --extra performance
+```
+
 It records stage timings, CLI logs and CPU sampling profiles, including both
 fitting workers. It does not optimize or relax the calibration settings.
-Profiles stay local; numerical code has no profiler dependency.
+Profiles stay local; numerical code has no profiler dependency. The maintained
+harness uses the current CLI default of 16 strict iterations per fitting stage;
+older saved benchmark harnesses may explicitly request larger historical budgets.
+Use the same iteration budget, zero-target policy and candidate pool when
+comparing timings. Canada/province command sequences use their corresponding
+inputs; see the [CLI-only workflow reference](../docs/small-area-reference.md#a-complete-workflow-using-cli-commands-only).
 
 Set `SYNTHPOPCAN_PROFILE=0` for an unprofiled timed run of the same four stages.
 The harness defaults to the hybrid joint solver and two fitting threads per

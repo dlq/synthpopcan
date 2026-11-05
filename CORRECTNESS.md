@@ -211,7 +211,7 @@ or incompatible native compiler/BLAS support falls back to NumPy. Tiny fits do
 not compile. Differential and concurrency tests live in
 `tests/test_numba_ipu.py`.
 
-Bounded Polars audit/map paths reread actual population CSVs in 4 MiB buffers.
+Bounded Polars audit/map paths reread actual population CSVs in 8 MiB buffers.
 Quoting, ambiguous null/empty values, unusual record syntax and unsafe numeric
 ranges restart the reference operation, discarding partial native aggregation.
 Duplicate headers, source-order diagnostics, exact income medians and rounding
