@@ -117,6 +117,9 @@ Then inspect the command line:
 synthpopcan --help
 ```
 
+For an optional `spc` shell alias and Tab completion setup, see the
+[installation guide](https://synthpopcan.readthedocs.io/en/latest/installation.html#optional-short-command).
+
 Run a small offline smoke test with the bundled fictional model:
 
 **Runnable teaching example.** Enter both commands in order.

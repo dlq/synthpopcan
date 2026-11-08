@@ -154,6 +154,13 @@ The following are not current commitments:
 
 These are ideas to investigate, not scheduled work:
 
+- Investigate a Git-style CLI extension mechanism where `synthpopcan NAME`
+  discovers an installed `synthpopcan-NAME` executable on `PATH` and forwards
+  its arguments. Start with a concrete downstream adapter or workflow. Review
+  built-in command precedence, help/discovery, exit codes, cross-platform
+  execution, and versioned artifact contracts. Assess whether Python entry
+  points or web integration are needed after the external-command proof.
+  Reference the [Git external-command convention](https://git-scm.com/docs/git#Documentation/git.txt-PATH).
 - Follow the linked family/placement plan for the bounded relationship
   crosswalk and Canadian urban/rural address-allocation evidence.
 - Test official province/territory projection scenarios first through a

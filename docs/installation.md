@@ -157,6 +157,98 @@ import synthpopcan as spc
 spc.__version__
 ```
 
+## Optional Short Command
+
+`synthpopcan` is the main command used in documentation and scripts. For
+interactive Bash or Zsh sessions, define a shorter shell alias:
+
+```bash
+alias spc=synthpopcan
+spc --help
+```
+
+Add the alias to `~/.zshrc` for Zsh or `~/.bashrc` for Bash to keep it in new
+sessions. It uses the `synthpopcan` executable from the active environment.
+Check `command -v spc` before defining it because other tools also use that
+name. Remove it from the current session with `unalias spc`.
+
+In Fish, an abbreviation expands to the full command as you type:
+
+```fish
+abbr --add spc synthpopcan
+```
+
+## Shell Completion
+
+The installed CLI includes Click's completion support for command names,
+options, choice values, and file paths. Activate the environment containing
+SynthPopCan before generating or using completions. Generate the file once,
+then load it from your shell configuration to avoid starting Python whenever
+a shell opens. Regenerate the file after upgrading Click or SynthPopCan.
+
+### Zsh
+
+Generate the completion file:
+
+```zsh
+_SYNTHPOPCAN_COMPLETE=zsh_source synthpopcan > ~/.synthpopcan-complete.zsh
+```
+
+Add the following to `~/.zshrc`, after any existing completion initialization.
+If your configuration already runs `compinit`, use its existing initialization.
+
+```zsh
+autoload -Uz compinit
+compinit
+source ~/.synthpopcan-complete.zsh
+```
+
+For completion with the optional `spc` alias, add this after loading the file:
+
+```zsh
+compdef _synthpopcan_completion spc
+```
+
+### Bash
+
+Completion requires Bash 4.4 or newer. The Bash bundled with macOS is older;
+use Zsh or an installed newer Bash there.
+
+```bash
+_SYNTHPOPCAN_COMPLETE=bash_source synthpopcan > ~/.synthpopcan-complete.bash
+```
+
+Add the following to `~/.bashrc`:
+
+```bash
+source ~/.synthpopcan-complete.bash
+```
+
+For completion with the optional `spc` alias, add this after loading the file.
+The wrapper invokes the installed command when Bash requests suggestions:
+
+```bash
+_spc_completion() {
+    _synthpopcan_completion synthpopcan
+}
+complete -o nosort -F _spc_completion spc
+```
+
+### Fish
+
+Generate a file in Fish's completion directory:
+
+```fish
+mkdir -p ~/.config/fish/completions
+env _SYNTHPOPCAN_COMPLETE=fish_source synthpopcan > ~/.config/fish/completions/synthpopcan.fish
+```
+
+Start a new shell after setup. Try typing `synthpopcan geo ` followed by Tab,
+or `synthpopcan geo calibrate --` followed by Tab. In Fish, the `spc`
+abbreviation expands to `synthpopcan` and uses its completions.
+
+These instructions use [Click's shell completion mechanism](https://click.palletsprojects.com/en/stable/shell-completion/).
+
 ## Run One-Off Commands With `uvx`
 
 If we have `uv` installed but do not want to install SynthPopCan into the
