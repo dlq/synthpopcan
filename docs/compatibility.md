@@ -148,3 +148,9 @@ The maintainer-approved 2026-11-04 exception changes only the CLI
 the compatibility validator permits only these exact transitions and rejects
 other default changes. Low-level Python and workflow request defaults retain
 their existing values.
+
+The maintainer-approved 2026-11-07 exception changes the `serve --workspace`
+default from `synthpopcan-runs/` to `runs/`, sharing the CLI workflow output
+root. The exact transition is recorded in the compatibility validator. Existing
+workspaces can be reopened with `--workspace synthpopcan-runs`; see
+{doc}`web-app` for moving their history into the shared root.

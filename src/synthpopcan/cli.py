@@ -96,7 +96,7 @@ from synthpopcan.statcan import (
 )
 from synthpopcan.tree import validate_linked_population
 from synthpopcan.validation import build_tree_output_validation_report
-from synthpopcan.webapp import serve_webapp, validate_loopback_host
+from synthpopcan.webapp import DEFAULT_WORKSPACE, serve_webapp, validate_loopback_host
 from synthpopcan.workflows.ipf import validate_ipf_artifact
 from synthpopcan.workflows.types import IPFValidationRequest
 
@@ -344,7 +344,7 @@ def guide_small_area_command() -> None:
 )
 @click.option(
     "--workspace",
-    default=Path("synthpopcan-runs"),
+    default=DEFAULT_WORKSPACE,
     show_default=True,
     type=_PATH,
     help="Managed workspace for local uploads, runs, and artifacts.",

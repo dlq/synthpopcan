@@ -8927,7 +8927,7 @@
           {
             "count": false,
             "default": {
-              "path": "synthpopcan-runs"
+              "path": "runs"
             },
             "flag_value": null,
             "is_flag": false,

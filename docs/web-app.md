@@ -50,11 +50,21 @@ command line or Python library for those workflows.
 
 ### Workspace and run lifecycle
 
-The default workspace is `synthpopcan-runs/` under the directory where the
+The default workspace is `runs/` under the directory where the
 server starts. Use `--workspace PATH` to place it elsewhere. Each run receives a
 separate directory containing claimed input copies, an append-only progress
 event stream, a versioned manifest, temporary work files, and published
 artifacts. The app displays the active workspace path before a run begins.
+
+CLI workflows and the web app share this output root. CLI output paths remain
+explicit, for example `--output runs/my-study/population.csv`. The web app
+keeps managed jobs in `runs/runs/` and uploads in `runs/uploads/`. Arbitrary
+CLI outputs do not appear automatically in the web app’s Runs history.
+
+To reopen a workspace created with the previous default, use
+`synthpopcan serve --workspace synthpopcan-runs`. To move that history under
+the shared root, stop the server and move the old workspace’s `runs/` and
+`uploads/` subdirectories into `runs/`, preserving their contents.
 
 Queued and running jobs can be cancelled. A page refresh reconnects to the
 stored event stream and manifest; after a server restart, unfinished runs are
@@ -289,7 +299,7 @@ Important options:
 - `--port`: local port. Use another port if `8000` is already in use.
 - `--open / --no-open`: open the browser automatically, or start the server
   without opening a browser.
-- `--workspace`: durable run directory. The default is `synthpopcan-runs/` in
+- `--workspace`: durable run directory. The default is `runs/` in
   the current directory.
 
 ## Troubleshooting

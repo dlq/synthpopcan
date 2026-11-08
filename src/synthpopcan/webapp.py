@@ -23,7 +23,7 @@ import uvicorn
 
 from synthpopcan.webapi import create_web_app
 
-DEFAULT_WORKSPACE = Path("synthpopcan-runs")
+DEFAULT_WORKSPACE = Path("runs")
 
 
 class _WebAppServer(Protocol):

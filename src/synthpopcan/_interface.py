@@ -518,9 +518,13 @@ def _index_contract_items(
     return indexed
 
 
-# Maintainer-requested CLI policy change, 2026-11-04. The immutable 1.0
+# Maintainer-requested CLI policy changes, 2026-11-04 and 2026-11-07. The immutable 1.0
 # baseline stays intact; only these exact default transitions are permitted.
 _REVIEWED_DEFAULT_TRANSITIONS = {
+    "cli.commands[synthpopcan serve].options[workspace].default": (
+        {"path": "synthpopcan-runs"},
+        {"path": "runs"},
+    ),
     "cli.commands[synthpopcan geo calibrate].options[max_iterations].default": (
         100,
         16,

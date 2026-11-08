@@ -163,7 +163,16 @@ def test_serve_webapp_closes_quietly_on_keyboard_interrupt() -> None:
     assert server.closed is True
 
 
-def test_cli_serve_delegates_to_webapp_runner(monkeypatch) -> None:
+@pytest.mark.parametrize(
+    ("workspace_args", "expected_workspace"),
+    [
+        ([], Path("runs")),
+        (["--workspace", "synthpopcan-runs"], Path("synthpopcan-runs")),
+    ],
+)
+def test_cli_serve_delegates_to_webapp_runner(
+    monkeypatch, workspace_args, expected_workspace
+) -> None:
     calls: list[dict[str, object]] = []
 
     def fake_serve_webapp(**kwargs: object) -> str:
@@ -172,12 +181,25 @@ def test_cli_serve_delegates_to_webapp_runner(monkeypatch) -> None:
 
     monkeypatch.setattr("synthpopcan.cli.serve_webapp", fake_serve_webapp)
 
-    assert main(["serve", "--host", "127.0.0.1", "--port", "8123", "--no-open"]) == 0
+    assert (
+        main(
+            [
+                "serve",
+                "--host",
+                "127.0.0.1",
+                "--port",
+                "8123",
+                "--no-open",
+                *workspace_args,
+            ]
+        )
+        == 0
+    )
     assert calls == [
         {
             "host": "127.0.0.1",
             "port": 8123,
-            "workspace": Path("synthpopcan-runs"),
+            "workspace": expected_workspace,
             "open_browser": False,
         },
     ]

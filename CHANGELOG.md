@@ -4,6 +4,9 @@ All notable public changes to SynthPopCan are tracked here.
 
 ## Unreleased
 
+- Use `runs/` as the shared default output root for CLI examples and the web
+  app. Existing web workspaces remain accessible with an explicit `--workspace`.
+
 ## 1.1.4 - 2026-11-05
 
 - Refresh CLI-only national examples, source-checkout acceleration installation
