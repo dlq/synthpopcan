@@ -7,6 +7,8 @@ import json
 from collections import Counter
 from pathlib import Path
 
+import pytest
+
 from synthpopcan.small_area_synthesis import calibrate_linked_household_csvs
 
 
@@ -317,3 +319,51 @@ def test_fresh_writer_contract_uses_measured_shapes_without_output_recount(
         paths["households"], paths["persons"], geography_column="tract"
     )
     assert report["linked_population"] == expected
+
+
+@pytest.mark.parametrize(
+    ("person_rows", "person_controlled", "pool_size", "message"),
+    [
+        ("p1,h1,adult\np2,missing,adult\n", False, None, "outside the candidate"),
+        (
+            "p1,h1,adult\np2,h2,adult\np3,missing,adult\n",
+            True,
+            1,
+            "outside the candidate",
+        ),
+        (",h1,adult\np2,h2,adult\n", True, None, "blank identifiers"),
+    ],
+)
+def test_calibration_rejects_invalid_links_before_realization(
+    tmp_path, person_rows, person_controlled, pool_size, message
+):
+    households = tmp_path / "candidate-households.csv"
+    persons = tmp_path / "candidate-persons.csv"
+    controls = tmp_path / "controls.csv"
+    person_controls = tmp_path / "person-controls.csv"
+    households.write_text("synthetic_household_id,household_size\nh1,1\nh2,1\n")
+    persons.write_text("synthetic_person_id,synthetic_household_id,age\n" + person_rows)
+    controls.write_text(
+        'margin,dimensions,ct,household_size,count\nsize,"ct,household_size",G1,1,2\n'
+    )
+    person_controls.write_text(
+        'margin,dimensions,ct,age,count\nage,"ct,age",G1,adult,2\n'
+    )
+    households_out = tmp_path / "households.csv"
+    persons_out = tmp_path / "persons.csv"
+
+    with pytest.raises(ValueError, match=message):
+        calibrate_linked_household_csvs(
+            households_path=households,
+            persons_path=persons,
+            controls_path=controls,
+            person_controls_path=person_controls if person_controlled else None,
+            geography_dimension="ct",
+            geography_column="ct",
+            households_out=households_out,
+            persons_out=persons_out,
+            pool_size=pool_size,
+        )
+
+    assert not households_out.exists()
+    assert not persons_out.exists()

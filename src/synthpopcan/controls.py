@@ -267,6 +267,15 @@ class ControlTable:
                 categories.add(cell.categories[dimension])
         return categories
 
+    def _positive_categories_for(self, dimension: str) -> set[str]:
+        return {
+            cell.categories[dimension]
+            for margin in self.margins
+            if dimension in margin.dimensions
+            for cell in margin.cells
+            if cell.count > 0
+        }
+
 
 CategoryMapping = dict[str, dict[str, str]]
 _WDS_METADATA_COLUMNS = {

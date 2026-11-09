@@ -184,7 +184,7 @@ def _unsupported_control_categories(
 ) -> list[str]:
     problems = []
     for dimension in sorted(set(support) - ignored_dimensions):
-        requested = controls.categories_for(dimension)
+        requested = controls._positive_categories_for(dimension)
         missing = sorted(requested - support[dimension])
         if missing:
             problems.append(f"{dimension}: {', '.join(missing)}")

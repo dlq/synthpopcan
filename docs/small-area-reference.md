@@ -1274,6 +1274,16 @@ for supplied `--controls` and `--person-controls`; install
 weights or alter infeasible targets. Its report retains infeasible geographies.
 Use the augmented pool without further subsampling during calibration.
 
+Calibration checks candidate identifiers and household links before
+subsampling. A category with only zero targets can be absent from the
+candidate pool. Every positive target still needs support.
+
+When calibrating from a prepared directory, the plan and batch totals must
+agree with the control tables. If `preparation.json` is present, calibration
+also verifies the recorded fingerprints of the plan and control files. Final
+population files are staged until linkage validation and the independent
+audit finish. A failed run keeps its work files and status for inspection.
+
 Combination checks disjoint geography sets, compatible licensing, unique IDs
 and household/person linkage. It retains source calibration reports, including
 non-convergence. The independent audit writes every realized cell's residual

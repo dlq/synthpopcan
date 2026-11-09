@@ -1,8 +1,8 @@
 # SynthPopCan Roadmap
 
 Status: `1.x` maintenance roadmap\
-Last updated: 2026-10-22\
-Current software version: `1.1.1`
+Last updated: 2026-11-09\
+Current software version: `1.1.4`
 
 ## How To Use This Roadmap
 
@@ -70,6 +70,19 @@ dates. The detailed scope and movement rules live in the
 [post-1.0 release train](plans/2026-08-19-post-1-0-release-train.md), while the
 separate [bilingual localization plan](plans/2026-08-19-bilingual-localization.md)
 owns the cross-cutting `1.2.0`–`1.4.0` language work.
+
+### Next patch candidate
+
+The runtime invariant fixes are candidates for `1.1.5`, along with the shared
+runs directory and shell setup documentation. Cut the patch when a packaged
+release is needed for a study or user workflow before `1.2.0` is ready. If
+`1.2.0` is ready first, carry the fixes into that release.
+
+For a patch, run the checks in [RELEASING.md](RELEASING.md) against the release
+commit. Include an installed-package smoke test for prepared calibration, with
+one valid control directory and one that fails preflight. After CI passes, push
+the annotated tag, publish the GitHub release and PyPI package, and verify the
+published package and stable documentation.
 
 ## Conditional Research Tracks
 

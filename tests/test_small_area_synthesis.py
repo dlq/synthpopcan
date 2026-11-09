@@ -745,6 +745,30 @@ def test_fit_linked_by_geography_matches_household_and_person_controls() -> None
     assert report["realized"]["max_abs_error"] == pytest.approx(0.0)
 
 
+def test_household_preflight_allows_absent_zero_only_category() -> None:
+    households = [{"synthetic_household_id": "h1", "tenure": "owner"}]
+    controls = ControlTable(
+        margins=(
+            ControlMargin(
+                "tenure",
+                ("ct", "tenure"),
+                (
+                    ControlCell({"ct": "G1", "tenure": "owner"}, 1),
+                    ControlCell({"ct": "G1", "tenure": "renter"}, 0),
+                ),
+            ),
+        ),
+        dimensions=("ct", "tenure"),
+    )
+
+    report = check_small_area_calibration_inputs(
+        households, controls, geography_dimension="ct"
+    )
+    assert report["passed"]
+    fit = fit_households_by_geography(households, controls, geography_dimension="ct")
+    assert fit.reports["G1"]["converged"]
+
+
 def test_linked_person_preflight_rejects_orphan_person_rows() -> None:
     households = [{"synthetic_household_id": "h1", "household_size": "1"}]
     persons = [{"synthetic_household_id": "missing", "AGEGRP": "adult"}]

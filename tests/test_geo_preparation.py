@@ -681,7 +681,19 @@ def test_calibrate_prepared_directory_owns_screening_batches_validation_and_audi
     assert (tmp_path / "maps-population.html").exists()
 
 
-def test_prepared_calibration_rejects_overlapping_plan_before_fitting(tmp_path, inputs):
+@pytest.mark.parametrize(
+    ("problem", "message"),
+    [
+        ("overlap", "disjoint"),
+        ("duplicate", "duplicate IDs"),
+        ("batch-total", "declares target_households"),
+        ("plan-total", "declares target_persons"),
+        ("control-bytes", "recorded fingerprint"),
+    ],
+)
+def test_prepared_calibration_rejects_invalid_plan_before_fitting(
+    tmp_path, inputs, problem, message
+):
     profile, source = inputs
     controls = tmp_path / "controls"
     invoke(
@@ -698,8 +710,19 @@ def test_prepared_calibration_rejects_overlapping_plan_before_fitting(tmp_path, 
     )
     path = controls / "plan.json"
     plan = json.loads(path.read_text())
-    plan["batches"][1]["tracts"] = plan["batches"][0]["tracts"]
-    path.write_text(json.dumps(plan))
+    if problem == "control-bytes":
+        table = controls / "private-households" / "household-controls.csv"
+        table.write_bytes(table.read_bytes() + b"\n")
+    else:
+        if problem == "overlap":
+            plan["batches"][1]["tracts"] = plan["batches"][0]["tracts"]
+        elif problem == "duplicate":
+            plan["batches"][0]["tracts"] *= 2
+        elif problem == "batch-total":
+            plan["batches"][0]["target_households"] += 1
+        else:
+            plan["target_persons"] += 1
+        path.write_text(json.dumps(plan))
     out = tmp_path / "failed"
     result = CliRunner().invoke(
         cli,
@@ -716,7 +739,7 @@ def test_prepared_calibration_rejects_overlapping_plan_before_fitting(tmp_path, 
         ],
     )
     assert result.exit_code == 1
-    assert "disjoint" in result.output
+    assert message in result.output
     assert not (out / "work").exists()
 
 

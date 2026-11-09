@@ -180,3 +180,23 @@ def test_single_batch_does_not_copy_discarded_source_report(
     assert result.details["validation"]["passed"]
     assert result.details["realized_control_audit"]["max_abs_error"] == 0
     assert (request.output_dir / "report.json").is_file()
+
+
+def test_failed_prepared_audit_leaves_final_artifacts_unpublished(batches, monkeypatch):
+    request, plan, requests, results = batches
+    monkeypatch.setattr(prepared, "_read_plan", lambda _: plan)
+    monkeypatch.setattr(prepared, "_prepare_batches", lambda *_: requests)
+    monkeypatch.setattr(prepared, "_fit_batches", lambda *_: results)
+
+    def fail_audit(*_):
+        assert not (request.output_dir / "households.csv").exists()
+        assert not (request.output_dir / "manifest.json").exists()
+        raise ValueError("test audit failure")
+
+    monkeypatch.setattr(prepared, "audit_population", fail_audit)
+    with pytest.raises(ValueError, match="test audit failure"):
+        prepared.calibrate_prepared_controls(request)
+
+    assert {path.name for path in request.output_dir.iterdir()} == {"workflow.json"}
+    status = json.loads((request.output_dir / "workflow.json").read_text())
+    assert status["status"] == "failed"

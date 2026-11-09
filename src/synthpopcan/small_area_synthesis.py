@@ -305,6 +305,29 @@ def check_linked_person_calibration_inputs(
         geography_dimension=geography_dimension,
         candidate_unit="person",
     )
+    link_issues, linked_households = _candidate_linkage_issues(
+        households, persons, household_id_column, person_id_column
+    )
+    issues = [*link_issues, *report["issues"]]
+    report.update(
+        {
+            "passed": not any(issue["severity"] == "error" for issue in issues),
+            "candidate_persons": len(persons),
+            "linked_households": linked_households,
+            "error_count": sum(issue["severity"] == "error" for issue in issues),
+            "warning_count": sum(issue["severity"] == "warning" for issue in issues),
+            "issues": issues,
+        }
+    )
+    return report
+
+
+def _candidate_linkage_issues(
+    households: Sequence[HouseholdRow],
+    persons: Sequence[PersonRow],
+    household_id_column: str,
+    person_id_column: str,
+) -> tuple[list[dict[str, Any]], int]:
     household_id_counts = Counter(
         household.get(household_id_column, "") for household in households
     )
@@ -380,18 +403,27 @@ def check_linked_person_calibration_inputs(
                 ),
             }
         )
-    issues = [*link_issues, *report["issues"]]
-    report.update(
-        {
-            "passed": not any(issue["severity"] == "error" for issue in issues),
-            "candidate_persons": len(persons),
-            "linked_households": len(household_ids),
-            "error_count": sum(issue["severity"] == "error" for issue in issues),
-            "warning_count": sum(issue["severity"] == "warning" for issue in issues),
-            "issues": issues,
-        }
-    )
-    return report
+    for entity, counts in (
+        ("household", household_id_counts),
+        ("person", person_id_counts),
+    ):
+        missing = sum(
+            count
+            for identifier, count in counts.items()
+            if not identifier or not identifier.strip()
+        )
+        if missing:
+            link_issues.append(
+                {
+                    "severity": "error",
+                    "kind": f"missing_{entity}_identifier",
+                    "message": (
+                        f"{missing} candidate {entity} rows have blank identifiers."
+                    ),
+                    "tip": "Regenerate or repair linked candidates before calibration.",
+                }
+            )
+    return link_issues, len(household_ids)
 
 
 def _check_calibration_inputs(
@@ -427,7 +459,7 @@ def _check_calibration_inputs(
         )
         candidate_categories = set(candidate_category_counts)
         control_categories = controls.categories_for(dimension)
-        for category in sorted(control_categories):
+        for category in sorted(controls._positive_categories_for(dimension)):
             if category not in candidate_categories:
                 missing_categories.add((dimension, category))
                 issues.append(
@@ -1478,6 +1510,9 @@ def realize_linked_geography_population(
     streaming to disk for large runs.
     """
 
+    _require_candidate_linkage(
+        households, persons, household_id_column, person_id_column
+    )
     realized = _expand_realized_population(
         households,
         persons,
@@ -1597,14 +1632,15 @@ def calibrate_linked_household_csvs(
     input_household_count = len(households)
     input_person_count = len(persons)
     subsampled = pool_size is not None and pool_size < len(households)
-    if subsampled:
-        households, persons = _subsample_candidates(
-            households,
-            persons,
-            pool_size,  # type: ignore[arg-type]
-            household_id_column=household_id_column,
-            seed=subsample_seed,
-        )
+    households, persons = _select_calibration_candidates(
+        households,
+        persons,
+        pool_size if subsampled else None,
+        has_person_controls=person_controls is not None,
+        household_id_column=household_id_column,
+        person_id_column=person_id_column,
+        seed=subsample_seed,
+    )
 
     control_pack_manifest: synthpopcan.control_packs.ControlPackManifest | None = None
     control_pack_evidence_record: (
@@ -1903,6 +1939,43 @@ def _read_csv_rows(path: Path) -> list[dict[str, str]]:
         return [dict(row) for row in csv.DictReader(handle)]
 
 
+def _require_candidate_linkage(
+    households, persons, household_id_column, person_id_column
+):
+    issues, _ = _candidate_linkage_issues(
+        households, persons, household_id_column, person_id_column
+    )
+    if issues:
+        raise ValueError(_format_preflight_error({"issues": issues}))
+
+
+def _select_calibration_candidates(
+    households: list[HouseholdRow],
+    persons: list[PersonRow],
+    pool_size: int | None,
+    *,
+    has_person_controls: bool,
+    household_id_column: str,
+    person_id_column: str,
+    seed: int,
+) -> tuple[list[HouseholdRow], list[PersonRow]]:
+    # Validate before selection can hide invalid links. The person preflight
+    # checks linkage for the unsampled joint fit.
+    if pool_size is not None or not has_person_controls:
+        _require_candidate_linkage(
+            households, persons, household_id_column, person_id_column
+        )
+    if pool_size is None:
+        return households, persons
+    return _subsample_candidates(
+        households,
+        persons,
+        pool_size,
+        household_id_column=household_id_column,
+        seed=seed,
+    )
+
+
 def _subsample_candidates(
     households: list[HouseholdRow],
     persons: list[PersonRow],
@@ -1935,6 +2008,52 @@ class _RealizedPopulation:
     assigned_persons: int
 
 
+def _build_replication_index(
+    df_hh: pd.DataFrame,
+    df_p: pd.DataFrame | None,
+    weights_by_geography: dict[str, list[float]],
+    household_id_column: str,
+):
+    linked_sizes = None
+    if df_p is not None:
+        persons_per_household = df_p[household_id_column].value_counts().to_dict()
+        linked_sizes = (
+            df_hh[household_id_column]
+            .map(persons_per_household.get)
+            .fillna(0)
+            .to_numpy(dtype=np.int64)
+        )
+
+    # --- Build expand index across all geographies ---
+    # Integerize once per geography; the caller reuses the result for the
+    # weights CSV without re-calling integerize_weights.
+    integer_weights: dict[str, list[int]] = {}
+    expected_counts: dict[str, tuple[int, int]] = {}
+    idx_parts: list[np.ndarray] = []
+    geo_parts: list[np.ndarray] = []
+    for geography in sorted(weights_by_geography):
+        weights = weights_by_geography[geography]
+        if len(weights) != len(df_hh):
+            raise ValueError(
+                f"weights for geography {geography!r} do not match household rows"
+            )
+        int_w = integerize_weights(weights)
+        integer_weights[geography] = int_w
+        counts = np.asarray(int_w, dtype=np.intp)
+        expected_counts[geography] = (
+            int(counts.sum()),
+            int(counts @ linked_sizes) if linked_sizes is not None else 0,
+        )
+        nonzero = np.where(counts > 0)[0]
+        repeated = np.repeat(nonzero, counts[nonzero])
+        idx_parts.append(repeated)
+        geo_parts.append(np.full(len(repeated), geography, dtype=object))
+
+    all_idxs = np.concatenate(idx_parts)  # (total_households,)
+    all_geos = np.concatenate(geo_parts)  # (total_households,)
+    return all_idxs, all_geos, integer_weights, expected_counts
+
+
 def _expand_realized_population(
     households: Sequence[HouseholdRow],
     persons: Sequence[PersonRow],
@@ -1958,32 +2077,14 @@ def _expand_realized_population(
     if not weights_by_geography:
         raise ValueError("at least one target geography is required")
 
-    # --- Build expand index across all geographies ---
-    # Integerize once per geography; the caller reuses the result for the
-    # weights CSV without re-calling integerize_weights.
-    integer_weights: dict[str, list[int]] = {}
-    idx_parts: list[np.ndarray] = []
-    geo_parts: list[np.ndarray] = []
-    for geography in sorted(weights_by_geography):
-        weights = weights_by_geography[geography]
-        if len(weights) != len(households):
-            raise ValueError(
-                f"weights for geography {geography!r} do not match household rows"
-            )
-        int_w = integerize_weights(weights)
-        integer_weights[geography] = int_w
-        counts = np.array(int_w, dtype=np.int32)
-        nonzero = np.where(counts > 0)[0]
-        repeated = np.repeat(nonzero, counts[nonzero])
-        idx_parts.append(repeated)
-        geo_parts.append(np.full(len(repeated), geography, dtype=object))
-
-    all_idxs = np.concatenate(idx_parts)  # (total_households,)
-    all_geos = np.concatenate(geo_parts)  # (total_households,)
+    df_hh = pd.DataFrame(households)
+    df_p = pd.DataFrame(persons) if persons else None
+    all_idxs, all_geos, integer_weights, expected_counts = _build_replication_index(
+        df_hh, df_p, weights_by_geography, household_id_column
+    )
     n_hh = len(all_idxs)
 
     # --- Expand households ---
-    df_hh = pd.DataFrame(households)
     df_hh_exp = df_hh.iloc[all_idxs].reset_index(drop=True)
     df_hh_exp["source_candidate_household_id"] = df_hh_exp[household_id_column].values
     df_hh_exp[geography_column] = all_geos
@@ -2008,8 +2109,7 @@ def _expand_realized_population(
     # --- Expand persons ---
     person_frame: pd.DataFrame | None = None
     n_p = 0
-    if persons:
-        df_p = pd.DataFrame(persons)
+    if df_p is not None:
         df_hh_idx = df_hh[[household_id_column]].copy()
         df_hh_idx["_cand_idx"] = np.arange(len(df_hh), dtype=np.int32)
         df_p_idx = df_p.merge(df_hh_idx, on=household_id_column, how="left")
@@ -2050,6 +2150,10 @@ def _expand_realized_population(
         else {}
     )
 
+    _check_replication_counts(
+        expected_counts, assigned_by_geography, assigned_persons_by_geography
+    )
+
     return _RealizedPopulation(
         household_frame=household_frame,
         person_frame=person_frame,
@@ -2059,6 +2163,18 @@ def _expand_realized_population(
         assigned_households=n_hh,
         assigned_persons=n_p,
     )
+
+
+def _check_replication_counts(expected_counts, assigned_households, assigned_persons):
+    for geography, (expected_households, expected_persons) in expected_counts.items():
+        if (
+            assigned_households.get(geography, 0) != expected_households
+            or assigned_persons.get(geography, 0) != expected_persons
+        ):
+            raise ValueError(
+                f"Realized household/person counts for {geography!r} "
+                "do not match the replication weights and candidate links."
+            )
 
 
 def _frame_to_string_rows(frame: pd.DataFrame) -> list[dict[str, str]]:

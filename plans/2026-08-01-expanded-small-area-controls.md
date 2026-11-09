@@ -144,9 +144,11 @@ is false:
 - control tables, universe evidence, pack definitions, and admitted geography
   sets match their recorded checksums and identities.
 
-A successful calibration must also enforce and record these postconditions:
+A completed calibration must enforce and record these postconditions:
 
-- solver convergence satisfies the requested tolerance or the run fails;
+- fractional convergence records whether the solver met the requested tolerance.
+  A structurally valid output can be published with non-convergence and residuals
+  explicitly reported against the retained targets;
 - weights and realized multiplicities are finite and nonnegative;
 - household/person linkage and geography inheritance remain intact;
 - fractional fitted residuals and integerized realized residuals are recomputed

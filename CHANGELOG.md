@@ -4,6 +4,14 @@ All notable public changes to SynthPopCan are tracked here.
 
 ## Unreleased
 
+- Validate candidate links before subsampling and require candidate support only
+  for positive targets. Reconcile prepared plan totals and verify recorded
+  fingerprints. Check realized replication counts by geography and stage final
+  files until linkage validation and the independent audit finish.
+
+- Document the optional `spc` shell alias and Click completions for Bash, Zsh,
+  and Fish.
+
 - Use `runs/` as the shared default output root for CLI examples and the web
   app. Existing web workspaces remain accessible with an explicit `--workspace`.
 

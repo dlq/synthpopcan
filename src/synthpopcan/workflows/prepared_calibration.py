@@ -9,6 +9,7 @@ import os
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from dataclasses import replace
 from pathlib import Path
+from tempfile import TemporaryDirectory
 from typing import Any
 
 from synthpopcan._candidate_preparation import prepare_candidates
@@ -71,18 +72,80 @@ def _read_plan(request: SmallAreaCalibrationRequest):
         raise ValueError(
             "Prepared control plan has no batches; prepare the controls again."
         )
-    names, geos = set(), set()
-    for batch in batches:
-        _validate_batch(request.controls_path, batch, names, geos, dimension)
-    if set(_selected_geographies(plan)) != geos:
-        raise ValueError(
-            "Prepared batches do not cover the plan's geography selection."
-        )
+    _validate_plan_batches(request.controls_path, plan, batches, dimension)
     return plan
 
 
+def _validate_plan_batches(directory, plan, batches, dimension):
+    names, geos = set(), set()
+    totals = {"target_households": 0, "target_persons": 0}
+    for batch in batches:
+        batch_totals = _validate_batch(directory, batch, names, geos, dimension)
+        for key, count in batch_totals.items():
+            totals[key] += count
+    if _selected_geographies(plan) != geos:
+        raise ValueError(
+            "Prepared batches do not cover the plan's geography selection."
+        )
+    _validate_declared_totals(plan, totals, "Prepared control plan")
+    _verify_control_fingerprints(directory, names)
+
+
 def _selected_geographies(record):
-    return record.get("geographies", record.get("tracts", []))
+    selected = record.get("geographies", record.get("tracts", []))
+    if not isinstance(selected, list) or any(
+        not isinstance(geo, str) or not geo.strip() for geo in selected
+    ):
+        raise ValueError("Prepared geography selections must be lists of nonblank IDs.")
+    unique = set(selected)
+    if len(unique) != len(selected):
+        raise ValueError(
+            "Prepared geography selections must not contain duplicate IDs."
+        )
+    return unique
+
+
+def _validate_declared_totals(record, totals, label):
+    for key, expected in totals.items():
+        declared = record.get(key)
+        if type(declared) is not int or declared != expected:
+            raise ValueError(
+                f"{label} declares {key}={declared!r}, but controls total "
+                f"{expected:,}. Prepare the controls again."
+            )
+
+
+def _verify_control_fingerprints(directory, names):
+    receipt = directory / "preparation.json"
+    if not receipt.exists():
+        # Older or Python-prepared directories can have a plan without a CLI receipt.
+        return
+    payload = json.loads(receipt.read_text())
+    artifacts = payload.get("artifacts") if isinstance(payload, dict) else None
+    if not isinstance(artifacts, list):
+        raise ValueError("Invalid preparation receipt. Prepare the controls again.")
+    expected = {"plan.json"} | {
+        f"{name}/{entity}-controls.csv"
+        for name in names
+        for entity in ("household", "person")
+    }
+    for artifact in artifacts:
+        relative = artifact.get("path") if isinstance(artifact, dict) else None
+        if not isinstance(relative, str) or relative not in expected:
+            continue
+        actual = file_fingerprint(directory / relative)
+        if any(artifact.get(key) != actual[key] for key in ("sha256", "size_bytes")):
+            raise ValueError(
+                f"Prepared artifact {relative!r} differs from its "
+                "recorded fingerprint. "
+                "Prepare the controls again."
+            )
+        expected.remove(relative)
+    if expected:
+        raise ValueError(
+            "Preparation receipt is missing fingerprints for "
+            f"{', '.join(sorted(expected))}."
+        )
 
 
 def _validate_batch(directory, batch, names, geos, dimension="ct"):
@@ -98,18 +161,40 @@ def _validate_batch(directory, batch, names, geos, dimension="ct"):
         raise ValueError(
             "Prepared batch age/gender policy conflicts with its universe."
         )
-    selected = set(_selected_geographies(batch))
+    selected = _selected_geographies(batch)
     if not selected or selected & geos:
         raise ValueError(
             "Prepared batches must contain nonempty, disjoint geographies."
         )
+    totals = {}
     for entity in ("household", "person"):
         table = read_control_table(directory / name / f"{entity}-controls.csv")
-        if set(controls_by_geography(table, geography_dimension=dimension)) != selected:
+        by_geography = controls_by_geography(table, geography_dimension=dimension)
+        if set(by_geography) != selected:
             raise ValueError(
                 f"{name} {entity} controls do not match the plan's geographies."
             )
+        total = 0
+        for geo, geo_table in by_geography.items():
+            margin_totals = {
+                sum(cell.count for cell in margin.cells) for margin in geo_table.margins
+            }
+            if len(geo_table.margins) != len(table.margins) or len(margin_totals) != 1:
+                raise ValueError(
+                    f"{name} {entity} controls have missing or unreconciled "
+                    f"margins for geography {geo!r}."
+                )
+            count = margin_totals.pop()
+            if not count.is_integer():
+                raise ValueError(
+                    f"{name} {entity} controls must have whole-number totals "
+                    f"for geography {geo!r}."
+                )
+            total += int(count)
+        totals[f"target_{entity}s"] = total
+    _validate_declared_totals(batch, totals, name)
     geos.update(selected)
+    return totals
 
 
 def _universe(request):
@@ -410,11 +495,40 @@ def calibrate_prepared_controls(
             "tolerance": request.tolerance,
         },
     }
-    write_json(request.output_dir / "workflow.json", status)
+    with (request.output_dir / "workflow.json").open("x", encoding="utf-8") as handle:
+        handle.write(json.dumps(status, ensure_ascii=False, indent=2) + "\n")
     try:
         requests = _prepare_batches(request, plan, progress)
         results = _fit_batches(requests, progress)
-        result = _publish_population(request, plan, requests, results, progress)
+        with TemporaryDirectory(prefix=".publishing-", dir=request.output_dir) as temp:
+            stage = Path(temp)
+            result = _publish_population(
+                replace(request, output_dir=stage), plan, requests, results, progress
+            )
+            published: list[Path] = []
+            try:
+                for path in sorted(
+                    stage.iterdir(), key=lambda p: p.name == "manifest.json"
+                ):
+                    destination = request.output_dir / path.name
+                    path.rename(destination)
+                    published.append(destination)
+            except BaseException:
+                for destination in published:
+                    destination.unlink(missing_ok=True)
+                raise
+        result = replace(
+            result,
+            households_path=request.output_dir / result.households_path.name,
+            persons_path=request.output_dir / result.persons_path.name,
+            manifest_path=request.output_dir / result.manifest_path.name,
+            report_path=request.output_dir / result.report_path.name,
+            weights_path=(
+                request.output_dir / result.weights_path.name
+                if result.weights_path is not None
+                else None
+            ),
+        )
     except Exception as exc:
         write_json(
             request.output_dir / "workflow.json",
