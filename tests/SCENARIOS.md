@@ -120,8 +120,11 @@ bounded batch from a verified reusable candidate pool.
 
 Acceptance evidence: DA/ADA plan identity, complete jurisdiction coverage,
 explicit exclusions and storage estimates, atomic batch output, candidate-pool
-integrity, deterministic resume behavior, linked validation, artifact hashes,
-and aggregate geography summaries.
+integrity, linked validation, artifact hashes, and aggregate geography
+summaries. Process-exit tests cover both sides of the batch checkpoint.
+Resume replaces uncommitted output and skips committed batches even when
+the plan summary is stale. Additional cases exercise workers that exit
+without a result and reject missing, truncated, or changed committed files.
 
 ## SCN-ENRICH-001
 

@@ -73,8 +73,8 @@ owns the cross-cutting `1.2.0`–`1.4.0` language work.
 
 ### Next patch candidate
 
-The runtime invariant fixes are candidates for `1.1.5`, along with the shared
-runs directory and shell setup documentation. Cut the patch when a packaged
+The runtime invariant and batch recovery fixes are candidates for `1.1.5`,
+along with the shared runs directory and shell setup documentation. Cut the patch when a packaged
 release is needed for a study or user workflow before `1.2.0` is ready. If
 `1.2.0` is ready first, carry the fixes into that release.
 

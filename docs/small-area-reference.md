@@ -470,12 +470,45 @@ separate territory-specific DA controls. This is an explicit source limitation,
 not evidence of territory-specific microdata. Unsupported categories fail
 instead of falling back to an unconditioned national mixture. Use `--limit 1`
 for a first batch and inspect convergence, realized residuals, linkage, output
-size, and the report before resuming. Completed batches are skipped; running
-and failed batches are safe to retry. Batch results are staged and atomically
-installed, and the plan is checkpointed after every result. `--workers`
-controls bounded batch-process parallelism while `--fit-workers` controls
-geography fitting within each process. Start conservatively because every
-process reads candidates and realizes a population independently.
+size, and the report before resuming. `--workers` controls bounded
+batch-process parallelism while `--fit-workers` controls geography fitting
+within each process. Start conservatively because every process reads
+candidates and realizes a population independently.
+
+### Batch checkpoints and recovery
+
+Use one coordinator per plan directory. The coordinator owns the batch
+manifests and may run multiple workers through `--workers`.
+
+| Persisted transition | Condition |
+| --- | --- |
+| `planned`, `failed`, or leftover `running` → `running` | The coordinator selects the batch and records the next attempt before starting it. |
+| `running` → `completed` | The worker returns result evidence after installing the validated output directory. The coordinator records that evidence in `batch.json`. |
+| `running` → `failed` | The callback raises or a parallel worker exits without returning evidence, including exit code zero. A later execution can retry the batch. |
+| `running` → `planned` | The coordinator handles an interrupt during execution, or a parallel worker cannot start. |
+| `completed` → `planned` | An explicit reset of a non-converged batch moves the prior result into `superseded_results`. Normal resume skips completed batches. |
+
+The national worker writes into a temporary sibling directory, validates
+household/person linkage, records hashes, then renames the directory into
+place. Readers select completed results from `batch.json`. File presence alone
+does not commit an attempt. If the process dies after the rename and before the
+batch checkpoint, the next run fits the batch again and replaces the abandoned
+output. If it dies after the batch checkpoint and before `plan.json` is
+refreshed, resume skips the committed batch and rebuilds the plan status from
+the batch manifests. Abrupt termination during staging can leave an unused
+temporary directory.
+
+Before starting more batches, resume checks the size and SHA-256 of the
+household, person, and report files recorded by the built-in worker. This
+includes completed batches outside the current selection because their results
+can still contribute to national summaries. If an artifact is missing or
+changed, restore the original file or run a fresh plan in a new directory.
+
+The plan status is a summary of the batch manifests. It is `completed` when
+all batches are completed, `failed` when any failed, `partial` when some are
+completed, and `planned` otherwise. Atomic renames cover these process restart
+cases. The workflow does not guarantee durability across machine or filesystem
+failure.
 
 Detailed per-batch maps are deferred and opt-in with `--maps`. After a complete
 plan, the default `--national-map` writes the familiar polygon choropleth as
@@ -1282,7 +1315,13 @@ When calibrating from a prepared directory, the plan and batch totals must
 agree with the control tables. If `preparation.json` is present, calibration
 also verifies the recorded fingerprints of the plan and control files. Final
 population files are staged until linkage validation and the independent
-audit finish. A failed run keeps its work files and status for inspection.
+audit finish. The prepared workflow records `running` in `workflow.json`
+when it claims a fresh output directory. It records `complete` after moving
+the final files into place, with the manifest moved last. A handled error
+records `failed`. An error while moving final files removes the files already
+moved. An abrupt stop can leave `running` and some files in place, so check
+`workflow.json` before using the result. Keep the work files for inspection
+and use a fresh output directory to retry.
 
 Combination checks disjoint geography sets, compatible licensing, unique IDs
 and household/person linkage. It retains source calibration reports, including

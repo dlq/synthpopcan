@@ -2,6 +2,9 @@ from __future__ import annotations
 
 import csv
 import json
+import subprocess
+import sys
+from functools import partial
 from pathlib import Path
 
 import pytest
@@ -730,8 +733,12 @@ def test_candidate_pools_are_generated_once_and_reused(
 
 
 @pytest.mark.scenario("SCN-NATIONAL-001")
-def test_cached_pool_batch_writes_timing_integrity_and_national_summary(
+@pytest.mark.parametrize(
+    "crash_at", [None, "before-batch-checkpoint", "after-batch-checkpoint"]
+)
+def test_cached_pool_batch_checkpoint_and_resume(
     tmp_path: Path,
+    crash_at: str | None,
 ) -> None:
     plan_path, _ = _prepare(tmp_path, "ada")
     plan = json.loads(plan_path.read_text())
@@ -792,13 +799,46 @@ def test_cached_pool_batch_writes_timing_integrity_and_national_summary(
     stale_output.mkdir(parents=True)
     (stale_output / "stale.txt").write_text("stale")
 
-    result = run_national_cached_batch(
-        batch,
-        plan_path.parent,
-        configuration=configuration,
-    )
-
+    run_batch = partial(run_national_cached_batch, configuration=configuration)
     output = plan_path.parent / batch["output_directory"]
+    expected_attempts = 1
+    if crash_at is not None:
+        _crash_during_batch_checkpoint(plan_path, configuration, crash_at)
+        assert (output / "households.csv").is_file()
+        assert (output / "persons.csv").is_file()
+        assert (output / "report.json").is_file()
+        assert not (output / "stale.txt").exists()
+        assert json.loads(plan_path.read_text())["status"] == "planned"
+
+        interrupted = json.loads(batch_path.read_text())
+        assert interrupted["attempts"] == 1
+        summary = build_national_geography_summary(plan_path)
+        if crash_at == "before-batch-checkpoint":
+            assert interrupted["status"] == "running"
+            assert "result" not in interrupted
+            assert summary["batches"]["completed"] == 0
+            assert summary["assigned_households"] == 0
+            # A resume must replace the directory from the uncommitted attempt.
+            (output / "uncommitted.txt").write_text("abandoned output")
+            expected_attempts = 2
+        else:
+            assert interrupted["status"] == "completed"
+            assert summary["batches"]["completed"] == 1
+            assert summary["assigned_households"] == 11
+
+    final_plan = execute_canada_small_area_plan(
+        plan_path, run_batch, jurisdiction_pruids={record["jurisdiction_pruid"]}
+    )
+    assert final_plan["status"] == "partial"
+    assert final_plan["last_execution"]["attempted_batches"] == (
+        0 if crash_at == "after-batch-checkpoint" else 1
+    )
+    checkpoint = json.loads(batch_path.read_text())
+    assert checkpoint["status"] == "completed"
+    assert checkpoint["attempts"] == expected_attempts
+    assert not (output / "uncommitted.txt").exists()
+    result = checkpoint["result"]
+
     assert not (output / "stale.txt").exists()
     report = json.loads((output / "report.json").read_text())
     assert result["linked_validation"]["passed"] is True
@@ -812,14 +852,15 @@ def test_cached_pool_batch_writes_timing_integrity_and_national_summary(
         )
         == report["assigned_persons"]
     )
-    assert (
-        result["artifacts"]["households"]["sha256"]
-        == file_integrity(output / "households.csv")["sha256"]
-    )
+    for name, filename in (
+        ("households", "households.csv"),
+        ("persons", "persons.csv"),
+        ("report", "report.json"),
+    ):
+        artifact = result["artifacts"][name]
+        assert plan_path.parent / artifact["path"] == output / filename
+        assert artifact["sha256"] == file_integrity(output / filename)["sha256"]
 
-    batch["status"] = "completed"
-    batch["result"] = result
-    batch_path.write_text(json.dumps(batch))
     summary = build_national_geography_summary(plan_path)
     assert summary["batches"]["completed"] == 1
     assert summary["assigned_households"] == 11
@@ -831,6 +872,169 @@ def test_cached_pool_batch_writes_timing_integrity_and_national_summary(
         sum(int(row["persons"]) for row in geography_rows)
         == summary["assigned_persons"]
     )
+
+
+def _crash_during_batch_checkpoint(
+    plan_path: Path, configuration: NationalBatchRunConfiguration, crash_at: str
+) -> None:
+    """Exit the runner at the checkpoint without executing Python cleanup."""
+    from dataclasses import asdict
+
+    script = """
+import json
+import os
+import sys
+from functools import partial
+from pathlib import Path
+
+import synthpopcan.national_small_area as national
+from synthpopcan.national_execution import (
+    NationalBatchRunConfiguration,
+    run_national_cached_batch,
+)
+
+plan_path, configuration, crash_at = sys.argv[1:]
+write_json = national._write_json
+
+def crash_at_checkpoint(path, payload):
+    if path.name == "batch.json" and payload["status"] == "completed":
+        if crash_at == "after-batch-checkpoint":
+            write_json(path, payload)
+        os._exit(23)
+    write_json(path, payload)
+
+national._write_json = crash_at_checkpoint
+national.execute_canada_small_area_plan(
+    Path(plan_path),
+    partial(
+        run_national_cached_batch,
+        configuration=NationalBatchRunConfiguration(**json.loads(configuration)),
+    ),
+    limit=1,
+)
+"""
+    process = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            script,
+            str(plan_path),
+            json.dumps(asdict(configuration)),
+            crash_at,
+        ],
+        capture_output=True,
+        text=True,
+        timeout=30,
+        check=False,
+    )
+    assert process.returncode == 23, process.stderr
+
+
+@pytest.mark.parametrize("exit_code", [0, 23])
+def test_parallel_worker_exit_without_result_is_restartable(tmp_path, exit_code):
+    plan_path, _ = _prepare(tmp_path)
+    script = tmp_path / "worker-exit.py"
+    script.write_text(
+        """
+import os
+import sys
+from pathlib import Path
+
+from synthpopcan.national_small_area import execute_canada_small_area_plan
+
+
+def exit_without_result(batch, root):
+    os._exit(int(sys.argv[2]))
+
+
+if __name__ == "__main__":
+    execute_canada_small_area_plan(
+        Path(sys.argv[1]), exit_without_result, limit=1, workers=2
+    )
+"""
+    )
+    process = subprocess.run(
+        [sys.executable, str(script), str(plan_path), str(exit_code)],
+        capture_output=True,
+        text=True,
+        timeout=30,
+        check=False,
+    )
+    assert process.returncode == 1
+    assert (
+        f"worker exited with code {exit_code} without returning a result"
+        in process.stderr
+    )
+    plan = json.loads(plan_path.read_text())
+    batch_path = plan_path.parent / plan["batches"][0]["manifest"]
+    batch = json.loads(batch_path.read_text())
+    assert batch["status"] == "failed"
+    assert batch["attempts"] == 1
+    assert "result" not in batch
+
+    execute_canada_small_area_plan(plan_path, _parallel_test_batch, limit=1)
+    resumed = json.loads(batch_path.read_text())
+    assert resumed["status"] == "completed"
+    assert resumed["attempts"] == 2
+    assert resumed["result"] == {"batch_id": batch["batch_id"]}
+
+
+@pytest.mark.parametrize(
+    ("name", "damage", "message"),
+    [
+        ("households", "missing", r"households\.csv"),
+        ("persons", "truncated", "byte size"),
+        ("report", "changed", "SHA-256"),
+    ],
+)
+def test_resume_refuses_damaged_completed_batch_artifacts(
+    tmp_path, name, damage, message
+):
+    plan_path, _ = _prepare(tmp_path)
+    root = plan_path.parent
+    plan = json.loads(plan_path.read_text())
+    # An earlier pending batch and --limit 1 must not hide a corrupt checkpoint.
+    batch_path = root / plan["batches"][-1]["manifest"]
+    batch = json.loads(batch_path.read_text())
+    output = root / batch["output_directory"]
+    output.mkdir(parents=True)
+    paths = {
+        "households": output / "households.csv",
+        "persons": output / "persons.csv",
+        "report": output / "report.json",
+    }
+    original = b"original"
+    for path in paths.values():
+        path.write_bytes(original)
+    batch.update(
+        status="completed",
+        attempts=1,
+        result={
+            "candidate_pool": {},
+            "artifacts": {
+                role: {"path": str(path.relative_to(root)), **file_integrity(path)}
+                for role, path in paths.items()
+            },
+        },
+    )
+    batch_path.write_text(json.dumps(batch))
+    if damage == "missing":
+        paths[name].unlink()
+    else:
+        paths[name].write_bytes(b"" if damage == "truncated" else b"modified")
+
+    def unexpected(*_):
+        pytest.fail("resume must verify completed artifacts before starting work")
+
+    with pytest.raises(ValueError, match=rf"Completed batch.*{name}.*{message}"):
+        execute_canada_small_area_plan(plan_path, unexpected, limit=1)
+    assert json.loads(batch_path.read_text()) == batch
+
+    paths[name].write_bytes(original)
+    resumed = execute_canada_small_area_plan(plan_path, _parallel_test_batch, limit=1)
+    assert resumed["last_execution"]["attempted_batches"] == 1
+    assert resumed["last_execution"]["status_counts"]["completed"] == 2
+    assert json.loads(batch_path.read_text()) == batch
 
 
 def test_parallel_plan_execution_completes_bounded_batches(tmp_path: Path) -> None:

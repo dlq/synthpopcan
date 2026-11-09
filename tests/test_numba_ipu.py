@@ -5,6 +5,7 @@ from __future__ import annotations
 import gc
 import weakref
 from concurrent.futures import ThreadPoolExecutor
+from decimal import Decimal, localcontext
 from types import SimpleNamespace
 
 import numpy as np
@@ -260,6 +261,48 @@ def test_compiled_convergence_matches_reference(compiled, targets):
     actual = fit(matrix, targets, initial, cache=cache, tolerance=1e-10)
     assert cache.compiled_signatures
     assert_matches(actual, expected, matrix)
+
+
+@pytest.mark.parametrize("side", [-1, 1])
+@pytest.mark.parametrize("within_tolerance", [False, True])
+def test_linked_fit_near_convergence_and_replication_boundaries(
+    compiled, side, within_tolerance
+):
+    # Each donor is one household. The second contributes twice as many people.
+    matrix = np.array([[1.0, 1.0], [1.0, 2.0]])
+    first = 0.5 + side * 2**-25
+    second = 1.0 - first
+    person_target = first + 2 * second + 2**-27
+    targets = np.array([1.0, person_target])
+    initial = np.array([first, second])
+
+    with localcontext() as context:
+        context.prec = 50
+        a, b, persons = map(Decimal.from_float, (first, second, person_target))
+        ratio = persons / (a + 2 * b)
+        a *= ratio.sqrt()
+        b *= ratio
+        expected_error = float(max(abs(a + b - 1), abs(a + 2 * b - persons)))
+    tolerance = expected_error * (1 + (1 if within_tolerance else -1) / 32)
+
+    cache = backend.IPUBackendCache()
+    for backend_cache in (None, cache):
+        weights, converged, iterations, error = fit(
+            matrix,
+            targets,
+            initial,
+            cache=backend_cache,
+            iterations=1,
+            tolerance=tolerance,
+        )
+        assert converged is within_tolerance
+        assert iterations == 1
+        assert error == pytest.approx(expected_error, abs=1e-15)
+        np.testing.assert_allclose(weights, [float(a), float(b)], rtol=0, atol=1e-15)
+        counts = integerize_weights(weights)
+        assert counts == ([1, 0] if side > 0 else [0, 1])
+        assert (matrix @ counts).tolist() == [1.0, 1.0 if side > 0 else 2.0]
+    assert cache.compiled_signatures
 
 
 @pytest.mark.parametrize(

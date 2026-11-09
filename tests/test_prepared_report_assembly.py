@@ -182,7 +182,10 @@ def test_single_batch_does_not_copy_discarded_source_report(
     assert (request.output_dir / "report.json").is_file()
 
 
-def test_failed_prepared_audit_leaves_final_artifacts_unpublished(batches, monkeypatch):
+@pytest.mark.parametrize("failure_stage", ["audit", "manifest-rename"])
+def test_prepared_failure_leaves_final_artifacts_unpublished(
+    batches, monkeypatch, failure_stage
+):
     request, plan, requests, results = batches
     monkeypatch.setattr(prepared, "_read_plan", lambda _: plan)
     monkeypatch.setattr(prepared, "_prepare_batches", lambda *_: requests)
@@ -193,8 +196,24 @@ def test_failed_prepared_audit_leaves_final_artifacts_unpublished(batches, monke
         assert not (request.output_dir / "manifest.json").exists()
         raise ValueError("test audit failure")
 
-    monkeypatch.setattr(prepared, "audit_population", fail_audit)
-    with pytest.raises(ValueError, match="test audit failure"):
+    original_rename = Path.rename
+
+    def fail_manifest_rename(path, destination):
+        if destination == request.output_dir / "manifest.json":
+            # Other artifacts have already been installed at this boundary.
+            assert (request.output_dir / "households.csv").is_file()
+            assert (request.output_dir / "persons.csv").is_file()
+            raise OSError("test manifest rename failure")
+        return original_rename(path, destination)
+
+    if failure_stage == "audit":
+        monkeypatch.setattr(prepared, "audit_population", fail_audit)
+        error, message = ValueError, "test audit failure"
+    else:
+        monkeypatch.setattr(Path, "rename", fail_manifest_rename)
+        error, message = OSError, "test manifest rename failure"
+
+    with pytest.raises(error, match=message):
         prepared.calibrate_prepared_controls(request)
 
     assert {path.name for path in request.output_dir.iterdir()} == {"workflow.json"}

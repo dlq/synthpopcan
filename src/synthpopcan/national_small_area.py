@@ -588,6 +588,50 @@ def estimate_national_da_storage(
     return estimate_national_small_area_storage(batches)
 
 
+def _verify_completed_batch_artifacts(root, records):
+    """Check cached-pool results before resuming or rebuilding plan summaries."""
+    for record in records:
+        manifest = record.get("manifest") if isinstance(record, Mapping) else None
+        if not isinstance(manifest, str):
+            continue
+        batch = _read_json(root / manifest)
+        result = batch.get("result")
+        # Generic callbacks can supply their own result format. The built-in
+        # worker identifies its artifact contract with the candidate pool record.
+        if (
+            batch.get("status") == "completed"
+            and isinstance(result, Mapping)
+            and "candidate_pool" in result
+        ):
+            _verify_batch_artifact_set(root, batch, result.get("artifacts"))
+
+
+def _verify_batch_artifact_set(root, batch, artifacts):
+    for name in ("households", "persons", "report"):
+        artifact = artifacts.get(name) if isinstance(artifacts, Mapping) else None
+        try:
+            _verify_batch_artifact(root, artifact)
+        except (OSError, ValueError) as exc:
+            raise ValueError(
+                f"Completed batch {batch.get('batch_id')!r} has an invalid {name} "
+                f"artifact: {exc}. Restore the checkpoint's original files "
+                "or run a fresh plan in a new directory."
+            ) from exc
+
+
+def _verify_batch_artifact(root, artifact):
+    relative = artifact.get("path") if isinstance(artifact, Mapping) else None
+    if not isinstance(relative, str) or Path(relative).is_absolute():
+        raise ValueError("expected a relative artifact path")
+    path = (root / relative).resolve()
+    if not path.is_relative_to(root.resolve()):
+        raise ValueError(f"{relative!r} is outside the plan directory")
+    if path.stat().st_size != artifact.get("byte_size"):
+        raise ValueError(f"{relative!r} differs from the recorded byte size")
+    if file_integrity(path)["sha256"] != artifact.get("sha256"):
+        raise ValueError(f"{relative!r} differs from the recorded SHA-256")
+
+
 def _pending_batches(root, records, jurisdiction_pruids):
     """Validate and select batches lazily, retaining serial read/error order."""
     for record in records:
@@ -669,6 +713,7 @@ def execute_canada_small_area_plan(
     records = plan.get("batches")
     if not isinstance(records, list):
         raise ValueError("national small-area plan batches must be a list")
+    _verify_completed_batch_artifacts(root, records)
     if workers > 1:
         return _execute_canada_small_area_plan_parallel(
             plan_path,
@@ -778,15 +823,19 @@ def _execute_canada_small_area_plan_parallel(
                 crashed = [
                     batch_id
                     for batch_id, (process, _, _) in active.items()
-                    if not process.is_alive() and process.exitcode not in (None, 0)
+                    if process.exitcode is not None
                 ]
                 for batch_id in crashed:
+                    exitcode = active[batch_id][0].exitcode
                     result_queue.put(
                         (
                             "error",
                             batch_id,
                             "WorkerProcessError",
-                            f"worker exited with code {active[batch_id][0].exitcode}",
+                            (
+                                f"worker exited with code {exitcode} "
+                                "without returning a result"
+                            ),
                             "",
                         )
                     )

@@ -4,6 +4,11 @@ All notable public changes to SynthPopCan are tracked here.
 
 ## Unreleased
 
+- Record a retryable failure when a parallel worker exits without a result.
+  Verify completed national batch artifacts before resuming and report any
+  missing or changed files. Document checkpoint recovery and test numerical
+  decisions near convergence and replication boundaries.
+
 - Validate candidate links before subsampling and require candidate support only
   for positive targets. Reconcile prepared plan totals and verify recorded
   fingerprints. Check realized replication counts by geography and stage final
