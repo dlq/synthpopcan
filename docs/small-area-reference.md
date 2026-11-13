@@ -1123,6 +1123,15 @@ synthpopcan geo calibrate candidate-households.csv --persons candidate-persons.c
   --include-weights --out calibrated/
 ```
 
+For linked normalized CSV calibration, add `--integerization swap` to
+reduce realized control residuals. It starts with midpoint rounding and
+searches up to 100 improving whole-household swaps per geography. The search
+preserves the starting household count and uses candidates with positive
+fitted weights. It minimizes the sum of squared control-cell residuals, so
+individual cells can trade off against one another. Check the realized
+residuals and fractional convergence separately. The default is
+`--integerization midpoint`.
+
 The broad pack supplies the Census geography identity and validates its
 evidence before the conditional margin is appended. Joint calibration expects
 the matching hierarchical PUMF age codes and retains them in the output. Both

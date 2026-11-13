@@ -666,6 +666,13 @@ def _calibrate_cli_files(request: SmallAreaCalibrationRequest):
     help="Hybrid tries an entropy-dual solve, with IPU fallback.",
 )
 @click.option(
+    "--integerization",
+    type=click.Choice(["midpoint", "swap"]),
+    default="midpoint",
+    show_default=True,
+    help="Reduce control residuals by swapping whole households in linked CSV fits.",
+)
+@click.option(
     "--zero-target-policy",
     type=click.Choice(["structural", "observed"]),
     default="structural",
@@ -718,6 +725,7 @@ def calibrate_command(
     augment_support: bool,
     workers: int | None,
     joint_solver: str,
+    integerization: str,
     zero_target_policy: str,
 ) -> None:
     """Calibrate linked household/person candidates to geography controls."""
@@ -769,6 +777,7 @@ def calibrate_command(
                 augment_support=augment_support,
                 n_workers=workers,
                 joint_solver=joint_solver,
+                integerization=integerization,
                 zero_target_policy=zero_target_policy,
             )
         )

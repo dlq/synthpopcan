@@ -196,7 +196,8 @@ def test_builtin_reconciles_rounding_without_filling_published_zeros(tmp_path):
 
 
 @pytest.mark.parametrize("vintage", [2016, 2021])
-def test_broad_and_marital_status_tract_acceptance(tmp_path, vintage):
+@pytest.mark.parametrize("integerization", ["midpoint", "swap"])
+def test_broad_and_marital_status_tract_acceptance(tmp_path, vintage, integerization):
     from collections import Counter
     from itertools import product
     from pathlib import Path
@@ -403,6 +404,8 @@ def test_broad_and_marital_status_tract_acceptance(tmp_path, vintage):
                 "--geo-dimension",
                 "ct",
                 "--include-weights",
+                "--integerization",
+                integerization,
                 "--out",
                 str(output),
             ],
@@ -419,6 +422,17 @@ def test_broad_and_marital_status_tract_acceptance(tmp_path, vintage):
     weights = {
         (r["target_geography"], r["source_candidate_household_id"]): float(r["weight"])
         for r in read_csv(output / "weights.csv")
+    }
+    if integerization == "swap":
+        assert report["integerization"] == "swap"
+    assert Counter(
+        (r["ct"], r["source_candidate_household_id"]) for r in realized_households
+    ) == {
+        (r["target_geography"], r["source_candidate_household_id"]): int(
+            r["integer_weight"]
+        )
+        for r in read_csv(output / "weights.csv")
+        if int(r["integer_weight"])
     }
     lookup = {r["synthetic_household_id"]: r["ct"] for r in realized_households}
     assert all(lookup[r["synthetic_household_id"]] == r["ct"] for r in realized_persons)
@@ -530,3 +544,21 @@ def test_broad_and_marital_status_tract_acceptance(tmp_path, vintage):
         and "evidenced private-household person total" in result.output
     )
     assert not list(output.glob("*.csv"))
+
+
+def test_swap_integerization_improves_residual_without_using_zero_weight_candidates():
+    import numpy as np
+
+    from synthpopcan.small_area_synthesis import _realize_control_weights
+
+    contributions = np.array([[1, 1, 1, 1, 1], [0, 1, 0, 1, 1]], dtype=float)
+    weights = np.array([0.5, 0.5, 0.5, 0.5, 0.0])
+    targets = np.array([2.0, 1.0])
+    midpoint, _ = _realize_control_weights("midpoint", contributions, weights, targets)
+    swapped, evidence = _realize_control_weights(
+        "swap", contributions, weights, targets
+    )
+    assert (contributions @ midpoint).tolist() == [2.0, 2.0]
+    assert (contributions @ swapped).tolist() == targets.tolist()
+    assert swapped[-1] == 0
+    assert evidence["integer_weights"] == swapped.tolist()

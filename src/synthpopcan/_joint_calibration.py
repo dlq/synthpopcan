@@ -258,3 +258,45 @@ class IPUSupport:
         if self.active is not None:
             self.full_weights[self.active] = self.weights
         return float(np.max(np.abs(self.full_matrix @ self.full_weights - targets)))
+
+
+def improve_integer_weights(
+    contributions: np.ndarray,
+    weights: np.ndarray,
+    counts: np.ndarray,
+    targets: np.ndarray,
+) -> np.ndarray:
+    """Reduce squared control residuals by exchanging whole households."""
+    result = counts.copy()
+    if not np.any(result):
+        return result
+    eligible = np.flatnonzero(weights > 0)
+    matrix = np.ascontiguousarray(contributions[:, eligible])
+    norms = np.einsum("ij,ij->j", matrix, matrix)
+    residual = contributions @ result - targets
+    for _ in range(100):
+        gradient = residual @ matrix
+        selected = np.flatnonzero(result[eligible] > 0)
+        remove_scores = norms[selected] - 2 * gradient[selected]
+        add_scores = norms + 2 * gradient
+        remove_shortlist = _lowest_scores(remove_scores, 64)
+        add = _lowest_scores(add_scores, 256)
+        remove = selected[remove_shortlist]
+        deltas = (
+            remove_scores[remove_shortlist, None]
+            + add_scores[add][None, :]
+            - 2 * (matrix[:, remove].T @ matrix[:, add])
+        )
+        i, j = np.unravel_index(deltas.argmin(), deltas.shape)
+        if deltas[i, j] >= -1e-8:
+            break
+        old, new = remove[i], add[j]
+        result[eligible[old]] -= 1
+        result[eligible[new]] += 1
+        residual += matrix[:, new] - matrix[:, old]
+    return result
+
+
+def _lowest_scores(scores: np.ndarray, limit: int) -> np.ndarray:
+    size = min(limit, len(scores))
+    return np.argpartition(scores, size - 1)[:size]

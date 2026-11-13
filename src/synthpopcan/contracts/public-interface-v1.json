@@ -2828,6 +2828,28 @@
           },
           {
             "count": false,
+            "default": "midpoint",
+            "flag_value": null,
+            "is_flag": false,
+            "kind": "option",
+            "multiple": false,
+            "name": "integerization",
+            "names": [
+              "--integerization"
+            ],
+            "nargs": 1,
+            "required": false,
+            "type": {
+              "case_sensitive": true,
+              "choices": [
+                "midpoint",
+                "swap"
+              ],
+              "name": "choice"
+            }
+          },
+          {
+            "count": false,
             "default": "structural",
             "flag_value": null,
             "is_flag": false,
@@ -14762,6 +14784,13 @@
             "kind": "keyword_only",
             "name": "zero_target_policy",
             "required": false
+          },
+          {
+            "annotation": "str",
+            "default": "midpoint",
+            "kind": "keyword_only",
+            "name": "integerization",
+            "required": false
           }
         ],
         "return_annotation": "GeographyHouseholdFit"
@@ -15047,6 +15076,13 @@
             "default": null,
             "kind": "keyword_only",
             "name": "marital_status_pack",
+            "required": false
+          },
+          {
+            "annotation": "str",
+            "default": "midpoint",
+            "kind": "keyword_only",
+            "name": "integerization",
             "required": false
           }
         ],

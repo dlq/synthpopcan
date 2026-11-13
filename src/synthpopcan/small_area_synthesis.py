@@ -34,6 +34,7 @@ from synthpopcan._joint_calibration import (
     JointCalibrationSystem,
     StructuralZeroSupportError,
     encode_ipu_contributions,
+    improve_integer_weights,
 )
 from synthpopcan._numba_ipu import IPUBackendCache
 from synthpopcan.controls import (
@@ -950,6 +951,7 @@ def fit_linked_by_geography(
     n_workers: int | None = None,
     joint_solver: str = "ipu",
     zero_target_policy: str = "structural",
+    integerization: str = "midpoint",
 ) -> GeographyHouseholdFit:
     """Fit household and linked-person controls with household weights.
 
@@ -963,6 +965,7 @@ def fit_linked_by_geography(
     restarts from the original household prior and reports every residual
     against the unchanged published controls.
     """
+    _validate_integerization(integerization, linked=True)
     _validate_zero_target_policy(zero_target_policy)
     original_prior = _observed_initial_prior(
         households, weight_field, zero_target_policy
@@ -1033,9 +1036,8 @@ def fit_linked_by_geography(
             )
         )
         fitted = index.contributions @ weights
-        integer_weights = np.asarray(
-            integerize_weights(weights.tolist()),
-            dtype=np.float64,
+        integer_weights, integerization_details = _realize_control_weights(
+            integerization, index.contributions, weights, targets
         )
         realized = index.contributions @ integer_weights
         report = _linked_constraint_report(
@@ -1060,6 +1062,7 @@ def fit_linked_by_geography(
             seed_records=len(households),
             include_issues=False,
         )
+        report.update(integerization_details)
         return geography, weights.tolist(), report
 
     return _collect_geography_fits(
@@ -1566,6 +1569,7 @@ def calibrate_linked_household_csvs(
     zero_target_policy: str = "structural",
     marital_status_controls_path: Path | None = None,
     marital_status_pack: str | None = None,
+    integerization: str = "midpoint",
 ) -> dict[str, Any]:
     """Calibrate linked household/person CSVs to geography controls.
 
@@ -1591,6 +1595,7 @@ def calibrate_linked_household_csvs(
         Disabled by default so otherwise identical reports remain byte stable.
     """
 
+    _validate_integerization(integerization, linked=person_controls_path is not None)
     _validate_zero_target_policy(
         zero_target_policy, has_person_controls=person_controls_path is not None
     )
@@ -1710,6 +1715,7 @@ def calibrate_linked_household_csvs(
             n_workers=n_workers,
             joint_solver=joint_solver,
             zero_target_policy=zero_target_policy,
+            integerization=integerization,
         )
     else:
         timing_seconds["input_validation"] = time.perf_counter() - phase_started
@@ -1732,6 +1738,7 @@ def calibrate_linked_household_csvs(
         households,
         persons,
         weights_by_geography=fit.weights_by_geography,
+        integer_weights_by_geography=_take_integer_weights(fit, integerization),
         geography_column=geography_column,
         household_id_column=household_id_column,
         person_id_column=person_id_column,
@@ -1788,6 +1795,8 @@ def calibrate_linked_household_csvs(
     summary["linked_population"] = _realization_contract(
         realization, households_out, persons_out, geography_column
     )
+    if integerization == "swap":
+        summary["integerization"] = "swap"
     summary["geography_universe"] = (
         geography_universe.as_dict() if geography_universe is not None else None
     )
@@ -1822,6 +1831,27 @@ def calibrate_linked_household_csvs(
         report_out.parent.mkdir(parents=True, exist_ok=True)
         report_out.write_text(json.dumps(summary, indent=2, sort_keys=True))
     return summary
+
+
+def _realize_control_weights(method, contributions, weights, targets):
+    counts = np.asarray(integerize_weights(weights.tolist()), dtype=np.int64)
+    if method == "swap":
+        counts = improve_integer_weights(contributions, weights, counts, targets)
+        return counts, {"integer_weights": counts.tolist()}
+    return counts, {}
+
+
+def _validate_integerization(method: str, *, linked: bool) -> None:
+    if method not in {"midpoint", "swap"}:
+        raise ValueError("integerization must be midpoint or swap")
+    if method == "swap" and not linked:
+        raise ValueError("Swap integerization requires linked person controls")
+
+
+def _take_integer_weights(fit: GeographyHouseholdFit, method: str):
+    if method == "midpoint":
+        return None
+    return {geo: report.pop("integer_weights") for geo, report in fit.reports.items()}
 
 
 def _prepare_calibration_control_pack(
@@ -2125,6 +2155,7 @@ def _build_replication_index(
     df_p: pd.DataFrame | None,
     weights_by_geography: dict[str, list[float]],
     household_id_column: str,
+    integer_weights_by_geography: dict[str, list[int]] | None = None,
 ):
     linked_sizes = None
     if df_p is not None:
@@ -2149,7 +2180,11 @@ def _build_replication_index(
             raise ValueError(
                 f"weights for geography {geography!r} do not match household rows"
             )
-        int_w = integerize_weights(weights)
+        int_w = (
+            integerize_weights(weights)
+            if integer_weights_by_geography is None
+            else integer_weights_by_geography[geography]
+        )
         integer_weights[geography] = int_w
         counts = np.asarray(int_w, dtype=np.intp)
         expected_counts[geography] = (
@@ -2174,6 +2209,7 @@ def _expand_realized_population(
     geography_column: str,
     household_id_column: str,
     person_id_column: str,
+    integer_weights_by_geography: dict[str, list[int]] | None = None,
 ) -> _RealizedPopulation:
     """Integerize geography weights and expand candidates into assigned frames.
 
@@ -2192,7 +2228,11 @@ def _expand_realized_population(
     df_hh = pd.DataFrame(households)
     df_p = pd.DataFrame(persons) if persons else None
     all_idxs, all_geos, integer_weights, expected_counts = _build_replication_index(
-        df_hh, df_p, weights_by_geography, household_id_column
+        df_hh,
+        df_p,
+        weights_by_geography,
+        household_id_column,
+        integer_weights_by_geography,
     )
     n_hh = len(all_idxs)
 
@@ -2308,11 +2348,13 @@ def _write_realized_population_to_csv(
     geography_column: str,
     household_id_column: str,
     person_id_column: str,
+    integer_weights_by_geography: dict[str, list[int]] | None = None,
 ) -> dict[str, Any]:
     realized = _expand_realized_population(
         households,
         persons,
         weights_by_geography=weights_by_geography,
+        integer_weights_by_geography=integer_weights_by_geography,
         geography_column=geography_column,
         household_id_column=household_id_column,
         person_id_column=person_id_column,

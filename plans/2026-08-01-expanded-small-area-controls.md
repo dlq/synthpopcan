@@ -253,6 +253,44 @@ checks govern admission, while the residuals show the separate limits of
 whole-household realization. The wider `SA12-12` acceptance remains open
 for its additional geographies and control families.
 
+#### Whole-household integerization experiment
+
+Systematic midpoint rounding preserves the rounded household weight total.
+It selects households by cumulative weight in candidate order and does not
+use their contributions to the individual control cells. In 20 fixed-seed
+permutations per tract, the median maximum marital-status residual ranged
+from 28 to 53.5 people. Changing candidate order alone left substantial error.
+
+A prototype started from the same midpoint allocations and swapped one
+household at a time among candidates with positive fractional weights. Each
+swap reduced the unweighted sum of squared residuals across all control
+cells. The search stopped at 100 swaps or when its shortlist offered no
+improvement. It retained the starting household count in every tract.
+
+| Census | Tract | Max marital residual before → after | Max residual across all cells before → after |
+| --- | --- | --- | --- |
+| 2016 | 4620221.00 | 33 → 1 | 47 → 4 |
+| 2016 | 4620470.03 | 37 → 1 | 48 → 2 |
+| 2016 | 4620625.02 | 31 → 1 | 79 → 5 |
+| 2021 | 4620252.00 | 50 → 1 | 50 → 2 |
+| 2021 | 4620419.00 | 29 → 1 | 54 → 22 |
+| 2021 | 4620626.00 | 71 → 2 | 71 → 7 |
+
+Both realized populations passed linkage validation. The prototype reused
+the exported fractional weights, so the previously nonconverged 2021 fit
+retains its original convergence status. The local experiment and outputs
+are under `runs/marital-integerization-2026-11-13/`. The CLI exposes the swap method through `geo calibrate --integerization swap`
+for linked normalized CSV controls. Midpoint remains the default.
+
+Rerunning both workflows through the CLI reproduced the prototype's
+marital-status residuals. The CLI's maximum across all cells for 2021 tract
+4620419.00 was 21 rather than 22 in the prototype. Both CLI outputs passed
+linkage validation. The 2016 run realized 6,830 households and 18,679 people
+(six below the person target), and the 2021 run realized 6,756 households and
+17,606 people (one above the person target). Fractional convergence stayed
+at three of three and two of three, respectively. The CLI invocations and
+validation reports are in the same local run directory.
+
 ### Education source review (2026-11-13)
 
 Accept the 2016 and 2021 Census Profile tract products as source candidates
