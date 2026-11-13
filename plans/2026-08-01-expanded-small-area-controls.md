@@ -59,7 +59,7 @@ runtime slice does not begin and the other families continue independently.
 | `SA12-03` | `in progress` | `SA12-01`, accepted `SA12-02`, `SA12-10` | Marital-status preparer, registry entry, and pack component ([#53](https://github.com/dlq/synthpopcan/issues/53)) | Normalized controls validate and round-trip; unsupported categories and universe mismatches fail closed |
 | `SA12-04` | `done` | Pinned 2016 and 2021 Profile definitions | Education source decision and crosswalk ([#55](https://github.com/dlq/synthpopcan/issues/55)) | Degree categories, age universe, vintage classifications, suppression rules, and fixture totals reproduce independently |
 | `SA12-05` | `in progress` | `SA12-01`, accepted `SA12-04`, `SA12-10` | Education preparer, registry entry, and pack component | Normalized controls validate and round-trip; not-applicable and unmapped categories remain explicit |
-| `SA12-06` | `ready` | Pinned 2016 and 2021 Profile definitions | Labour-force-status source decision and crosswalk | Categories, age denominator, vintage differences, suppression rules, and fixture totals reproduce independently |
+| `SA12-06` | `done` | Pinned 2016 and 2021 Profile definitions | Labour-force-status source decision and crosswalk | Categories, age denominator, vintage differences, suppression rules, and fixture totals reproduce independently |
 | `SA12-07` | `blocked` | `SA12-01`, accepted `SA12-06`, `SA12-10` | Labour-force preparer, registry entry, and pack component | Normalized controls validate and round-trip; support, zero, and universe failures stop before fitting |
 | `SA12-08` | `ready` | Pinned 2016 and 2021 Profile definitions | Work-activity source decision and crosswalk | Full/part-year and full/part-time categories, applicability, suppression, and fixture totals reproduce independently |
 | `SA12-09` | `blocked` | `SA12-01`, accepted `SA12-08`, `SA12-10` | Work-activity preparer, registry entry, and pack component | Normalized controls validate and round-trip; mutually exclusive states and denominators are enforced |
@@ -418,6 +418,77 @@ weights to realized households and independently recounted education
 residuals. The 2021 tract 4620221.00 remained fractionally nonconverged.
 Local commands, outputs, and audit are under
 `runs/education-acceptance-2026-11-13/`.
+
+### Labour-force status source review (2026-11-13)
+
+Use the same checksum-pinned 2016 and 2021 Census Profile CT archives and
+tract identifiers documented in the education source review. Labour-force
+status covers private-household residents aged 15 and over in the 25% sample.
+The reference weeks were May 1–7, 2016 and May 2–8, 2021. Annual work
+activity has a separate reference period and is reviewed under `SA12-08`.
+[2016 Labour Reference Guide](https://publications.gc.ca/collections/collection_2017/statcan/98-500-x/98-500-x2016012-eng.pdf) ·
+[2021 Labour Reference Guide](https://www12.statcan.gc.ca/census-recensement/2021/ref/98-500/012/98-500-x2021012-eng.pdf)
+
+| Category | 2016 Profile row | 2021 Profile row | 2016 `LFTAG` / 2021 `LFACT` |
+| --- | --- | --- | --- |
+| Employed | 1867 | 2225 | 1–2 |
+| Unemployed | 1868 | 2226 | 3–10 |
+| Not in the labour force | 1869 | 2227 | 11–14 |
+
+The code ranges match across vintages. Codes 11–13 use vintage-specific
+last-worked years, which the aggregate category combines. For hierarchical
+PUMF candidates, `AGEGRP` codes 1–2 give the under-15 state. Codes 3–13
+require a labour code 1–14. Reject unknown ages and unavailable or unmapped
+adult labour codes, including 99 (not applicable). The in-labour-force
+subtotal (1866/2224) overlaps employed and unemployed. Use the three disjoint
+count rows in the table, omitting the subtotal and rate rows from the fit.
+[Hierarchical PUMF codebooks](https://www150.statcan.gc.ca/n1/pub/98m0001x/)
+
+1. Anchor the eligible vector to the labour-status root (1865/2223).
+   Cross-check it against the 25% private-household age-15+ education
+   root (1683/1998) and income-statistics root (672/126). Require each
+   companion to be within five people of the labour root. Every complete
+   tract met both bounds. Use the all-ages 25% citizenship root (1135/1522)
+   as the private-household anchor. Require a positive labour root no larger
+   than the all-ages anchor and derive the under-15 target by subtraction.
+   The 100% Profile counts belong to a separate denominator.
+1. Require exact agreement with the all-ages and under-15 targets of
+   any other controls in a joint fit. For instance, 2016 CT 4620053.00
+   gives an under-15 target of 20 from labour and 25 from education.
+   Of the tracts passing the labour source screen, 3,743 in 2016 and
+   6,008 in 2021 also had an exact match to the education age target.
+1. Require all roots and leaves to be observed nonnegative base-five
+   integers. Allow an absolute discrepancy up to 16 between the three
+   leaves and the labour root, a conservative allowance of four per
+   published cell. Reject a zero-sum vector against a positive root.
+   Reconcile by proportional largest remainder in table order and retain
+   observed zeros, published counts, derived targets, and the archive hash.
+   The observed leaf-sum-minus-root range was −15 to +15 in 2016 and
+   −15 to +10 in 2021.
+1. Exclude a tract with an absent, blank, suppressed, unreliable, or
+   malformed required cell and fail preflight if it was explicitly
+   selected. Reject duplicate required rows. Read the 2016 total-sex
+   count or the 2021 total count and adjacent symbol. Preserve the reason
+   and distinguish numeric zero from unavailable data. Never reconstruct
+   suppressed counts from the subtotal or companion roots.
+
+| Census | Tracts scanned | Unavailable required counts | Impossible adult/all-ages counts | Passed source screen |
+| --- | --- | --- | --- | --- |
+| 2016 | 5,721 | 80 (73 `x`, 5 `..`, 2 `F`) | 57 | 5,584 |
+| 2021 | 6,247 | 89 (blank with `x`) | 1 | 6,157 |
+
+| Census | Montréal CT | All ages | Labour 15+ | Derived under 15 | Published employed / unemployed / outside labour force | Reconciled vector |
+| --- | --- | --- | --- | --- | --- | --- |
+| 2016 | 4620053.00 | 1,095 | 1,075 | 20 | 635 / 45 / 395 | 635 / 45 / 395 |
+| 2016 | 4620056.00 | 1,500 | 1,410 | 90 | 645 / 65 / 705 | 643 / 65 / 702 |
+| 2021 | 4620053.00 | 1,320 | 1,260 | 60 | 740 / 65 / 455 | 740 / 65 / 455 |
+| 2021 | 4620056.00 | 1,920 | 1,805 | 115 | 960 / 90 / 755 | 960 / 90 / 755 |
+
+Rejection fixtures include 2016 CT 2050130.05 (suppressed) and 3050015.01
+(labour root 40, citizenship root 0), and 2021 CT 9320010.00 (suppressed)
+and 5350376.06 (labour root 280, citizenship root 275). These are source
+checks. Candidate support and fit evidence belong to `SA12-07` and the
+subsequent joint acceptance.
 
 ## `1.1.0` Runtime Invariants
 
