@@ -543,6 +543,12 @@ def _calibrate_cli_files(request: SmallAreaCalibrationRequest):
     ),
 )
 @click.option(
+    "--marital-status-controls",
+    "marital_status_controls_path",
+    type=_PATH,
+    help="Age-15+ private-household marital-status targets and crosswalk JSON.",
+)
+@click.option(
     "--control-pack",
     default=None,
     help="Built-in control-pack identifier or strict local manifest JSON.",
@@ -679,6 +685,7 @@ def calibrate_command(
     persons_path: Path | None,
     controls_path: Path,
     person_controls_path: Path | None,
+    marital_status_controls_path: Path | None,
     control_pack: str | None,
     control_pack_evidence: Path | None,
     geo_dimension: str,
@@ -734,6 +741,7 @@ def calibrate_command(
                 geography_dimension=geo_dimension,
                 geography_column=output_geo_column,
                 person_controls_path=person_controls_path,
+                marital_status_controls_path=marital_status_controls_path,
                 control_pack=control_pack,
                 control_pack_evidence=control_pack_evidence,
                 geography_universe=geography_universe,

@@ -2495,6 +2495,30 @@
           },
           {
             "count": false,
+            "default": {
+              "type": "Sentinel"
+            },
+            "flag_value": null,
+            "is_flag": false,
+            "kind": "option",
+            "multiple": false,
+            "name": "marital_status_controls_path",
+            "names": [
+              "--marital-status-controls"
+            ],
+            "nargs": 1,
+            "required": false,
+            "type": {
+              "dir_okay": true,
+              "exists": false,
+              "file_okay": true,
+              "name": "path",
+              "readable": true,
+              "writable": false
+            }
+          },
+          {
+            "count": false,
             "default": null,
             "flag_value": null,
             "is_flag": false,
@@ -9893,6 +9917,11 @@
         "purpose": "linked-tree training manifest"
       },
       {
+        "documentation": "docs/small-area-reference.md",
+        "identifier": "synthpopcan-marital-status-controls-v1",
+        "purpose": "reviewed age-15+ marital-status control input"
+      },
+      {
         "documentation": "docs/records/prepared-model-archive-correction-2026-08-16.md",
         "identifier": "synthpopcan-prepared-model-archive-correction-evidence-v1",
         "purpose": "verified prepared-model archive-correction transaction"
@@ -14977,6 +15006,13 @@
             "default": "structural",
             "kind": "keyword_only",
             "name": "zero_target_policy",
+            "required": false
+          },
+          {
+            "annotation": "Path | None",
+            "default": null,
+            "kind": "keyword_only",
+            "name": "marital_status_controls_path",
             "required": false
           }
         ],

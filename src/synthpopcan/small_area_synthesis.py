@@ -1564,6 +1564,7 @@ def calibrate_linked_household_csvs(
     record_timing: bool = False,
     joint_solver: str = "ipu",
     zero_target_policy: str = "structural",
+    marital_status_controls_path: Path | None = None,
 ) -> dict[str, Any]:
     """Calibrate linked household/person CSVs to geography controls.
 
@@ -1642,6 +1643,14 @@ def calibrate_linked_household_csvs(
         seed=subsample_seed,
     )
 
+    persons, person_controls, marital_status_provenance = _with_marital_status_controls(
+        marital_status_controls_path,
+        persons,
+        person_controls,
+        geography_universe,
+        geography_dimension,
+        control_pack,
+    )
     control_pack_manifest: synthpopcan.control_packs.ControlPackManifest | None = None
     control_pack_evidence_record: (
         synthpopcan.control_packs.ControlPackEvidence | None
@@ -1839,6 +1848,7 @@ def calibrate_linked_household_csvs(
         else None
     )
     summary["control_pack_plan"] = control_pack_plan
+    summary.update(marital_status_provenance)
     timing_seconds["report_construction"] = time.perf_counter() - phase_started
     timing_seconds["total_before_report_write"] = time.perf_counter() - started
     if record_timing:
@@ -1847,6 +1857,19 @@ def calibrate_linked_household_csvs(
         report_out.parent.mkdir(parents=True, exist_ok=True)
         report_out.write_text(json.dumps(summary, indent=2, sort_keys=True))
     return summary
+
+
+def _with_marital_status_controls(path, persons, controls, geography, dimension, pack):
+    if path is None:
+        return persons, controls, {}
+    if controls is None or geography is None or pack is not None:
+        raise ValueError(
+            "Marital-status calibration requires normalized person controls and an "
+            "explicit Census geography identity. Omit the reviewed control pack."
+        )
+    from synthpopcan._conditional_controls import load_marital_status_controls
+
+    return load_marital_status_controls(path, persons, controls, geography, dimension)
 
 
 def _realization_contract(realization, households_path, persons_path, geography_column):

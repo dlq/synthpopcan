@@ -1073,6 +1073,44 @@ Important options:
   `1e-6`.
 - `--format summary|json`: printed report format.
 
+#### Marital status for persons aged 15 and older
+
+Use `geo calibrate --marital-status-controls marital.json` with normalized
+household and person control CSVs and explicit Census vintage, geography level,
+and namespace. This first path accepts independently reviewed, reconciled
+private-household targets supplied by the study. It is available through
+`SmallAreaCalibrationRequest.marital_status_controls_path` in Python too.
+
+The JSON document has schema version `synthpopcan-marital-status-controls-v1`.
+It contains an `age_eligibility` map from the candidate model's `AGEGRP` codes
+to booleans and a `crosswalk` from its `MarStH` (2016) or `MARSTH` (2021)
+codes to the reviewed categories. In `targets`, supply one record per person
+control geography with these fields.
+
+| Field | Contents |
+| --- | --- |
+| `geography` | Versioned `GeographyIdentity` object with the short identifier, vintage, level, and namespace. Omit the optional DGUID. |
+| `all_private_household_persons` | Independently evidenced private-household person count, matching every existing person margin. |
+| `age_15_plus_persons` and `under_15_persons` | Independently evidenced counts that sum to the private-household total. |
+| `eligible_counts` | One count per crosswalk category, including observed zeros. The vector sums to the age-15+ count. |
+| `under_15_not_applicable` | Explicit target for under-15 candidates, matching the independently evidenced under-15 count. |
+| `source_evidence` | Reference identifying the source revision, universe, and any reviewed reconciliation. |
+
+Candidate rows with unknown age codes or unmapped eligible marital-status
+codes fail preflight. The added `marital_status_15_plus` column labels younger
+people as `under_15_not_applicable` and the fit continues to assign whole
+households. The report records fitted and realized residuals and the input
+document's hash. Use normalized CSVs without a reviewed pack or prepared
+controls directory for this path.
+
+The standard 2016 and 2021 Census marital-status products cover the
+population aged 15 and over, including people in collective dwellings. Use
+them as private-household targets only where independently reviewed evidence
+establishes that the populations coincide. Equality of published rounded
+counts alone does not establish that condition. See the
+[2016 CT table](https://www150.statcan.gc.ca/n1/en/catalogue/98-400-X2016036)
+and [2021 reference guide](https://www12.statcan.gc.ca/census-recensement/2021/ref/98-500/002/98-500-x2021002-eng.pdf).
+
 ### `geo synthesize`
 
 Generates linked candidates from a package and calibrates them in one command.

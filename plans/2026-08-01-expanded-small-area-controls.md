@@ -56,7 +56,7 @@ runtime slice does not begin and the other families continue independently.
 | ID | Status | Depends on | Deliverable | Acceptance |
 | --- | --- | --- | --- | --- |
 | `SA12-01` | `done` | Released `1.1.0` registry and runtime invariants | Versioned age-15+ universe and not-applicable/conditional-semantics contract | The contract distinguishes all-private-household persons, age-15+ denominators, under-15 states, suppression, and rounding; mismatch fixtures fail before fitting |
-| `SA12-02` | `ready` | Pinned 2016 and 2021 Profile definitions | Marital-status source decision and crosswalk | Child rows, categories, denominators, suppression rules, vintage differences, and fixture totals reproduce independently |
+| `SA12-02` | `in progress` | Pinned 2016 and 2021 Profile definitions | Marital-status source decision and crosswalk | Child rows, categories, denominators, suppression rules, vintage differences, and fixture totals reproduce independently |
 | `SA12-03` | `blocked` | `SA12-01`, accepted `SA12-02`, `SA12-10` | Marital-status preparer, registry entry, and pack component | Normalized controls validate and round-trip; unsupported categories and universe mismatches fail closed |
 | `SA12-04` | `ready` | Pinned 2016 and 2021 Profile definitions | Education source decision and crosswalk | Degree categories, age universe, vintage classifications, suppression rules, and fixture totals reproduce independently |
 | `SA12-05` | `blocked` | `SA12-01`, accepted `SA12-04`, `SA12-10` | Education preparer, registry entry, and pack component | Normalized controls validate and round-trip; not-applicable and unmapped categories remain explicit |
@@ -64,7 +64,7 @@ runtime slice does not begin and the other families continue independently.
 | `SA12-07` | `blocked` | `SA12-01`, accepted `SA12-06`, `SA12-10` | Labour-force preparer, registry entry, and pack component | Normalized controls validate and round-trip; support, zero, and universe failures stop before fitting |
 | `SA12-08` | `ready` | Pinned 2016 and 2021 Profile definitions | Work-activity source decision and crosswalk | Full/part-year and full/part-time categories, applicability, suppression, and fixture totals reproduce independently |
 | `SA12-09` | `blocked` | `SA12-01`, accepted `SA12-08`, `SA12-10` | Work-activity preparer, registry entry, and pack component | Normalized controls validate and round-trip; mutually exclusive states and denominators are enforced |
-| `SA12-10` | `ready` | `SA12-01` | Shared conditional-person reconciliation and preflight path | The common implementation represents not-applicable states or explicit conditional constraints without silently manufacturing totals; adversarial cases fail closed |
+| `SA12-10` | `in progress` | `SA12-01` | Shared conditional-person reconciliation and preflight path | The common implementation represents not-applicable states or explicit conditional constraints without silently manufacturing totals; adversarial cases fail closed |
 | `SA12-11` | `blocked` | `SA12-10` and at least one accepted family runtime slice | Separately versioned conditional-person pack tier | Manifests have stable identifiers, semantic checksums, inspectable contents, and fail-closed compatibility with the retained broad packs |
 | `SA12-12` | `blocked` | `SA12-11` | Joint bounded feasibility and calibration evidence | Accepted families run jointly with broad packs on reviewed 2016/2021 CSD, CT, ADA, and DA cases; fractional and realized residuals are independently recomputed |
 | `SA12-13` | `blocked` | `SA12-12` | Python and CLI adoption through the shared workflow | Equivalent library and command requests normalize identically; public-interface and machine-output fixtures remain additive |
@@ -117,6 +117,14 @@ unbounded queue:
 Assignment is not acceptance. A family that cannot satisfy its universe,
 crosswalk, suppression, support, and residual evidence remains uncontrolled
 and returns to conditional research.
+
+The first conditional calibration path accepts reviewed marital-status
+vectors and separate private-household age denominators through normalized
+CSV calibration. Fictional 2016 and 2021 inputs exercise the CLI from
+preflight through realized residuals. Admission to a built-in pack still
+requires a verified source and crosswalk for each vintage and geography.
+The published all-resident marital-status rows alone do not meet the
+private-household universe requirement.
 
 ## `1.1.0` Runtime Invariants
 

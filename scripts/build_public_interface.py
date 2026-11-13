@@ -27,6 +27,10 @@ SCHEMA_PATTERN = re.compile(r"synthpopcan-[a-z0-9-]+-v[0-9]+")
 # These formats are accepted or emitted by documented CLI/Python workflows and
 # are therefore part of the 1.x persisted-artifact compatibility commitment.
 SUPPORTED_SCHEMAS: dict[str, tuple[str, str]] = {
+    "synthpopcan-marital-status-controls-v1": (
+        "reviewed age-15+ marital-status control input",
+        "docs/small-area-reference.md",
+    ),
     "synthpopcan-assurance-v1": ("run assurance record", "CORRECTNESS.md"),
     "synthpopcan-canada-small-area-plan-v1": (
         "resumable national small-area plan",
