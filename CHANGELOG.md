@@ -4,6 +4,16 @@ All notable public changes to SynthPopCan are tracked here.
 
 ## Unreleased
 
+- Add 2016 and 2021 census tract controls for marital status, education, and
+  labour-force status in linked normalized CSV calibration. Compatible
+  families can be fitted together alongside the broad control pack.
+
+- Add opt-in `geo calibrate --integerization swap` to reduce realized control
+  residuals while keeping household counts fixed. Midpoint remains the default.
+
+- Report incompatible household-size and population targets before fitting,
+  with separate guidance for control conflicts and candidate capacity limits.
+
 - Record a retryable failure when a parallel worker exits without a result.
   Verify completed national batch artifacts before resuming and report any
   missing or changed files. Document checkpoint recovery and test numerical

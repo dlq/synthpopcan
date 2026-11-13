@@ -1110,7 +1110,10 @@ def test_calibration_report_highlights_largest_residuals(tmp_path: Path) -> None
         "margin, and category that the calibration could not satisfy.",
         "For non-converged geographies, check whether controls conflict, "
         "categories were mapped consistently, or the candidate pool lacks "
-        "enough matching households.",
+        "enough matching households. Test joint feasibility under the "
+        "selected zero policy before increasing iterations. Review or "
+        "reconcile conflicting targets, expand candidate support, or "
+        "exclude the tract from exact-fit results.",
         "Review the realized margin summaries: integer household selection "
         "introduced residuals after the fractional household/person fit.",
     ]

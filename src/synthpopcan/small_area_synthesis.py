@@ -970,16 +970,6 @@ def fit_linked_by_geography(
     original_prior = _observed_initial_prior(
         households, weight_field, zero_target_policy
     )
-    household_fit = fit_households_by_geography(
-        households,
-        household_controls,
-        geography_dimension=geography_dimension,
-        household_id_column=household_id_column,
-        weight_field=weight_field,
-        max_iterations=max_iterations,
-        tolerance=tolerance,
-        n_workers=n_workers,
-    )
     household_by_geography = controls_by_geography(
         household_controls,
         geography_dimension=geography_dimension,
@@ -999,6 +989,23 @@ def fit_linked_by_geography(
             f"controls for {missing_household[:5]!r}"
         )
 
+    _validate_household_size_population(
+        household_by_geography,
+        person_by_geography,
+        households,
+        persons,
+        household_id_column,
+    )
+    household_fit = fit_households_by_geography(
+        households,
+        household_controls,
+        geography_dimension=geography_dimension,
+        household_id_column=household_id_column,
+        weight_field=weight_field,
+        max_iterations=max_iterations,
+        tolerance=tolerance,
+        n_workers=n_workers,
+    )
     first_geography = sorted(household_by_geography)[0]
     index = _LinkedCalibrationIndex.build(
         households,
@@ -1072,6 +1079,81 @@ def fit_linked_by_geography(
     )
 
 
+def _validate_household_size_population(
+    household_by_geography: Mapping[str, ControlTable],
+    person_by_geography: Mapping[str, ControlTable],
+    households: Sequence[HouseholdRow],
+    persons: Sequence[PersonRow],
+    household_id_column: str,
+) -> None:
+    """Reject incompatible household-size and person totals."""
+    if not any(
+        margin.dimensions == ("household_size_group",)
+        for controls in household_by_geography.values()
+        for margin in controls.margins
+    ):
+        return
+    sizes = Counter(person.get(household_id_column) for person in persons)
+    maxima: dict[str, int] = {}
+    for household in households:
+        group = household.get("household_size_group")
+        if group is not None:
+            maxima[group] = max(
+                maxima.get(group, 0), sizes[household[household_id_column]]
+            )
+    for geography, household_controls in household_by_geography.items():
+        population = _first_margin_total(person_by_geography[geography])
+        for margin in household_controls.margins:
+            if margin.dimensions == ("household_size_group",):
+                minimum = _minimum_grouped_population(margin)
+                if minimum is not None and minimum > population + 1e-9:
+                    raise ValueError(
+                        f"Geography {geography!r}: household-size targets require at "
+                        f"least {minimum:g} people, but the person target is "
+                        f"{population:g}. Review Census vintage, private-household "
+                        "universe, and rounding. Reconcile and document the targets "
+                        "or run without this tract. More candidates cannot resolve "
+                        "this conflict."
+                    )
+
+                _validate_candidate_population_maximum(
+                    geography, margin, population, maxima
+                )
+
+
+def _validate_candidate_population_maximum(geography, margin, population, maxima):
+    positive = [cell for cell in margin.cells if cell.count > 0]
+    if not positive or any(
+        cell.categories["household_size_group"] not in maxima for cell in positive
+    ):
+        return
+    maximum = sum(
+        maxima[cell.categories["household_size_group"]] * cell.count
+        for cell in positive
+    )
+    if population > maximum + 1e-9:
+        raise ValueError(
+            f"Geography {geography!r}: the candidate pool can supply at most "
+            f"{maximum:g} people at the requested household-size counts, but "
+            f"the person target is {population:g}. Use a model or pool with "
+            "larger linked households in the required size groups, review the "
+            "household-size and population targets, or exclude this tract."
+        )
+
+
+def _minimum_grouped_population(margin: ControlMargin) -> float | None:
+    sizes = {"1": 1, "2": 2, "3": 3, "4": 4, "5": 5}
+    if any(
+        cell.categories.get("household_size_group") not in sizes
+        for cell in margin.cells
+    ):
+        return None
+    return sum(
+        sizes[cell.categories["household_size_group"]] * cell.count
+        for cell in margin.cells
+    )
+
+
 def _fit_linked_system_for_geography(
     system: JointCalibrationSystem,
     geography: str,
@@ -1098,6 +1180,14 @@ def _fit_linked_system_for_geography(
             original_prior=original_prior,
             household_total=household_total,
         )
+    except StructuralZeroSupportError as exc:
+        raise ValueError(
+            f"Linked calibration failed for geography {geography!r}: {exc}. "
+            "Check which positive targets lost support under the zero controls. "
+            "Add eligible linked households or exclude this tract. If the source "
+            "zeros are rounded observations, --zero-target-policy observed "
+            "can produce an approximate fit with reported residuals."
+        ) from exc
     except ValueError as exc:
         raise ValueError(
             f"Linked calibration failed for geography {geography!r}: {exc}"
@@ -2734,7 +2824,10 @@ def _suggest_small_area_next_steps(
         steps.append(
             "For non-converged geographies, check whether controls conflict, "
             "categories were mapped consistently, or the candidate pool lacks "
-            "enough matching households."
+            "enough matching households. Test joint feasibility under the "
+            "selected zero policy before increasing iterations. Review or "
+            "reconcile conflicting targets, expand candidate support, or "
+            "exclude the tract from exact-fit results."
         )
     if realized_max_abs_error is not None and realized_max_abs_error > 1e-9:
         steps.append(

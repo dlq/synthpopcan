@@ -84,3 +84,44 @@ def test_structural_zero_failure_names_affected_geography(workers, solver):
         "a positive linked calibration target has no household support "
         "after applying structural-zero controls"
     )
+
+
+@pytest.mark.parametrize(
+    ("population", "message"),
+    [
+        (9, "at least 10 people.*person target is 9"),
+        (11, "at most 10 people.*person target is 11"),
+    ],
+)
+def test_linked_fit_rejects_population_outside_household_size_bounds(
+    population, message
+):
+    geography = "9350156.05"
+    household = ControlTable(
+        margins=(
+            ControlMargin(
+                "size",
+                ("ct", "household_size_group"),
+                (ControlCell({"ct": geography, "household_size_group": "5"}, 2),),
+            ),
+        ),
+        dimensions=("ct", "household_size_group"),
+    )
+    person = ControlTable(
+        margins=(
+            ControlMargin(
+                "population",
+                ("ct", "group"),
+                (ControlCell({"ct": geography, "group": "all"}, population),),
+            ),
+        ),
+        dimensions=("ct", "group"),
+    )
+    with pytest.raises(ValueError, match=rf"9350156\.05.*{message}"):
+        fit_linked_by_geography(
+            [{"synthetic_household_id": "h1", "household_size_group": "5"}],
+            [{"synthetic_household_id": "h1"} for _ in range(5)],
+            household,
+            person,
+            geography_dimension="ct",
+        )

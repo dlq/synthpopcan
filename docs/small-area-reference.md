@@ -1052,7 +1052,9 @@ Important options:
 - `--person-controls`: optional person controls for joint household-weight
   refinement.
 - `--control-pack`: optional built-in identifier or strict local pack manifest.
-  Requires person controls and `--control-pack-evidence`.
+  For a broad pack or a local manifest, supply person controls and
+  `--control-pack-evidence`. A standalone built-in marital-status pack
+  uses its source CSV as evidence.
 - `--control-pack-evidence`: strict JSON bound to the selected pack and the
   exact household/person control tables. A non-passing plan stops before fit.
 - `--geo-dimension`: geography dimension in the controls.
@@ -1072,6 +1074,31 @@ Important options:
 - `--tolerance`: convergence tolerance for each geography; the default is
   `1e-6`.
 - `--format summary|json`: printed report format.
+
+#### Diagnose infeasible linked fits
+
+For a `household_size_group` margin, calibration checks whether the
+household-size targets can accommodate the person total. The lower bound
+counts each 5+ household as five people. The upper bound uses the largest
+linked candidate household in each positive size group when all those
+groups are represented.
+
+- If the person target is **below the minimum**, check that the Census
+  vintage and private-household universe agree, then review any rounding or
+  normalization. Document any target reconciliation or exclude the tract.
+- If the person target is **above the candidate maximum**, use a model or
+  pool that supplies larger linked households in the required size groups,
+  review the targets, or exclude the tract. More draws from a model with
+  the same size cap cannot raise this bound.
+- If a positive cell **loses support under structural zeros**, review the
+  zero controls and add compatible candidates. If the zeros are rounded
+  observations, `--zero-target-policy observed` can produce an approximate
+  fit with residuals against the original targets.
+- If the run **completes without convergence**, use `report.json` to locate
+  the geography and margins with the largest residuals. Check joint
+  feasibility under the selected zero policy before raising the iteration
+  limit. Whole-household swaps can reduce realized residuals. Fractional
+  convergence is reported separately.
 
 #### Marital status for persons aged 15 and older
 

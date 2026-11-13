@@ -4,8 +4,8 @@ Status: active feature implementation; `1.1.0` released and `1.2.0` committed\
 Created: 2026-08-01\
 Last updated: 2026-11-13\
 Target: `1.1.0` broad compatible packs; conditional person controls in `1.2.0`\
-Next action: investigate the realized tract residuals and apply the
-education source contract in `SA12-05` when its prerequisites are complete\
+Next action: review the work-activity sources in `SA12-08` and continue
+joint conditional-control acceptance beyond the tested tracts\
 Roadmap: [PLANS.md](../PLANS.md) | [Plan index](README.md)
 
 Release sequencing and confidence are defined in the
@@ -324,6 +324,32 @@ conditional margins and matched integer weights to realized households.
 Scripts and results are in
 `runs/joint-conditional-2026-11-13/toronto-diagnosis/`. This experiment
 uses local candidate preparation. The model generator and CLI are unchanged.
+
+#### Multi-region joint evidence and B.C. sensitivity runs
+
+All 23 tracts from the two-vintage denominator screen ran with the 14 broad
+and three conditional margins and whole-household swaps. The original pools
+were jointly feasible in 10 tracts. Augmentation restored feasibility in 11
+more. Selected fits converged in 9 of 9 tracts in 2016 and 12 of 14 in 2021.
+All selected outputs passed linked validation.
+
+The remaining B.C. cases had different size bounds. For CT 9350156.05,
+the normalized size margin required at least 238 people against a target
+of 230. For CT 9350180.05, the candidate model could accommodate at most
+106 people against a target of 110. Targeted resampling improved joint
+support for the latter, while its size bound still prevented an exact fit.
+The linked CLI now rejects these two bound violations and identifies
+whether to review targets or expand candidate support.
+
+The sensitivity runs kept the published inputs separately. For 9350156.05,
+two households moved from 5+ to size 1 in the normalized target. For
+9350180.05, one household moved from size 1 to 5+, using the targeted
+provincial pool. Both adjusted cases converged fractionally and passed
+linkage validation. Their maximum realized cell residuals were two and
+four, respectively. These fits establish feasibility for the adjusted
+targets. The 23-tract original-target acceptance count remains 21 of 23.
+The scripts, reports, and audits are in the local
+`runs/joint-23-2026-11-13/` directory.
 
 ### Education source review (2026-11-13)
 
