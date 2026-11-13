@@ -235,6 +235,15 @@ def labour_force_packs_command() -> None:
         click.echo(identifier)
 
 
+@control_packs_group.command("work-activity")
+def work_activity_packs_command() -> None:
+    """List built-in work-activity tract packs."""
+    from synthpopcan._work_activity_packs import PACKS
+
+    for identifier in PACKS:
+        click.echo(identifier)
+
+
 @control_packs_group.command("education")
 def education_packs_command() -> None:
     """List the built-in education tract packs."""
@@ -582,6 +591,13 @@ def _calibrate_cli_files(request: SmallAreaCalibrationRequest):
     type=_PATH,
     help="Matching Census Profile tract ZIP or CSV for the labour-force pack.",
 )
+@click.option("--work-activity-pack", help="Built-in work-activity tract pack.")
+@click.option(
+    "--work-activity-profile",
+    "work_activity_profile_path",
+    type=_PATH,
+    help="Matching Census Profile tract ZIP or CSV for the work-activity pack.",
+)
 @click.option("--education-pack", help="Built-in education tract pack.")
 @click.option(
     "--education-profile",
@@ -743,6 +759,8 @@ def calibrate_command(
     education_profile_path: Path | None,
     labour_force_pack: str | None,
     labour_force_profile_path: Path | None,
+    work_activity_pack: str | None,
+    work_activity_profile_path: Path | None,
     control_pack: str | None,
     control_pack_evidence: Path | None,
     geo_dimension: str,
@@ -804,6 +822,8 @@ def calibrate_command(
                 education_pack=education_pack,
                 labour_force_pack=labour_force_pack,
                 labour_force_profile_path=labour_force_profile_path,
+                work_activity_pack=work_activity_pack,
+                work_activity_profile_path=work_activity_profile_path,
                 education_profile_path=education_profile_path,
                 control_pack=control_pack,
                 control_pack_evidence=control_pack_evidence,

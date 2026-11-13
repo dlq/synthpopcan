@@ -4,8 +4,8 @@ Status: active feature implementation; `1.1.0` released and `1.2.0` committed\
 Created: 2026-08-01\
 Last updated: 2026-11-13\
 Target: `1.1.0` broad compatible packs; conditional person controls in `1.2.0`\
-Next action: prepare the work-activity tract packs in `SA12-09` and continue
-joint conditional-control acceptance beyond the tested tracts\
+Next action: add work activity to joint conditional-control acceptance
+and extend coverage beyond the tested tracts\
 Roadmap: [PLANS.md](../PLANS.md) | [Plan index](README.md)
 
 Release sequencing and confidence are defined in the
@@ -62,7 +62,7 @@ runtime slice does not begin and the other families continue independently.
 | `SA12-06` | `done` | Pinned 2016 and 2021 Profile definitions | Labour-force-status source decision and crosswalk | Categories, age denominator, vintage differences, suppression rules, and fixture totals reproduce independently |
 | `SA12-07` | `in progress` | `SA12-01`, accepted `SA12-06`, `SA12-10` | Labour-force preparer, registry entry, and pack component | Normalized controls validate and round-trip; support, zero, and universe failures stop before fitting |
 | `SA12-08` | `done` | Pinned 2016 and 2021 Profile definitions | Work-activity source decision and crosswalk | Full/part-year and full/part-time categories, applicability, suppression, and fixture totals reproduce independently |
-| `SA12-09` | `ready` | `SA12-01`, accepted `SA12-08`, `SA12-10` | Work-activity preparer, registry entry, and pack component | Normalized controls validate and round-trip; mutually exclusive states and denominators are enforced |
+| `SA12-09` | `in progress` | `SA12-01`, accepted `SA12-08`, `SA12-10` | Work-activity preparer, registry entry, and pack component | Normalized controls validate and round-trip; mutually exclusive states and denominators are enforced |
 | `SA12-10` | `in progress` | `SA12-01` | Shared conditional-person reconciliation and preflight path | The common implementation represents not-applicable states or explicit conditional constraints without silently manufacturing totals; adversarial cases fail closed |
 | `SA12-11` | `blocked` | `SA12-10` and at least one accepted family runtime slice | Separately versioned conditional-person pack tier | Manifests have stable identifiers, semantic checksums, inspectable contents, and fail-closed compatibility with the retained broad packs |
 | `SA12-12` | `blocked` | `SA12-11` | Joint bounded feasibility and calibration evidence | Accepted families run jointly with broad packs on reviewed 2016/2021 CSD, CT, ADA, and DA cases; fractional and realized residuals are independently recomputed |
@@ -652,6 +652,31 @@ These counts establish source eligibility. Candidate support, normalized
 pack validation, and fit evidence belong to `SA12-09` and joint acceptance.
 The local archive scan is recorded in
 `runs/work-activity-source-review-2026-11-13/`.
+
+#### Work-activity tract implementation and fit evidence
+
+Both built-in work-activity packs accept the matching tract Profile ZIP
+or English CSV via `geo calibrate --work-activity-pack ... --work-activity-profile ...`.
+The shared conditional Profile reader checks the work-activity denominator
+against education, labour-force status, and income before enforcing exact
+all-ages and under-15 agreement with other selected controls.
+
+Both vintages used published broad controls, the same candidate pools for
+each midpoint/swap comparison, and the hybrid solver at tolerance 0.01.
+
+| Census | Montréal tracts | Fractional convergence | Max realized work-activity residual, midpoint → swap | Max realized residual across all controls, midpoint → swap |
+| --- | --- | --- | --- | --- |
+| 2016 | 4620470.03, 4620625.02 | 2 of 2 | 41 → 1 | 69 → 9 |
+| 2021 | 4620221.00, 4620638.04 | 2 of 2 | 92 → 1 | 103 → 10 |
+
+All four outputs passed linkage validation. The audit independently
+classified exported people from `AGEGRP` and `WRKACT`, recomputed the
+work-activity residuals, and matched exported weights to realized
+household multiplicities. The 2016 tract 4620500.00 failed broad
+preflight because its household-size counts require at least 925 people
+and its person target is 920. The 2021 tract 4620643.03 was screened out
+for a different work-activity under-15 target. Commands, screens, and
+reports are in `runs/work-activity-acceptance-2026-11-13/`.
 
 ## `1.1.0` Runtime Invariants
 

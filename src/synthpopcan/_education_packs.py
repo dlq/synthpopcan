@@ -5,6 +5,7 @@ from __future__ import annotations
 from synthpopcan._conditional_profile import prepare_profile_targets
 from synthpopcan.geography import GeographyUniverse
 
+SOURCE_FIELDS = dict.fromkeys((2016, 2021), "HDGREE")
 PACKS = {f"statcan-{year}-education-ct-v1": year for year in (2016, 2021)}
 CROSSWALK = {
     "1": "no_credential",

@@ -1,4 +1,4 @@
-"""Labour-force Profile parsing and linked conditional calibration."""
+"""Labour-force and annual work-activity Profile calibration."""
 
 import csv
 import json
@@ -10,8 +10,16 @@ from synthpopcan.cli import cli
 
 
 @pytest.mark.parametrize("year", [2016, 2021])
-@pytest.mark.parametrize("case", ["valid", "suppressed", "companion", "duplicate"])
-def test_labour_force_calibration(tmp_path, year, case):
+@pytest.mark.parametrize(
+    ("family", "case"),
+    [
+        (family, case)
+        for family in ("labour-force", "work-activity")
+        for case in ("valid", "suppressed", "companion", "duplicate")
+    ]
+    + [("work-activity", "rounding"), ("work-activity", "adult_not_applicable")],
+)
+def test_labour_profile_calibration(tmp_path, year, family, case):
     tract = "4620053.00"
     profile = tmp_path / "profile.csv"
     if year == 2016:
@@ -38,6 +46,22 @@ def test_labour_force_calibration(tmp_path, year, case):
         members = [1522, 2223, 126, 1998, 2225, 2226, 2227]
     values = [20, 15, 15, 5 if case == "companion" else 15, 5, 5, 0]
     field = "LFTAG" if year == 2016 else "LFACT"
+    first_code, second_code = 1, 8
+    if family == "work-activity":
+        field = "WRKACT"
+        first_code, second_code = 2, 11
+        members = (
+            [1135, 1873, 672, 1683, 1874, 1876, 1877, 1865]
+            if year == 2016
+            else [1522, 2231, 126, 1998, 2232, 2234, 2235, 2223]
+        )
+        values.append(15)
+        if case == "rounding":
+            values[4] = 30
+        if case == "adult_not_applicable":
+            first_code = 99
+    pack_suffix = "labour-force-status" if family == "labour-force" else family
+    output_field = pack_suffix.replace("-", "_")
     rows = [
         [*prefix, member, value, "x" if case == "suppressed" and i == 4 else ""]
         if year == 2021
@@ -54,7 +78,8 @@ def test_labour_force_calibration(tmp_path, year, case):
     hh.write_text("synthetic_household_id,household_size\na,1\nb,1\nc,2\n")
     pp.write_text(
         f"synthetic_person_id,synthetic_household_id,AGEGRP,{field},group\n"
-        "p1,a,3,1,all\np2,b,12,8,all\np3,c,3,1,all\np4,c,2,99,all\n"
+        f"p1,a,3,{first_code},all\np2,b,12,{second_code},all\n"
+        f"p3,c,3,{first_code},all\np4,c,2,99,all\n"
     )
     hc.write_text(
         f"margin,dimensions,ct,household_size,count\n"
@@ -77,9 +102,9 @@ def test_labour_force_calibration(tmp_path, year, case):
             str(hc),
             "--person-controls",
             str(pc),
-            "--labour-force-pack",
-            f"statcan-{year}-labour-force-status-ct-v1",
-            "--labour-force-profile",
+            f"--{family}-pack",
+            f"statcan-{year}-{pack_suffix}-ct-v1",
+            f"--{family}-profile",
             str(profile),
             "--geo-dimension",
             "ct",
@@ -101,16 +126,21 @@ def test_labour_force_calibration(tmp_path, year, case):
         expected = {
             "suppressed": "unavailable or invalid",
             "companion": "denominators",
-            "duplicate": "duplicate labour-force status",
+            "duplicate": "duplicate",
+            "rounding": "rounding envelope",
+            "adult_not_applicable": "unsupported eligible WRKACT",
         }
         assert expected[case] in result.output
         assert not (out / "persons.csv").exists()
         return
     assert result.exit_code == 0, result.output
     report = json.loads((out / "report.json").read_text())
-    evidence = report["labour_force_status_controls"]["geographies"][tract]
+    evidence = report[f"{output_field}_controls"]["geographies"][tract]
     assert evidence["under_15_target"] == 5
-    assert evidence["eligible_targets"]["employed"] == 8
-    assert evidence["eligible_targets"]["unemployed"] == 7
-    assert evidence["eligible_targets"]["not_in_labour_force"] == 0
+    categories = (
+        ("employed", "unemployed", "not_in_labour_force")
+        if family == "labour-force"
+        else ("did_not_work", "full_year_full_time", "part_year_or_part_time")
+    )
+    assert evidence["eligible_targets"] == dict(zip(categories, (8, 7, 0), strict=True))
     assert report["summary"]["realized_max_abs_error"] == 0

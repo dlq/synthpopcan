@@ -77,6 +77,7 @@ def test_cli_command_tree_is_coherent() -> None:
         "list",
         "marital-status",
         "labour-force-status",
+        "work-activity",
         "education",
         "plan",
         "show",

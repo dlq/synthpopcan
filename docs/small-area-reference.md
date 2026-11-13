@@ -1243,6 +1243,24 @@ for children. The report includes the published rows, derived targets,
 and Profile hash. Tracts with unavailable counts or incompatible
 all-ages and under-15 targets fail before fitting.
 
+### Work-activity controls for census tracts
+
+List the packs with `synthpopcan geo control-packs work-activity`. For
+linked normalized CSV calibration, use `--work-activity-pack statcan-2021-work-activity-ct-v1` and `--work-activity-profile tract-profile.zip` with `geo calibrate`. Use the corresponding 2016
+identifier and Profile for 2016 tracts. The Profile can be the official
+tract ZIP or its extracted English CSV. The options can accompany the
+matching broad pack and its evidence, and `--integerization swap`.
+
+The pack writes `work_activity_15_plus` on realized persons. It groups
+private-household residents aged 15 and over into did not work, worked
+full year and full time, and worked part year and/or part time during
+calendar year 2015 (2016 Census) or 2020 (2021 Census). Children use
+`under_15_not_applicable`. The report records published counts, reconciled
+targets, and the Profile hash. A selected tract needs observed counts and
+exact agreement with the all-ages and under-15 targets of the other
+controls. If a tract fails, inspect the reported rows and use compatible
+controls for that tract or omit the work-activity pack for its fit.
+
 ### `geo synthesize`
 
 Generates linked candidates from a package and calibrates them in one command.

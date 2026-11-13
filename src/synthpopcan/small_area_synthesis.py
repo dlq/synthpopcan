@@ -1664,6 +1664,8 @@ def calibrate_linked_household_csvs(
     education_profile_path: Path | None = None,
     labour_force_pack: str | None = None,
     labour_force_profile_path: Path | None = None,
+    work_activity_pack: str | None = None,
+    work_activity_profile_path: Path | None = None,
 ) -> dict[str, Any]:
     """Calibrate linked household/person CSVs to geography controls.
 
@@ -1756,7 +1758,7 @@ def calibrate_linked_household_csvs(
     ) = _prepare_calibration_control_pack(
         control_pack,
         control_pack_evidence,
-        marital_pack or education_pack or labour_force_pack,
+        marital_pack or education_pack or labour_force_pack or work_activity_pack,
         households,
         persons,
         controls,
@@ -1782,6 +1784,7 @@ def calibrate_linked_household_csvs(
         (
             ("education", education_pack, education_profile_path),
             ("labour_force_status", labour_force_pack, labour_force_profile_path),
+            ("work_activity", work_activity_pack, work_activity_profile_path),
         ),
     )
     phase_started = time.perf_counter()

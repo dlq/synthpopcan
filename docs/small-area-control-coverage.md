@@ -158,9 +158,12 @@ aggregate-only regression fixtures.
    housing suitability, and condominium status.
 1. **Completed:** citizenship, immigrant status, generation status, and
    visible-minority status for people in private households.
-1. Add reviewed marital-status, language, place-of-birth, education,
-   labour-force, work-activity, and income-band crosswalks, with explicit
-   conditional-universe handling.
+1. The reviewed age-15+ tract controls cover marital status, education,
+   labour-force status, and annual work activity for 2016 and 2021. See the
+   [small-area reference](small-area-reference.md#work-activity-controls-for-census-tracts)
+   for the linked calibration options.
+1. Extend conditional-universe coverage and review language, place-of-birth,
+   and income-band crosswalks.
 1. Consider mortgage and subsidy only as an opt-in approximate tier with
    rounding provenance and a reconciliation tolerance.
 1. Leave the five unsupported fields explicitly uncontrolled unless another

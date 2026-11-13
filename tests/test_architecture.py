@@ -64,6 +64,7 @@ MODULE_LAYERS = {
             "_marital_status_packs",
             "_education_packs",
             "_labour_force_packs",
+            "_work_activity_packs",
             "_conditional_profile",
             "benchmarks",
             "calibration",

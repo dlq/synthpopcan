@@ -102,6 +102,7 @@ def _validate_broad_child_targets(controls, dimension, targets, family):
                     "education_15_plus",
                     "marital_status_15_plus",
                     "labour_force_status_15_plus",
+                    "work_activity_15_plus",
                 }
             ),
             None,
@@ -247,19 +248,20 @@ def apply_builtin_profile_pack(
 ):
     import synthpopcan._education_packs as _education_packs
     import synthpopcan._labour_force_packs as _labour_force_packs
+    import synthpopcan._work_activity_packs as _work_activity_packs
     from synthpopcan._marital_status_packs import AGE_ELIGIBILITY
     from synthpopcan.small_area_synthesis import controls_by_geography
 
-    source = _education_packs if family == "education" else _labour_force_packs
+    source = {
+        "education": _education_packs,
+        "labour_force_status": _labour_force_packs,
+        "work_activity": _work_activity_packs,
+    }[family]
     if pack not in source.PACKS:
         raise ValueError(f"Unknown {family.replace('_', '-')} pack {pack!r}")
     identifiers = set(controls_by_geography(controls, geography_dimension=dimension))
     targets, evidence = source.prepare_pack_targets(pack, path, geography, identifiers)
-    source_field = (
-        "HDGREE"
-        if family == "education"
-        else _labour_force_packs.SOURCE_FIELDS[source.PACKS[pack]]
-    )
+    source_field = source.SOURCE_FIELDS[source.PACKS[pack]]
     return _apply_builtin_person_targets(
         persons,
         controls,
