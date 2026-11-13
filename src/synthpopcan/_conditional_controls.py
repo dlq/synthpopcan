@@ -90,6 +90,25 @@ def _validate_existing_person_margins(
                 )
 
 
+def _validate_broad_child_targets(controls, dimension, targets):
+    for margin in controls.margins:
+        if "age_group_3" not in margin.dimensions:
+            continue
+        children: dict[str, float] = dict.fromkeys(targets, 0.0)
+        for cell in margin.cells:
+            if cell.categories["age_group_3"] == "0_14":
+                children[cell.categories[dimension]] += cell.count
+        for identifier, count in children.items():
+            if not math.isclose(
+                count, targets[identifier].under_15_count, rel_tol=0, abs_tol=1e-9
+            ):
+                raise ValueError(
+                    f"{identifier}: {margin.name} under-15 target {count:g} "
+                    "does not match the reconciled marital-status under-15 target "
+                    f"{targets[identifier].under_15_count:g}"
+                )
+
+
 def classify_conditional_person_field(
     persons: Sequence[Mapping[str, str]],
     *,
@@ -201,6 +220,7 @@ def apply_builtin_marital_status_pack(
         eligible_categories=categories,
         targets=targets,
     )
+    _validate_broad_child_targets(controls, dimension, targets)
     persons = classify_conditional_person_field(
         persons,
         age_field="AGEGRP",

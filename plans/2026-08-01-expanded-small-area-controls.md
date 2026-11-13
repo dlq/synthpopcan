@@ -2,11 +2,10 @@
 
 Status: active feature implementation; `1.1.0` released and `1.2.0` committed\
 Created: 2026-08-01\
-Last updated: 2026-10-22\
+Last updated: 2026-11-13\
 Target: `1.1.0` broad compatible packs; conditional person controls in `1.2.0`\
-Next action: integrate the `SA12-01` universe contract through `SA12-10` while the four
-independent source reviews `SA12-02`, `SA12-04`, `SA12-06`, and `SA12-08`
-proceed\
+Next action: obtain genuine 2016 broad controls, investigate the realized
+residuals, and continue the education source review (`SA12-04`)\
 Roadmap: [PLANS.md](../PLANS.md) | [Plan index](README.md)
 
 Release sequencing and confidence are defined in the
@@ -56,9 +55,9 @@ runtime slice does not begin and the other families continue independently.
 | ID | Status | Depends on | Deliverable | Acceptance |
 | --- | --- | --- | --- | --- |
 | `SA12-01` | `done` | Released `1.1.0` registry and runtime invariants | Versioned age-15+ universe and not-applicable/conditional-semantics contract | The contract distinguishes all-private-household persons, age-15+ denominators, under-15 states, suppression, and rounding; mismatch fixtures fail before fitting |
-| `SA12-02` | `in progress` | Pinned 2016 and 2021 Profile definitions | Marital-status source decision and crosswalk | Child rows, categories, denominators, suppression rules, vintage differences, and fixture totals reproduce independently |
-| `SA12-03` | `blocked` | `SA12-01`, accepted `SA12-02`, `SA12-10` | Marital-status preparer, registry entry, and pack component ([#53](https://github.com/dlq/synthpopcan/issues/53)) | Normalized controls validate and round-trip; unsupported categories and universe mismatches fail closed |
-| `SA12-04` | `ready` | Pinned 2016 and 2021 Profile definitions | Education source decision and crosswalk ([#55](https://github.com/dlq/synthpopcan/issues/55)) | Degree categories, age universe, vintage classifications, suppression rules, and fixture totals reproduce independently |
+| `SA12-02` | `done` | Pinned 2016 and 2021 Profile definitions | Marital-status source decision and crosswalk | Child rows, categories, denominators, suppression rules, vintage differences, and fixture totals reproduce independently |
+| `SA12-03` | `in progress` | `SA12-01`, accepted `SA12-02`, `SA12-10` | Marital-status preparer, registry entry, and pack component ([#53](https://github.com/dlq/synthpopcan/issues/53)) | Normalized controls validate and round-trip; unsupported categories and universe mismatches fail closed |
+| `SA12-04` | `in progress` | Pinned 2016 and 2021 Profile definitions | Education source decision and crosswalk ([#55](https://github.com/dlq/synthpopcan/issues/55)) | Degree categories, age universe, vintage classifications, suppression rules, and fixture totals reproduce independently |
 | `SA12-05` | `blocked` | `SA12-01`, accepted `SA12-04`, `SA12-10` | Education preparer, registry entry, and pack component | Normalized controls validate and round-trip; not-applicable and unmapped categories remain explicit |
 | `SA12-06` | `ready` | Pinned 2016 and 2021 Profile definitions | Labour-force-status source decision and crosswalk | Categories, age denominator, vintage differences, suppression rules, and fixture totals reproduce independently |
 | `SA12-07` | `blocked` | `SA12-01`, accepted `SA12-06`, `SA12-10` | Labour-force preparer, registry entry, and pack component | Normalized controls validate and round-trip; support, zero, and universe failures stop before fitting |
@@ -121,8 +120,7 @@ and returns to conditional research.
 The first conditional calibration path accepts reviewed marital-status
 vectors and separate private-household age denominators through normalized
 CSV calibration. Fictional 2016 and 2021 inputs exercise the CLI from
-preflight through realized residuals. Admission to a built-in pack still
-requires a verified source and crosswalk for each vintage and geography.
+preflight through realized residuals. The built-in packs use the verified CT sources and crosswalk below.
 The published all-resident marital-status rows alone do not meet the
 private-household universe requirement.
 
@@ -163,8 +161,101 @@ to 1,035. These are unreconciled published counts. The CT packs preserve the sou
 largest-remainder adjustments within base-five rounding bounds. Missing or
 suppressed required cells stop the run before fitting. Resolve 2016 tract IDs through the IVT UID and
 2021 tract IDs through the CT label, then verify each against the matching
-Census geography. The first candidate pack scope is CT. The deposits
+Census geography. The built-in pack scope is CT. The deposits
 provide no CSD, ADA or DA target vectors.
+
+### Marital-status release acceptance
+
+The bounded `1.2.0` scope is the 2016 and 2021 built-in census tract packs in
+normalized CSV calibration. `geo calibrate` can combine either with the matching
+broad CT pack. The broad evidence remains bound to its original 14 margins,
+and the report records the conditional targets and their separate source
+fingerprint. Prepared-control directories, the local web app, and other
+geographies remain outside this acceptance. The joint CLI path also uses the
+advanced file calibration API. Broader Python/CLI adoption and installed
+distribution evidence remain open.
+
+The [acceptance test](../tests/test_marital_status_controls.py) uses published
+marital-status cells from Montréal tracts 4620053.00, 4620054.00 and 4620056.00
+in both vintages. The linked candidate profiles, broad targets and companion
+counts are fictional and constructed to agree with the reconciled conditional
+totals. All nine household and five person margins pass broad-pack preflight
+before the marital-status margin is added. The test recomputes each margin
+from the exported weights and linked candidate profiles, then recounts it
+from the output household and person CSVs. It checks household sizes and
+person-to-household geography inheritance.
+
+| Census | Tracts converged | Maximum fractional residual | Maximum realized residual |
+| --- | --- | --- | --- |
+| 2016 | 3 of 3 | < 0.000001 | 0 |
+| 2021 | 3 of 3 | < 0.000001 | 0 |
+
+For each vintage, suppression in a selected tract, an incompatible pack
+vintage, a conflicting private-household person total, and a conflicting
+under-15 target each fail before fit output is written. The test also exercises
+the hierarchical age codes at the 15 and 65 boundaries while preserving the
+frozen broad-pack crosswalk for existing callers.
+
+A separate real-source screen compared the 2021 Montréal Profile age root
+(ID 8) and private-household count (ID 56) to the marital extract all-ages
+count. Of 316 tracts with equal Profile companion counts, 43 also matched
+the marital count. Of those 43, eight had an identical reconciled under-15
+target. The others fail joint preflight because the broad and marital
+margins would require different child counts.
+
+An empirical 2021 run selected three of those eight tracts from the
+Montréal CLI-only workflow's normalized zero-collective controls and used
+86,461 complete linked candidates from its 100,000-household model pool.
+Whole households with unavailable required codes were excluded. The default
+IPU solver at 100 iterations converged on zero of three tracts. A second run
+used `--joint-solver hybrid --max-iterations 1000 --tolerance 0.01 --include-weights`. Its results were independently recomputed for each
+margin from the weight file and the realized population files.
+
+| 2021 tract | Hybrid fractional fit converged | Maximum fractional residual | Maximum realized residual |
+| --- | --- | --- | --- |
+| 4620252.00 | Yes | 0.000142 | 50 |
+| 4620419.00 | No | 39.746812 | 54 |
+| 4620626.00 | Yes | 0.002212 | 71 |
+
+Keep exact denominator checks in place. The 2021 empirical results show
+that agreeing on the denominator is only an admission check. The remaining
+`SA12-12` work includes genuine 2016 broad inputs and stronger realized
+residual evidence. The official 2016 bulk CT fetch returned HTTP 403
+with a browser challenge during this pass.
+
+### Education source review (2026-11-13)
+
+The Census Profile's highest certificate, diploma or degree section is the
+initial source candidate. Statistics Canada defines the universe in both
+vintages as people aged 15 and older in private households, measured with
+the 25% sample. Use the age-15+ root and its mutually exclusive children,
+keeping the age-25–64 panel separate. The project inventory identifies
+root 1683 for 2016 and 1998 for 2021. The latter is confirmed against the
+cached official 2021 CT archive metadata.
+[2016 Education Reference Guide](https://www12.statcan.gc.ca/census-recensement/2016/ref/guides/013/98-500-x2016013-eng.pdf) ·
+[2021 Census Dictionary](https://www12.statcan.gc.ca/census-recensement/2021/ref/dict/98-301-x2021001-eng.pdf)
+
+The hierarchical `HDGREE` codebooks have eight eligible categories in each
+vintage. The preliminary mapping preserves no credential, secondary school,
+two trades categories, college or CEGEP, university below bachelor level,
+bachelor's degree, and university above bachelor level. For the last group,
+sum the disjoint Profile leaves for the above-bachelor certificate or diploma,
+professional degree, master's and doctorate. The trades labels differ by
+vintage and must be validated separately. Code 88 denotes unavailable and 99
+denotes not applicable. Neither should contribute to the eight-category
+vector. A missing or suppressed published count must stay unavailable.
+
+For 2021 CT 4620053.00, root 1998 is 1,260. Profile rows 1999, 2000,
+2004–2007, 2009, and the sum of 2010–2013 give 125, 175, 55, 20, 150,
+90, 320, and 320 respectively. The eight values sum to 1,255, five below
+the published root. Retain both totals as evidence when deciding how to
+reconcile the vector.
+
+The remaining source decision needs an independently evidenced compatible
+all-ages/under-15 private-household denominator, review of rounding and
+suppression on actual tract rows, and an independently reproduced fixture
+for each vintage. The 2016 bulk CT fetch returned a browser challenge on
+2026-11-13. The review remains open.
 
 ## `1.1.0` Runtime Invariants
 

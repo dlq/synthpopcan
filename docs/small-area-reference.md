@@ -1110,6 +1110,27 @@ alongside the normalized household and person controls. The 2016 pack uses
 `statcan-2016-marital-status-ct-v1`. These conditional packs have their own
 input contract and are applied by `geo calibrate`.
 
+For a joint fit with a matching broad CT pack, bind its evidence to the
+unchanged household and person control CSVs, then select the marital-status
+pack separately. For 2021, the relevant options are:
+
+```bash
+synthpopcan geo calibrate candidate-households.csv --persons candidate-persons.csv \
+  --controls broad-households.csv --person-controls broad-persons.csv \
+  --control-pack statcan-2021-broad-ct-v1 --control-pack-evidence broad-evidence.json \
+  --marital-status-pack statcan-2021-marital-status-ct-v1 \
+  --marital-status-controls tract-cells.csv --geo-dimension ct \
+  --include-weights --out calibrated/
+```
+
+The broad pack supplies the Census geography identity and validates its
+evidence before the conditional margin is appended. Joint calibration expects
+the matching hierarchical PUMF age codes and retains them in the output. Both
+sources must support each selected tract and agree on its private-household
+person total and under-15 target. See the
+[release acceptance scope](https://github.com/dlq/synthpopcan/blob/main/plans/2026-08-01-expanded-small-area-controls.md#marital-status-release-acceptance)
+for the tested combination and its limits.
+
 Download the matching IVT from the
 [2016 deposit](https://doi.org/10.5683/SP3/CDKEOF) or
 [2021 deposit](https://doi.org/10.5683/SP3/UHEPKL). From a source checkout,

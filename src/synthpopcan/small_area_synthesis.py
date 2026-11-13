@@ -1565,6 +1565,7 @@ def calibrate_linked_household_csvs(
     joint_solver: str = "ipu",
     zero_target_policy: str = "structural",
     marital_status_controls_path: Path | None = None,
+    marital_status_pack: str | None = None,
 ) -> dict[str, Any]:
     """Calibrate linked household/person CSVs to geography controls.
 
@@ -1644,7 +1645,26 @@ def calibrate_linked_household_csvs(
     )
 
     control_pack, marital_pack = _split_marital_status_pack(
-        control_pack, control_pack_evidence
+        control_pack, control_pack_evidence, marital_status_pack
+    )
+    (
+        households,
+        persons,
+        geography_universe,
+        control_pack_manifest,
+        control_pack_evidence_record,
+        control_pack_plan,
+    ) = _prepare_calibration_control_pack(
+        control_pack,
+        control_pack_evidence,
+        marital_pack,
+        households,
+        persons,
+        controls,
+        person_controls,
+        geography_universe,
+        geography_dimension,
+        geography_column,
     )
     persons, person_controls, marital_status_provenance = _with_marital_status_controls(
         marital_status_controls_path,
@@ -1655,65 +1675,6 @@ def calibrate_linked_household_csvs(
         control_pack,
         marital_pack,
     )
-    control_pack_manifest: synthpopcan.control_packs.ControlPackManifest | None = None
-    control_pack_evidence_record: (
-        synthpopcan.control_packs.ControlPackEvidence | None
-    ) = None
-    control_pack_plan: dict[str, Any] | None = None
-    if control_pack is not None:
-        if person_controls is None:
-            raise ValueError("control_pack requires person_controls_path")
-        from synthpopcan.control_packs import (
-            apply_control_pack_derivations,
-            load_control_pack,
-            load_control_pack_evidence,
-            plan_control_pack,
-        )
-
-        control_pack_manifest = load_control_pack(control_pack)
-        if control_pack_manifest.geography_column != geography_dimension:
-            raise ValueError(
-                "control pack geography column "
-                f"{control_pack_manifest.geography_column!r} does not match "
-                f"geography_dimension {geography_dimension!r}"
-            )
-        pack_geography_universe = GeographyUniverse(
-            census_vintage=control_pack_manifest.census_vintage,
-            geography_level=control_pack_manifest.geography_level,
-            identifier_namespace=control_pack_manifest.identifier_namespace,
-            identifier_column=geography_column,
-        )
-        if geography_universe is not None:
-            if (
-                geography_universe.canonical_key
-                != pack_geography_universe.canonical_key
-            ):
-                raise ValueError(
-                    "geography universe is incompatible with the selected control pack"
-                )
-        else:
-            geography_universe = pack_geography_universe
-        control_pack_evidence_record = (
-            load_control_pack_evidence(control_pack_evidence)
-            if control_pack_evidence is not None
-            else None
-        )
-        control_pack_plan = plan_control_pack(
-            control_pack_manifest,
-            households,
-            persons,
-            controls,
-            person_controls,
-            evidence=control_pack_evidence_record,
-        )
-        if not control_pack_plan["passed"]:
-            raise ValueError(_format_control_pack_plan_error(control_pack_plan))
-        households, persons = apply_control_pack_derivations(
-            control_pack_manifest,
-            households,
-            persons,
-        )
-
     phase_started = time.perf_counter()
     household_input_report = check_small_area_calibration_inputs(
         households,
@@ -1863,13 +1824,104 @@ def calibrate_linked_household_csvs(
     return summary
 
 
-def _split_marital_status_pack(pack, evidence):
-    if not isinstance(pack, str) or not pack.endswith("-marital-status-ct-v1"):
-        return pack, None
+def _prepare_calibration_control_pack(
+    control_pack,
+    control_pack_evidence,
+    marital_pack,
+    households,
+    persons,
+    controls,
+    person_controls,
+    geography_universe,
+    geography_dimension,
+    geography_column,
+):
+    if control_pack is None:
+        return households, persons, geography_universe, None, None, None
+
+    if person_controls is None:
+        raise ValueError("control_pack requires person_controls_path")
+    from synthpopcan.control_packs import (
+        apply_control_pack_derivations,
+        load_control_pack,
+        load_control_pack_evidence,
+        plan_control_pack,
+    )
+
+    control_pack_manifest = load_control_pack(control_pack)
+    if control_pack_manifest.geography_column != geography_dimension:
+        raise ValueError(
+            "control pack geography column "
+            f"{control_pack_manifest.geography_column!r} does not match "
+            f"geography_dimension {geography_dimension!r}"
+        )
+    pack_geography_universe = GeographyUniverse(
+        census_vintage=control_pack_manifest.census_vintage,
+        geography_level=control_pack_manifest.geography_level,
+        identifier_namespace=control_pack_manifest.identifier_namespace,
+        identifier_column=geography_column,
+    )
+    if geography_universe is not None:
+        if geography_universe.canonical_key != pack_geography_universe.canonical_key:
+            raise ValueError(
+                "geography universe is incompatible with the selected control pack"
+            )
+    else:
+        geography_universe = pack_geography_universe
+    control_pack_evidence_record = (
+        load_control_pack_evidence(control_pack_evidence)
+        if control_pack_evidence is not None
+        else None
+    )
+    pack_persons = _broad_pack_persons(persons) if marital_pack is not None else persons
+    control_pack_plan = plan_control_pack(
+        control_pack_manifest,
+        households,
+        pack_persons,
+        controls,
+        person_controls,
+        evidence=control_pack_evidence_record,
+    )
+    if not control_pack_plan["passed"]:
+        raise ValueError(_format_control_pack_plan_error(control_pack_plan))
+    households, derived_persons = apply_control_pack_derivations(
+        control_pack_manifest, households, pack_persons
+    )
+    if marital_pack is not None:
+        for original, derived in zip(persons, derived_persons, strict=True):
+            if "AGEGRP" in original:
+                derived["AGEGRP"] = original["AGEGRP"]
+    persons = derived_persons
+
+    return (
+        households,
+        persons,
+        geography_universe,
+        control_pack_manifest,
+        control_pack_evidence_record,
+        control_pack_plan,
+    )
+
+
+def _broad_pack_persons(persons):
+    # Map hierarchical PUMF ages to equivalent groups in the frozen broad
+    # pack crosswalk. The caller restores the original codes after derivation.
+    broad_age_codes = {"3": "4", "12": "14", "13": "14"}
+    return [
+        {**person, "AGEGRP": broad_age_codes[age]}
+        if (age := person.get("AGEGRP")) in broad_age_codes
+        else person
+        for person in persons
+    ]
+
+
+def _split_marital_status_pack(pack, evidence, marital_pack):
     from synthpopcan._marital_status_packs import PACKS
 
-    if pack not in PACKS:
-        return pack, None
+    if not isinstance(pack, str) or pack not in PACKS:
+        return pack, marital_pack
+    if marital_pack is not None:
+        raise ValueError("Select the marital-status pack once")
     if evidence is not None:
         raise ValueError(
             "Built-in marital-status packs use --marital-status-controls evidence"
@@ -1882,7 +1934,12 @@ def _with_marital_status_controls(
 ):
     if path is None and marital_pack is None:
         return persons, controls, {}
-    if path is None or controls is None or geography is None or pack is not None:
+    if (
+        path is None
+        or controls is None
+        or geography is None
+        or (pack is not None and marital_pack is None)
+    ):
         raise ValueError(
             "Marital-status calibration requires --marital-status-controls, "
             "normalized person controls and an explicit Census geography identity. "
@@ -1894,6 +1951,10 @@ def _with_marital_status_controls(
     )
 
     if marital_pack is not None:
+        from synthpopcan._marital_status_packs import PACKS
+
+        if marital_pack not in PACKS:
+            raise ValueError(f"Unknown marital-status pack {marital_pack!r}")
         return apply_builtin_marital_status_pack(
             path, persons, controls, geography, dimension, marital_pack
         )

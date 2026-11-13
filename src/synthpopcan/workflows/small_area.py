@@ -79,6 +79,7 @@ class SmallAreaCalibrationRequest:
     joint_solver: str = "ipu"
     zero_target_policy: str = "structural"
     marital_status_controls_path: Path | None = None
+    marital_status_pack: str | None = None
 
 
 @dataclass(frozen=True)
@@ -356,7 +357,10 @@ def calibrate_small_area_files(
 
 def _calibration_file_workflow(request: SmallAreaCalibrationRequest):
     if request.controls_path.is_dir():
-        if request.marital_status_controls_path is not None:
+        if (
+            request.marital_status_controls_path is not None
+            or request.marital_status_pack is not None
+        ):
             raise ValueError("Marital-status controls require normalized control CSVs.")
         from synthpopcan.workflows.prepared_calibration import (
             calibrate_prepared_controls,
@@ -409,11 +413,8 @@ def _calibrate_normalized_control_files(
         record_timing=request.record_timing,
         joint_solver=request.joint_solver,
         zero_target_policy=request.zero_target_policy,
-        **(
-            {"marital_status_controls_path": request.marital_status_controls_path}
-            if request.marital_status_controls_path is not None
-            else {}
-        ),
+        marital_status_pack=request.marital_status_pack,
+        marital_status_controls_path=request.marital_status_controls_path,
     )
     if not isinstance(details.get("summary"), Mapping):
         raise RuntimeError("small-area calibration returned an invalid summary")
