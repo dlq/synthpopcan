@@ -3080,6 +3080,14 @@
       {
         "kind": "command",
         "output_modes": [
+          "human"
+        ],
+        "parameters": [],
+        "path": "synthpopcan geo control-packs marital-status"
+      },
+      {
+        "kind": "command",
+        "output_modes": [
           "summary",
           "json"
         ],

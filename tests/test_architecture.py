@@ -61,6 +61,7 @@ MODULE_LAYERS = {
     "domain": frozenset(
         {
             "_conditional_controls",
+            "_marital_status_packs",
             "benchmarks",
             "calibration",
             "control_suggestions",

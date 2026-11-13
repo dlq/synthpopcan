@@ -6,13 +6,16 @@ import json
 import pytest
 from click.testing import CliRunner
 
+from synthpopcan._marital_status_packs import prepare_pack_targets
 from synthpopcan.cli import cli
-from synthpopcan.geography import statcan_geography_identity
+from synthpopcan.geography import statcan_geography_identity, statcan_geography_universe
 
 
 @pytest.mark.parametrize("vintage,field", [(2016, "MarStH"), (2021, "MARSTH")])
-@pytest.mark.parametrize("wrong_total", [False, True])
-def test_marital_status_calibration(tmp_path, vintage, field, wrong_total):
+@pytest.mark.parametrize("case", ["json", "wrong-total", "built-in", "suppressed"])
+def test_marital_status_calibration(tmp_path, vintage, field, case):
+    built_in = case in {"built-in", "suppressed"}
+    wrong_total = case == "wrong-total"
     households = tmp_path / "seed-h.csv"
     persons = tmp_path / "seed-p.csv"
     household_controls = tmp_path / "household-controls.csv"
@@ -57,6 +60,33 @@ def test_marital_status_calibration(tmp_path, vintage, field, wrong_total):
             }
         )
     )
+    pack_args = []
+    if built_in:
+        persons.write_text(
+            f"synthetic_person_id,synthetic_household_id,AGEGRP,{field},group\n"
+            "p1,h1,3,2,all\np2,h1,2,8,all\np3,h2,3,1,all\np4,h3,3,4,all\n"
+        )
+        household_controls.write_text(
+            "margin,dimensions,ct,household_size,count\n"
+            'size,"ct,household_size",4620001.00,1,5\n'
+            'size,"ct,household_size",4620001.00,2,5\n'
+        )
+        person_controls.write_text(
+            person_controls.read_text().replace(",all,3", ",all,15")
+        )
+        marital_controls = tmp_path / "marital.csv"
+        observed = {(1, 1): 15, (1, 2): 5, (1, 3): 10, (3, 3): 5, (6, 3): 5}
+        with marital_controls.open("w", newline="") as handle:
+            writer = csv.writer(handle)
+            writer.writerow(["ct", "marital_status", "age_20", "value"])
+            for status in (1, 3, 4, 6, 7, 8, 9):
+                ages = (1, 2, 3, *range(6, 16)) if status == 1 else (3, *range(6, 16))
+                for age in ages:
+                    value = observed.get((status, age), 0)
+                    if case == "suppressed" and (status, age) == (9, 3):
+                        value = ""
+                    writer.writerow(["4620001.00", status, age, value])
+        pack_args = ["--control-pack", f"statcan-{vintage}-marital-status-ct-v1"]
     result = CliRunner().invoke(
         cli,
         [
@@ -71,6 +101,7 @@ def test_marital_status_calibration(tmp_path, vintage, field, wrong_total):
             str(person_controls),
             "--marital-status-controls",
             str(marital_controls),
+            *pack_args,
             "--geo-dimension",
             "ct",
             "--census-vintage",
@@ -83,6 +114,11 @@ def test_marital_status_calibration(tmp_path, vintage, field, wrong_total):
             str(output),
         ],
     )
+    if case == "suppressed":
+        assert result.exit_code == 1
+        assert "unavailable or invalid" in result.output
+        assert not (output / "persons.csv").exists()
+        return
     if wrong_total:
         assert result.exit_code == 1
         assert "age-15+ denominator" in result.output
@@ -96,7 +132,7 @@ def test_marital_status_calibration(tmp_path, vintage, field, wrong_total):
     assert {key: row["marital_status_15_plus"] for key, row in by_source.items()} == {
         "p1": "married",
         "p2": "under_15_not_applicable",
-        "p3": "single",
+        "p3": "never_married" if built_in else "single",
     }
     assert (
         by_source["p1"]["synthetic_household_id"]
@@ -105,4 +141,55 @@ def test_marital_status_calibration(tmp_path, vintage, field, wrong_total):
     report = json.loads((output / "report.json").read_text())
     assert report["summary"]["converged_count"] == 1
     assert report["summary"]["realized_max_abs_error"] == 0
-    assert report["marital_status_controls"]["sha256"]
+    if built_in:
+        evidence = report["marital_status_controls"]
+        assert evidence["pack"] == pack_args[1]
+        assert evidence["input"]["sha256"]
+        assert len(rows) == 15
+        assert (
+            evidence["geographies"]["4620001.00"]["eligible_targets"]["common_law"] == 0
+        )
+    else:
+        assert report["marital_status_controls"]["sha256"]
+
+
+def test_builtin_reconciles_rounding_without_filling_published_zeros(tmp_path):
+    source = tmp_path / "source.csv"
+    # The adult age total is 20, but the age cells sum to 25 versus
+    # an all-ages total of 30. The marital cells sum to 15.
+    observed = {(1, 1): 30, (1, 2): 5, (1, 3): 20, (3, 3): 10, (6, 3): 5}
+    with source.open("w", newline="") as handle:
+        writer = csv.writer(handle)
+        writer.writerow(["ct", "marital_status", "age_20", "value"])
+        for status in (1, 3, 4, 6, 7, 8, 9):
+            ages = (1, 2, 3, *range(6, 16)) if status == 1 else (3, *range(6, 16))
+            for age in ages:
+                writer.writerow(
+                    ["4620053.00", status, age, observed.get((status, age), 0)]
+                )
+    targets, report = prepare_pack_targets(
+        "statcan-2021-marital-status-ct-v1",
+        source,
+        statcan_geography_universe(2021, "ct", "ct"),
+        {"4620053.00"},
+    )
+    target = targets["4620053.00"]
+    assert target.under_15_count == 6
+    assert target.eligible_counts == {
+        "never_married": 8,
+        "married": 16,
+        "common_law": 0,
+        "separated_divorced_widowed": 0,
+    }
+    assert report["geographies"]["4620053.00"]["source_age_15_plus"] == 20
+
+    source.write_text(
+        source.read_text().replace("4620053.00,1,1,30", "4620053.00,1,1,100")
+    )
+    with pytest.raises(ValueError, match="rounding envelope"):
+        prepare_pack_targets(
+            "statcan-2021-marital-status-ct-v1",
+            source,
+            statcan_geography_universe(2021, "ct", "ct"),
+            {"4620053.00"},
+        )

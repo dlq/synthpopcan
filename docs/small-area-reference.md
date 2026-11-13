@@ -1103,6 +1103,42 @@ households. The report records fitted and realized residuals and the input
 document's hash. Use normalized CSVs without a reviewed pack or prepared
 controls directory for this path.
 
+The built-in CT packs use a separate source CSV path. List their identifiers
+with `synthpopcan geo control-packs marital-status`. For example, use
+`--control-pack statcan-2021-marital-status-ct-v1 --marital-status-controls tract-cells.csv`
+alongside the normalized household and person controls. The 2016 pack uses
+`statcan-2016-marital-status-ct-v1`. These conditional packs have their own
+input contract and are applied by `geo calibrate`.
+
+Download the matching IVT from the
+[2016 deposit](https://doi.org/10.5683/SP3/CDKEOF) or
+[2021 deposit](https://doi.org/10.5683/SP3/UHEPKL). From a source checkout,
+run the pinned extraction tool. It verifies the deposited IVT hash and
+preserves unavailable values as blank CSV cells.
+
+```bash
+uv run --no-project --with pyivt==0.0.8 python scripts/extract_marital_status_tracts.py \
+  2021 EO3559_2021_Table1_Final.ivt tract-cells.csv
+```
+
+The pack uses the published all-ages total as its anchor. It sums disjoint
+adult age rows, then apportions that total between adults and children by
+largest remainder. It apportions the reconciled adult total across the four
+marital-status categories by the same method. Bounds of 52 people for the age
+discrepancy and 308 for the adult category discrepancy come from the maximum
+base-five rounding error of four per cell on both sides. These are admission
+bounds for reconciliation. Adjusted counts are derived targets. The report
+retains the observed totals and category sums alongside the adjusted counts
+and the input CSV hash.
+
+Every selected tract must have all required source cells and a matching
+all-ages total in the supplied person margins. A blank, suppressed, duplicate,
+or invalid required cell stops calibration before fitting. To use a subset,
+select the same supported tracts in both control tables. Numeric zeros stay
+zero through apportionment. In the default fit they act as structural zeros.
+For a fit that allows residuals against published zeros, explicitly select
+`--zero-target-policy observed`.
+
 The standard 2016 and 2021 Census marital-status products cover the
 population aged 15 and over, including people in collective dwellings. Use
 them as private-household targets only where independently reviewed evidence

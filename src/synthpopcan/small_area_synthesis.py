@@ -1643,6 +1643,9 @@ def calibrate_linked_household_csvs(
         seed=subsample_seed,
     )
 
+    control_pack, marital_pack = _split_marital_status_pack(
+        control_pack, control_pack_evidence
+    )
     persons, person_controls, marital_status_provenance = _with_marital_status_controls(
         marital_status_controls_path,
         persons,
@@ -1650,6 +1653,7 @@ def calibrate_linked_household_csvs(
         geography_universe,
         geography_dimension,
         control_pack,
+        marital_pack,
     )
     control_pack_manifest: synthpopcan.control_packs.ControlPackManifest | None = None
     control_pack_evidence_record: (
@@ -1859,16 +1863,40 @@ def calibrate_linked_household_csvs(
     return summary
 
 
-def _with_marital_status_controls(path, persons, controls, geography, dimension, pack):
-    if path is None:
-        return persons, controls, {}
-    if controls is None or geography is None or pack is not None:
-        raise ValueError(
-            "Marital-status calibration requires normalized person controls and an "
-            "explicit Census geography identity. Omit the reviewed control pack."
-        )
-    from synthpopcan._conditional_controls import load_marital_status_controls
+def _split_marital_status_pack(pack, evidence):
+    if not isinstance(pack, str) or not pack.endswith("-marital-status-ct-v1"):
+        return pack, None
+    from synthpopcan._marital_status_packs import PACKS
 
+    if pack not in PACKS:
+        return pack, None
+    if evidence is not None:
+        raise ValueError(
+            "Built-in marital-status packs use --marital-status-controls evidence"
+        )
+    return None, pack
+
+
+def _with_marital_status_controls(
+    path, persons, controls, geography, dimension, pack, marital_pack
+):
+    if path is None and marital_pack is None:
+        return persons, controls, {}
+    if path is None or controls is None or geography is None or pack is not None:
+        raise ValueError(
+            "Marital-status calibration requires --marital-status-controls, "
+            "normalized person controls and an explicit Census geography identity. "
+            "Choose a marital-status pack for a source CSV or omit the pack for JSON."
+        )
+    from synthpopcan._conditional_controls import (
+        apply_builtin_marital_status_pack,
+        load_marital_status_controls,
+    )
+
+    if marital_pack is not None:
+        return apply_builtin_marital_status_pack(
+            path, persons, controls, geography, dimension, marital_pack
+        )
     return load_marital_status_controls(path, persons, controls, geography, dimension)
 
 

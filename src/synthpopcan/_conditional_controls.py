@@ -179,6 +179,40 @@ def load_marital_status_controls(
     )
 
 
+def apply_builtin_marital_status_pack(
+    path, persons, controls, geography, dimension, pack
+):
+    from synthpopcan._marital_status_packs import (
+        AGE_ELIGIBILITY,
+        CROSSWALK,
+        PACKS,
+        prepare_pack_targets,
+    )
+    from synthpopcan.small_area_synthesis import controls_by_geography
+
+    identifiers = set(controls_by_geography(controls, geography_dimension=dimension))
+    targets, evidence = prepare_pack_targets(pack, path, geography, identifiers)
+    categories = frozenset(CROSSWALK.values())
+    controls = reconcile_conditional_person_margin(
+        controls,
+        geography=geography,
+        geography_dimension=dimension,
+        field="marital_status_15_plus",
+        eligible_categories=categories,
+        targets=targets,
+    )
+    persons = classify_conditional_person_field(
+        persons,
+        age_field="AGEGRP",
+        age_eligibility=AGE_ELIGIBILITY,
+        source_field=PACKS[pack][2],
+        output_field="marital_status_15_plus",
+        crosswalk=CROSSWALK,
+        eligible_categories=categories,
+    )
+    return persons, controls, {"marital_status_controls": evidence}
+
+
 def _document_mapping(payload, name, value_type):
     values = payload.get(name)
     if (

@@ -126,6 +126,46 @@ requires a verified source and crosswalk for each vintage and geography.
 The published all-resident marital-status rows alone do not meet the
 private-household universe requirement.
 
+### Marital-status source review (2026-11-13)
+
+Statistics Canada produced two private-household custom tabulations
+distributed under its Open Licence by the University of Toronto. They cover
+Canada, CMAs, tracted CAs and CTs using 25% Census sample data.
+
+| Census | Deposit | File and revision | SHA-256 |
+| --- | --- | --- | --- |
+| 2016 | [Borealis CDKEOF](https://doi.org/10.5683/SP3/CDKEOF) | `EO3559_2016_Table2_Final.ivt`, 1.0, file 428828 | `2d4df7fcf4b77ba97f2c31c1438f02a07b7537f488651ef07c3aca798291b215` |
+| 2021 | [Borealis UHEPKL](https://doi.org/10.5683/SP3/UHEPKL) | `EO3559_2021_Table1_Final.ivt`, 1.1, file 428826 | `01c2b85e3cd9dfb75dc41294fa5d31ba850fc4ae0956ca3933e6e08784e3331b` |
+
+Both files matched the deposit MD5s. Inspection with `pyivt==0.0.8`
+confirmed the same marital-status member codes in both. The official
+[hierarchical PUMF archives](https://www150.statcan.gc.ca/n1/pub/98m0001x/)
+supply the SAS formats for `MarStH` (2016) and `MARSTH` (2021).
+
+| PUMF code | Category | IVT marital-status member codes |
+| --- | --- | --- |
+| 1 | Never married, not living common law | 6 |
+| 2 | Married | 3 |
+| 3 | Living common law | 4 |
+| 4 | Separated, divorced or widowed, not living common law | 7 + 8 + 9 |
+
+Use total household type, disability and sex or gender (member 1 on each).
+Use the non-overlapping adult age members 3 and 6–15. Age member 2 gives
+under-15 and member 1 gives all ages. Marital member 1 provides the independent
+age totals. For PUMF age eligibility, `AGEGRP` 1–2 are under 15 and 3–13
+are eligible. Age code 88 and eligible marital code 8 are unavailable.
+
+For CT 4620053.00, the 2021 extract gives all ages 1,320, under-15 60,
+and adult age totals 1,260. Its four adult marital categories are 595,
+220, 250 and 160, summing to 1,225. The 2016 extract gives 1,095, 20
+and 1,070 respectively, with categories 530, 160, 175 and 170 summing
+to 1,035. These are unreconciled published counts. The CT packs preserve the source totals and record proportional
+largest-remainder adjustments within base-five rounding bounds. Missing or
+suppressed required cells stop the run before fitting. Resolve 2016 tract IDs through the IVT UID and
+2021 tract IDs through the CT label, then verify each against the matching
+Census geography. The first candidate pack scope is CT. The deposits
+provide no CSD, ADA or DA target vectors.
+
 ## `1.1.0` Runtime Invariants
 
 The expanded control surface must enforce its scientific and structural

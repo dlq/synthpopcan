@@ -226,6 +226,15 @@ def control_packs_list_command(output_format: str) -> None:
         )
 
 
+@control_packs_group.command("marital-status")
+def marital_status_packs_command() -> None:
+    """List the built-in conditional marital-status packs and their sources."""
+    from synthpopcan._marital_status_packs import PACKS
+
+    for identifier, (vintage, doi, field) in PACKS.items():
+        click.echo(f"{identifier}  Census {vintage} CT  {field}  doi:{doi}")
+
+
 @control_packs_group.command("show")
 @click.argument("pack", metavar="PACK")
 @click.option(
@@ -546,7 +555,7 @@ def _calibrate_cli_files(request: SmallAreaCalibrationRequest):
     "--marital-status-controls",
     "marital_status_controls_path",
     type=_PATH,
-    help="Age-15+ private-household marital-status targets and crosswalk JSON.",
+    help="Age-15+ targets JSON or source CSV with a built-in marital-status pack.",
 )
 @click.option(
     "--control-pack",
