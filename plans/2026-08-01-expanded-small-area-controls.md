@@ -707,6 +707,63 @@ swaps. This evidence covers the six selected tracts. Reproduction commands,
 per-tract fractional residuals, and output audits are in the local run
 directory `runs/joint-five-2026-11-13/`.
 
+#### Five-family cohort extension (2026-11-13)
+
+At `fc5bd33`, the remaining 17 tracts in the 23-tract cohort were
+screened against the published work-activity targets and the existing
+joint controls. Twelve had compatible denominators. The feasibility
+screen reused each tract's previously selected pool and required zero
+summed absolute residual across all 18 margins, within a numerical
+tolerance of 1e-7. Ten passed, bringing the five-family acceptance
+sample to 16 of 23 tracts.
+
+The ten new fits used the same hybrid solver, tolerance, iteration cap,
+and whole-household swap settings as the initial six. All converged.
+The largest fractional residuals were 0.005133 or less in 2016 and
+0.001479 or less in 2021. All five output batches passed linkage
+validation. The audit recounted all 18 realized margins and checked
+exported integer weights against household multiplicities.
+
+| Census | Tract | Pool | Broad | Marital status | Education | Labour-force status | Work activity |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 2016 | 5350346.02 | augmented | 5 | 2 | 1 | 1 | 1 |
+| 2016 | 5350484.03 | original | 5 | 1 | 1 | 2 | 1 |
+| 2016 | 5350516.03 | original | 7 | 1 | 1 | 1 | 1 |
+| 2016 | 5350516.09 | original | 4 | 1 | 1 | 1 | 1 |
+| 2016 | 5350600.01 | original | 5 | 2 | 0 | 1 | 0 |
+| 2021 | 5370066.00 | augmented | 7 | 1 | 1 | 1 | 1 |
+| 2021 | 5590043.02 | original | 5 | 2 | 1 | 0 | 0 |
+| 2021 | 9330147.07 | augmented | 5 | 2 | 1 | 1 | 1 |
+| 2021 | 9330227.02 | augmented | 1 | 1 | 1 | 1 | 1 |
+| 2021 | 9380014.00 | augmented | 7 | 1 | 1 | 1 | 1 |
+
+Values are the largest absolute count errors after swaps in each family.
+
+Five tracts shared the same all-ages target but differed by five in their
+published age-15+ totals. The resulting under-15 targets are incompatible
+in a joint fit. The source targets were preserved.
+
+| Census | Tract | Age 15+ in other controls | Age 15+ in work activity |
+| --- | --- | --- | --- |
+| 2016 | 5350484.04 | 755 | 750 |
+| 2016 | 5350516.47 | 3,960 | 3,965 |
+| 2021 | 4080120.05 | 1,130 | 1,135 |
+| 2021 | 5350412.26 | 4,805 | 4,810 |
+| 2021 | 9330011.00 | 6,045 | 6,040 |
+
+Two 2021 B.C. tracts passed the denominator check and failed joint
+feasibility with the unchanged targets. For 9350156.05, the normalized
+household-size targets require at least 238 people, while its person
+target is 230. Its previously selected original pool had a minimum summed
+absolute residual of 4.00. For 9350180.05, the previously selected
+augmented pool had a minimum summed absolute residual of 31.34772946
+across the 18 margins. The earlier B.C. diagnosis identified limited
+candidate capacity in the largest household-size category. Both tracts
+were excluded before fitting.
+
+Reproduction commands, full residuals, and screening evidence are in
+the local run directory `runs/joint-five-extension-2026-11-13/`.
+
 ## `1.1.0` Runtime Invariants
 
 The expanded control surface must enforce its scientific and structural
