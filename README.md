@@ -18,7 +18,7 @@ developers first.
 
 [Try the demo](#quick-start) ·
 [Get help](https://github.com/dlq/synthpopcan/issues/new?template=question.yml) ·
-[Contribute](CONTRIBUTING.md) ·
+[Contribute](https://github.com/dlq/synthpopcan/blob/main/CONTRIBUTING.md) ·
 [Good first issues](https://github.com/dlq/synthpopcan/contribute)
 
 ## Quick Start
@@ -46,7 +46,7 @@ age/sex files** in the local workbench. The
 [web app guide](https://synthpopcan.readthedocs.io/en/latest/web-app.html)
 walks through the fit and explains what stays on disk.
 
-![Local workbench results for the fictional age-and-sex demo, showing convergence and a four-row weighted output preview](assets/screenshots/demo-workbench.png)
+![Local workbench results for the fictional age-and-sex demo, showing convergence and a four-row weighted output preview](https://raw.githubusercontent.com/dlq/synthpopcan/main/assets/screenshots/demo-workbench.png)
 
 The local workbench after fitting the [fictional age-and-sex example](https://synthpopcan.readthedocs.io/en/latest/web-app.html).
 
