@@ -2526,6 +2526,49 @@
             "is_flag": false,
             "kind": "option",
             "multiple": false,
+            "name": "labour_force_pack",
+            "names": [
+              "--labour-force-pack"
+            ],
+            "nargs": 1,
+            "required": false,
+            "type": {
+              "name": "text"
+            }
+          },
+          {
+            "count": false,
+            "default": {
+              "type": "Sentinel"
+            },
+            "flag_value": null,
+            "is_flag": false,
+            "kind": "option",
+            "multiple": false,
+            "name": "labour_force_profile_path",
+            "names": [
+              "--labour-force-profile"
+            ],
+            "nargs": 1,
+            "required": false,
+            "type": {
+              "dir_okay": true,
+              "exists": false,
+              "file_okay": true,
+              "name": "path",
+              "readable": true,
+              "writable": false
+            }
+          },
+          {
+            "count": false,
+            "default": {
+              "type": "Sentinel"
+            },
+            "flag_value": null,
+            "is_flag": false,
+            "kind": "option",
+            "multiple": false,
             "name": "education_pack",
             "names": [
               "--education-pack"
@@ -3136,6 +3179,14 @@
           }
         ],
         "path": "synthpopcan geo control-packs evidence"
+      },
+      {
+        "kind": "command",
+        "output_modes": [
+          "human"
+        ],
+        "parameters": [],
+        "path": "synthpopcan geo control-packs labour-force-status"
       },
       {
         "kind": "command",
@@ -15148,6 +15199,20 @@
             "default": null,
             "kind": "keyword_only",
             "name": "education_profile_path",
+            "required": false
+          },
+          {
+            "annotation": "str | None",
+            "default": null,
+            "kind": "keyword_only",
+            "name": "labour_force_pack",
+            "required": false
+          },
+          {
+            "annotation": "Path | None",
+            "default": null,
+            "kind": "keyword_only",
+            "name": "labour_force_profile_path",
             "required": false
           }
         ],

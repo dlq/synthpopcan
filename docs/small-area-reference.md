@@ -1201,6 +1201,21 @@ the normalized targets, and the Profile hash. Selected tracts must have
 complete education counts, compatible all-ages and under-15 targets, and
 linked candidates with supported age and eligible education codes.
 
+### Labour-force status controls for census tracts
+
+List the packs with `synthpopcan geo control-packs labour-force-status`.
+For linked normalized CSV calibration, use the matching vintage of
+`--labour-force-pack statcan-2021-labour-force-status-ct-v1` and
+`--labour-force-profile tract-profile.zip` with `geo calibrate`. The input
+may also be the extracted English Profile CSV. These options can accompany
+the matching broad pack and its evidence, and `--integerization swap`.
+
+The pack writes `labour_force_status_15_plus` with employed, unemployed,
+or outside the labour force for adults, and `under_15_not_applicable`
+for children. The report includes the published rows, derived targets,
+and Profile hash. Tracts with unavailable counts or incompatible
+all-ages and under-15 targets fail before fitting.
+
 ### `geo synthesize`
 
 Generates linked candidates from a package and calibrates them in one command.

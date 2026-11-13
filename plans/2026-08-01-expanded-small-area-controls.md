@@ -60,7 +60,7 @@ runtime slice does not begin and the other families continue independently.
 | `SA12-04` | `done` | Pinned 2016 and 2021 Profile definitions | Education source decision and crosswalk ([#55](https://github.com/dlq/synthpopcan/issues/55)) | Degree categories, age universe, vintage classifications, suppression rules, and fixture totals reproduce independently |
 | `SA12-05` | `in progress` | `SA12-01`, accepted `SA12-04`, `SA12-10` | Education preparer, registry entry, and pack component | Normalized controls validate and round-trip; not-applicable and unmapped categories remain explicit |
 | `SA12-06` | `done` | Pinned 2016 and 2021 Profile definitions | Labour-force-status source decision and crosswalk | Categories, age denominator, vintage differences, suppression rules, and fixture totals reproduce independently |
-| `SA12-07` | `blocked` | `SA12-01`, accepted `SA12-06`, `SA12-10` | Labour-force preparer, registry entry, and pack component | Normalized controls validate and round-trip; support, zero, and universe failures stop before fitting |
+| `SA12-07` | `in progress` | `SA12-01`, accepted `SA12-06`, `SA12-10` | Labour-force preparer, registry entry, and pack component | Normalized controls validate and round-trip; support, zero, and universe failures stop before fitting |
 | `SA12-08` | `ready` | Pinned 2016 and 2021 Profile definitions | Work-activity source decision and crosswalk | Full/part-year and full/part-time categories, applicability, suppression, and fixture totals reproduce independently |
 | `SA12-09` | `blocked` | `SA12-01`, accepted `SA12-08`, `SA12-10` | Work-activity preparer, registry entry, and pack component | Normalized controls validate and round-trip; mutually exclusive states and denominators are enforced |
 | `SA12-10` | `in progress` | `SA12-01` | Shared conditional-person reconciliation and preflight path | The common implementation represents not-applicable states or explicit conditional constraints without silently manufacturing totals; adversarial cases fail closed |
@@ -489,6 +489,28 @@ Rejection fixtures include 2016 CT 2050130.05 (suppressed) and 3050015.01
 and 5350376.06 (labour root 280, citizenship root 275). These are source
 checks. Candidate support and fit evidence belong to `SA12-07` and the
 subsequent joint acceptance.
+
+#### Labour-force tract implementation and fit evidence
+
+The built-in 2016 and 2021 labour-force status packs accept the matching
+tract Profile ZIP or CSV via `geo calibrate --labour-force-pack ... --labour-force-profile ...`.
+Both reuse the conditional Profile validation path and check exact
+all-ages and under-15 agreement before joint calibration.
+
+Three Montréal tracts per vintage used published labour-force and broad
+controls with the hybrid solver at tolerance 0.01. The midpoint and swap
+runs used the same controls and candidate pools.
+
+| Census | Tracts | Fractional convergence | Max realized labour residual, midpoint → swap | Max realized residual across all controls, midpoint → swap |
+| --- | --- | --- | --- | --- |
+| 2016 | 4620470.03, 4620500.00, 4620625.02 | 2 of 3 | 61 → 2 | 93 → 9 |
+| 2021 | 4620221.00, 4620638.04, 4620643.03 | 3 of 3 | 61 → 1 | 70 → 5 |
+
+All four outputs passed linkage validation. The audit matched exported
+integer weights to realized households and independently recounted the
+labour-force residuals. The 2016 tract 4620500.00 remained fractionally
+nonconverged. Commands and results are in the local directory
+`runs/labour-acceptance-2026-11-13/`.
 
 ## `1.1.0` Runtime Invariants
 

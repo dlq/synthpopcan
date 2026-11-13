@@ -226,6 +226,15 @@ def control_packs_list_command(output_format: str) -> None:
         )
 
 
+@control_packs_group.command("labour-force-status")
+def labour_force_packs_command() -> None:
+    """List built-in labour-force status tract packs."""
+    from synthpopcan._labour_force_packs import PACKS
+
+    for identifier in PACKS:
+        click.echo(identifier)
+
+
 @control_packs_group.command("education")
 def education_packs_command() -> None:
     """List the built-in education tract packs."""
@@ -566,6 +575,13 @@ def _calibrate_cli_files(request: SmallAreaCalibrationRequest):
     type=_PATH,
     help="Age-15+ targets JSON or source CSV with a built-in marital-status pack.",
 )
+@click.option("--labour-force-pack", help="Built-in labour-force status tract pack.")
+@click.option(
+    "--labour-force-profile",
+    "labour_force_profile_path",
+    type=_PATH,
+    help="Matching Census Profile tract ZIP or CSV for the labour-force pack.",
+)
 @click.option("--education-pack", help="Built-in education tract pack.")
 @click.option(
     "--education-profile",
@@ -725,6 +741,8 @@ def calibrate_command(
     marital_status_pack: str | None,
     education_pack: str | None,
     education_profile_path: Path | None,
+    labour_force_pack: str | None,
+    labour_force_profile_path: Path | None,
     control_pack: str | None,
     control_pack_evidence: Path | None,
     geo_dimension: str,
@@ -784,6 +802,8 @@ def calibrate_command(
                 marital_status_controls_path=marital_status_controls_path,
                 marital_status_pack=marital_status_pack,
                 education_pack=education_pack,
+                labour_force_pack=labour_force_pack,
+                labour_force_profile_path=labour_force_profile_path,
                 education_profile_path=education_profile_path,
                 control_pack=control_pack,
                 control_pack_evidence=control_pack_evidence,

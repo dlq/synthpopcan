@@ -83,6 +83,8 @@ class SmallAreaCalibrationRequest:
     integerization: str = "midpoint"
     education_pack: str | None = None
     education_profile_path: Path | None = None
+    labour_force_pack: str | None = None
+    labour_force_profile_path: Path | None = None
 
 
 @dataclass(frozen=True)
@@ -365,6 +367,11 @@ def _calibration_file_workflow(request: SmallAreaCalibrationRequest):
             or request.education_profile_path is not None
         ):
             raise ValueError("Education controls require normalized control CSVs.")
+        if (
+            request.labour_force_pack is not None
+            or request.labour_force_profile_path is not None
+        ):
+            raise ValueError("Labour-force controls require normalized control CSVs.")
         if request.integerization != "midpoint":
             raise ValueError("Swap integerization requires normalized control CSVs")
         if (
@@ -425,6 +432,8 @@ def _calibrate_normalized_control_files(
         zero_target_policy=request.zero_target_policy,
         integerization=request.integerization,
         education_pack=request.education_pack,
+        labour_force_pack=request.labour_force_pack,
+        labour_force_profile_path=request.labour_force_profile_path,
         education_profile_path=request.education_profile_path,
         marital_status_pack=request.marital_status_pack,
         marital_status_controls_path=request.marital_status_controls_path,

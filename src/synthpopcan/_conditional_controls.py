@@ -92,11 +92,27 @@ def _validate_existing_person_margins(
 
 def _validate_broad_child_targets(controls, dimension, targets, family):
     for margin in controls.margins:
-        if "age_group_3" not in margin.dimensions:
+        field = next(
+            (
+                name
+                for name in margin.dimensions
+                if name
+                in {
+                    "age_group_3",
+                    "education_15_plus",
+                    "marital_status_15_plus",
+                    "labour_force_status_15_plus",
+                }
+            ),
+            None,
+        )
+        if field is None:
             continue
         children: dict[str, float] = dict.fromkeys(targets, 0.0)
         for cell in margin.cells:
-            if cell.categories["age_group_3"] == "0_14":
+            if cell.categories[field] == (
+                "0_14" if field == "age_group_3" else UNDER_15
+            ):
                 children[cell.categories[dimension]] += cell.count
         for identifier, count in children.items():
             if not math.isclose(
@@ -226,15 +242,24 @@ def apply_builtin_marital_status_pack(
     )
 
 
-def apply_builtin_education_pack(path, persons, controls, geography, dimension, pack):
-    from synthpopcan._education_packs import CROSSWALK, PACKS, prepare_pack_targets
+def apply_builtin_profile_pack(
+    path, persons, controls, geography, dimension, pack, family
+):
+    import synthpopcan._education_packs as _education_packs
+    import synthpopcan._labour_force_packs as _labour_force_packs
     from synthpopcan._marital_status_packs import AGE_ELIGIBILITY
     from synthpopcan.small_area_synthesis import controls_by_geography
 
-    if pack not in PACKS:
-        raise ValueError(f"Unknown education pack {pack!r}")
+    source = _education_packs if family == "education" else _labour_force_packs
+    if pack not in source.PACKS:
+        raise ValueError(f"Unknown {family.replace('_', '-')} pack {pack!r}")
     identifiers = set(controls_by_geography(controls, geography_dimension=dimension))
-    targets, evidence = prepare_pack_targets(pack, path, geography, identifiers)
+    targets, evidence = source.prepare_pack_targets(pack, path, geography, identifiers)
+    source_field = (
+        "HDGREE"
+        if family == "education"
+        else _labour_force_packs.SOURCE_FIELDS[source.PACKS[pack]]
+    )
     return _apply_builtin_person_targets(
         persons,
         controls,
@@ -242,9 +267,9 @@ def apply_builtin_education_pack(path, persons, controls, geography, dimension, 
         dimension,
         targets,
         evidence,
-        "education",
-        "HDGREE",
-        CROSSWALK,
+        family,
+        source_field,
+        source.CROSSWALK,
         AGE_ELIGIBILITY,
     )
 
