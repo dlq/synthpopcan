@@ -4,8 +4,9 @@ Status: active feature implementation; `1.1.0` released and `1.2.0` committed\
 Created: 2026-08-01\
 Last updated: 2026-11-13\
 Target: `1.1.0` broad compatible packs; conditional person controls in `1.2.0`\
-Next action: obtain genuine 2016 broad controls, investigate the realized
-residuals, and continue the education source review (`SA12-04`)\
+Next action: use the recovered 2016 Profile for broad-control acceptance,
+investigate the realized residuals, and apply the education source contract
+in `SA12-05` when its prerequisites are complete\
 Roadmap: [PLANS.md](../PLANS.md) | [Plan index](README.md)
 
 Release sequencing and confidence are defined in the
@@ -57,7 +58,7 @@ runtime slice does not begin and the other families continue independently.
 | `SA12-01` | `done` | Released `1.1.0` registry and runtime invariants | Versioned age-15+ universe and not-applicable/conditional-semantics contract | The contract distinguishes all-private-household persons, age-15+ denominators, under-15 states, suppression, and rounding; mismatch fixtures fail before fitting |
 | `SA12-02` | `done` | Pinned 2016 and 2021 Profile definitions | Marital-status source decision and crosswalk | Child rows, categories, denominators, suppression rules, vintage differences, and fixture totals reproduce independently |
 | `SA12-03` | `in progress` | `SA12-01`, accepted `SA12-02`, `SA12-10` | Marital-status preparer, registry entry, and pack component ([#53](https://github.com/dlq/synthpopcan/issues/53)) | Normalized controls validate and round-trip; unsupported categories and universe mismatches fail closed |
-| `SA12-04` | `in progress` | Pinned 2016 and 2021 Profile definitions | Education source decision and crosswalk ([#55](https://github.com/dlq/synthpopcan/issues/55)) | Degree categories, age universe, vintage classifications, suppression rules, and fixture totals reproduce independently |
+| `SA12-04` | `done` | Pinned 2016 and 2021 Profile definitions | Education source decision and crosswalk ([#55](https://github.com/dlq/synthpopcan/issues/55)) | Degree categories, age universe, vintage classifications, suppression rules, and fixture totals reproduce independently |
 | `SA12-05` | `blocked` | `SA12-01`, accepted `SA12-04`, `SA12-10` | Education preparer, registry entry, and pack component | Normalized controls validate and round-trip; not-applicable and unmapped categories remain explicit |
 | `SA12-06` | `ready` | Pinned 2016 and 2021 Profile definitions | Labour-force-status source decision and crosswalk | Categories, age denominator, vintage differences, suppression rules, and fixture totals reproduce independently |
 | `SA12-07` | `blocked` | `SA12-01`, accepted `SA12-06`, `SA12-10` | Labour-force preparer, registry entry, and pack component | Normalized controls validate and round-trip; support, zero, and universe failures stop before fitting |
@@ -221,41 +222,113 @@ Keep exact denominator checks in place. The 2021 empirical results show
 that agreeing on the denominator is only an admission check. The remaining
 `SA12-12` work includes genuine 2016 broad inputs and stronger realized
 residual evidence. The official 2016 bulk CT fetch returned HTTP 403
-with a browser challenge during this pass.
+with a browser challenge during the marital-status pass. The education
+source review below recovered a mirror of the tract archive.
 
 ### Education source review (2026-11-13)
 
-The Census Profile's highest certificate, diploma or degree section is the
-initial source candidate. Statistics Canada defines the universe in both
-vintages as people aged 15 and older in private households, measured with
-the 25% sample. Use the age-15+ root and its mutually exclusive children,
-keeping the age-25–64 panel separate. The project inventory identifies
-root 1683 for 2016 and 1998 for 2021. The latter is confirmed against the
-cached official 2021 CT archive metadata.
+Accept the 2016 and 2021 Census Profile tract products as source candidates
+for `SA12-05`, subject to the tract-level rules below. Both education panels
+cover the population aged 15 and over in private households, using estimates
+from the 25% sample. Use total sex or gender counts and the age-15+ panel.
 [2016 Education Reference Guide](https://www12.statcan.gc.ca/census-recensement/2016/ref/guides/013/98-500-x2016013-eng.pdf) ·
 [2021 Census Dictionary](https://www12.statcan.gc.ca/census-recensement/2021/ref/dict/98-301-x2021001-eng.pdf)
 
-The hierarchical `HDGREE` codebooks have eight eligible categories in each
-vintage. The preliminary mapping preserves no credential, secondary school,
-two trades categories, college or CEGEP, university below bachelor level,
-bachelor's degree, and university above bachelor level. For the last group,
-sum the disjoint Profile leaves for the above-bachelor certificate or diploma,
-professional degree, master's and doctorate. The trades labels differ by
-vintage and must be validated separately. Code 88 denotes unavailable and 99
-denotes not applicable. Neither should contribute to the eight-category
-vector. A missing or suppressed published count must stay unavailable.
+| Vintage | Tract Profile input | SHA-256 |
+| --- | --- | --- |
+| 2016 | `98-401-X2016043_eng_CSV.zip`, [Zenodo mirror](https://zenodo.org/records/15343658) | `c0113c58902368a77218fe7ae96ca477311cd8a6379a8eb9a257739839a9e8d6` |
+| 2021 | `98-401-X2021007_eng_CSV.zip`, [Statistics Canada downloads](https://www12.statcan.gc.ca/census-recensement/2021/dp-pd/prof/details/download-telecharger.cfm?Lang=E) | `5d29811e5c3171cb16c9564bfbce0a08da45d1584810be2bd74764cbd2329ffc` |
 
-For 2021 CT 4620053.00, root 1998 is 1,260. Profile rows 1999, 2000,
-2004–2007, 2009, and the sum of 2010–2013 give 125, 175, 55, 20, 150,
-90, 320, and 320 respectively. The eight values sum to 1,255, five below
-the published root. Retain both totals as evidence when deciding how to
-reconcile the vector.
+The 2016 mirror matched its deposited MD5
+`b7945a00205e2e251a175d3a3999d832`. For 2016 select `GEO_LEVEL=2` and use
+the dotted tract identifier in `GEO_CODE (POR)`. For 2021 select
+`GEO_LEVEL=Census tract` and use `ALT_GEO_CODE`, with the matching vintage
+DGUID. Read the 2016 Total–Sex count or 2021 `C1_COUNT_TOTAL` and its
+adjacent `SYMBOL`. Retain the product revision and tract vintage.
 
-The remaining source decision needs an independently evidenced compatible
-all-ages/under-15 private-household denominator, review of rounding and
-suppression on actual tract rows, and an independently reproduced fixture
-for each vintage. The 2016 bulk CT fetch returned a browser challenge on
-2026-11-13. The review remains open.
+#### Education category crosswalk
+
+The mapping uses disjoint Profile rows from the age-15+ panel and the
+vintage-specific hierarchical PUMF `HDGREE` codes. Code 88 is unavailable,
+and code 99 is not applicable. Classify children from age eligibility and
+require one of codes 1–8 for eligible candidates. The trades categories have
+different published definitions by vintage. Preserve those definitions in
+reports. [Statistics Canada hierarchical PUMF](https://www150.statcan.gc.ca/n1/pub/98m0001x/)
+
+| HDGREE | Category | 2016 Profile row | 2021 Profile row |
+| --- | --- | --- | --- |
+| 1 | No certificate, diploma or degree | 1684 | 1999 |
+| 2 | Secondary diploma or equivalency | 1685 | 2000 |
+| 3 | Other trades certificate or diploma | 1688, excluding apprenticeship or qualification certificates | 2004, non-apprenticeship trades |
+| 4 | Apprenticeship or qualification certificate | 1689, apprenticeship or qualification | 2005, apprenticeship |
+| 5 | College, CEGEP or other non-university credential | 1690 | 2006 |
+| 6 | University certificate or diploma below bachelor level | 1691 | 2007 |
+| 7 | Bachelor's degree | 1693 | 2009 |
+| 8 | University credential above bachelor level | Sum of 1694–1697 | Sum of 2010–2013 |
+
+#### Denominator and rounding rules
+
+1. Anchor the adult vector to the education root (2016 row 1683, 2021 row
+   1998). Cross-check it against the same-universe 25% income-statistics
+   root (672 or 126). Require both counts and a difference of at most
+   five. Every complete tract in the two archives met that bound. Require
+   all three denominator rows to be observed nonnegative base-five integers.
+1. Anchor the all-ages denominator to the same Profile's 25% private-household
+   citizenship root (1135 or 1522). Require a positive all-ages count and
+   `0 < education total <= all-ages total`. Derive the under-15 target by
+   subtraction. Record that it is a derived calibration target. The 100%
+   private-household counts (57 or 56) can differ materially from the 25%
+   roots. Other independently sourced age targets, including the marital
+   IVTs, must agree before any joint fit. Never clamp a negative child
+   target or silently rescale between the short- and long-form universes.
+1. Require the education root and all 11 disjoint leaves to be observed,
+   nonnegative base-five integers. Their sum differed from the root by
+   −30 to +25 in both vintages. Admit an absolute gap of at most 48
+   (four people per published cell across 11 leaves and the root) as a
+   conservative policy for these files. This is a calibration admission
+   bound, not a guarantee about weighted-count error. Reject an all-zero
+   vector with a positive root. Group the 11 leaves into eight categories
+   before applying deterministic proportional largest remainder, with ties
+   in code order. Preserve observed zeros and retain the raw leaves,
+   published roots, derived counts, adjustments, and source hash in evidence.
+1. Treat any unavailable required value as a tract exclusion during
+   preparation and a preflight error if the tract was explicitly selected.
+   Handle blank, absent, `x`, `..`, `...`, and `F` as unavailable, preserving
+   the reason. For 2021 also inspect the count symbol. Reject malformed or
+   duplicate cells. A numeric zero with a usable symbol is an observed
+   rounded value. Do not reconstruct an unavailable cell from parent totals,
+   other sex/gender columns, or another vintage.
+   [2016 Census Guide](https://publications.gc.ca/collections/collection_2017/statcan/98-304-x/98-304-x2016001-eng.pdf) ·
+   [2021 Profile rounding notes](https://www12.statcan.gc.ca/census-recensement/2021/as-sa/fogs-spg/Page.cfm?Dguid=2021A00034708&Lang=E&topic=9)
+
+#### Tract evidence
+
+| Vintage | Tracts scanned | Unavailable required counts | Complete tracts with adult total above all-ages total | Pass numeric source screen |
+| --- | --- | --- | --- | --- |
+| 2016 | 5,721 | 80 (73 `x`, 5 `..`, 2 `F`) | 56 | 5,585 |
+| 2021 | 6,247 | 89 (blank counts with `x` symbols) | 1 | 6,157 |
+
+These counts screen the source only. Candidate support, joint control
+compatibility, and calibration residuals belong to the runtime acceptance.
+
+| Vintage | Montréal CT | 25% all ages | Education 15+ | Companion 15+ | Derived under 15 | Raw eight-category vector in HDGREE order | Raw sum |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 2016 | 4620053.00 | 1,095 | 1,070 | 1,075 | 25 | 120, 145, 50, 10, 180, 80, 220, 265 | 1,070 |
+| 2016 | 4620054.00 | 1,085 | 1,045 | 1,045 | 40 | 25, 145, 45, 30, 185, 55, 290, 275 | 1,050 |
+| 2021 | 4620053.00 | 1,320 | 1,260 | 1,260 | 60 | 125, 175, 55, 20, 150, 90, 320, 320 | 1,255 |
+| 2021 | 4620054.00 | 1,125 | 1,085 | 1,085 | 40 | 35, 155, 25, 20, 175, 60, 345, 260 | 1,075 |
+
+Negative fixtures include 2016 CT 2050130.05 (`x`), 4620732.03 (`..`),
+and 8600002.00 (`F`), and 2021 CT 9320010.00 (blank). Denominator
+reversals include 2016 CT 3050015.01 (adult 40, all ages 0) and 2021 CT
+5350376.06 (adult 280, all ages 275). In 55 of the 56 rejected 2016 tracts,
+the citizenship root is zero even though the education root is positive.
+The separate 25% private-household language root (872 in 2016, 1078 in
+2021\) is at least as large as the education root in all complete tracts.
+Keep the citizenship-based policy for compatibility with the existing broad
+control. Admitting those tracts under the language root would require a
+separate source decision. The recovered 2016 archive also supports the
+separate marital-status broad-control acceptance work.
 
 ## `1.1.0` Runtime Invariants
 
