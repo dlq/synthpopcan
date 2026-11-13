@@ -4,8 +4,7 @@ Status: active feature implementation; `1.1.0` released and `1.2.0` committed\
 Created: 2026-08-01\
 Last updated: 2026-11-13\
 Target: `1.1.0` broad compatible packs; conditional person controls in `1.2.0`\
-Next action: add work activity to joint conditional-control acceptance
-and extend coverage beyond the tested tracts\
+Next action: extend five-family joint acceptance beyond the tested tracts\
 Roadmap: [PLANS.md](../PLANS.md) | [Plan index](README.md)
 
 Release sequencing and confidence are defined in the
@@ -677,6 +676,36 @@ preflight because its household-size counts require at least 925 people
 and its person target is 920. The 2021 tract 4620643.03 was screened out
 for a different work-activity under-15 target. Commands, screens, and
 reports are in `runs/work-activity-acceptance-2026-11-13/`.
+
+#### Five-family joint tract acceptance (2026-11-13)
+
+At `3c0ce08`, the matching broad pack and the marital-status, education,
+labour-force status, and work-activity add-ons ran together for 18 margins.
+Six tracts from the earlier joint cohort were selected for compatible
+published all-ages and under-15 targets. Montréal and Saskatchewan reused
+the original candidate pools, and Toronto reused the previously augmented
+pool. The fits used the pinned Profile ZIPs, the hybrid solver at tolerance
+0.01 with a 1,000-iteration cap, and whole-household swaps.
+
+All six tracts had zero joint feasibility slack and converged fractionally.
+The largest fractional residual was 0.000189 or less in 2016 and 0.002281
+or less in 2021. All three batches passed linkage validation. The audit
+recounted the realized margins from exported records and verified that
+integer weights matched realized household multiplicities.
+
+| Census | Tract | Broad | Marital status | Education | Labour-force status | Work activity |
+| --- | --- | --- | --- | --- | --- | --- |
+| 2016 | 4620470.03 | 5 | 1 | 1 | 1 | 1 |
+| 2016 | 4620625.02 | 8 | 1 | 2 | 0 | 0 |
+| 2021 | 7250105.00 | 5 | 0 | 0 | 0 | 0 |
+| 2021 | 5350403.09 | 6 | 1 | 1 | 1 | 1 |
+| 2021 | 5350411.18 | 8 | 1 | 1 | 1 | 1 |
+| 2021 | 5350804.01 | 3 | 1 | 1 | 1 | 1 |
+
+Each value is the largest absolute count error within that family after
+swaps. This evidence covers the six selected tracts. Reproduction commands,
+per-tract fractional residuals, and output audits are in the local run
+directory `runs/joint-five-2026-11-13/`.
 
 ## `1.1.0` Runtime Invariants
 
