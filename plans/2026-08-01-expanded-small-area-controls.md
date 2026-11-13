@@ -291,6 +291,40 @@ linkage validation. The 2016 run realized 6,830 households and 18,679 people
 at three of three and two of three, respectively. The CLI invocations and
 validation reports are in the same local run directory.
 
+#### Toronto joint-fit diagnosis and rerun
+
+The 2021 Toronto run combined all 17 broad and conditional margins.
+A nonnegative linear feasibility check with structural zeros found an
+exact fit for the housing margins alone in every tract. The original
+complete-case pool had one six-person household and no seven-person
+households, down from 4,954 households of those sizes before filtering.
+When the person controls were added, the minimum sum of absolute cell
+residuals was 70, 216.5, and 127.5, respectively. The available household
+sizes could not supply the target person totals at the published
+household-size distribution.
+
+A local candidate-pool experiment retained the original complete households.
+It added 11,889 large candidates using complete synthetic person draws from
+the same Toronto model's province, household-size, and tenure groups. This
+changes the candidate distribution and assumes exchangeability of complete
+draws within those groups. The published targets and structural zeros
+were retained. The augmented pool had an exact fractional feasibility
+witness for every tract.
+
+| 2021 CT | Max fractional residual before → after | Max realized residual before → after |
+| --- | --- | --- |
+| 5350403.09 | 36.907 → 0.000332 | 22 → 4 |
+| 5350411.18 | 109.150 → 0.000315 | 57 → 3 |
+| 5350412.26 | 64.746 → 0.000006 | 36 → 4 |
+
+All three converged fractionally with the hybrid solver. The swap output
+passed linkage validation for 6,180 households and 22,059 people against
+a target of 22,060 people. The audit independently recounted the three
+conditional margins and matched integer weights to realized households.
+Scripts and results are in
+`runs/joint-conditional-2026-11-13/toronto-diagnosis/`. This experiment
+uses local candidate preparation. The model generator and CLI are unchanged.
+
 ### Education source review (2026-11-13)
 
 Accept the 2016 and 2021 Census Profile tract products as source candidates
