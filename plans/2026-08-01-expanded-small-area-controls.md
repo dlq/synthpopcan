@@ -4,7 +4,7 @@ Status: active feature implementation; `1.1.0` released and `1.2.0` committed\
 Created: 2026-08-01\
 Last updated: 2026-11-13\
 Target: `1.1.0` broad compatible packs; conditional person controls in `1.2.0`\
-Next action: review the work-activity sources in `SA12-08` and continue
+Next action: prepare the work-activity tract packs in `SA12-09` and continue
 joint conditional-control acceptance beyond the tested tracts\
 Roadmap: [PLANS.md](../PLANS.md) | [Plan index](README.md)
 
@@ -61,8 +61,8 @@ runtime slice does not begin and the other families continue independently.
 | `SA12-05` | `in progress` | `SA12-01`, accepted `SA12-04`, `SA12-10` | Education preparer, registry entry, and pack component | Normalized controls validate and round-trip; not-applicable and unmapped categories remain explicit |
 | `SA12-06` | `done` | Pinned 2016 and 2021 Profile definitions | Labour-force-status source decision and crosswalk | Categories, age denominator, vintage differences, suppression rules, and fixture totals reproduce independently |
 | `SA12-07` | `in progress` | `SA12-01`, accepted `SA12-06`, `SA12-10` | Labour-force preparer, registry entry, and pack component | Normalized controls validate and round-trip; support, zero, and universe failures stop before fitting |
-| `SA12-08` | `ready` | Pinned 2016 and 2021 Profile definitions | Work-activity source decision and crosswalk | Full/part-year and full/part-time categories, applicability, suppression, and fixture totals reproduce independently |
-| `SA12-09` | `blocked` | `SA12-01`, accepted `SA12-08`, `SA12-10` | Work-activity preparer, registry entry, and pack component | Normalized controls validate and round-trip; mutually exclusive states and denominators are enforced |
+| `SA12-08` | `done` | Pinned 2016 and 2021 Profile definitions | Work-activity source decision and crosswalk | Full/part-year and full/part-time categories, applicability, suppression, and fixture totals reproduce independently |
+| `SA12-09` | `ready` | `SA12-01`, accepted `SA12-08`, `SA12-10` | Work-activity preparer, registry entry, and pack component | Normalized controls validate and round-trip; mutually exclusive states and denominators are enforced |
 | `SA12-10` | `in progress` | `SA12-01` | Shared conditional-person reconciliation and preflight path | The common implementation represents not-applicable states or explicit conditional constraints without silently manufacturing totals; adversarial cases fail closed |
 | `SA12-11` | `blocked` | `SA12-10` and at least one accepted family runtime slice | Separately versioned conditional-person pack tier | Manifests have stable identifiers, semantic checksums, inspectable contents, and fail-closed compatibility with the retained broad packs |
 | `SA12-12` | `blocked` | `SA12-11` | Joint bounded feasibility and calibration evidence | Accepted families run jointly with broad packs on reviewed 2016/2021 CSD, CT, ADA, and DA cases; fractional and realized residuals are independently recomputed |
@@ -485,7 +485,8 @@ Use the same checksum-pinned 2016 and 2021 Census Profile CT archives and
 tract identifiers documented in the education source review. Labour-force
 status covers private-household residents aged 15 and over in the 25% sample.
 The reference weeks were May 1–7, 2016 and May 2–8, 2021. Annual work
-activity has a separate reference period and is reviewed under `SA12-08`.
+activity has a separate reference period, documented in the
+[work-activity source review](#work-activity-source-review-2026-11-13).
 [2016 Labour Reference Guide](https://publications.gc.ca/collections/collection_2017/statcan/98-500-x/98-500-x2016012-eng.pdf) ·
 [2021 Labour Reference Guide](https://www12.statcan.gc.ca/census-recensement/2021/ref/98-500/012/98-500-x2021012-eng.pdf)
 
@@ -571,6 +572,86 @@ integer weights to realized households and independently recounted the
 labour-force residuals. The 2016 tract 4620500.00 remained fractionally
 nonconverged. Commands and results are in the local directory
 `runs/labour-acceptance-2026-11-13/`.
+
+### Work-activity source review (2026-11-13)
+
+Use the checksum-pinned 2016 and 2021 Census Profile CT archives and vintage
+tract identifiers documented in the education source review. Both roots
+cover residents aged 15 and over in private households (25% long-form
+sample). The 2016 Census measures work for pay or in self-employment in
+calendar year 2015. The 2021 Census measures calendar year 2020, which
+includes pandemic disruptions. Full-year full-time means 49–52 weeks,
+mostly at least 30 hours per week. Labour-force status measures a separate
+May reference week.
+[2016 work-activity definition](https://www23.statcan.gc.ca/imdb/p2SV.pl?DECId=244099&DFId=244177&Function=assembleDESurv&Id=152274&RepClass=591&db=IMDB) ·
+[2021 Census Dictionary](https://www12.statcan.gc.ca/census-recensement/2021/ref/dict/98-301-x2021001-eng.pdf) ·
+[2021 Labour Reference Guide](https://www12.statcan.gc.ca/census-recensement/2021/ref/98-500/012/98-500-x2021012-eng.pdf)
+
+| Category | 2016 Profile row | 2021 Profile row | Hierarchical PUMF `WRKACT` (both vintages) |
+| --- | --- | --- | --- |
+| Did not work in the reference year | 1874 | 2232 | 1–2 |
+| Worked full year, full time | 1876 | 2234 | 11 |
+| Worked part year and/or part time | 1877 | 2235 | 3–10, 12 |
+
+Code 1 covers those who worked before the reference year or never worked.
+Code 2 covers those who worked in the Census year but did not work in the
+reference year. Codes 3–10 cover 1–48 weeks and code 12 covers 49–52 weeks
+mostly part time. Use `AGEGRP` 1–2 for the under-15 state and require a
+mapped `WRKACT` code for `AGEGRP` 3–13. Reject unknown ages and unmapped
+adult codes, including 99 (not applicable). `WRKACT` is sufficient for this
+crosswalk. Omit the worked subtotal (1875/2233) and the average weeks row
+(1878/2236) from the margin.
+[Hierarchical PUMF codebooks](https://www150.statcan.gc.ca/n1/pub/98m0001x/)
+
+1. Anchor the adult vector to the work-activity root (1873/2231). Require
+   each companion 25% age-15+ root to be within five of it: education
+   (1683/1998), labour-force status (1865/2223), and income statistics
+   (672/126). Every complete tract met this check. Require a positive
+   adult root no larger than the 25% all-ages citizenship root
+   (1135/1522) and derive the under-15 target by subtraction. The 100%
+   population counts use a separate denominator.
+1. Require exact agreement on all-ages and under-15 targets when
+   combining controls. Independent rounding can pass the source check
+   and still fail joint preflight. In 2021 CT 4620053.00 the work-activity
+   root is 1,265, while education and labour-force status both use 1,260.
+1. Require observed nonnegative base-five integers for all roots and
+   leaves. With independently rounded cells, allow an absolute gap of
+   at most 16 between the leaf sum and its root (four per cell). Reject
+   an all-zero vector against a positive root. Reconcile eligible
+   vectors by proportional largest remainder in table order. Retain
+   numeric zeros, raw counts, reconciled targets, and archive provenance.
+1. Exclude tracts with a required count that is absent, blank,
+   suppressed, unreliable, or malformed. Fail preflight for explicitly
+   selected excluded tracts and report the missing or invalid row.
+   Reject duplicate required rows. Read the 2016 total-sex count or the
+   2021 total count and its adjacent symbol. Treat `x`, `..`, `...`,
+   and `F` as unavailable when present. Preserve numeric zero and leave
+   unavailable cells unresolved even when a subtotal could imply a value.
+
+| Census | Tracts scanned | Unavailable required counts | Invalid adult/all-ages counts | Outside rounding envelope | Passed source screen |
+| --- | --- | --- | --- | --- | --- |
+| 2016 | 5,721 | 80 (73 `x`, 5 `..`, 2 `F`) | 56 | 0 | 5,585 |
+| 2021 | 6,247 | 89 (blank with `x`) | 3 | 1 | 6,154 |
+
+The published leaf sum minus the adult root ranged from −15 to +15 in
+2016 and −20 to +15 in 2021. CT 8350018.00 in 2021 published an adult root
+of 40 and leaves of 20 / 0 / 0. Its −20 gap exceeds the allowance and
+the source screen excludes it. Suppression fixtures are 2016 CT
+2050130.05 and 2021 CT 9320010.00. Invalid denominator fixtures include
+2016 CT 3050015.01 (adult 40, all ages 0) and 2021 CT 5220015.00
+(adult 55, all ages 50).
+
+| Census | CT | All ages | Work activity 15+ | Derived under 15 | Published leaves in table order | Reconciled leaves |
+| --- | --- | --- | --- | --- | --- | --- |
+| 2016 | 4620053.00 | 1,095 | 1,070 | 25 | 395 / 345 / 335 | 393 / 343 / 334 |
+| 2016 | 4620054.00 | 1,085 | 1,045 | 40 | 175 / 485 / 385 | 175 / 485 / 385 |
+| 2021 | 4620053.00 | 1,320 | 1,265 | 55 | 520 / 425 / 315 | 522 / 427 / 316 |
+| 2021 | 4620054.00 | 1,125 | 1,085 | 40 | 285 / 390 / 410 | 285 / 390 / 410 |
+
+These counts establish source eligibility. Candidate support, normalized
+pack validation, and fit evidence belong to `SA12-09` and joint acceptance.
+The local archive scan is recorded in
+`runs/work-activity-source-review-2026-11-13/`.
 
 ## `1.1.0` Runtime Invariants
 
