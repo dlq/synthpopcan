@@ -143,3 +143,60 @@ def test_education_calibration(tmp_path, year, case):
     assert evidence["eligible_targets"]["university_above_bachelor"] == 7
     assert evidence["eligible_targets"]["secondary"] == 0
     assert report["summary"]["realized_max_abs_error"] == 0
+
+
+@pytest.mark.parametrize(
+    ("case", "expected"),
+    [
+        ("wrong-vintage", "matching Statistics Canada CT geography"),
+        ("wrong-header", "Expected the 2021 Census Profile"),
+        ("short-row", "incomplete education Profile CSV row"),
+        ("wrong-dguid", "incompatible education Profile geography"),
+        ("non-base-five", "is not base-five"),
+        ("missing", "missing education Profile rows"),
+        ("rounding", "exceed the rounding envelope"),
+    ],
+)
+def test_education_profile_rejects_invalid_source(tmp_path, case, expected):
+    from synthpopcan._education_packs import prepare_pack_targets
+    from synthpopcan.geography import statcan_geography_universe
+
+    tract = "4620053.00"
+    profile = tmp_path / "profile.csv"
+    header = [
+        "CENSUS_YEAR",
+        "GEO_LEVEL",
+        "ALT_GEO_CODE",
+        "DGUID",
+        "CHARACTERISTIC_ID",
+        "C1_COUNT_TOTAL",
+        "SYMBOL",
+    ]
+    counts = dict.fromkeys(
+        [1999, 2000, 2004, 2005, 2006, 2007, 2009, 2010, 2011, 2012, 2013], 0
+    )
+    counts.update({1522: 20, 1998: 15, 126: 15, 1999: 15})
+    if case == "wrong-header":
+        header[-1] = "UNEXPECTED"
+    if case == "non-base-five":
+        counts[1999] = 16
+    if case == "missing":
+        del counts[2013]
+    if case == "rounding":
+        counts[1999] = 100
+    dguid = "wrong" if case == "wrong-dguid" else f"2021S0507{tract}"
+    with profile.open("w", newline="") as handle:
+        writer = csv.writer(handle)
+        writer.writerow(header)
+        if case == "short-row":
+            writer.writerow([2021, "Census tract", tract])
+        else:
+            writer.writerows(
+                [2021, "Census tract", tract, dguid, member, count, ""]
+                for member, count in counts.items()
+            )
+    universe = statcan_geography_universe(
+        2016 if case == "wrong-vintage" else 2021, "ct", "ct"
+    )
+    with pytest.raises(ValueError, match=expected):
+        prepare_pack_targets("statcan-2021-education-ct-v1", profile, universe, {tract})
