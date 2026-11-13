@@ -4,9 +4,8 @@ Status: active feature implementation; `1.1.0` released and `1.2.0` committed\
 Created: 2026-08-01\
 Last updated: 2026-11-13\
 Target: `1.1.0` broad compatible packs; conditional person controls in `1.2.0`\
-Next action: use the recovered 2016 Profile for broad-control acceptance,
-investigate the realized residuals, and apply the education source contract
-in `SA12-05` when its prerequisites are complete\
+Next action: investigate the realized tract residuals and apply the
+education source contract in `SA12-05` when its prerequisites are complete\
 Roadmap: [PLANS.md](../PLANS.md) | [Plan index](README.md)
 
 Release sequencing and confidence are defined in the
@@ -218,12 +217,41 @@ margin from the weight file and the realized population files.
 | 4620419.00 | No | 39.746812 | 54 |
 | 4620626.00 | Yes | 0.002212 | 71 |
 
-Keep exact denominator checks in place. The 2021 empirical results show
-that agreeing on the denominator is only an admission check. The remaining
-`SA12-12` work includes genuine 2016 broad inputs and stronger realized
-residual evidence. The official 2016 bulk CT fetch returned HTTP 403
-with a browser challenge during the marital-status pass. The education
-source review below recovered a mirror of the tract archive.
+The 2016 run screened 970 Montréal tracts in the recovered Profile.
+Of 205 with matching Profile total and private-household counts and
+positive household counts, 33 also matched the marital all-ages count
+and had complete broad and marital source cells. Three also matched the
+under-15 target. All three ran with nine household, five person, and one
+conditional marital-status margin. The preparation applied the reviewed
+2016 registry crosswalk and proportional largest-remainder normalization
+to the Profile household-size and private-household population anchors.
+It preserved raw and normalized vectors and mapped the published male
+and female counts to hierarchical PUMF SEX codes 2 and 1.
+
+The candidate pool used `montreal-cma-2016-all-fields`, package
+`v1.0.0-rights.1`, with 100,000 households and seed 20161113. Filtering
+unavailable required fields by whole household left 89,176 candidates
+with 181,542 people. IPU at 100 iterations and tolerance 0.01 converged
+on zero of three tracts. The hybrid solver with up to 1,000 iterations
+and the same tolerance converged on all three.
+
+| 2016 tract | Hybrid max fractional residual, all margins | Max realized residual, all margins | Max realized marital residual |
+| --- | --- | --- | --- |
+| 4620221.00 | 0.000344 | 47 | 33 |
+| 4620470.03 | 0.000135 | 48 | 37 |
+| 4620625.02 | 0.001202 | 79 | 31 |
+
+An independent tally reproduced all margin maxima from the exported weights
+(to within 0.00001 of the report, allowing for CSV precision) and from the
+realized CSVs (exactly). Linkage validation passed for 6,830 households and
+18,743 people. The person target was 18,685. The run directory
+`runs/marital-2016-acceptance-2026-11-13/` holds the source screen,
+normalization evidence, CLI invocations, reports, and audit.
+
+The empirical CT pass now covers both vintages. The exact denominator
+checks govern admission, while the residuals show the separate limits of
+whole-household realization. The wider `SA12-12` acceptance remains open
+for its additional geographies and control families.
 
 ### Education source review (2026-11-13)
 
