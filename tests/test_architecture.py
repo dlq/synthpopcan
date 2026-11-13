@@ -60,6 +60,7 @@ MODULE_LAYERS = {
     ),
     "domain": frozenset(
         {
+            "_conditional_controls",
             "benchmarks",
             "calibration",
             "control_suggestions",
