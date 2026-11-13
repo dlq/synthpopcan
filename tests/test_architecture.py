@@ -62,6 +62,7 @@ MODULE_LAYERS = {
         {
             "_conditional_controls",
             "_marital_status_packs",
+            "_education_packs",
             "benchmarks",
             "calibration",
             "control_suggestions",

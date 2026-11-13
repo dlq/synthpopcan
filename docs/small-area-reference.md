@@ -1177,6 +1177,30 @@ counts alone does not establish that condition. See the
 [2016 CT table](https://www150.statcan.gc.ca/n1/en/catalogue/98-400-X2016036)
 and [2021 reference guide](https://www12.statcan.gc.ca/census-recensement/2021/ref/98-500/002/98-500-x2021002-eng.pdf).
 
+### Education controls for census tracts
+
+List the education packs with `synthpopcan geo control-packs education`.
+For normalized linked CSV calibration, add `--education-pack` and
+`--education-profile`. The profile can be the matching Statistics Canada
+tract ZIP or its extracted English CSV. For example:
+
+```bash
+synthpopcan geo calibrate candidate-households.csv --persons candidate-persons.csv \
+  --controls broad-households.csv --person-controls broad-persons.csv \
+  --control-pack statcan-2021-broad-ct-v1 --control-pack-evidence broad-evidence.json \
+  --education-pack statcan-2021-education-ct-v1 --education-profile tract-profile.zip \
+  --geo-dimension ct --joint-solver hybrid --integerization swap \
+  --include-weights --out calibrated/
+```
+
+Use matching 2016 identifiers and Profile for a 2016 fit. The education pack
+controls eight `HDGREE` categories among private-household residents aged
+15 and over. It writes `education_15_plus` on realized persons and labels
+children `under_15_not_applicable`. The report preserves the raw Profile rows,
+the normalized targets, and the Profile hash. Selected tracts must have
+complete education counts, compatible all-ages and under-15 targets, and
+linked candidates with supported age and eligible education codes.
+
 ### `geo synthesize`
 
 Generates linked candidates from a package and calibrates them in one command.

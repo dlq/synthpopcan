@@ -1570,6 +1570,8 @@ def calibrate_linked_household_csvs(
     marital_status_controls_path: Path | None = None,
     marital_status_pack: str | None = None,
     integerization: str = "midpoint",
+    education_pack: str | None = None,
+    education_profile_path: Path | None = None,
 ) -> dict[str, Any]:
     """Calibrate linked household/person CSVs to geography controls.
 
@@ -1662,7 +1664,7 @@ def calibrate_linked_household_csvs(
     ) = _prepare_calibration_control_pack(
         control_pack,
         control_pack_evidence,
-        marital_pack,
+        marital_pack or education_pack,
         households,
         persons,
         controls,
@@ -1679,6 +1681,14 @@ def calibrate_linked_household_csvs(
         geography_dimension,
         control_pack,
         marital_pack,
+    )
+    persons, person_controls, education_provenance = _with_education_controls(
+        education_profile_path,
+        education_pack,
+        persons,
+        person_controls,
+        geography_universe,
+        geography_dimension,
     )
     phase_started = time.perf_counter()
     household_input_report = check_small_area_calibration_inputs(
@@ -1823,6 +1833,7 @@ def calibrate_linked_household_csvs(
     )
     summary["control_pack_plan"] = control_pack_plan
     summary.update(marital_status_provenance)
+    summary.update(education_provenance)
     timing_seconds["report_construction"] = time.perf_counter() - phase_started
     timing_seconds["total_before_report_write"] = time.perf_counter() - started
     if record_timing:
@@ -1857,7 +1868,7 @@ def _take_integer_weights(fit: GeographyHouseholdFit, method: str):
 def _prepare_calibration_control_pack(
     control_pack,
     control_pack_evidence,
-    marital_pack,
+    conditional_pack,
     households,
     persons,
     controls,
@@ -1903,7 +1914,9 @@ def _prepare_calibration_control_pack(
         if control_pack_evidence is not None
         else None
     )
-    pack_persons = _broad_pack_persons(persons) if marital_pack is not None else persons
+    pack_persons = (
+        _broad_pack_persons(persons) if conditional_pack is not None else persons
+    )
     control_pack_plan = plan_control_pack(
         control_pack_manifest,
         households,
@@ -1917,7 +1930,7 @@ def _prepare_calibration_control_pack(
     households, derived_persons = apply_control_pack_derivations(
         control_pack_manifest, households, pack_persons
     )
-    if marital_pack is not None:
+    if conditional_pack is not None:
         for original, derived in zip(persons, derived_persons, strict=True):
             if "AGEGRP" in original:
                 derived["AGEGRP"] = original["AGEGRP"]
@@ -1943,6 +1956,21 @@ def _broad_pack_persons(persons):
         else person
         for person in persons
     ]
+
+
+def _with_education_controls(path, pack, persons, controls, geography, dimension):
+    if path is None and pack is None:
+        return persons, controls, {}
+    if path is None or pack is None or controls is None or geography is None:
+        raise ValueError(
+            "Education calibration requires --education-pack, --education-profile, "
+            "normalized person controls and a Census geography identity"
+        )
+    from synthpopcan._conditional_controls import apply_builtin_education_pack
+
+    return apply_builtin_education_pack(
+        path, persons, controls, geography, dimension, pack
+    )
 
 
 def _split_marital_status_pack(pack, evidence, marital_pack):

@@ -90,7 +90,7 @@ def _validate_existing_person_margins(
                 )
 
 
-def _validate_broad_child_targets(controls, dimension, targets):
+def _validate_broad_child_targets(controls, dimension, targets, family):
     for margin in controls.margins:
         if "age_group_3" not in margin.dimensions:
             continue
@@ -104,7 +104,8 @@ def _validate_broad_child_targets(controls, dimension, targets):
             ):
                 raise ValueError(
                     f"{identifier}: {margin.name} under-15 target {count:g} "
-                    "does not match the reconciled marital-status under-15 target "
+                    f"does not match the reconciled "
+                    f"{family.replace('_', '-')} under-15 target "
                     f"{targets[identifier].under_15_count:g}"
                 )
 
@@ -211,26 +212,76 @@ def apply_builtin_marital_status_pack(
 
     identifiers = set(controls_by_geography(controls, geography_dimension=dimension))
     targets, evidence = prepare_pack_targets(pack, path, geography, identifiers)
-    categories = frozenset(CROSSWALK.values())
+    return _apply_builtin_person_targets(
+        persons,
+        controls,
+        geography,
+        dimension,
+        targets,
+        evidence,
+        "marital_status",
+        PACKS[pack][2],
+        CROSSWALK,
+        AGE_ELIGIBILITY,
+    )
+
+
+def apply_builtin_education_pack(path, persons, controls, geography, dimension, pack):
+    from synthpopcan._education_packs import CROSSWALK, PACKS, prepare_pack_targets
+    from synthpopcan._marital_status_packs import AGE_ELIGIBILITY
+    from synthpopcan.small_area_synthesis import controls_by_geography
+
+    if pack not in PACKS:
+        raise ValueError(f"Unknown education pack {pack!r}")
+    identifiers = set(controls_by_geography(controls, geography_dimension=dimension))
+    targets, evidence = prepare_pack_targets(pack, path, geography, identifiers)
+    return _apply_builtin_person_targets(
+        persons,
+        controls,
+        geography,
+        dimension,
+        targets,
+        evidence,
+        "education",
+        "HDGREE",
+        CROSSWALK,
+        AGE_ELIGIBILITY,
+    )
+
+
+def _apply_builtin_person_targets(
+    persons,
+    controls,
+    geography,
+    dimension,
+    targets,
+    evidence,
+    family,
+    source_field,
+    crosswalk,
+    age_eligibility,
+):
+    field = f"{family}_15_plus"
+    categories = frozenset(crosswalk.values())
     controls = reconcile_conditional_person_margin(
         controls,
         geography=geography,
         geography_dimension=dimension,
-        field="marital_status_15_plus",
+        field=field,
         eligible_categories=categories,
         targets=targets,
     )
-    _validate_broad_child_targets(controls, dimension, targets)
+    _validate_broad_child_targets(controls, dimension, targets, family)
     persons = classify_conditional_person_field(
         persons,
         age_field="AGEGRP",
-        age_eligibility=AGE_ELIGIBILITY,
-        source_field=PACKS[pack][2],
-        output_field="marital_status_15_plus",
-        crosswalk=CROSSWALK,
+        age_eligibility=age_eligibility,
+        source_field=source_field,
+        output_field=field,
+        crosswalk=crosswalk,
         eligible_categories=categories,
     )
-    return persons, controls, {"marital_status_controls": evidence}
+    return persons, controls, {f"{family}_controls": evidence}
 
 
 def _document_mapping(payload, name, value_type):

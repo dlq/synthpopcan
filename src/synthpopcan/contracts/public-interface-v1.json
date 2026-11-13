@@ -2526,6 +2526,49 @@
             "is_flag": false,
             "kind": "option",
             "multiple": false,
+            "name": "education_pack",
+            "names": [
+              "--education-pack"
+            ],
+            "nargs": 1,
+            "required": false,
+            "type": {
+              "name": "text"
+            }
+          },
+          {
+            "count": false,
+            "default": {
+              "type": "Sentinel"
+            },
+            "flag_value": null,
+            "is_flag": false,
+            "kind": "option",
+            "multiple": false,
+            "name": "education_profile_path",
+            "names": [
+              "--education-profile"
+            ],
+            "nargs": 1,
+            "required": false,
+            "type": {
+              "dir_okay": true,
+              "exists": false,
+              "file_okay": true,
+              "name": "path",
+              "readable": true,
+              "writable": false
+            }
+          },
+          {
+            "count": false,
+            "default": {
+              "type": "Sentinel"
+            },
+            "flag_value": null,
+            "is_flag": false,
+            "kind": "option",
+            "multiple": false,
             "name": "marital_status_pack",
             "names": [
               "--marital-status-pack"
@@ -2982,6 +3025,14 @@
         ],
         "parameters": [],
         "path": "synthpopcan geo control-packs"
+      },
+      {
+        "kind": "command",
+        "output_modes": [
+          "human"
+        ],
+        "parameters": [],
+        "path": "synthpopcan geo control-packs education"
       },
       {
         "kind": "command",
@@ -15083,6 +15134,20 @@
             "default": "midpoint",
             "kind": "keyword_only",
             "name": "integerization",
+            "required": false
+          },
+          {
+            "annotation": "str | None",
+            "default": null,
+            "kind": "keyword_only",
+            "name": "education_pack",
+            "required": false
+          },
+          {
+            "annotation": "Path | None",
+            "default": null,
+            "kind": "keyword_only",
+            "name": "education_profile_path",
             "required": false
           }
         ],

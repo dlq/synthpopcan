@@ -58,7 +58,7 @@ runtime slice does not begin and the other families continue independently.
 | `SA12-02` | `done` | Pinned 2016 and 2021 Profile definitions | Marital-status source decision and crosswalk | Child rows, categories, denominators, suppression rules, vintage differences, and fixture totals reproduce independently |
 | `SA12-03` | `in progress` | `SA12-01`, accepted `SA12-02`, `SA12-10` | Marital-status preparer, registry entry, and pack component ([#53](https://github.com/dlq/synthpopcan/issues/53)) | Normalized controls validate and round-trip; unsupported categories and universe mismatches fail closed |
 | `SA12-04` | `done` | Pinned 2016 and 2021 Profile definitions | Education source decision and crosswalk ([#55](https://github.com/dlq/synthpopcan/issues/55)) | Degree categories, age universe, vintage classifications, suppression rules, and fixture totals reproduce independently |
-| `SA12-05` | `blocked` | `SA12-01`, accepted `SA12-04`, `SA12-10` | Education preparer, registry entry, and pack component | Normalized controls validate and round-trip; not-applicable and unmapped categories remain explicit |
+| `SA12-05` | `in progress` | `SA12-01`, accepted `SA12-04`, `SA12-10` | Education preparer, registry entry, and pack component | Normalized controls validate and round-trip; not-applicable and unmapped categories remain explicit |
 | `SA12-06` | `ready` | Pinned 2016 and 2021 Profile definitions | Labour-force-status source decision and crosswalk | Categories, age denominator, vintage differences, suppression rules, and fixture totals reproduce independently |
 | `SA12-07` | `blocked` | `SA12-01`, accepted `SA12-06`, `SA12-10` | Labour-force preparer, registry entry, and pack component | Normalized controls validate and round-trip; support, zero, and universe failures stop before fitting |
 | `SA12-08` | `ready` | Pinned 2016 and 2021 Profile definitions | Work-activity source decision and crosswalk | Full/part-year and full/part-time categories, applicability, suppression, and fixture totals reproduce independently |
@@ -395,6 +395,29 @@ Keep the citizenship-based policy for compatibility with the existing broad
 control. Admitting those tracts under the language root would require a
 separate source decision. The recovered 2016 archive also supports the
 separate marital-status broad-control acceptance work.
+
+#### Education tract implementation and fit evidence
+
+The built-in 2016 and 2021 packs read the matching tract Profile ZIP or CSV
+through `geo calibrate --education-pack ... --education-profile ...`.
+The joint path validates broad evidence before appending the conditional
+margin and rejects disagreement on the all-ages or under-15 target.
+
+The Montréal runs used published education rows and all nine household
+and five person broad margins. Three eligible tracts per vintage ran with
+the hybrid solver at tolerance 0.01. Both integerization methods were
+checked against the same inputs.
+
+| Census | Tracts | Fractional convergence | Max realized education residual, midpoint → swap | Max realized residual across all controls, midpoint → swap |
+| --- | --- | --- | --- | --- |
+| 2016 | 4620470.03, 4620625.02, 4620638.01 | 3 of 3 | 56 → 1 | 114 → 9 |
+| 2021 | 4620221.00, 4620638.04, 4620643.03 | 2 of 3 | 40 → 2 | 53 → 25 |
+
+All four outputs passed linkage validation. The audit matched the integer
+weights to realized households and independently recounted education
+residuals. The 2021 tract 4620221.00 remained fractionally nonconverged.
+Local commands, outputs, and audit are under
+`runs/education-acceptance-2026-11-13/`.
 
 ## `1.1.0` Runtime Invariants
 
