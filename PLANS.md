@@ -1,7 +1,7 @@
 # SynthPopCan Roadmap
 
 Status: `1.x` maintenance roadmap\
-Last updated: 2026-11-09\
+Last updated: 2026-11-13\
 Current software version: `1.1.4`
 
 ## How To Use This Roadmap
@@ -19,6 +19,7 @@ of its scopes.
 | Question | Source of truth |
 | --- | --- |
 | What is maintained or being considered now? | This roadmap and the linked active plans |
+| Where can someone report a problem or discuss an individual task? | [GitHub Issues](https://github.com/dlq/synthpopcan/issues) and the [issue tracking rules](plans/README.md#github-issues) |
 | What changed in a release? | [CHANGELOG.md](CHANGELOG.md) |
 | How does the current product work? | [README.md](README.md) and the [user documentation](docs/index.rst) |
 | Why was a durable technical choice made? | [Architecture decision records](adr/README.md) |

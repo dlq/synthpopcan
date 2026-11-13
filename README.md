@@ -16,6 +16,47 @@ households and people from Census-derived data. It supports reproducible work
 without requiring researchers to expose private source data or become software
 developers first.
 
+[Try the demo](#quick-start) ·
+[Get help](https://github.com/dlq/synthpopcan/issues/new?template=question.yml) ·
+[Contribute](CONTRIBUTING.md) ·
+[Good first issues](https://github.com/dlq/synthpopcan/contribute)
+
+## Quick Start
+
+Install the published package from PyPI, then generate and validate a small
+linked population using the bundled fictional model. Installation needs an
+internet connection. The demo runs offline.
+
+```bash
+python3 -m pip install synthpopcan
+synthpopcan models generate demo-linked-household-person \
+  --households 10 \
+  --condition "geo=Demo North" \
+  --out synthpopcan-quickstart \
+  --random-seed 42
+synthpopcan validate linked synthpopcan-quickstart
+```
+
+The output folder contains `households.csv`, `persons.csv`, and
+`manifest.json`. Validation should report `Passed: True`, with 10 fictional
+households, 15 people, and no issues.
+
+For a browser-based demo, run `synthpopcan serve` and choose **Use demo
+age/sex files** in the local workbench. The
+[web app guide](https://synthpopcan.readthedocs.io/en/latest/web-app.html)
+walks through the fit and explains what stays on disk.
+
+![Local workbench results for the fictional age-and-sex demo, showing convergence and a four-row weighted output preview](assets/screenshots/demo-workbench.png)
+
+The local workbench after fitting the [fictional age-and-sex example](https://synthpopcan.readthedocs.io/en/latest/web-app.html).
+
+On Windows, use the Ubuntu terminal after completing the
+[WSL setup](https://synthpopcan.readthedocs.io/en/latest/installation.html).
+For the optional `spc` alias and Tab completion, see the
+[shell setup guide](https://synthpopcan.readthedocs.io/en/latest/installation.html#optional-short-command).
+
+## Project Scope
+
 SynthPopCan is an independent research-software project. It is not affiliated
 with, endorsed by, or sponsored by Statistics Canada or the Government of
 Canada.
@@ -28,6 +69,9 @@ Core workflows:
    calibration, while keeping source adapters and metadata appropriately
    census-vintage-specific.
 1. Maintain a local web app for configuring runs, inspecting controls, generating from prepared models, validating outputs, and downloading results.
+
+Generating from portable frequency or CART models works with the base
+installation. To train CART models, install `synthpopcan[model-build]`.
 
 Version `1.1.4` preserves the stable, explicitly bounded interface established by
 `1.0.0`. Its packaged
@@ -81,61 +125,7 @@ Project records have distinct jobs:
 | [`NOTES.md`](https://github.com/dlq/synthpopcan/blob/main/NOTES.md) | Index of dated historical research and design syntheses, not current project status |
 | [`docs/stewardship.md`](https://synthpopcan.readthedocs.io/en/latest/stewardship.html) | Supported environments, maintenance expectations, licensing, preservation identifiers, and dated records |
 
-## Quick Start
-
-These commands use a Unix-style shell. Windows readers should first complete
-the [WSL setup in the Installation guide](https://synthpopcan.readthedocs.io/en/latest/installation.html),
-then run the same commands inside the Ubuntu terminal.
-
-Install the published package from PyPI:
-
-**Network required for installation.**
-
-```bash
-python3 -m pip install synthpopcan
-```
-
-The base installation is enough to generate from portable frequency or CART
-models. Starting with `0.7.0`, only researchers training new CART models need
-`python3 -m pip install "synthpopcan[model-build]"`.
-
-For a guided first look, start the local browser workbench:
-
-```bash
-synthpopcan serve
-```
-
-It opens forms, previews, run history, and downloads on this computer only. The
-[local web app guide](https://synthpopcan.readthedocs.io/en/latest/web-app.html)
-includes fictional teaching data and
-explains what stays on disk. Use the command line below when the work needs to
-be scripted or repeated exactly.
-
-Then inspect the command line:
-
-```bash
-synthpopcan --help
-```
-
-For an optional `spc` shell alias and Tab completion setup, see the
-[installation guide](https://synthpopcan.readthedocs.io/en/latest/installation.html#optional-short-command).
-
-Run a small offline smoke test with the bundled fictional model:
-
-**Runnable teaching example.** Enter both commands in order.
-
-```bash
-synthpopcan models generate demo-linked-household-person \
-  --households 10 \
-  --condition "geo=Demo North" \
-  --out synthpopcan-quickstart \
-  --random-seed 42
-synthpopcan validate linked synthpopcan-quickstart
-```
-
-This verifies linked household/person generation, but it does not create a
-representative Canadian population. The documentation explains how to choose
-research sources, controls, and model packages.
+## More Ways to Run SynthPopCan
 
 For a one-off command without installing the tool into the current environment,
 use `uvx`:

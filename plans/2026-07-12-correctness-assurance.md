@@ -74,7 +74,7 @@ release harness.
 
 | ID | Status | Depends on | Deliverable | Acceptance |
 | --- | --- | --- | --- | --- |
-| `ASSURE12-01` | `ready` | Current pytest organization and release gates | One lightweight runner with named test selections and conservative selection from changed files | Local and CI invocations resolve the same named selection; dry-run output explains selected tests; shared or unmapped changes fall back to the full suite; selection regressions verify omissions and fallback without adding a heavyweight dependency |
+| `ASSURE12-01` | `ready` | Current pytest organization and release gates | One lightweight runner with named test selections and conservative selection from changed files ([#54](https://github.com/dlq/synthpopcan/issues/54)) | Local and CI invocations resolve the same named selection; dry-run output explains selected tests; shared or unmapped changes fall back to the full suite; selection regressions verify omissions and fallback without adding a heavyweight dependency |
 | `ASSURE12-02` | `blocked` | `ASSURE12-01` | GitHub CI integration and contributor guidance | Pull requests can use affected selections through the shared runner; main and release workflows retain full supported-Python, coverage, correctness, web, and distribution gates; required checks cannot report success merely because selection is empty or an upstream job failed; equivalent local commands and measured runtime are documented |
 
 Keep ordinary development focused on affected behaviour. Coverage thresholds

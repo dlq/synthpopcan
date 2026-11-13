@@ -3,6 +3,19 @@
 Read the [project roadmap](../PLANS.md) first. This directory contains detailed
 implementation and research scopes; it is not a second roadmap.
 
+## GitHub Issues
+
+Use this index and the owning plans for release commitments, dependencies,
+acceptance checks, and slice status. Use [GitHub Issues](https://github.com/dlq/synthpopcan/issues)
+for incoming bug reports, requests, and individual tasks that need discussion,
+assignment, or coordination. A plan slice can proceed directly to a pull request.
+
+If an issue tracks a plan slice, include its stable ID and a link to the owning
+plan in the issue. Link the issue from that slice's deliverable cell. Keep the
+acceptance checks and release scope in the plan. When work lands, update the
+slice status and close the issue with a link to the implementing change. If an
+issue is deferred or superseded, record the decision and link to any successor.
+
 ## Plan Lifecycle
 
 | State | Meaning |

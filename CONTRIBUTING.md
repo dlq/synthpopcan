@@ -6,8 +6,38 @@ and grounded in the existing code and documentation structure.
 Contributions do not have to be code. Reports about unclear terminology,
 documentation gaps, inaccessible workflows, research-method concerns, and
 small public teaching examples are especially useful. Open a question or
-feature issue if you want to discuss an idea before preparing a change. Never
+feature issue if you want to discuss an idea before preparing a change. Use the
+[question form](https://github.com/dlq/synthpopcan/issues/new?template=question.yml)
+for help choosing or running a workflow. Never
 post private data, raw Census microdata rows, credentials, or controlled files.
+
+If you are new to the project, browse the
+[good first issues](https://github.com/dlq/synthpopcan/contribute). Each has a
+starting point and a way to check your work. The
+[open issues](https://github.com/dlq/synthpopcan/issues) include larger tasks,
+and the [plan index](plans/README.md) explains how those tasks fit the roadmap.
+
+## First Contribution
+
+Fork and clone the repository, then open a terminal in your checkout. For a
+Python starter issue, install [uv](https://docs.astral.sh/uv/getting-started/installation/)
+and run this focused CLI smoke test. The setup uses Python 3.12 and the locked
+development dependencies.
+
+```bash
+uv sync --locked --python 3.12 --group dev
+uv run --locked pytest tests/test_cli.py::test_cli_smoke -q
+```
+
+For a Markdown-only contribution, use this check instead. Replace `README.md`
+with the file you edited.
+
+```bash
+uv run --locked --python 3.12 --no-default-groups --group docs mdformat --check README.md
+```
+
+These checks use public repository files. Use the full setup below for web
+changes or to run the complete local check suite.
 
 ## Development Setup
 
@@ -38,7 +68,7 @@ The coverage tool's `test-exclude` dependencies currently use scoped npm
 Remove the overrides once upstream dependency ranges admit patched versions;
 verify that coverage file selection and metrics remain unchanged.
 
-Run the normal checks before opening a pull request:
+Run the full local check suite with:
 
 ```bash
 ./scripts/check.sh
