@@ -1748,6 +1748,12 @@ def calibrate_linked_household_csvs(
     control_pack, marital_pack = _split_marital_status_pack(
         control_pack, control_pack_evidence, marital_status_pack
     )
+    conditional_selections = (
+        ("marital_status", marital_pack),
+        ("education", education_pack),
+        ("labour_force_status", labour_force_pack),
+        ("work_activity", work_activity_pack),
+    )
     (
         households,
         persons,
@@ -1758,7 +1764,7 @@ def calibrate_linked_household_csvs(
     ) = _prepare_calibration_control_pack(
         control_pack,
         control_pack_evidence,
-        marital_pack or education_pack or labour_force_pack or work_activity_pack,
+        conditional_selections,
         households,
         persons,
         controls,
@@ -1965,7 +1971,7 @@ def _take_integer_weights(fit: GeographyHouseholdFit, method: str):
 def _prepare_calibration_control_pack(
     control_pack,
     control_pack_evidence,
-    conditional_pack,
+    conditional_selections,
     households,
     persons,
     controls,
@@ -1975,6 +1981,9 @@ def _prepare_calibration_control_pack(
     geography_column,
 ):
     if control_pack is None:
+        _validate_conditional_pack_selection(
+            None, geography_universe, conditional_selections
+        )
         return households, persons, geography_universe, None, None, None
 
     if person_controls is None:
@@ -2006,14 +2015,16 @@ def _prepare_calibration_control_pack(
             )
     else:
         geography_universe = pack_geography_universe
+    _validate_conditional_pack_selection(
+        control_pack_manifest, geography_universe, conditional_selections
+    )
+    has_conditional_pack = any(pack is not None for _, pack in conditional_selections)
     control_pack_evidence_record = (
         load_control_pack_evidence(control_pack_evidence)
         if control_pack_evidence is not None
         else None
     )
-    pack_persons = (
-        _broad_pack_persons(persons) if conditional_pack is not None else persons
-    )
+    pack_persons = _broad_pack_persons(persons) if has_conditional_pack else persons
     control_pack_plan = plan_control_pack(
         control_pack_manifest,
         households,
@@ -2027,7 +2038,7 @@ def _prepare_calibration_control_pack(
     households, derived_persons = apply_control_pack_derivations(
         control_pack_manifest, households, pack_persons
     )
-    if conditional_pack is not None:
+    if has_conditional_pack:
         for original, derived in zip(persons, derived_persons, strict=True):
             if "AGEGRP" in original:
                 derived["AGEGRP"] = original["AGEGRP"]
@@ -2053,6 +2064,38 @@ def _broad_pack_persons(persons):
         else person
         for person in persons
     ]
+
+
+def _validate_conditional_pack_selection(broad_pack, geography, selections):
+    from synthpopcan._conditional_pack_catalogue import describe_conditional_pack
+
+    for family, identifier in selections:
+        if identifier is None:
+            continue
+        definition = describe_conditional_pack(identifier)
+        label = family.replace("_", "-")
+        if definition is None or definition["family"] != family:
+            raise ValueError(f"Unknown {label} pack {identifier!r}")
+        identity = (
+            definition["census_vintage"],
+            definition["geography_level"],
+            definition["identifier_namespace"],
+        )
+        if geography is None or geography.canonical_key != identity:
+            raise ValueError(
+                f"{identifier} requires its matching Statistics Canada CT geography"
+            )
+        if (
+            broad_pack is not None
+            and broad_pack.definition_sha256
+            != definition["compatible_broad_definition_sha256"]
+        ):
+            expected = definition["compatible_broad_pack"]
+            raise ValueError(
+                f"{identifier} requires broad pack {expected} with its built-in "
+                f"definition when combined with a control pack; "
+                f"got {broad_pack.identifier}"
+            )
 
 
 def _with_profile_controls(persons, controls, geography, dimension, selections):

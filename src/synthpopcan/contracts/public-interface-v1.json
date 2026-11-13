@@ -10029,6 +10029,11 @@
         "purpose": "resumable national small-area plan"
       },
       {
+        "documentation": "docs/small-area-reference.md",
+        "identifier": "synthpopcan-conditional-control-pack-v1",
+        "purpose": "reviewed conditional tract pack definition"
+      },
+      {
         "documentation": "docs/small-area.md",
         "identifier": "synthpopcan-control-compatibility-registry-v1",
         "purpose": "installed control-pack compatibility registry"

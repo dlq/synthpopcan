@@ -22,13 +22,13 @@ CROSSWALK = {
     "3": "common_law",
     "4": "separated_divorced_widowed",
 }
-_MARITAL_MEMBERS = ((6,), (3,), (4,), (7, 8, 9))
-_ADULT_AGES = (3, *range(6, 16))
+MARITAL_MEMBERS = ((6,), (3,), (4,), (7, 8, 9))
+ADULT_AGES = (3, *range(6, 16))
 _REQUIRED_CELLS = frozenset(
     (status, age)
     for status in (1, 3, 4, 6, 7, 8, 9)
-    for age in (1, 2, *_ADULT_AGES)
-    if status == 1 or age in _ADULT_AGES
+    for age in (1, 2, *ADULT_AGES)
+    if status == 1 or age in ADULT_AGES
 )
 
 
@@ -74,15 +74,15 @@ def _reconcile(
     if cells.keys() != _REQUIRED_CELLS:
         raise ValueError(f"{geo}: missing or suppressed marital-status source cells")
     total, child = cells[1, 1], cells[1, 2]
-    adult = sum(cells[1, age] for age in _ADULT_AGES)
+    adult = sum(cells[1, age] for age in ADULT_AGES)
     observed = [
-        sum(cells[member, age] for member in members for age in _ADULT_AGES)
-        for members in _MARITAL_MEMBERS
+        sum(cells[member, age] for member in members for age in ADULT_AGES)
+        for members in MARITAL_MEMBERS
     ]
     # Each base-five rounded count can differ by up to four from the
     # unrounded integer. The envelopes count the cells on both sides.
-    age_limit = 4 * (len(_ADULT_AGES) + 2)
-    marital_limit = 4 * len(_ADULT_AGES) * (1 + sum(map(len, _MARITAL_MEMBERS)))
+    age_limit = 4 * (len(ADULT_AGES) + 2)
+    marital_limit = 4 * len(ADULT_AGES) * (1 + sum(map(len, MARITAL_MEMBERS)))
     if (
         abs(total - adult - child) > age_limit
         or abs(adult - sum(observed)) > marital_limit

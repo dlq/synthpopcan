@@ -122,6 +122,37 @@ def test_cli_lists_and_shows_control_packs(tmp_path: Path, capsys) -> None:
         main(["geo", "control-packs", "show", "not-a-pack"])
 
 
+@pytest.mark.parametrize("year", [2016, 2021])
+@pytest.mark.parametrize(
+    "family", ["marital-status", "education", "labour-force-status", "work-activity"]
+)
+def test_cli_shows_versioned_conditional_packs(tmp_path, capsys, year, family):
+    import hashlib
+
+    from synthpopcan.control_packs import load_control_pack
+
+    identifier = f"statcan-{year}-{family}-ct-v1"
+    args = ["geo", "control-packs", "show", identifier]
+    assert main(args) == 0
+    definition = json.loads(capsys.readouterr().out)
+    output = tmp_path / "definition.json"
+    assert main([*args, "--out", str(output)]) == 0
+    assert json.loads(output.read_text()) == definition
+    assert definition["identifier"] == identifier
+    assert definition["schema_version"] == "synthpopcan-conditional-control-pack-v1"
+    assert definition["version"] == 1
+    assert definition["minimum_age"] == 15
+    assert definition["census_vintage"] == year
+    assert set(definition["crosswalk"].values()) == set(definition["category_order"])
+    broad = load_control_pack(definition["compatible_broad_pack"])
+    assert definition["compatible_broad_definition_sha256"] == broad.definition_sha256
+    checksum = definition.pop("definition_sha256")
+    canonical = json.dumps(
+        definition, ensure_ascii=False, separators=(",", ":"), sort_keys=True
+    ).encode()
+    assert checksum == hashlib.sha256(canonical).hexdigest()
+
+
 _CONTROL_PACK_ID = "statcan-2021-core-private-household-da-v1"
 
 

@@ -2,6 +2,7 @@
 
 import csv
 import json
+from unittest.mock import patch
 
 import pytest
 from click.testing import CliRunner
@@ -17,7 +18,20 @@ from synthpopcan.cli import cli
         for family in ("labour-force", "work-activity")
         for case in ("valid", "suppressed", "companion", "duplicate")
     ]
-    + [("work-activity", "rounding"), ("work-activity", "adult_not_applicable")],
+    + [
+        ("work-activity", case)
+        for case in (
+            "rounding",
+            "adult_not_applicable",
+            "wrong_vintage",
+            "wrong_family",
+            "wrong_broad_pack",
+            "wrong_total",
+            "missing_count",
+            "wrong_under_15",
+            "wrong_geography",
+        )
+    ],
 )
 def test_labour_profile_calibration(tmp_path, year, family, case):
     tract = "4620053.00"
@@ -89,38 +103,65 @@ def test_labour_profile_calibration(tmp_path, year, family, case):
     pc.write_text(
         f'margin,dimensions,ct,group,count\npeople,"ct,group",{tract},all,20\n'
     )
+    if case == "wrong_total":
+        pc.write_text(
+            f'margin,dimensions,ct,group,count\npeople,"ct,group",{tract},all,25\n'
+        )
+    if case == "missing_count":
+        pc.write_text(
+            f'margin,dimensions,ct,group,count\npeople,"ct,group",{tract},all\n'
+        )
+    if case == "wrong_under_15":
+        pc.write_text(
+            f"margin,dimensions,ct,age_group_3,count\n"
+            f'age,"ct,age_group_3",{tract},0_14,10\n'
+            f'age,"ct,age_group_3",{tract},15_64,10\n'
+        )
+    if case == "wrong_geography":
+        pc.write_text(
+            'margin,dimensions,ct,group,count\npeople,"ct,group",4620054.00,all,20\n'
+        )
+    pack_year = (2021 if year == 2016 else 2016) if case == "wrong_vintage" else year
+    if case == "wrong_family":
+        pack_suffix = "education"
     out = tmp_path / "out"
-    result = CliRunner().invoke(
-        cli,
-        [
-            "geo",
-            "calibrate",
-            str(hh),
-            "--persons",
-            str(pp),
-            "--controls",
-            str(hc),
-            "--person-controls",
-            str(pc),
-            f"--{family}-pack",
-            f"statcan-{year}-{pack_suffix}-ct-v1",
-            f"--{family}-profile",
-            str(profile),
-            "--geo-dimension",
-            "ct",
-            "--census-vintage",
-            str(year),
-            "--geo-level",
-            "ct",
-            "--geo-namespace",
-            f"statcan:census:{year}:ct",
-            "--integerization",
-            "swap",
-            "--include-weights",
-            "--out",
-            str(out),
-        ],
-    )
+    args = [
+        "geo",
+        "calibrate",
+        str(hh),
+        "--persons",
+        str(pp),
+        "--controls",
+        str(hc),
+        "--person-controls",
+        str(pc),
+        f"--{family}-pack",
+        f"statcan-{pack_year}-{pack_suffix}-ct-v1",
+        f"--{family}-profile",
+        str(profile),
+        "--geo-dimension",
+        "ct",
+        "--census-vintage",
+        str(year),
+        "--geo-level",
+        "ct",
+        "--geo-namespace",
+        f"statcan:census:{year}:ct",
+        "--integerization",
+        "swap",
+        "--include-weights",
+        "--out",
+        str(out),
+    ]
+    if case == "wrong_broad_pack":
+        args.extend(["--control-pack", f"statcan-{year}-core-private-household-ct-v1"])
+    runner = CliRunner()
+    if case == "valid":
+        result = runner.invoke(cli, args)
+    else:
+        with patch("synthpopcan.small_area_synthesis.fit_linked_by_geography") as fit:
+            result = runner.invoke(cli, args)
+            fit.assert_not_called()
     if case != "valid":
         assert result.exit_code == 1, result.output
         expected = {
@@ -129,13 +170,24 @@ def test_labour_profile_calibration(tmp_path, year, family, case):
             "duplicate": "duplicate",
             "rounding": "rounding envelope",
             "adult_not_applicable": "unsupported eligible WRKACT",
+            "wrong_vintage": "matching Statistics Canada CT geography",
+            "wrong_family": "Unknown work-activity pack",
+            "wrong_broad_pack": "requires broad pack",
+            "wrong_total": "private-household person total",
+            "missing_count": "has invalid count",
+            "wrong_under_15": "under-15 target",
+            "wrong_geography": "missing work activity Profile rows",
         }
         assert expected[case] in result.output
         assert not (out / "persons.csv").exists()
         return
     assert result.exit_code == 0, result.output
     report = json.loads((out / "report.json").read_text())
-    evidence = report[f"{output_field}_controls"]["geographies"][tract]
+    provenance = report[f"{output_field}_controls"]
+    inspected = runner.invoke(cli, ["geo", "control-packs", "show", provenance["pack"]])
+    assert inspected.exit_code == 0, inspected.output
+    assert provenance["pack_definition"] == json.loads(inspected.output)
+    evidence = provenance["geographies"][tract]
     assert evidence["under_15_target"] == 5
     categories = (
         ("employed", "unemployed", "not_in_labour_force")

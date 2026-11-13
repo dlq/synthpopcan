@@ -44,6 +44,10 @@ SUPPORTED_SCHEMAS: dict[str, tuple[str, str]] = {
         "study-specific control-pack evidence",
         "docs/small-area.md",
     ),
+    "synthpopcan-conditional-control-pack-v1": (
+        "reviewed conditional tract pack definition",
+        "docs/small-area-reference.md",
+    ),
     "synthpopcan-control-pack-v1": (
         "reviewed control-pack definition",
         "docs/small-area.md",

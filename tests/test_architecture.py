@@ -61,6 +61,7 @@ MODULE_LAYERS = {
     "domain": frozenset(
         {
             "_conditional_controls",
+            "_conditional_pack_catalogue",
             "_marital_status_packs",
             "_education_packs",
             "_labour_force_packs",

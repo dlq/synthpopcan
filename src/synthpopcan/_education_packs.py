@@ -17,7 +17,7 @@ CROSSWALK = {
     "7": "bachelor",
     "8": "university_above_bachelor",
 }
-_ROWS = {
+PROFILE_ROWS = {
     2016: (
         1135,
         1683,
@@ -51,6 +51,9 @@ _ROWS = {
 }
 
 
+ROUNDING_LIMIT = 48
+
+
 def prepare_pack_targets(pack, path, geography: GeographyUniverse, identifiers):
     year = PACKS[pack]
     return prepare_profile_targets(
@@ -60,7 +63,7 @@ def prepare_pack_targets(pack, path, geography: GeographyUniverse, identifiers):
         identifiers,
         year,
         "education",
-        _ROWS[year],
+        PROFILE_ROWS[year],
         CROSSWALK,
-        48,
+        ROUNDING_LIMIT,
     )

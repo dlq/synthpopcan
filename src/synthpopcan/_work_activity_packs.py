@@ -9,11 +9,14 @@ CROSSWALK = {
     "11": "full_year_full_time",
     **dict.fromkeys((*map(str, range(3, 11)), "12"), "part_year_or_part_time"),
 }
-_ROWS = {
+PROFILE_ROWS = {
     2016: (1135, 1873, (672, 1683, 1865), ((1874,), (1876,), (1877,))),
     2021: (1522, 2231, (126, 1998, 2223), ((2232,), (2234,), (2235,))),
 }
 SOURCE_FIELDS = dict.fromkeys((2016, 2021), "WRKACT")
+
+
+ROUNDING_LIMIT = 16
 
 
 def prepare_pack_targets(pack, path, geography, identifiers):
@@ -25,7 +28,7 @@ def prepare_pack_targets(pack, path, geography, identifiers):
         identifiers,
         year,
         "work activity",
-        _ROWS[year],
+        PROFILE_ROWS[year],
         CROSSWALK,
-        16,
+        ROUNDING_LIMIT,
     )

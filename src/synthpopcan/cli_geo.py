@@ -12,14 +12,17 @@ from typing import Any
 import click
 
 from synthpopcan.cli_errors import FriendlyGroup
-from synthpopcan.cli_output import click_file_access_error, click_value_error
+from synthpopcan.cli_output import (
+    click_file_access_error,
+    click_value_error,
+    write_json_object,
+)
 from synthpopcan.console import print_wrote
 from synthpopcan.control_packs import (
     build_control_pack_evidence,
     list_builtin_control_packs,
     load_control_pack,
     plan_control_pack,
-    write_control_pack,
     write_control_pack_evidence,
 )
 from synthpopcan.controls import read_control_table
@@ -272,18 +275,28 @@ def marital_status_packs_command() -> None:
     help="Optionally write the normalized strict manifest to this JSON path.",
 )
 def control_packs_show_command(pack: str, output_path: Path | None) -> None:
-    """Show a built-in pack identifier or strict local pack manifest."""
+    """Show a built-in pack definition or strict local pack manifest."""
+    from synthpopcan._conditional_pack_catalogue import describe_conditional_pack
 
     try:
-        manifest = load_control_pack(pack)
+        definition = describe_conditional_pack(pack)
+        if definition is None:
+            definition = load_control_pack(pack).as_dict()
         if output_path is not None:
-            write_control_pack(manifest, output_path)
+            _write_inspected_pack(output_path, definition)
+            return
     except ValueError as exc:
         raise click_value_error(exc) from exc
-    if output_path is not None:
-        print_wrote(output_path)
-        return
-    click.echo(json.dumps(manifest.as_dict(), indent=2, sort_keys=True))
+    click.echo(json.dumps(definition, indent=2, sort_keys=True))
+
+
+def _write_inspected_pack(path: Path, definition: dict[str, Any]) -> None:
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        write_json_object(path, definition)
+    except OSError as exc:
+        raise click_file_access_error(path, "write", exc) from exc
+    print_wrote(path)
 
 
 @control_packs_group.command("evidence")

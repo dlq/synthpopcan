@@ -362,7 +362,7 @@ def _read_control_table(handle: Any) -> ControlTable:
             count = float(row["count"])
         except KeyError as exc:
             raise ValueError("controls CSV requires a count column") from exc
-        except ValueError as exc:
+        except (TypeError, ValueError) as exc:
             raise ValueError(f"controls row {row_number} has invalid count") from exc
 
         margin_label = row.get("margin", "").strip()

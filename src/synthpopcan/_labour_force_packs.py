@@ -8,11 +8,14 @@ CROSSWALK = {
     **dict.fromkeys(map(str, range(3, 11)), "unemployed"),
     **dict.fromkeys(map(str, range(11, 15)), "not_in_labour_force"),
 }
-_ROWS = {
+PROFILE_ROWS = {
     2016: (1135, 1865, (672, 1683), ((1867,), (1868,), (1869,))),
     2021: (1522, 2223, (126, 1998), ((2225,), (2226,), (2227,))),
 }
 SOURCE_FIELDS = {2016: "LFTAG", 2021: "LFACT"}
+
+
+ROUNDING_LIMIT = 16
 
 
 def prepare_pack_targets(pack, path, geography, identifiers):
@@ -24,7 +27,7 @@ def prepare_pack_targets(pack, path, geography, identifiers):
         identifiers,
         year,
         "labour-force status",
-        _ROWS[year],
+        PROFILE_ROWS[year],
         CROSSWALK,
-        16,
+        ROUNDING_LIMIT,
     )

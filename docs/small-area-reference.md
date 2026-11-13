@@ -1243,6 +1243,25 @@ for children. The report includes the published rows, derived targets,
 and Profile hash. Tracts with unavailable counts or incompatible
 all-ages and under-15 targets fail before fitting.
 
+### Inspecting conditional tract packs
+
+Use `synthpopcan geo control-packs show statcan-2021-work-activity-ct-v1`
+to inspect a built-in conditional pack. The same command works with the
+2016 and 2021 marital-status, education, and labour-force pack IDs.
+Use `--out pack.json` to save the definition. Select a built-in pack by
+its ID when calibrating.
+
+The versioned definition records the Census geography, private-household
+age universe, linked schema, source cells, crosswalk, category order,
+and reconciliation rules. Its SHA-256 covers the semantic fields using
+canonical JSON, excluding the checksum itself. Each calibration report
+records the definition with its source-file fingerprint. If a broad pack
+is supplied, its definition checksum must match the compatible broad pack
+listed in the conditional definition. With normalized controls and an
+explicit Census geography, calibration also supports the conditional
+pack without a named broad pack. In either case, incompatible geography
+or age targets stop calibration before fitting.
+
 ### Work-activity controls for census tracts
 
 List the packs with `synthpopcan geo control-packs work-activity`. For

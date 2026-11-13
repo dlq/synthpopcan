@@ -44,6 +44,7 @@ def reconcile_conditional_person_margin(
     if field in controls.dimensions or field == geography_dimension:
         raise ValueError(f"conditional field {field!r} is already controlled")
     _validate_existing_person_margins(controls, geography_dimension, targets)
+    _validate_child_targets(controls, geography_dimension, targets, field)
     cells = []
     for identifier, target in sorted(targets.items()):
         if set(target.eligible_counts) != eligible_categories:
@@ -90,7 +91,8 @@ def _validate_existing_person_margins(
                 )
 
 
-def _validate_broad_child_targets(controls, dimension, targets, family):
+def _validate_child_targets(controls, dimension, targets, field_name):
+    family = field_name.removesuffix("_15_plus").replace("_", "-")
     for margin in controls.margins:
         field = next(
             (
@@ -122,7 +124,7 @@ def _validate_broad_child_targets(controls, dimension, targets, family):
                 raise ValueError(
                     f"{identifier}: {margin.name} under-15 target {count:g} "
                     f"does not match the reconciled "
-                    f"{family.replace('_', '-')} under-15 target "
+                    f"{family} under-15 target "
                     f"{targets[identifier].under_15_count:g}"
                 )
 
@@ -246,17 +248,11 @@ def apply_builtin_marital_status_pack(
 def apply_builtin_profile_pack(
     path, persons, controls, geography, dimension, pack, family
 ):
-    import synthpopcan._education_packs as _education_packs
-    import synthpopcan._labour_force_packs as _labour_force_packs
-    import synthpopcan._work_activity_packs as _work_activity_packs
+    from synthpopcan._conditional_pack_catalogue import PROFILE_FAMILIES
     from synthpopcan._marital_status_packs import AGE_ELIGIBILITY
     from synthpopcan.small_area_synthesis import controls_by_geography
 
-    source = {
-        "education": _education_packs,
-        "labour_force_status": _labour_force_packs,
-        "work_activity": _work_activity_packs,
-    }[family]
+    source = PROFILE_FAMILIES[family]
     if pack not in source.PACKS:
         raise ValueError(f"Unknown {family.replace('_', '-')} pack {pack!r}")
     identifiers = set(controls_by_geography(controls, geography_dimension=dimension))
@@ -298,7 +294,6 @@ def _apply_builtin_person_targets(
         eligible_categories=categories,
         targets=targets,
     )
-    _validate_broad_child_targets(controls, dimension, targets, family)
     persons = classify_conditional_person_field(
         persons,
         age_field="AGEGRP",
@@ -308,7 +303,14 @@ def _apply_builtin_person_targets(
         crosswalk=crosswalk,
         eligible_categories=categories,
     )
-    return persons, controls, {f"{family}_controls": evidence}
+    from synthpopcan._conditional_pack_catalogue import describe_conditional_pack
+
+    definition = describe_conditional_pack(evidence["pack"])
+    return (
+        persons,
+        controls,
+        {f"{family}_controls": {**evidence, "pack_definition": definition}},
+    )
 
 
 def _document_mapping(payload, name, value_type):
