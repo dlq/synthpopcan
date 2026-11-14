@@ -4,7 +4,7 @@ Status: active feature implementation; `1.1.0` released and `1.2.0` committed\
 Created: 2026-08-01\
 Last updated: 2026-11-14\
 Target: `1.1.0` broad compatible packs; conditional person controls in `1.2.0`\
-Next action: extend non-tract acceptance to CSD and DA sources and the 2016 vintage\
+Next action: review non-tract marital-status sources and cross-vintage acceptance\
 Roadmap: [PLANS.md](../PLANS.md) | [Plan index](README.md)
 
 Release sequencing and confidence are defined in the
@@ -803,6 +803,149 @@ remaining acceptance work includes reviewing non-tract marital-status
 sources and extending the cases to 2016 and to CSD and DA. The local
 run directory `runs/nontract-acceptance-2026-11-14/` records the inputs,
 screening, CLI invocation, and audit.
+
+#### Non-tract marital-status source review (2026-11-14)
+
+The 2021 table 98-10-0129-01 publishes marital status by age for CSDs
+and DAs. Its universe is the 100% population aged 15 and over, including
+residents of collective dwellings. The corresponding 2016 CSD and DA
+marital-status table also uses the 100% population. The existing broad
+conditional-person controls use 25% private-household denominators.
+These published vectors require a documented universe and rounding
+reconciliation before use in a joint fit.
+[2021 table 98-10-0129-01](https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?geocode=A000248&pid=9810012901) ·
+[2021 family reference guide](https://www12.statcan.gc.ca/census-recensement/2021/ref/98-500/002/98-500-x2021002-eng.pdf)
+
+The 2016 table 98-400-X2016029 covers people aged 15 and over in
+private households at CSD level, but classifies family characteristics
+rather than the complete four-category marital-status vector. Its
+100% universe also needs an explicit comparison with the 25% Profile
+controls. It is a source candidate for further review.
+[2016 table 98-400-X2016029](https://www150.statcan.gc.ca/n1/en/catalogue/98-400-X2016029)
+
+The 2016 and 2021 CSD/DA Profile archives were recovered from mirrors
+and checked against their published MD5 checksums. The experimental
+reconciliation and selected fits are recorded below.
+
+#### Five-family ADA reconciliation experiment (2026-11-14)
+
+The accessible [Zenodo 2016 Profile mirror](https://zenodo.org/records/15343658)
+includes the CSD and DA archive. For a first reconciliation experiment,
+the existing 2021 Québec ADA inputs were screened for equality of the
+published 100% total-population and private-household counts and for
+exact equality of the 100% marital-status adult root and the 25%
+education adult root. These equalities are an observed screening
+condition. Published counts are rounded and do not establish exact
+underlying population equality. The two Census universes remain distinct.
+
+The 100% marital-status leaves were mapped to never married and not
+living common law, married, living common law, and separated/divorced/
+widowed and not living common law. Complete observed base-five cells
+and a conservative rounding envelope were required. Their 100% category
+counts were proportionally reconciled to the common published adult
+total by largest remainder, preserving source values and numeric zero.
+These are experimental proxy targets for the 25% conditional controls.
+The source does not directly establish the 25% marital distribution.
+
+Three selected ADAs passed zero-slack feasibility with 18 margins.
+Using the hybrid solver at tolerance 0.01, all three fractional fits
+converged. Linked validation passed. Independent audit recomputed
+fractional and realized errors and checked exported weights against
+household multiplicities.
+
+| 2021 Québec ADA | Broad | Marital status | Education | Labour-force status | Work activity |
+| --- | --- | --- | --- | --- | --- |
+| 24230011 | 6 | 1 | 1 | 1 | 1 |
+| 24250012 | 2 | 1 | 1 | 1 | 1 |
+| 24580034 | 5 | 1 | 1 | 1 | 1 |
+
+Values are maximum absolute count errors after whole-household swaps.
+This proxy experiment does not admit a non-tract marital-status pack.
+Inputs, source cells, preflight, CLI commands, and audit are in
+`runs/nontract-five-2026-11-14/` and
+`runs/nontract-acceptance-2026-11-14/`.
+
+#### CSD and DA proxy fits (2026-11-14)
+
+The 2016 `98-401-X2016044_eng_CSV.zip` archive has SHA-256
+`0e1c72f4be0a97cdf72994181186479c2347f0d755465145ea91db095cc2a8ac`.
+The 2021 `98-401-X2021006_eng_CSV.zip` archive has SHA-256
+`f133d818d5078f3d4a6c68e3568653f4a1aab5e5e98b316723bd4b1ce0055c6d`.
+Both match the published mirror MD5s.
+[2016 archive](https://zenodo.org/records/15343658) ·
+[2021 archive](https://zenodo.org/records/15333781)
+
+The screening requires equal published 100% total-population and
+private-household counts. It allows the 25% private-household all-ages
+root and age-15+ root to differ from their corresponding 100% roots by
+at most five. The conditional 25% families must agree on the adult
+target and the normalized broad age margin must agree on children.
+Suppressed required cells and vectors outside rounding bounds are
+excluded. The published 100% marital-status categories are normalized
+by proportional largest remainder to the 25% adult target. The
+resulting marital-status targets are an approximate proxy, because
+equal rounded counts do not establish exact universe equality or
+the marital distribution of the 25% sample.
+
+Selected cases were screened by linear programming with structural
+zeros. Only zero-slack cases ran the hybrid solver with tolerance 0.01
+and whole-household swaps. All six selected cases below converged and
+passed linkage validation. An independent audit recalculated fractional
+and realized errors and matched integer weights to realized household
+multiplicities.
+
+| Census | Geography | Identifier | Broad | Marital status | Education | Labour-force status | Work activity |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 2016 | DA | 24180079 | 7 | 1 | 1 | 1 | 1 |
+| 2016 | DA | 24370090 | 2 | 1 | 1 | 1 | 1 |
+| 2021 | CSD | 2457030 | 9 | 1 | 1 | 1 | 1 |
+| 2021 | CSD | 2467055 | 3 | 1 | 1 | 1 | 1 |
+| 2021 | CSD | 2471075 | 4 | 1 | 1 | 1 | 1 |
+| 2021 | DA | 24210077 | 2 | 0 | 0 | 1 | 0 |
+
+Values are maximum absolute count errors after swaps by family.
+Candidate pools were generated for Québec. The 2016 DA fits used an
+augmented pool. The 2016 CSD 2434115 passed the source screen but its
+household-size targets require at least 1,145 people against the
+person target of 1,140. The original and augmented pools each produced
+a minimum joint L1 residual of 2.5, so it was not fit. Other screened
+cases with positive feasibility residuals were excluded.
+
+The source review and proxy reconciliation advance `SA12-12`. A directly
+sourced private-household non-tract marital-status distribution remains
+outstanding. The
+experimental source extracts, feasibility scripts, fit reports, and
+audits are in `runs/nontract-2016-2026-11-14/` and
+`runs/nontract-2021-2026-11-14/`.
+
+#### 2016 CSD conflict and alternate fit (2026-11-14)
+
+For CSD 2434115, the published 100% household-size cells are
+135 / 215 / 70 / 55 / 30, totaling 505 households. Even at five people
+per household in the last category, they require 1,145 people. The
+published 100% private-household count is 1,145 and the 25%
+private-household target is 1,140. These published and normalized
+targets were preserved. The 2.5 minimum joint L1 residual applies to
+the entire constraint system with the tested pool.
+
+An expanded national scan examined 5,162 CSDs. Twenty-six passed the
+source and denominator screen. Among two Ontario CSDs screened against
+the existing augmented Toronto candidate pool, Cramahe (3514014) had
+zero joint feasibility slack. The other had minimum L1 11. The Cramahe
+fit used the same 18 margins, approximate 100% marital-status proxy,
+hybrid tolerance 0.01, and whole-household swaps as the non-tract
+experiment. It converged fractionally. The largest fractional error
+reported was 0.000125 or less. Independent auditing verified the
+realized residuals, linked output, and household weights.
+
+| 2016 CSD | Broad | Marital status | Education | Labour-force status | Work activity |
+| --- | --- | --- | --- | --- | --- |
+| 3514014 | 6 | 1 | 1 | 1 | 1 |
+
+Values are maximum absolute count errors after swaps. The CSD output
+contains 2,565 households and 6,356 people. Reproduction inputs,
+feasibility evidence, reports, and the independent audit are retained
+in `runs/nontract-2016-csd-expanded-2026-11-14/`.
 
 ## `1.1.0` Runtime Invariants
 
