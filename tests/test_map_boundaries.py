@@ -40,6 +40,40 @@ def test_read_geojson_file_empty_keep_ids_returns_empty(tmp_path: Path) -> None:
     assert bbox == (-180.0, -90.0, 180.0, 90.0)
 
 
+@pytest.mark.parametrize(
+    "elevations",
+    [
+        pytest.param([100, 200, 300, 400, 100], id="positive-elevation"),
+        pytest.param([-500, 0, 9000, -100, -500], id="mixed-elevation"),
+    ],
+)
+def test_read_geojson_file_polygon_elevation_preserves_2d_bounds(
+    tmp_path: Path, elevations: list[int]
+) -> None:
+    path = tmp_path / "elevation.geojson"
+    _write_fake_geojson(path, ["A1", "A2"])
+
+    _, flat_bbox = _read_geojson_file(path, {"A2"})
+
+    payload = json.loads(path.read_text())
+    selected_feature = payload["features"][1]
+    ring = selected_feature["geometry"]["coordinates"][0]
+
+    for position, elevation in zip(ring, elevations, strict=True):
+        position.append(elevation)
+
+    path.write_text(json.dumps(payload))
+
+    result, bbox = _read_geojson_file(path, {"A2"})
+
+    assert result == {
+        "type": "FeatureCollection",
+        "features": [selected_feature],
+    }
+    assert bbox == (-73.6, 45.5, -73.5, 45.6)
+    assert bbox == flat_bbox
+
+
 def test_read_geojson_file_multipolygon(tmp_path: Path) -> None:
     import json as _json
 
