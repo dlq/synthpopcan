@@ -203,6 +203,16 @@ def test_cli_shows_versioned_conditional_packs(
     _validate_conditional_pack_selection(broad, tract, selection)
     with pytest.raises(ValueError, match="matching Statistics Canada CT geography"):
         _validate_conditional_pack_selection(
+            None,
+            statcan_geography_universe(2016 if year == 2021 else 2021, "ct", "ct"),
+            selection,
+        )
+    with pytest.raises(ValueError, match="Unknown"):
+        _validate_conditional_pack_selection(
+            None, tract, (("wrong_family", identifier),)
+        )
+    with pytest.raises(ValueError, match="matching Statistics Canada CT geography"):
+        _validate_conditional_pack_selection(
             None, statcan_geography_universe(year, "ada", "ada"), selection
         )
     with pytest.raises(ValueError, match="requires broad pack"):

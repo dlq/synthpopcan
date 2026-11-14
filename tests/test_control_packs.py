@@ -78,7 +78,7 @@ def test_registry_records_reviewed_crosswalks_and_explicit_deferred_fields() -> 
     statuses = {field.concept_identifier: field.status for field in registry.fields}
 
     assert registry.schema_version == COMPATIBILITY_REGISTRY_SCHEMA_VERSION
-    assert registry.revision == "2026-08-19"
+    assert registry.revision == "2026-11-14"
     assert len(controls) == 28
     assert statuses["household.size"] == "implemented"
     assert statuses["household.dwelling-type"] == "implemented"

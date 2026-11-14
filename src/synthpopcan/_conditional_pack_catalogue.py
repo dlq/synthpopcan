@@ -17,6 +17,42 @@ PROFILE_FAMILIES = {
     "work_activity": _work_activity_packs,
 }
 
+FAMILY_CONCEPTS = {
+    "marital_status": "person.marital-status",
+    "education": "person.education",
+    "labour_force_status": "person.labour-force",
+    "work_activity": "person.work-activity",
+}
+
+# These digests are part of the published v1 definitions. A change to a
+# crosswalk or source rule requires a new pack version, not a silent rewrite.
+DEFINITION_DIGESTS = {
+    "statcan-2016-marital-status-ct-v1": (
+        "3dcae991649aadcea59c27e6506c588bfd8792f9af18b8a0326517e7805c29ab"
+    ),
+    "statcan-2016-education-ct-v1": (
+        "d4249e864064e8e8313ee61f9948315089663ac1ca9446e14f3fa89842df9fbb"
+    ),
+    "statcan-2016-labour-force-status-ct-v1": (
+        "e6af73cc5bd4d27a8430621de8a77a51b0835209d07c5482b1e76ab31be08f01"
+    ),
+    "statcan-2016-work-activity-ct-v1": (
+        "ad3a446bbe42ce501d21f5fec5da09d1d52ba38f65fa4a423d53d351b1342423"
+    ),
+    "statcan-2021-marital-status-ct-v1": (
+        "7488af4b2dea2c92ac35d6cf98fbcdf87566493e1c72aca29e71e98ca1fb7327"
+    ),
+    "statcan-2021-education-ct-v1": (
+        "07edd25e04cdd14b51631843edbfb4acf8a2c5930b6516e637543b2d4568690a"
+    ),
+    "statcan-2021-labour-force-status-ct-v1": (
+        "3173b0755336bae7f7c3caf9bac81796d96701b84e83941b7ff4ba5f8f69b5e2"
+    ),
+    "statcan-2021-work-activity-ct-v1": (
+        "2869422bd35d8e70bc5fa7d255f89922f8f0ce9e6f627e7fc8348332f4d740af"
+    ),
+}
+
 
 def describe_conditional_pack(identifier: str) -> dict[str, object] | None:
     """Return a fresh, checksummed definition for a built-in conditional pack."""
@@ -83,7 +119,10 @@ def describe_conditional_pack(identifier: str) -> dict[str, object] | None:
         "reconciliation": "base-five-proportional-largest-remainder",
         "unavailable_count_policy": "reject-selected-tract",
     }
-    definition["definition_sha256"] = _catalogue_definition_sha256(definition)
+    digest = _catalogue_definition_sha256(definition)
+    if digest != DEFINITION_DIGESTS.get(identifier):
+        raise ValueError(f"conditional pack {identifier!r} definition digest mismatch")
+    definition["definition_sha256"] = digest
     return definition
 
 

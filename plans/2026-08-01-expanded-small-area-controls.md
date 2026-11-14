@@ -55,13 +55,13 @@ runtime slice does not begin and the other families continue independently.
 | --- | --- | --- | --- | --- |
 | `SA12-01` | `done` | Released `1.1.0` registry and runtime invariants | Versioned age-15+ universe and not-applicable/conditional-semantics contract | The contract distinguishes all-private-household persons, age-15+ denominators, under-15 states, suppression, and rounding; mismatch fixtures fail before fitting |
 | `SA12-02` | `done` | Pinned 2016 and 2021 Profile definitions | Marital-status source decision and crosswalk | Child rows, categories, denominators, suppression rules, vintage differences, and fixture totals reproduce independently |
-| `SA12-03` | `in progress` | `SA12-01`, accepted `SA12-02`, `SA12-10` | Marital-status preparer, registry entry, and pack component ([#53](https://github.com/dlq/synthpopcan/issues/53)) | Normalized controls validate and round-trip; unsupported categories and universe mismatches fail closed |
+| `SA12-03` | `done` | `SA12-01`, accepted `SA12-02`, `SA12-10` | Marital-status preparer, registry entry, and pack component ([#53](https://github.com/dlq/synthpopcan/issues/53)) | Normalized controls validate and round-trip; unsupported categories and universe mismatches fail closed |
 | `SA12-04` | `done` | Pinned 2016 and 2021 Profile definitions | Education source decision and crosswalk ([#55](https://github.com/dlq/synthpopcan/issues/55)) | Degree categories, age universe, vintage classifications, suppression rules, and fixture totals reproduce independently |
-| `SA12-05` | `in progress` | `SA12-01`, accepted `SA12-04`, `SA12-10` | Education preparer, registry entry, and pack component | Normalized controls validate and round-trip; not-applicable and unmapped categories remain explicit |
+| `SA12-05` | `done` | `SA12-01`, accepted `SA12-04`, `SA12-10` | Education preparer, registry entry, and pack component | Normalized controls validate and round-trip; not-applicable and unmapped categories remain explicit |
 | `SA12-06` | `done` | Pinned 2016 and 2021 Profile definitions | Labour-force-status source decision and crosswalk | Categories, age denominator, vintage differences, suppression rules, and fixture totals reproduce independently |
-| `SA12-07` | `in progress` | `SA12-01`, accepted `SA12-06`, `SA12-10` | Labour-force preparer, registry entry, and pack component | Normalized controls validate and round-trip; support, zero, and universe failures stop before fitting |
+| `SA12-07` | `done` | `SA12-01`, accepted `SA12-06`, `SA12-10` | Labour-force preparer, registry entry, and pack component | Normalized controls validate and round-trip; support, zero, and universe failures stop before fitting |
 | `SA12-08` | `done` | Pinned 2016 and 2021 Profile definitions | Work-activity source decision and crosswalk | Full/part-year and full/part-time categories, applicability, suppression, and fixture totals reproduce independently |
-| `SA12-09` | `in progress` | `SA12-01`, accepted `SA12-08`, `SA12-10` | Work-activity preparer, registry entry, and pack component | Normalized controls validate and round-trip; mutually exclusive states and denominators are enforced |
+| `SA12-09` | `done` | `SA12-01`, accepted `SA12-08`, `SA12-10` | Work-activity preparer, registry entry, and pack component | Normalized controls validate and round-trip; mutually exclusive states and denominators are enforced |
 | `SA12-10` | `done` | `SA12-01` | Shared conditional-person reconciliation and preflight path | The common implementation represents not-applicable states or explicit conditional constraints without silently manufacturing totals; adversarial cases fail closed |
 | `SA12-11` | `done` | `SA12-10` and at least one accepted family runtime slice | Separately versioned conditional-person pack tier | Manifests have stable identifiers, semantic checksums, inspectable contents, and fail-closed compatibility with the retained broad packs |
 | `SA12-12` | `done` | `SA12-11` | Joint bounded feasibility and calibration evidence | Reviewed 2016/2021 CT and CSD cases have direct-source joint evidence; non-tract proxy cases and missing 2016 ADA evidence are explicitly qualified or deferred below. Fractional and realized residuals are independently recomputed for the recorded fits |
@@ -1065,9 +1065,19 @@ excluded case appear feasible.
 
 This decision accepts statistical evidence, not a universal runtime or
 release claim. The eight built-in conditional packs remain CT-only; the
-non-tract studies used explicit normalized controls. `SA12-03`, `SA12-05`,
-`SA12-07`, and `SA12-09` remain open for their individual implementation
-acceptance, and `SA12-13` through `SA12-15` remain necessary before release.
+non-tract studies used explicit normalized controls.
+
+#### Conditional-family implementation gates (2026-11-14)
+
+`SA12-03`, `SA12-05`, `SA12-07`, and `SA12-09` are accepted for the
+bounded 2016 and 2021 tract scope. The compatibility registry identifies the
+separate conditional packs and their source fields, and their published v1
+definition digests are checked before use. Tests cover incompatible vintage,
+geography and broad packs; invalid registry references; changed crosswalks;
+and the existing source, universe, suppression and candidate-support failure
+paths. Annual work activity controls `WRKACT`, not `FPTWK`. These gates do not
+extend built-in pack coverage to non-tract geographies or imply that every
+compatible fit converges.
 
 #### Python, CLI, and local-web adoption in progress (2026-11-14)
 

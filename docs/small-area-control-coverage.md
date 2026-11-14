@@ -40,7 +40,7 @@ that every geography or every underlying field is locally represented.
 
 For the planned 1.2.0 scope, the four conditional families have bounded
 acceptance evidence for the reviewed tract packs and compatible inputs;
-individual family and release gates remain open. The named non-tract joint fits
+the individual family implementation gates are complete. The named non-tract joint fits
 are bounded research evidence using explicitly supplied targets; no built-in
 conditional CSD, ADA, or DA pack is claimed. Marital-status DA and ADA fits
 using all-resident rows are approximate, and direct private-household DA/ADA

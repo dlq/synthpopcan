@@ -282,6 +282,7 @@ class FieldCompatibility(_BoundaryModel):
     fields_2016: list[str]
     fields_2021: list[str]
     control_identifiers: list[str]
+    conditional_pack_identifiers: list[str] = Field(default_factory=list)
     status: ControlStatus
     notes: list[str] = Field(min_length=1)
 
@@ -310,10 +311,40 @@ class ControlCompatibilityRegistry(_BoundaryModel):
                     f"registry concept {field.concept_identifier!r} references "
                     f"unknown controls {sorted(unknown)!r}"
                 )
+        _validate_conditional_registry_fields(self.fields)
         mapped_concepts = {control.concept_identifier for control in self.controls}
         if not mapped_concepts <= set(concepts):
             raise ValueError("every control must map to a registered field concept")
         return self
+
+
+def _validate_conditional_registry_fields(fields: list[FieldCompatibility]) -> None:
+    from synthpopcan._conditional_pack_catalogue import (
+        FAMILY_CONCEPTS,
+        describe_conditional_pack,
+    )
+
+    seen_conditional_packs: set[str] = set()
+    for field in fields:
+        for identifier in field.conditional_pack_identifiers:
+            if identifier in seen_conditional_packs:
+                raise ValueError(f"duplicate conditional pack reference {identifier!r}")
+            seen_conditional_packs.add(identifier)
+            definition = describe_conditional_pack(identifier)
+            if definition is None:
+                raise ValueError(f"unknown conditional pack {identifier!r}")
+            year = definition["census_vintage"]
+            source_fields = field.fields_2016 if year == 2016 else field.fields_2021
+            if (
+                FAMILY_CONCEPTS.get(str(definition["family"]))
+                != field.concept_identifier
+                or field.entity_level != "person"
+                or definition["source_field"] not in source_fields
+            ):
+                raise ValueError(
+                    f"conditional pack {identifier!r} does not match "
+                    f"registry concept {field.concept_identifier!r}"
+                )
 
 
 class PackMargin(_BoundaryModel):
@@ -449,14 +480,41 @@ def load_compatibility_registry() -> ControlCompatibilityRegistry:
     """Return the immutable built-in field/control compatibility registry."""
 
     controls = _control_definitions()
+    fields = _conditional_registry_fields(_field_inventory(controls))
     return ControlCompatibilityRegistry.model_validate(
         {
             "schema_version": COMPATIBILITY_REGISTRY_SCHEMA_VERSION,
-            "revision": _CURRENT_REGISTRY_REVISION,
-            "fields": _field_inventory(controls),
+            "revision": "2026-11-14",
+            "fields": fields,
             "controls": controls,
         }
     )
+
+
+def _conditional_registry_fields(fields):
+    from synthpopcan._conditional_pack_catalogue import (
+        DEFINITION_DIGESTS,
+        FAMILY_CONCEPTS,
+        describe_conditional_pack,
+    )
+
+    by_concept = {field["concept_identifier"]: field for field in fields}
+    for identifier in DEFINITION_DIGESTS:
+        definition = describe_conditional_pack(identifier)
+        if definition is None:
+            raise ValueError(f"missing conditional pack {identifier!r}")
+        field = by_concept[FAMILY_CONCEPTS[str(definition["family"])]]
+        field.setdefault("conditional_pack_identifiers", []).append(identifier)
+        field["status"] = "implemented"
+        field["notes"] = [
+            "Conditional age-15-plus private-household controls are available "
+            "for census tracts in 2016 and 2021; they are separate from broad packs."
+        ]
+        if definition["family"] == "work_activity":
+            field["notes"].append(
+                "WRKACT is controlled; FPTWK is not directly controlled."
+            )
+    return fields
 
 
 def _builtin_packs() -> dict[str, ControlPackManifest]:
