@@ -260,8 +260,10 @@ any pool subsample. The durable run stops if that final plan fails.
 The form asks for the geography dimension and output column, candidate household
 count, optional calibration pool size, average persons per household, and random
 seed. Question-mark help labels can be hovered, tapped, or reached with the
-keyboard for a short field explanation. **Estimate and prepare** sends only the controls text and numeric settings
-to the local Python helper. It uses the same `estimate_small_area_run` logic as
+keyboard for a short field explanation. **Estimate and prepare** uploads the
+selected source files to the local workspace and sends the settings and upload
+identifiers to the local Python helper for preflight. It uses the same
+`estimate_small_area_run` logic as
 the CLI and reports:
 
 - target geographies and households;
@@ -282,6 +284,17 @@ the reproduction command records `--control-pack` and
 dimension, the generated command automatically adds `--max-household-size 5`
 and the matching grouped-column option. See {doc}`small-area` for
 control-building, validation, and mapping steps.
+
+For the reviewed conditional tract controls, select the matching broad tract
+pack and upload its evidence and person controls. The form also accepts the
+marital-status tract CSV and the education, labour-force, and work-activity
+Profile CSVs or ZIPs for either 2016 or 2021. Preflight rejects incompatible
+vintages, missing source cells, and conflicting denominators. After an
+interruption, **Restart from saved inputs** makes a new run after verifying
+the retained inputs and rerunning preflight; it leaves partial output in the
+interrupted run untouched. See the
+[conditional-control reference](small-area-reference.md)
+for the accepted tract scope and non-tract limitations.
 
 ## Options
 

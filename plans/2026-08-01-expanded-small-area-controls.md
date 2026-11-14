@@ -4,7 +4,7 @@ Status: active feature implementation; `1.1.0` released and `1.2.0` committed\
 Created: 2026-08-01\
 Last updated: 2026-11-14\
 Target: `1.1.0` broad compatible packs; conditional person controls in `1.2.0`\
-Next action: complete installed-distribution and release evidence for the accepted scope\
+Next action: resolve the individual conditional-family gates and remaining release-train work\
 Roadmap: [PLANS.md](../PLANS.md) | [Plan index](README.md)
 
 Release sequencing and confidence are defined in the
@@ -67,7 +67,7 @@ runtime slice does not begin and the other families continue independently.
 | `SA12-12` | `done` | `SA12-11` | Joint bounded feasibility and calibration evidence | Reviewed 2016/2021 CT and CSD cases have direct-source joint evidence; non-tract proxy cases and missing 2016 ADA evidence are explicitly qualified or deferred below. Fractional and realized residuals are independently recomputed for the recorded fits |
 | `SA12-13` | `done` | `SA12-12` | Python and CLI adoption through the shared workflow | Equivalent library and command requests normalize identically; public-interface and machine-output fixtures remain additive |
 | `SA12-14` | `done` | `SA12-12` | Local-web and durable-run adoption through the shared workflow | HTTP normalization, progress events, run evidence, interruption restart, and browser scenarios match the accepted pack semantics |
-| `SA12-15` | `ready` | `SA12-13`, `SA12-14` | Installed-distribution evidence and public documentation | Wheel and sdist smokes pass; documentation names admitted, deferred, approximate, validation-only, and uncontrolled families |
+| `SA12-15` | `done` | `SA12-13`, `SA12-14` | Installed-distribution evidence and public documentation | Wheel and sdist smokes pass; documentation names admitted, deferred, approximate, validation-only, and uncontrolled families |
 
 The internal universe contract and rejection fixtures are recorded in the
 [2026-10-22 preparation record](../docs/records/readiness-2026-10-22.md).
@@ -1084,12 +1084,29 @@ requires the reviewed broad pack, evidence, and person controls.
 SA12-13 and SA12-14 use a fresh restart rather than resuming a partial fit.
 The app marks unfinished runs interrupted, verifies retained inputs and model
 identity, copies them into a new run, rechecks preflight, and publishes the
-new queued run atomically. The original run and partial artifacts remain
+new queued run with the manifest last. The original run and partial artifacts remain
 unchanged. Failure and tampering tests cover rejection and cleanup; the new
 manifest records its parent. An unseeded generation can differ after restart.
 The web upload accepts marital-status CSVs and Profile CSVs or ZIPs within
-its 256 MiB limit; the CLI remains available for larger sources. Installed
-distribution and final release evidence remain in `SA12-15`.
+its 256 MiB limit; the CLI remains available for larger sources.
+
+#### SA12-15 installed-distribution and documentation evidence (2026-11-14)
+
+The development tree based on `93b9864` was built as both a wheel and
+an sdist, then each was installed into a separate clean Python 3.12 environment
+outside the checkout. The expanded `scripts/wheel_smoke.py` exercised all four
+conditional families jointly for both vintages through the installed Python
+and CLI interfaces, checked the packaged definitions, compared source evidence,
+and verified that a wrong-vintage pack fails before writing person output.
+The sdist also contained the updated public documentation and smoke script.
+
+These verification builds used the current source version `1.1.4` and
+uncommitted SA12-15 documentation and smoke changes; they are not 1.2.0
+release-candidate artifacts. The local builds and their hashes are retained
+under `runs/sa12-15-distribution-2026-11-14/`.
+The source-level acceptance and limitations remain those in SA12-12 above.
+Individual family implementation gates and the other 1.2.0 release-train
+gates remain open; this evidence does not by itself authorize a release.
 
 ## `1.1.0` Runtime Invariants
 

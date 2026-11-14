@@ -4,8 +4,8 @@ Status: active maintenance; `1.1.0` released and `1.2.0` committed next\
 Created: 2026-08-19\
 Last updated: 2026-10-22\
 Target: bounded `1.x` feature releases with patch releases as needed\
-Next action: integrate `SA12-10` and finish `I18N12-01` before expanding the
-`1.2.0` public surface\
+Next action: resolve the remaining conditional-family gates and finish
+`I18N12-01` before the `1.2.0` release candidate\
 Roadmap: [PLANS.md](../PLANS.md) | [Plan index](README.md)
 
 ## Planning Horizon
@@ -161,8 +161,10 @@ Acceptance gate:
   reviewed;
 - each denominator, not-applicable category, suppression rule, and rounding
   decision is explicit in the compatibility registry;
-- joint use with the `1.1.0` broad pack is feasible on bounded 2016 and 2021
-  CSD, CT, ADA, and DA cases;
+- joint use with the `1.1.0` broad pack is feasible on the bounded, directly
+  sourced 2016 and 2021 CT and CSD cases; non-tract proxy evidence and the
+  deferred DA/ADA scope are explicitly qualified in the
+  [SA12-12 decision](2026-08-01-expanded-small-area-controls.md#sa12-12-bounded-joint-evidence-decision-2026-11-14);
 - rare and structural-zero cases fail closed before calibration;
 - fractional and realized residual evidence covers every added family; and
 - exact (not integer-rounded) combined branch coverage is at least `95.00%`,

@@ -32,6 +32,24 @@ number implemented today and not evidence that all 29 crosswalks are ready.
 The reviewed core and expanded packs currently control **15 of 36 fields**
 through 14 families: nine household fields plus broad age by sex/gender,
 citizenship, immigrant status, generation status, and visible-minority status.
+Separately versioned conditional census-tract packs add marital status,
+education, labour-force status, and annual work activity for both 2016 and
+2021\. They use age-15+ private-household targets and an explicit under-15
+not-applicable category. These are additional, coarsened margins, not proof
+that every geography or every underlying field is locally represented.
+
+For the planned 1.2.0 scope, the four conditional families have bounded
+acceptance evidence for the reviewed tract packs and compatible inputs;
+individual family and release gates remain open. The named non-tract joint fits
+are bounded research evidence using explicitly supplied targets; no built-in
+conditional CSD, ADA, or DA pack is claimed. Marital-status DA and ADA fits
+using all-resident rows are approximate, and direct private-household DA/ADA
+marital-status packs and five-family 2016 ADA acceptance are deferred. The
+published percentages for mortgage and subsidy remain candidates for a
+separate approximate tier, not admitted controls. Language, place of birth,
+and income candidates remain validation or research candidates until their
+crosswalk and universe reviews are accepted. The five fields without matching
+distributions listed below remain uncontrolled by these packs.
 
 ## Geography Coverage
 
@@ -86,7 +104,7 @@ control is implemented.
 | `BUILT` | coarsened | 1643 | 1440 | Review vintage construction-period bands. |
 | `NOS` | direct | 1640 | 1437 | Suitable versus not suitable housing. |
 | `AGEGRP` + sex/gender | joint/coarsened | 8 | 8 | Cross broad age rows with Profile sex/gender columns. |
-| marital status | coarsened | 59 | 58 | Shared population aged 15+ universe. |
+| marital status | coarsened | 59 | 58 | Profile rows cover all residents aged 15+; the tract pack uses a separate private-household source. |
 | `CITIZEN` | coarsened | 1135 | 1522 | Implemented as Canadian citizen versus not Canadian. |
 | `IMMSTAT` | coarsened | 1140 | 1527 | Implemented; status remains distinct from immigration period. |
 | `GENSTAT` | coarsened | 1278 | 1665 | Implemented as first, second, third-or-later generation. |
@@ -123,9 +141,9 @@ as locally calibrated.
 
 ## What This Audit Does And Does Not Establish
 
-This began as a **source-availability screen**. For the 14 implemented
-families, the compatibility registry and packs now additionally establish
-reviewed mappings, universes, suppression policies, and executable fixtures.
+This began as a **source-availability screen**. The broad packs and the four
+conditional tract families now additionally have reviewed mappings,
+universes, suppression policies, and executable fixtures.
 For the remaining candidates, the inventory still does not establish:
 
 - an exact, reviewed mapping of every Profile child category to every PUMF
