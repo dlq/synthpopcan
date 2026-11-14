@@ -912,8 +912,7 @@ a minimum joint L1 residual of 2.5, so it was not fit. Other screened
 cases with positive feasibility residuals were excluded.
 
 The source review and proxy reconciliation advance `SA12-12`. A directly
-sourced private-household non-tract marital-status distribution remains
-outstanding. The
+sourced private-household distribution for DA and ADA remains outstanding. The
 experimental source extracts, feasibility scripts, fit reports, and
 audits are in `runs/nontract-2016-2026-11-14/` and
 `runs/nontract-2021-2026-11-14/`.
@@ -946,6 +945,60 @@ Values are maximum absolute count errors after swaps. The CSD output
 contains 2,565 households and 6,356 people. Reproduction inputs,
 feasibility evidence, reports, and the independent audit are retained
 in `runs/nontract-2016-csd-expanded-2026-11-14/`.
+
+#### Direct private-household CSD marital-status reruns (2026-11-14)
+
+Two public 25% private-household sources provide the four marital
+categories at CSD level. The 2016 source is the Québec English-Speaking
+Communities Research Network (QUESCREN) portal's copy of Statistics
+Canada table 98-400-X2016352. Its IVT SHA-256 is
+`0384feb1b2e94e0f1aaa12ecc28333481f58e7db0af844f49f9d484ee629ebfd`.
+The 2021 source is QUESCREN's copy of custom table CO-2613, table 1.
+Its IVT SHA-256 is
+`f7aab7fbc2cb8d994a0bbcfc965aafa98ed59f0e24ac4bf5b0b7953b8a43508d`.
+[2016 table](https://www150.statcan.gc.ca/n1/en/catalogue/98-400-X2016352) ·
+[2021 custom dataset](https://desq.quescren.ca/en/dataset/pch-2021-co-2613-table1)
+
+Both extracts select total first official language spoken and total
+sex or gender. The source categories map to never married and not
+living common law, married, living common law, and separated/divorced/
+widowed and not living common law. Published categories are preserved.
+When independent rounding produces a total difference, proportional
+largest remainder reconciles the vector to the existing 25% adult target.
+
+| Census | CSD | Published adult total | Published leaves | Reconciled leaves |
+| --- | --- | --- | --- | --- |
+| 2016 | 3514014 | 5,435 | 1,160 / 2,810 / 730 / 735 | 1,160 / 2,810 / 730 / 735 |
+| 2021 | 2457030 | 6,850 | 1,725 / 2,075 / 2,380 / 670 | 1,726 / 2,077 / 2,382 / 670 |
+| 2021 | 2467055 | 1,995 | 475 / 705 / 585 / 240 | 473 / 701 / 582 / 239 |
+| 2021 | 2471075 | 1,585 | 445 / 600 / 325 / 210 | 446 / 602 / 326 / 211 |
+
+The 2021 adult target for 2457030 is 6,855, five above its published
+root. The other targets equal their published roots. All four joint
+18-margin systems had zero minimum L1 feasibility slack. All fractional
+fits converged at tolerance 0.01 and all linked outputs passed
+validation. An independent audit recounted fractional and realized
+margins and checked integer weights against household multiplicities.
+
+| Census | CSD | Broad | Marital status | Education | Labour-force status | Work activity |
+| --- | --- | --- | --- | --- | --- | --- |
+| 2016 | 3514014 | 4 | 2 | 1 | 1 | 2 |
+| 2021 | 2457030 | 3 | 1 | 1 | 1 | 1 |
+| 2021 | 2467055 | 8 | 1 | 1 | 1 | 1 |
+| 2021 | 2471075 | 5 | 1 | 1 | 1 | 1 |
+
+Values are maximum absolute count residuals after whole-household
+swaps. The 2016 fit reused the augmented Toronto candidate pool and the
+2021 fits reused the Québec pool. The source file, selected cells,
+inputs, reports, and audits are retained in
+`runs/private-marital-source-2026-11-14/`. The 2016 IVT exceeded
+pyivt's default 2 GiB memory estimate. Its targeted extraction used
+a locally built pyivt 0.0.10 with an 8 GiB estimate limit.
+
+These CSD reruns supersede the earlier proxy fits for these four CSDs.
+The sources reviewed here do not supply the earlier DA or ADA cases.
+Those cases retain their approximate proxy evidence pending a directly
+sourced private-household distribution at those geographies.
 
 ## `1.1.0` Runtime Invariants
 
