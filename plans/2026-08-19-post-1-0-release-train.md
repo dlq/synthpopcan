@@ -4,8 +4,8 @@ Status: active maintenance; `1.1.0` released and `1.2.0` committed next\
 Created: 2026-08-19\
 Last updated: 2026-10-22\
 Target: bounded `1.x` feature releases with patch releases as needed\
-Next action: resolve the remaining conditional-family gates and finish
-`I18N12-01` before the `1.2.0` release candidate\
+Next action: admit the accepted conditional families and complete the
+web-client catalogue foundation before the `1.2.0` release candidate\
 Roadmap: [PLANS.md](../PLANS.md) | [Plan index](README.md)
 
 ## Planning Horizon
@@ -36,7 +36,7 @@ weakening that gate.
 
 | ID | Status | Depends on | Deliverable | Acceptance |
 | --- | --- | --- | --- | --- |
-| `REL12-01` | `blocked` | Terminal `done` or `deferred` status for [`SA12-01`–`SA12-15`](2026-08-01-expanded-small-area-controls.md#pr-sized-work) | Admit the individually accepted conditional-person control families to `1.2.0` | Every admitted family has accepted source, universe, runtime, residual, and interface evidence; a failed family is explicitly deferred |
+| `REL12-01` | `ready` | Terminal `done` or `deferred` status for [`SA12-01`–`SA12-15`](2026-08-01-expanded-small-area-controls.md#pr-sized-work) | Admit the individually accepted conditional-person control families to `1.2.0` | Every admitted family has accepted source, universe, runtime, residual, and interface evidence; a failed family is explicitly deferred |
 | `REL12-02` | `blocked` | Completed [`I18N12-01`–`I18N12-05`](2026-08-19-bilingual-localization.md#pr-sized-work) | Ship the locale-safe message-catalogue foundation | The packaged catalogue, locale rules, compatibility fixtures, and static guard pass without a full-localization claim |
 | `REL12-03` | `blocked` | Terminal status for [`RB12-01`–`RB12-09`](2026-08-26-responsibility-boundaries.md#pr-sized-work), completed [`ASSURE12-01`–`ASSURE12-02`](2026-07-12-correctness-assurance.md#pr-sized-work), and completed applicable [`TYPE12-01`–`TYPE12-08`](2026-08-01-strict-typing.md#pr-sized-work) slices | Complete the bounded maintainability ratchet | Each required boundary and documentation slice meets its local acceptance; deferred archive extraction does not enlarge the executor |
 | `REL12-04` | `blocked` | `REL12-01`, `REL12-02`, `REL12-03` | Prepare and verify the `1.2.0` release candidate | The release acceptance gate below and the exact-commit procedure in `RELEASING.md` pass |
@@ -133,7 +133,7 @@ live in the
 - document every beginner export, require docstrings for newly added or
   changed supported symbols, and ratchet down the existing undocumented
   supported-surface count;
-- route newly localized human-facing CLI and web text through the catalogue
+- route newly localized web-client text through the catalogue
   boundary so localization does not become another cross-cutting concern in
   the large adapter modules; and
 - begin separating the Zenodo depositor's protocol client, checkpoint/state
@@ -183,8 +183,8 @@ Acceptance gate:
 Target window: first half of 2027\
 Confidence: forecast, not a commitment
 
-Also target reviewed Canadian English/French localization for the core CLI and
-local-web workflows. This interface tranche is independent of whether every
+Also target reviewed Canadian English/French localization for core web-client
+workflows. CLI and documentation localization are deferred. This interface tranche is independent of whether every
 statistical language, migration, or income family passes its evidence gate.
 
 Evaluate the remaining count-based candidates from the current all-fields
@@ -221,13 +221,13 @@ Acceptance gate for every statistical family admitted to `1.3.0`:
 - a family that fails remains validation-only and does not delay unrelated
   accepted families.
 
-## `1.4.0` — Complete English/French Supported Surface
+## `1.4.0` — Complete English/French Web Client
 
 Target window: second half of 2027\
 Confidence: provisional follow-on
 
-Complete reviewed English/French localization for every supported CLI and
-local-web path and for maintained public user documentation. Preserve
+Complete reviewed English/French localization for supported local-web client
+paths. CLI and documentation localization remain deferred. Preserve
 language-neutral commands, options, identifiers, schemas, JSON, CSV, evidence,
 and reproducibility contracts. This release becomes scoped only after the
 `1.2.0` catalogue/packaging foundation and `1.3.0` core localization prove

@@ -127,3 +127,48 @@ def test_archive_correction_evidence_binds_both_licensing_contracts() -> None:
 
     with pytest.raises(ValueError, match="licensing digests changed"):
         validate_archive_correction_evidence(evidence)
+
+
+@pytest.mark.parametrize(
+    "path,value,message",
+    [
+        (("schema_version",), "wrong", "unsupported archive correction"),
+        (("target",), "SANDBOX", "not for production"),
+        (("recorded_on",), "2026-08-17", "date changed"),
+        (
+            ("execution_authority", "executor_commit"),
+            "not-a-commit",
+            "executor commit is invalid",
+        ),
+        (
+            ("execution_authority", "candidate_envelope_sha256"),
+            "not-a-hash",
+            "not SHA-256",
+        ),
+        (("models",), [], "exactly 32 models"),
+        (("models", 0, "model_id"), "INVALID ID", "model ID is invalid"),
+        (
+            ("models", 0, "historical", "asset", "filename"),
+            "../model.json.gz",
+            "filename is unsafe",
+        ),
+        (("models", 0, "historical", "asset", "size_bytes"), True, "positive integer"),
+        (("models", 0, "historical", "asset", "sha256"), "bad", "not SHA-256"),
+        (
+            ("models", 0, "historical", "publication_date"),
+            "not-a-date",
+            "date is invalid",
+        ),
+        (("verification", "operations_verified"), 63, "verification totals changed"),
+    ],
+)
+def test_archive_evidence_rejects_malformed_identity_and_verification(
+    path, value, message
+):
+    evidence = deepcopy(load_archive_correction_evidence())
+    parent = evidence
+    for key in path[:-1]:
+        parent = parent[key]
+    parent[path[-1]] = value
+    with pytest.raises(ValueError, match=message):
+        validate_archive_correction_evidence(evidence)

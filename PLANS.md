@@ -51,7 +51,7 @@ less certain and are revisited after every minor release.
 | Type-safety maintenance | Keep package-wide Pyright `standard` blocking and expand the strict-clean module set without weakening dynamic-data validation. | [Strict typing plan](plans/2026-08-01-strict-typing.md) |
 | Maintainability and approachability | Make coverage enforcement exact, reduce high-complexity orchestration incrementally, ratchet supported-surface documentation, and keep localization and archive state machinery behind explicit boundaries. | [Responsibility-boundaries plan](plans/2026-08-26-responsibility-boundaries.md), [post-1.0 release train](plans/2026-08-19-post-1-0-release-train.md), [contributor guide](CONTRIBUTING.md) |
 | Release train | Preserve the additive `1.1.0` control expansion and admit later families only through their stated universe and evidence gates. | [Post-1.0 release train](plans/2026-08-19-post-1-0-release-train.md) |
-| English/French localization | Build a locale-safe foundation in `1.2.0`, localize core CLI/web workflows in `1.3.0`, and complete the supported bilingual surface in provisional `1.4.0` without changing machine contracts. | [Bilingual localization plan](plans/2026-08-19-bilingual-localization.md) |
+| English/French localization | Build a web-client locale foundation in `1.2.0`, localize core web workflows in `1.3.0`, and complete the supported web-client surface in provisional `1.4.0`. CLI and documentation translation are deferred, with machine contracts preserved. | [Bilingual localization plan](plans/2026-08-19-bilingual-localization.md) |
 
 Current foundation evidence and remaining acceptance work are recorded in the
 [2026-10-22 preparation record](docs/records/readiness-2026-10-22.md).
@@ -62,7 +62,7 @@ Current foundation evidence and remaining acceptance work are recorded in the
 | --- | --- | --- | --- |
 | `1.1.0` | Released | August 2026 | 24 reviewed control packs and 14 compatible control families, including broad packs that jointly apply nine household and five person margins with explicit fail-closed runtime invariants. |
 | `1.2.0` | Committed next release | November–December 2026 | Conditional age-15+ marital-status, education, labour-force, and work-activity controls that pass explicit universe and residual gates; the locale-safe message-catalogue foundation; and a bounded maintainability ratchet for exact coverage, orchestration complexity, public documentation, and archive-state boundaries. |
-| `1.3.0` | Forecast, not committed | First half of 2027 | Evidence-qualified language, immigrant place-of-birth, and income-band controls plus core English/French CLI and local-web localization; approximate mortgage/subsidy only as an opt-in tier. |
+| `1.3.0` | Forecast, not committed | First half of 2027 | Evidence-qualified language, immigrant place-of-birth, and income-band controls plus core English/French web-client localization; approximate mortgage/subsidy only as an opt-in tier. |
 | `1.4.0` | Provisional follow-on | Second half of 2027 | Complete English/French coverage of supported CLI, local-web, and public-documentation surfaces after the `1.2.0` locale foundation proves sustainable. |
 
 Patch releases remain demand-driven. Family entities, collective populations,

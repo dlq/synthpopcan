@@ -91,6 +91,22 @@ git ls-files -z -- '*.md' | \
   xargs -0 uv run --group docs mdformat --check
 ```
 
+The shared test runner offers named selections and a conservative affected-file
+mode for local work and pull requests:
+
+```bash
+uv run --locked --extra performance python scripts/test_runner.py localization
+uv run --locked --extra performance python scripts/test_runner.py affected --base origin/main --dry-run
+uv run --locked --extra performance python scripts/test_runner.py affected --base origin/main
+```
+
+The affected selection includes committed, staged, unstaged, and untracked
+changes. It currently selects individual changed test files only; shared,
+source, deleted, unmapped, or empty changes run the full suite. The dry run
+explains the choice. Pull requests use this selection for non-coverage Python
+jobs; main and the coverage job still run the full suite. Pass pytest arguments
+after `--`, for example `-- -q`. Partial runs do not enforce coverage.
+
 Run `./scripts/check.sh` before requesting final review when practical. If a
 local check cannot run on your machine, say which check and why in the pull
 request instead of leaving reviewers to infer it.

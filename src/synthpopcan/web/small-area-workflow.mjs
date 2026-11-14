@@ -37,6 +37,7 @@ export function bindSmallAreaWorkflow() {
     const operation = operations.begin("prepare");
     const resultBox = document.querySelector("#small-area-result");
     showStatus(resultBox, "Uploading and checking the planned small-area run...");
+    resultBox.dataset.workflowState = "preparing";
     try {
       const draft = snapshotDraft();
       const request = await buildSmallAreaRequest(draft, uploadCsv);
@@ -45,7 +46,10 @@ export function bindSmallAreaWorkflow() {
       if (!operation.isCurrent()) return;
       showEstimate(resultBox, preflight, operations);
     } catch (error) {
-      if (operation.isCurrent()) showError(resultBox, error);
+      if (operation.isCurrent()) {
+        showError(resultBox, error);
+        resultBox.dataset.workflowState = "";
+      }
     }
   });
 
@@ -78,12 +82,9 @@ function invalidatePreparedEstimate(operations) {
   operations.invalidate("prepare");
   operations.invalidate("start");
   const resultBox = document.querySelector("#small-area-result");
-  if (
-    resultBox.querySelector(".primary-action") ||
-    resultBox.textContent.startsWith("Uploading and checking") ||
-    resultBox.textContent.startsWith("Starting the durable")
-  ) {
+  if (["preparing", "prepared", "starting"].includes(resultBox.dataset.workflowState)) {
     showStatus(resultBox, "Inputs changed. Estimate the run again before starting.");
+    resultBox.dataset.workflowState = "";
   }
 }
 
@@ -155,6 +156,7 @@ function snapshotDraft() {
 function showEstimate(element, preflight, operations) {
   const estimate = preflight.estimate;
   revokeDownloads(element);
+  element.dataset.workflowState = "prepared";
   element.className = `result-box ${preflight.ready ? "success" : "warning"}`;
   element.textContent = preflight.ready
     ? "Preflight complete. Review the scale before starting the durable run."
@@ -189,6 +191,7 @@ function showEstimate(element, preflight, operations) {
     const request = structuredClone(preflight.request);
     button.disabled = true;
     showStatus(element, "Starting the durable small-area run...");
+    element.dataset.workflowState = "starting";
     try {
       const run = await createRun(request);
       document.dispatchEvent(
@@ -197,7 +200,10 @@ function showEstimate(element, preflight, operations) {
         }),
       );
     } catch (error) {
-      if (operation.isCurrent()) showError(element, error);
+      if (operation.isCurrent()) {
+        showError(element, error);
+        element.dataset.workflowState = "";
+      }
     }
   });
   element.append(button);

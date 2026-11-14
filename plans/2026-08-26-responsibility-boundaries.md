@@ -135,7 +135,7 @@ releases; no new archive operation should enlarge the monolithic path.
 
 ### Localization
 
-All newly covered CLI and web prose passes through the message-catalogue
+All newly covered web-client prose passes through the message-catalogue
 boundary owned by the
 [bilingual localization plan](2026-08-19-bilingual-localization.md). Domain and
 workflow modules return language-neutral results and structured errors.
@@ -198,7 +198,7 @@ reviewable changes.
 - every beginner export is documented, newly added or changed supported symbols
   have docstrings, and the measured undocumented supported-surface count does
   not increase;
-- all new user-facing CLI and web text in covered modules uses the localization
+- all new user-facing web text in covered modules uses the localization
   boundary;
 - architecture, public-interface, schema compatibility, type, lint,
   documentation, browser, fault-injection, and installed-distribution gates

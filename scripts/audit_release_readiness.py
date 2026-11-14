@@ -9,6 +9,7 @@ import json
 import subprocess
 import sys
 from collections import Counter
+from html.parser import HTMLParser
 from pathlib import Path
 from typing import Any
 
@@ -133,10 +134,65 @@ def localization_inventory() -> dict[str, Any]:
         "translation_status": "inventory only; no reviewed product translations or catalogue yet",
         "scope": "All CLI groups/aliases/options, static web routes, package presentation/domain files, maintained docs and historical/source exclusions",
         "python_literals": _python_literal_inventory(),
+        "web_html_text": _web_html_inventory(),
         "commands": _cli_surfaces(),
         "routes": _web_routes(),
         "files": _file_ownership(),
     }
+
+
+class _WebTextParser(HTMLParser):
+    """Collect visible HTML text and accessibility labels with source locations."""
+
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.entries: list[dict[str, Any]] = []
+        self.hidden_depth = 0
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        if tag in {"script", "style"}:
+            self.hidden_depth += 1
+        for name, value in attrs:
+            if value and name in {
+                "alt",
+                "aria-label",
+                "aria-description",
+                "aria-placeholder",
+                "aria-valuetext",
+                "data-help",
+                "placeholder",
+                "title",
+            }:
+                self.entries.append(
+                    {
+                        "line": self.getpos()[0],
+                        "role": f"attribute:{name}",
+                        "text": value,
+                    }
+                )
+
+    def handle_endtag(self, tag: str) -> None:
+        if tag in {"script", "style"} and self.hidden_depth:
+            self.hidden_depth -= 1
+
+    def handle_data(self, data: str) -> None:
+        if not self.hidden_depth and (text := " ".join(data.split())):
+            self.entries.append(
+                {"line": self.getpos()[0], "role": "visible-text", "text": text}
+            )
+
+
+def _web_html_inventory() -> dict[str, Any]:
+    result: dict[str, Any] = {}
+    for path in sorted((ROOT / "src/synthpopcan/web").rglob("*.html")):
+        source = path.read_text()
+        parser = _WebTextParser()
+        parser.feed(source)
+        result[path.relative_to(ROOT).as_posix()] = {
+            "source_sha256": hashlib.sha256(source.encode()).hexdigest(),
+            "entries": parser.entries,
+        }
+    return result
 
 
 def _cli_surfaces() -> list[dict[str, Any]]:

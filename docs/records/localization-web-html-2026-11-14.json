@@ -1,0 +1,725 @@
+{
+  "scope": "HTML visible text and selected accessibility attributes; JavaScript and Python role review are not included",
+  "files": {
+    "src/synthpopcan/web/index.html": {
+      "source_sha256": "b0f84372e001aa1b66ecce73bc7c9d7af6c79e876c5fb28e070f7d97371659fb",
+      "entries": [
+        {
+          "line": 6,
+          "role": "visible-text",
+          "text": "SynthPopCan"
+        },
+        {
+          "line": 24,
+          "role": "visible-text",
+          "text": "SynthPopCan"
+        },
+        {
+          "line": 25,
+          "role": "visible-text",
+          "text": "Local synthetic population workspace"
+        },
+        {
+          "line": 28,
+          "role": "visible-text",
+          "text": "Local"
+        },
+        {
+          "line": 31,
+          "role": "attribute:aria-label",
+          "text": "Runs workbench"
+        },
+        {
+          "line": 35,
+          "role": "visible-text",
+          "text": "Workspace history"
+        },
+        {
+          "line": 36,
+          "role": "visible-text",
+          "text": "Runs"
+        },
+        {
+          "line": 38,
+          "role": "visible-text",
+          "text": "New run"
+        },
+        {
+          "line": 42,
+          "role": "visible-text",
+          "text": "Loading workspace runs…"
+        },
+        {
+          "line": 45,
+          "role": "visible-text",
+          "text": "Small-area workflow"
+        },
+        {
+          "line": 46,
+          "role": "visible-text",
+          "text": "Generate linked candidates and calibrate them in one durable Python run."
+        },
+        {
+          "line": 47,
+          "role": "visible-text",
+          "text": "Prepare a small-area synthesis"
+        },
+        {
+          "line": 56,
+          "role": "visible-text",
+          "text": "New durable run"
+        },
+        {
+          "line": 57,
+          "role": "visible-text",
+          "text": "IPF from margin tables"
+        },
+        {
+          "line": 58,
+          "role": "visible-text",
+          "text": "Fit compact weights from seed records and normalized controls."
+        },
+        {
+          "line": 60,
+          "role": "visible-text",
+          "text": "Draft"
+        },
+        {
+          "line": 63,
+          "role": "attribute:aria-label",
+          "text": "IPF run steps"
+        },
+        {
+          "line": 64,
+          "role": "visible-text",
+          "text": "1. Inputs"
+        },
+        {
+          "line": 65,
+          "role": "visible-text",
+          "text": "2. Configure"
+        },
+        {
+          "line": 66,
+          "role": "visible-text",
+          "text": "3. Preflight"
+        },
+        {
+          "line": 67,
+          "role": "visible-text",
+          "text": "4. Run"
+        },
+        {
+          "line": 68,
+          "role": "visible-text",
+          "text": "5. Results"
+        },
+        {
+          "line": 75,
+          "role": "visible-text",
+          "text": "Choose the two IPF input files"
+        },
+        {
+          "line": 76,
+          "role": "visible-text",
+          "text": "Files stream directly into this local workspace. They are not loaded into browser memory for fitting."
+        },
+        {
+          "line": 79,
+          "role": "visible-text",
+          "text": "Use demo age/sex files"
+        },
+        {
+          "line": 80,
+          "role": "visible-text",
+          "text": "Generate from a prepared model"
+        },
+        {
+          "line": 83,
+          "role": "visible-text",
+          "text": "Seed CSV"
+        },
+        {
+          "line": 85,
+          "role": "visible-text",
+          "text": "Choose one CSV."
+        },
+        {
+          "line": 87,
+          "role": "visible-text",
+          "text": "Normalized margin/control CSV"
+        },
+        {
+          "line": 89,
+          "role": "visible-text",
+          "text": "Choose one CSV."
+        },
+        {
+          "line": 93,
+          "role": "visible-text",
+          "text": "Upload and continue"
+        },
+        {
+          "line": 99,
+          "role": "visible-text",
+          "text": "Generate from a prepared model"
+        },
+        {
+          "line": 100,
+          "role": "visible-text",
+          "text": "Choose a reviewed catalogue package or upload a linked package JSON. Generation and validation run in Python."
+        },
+        {
+          "line": 103,
+          "role": "visible-text",
+          "text": "Prepared model"
+        },
+        {
+          "line": 105,
+          "role": "visible-text",
+          "text": "Choose a catalogue model"
+        },
+        {
+          "line": 109,
+          "role": "visible-text",
+          "text": "Download selected model"
+        },
+        {
+          "line": 110,
+          "role": "visible-text",
+          "text": "Remove downloaded model"
+        },
+        {
+          "line": 111,
+          "role": "visible-text",
+          "text": "Downloadable models stay in the local SynthPopCan cache."
+        },
+        {
+          "line": 113,
+          "role": "visible-text",
+          "text": "Or package JSON"
+        },
+        {
+          "line": 116,
+          "role": "visible-text",
+          "text": "Households"
+        },
+        {
+          "line": 119,
+          "role": "visible-text",
+          "text": "Conditions"
+        },
+        {
+          "line": 120,
+          "role": "attribute:placeholder",
+          "text": "geo=Demo North"
+        },
+        {
+          "line": 121,
+          "role": "visible-text",
+          "text": "Comma-separated name=value pairs supported by the package."
+        },
+        {
+          "line": 123,
+          "role": "visible-text",
+          "text": "Random seed"
+        },
+        {
+          "line": 128,
+          "role": "visible-text",
+          "text": "Back"
+        },
+        {
+          "line": 129,
+          "role": "visible-text",
+          "text": "Check model and scale"
+        },
+        {
+          "line": 135,
+          "role": "visible-text",
+          "text": "Configure the fit"
+        },
+        {
+          "line": 136,
+          "role": "visible-text",
+          "text": "Compact fitted weights are the durable output. Expansion remains a separate, explicit workflow."
+        },
+        {
+          "line": 139,
+          "role": "visible-text",
+          "text": "Output"
+        },
+        {
+          "line": 140,
+          "role": "visible-text",
+          "text": "Compact fitted weights — one row per seed profile."
+        },
+        {
+          "line": 143,
+          "role": "visible-text",
+          "text": "Advanced IPF settings"
+        },
+        {
+          "line": 145,
+          "role": "visible-text",
+          "text": "Weight column"
+        },
+        {
+          "line": 146,
+          "role": "attribute:placeholder",
+          "text": "Optional"
+        },
+        {
+          "line": 148,
+          "role": "visible-text",
+          "text": "Maximum iterations"
+        },
+        {
+          "line": 151,
+          "role": "visible-text",
+          "text": "Tolerance"
+        },
+        {
+          "line": 155,
+          "role": "visible-text",
+          "text": "Keep a result when IPF reaches the iteration limit"
+        },
+        {
+          "line": 161,
+          "role": "visible-text",
+          "text": "Back"
+        },
+        {
+          "line": 162,
+          "role": "visible-text",
+          "text": "Check inputs"
+        },
+        {
+          "line": 168,
+          "role": "visible-text",
+          "text": "Preflight"
+        },
+        {
+          "line": 169,
+          "role": "visible-text",
+          "text": "Review parsed records, control margins, expected output, and workspace capacity before starting."
+        },
+        {
+          "line": 173,
+          "role": "visible-text",
+          "text": "Change settings"
+        },
+        {
+          "line": 174,
+          "role": "visible-text",
+          "text": "Start run"
+        },
+        {
+          "line": 180,
+          "role": "visible-text",
+          "text": "Run progress"
+        },
+        {
+          "line": 181,
+          "role": "visible-text",
+          "text": "This work continues in an isolated local process. You can refresh and reconnect from the Runs list."
+        },
+        {
+          "line": 186,
+          "role": "visible-text",
+          "text": "Cancel run"
+        },
+        {
+          "line": 187,
+          "role": "visible-text",
+          "text": "Restart from saved inputs"
+        },
+        {
+          "line": 193,
+          "role": "visible-text",
+          "text": "Results"
+        },
+        {
+          "line": 194,
+          "role": "visible-text",
+          "text": "The completed run and its artifacts are stored in the local workspace."
+        },
+        {
+          "line": 198,
+          "role": "visible-text",
+          "text": "Weighted output preview"
+        },
+        {
+          "line": 201,
+          "role": "visible-text",
+          "text": "Person output preview"
+        },
+        {
+          "line": 206,
+          "role": "visible-text",
+          "text": "Artifacts"
+        },
+        {
+          "line": 210,
+          "role": "visible-text",
+          "text": "Reproduce from the command line"
+        },
+        {
+          "line": 219,
+          "role": "visible-text",
+          "text": "Prepare a small-area synthesis"
+        },
+        {
+          "line": 220,
+          "role": "visible-text",
+          "text": "Python-backed preflight"
+        },
+        {
+          "line": 222,
+          "role": "attribute:aria-label",
+          "text": "Prepare a small-area synthesis"
+        },
+        {
+          "line": 223,
+          "role": "visible-text",
+          "text": "Choose a linked model and normalized geographic controls. Preflight checks compatibility, scale, and disk before the durable run starts."
+        },
+        {
+          "line": 229,
+          "role": "attribute:data-help",
+          "text": "A published linked household/person model. Downloadable models are fetched by the generated CLI commands when needed."
+        },
+        {
+          "line": 232,
+          "role": "visible-text",
+          "text": "Premade linked model"
+        },
+        {
+          "line": 234,
+          "role": "visible-text",
+          "text": "No premade model selected"
+        },
+        {
+          "line": 238,
+          "role": "attribute:data-help",
+          "text": "Use a local linked package JSON instead of a premade model ID."
+        },
+        {
+          "line": 241,
+          "role": "visible-text",
+          "text": "Or package JSON"
+        },
+        {
+          "line": 245,
+          "role": "attribute:data-help",
+          "text": "Use an existing validated household CSV instead of generating candidates from a model. A person CSV is also required."
+        },
+        {
+          "line": 248,
+          "role": "visible-text",
+          "text": "Or candidate households CSV"
+        },
+        {
+          "line": 252,
+          "role": "attribute:data-help",
+          "text": "Linked person candidates accompanying the candidate household CSV."
+        },
+        {
+          "line": 255,
+          "role": "visible-text",
+          "text": "Candidate persons CSV"
+        },
+        {
+          "line": 259,
+          "role": "attribute:data-help",
+          "text": "Normalized household controls containing one target geography dimension and household-level margins."
+        },
+        {
+          "line": 262,
+          "role": "visible-text",
+          "text": "Household controls CSV"
+        },
+        {
+          "line": 266,
+          "role": "attribute:data-help",
+          "text": "Optional person-level controls used for joint linked calibration. They are included in the CLI command but not needed for the scale estimate."
+        },
+        {
+          "line": 269,
+          "role": "visible-text",
+          "text": "Person controls CSV"
+        },
+        {
+          "line": 273,
+          "role": "attribute:data-help",
+          "text": "Optional reviewed 2016 or 2021 household/person control contract. Raw normalized controls remain available when no pack is selected."
+        },
+        {
+          "line": 276,
+          "role": "visible-text",
+          "text": "Reviewed control pack"
+        },
+        {
+          "line": 278,
+          "role": "visible-text",
+          "text": "Raw normalized controls"
+        },
+        {
+          "line": 282,
+          "role": "attribute:data-help",
+          "text": "Required with a reviewed pack. This strict JSON binds the pack, source revision, universe, geography, and exact household/person control tables."
+        },
+        {
+          "line": 285,
+          "role": "visible-text",
+          "text": "Control-pack evidence JSON"
+        },
+        {
+          "line": 289,
+          "role": "visible-text",
+          "text": "Conditional census tract controls"
+        },
+        {
+          "line": 290,
+          "role": "visible-text",
+          "text": "Select a matching 2016 or 2021 broad tract pack and upload the source for each family you want to fit."
+        },
+        {
+          "line": 292,
+          "role": "visible-text",
+          "text": "Marital status pack"
+        },
+        {
+          "line": 293,
+          "role": "visible-text",
+          "text": "None"
+        },
+        {
+          "line": 293,
+          "role": "visible-text",
+          "text": "2016"
+        },
+        {
+          "line": 293,
+          "role": "visible-text",
+          "text": "2021"
+        },
+        {
+          "line": 295,
+          "role": "visible-text",
+          "text": "Marital status tract CSV"
+        },
+        {
+          "line": 296,
+          "role": "visible-text",
+          "text": "Education pack"
+        },
+        {
+          "line": 297,
+          "role": "visible-text",
+          "text": "None"
+        },
+        {
+          "line": 297,
+          "role": "visible-text",
+          "text": "2016"
+        },
+        {
+          "line": 297,
+          "role": "visible-text",
+          "text": "2021"
+        },
+        {
+          "line": 299,
+          "role": "visible-text",
+          "text": "Education Profile CSV or ZIP"
+        },
+        {
+          "line": 300,
+          "role": "visible-text",
+          "text": "Labour-force status pack"
+        },
+        {
+          "line": 301,
+          "role": "visible-text",
+          "text": "None"
+        },
+        {
+          "line": 301,
+          "role": "visible-text",
+          "text": "2016"
+        },
+        {
+          "line": 301,
+          "role": "visible-text",
+          "text": "2021"
+        },
+        {
+          "line": 303,
+          "role": "visible-text",
+          "text": "Labour-force Profile CSV or ZIP"
+        },
+        {
+          "line": 304,
+          "role": "visible-text",
+          "text": "Work activity pack"
+        },
+        {
+          "line": 305,
+          "role": "visible-text",
+          "text": "None"
+        },
+        {
+          "line": 305,
+          "role": "visible-text",
+          "text": "2016"
+        },
+        {
+          "line": 305,
+          "role": "visible-text",
+          "text": "2021"
+        },
+        {
+          "line": 307,
+          "role": "visible-text",
+          "text": "Work activity Profile CSV or ZIP"
+        },
+        {
+          "line": 308,
+          "role": "visible-text",
+          "text": "Whole-household realization"
+        },
+        {
+          "line": 308,
+          "role": "visible-text",
+          "text": "Midpoint rounding"
+        },
+        {
+          "line": 308,
+          "role": "visible-text",
+          "text": "Improve with swaps"
+        },
+        {
+          "line": 309,
+          "role": "visible-text",
+          "text": "Joint solver"
+        },
+        {
+          "line": 309,
+          "role": "visible-text",
+          "text": "IPU"
+        },
+        {
+          "line": 309,
+          "role": "visible-text",
+          "text": "Hybrid"
+        },
+        {
+          "line": 310,
+          "role": "visible-text",
+          "text": "Zero targets"
+        },
+        {
+          "line": 310,
+          "role": "visible-text",
+          "text": "Treat as structural zeros"
+        },
+        {
+          "line": 310,
+          "role": "visible-text",
+          "text": "Allow residuals at observed zeros"
+        },
+        {
+          "line": 314,
+          "role": "attribute:data-help",
+          "text": "Optional prepared WGS-84 GeoJSON whose features use a geo_id property matching the output geography values."
+        },
+        {
+          "line": 317,
+          "role": "visible-text",
+          "text": "Boundary GeoJSON for map"
+        },
+        {
+          "line": 321,
+          "role": "attribute:data-help",
+          "text": "The geography dimension in the controls, such as ct or ada."
+        },
+        {
+          "line": 324,
+          "role": "visible-text",
+          "text": "Geography dimension"
+        },
+        {
+          "line": 328,
+          "role": "attribute:data-help",
+          "text": "The column written to generated household and person rows. Usually this matches the geography dimension."
+        },
+        {
+          "line": 331,
+          "role": "visible-text",
+          "text": "Output geography column"
+        },
+        {
+          "line": 335,
+          "role": "attribute:data-help",
+          "text": "Number of candidate households generated from the model before calibration. This is not the final population count."
+        },
+        {
+          "line": 338,
+          "role": "visible-text",
+          "text": "Candidate households"
+        },
+        {
+          "line": 342,
+          "role": "attribute:data-help",
+          "text": "Optional candidate subset fitted for each target geography. Smaller pools make exploratory runs faster."
+        },
+        {
+          "line": 345,
+          "role": "visible-text",
+          "text": "Calibration pool size"
+        },
+        {
+          "line": 346,
+          "role": "attribute:placeholder",
+          "text": "Use all candidates"
+        },
+        {
+          "line": 349,
+          "role": "attribute:data-help",
+          "text": "Used only to estimate person rows in the final linked output."
+        },
+        {
+          "line": 352,
+          "role": "visible-text",
+          "text": "Average persons per household"
+        },
+        {
+          "line": 356,
+          "role": "attribute:data-help",
+          "text": "Makes candidate generation reproducible without changing which generated candidates are selected for calibration."
+        },
+        {
+          "line": 359,
+          "role": "visible-text",
+          "text": "Generation seed"
+        },
+        {
+          "line": 363,
+          "role": "attribute:data-help",
+          "text": "Controls the calibration-pool subsample independently from candidate generation. Vary it to test sensitivity."
+        },
+        {
+          "line": 366,
+          "role": "visible-text",
+          "text": "Subsample seed"
+        },
+        {
+          "line": 369,
+          "role": "visible-text",
+          "text": "Estimate and prepare"
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,6420 @@
+{
+  "scope": "JavaScript string and template expressions; roles require review",
+  "files": {
+    "src/synthpopcan/web/app.mjs": {
+      "source_sha256": "36e731b109a5d4ea191ca5de5f45a5524df5b80334499198f412e024ff7656df",
+      "entries": [
+        {
+          "line": 6,
+          "start_byte": 230,
+          "end_byte": 240,
+          "kind": "string",
+          "source": "\"/api/app\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 13,
+          "start_byte": 387,
+          "end_byte": 411,
+          "kind": "string",
+          "source": "\".help-label[data-help]\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 16,
+          "start_byte": 524,
+          "end_byte": 530,
+          "kind": "string",
+          "source": "\"role\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 16,
+          "start_byte": 532,
+          "end_byte": 538,
+          "kind": "string",
+          "source": "\"note\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 17,
+          "start_byte": 564,
+          "end_byte": 576,
+          "kind": "string",
+          "source": "\"aria-label\"",
+          "role": "web-presentation-and-control-mixed-preserve"
+        },
+        {
+          "line": 17,
+          "start_byte": 578,
+          "end_byte": 610,
+          "kind": "template",
+          "source": "`${name}. ${label.dataset.help}`",
+          "role": "web-presentation-and-control-mixed-preserve"
+        },
+        {
+          "line": 18,
+          "start_byte": 665,
+          "end_byte": 680,
+          "kind": "string",
+          "source": "\"input, select\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 19,
+          "start_byte": 717,
+          "end_byte": 729,
+          "kind": "string",
+          "source": "\"aria-label\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 20,
+          "start_byte": 780,
+          "end_byte": 786,
+          "kind": "string",
+          "source": "\"span\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 21,
+          "start_byte": 812,
+          "end_byte": 825,
+          "kind": "string",
+          "source": "\"help-marker\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 22,
+          "start_byte": 851,
+          "end_byte": 864,
+          "kind": "string",
+          "source": "\"aria-hidden\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 22,
+          "start_byte": 866,
+          "end_byte": 872,
+          "kind": "string",
+          "source": "\"true\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 23,
+          "start_byte": 900,
+          "end_byte": 903,
+          "kind": "string",
+          "source": "\"?\"",
+          "role": "direct-presentation-candidate"
+        },
+        {
+          "line": 25,
+          "start_byte": 974,
+          "end_byte": 980,
+          "kind": "string",
+          "source": "\"span\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 26,
+          "start_byte": 1007,
+          "end_byte": 1019,
+          "kind": "string",
+          "source": "\"help-popup\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 27,
+          "start_byte": 1046,
+          "end_byte": 1059,
+          "kind": "string",
+          "source": "\"aria-hidden\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 27,
+          "start_byte": 1061,
+          "end_byte": 1067,
+          "kind": "string",
+          "source": "\"true\"",
+          "role": "machine-data-or-protocol-preserve"
+        }
+      ]
+    },
+    "src/synthpopcan/web/cli-commands.mjs": {
+      "source_sha256": "cf34a05e4df4f7cf237cb9b139ef7d696fe21445e294b7ec108f92b7a062780a",
+      "entries": [
+        {
+          "line": 8,
+          "start_byte": 133,
+          "end_byte": 204,
+          "kind": "template",
+          "source": "`--seed ${shellQuote(seedName)} --controls ${shellQuote(controlsName)}`",
+          "role": "generated-shell-mixed-preserve"
+        },
+        {
+          "line": 10,
+          "start_byte": 240,
+          "end_byte": 280,
+          "kind": "string",
+          "source": "\"--out synthpopcan-ipf-weights.csv\"",
+          "role": "generated-shell-mixed-preserve"
+        },
+        {
+          "line": 11,
+          "start_byte": 281,
+          "end_byte": 321,
+          "kind": "template",
+          "source": "`--max-iterations ${maxIterations}`",
+          "role": "generated-shell-mixed-preserve"
+        },
+        {
+          "line": 12,
+          "start_byte": 322,
+          "end_byte": 353,
+          "kind": "template",
+          "source": "`--tolerance ${tolerance}`",
+          "role": "generated-shell-mixed-preserve"
+        },
+        {
+          "line": 13,
+          "start_byte": 354,
+          "end_byte": 397,
+          "kind": "string",
+          "source": "\"--report synthpopcan-ipf-report.json\"",
+          "role": "generated-shell-mixed-preserve"
+        },
+        {
+          "line": 16,
+          "start_byte": 439,
+          "end_byte": 483,
+          "kind": "template",
+          "source": "`--weight-column ${shellQuote(weightField)}`",
+          "role": "generated-shell-mixed-preserve"
+        },
+        {
+          "line": 17,
+          "start_byte": 496,
+          "end_byte": 601,
+          "kind": "template",
+          "source": "`# Confirm that the seed rows cover every control category.\\nsynthpopcan ipf check-inputs ${common}`",
+          "role": "generated-shell-mixed-preserve"
+        },
+        {
+          "line": 18,
+          "start_byte": 602,
+          "end_byte": 726,
+          "kind": "template",
+          "source": "`# Fit one compact IPF weight per seed row and save a convergence report.\\nsynthpopcan ipf fit ${fitOptions.join(\" \")}`",
+          "role": "generated-shell-mixed-preserve"
+        },
+        {
+          "line": 19,
+          "start_byte": 720,
+          "end_byte": 723,
+          "kind": "string",
+          "source": "\" \"",
+          "role": "generated-shell-mixed-preserve"
+        },
+        {
+          "line": 19,
+          "start_byte": 727,
+          "end_byte": 895,
+          "kind": "string",
+          "source": "\"# Integerize the fitted weights into one row per synthetic record.\\nsynthpopcan ipf expand --weights synthpopcan-ipf-weights.csv --out synthpopcan-population.csv\"",
+          "role": "generated-shell-mixed-preserve"
+        },
+        {
+          "line": 29,
+          "start_byte": 1090,
+          "end_byte": 1139,
+          "kind": "template",
+          "source": "`--condition ${shellQuote(`${column}=${value}`)}`",
+          "role": "generated-shell-mixed-preserve"
+        },
+        {
+          "line": 29,
+          "start_byte": 1116,
+          "end_byte": 1136,
+          "kind": "template",
+          "source": "`${column}=${value}`",
+          "role": "generated-shell-mixed-preserve"
+        },
+        {
+          "line": 31,
+          "start_byte": 1179,
+          "end_byte": 1215,
+          "kind": "string",
+          "source": "\"synthpopcan-linked-tree-package-v1\"",
+          "role": "generated-shell-mixed-preserve"
+        },
+        {
+          "line": 32,
+          "start_byte": 1231,
+          "end_byte": 1373,
+          "kind": "template",
+          "source": "`# Review the linked model package before generating households and people.\\nsynthpopcan models build inspect ${shellQuote(reference)}`",
+          "role": "generated-shell-mixed-preserve"
+        },
+        {
+          "line": 34,
+          "start_byte": 1382,
+          "end_byte": 1524,
+          "kind": "template",
+          "source": "`# Generate a linked population directory with equivalent inputs and settings.\\nsynthpopcan models generate ${shellQuote(reference)}`",
+          "role": "generated-shell-mixed-preserve"
+        },
+        {
+          "line": 35,
+          "start_byte": 1525,
+          "end_byte": 1556,
+          "kind": "template",
+          "source": "`--households ${rows}`",
+          "role": "generated-shell-mixed-preserve"
+        },
+        {
+          "line": 37,
+          "start_byte": 1586,
+          "end_byte": 1625,
+          "kind": "string",
+          "source": "\"--out synthpopcan-population\"",
+          "role": "generated-shell-mixed-preserve"
+        },
+        {
+          "line": 38,
+          "start_byte": 1626,
+          "end_byte": 1664,
+          "kind": "template",
+          "source": "`--random-seed ${randomSeed}`",
+          "role": "generated-shell-mixed-preserve"
+        },
+        {
+          "line": 40,
+          "start_byte": 1679,
+          "end_byte": 1682,
+          "kind": "string",
+          "source": "\" \"",
+          "role": "generated-shell-mixed-preserve"
+        },
+        {
+          "line": 44,
+          "start_byte": 1712,
+          "end_byte": 1859,
+          "kind": "template",
+          "source": "`# Generate synthetic rows from this model with equivalent inputs and settings.\\nsynthpopcan models build generate ${shellQuote(reference)}`",
+          "role": "generated-shell-mixed-preserve"
+        },
+        {
+          "line": 45,
+          "start_byte": 1860,
+          "end_byte": 1883,
+          "kind": "template",
+          "source": "`--rows ${rows}`",
+          "role": "generated-shell-mixed-preserve"
+        },
+        {
+          "line": 47,
+          "start_byte": 1911,
+          "end_byte": 1951,
+          "kind": "string",
+          "source": "\"--out synthpopcan-tree-rows.csv\"",
+          "role": "generated-shell-mixed-preserve"
+        },
+        {
+          "line": 48,
+          "start_byte": 1952,
+          "end_byte": 2012,
+          "kind": "string",
+          "source": "\"--manifest-out synthpopcan-generation-manifest.json\"",
+          "role": "generated-shell-mixed-preserve"
+        },
+        {
+          "line": 49,
+          "start_byte": 2013,
+          "end_byte": 2049,
+          "kind": "template",
+          "source": "`--random-seed ${randomSeed}`",
+          "role": "generated-shell-mixed-preserve"
+        },
+        {
+          "line": 51,
+          "start_byte": 2062,
+          "end_byte": 2065,
+          "kind": "string",
+          "source": "\" \"",
+          "role": "generated-shell-mixed-preserve"
+        },
+        {
+          "line": 70,
+          "start_byte": 2399,
+          "end_byte": 2409,
+          "kind": "string",
+          "source": "\"download\"",
+          "role": "generated-shell-mixed-preserve"
+        },
+        {
+          "line": 71,
+          "start_byte": 2431,
+          "end_byte": 2553,
+          "kind": "template",
+          "source": "`# Download and verify the published linked model package.\\nsynthpopcan models fetch ${shellQuote(modelReference)}`",
+          "role": "generated-shell-mixed-preserve"
+        },
+        {
+          "line": 75,
+          "start_byte": 2593,
+          "end_byte": 2638,
+          "kind": "template",
+          "source": "`--controls ${shellQuote(controlsName)}`",
+          "role": "generated-shell-mixed-preserve"
+        },
+        {
+          "line": 76,
+          "start_byte": 2639,
+          "end_byte": 2695,
+          "kind": "template",
+          "source": "`--geo-dimension ${shellQuote(geographyDimension)}`",
+          "role": "generated-shell-mixed-preserve"
+        },
+        {
+          "line": 77,
+          "start_byte": 2696,
+          "end_byte": 2748,
+          "kind": "template",
+          "source": "`--candidate-households ${candidateHouseholds}`",
+          "role": "generated-shell-mixed-preserve"
+        },
+        {
+          "line": 78,
+          "start_byte": 2749,
+          "end_byte": 2805,
+          "kind": "template",
+          "source": "`--average-persons-per-household ${averagePersons}`",
+          "role": "generated-shell-mixed-preserve"
+        },
+        {
+          "line": 81,
+          "start_byte": 2858,
+          "end_byte": 2883,
+          "kind": "template",
+          "source": "`--pool-size ${poolSize}`",
+          "role": "generated-shell-mixed-preserve"
+        },
+        {
+          "line": 82,
+          "start_byte": 2902,
+          "end_byte": 3016,
+          "kind": "template",
+          "source": "`# Recheck output scale before starting the full run.\\nsynthpopcan geo estimate ${estimateOptions.join(\" \")}`",
+          "role": "generated-shell-mixed-preserve"
+        },
+        {
+          "line": 83,
+          "start_byte": 3010,
+          "end_byte": 3013,
+          "kind": "string",
+          "source": "\" \"",
+          "role": "generated-shell-mixed-preserve"
+        },
+        {
+          "line": 86,
+          "start_byte": 3052,
+          "end_byte": 3115,
+          "kind": "template",
+          "source": "`synthpopcan geo synthesize ${shellQuote(modelReference)}`",
+          "role": "generated-shell-mixed-preserve"
+        },
+        {
+          "line": 87,
+          "start_byte": 3116,
+          "end_byte": 3158,
+          "kind": "template",
+          "source": "`--households ${candidateHouseholds}`",
+          "role": "generated-shell-mixed-preserve"
+        },
+        {
+          "line": 88,
+          "start_byte": 3159,
+          "end_byte": 3204,
+          "kind": "template",
+          "source": "`--controls ${shellQuote(controlsName)}`",
+          "role": "generated-shell-mixed-preserve"
+        },
+        {
+          "line": 92,
+          "start_byte": 3265,
+          "end_byte": 3318,
+          "kind": "template",
+          "source": "`--person-controls ${shellQuote(personControlsName)}`",
+          "role": "generated-shell-mixed-preserve"
+        },
+        {
+          "line": 94,
+          "start_byte": 3349,
+          "end_byte": 3405,
+          "kind": "template",
+          "source": "`--geo-dimension ${shellQuote(geographyDimension)}`",
+          "role": "generated-shell-mixed-preserve"
+        },
+        {
+          "line": 95,
+          "start_byte": 3406,
+          "end_byte": 3456,
+          "kind": "template",
+          "source": "`--geo-column ${shellQuote(geographyColumn)}`",
+          "role": "generated-shell-mixed-preserve"
+        },
+        {
+          "line": 98,
+          "start_byte": 3496,
+          "end_byte": 3518,
+          "kind": "string",
+          "source": "\"household_size_group\"",
+          "role": "generated-shell-mixed-preserve"
+        },
+        {
+          "line": 99,
+          "start_byte": 3549,
+          "end_byte": 3580,
+          "kind": "string",
+          "source": "\"--max-household-size 5\"",
+          "role": "generated-shell-mixed-preserve"
+        },
+        {
+          "line": 100,
+          "start_byte": 3581,
+          "end_byte": 3640,
+          "kind": "string",
+          "source": "\"--household-size-group-column household_size_group\"",
+          "role": "generated-shell-mixed-preserve"
+        },
+        {
+          "line": 104,
+          "start_byte": 3677,
+          "end_byte": 3711,
+          "kind": "string",
+          "source": "\"--out small-area-population\"",
+          "role": "generated-shell-mixed-preserve"
+        },
+        {
+          "line": 105,
+          "start_byte": 3712,
+          "end_byte": 3736,
+          "kind": "string",
+          "source": "\"--include-weights\"",
+          "role": "generated-shell-mixed-preserve"
+        },
+        {
+          "line": 106,
+          "start_byte": 3737,
+          "end_byte": 3771,
+          "kind": "template",
+          "source": "`--random-seed ${randomSeed}`",
+          "role": "generated-shell-mixed-preserve"
+        },
+        {
+          "line": 107,
+          "start_byte": 3772,
+          "end_byte": 3812,
+          "kind": "template",
+          "source": "`--subsample-seed ${subsampleSeed}`",
+          "role": "generated-shell-mixed-preserve"
+        },
+        {
+          "line": 110,
+          "start_byte": 3866,
+          "end_byte": 3891,
+          "kind": "template",
+          "source": "`--pool-size ${poolSize}`",
+          "role": "generated-shell-mixed-preserve"
+        },
+        {
+          "line": 111,
+          "start_byte": 3910,
+          "end_byte": 4033,
+          "kind": "template",
+          "source": "`# Generate linked candidates, calibrate whole households, and write review artifacts.\\n${synthesisOptions.join(\" \")}`",
+          "role": "generated-shell-mixed-preserve"
+        },
+        {
+          "line": 112,
+          "start_byte": 4027,
+          "end_byte": 4030,
+          "kind": "string",
+          "source": "\" \"",
+          "role": "generated-shell-mixed-preserve"
+        },
+        {
+          "line": 118,
+          "start_byte": 4107,
+          "end_byte": 4152,
+          "kind": "template",
+          "source": "`'${String(value).replaceAll(\"'\", `'\"'\"'`)}'`",
+          "role": "generated-shell-mixed-preserve"
+        },
+        {
+          "line": 118,
+          "start_byte": 4136,
+          "end_byte": 4139,
+          "kind": "string",
+          "source": "\"'\"",
+          "role": "generated-shell-mixed-preserve"
+        },
+        {
+          "line": 118,
+          "start_byte": 4141,
+          "end_byte": 4148,
+          "kind": "template",
+          "source": "`'\"'\"'`",
+          "role": "generated-shell-mixed-preserve"
+        }
+      ]
+    },
+    "src/synthpopcan/web/csv.mjs": {
+      "source_sha256": "8e88d5bd7222c3823da398cc11a666b32d5775bb2cb02c93be32d8068c07802e",
+      "entries": [
+        {
+          "line": 14,
+          "start_byte": 433,
+          "end_byte": 435,
+          "kind": "string",
+          "source": "\"\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 22,
+          "start_byte": 567,
+          "end_byte": 569,
+          "kind": "string",
+          "source": "\"\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 26,
+          "start_byte": 693,
+          "end_byte": 696,
+          "kind": "string",
+          "source": "\",\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 28,
+          "start_byte": 790,
+          "end_byte": 792,
+          "kind": "string",
+          "source": "\"\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 28,
+          "start_byte": 800,
+          "end_byte": 803,
+          "kind": "string",
+          "source": "\",\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 31,
+          "start_byte": 827,
+          "end_byte": 850,
+          "kind": "template",
+          "source": "`${lines.join(\"\\n\")}\\n`",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 31,
+          "start_byte": 841,
+          "end_byte": 845,
+          "kind": "string",
+          "source": "\"\\n\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 37,
+          "start_byte": 955,
+          "end_byte": 957,
+          "kind": "string",
+          "source": "\"\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 45,
+          "start_byte": 1141,
+          "end_byte": 1145,
+          "kind": "string",
+          "source": "'\"'",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 45,
+          "start_byte": 1157,
+          "end_byte": 1160,
+          "kind": "string",
+          "source": "'\"'",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 46,
+          "start_byte": 1181,
+          "end_byte": 1184,
+          "kind": "string",
+          "source": "'\"'",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 48,
+          "start_byte": 1232,
+          "end_byte": 1235,
+          "kind": "string",
+          "source": "'\"'",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 56,
+          "start_byte": 1349,
+          "end_byte": 1352,
+          "kind": "string",
+          "source": "'\"'",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 58,
+          "start_byte": 1401,
+          "end_byte": 1404,
+          "kind": "string",
+          "source": "\",\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 60,
+          "start_byte": 1448,
+          "end_byte": 1450,
+          "kind": "string",
+          "source": "\"\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 61,
+          "start_byte": 1476,
+          "end_byte": 1480,
+          "kind": "string",
+          "source": "\"\\n\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 66,
+          "start_byte": 1618,
+          "end_byte": 1620,
+          "kind": "string",
+          "source": "\"\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 67,
+          "start_byte": 1646,
+          "end_byte": 1650,
+          "kind": "string",
+          "source": "\"\\r\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 72,
+          "start_byte": 1702,
+          "end_byte": 1705,
+          "kind": "string",
+          "source": "\"\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 82,
+          "start_byte": 1980,
+          "end_byte": 2034,
+          "kind": "template",
+          "source": "`CSV exceeds the ${maxRecords - 1}-row browser limit.`",
+          "role": "web-error-message-candidate"
+        },
+        {
+          "line": 87,
+          "start_byte": 2117,
+          "end_byte": 2119,
+          "kind": "string",
+          "source": "\"\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 93,
+          "start_byte": 2230,
+          "end_byte": 2263,
+          "kind": "template",
+          "source": "`\"${text.replaceAll('\"', '\"\"')}\"`",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 93,
+          "start_byte": 2250,
+          "end_byte": 2253,
+          "kind": "string",
+          "source": "'\"'",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 93,
+          "start_byte": 2255,
+          "end_byte": 2259,
+          "kind": "string",
+          "source": "'\"\"'",
+          "role": "machine-data-or-protocol-preserve"
+        }
+      ]
+    },
+    "src/synthpopcan/web/form-utils.mjs": {
+      "source_sha256": "be827e2bf3974227adb336e65b042a8f028abac41116096db8bda3c2628be6c4",
+      "entries": [
+        {
+          "line": 5,
+          "start_byte": 210,
+          "end_byte": 221,
+          "kind": "string",
+          "source": "\"text/csv\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 13,
+          "start_byte": 429,
+          "end_byte": 441,
+          "kind": "string",
+          "source": "\"file-ready\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 18,
+          "start_byte": 569,
+          "end_byte": 581,
+          "kind": "string",
+          "source": "\"result-box\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 24,
+          "start_byte": 769,
+          "end_byte": 772,
+          "kind": "string",
+          "source": "\"a\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 35,
+          "start_byte": 1058,
+          "end_byte": 1119,
+          "kind": "template",
+          "source": "`Choose a file for ${input.labels?.[0]?.textContent.trim()}.`",
+          "role": "web-error-message-candidate"
+        },
+        {
+          "line": 42,
+          "start_byte": 1273,
+          "end_byte": 1276,
+          "kind": "string",
+          "source": "\"\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 49,
+          "start_byte": 1475,
+          "end_byte": 1535,
+          "kind": "template",
+          "source": "`${input.labels?.[0]?.textContent.trim()} must be a number.`",
+          "role": "web-error-message-candidate"
+        },
+        {
+          "line": 56,
+          "start_byte": 1688,
+          "end_byte": 1690,
+          "kind": "string",
+          "source": "\"\"",
+          "role": "machine-data-or-protocol-preserve"
+        }
+      ]
+    },
+    "src/synthpopcan/web/http.mjs": {
+      "source_sha256": "01286aaf1228e533ea1095498ef9de7ce32d5698ec41e15c02921fea6c7539f4",
+      "entries": [
+        {
+          "line": 4,
+          "start_byte": 145,
+          "end_byte": 187,
+          "kind": "template",
+          "source": "`Request returned HTTP ${response.status}`",
+          "role": "web-error-message-candidate"
+        }
+      ]
+    },
+    "src/synthpopcan/web/operation-sequencer.mjs": {
+      "source_sha256": "85329d01ca345c8c9f7c6325779495a06a892bed930d1d7fdf139ee52d7461ea",
+      "entries": []
+    },
+    "src/synthpopcan/web/preview.mjs": {
+      "source_sha256": "b9d9579e016ff44cedba75175a5ebaca6c51e2b9d1cc007a753c179247eb4913",
+      "entries": [
+        {
+          "line": 25,
+          "start_byte": 760,
+          "end_byte": 762,
+          "kind": "string",
+          "source": "\"\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 32,
+          "start_byte": 874,
+          "end_byte": 876,
+          "kind": "string",
+          "source": "\"\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 38,
+          "start_byte": 1029,
+          "end_byte": 1033,
+          "kind": "string",
+          "source": "'\"'",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 38,
+          "start_byte": 1056,
+          "end_byte": 1059,
+          "kind": "string",
+          "source": "'\"'",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 39,
+          "start_byte": 1080,
+          "end_byte": 1083,
+          "kind": "string",
+          "source": "'\"'",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 41,
+          "start_byte": 1131,
+          "end_byte": 1134,
+          "kind": "string",
+          "source": "'\"'",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 46,
+          "start_byte": 1234,
+          "end_byte": 1237,
+          "kind": "string",
+          "source": "'\"'",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 48,
+          "start_byte": 1288,
+          "end_byte": 1291,
+          "kind": "string",
+          "source": "\",\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 50,
+          "start_byte": 1332,
+          "end_byte": 1334,
+          "kind": "string",
+          "source": "\"\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 51,
+          "start_byte": 1360,
+          "end_byte": 1365,
+          "kind": "string",
+          "source": "\"\\n\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 51,
+          "start_byte": 1377,
+          "end_byte": 1381,
+          "kind": "string",
+          "source": "\"\\r\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 52,
+          "start_byte": 1404,
+          "end_byte": 1409,
+          "kind": "string",
+          "source": "\"\\r\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 52,
+          "start_byte": 1432,
+          "end_byte": 1436,
+          "kind": "string",
+          "source": "\"\\n\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 61,
+          "start_byte": 1626,
+          "end_byte": 1628,
+          "kind": "string",
+          "source": "\"\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 67,
+          "start_byte": 1691,
+          "end_byte": 1694,
+          "kind": "string",
+          "source": "\"\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 75,
+          "start_byte": 1864,
+          "end_byte": 1866,
+          "kind": "string",
+          "source": "\"\"",
+          "role": "machine-data-or-protocol-preserve"
+        }
+      ]
+    },
+    "src/synthpopcan/web/result-ui.mjs": {
+      "source_sha256": "e09a57e761df3841f26338efabaaf4bacc54b55773932c45c94f605b44a817fc",
+      "entries": [
+        {
+          "line": 5,
+          "start_byte": 142,
+          "end_byte": 154,
+          "kind": "string",
+          "source": "\"result-box\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 11,
+          "start_byte": 286,
+          "end_byte": 304,
+          "kind": "string",
+          "source": "\"result-box error\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 17,
+          "start_byte": 523,
+          "end_byte": 543,
+          "kind": "string",
+          "source": "\"result-box success\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 18,
+          "start_byte": 593,
+          "end_byte": 596,
+          "kind": "string",
+          "source": "\"p\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 19,
+          "start_byte": 628,
+          "end_byte": 644,
+          "kind": "string",
+          "source": "\"result-message\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 30,
+          "start_byte": 975,
+          "end_byte": 980,
+          "kind": "string",
+          "source": "\"div\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 31,
+          "start_byte": 1002,
+          "end_byte": 1017,
+          "kind": "string",
+          "source": "\"download-list\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 34,
+          "start_byte": 1184,
+          "end_byte": 1187,
+          "kind": "string",
+          "source": "\"a\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 37,
+          "start_byte": 1271,
+          "end_byte": 1286,
+          "kind": "string",
+          "source": "\"download-link\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 38,
+          "start_byte": 1311,
+          "end_byte": 1342,
+          "kind": "template",
+          "source": "`Download ${download.filename}`",
+          "role": "direct-presentation-candidate"
+        },
+        {
+          "line": 47,
+          "start_byte": 1562,
+          "end_byte": 1571,
+          "kind": "string",
+          "source": "\"details\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 48,
+          "start_byte": 1596,
+          "end_byte": 1611,
+          "kind": "string",
+          "source": "\"cli-follow-up\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 49,
+          "start_byte": 1654,
+          "end_byte": 1663,
+          "kind": "string",
+          "source": "\"summary\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 50,
+          "start_byte": 1690,
+          "end_byte": 1711,
+          "kind": "string",
+          "source": "\"Continue in the CLI\"",
+          "role": "direct-presentation-candidate"
+        },
+        {
+          "line": 51,
+          "start_byte": 1751,
+          "end_byte": 1756,
+          "kind": "string",
+          "source": "\"div\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 52,
+          "start_byte": 1778,
+          "end_byte": 1798,
+          "kind": "string",
+          "source": "\"cli-follow-up-body\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 53,
+          "start_byte": 1845,
+          "end_byte": 1848,
+          "kind": "string",
+          "source": "\"p\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 54,
+          "start_byte": 1877,
+          "end_byte": 1897,
+          "kind": "string",
+          "source": "\"cli-follow-up-note\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 55,
+          "start_byte": 1926,
+          "end_byte": 2112,
+          "kind": "string",
+          "source": "\"Run these commands in a terminal to continue with equivalent inputs and settings. Browser and CLI random-number generators may produce different synthetic rows from the same seed.\"",
+          "role": "direct-presentation-candidate"
+        },
+        {
+          "line": 57,
+          "start_byte": 2158,
+          "end_byte": 2166,
+          "kind": "string",
+          "source": "\"button\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 58,
+          "start_byte": 2194,
+          "end_byte": 2228,
+          "kind": "string",
+          "source": "\"secondary-action cli-copy-action\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 59,
+          "start_byte": 2250,
+          "end_byte": 2258,
+          "kind": "string",
+          "source": "\"button\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 60,
+          "start_byte": 2287,
+          "end_byte": 2302,
+          "kind": "string",
+          "source": "\"Copy commands\"",
+          "role": "direct-presentation-candidate"
+        },
+        {
+          "line": 61,
+          "start_byte": 2340,
+          "end_byte": 2346,
+          "kind": "string",
+          "source": "\"\\n\\n\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 62,
+          "start_byte": 2379,
+          "end_byte": 2386,
+          "kind": "string",
+          "source": "\"click\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 64,
+          "start_byte": 2485,
+          "end_byte": 2493,
+          "kind": "string",
+          "source": "\"Copied\"",
+          "role": "direct-presentation-candidate"
+        },
+        {
+          "line": 66,
+          "start_byte": 2549,
+          "end_byte": 2564,
+          "kind": "string",
+          "source": "\"Copy commands\"",
+          "role": "direct-presentation-candidate"
+        },
+        {
+          "line": 69,
+          "start_byte": 2623,
+          "end_byte": 2628,
+          "kind": "string",
+          "source": "\"pre\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 70,
+          "start_byte": 2669,
+          "end_byte": 2675,
+          "kind": "string",
+          "source": "\"code\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 79,
+          "start_byte": 2920,
+          "end_byte": 2925,
+          "kind": "string",
+          "source": "\"div\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 80,
+          "start_byte": 2947,
+          "end_byte": 2960,
+          "kind": "string",
+          "source": "\"result-item\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 87,
+          "start_byte": 3162,
+          "end_byte": 3170,
+          "kind": "string",
+          "source": "\"strong\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 89,
+          "start_byte": 3254,
+          "end_byte": 3260,
+          "kind": "string",
+          "source": "\"span\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 96,
+          "start_byte": 3435,
+          "end_byte": 3454,
+          "kind": "string",
+          "source": "\"[data-object-url]\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 102,
+          "start_byte": 3622,
+          "end_byte": 3627,
+          "kind": "string",
+          "source": "\"div\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 103,
+          "start_byte": 3653,
+          "end_byte": 3667,
+          "kind": "string",
+          "source": "\"preview-list\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 111,
+          "start_byte": 3884,
+          "end_byte": 3893,
+          "kind": "string",
+          "source": "\"section\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 112,
+          "start_byte": 3918,
+          "end_byte": 3971,
+          "kind": "template",
+          "source": "`validation-summary ${validation.status ?? \"passed\"}`",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 112,
+          "start_byte": 3961,
+          "end_byte": 3969,
+          "kind": "string",
+          "source": "\"passed\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 113,
+          "start_byte": 4014,
+          "end_byte": 4018,
+          "kind": "string",
+          "source": "\"h4\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 114,
+          "start_byte": 4045,
+          "end_byte": 4065,
+          "kind": "string",
+          "source": "\"Validation summary\"",
+          "role": "direct-presentation-candidate"
+        },
+        {
+          "line": 115,
+          "start_byte": 4105,
+          "end_byte": 4110,
+          "kind": "string",
+          "source": "\"div\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 116,
+          "start_byte": 4132,
+          "end_byte": 4149,
+          "kind": "string",
+          "source": "\"validation-list\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 126,
+          "start_byte": 4429,
+          "end_byte": 4438,
+          "kind": "string",
+          "source": "\"section\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 127,
+          "start_byte": 4461,
+          "end_byte": 4476,
+          "kind": "string",
+          "source": "\"preview-block\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 128,
+          "start_byte": 4519,
+          "end_byte": 4523,
+          "kind": "string",
+          "source": "\"h4\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 129,
+          "start_byte": 4550,
+          "end_byte": 4581,
+          "kind": "template",
+          "source": "`Preview: ${download.filename}`",
+          "role": "direct-presentation-candidate"
+        },
+        {
+          "line": 130,
+          "start_byte": 4621,
+          "end_byte": 4624,
+          "kind": "string",
+          "source": "\"p\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 131,
+          "start_byte": 4646,
+          "end_byte": 4660,
+          "kind": "string",
+          "source": "\"preview-note\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 135,
+          "start_byte": 4844,
+          "end_byte": 4847,
+          "kind": "string",
+          "source": "\"p\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 136,
+          "start_byte": 4872,
+          "end_byte": 4886,
+          "kind": "string",
+          "source": "\"preview-note\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 137,
+          "start_byte": 4912,
+          "end_byte": 4933,
+          "kind": "string",
+          "source": "\"No rows to preview.\"",
+          "role": "direct-presentation-candidate"
+        },
+        {
+          "line": 141,
+          "start_byte": 5025,
+          "end_byte": 5030,
+          "kind": "string",
+          "source": "\"div\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 142,
+          "start_byte": 5057,
+          "end_byte": 5077,
+          "kind": "string",
+          "source": "\"preview-table-wrap\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 143,
+          "start_byte": 5118,
+          "end_byte": 5125,
+          "kind": "string",
+          "source": "\"table\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 144,
+          "start_byte": 5148,
+          "end_byte": 5163,
+          "kind": "string",
+          "source": "\"preview-table\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 154,
+          "start_byte": 5401,
+          "end_byte": 5506,
+          "kind": "template",
+          "source": "` Showing ${preview.columns.length} columns; ${preview.hiddenColumnCount} more column(s) are in the CSV.`",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 155,
+          "start_byte": 5515,
+          "end_byte": 5517,
+          "kind": "string",
+          "source": "\"\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 156,
+          "start_byte": 5559,
+          "end_byte": 5588,
+          "kind": "string",
+          "source": "\" More rows are in the CSV.\"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 156,
+          "start_byte": 5590,
+          "end_byte": 5592,
+          "kind": "string",
+          "source": "\"\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 157,
+          "start_byte": 5603,
+          "end_byte": 5692,
+          "kind": "template",
+          "source": "`First ${Math.min(preview.rowLimit, preview.rows.length)} row(s).${columnNote}${rowNote}`",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 161,
+          "start_byte": 5767,
+          "end_byte": 5774,
+          "kind": "string",
+          "source": "\"thead\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 162,
+          "start_byte": 5814,
+          "end_byte": 5818,
+          "kind": "string",
+          "source": "\"tr\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 164,
+          "start_byte": 5893,
+          "end_byte": 5897,
+          "kind": "string",
+          "source": "\"th\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 173,
+          "start_byte": 6067,
+          "end_byte": 6074,
+          "kind": "string",
+          "source": "\"tbody\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 175,
+          "start_byte": 6157,
+          "end_byte": 6161,
+          "kind": "string",
+          "source": "\"tr\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 177,
+          "start_byte": 6248,
+          "end_byte": 6252,
+          "kind": "string",
+          "source": "\"td\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 178,
+          "start_byte": 6302,
+          "end_byte": 6304,
+          "kind": "string",
+          "source": "\"\"",
+          "role": "machine-data-or-protocol-preserve"
+        }
+      ]
+    },
+    "src/synthpopcan/web/run-api.mjs": {
+      "source_sha256": "77ee17fa9b9ee826a54d08152f7b3ad2c5c7e3eff0bce9c2d2f5721db6b16f22",
+      "entries": [
+        {
+          "line": 4,
+          "start_byte": 112,
+          "end_byte": 126,
+          "kind": "string",
+          "source": "\"/api/uploads\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 5,
+          "start_byte": 142,
+          "end_byte": 148,
+          "kind": "string",
+          "source": "\"POST\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 7,
+          "start_byte": 220,
+          "end_byte": 226,
+          "kind": "string",
+          "source": "\".zip\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 8,
+          "start_byte": 238,
+          "end_byte": 255,
+          "kind": "string",
+          "source": "\"application/zip\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 9,
+          "start_byte": 279,
+          "end_byte": 289,
+          "kind": "string",
+          "source": "\"text/csv\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 16,
+          "start_byte": 471,
+          "end_byte": 512,
+          "kind": "template",
+          "source": "`Upload returned HTTP ${response.status}`",
+          "role": "web-error-message-candidate"
+        },
+        {
+          "line": 22,
+          "start_byte": 596,
+          "end_byte": 607,
+          "kind": "string",
+          "source": "\"/api/runs\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 26,
+          "start_byte": 669,
+          "end_byte": 689,
+          "kind": "string",
+          "source": "\"/api/control-packs\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 30,
+          "start_byte": 746,
+          "end_byte": 786,
+          "kind": "template",
+          "source": "`/api/runs/${encodeURIComponent(runId)}`",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 34,
+          "start_byte": 851,
+          "end_byte": 867,
+          "kind": "string",
+          "source": "\"/api/preflight\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 38,
+          "start_byte": 951,
+          "end_byte": 962,
+          "kind": "string",
+          "source": "\"/api/runs\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 42,
+          "start_byte": 1044,
+          "end_byte": 1091,
+          "kind": "template",
+          "source": "`/api/runs/${encodeURIComponent(runId)}/cancel`",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 43,
+          "start_byte": 1107,
+          "end_byte": 1113,
+          "kind": "string",
+          "source": "\"POST\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 48,
+          "start_byte": 1179,
+          "end_byte": 1227,
+          "kind": "template",
+          "source": "`/api/runs/${encodeURIComponent(runId)}/restart`",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 49,
+          "start_byte": 1243,
+          "end_byte": 1249,
+          "kind": "string",
+          "source": "\"POST\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 54,
+          "start_byte": 1318,
+          "end_byte": 1402,
+          "kind": "template",
+          "source": "`/api/runs/${encodeURIComponent(runId)}/artifacts/${encodeURIComponent(artifactId)}`",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 58,
+          "start_byte": 1485,
+          "end_byte": 1541,
+          "kind": "template",
+          "source": "`${artifactUrl(runId, artifactId)}/preview?rows=${rows}`",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 64,
+          "start_byte": 1623,
+          "end_byte": 1629,
+          "kind": "string",
+          "source": "\"POST\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 65,
+          "start_byte": 1662,
+          "end_byte": 1681,
+          "kind": "string",
+          "source": "\"application/json\"",
+          "role": "machine-data-or-protocol-preserve"
+        }
+      ]
+    },
+    "src/synthpopcan/web/run-events.mjs": {
+      "source_sha256": "2a8d10560cd88dc5e61106da9774cdfa1bb0295b9dfd2e42582cc5b03d72827b",
+      "entries": [
+        {
+          "line": 1,
+          "start_byte": 26,
+          "end_byte": 37,
+          "kind": "string",
+          "source": "\"succeeded\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 1,
+          "start_byte": 39,
+          "end_byte": 47,
+          "kind": "string",
+          "source": "\"failed\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 1,
+          "start_byte": 49,
+          "end_byte": 60,
+          "kind": "string",
+          "source": "\"cancelled\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 1,
+          "start_byte": 62,
+          "end_byte": 75,
+          "kind": "string",
+          "source": "\"interrupted\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 4,
+          "start_byte": 192,
+          "end_byte": 239,
+          "kind": "template",
+          "source": "`/api/runs/${encodeURIComponent(runId)}/events`",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 6,
+          "start_byte": 290,
+          "end_byte": 300,
+          "kind": "string",
+          "source": "\"progress\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 9,
+          "start_byte": 388,
+          "end_byte": 394,
+          "kind": "string",
+          "source": "\"open\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 10,
+          "start_byte": 446,
+          "end_byte": 453,
+          "kind": "string",
+          "source": "\"error\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 16,
+          "start_byte": 597,
+          "end_byte": 637,
+          "kind": "template",
+          "source": "`/api/runs/${encodeURIComponent(runId)}`",
+          "role": "machine-data-or-protocol-preserve"
+        }
+      ]
+    },
+    "src/synthpopcan/web/run-list.mjs": {
+      "source_sha256": "0bc822cef7bc07bbdf6f371cc4fb6e5985196fe0ee17c445d9cb52846cf7cee3",
+      "entries": [
+        {
+          "line": 1,
+          "start_byte": 24,
+          "end_byte": 32,
+          "kind": "string",
+          "source": "\"queued\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 1,
+          "start_byte": 34,
+          "end_byte": 43,
+          "kind": "string",
+          "source": "\"running\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 1,
+          "start_byte": 45,
+          "end_byte": 57,
+          "kind": "string",
+          "source": "\"cancelling\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 6,
+          "start_byte": 231,
+          "end_byte": 234,
+          "kind": "string",
+          "source": "\"p\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 7,
+          "start_byte": 259,
+          "end_byte": 272,
+          "kind": "string",
+          "source": "\"empty-state\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 8,
+          "start_byte": 298,
+          "end_byte": 355,
+          "kind": "string",
+          "source": "\"No runs yet. Start with the demo or your own CSV files.\"",
+          "role": "direct-presentation-candidate"
+        },
+        {
+          "line": 13,
+          "start_byte": 470,
+          "end_byte": 478,
+          "kind": "string",
+          "source": "\"button\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 14,
+          "start_byte": 499,
+          "end_byte": 507,
+          "kind": "string",
+          "source": "\"button\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 15,
+          "start_byte": 532,
+          "end_byte": 547,
+          "kind": "string",
+          "source": "\"run-list-item\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 16,
+          "start_byte": 577,
+          "end_byte": 587,
+          "kind": "string",
+          "source": "\"selected\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 17,
+          "start_byte": 644,
+          "end_byte": 658,
+          "kind": "string",
+          "source": "\"aria-pressed\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 18,
+          "start_byte": 740,
+          "end_byte": 748,
+          "kind": "string",
+          "source": "\"strong\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 19,
+          "start_byte": 775,
+          "end_byte": 839,
+          "kind": "template",
+          "source": "`${workflowLabel(run.workflow)} · ${shortDate(run.created_at)}`",
+          "role": "direct-presentation-candidate"
+        },
+        {
+          "line": 20,
+          "start_byte": 883,
+          "end_byte": 889,
+          "kind": "string",
+          "source": "\"span\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 21,
+          "start_byte": 917,
+          "end_byte": 971,
+          "kind": "template",
+          "source": "`${statusLabel(run.status)} · ${shortId(run.run_id)}`",
+          "role": "direct-presentation-candidate"
+        },
+        {
+          "line": 22,
+          "start_byte": 1015,
+          "end_byte": 1018,
+          "kind": "string",
+          "source": "\"i\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 23,
+          "start_byte": 1044,
+          "end_byte": 1106,
+          "kind": "template",
+          "source": "`status-dot ${ACTIVE.has(run.status) ? \"active\" : run.status}`",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 23,
+          "start_byte": 1083,
+          "end_byte": 1092,
+          "kind": "string",
+          "source": "\"active\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 24,
+          "start_byte": 1132,
+          "end_byte": 1145,
+          "kind": "string",
+          "source": "\"aria-hidden\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 24,
+          "start_byte": 1147,
+          "end_byte": 1153,
+          "kind": "string",
+          "source": "\"true\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 26,
+          "start_byte": 1226,
+          "end_byte": 1233,
+          "kind": "string",
+          "source": "\"click\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 32,
+          "start_byte": 1346,
+          "end_byte": 1353,
+          "kind": "string",
+          "source": "\"model\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 32,
+          "start_byte": 1362,
+          "end_byte": 1369,
+          "kind": "string",
+          "source": "\"Model\"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 33,
+          "start_byte": 1390,
+          "end_byte": 1402,
+          "kind": "string",
+          "source": "\"small_area\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 33,
+          "start_byte": 1411,
+          "end_byte": 1423,
+          "kind": "string",
+          "source": "\"Small area\"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 34,
+          "start_byte": 1434,
+          "end_byte": 1439,
+          "kind": "string",
+          "source": "\"IPF\"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 43,
+          "start_byte": 1585,
+          "end_byte": 1592,
+          "kind": "string",
+          "source": "\"short\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 44,
+          "start_byte": 1603,
+          "end_byte": 1612,
+          "kind": "string",
+          "source": "\"numeric\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 45,
+          "start_byte": 1624,
+          "end_byte": 1633,
+          "kind": "string",
+          "source": "\"numeric\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 46,
+          "start_byte": 1647,
+          "end_byte": 1656,
+          "kind": "string",
+          "source": "\"2-digit\"",
+          "role": "machine-data-or-protocol-preserve"
+        }
+      ]
+    },
+    "src/synthpopcan/web/run-workbench-model.mjs": {
+      "source_sha256": "777f28d3246b7bb576138c3976fed27a28e1f71f5685d85dd1c1679578c91844",
+      "entries": [
+        {
+          "line": 9,
+          "start_byte": 142,
+          "end_byte": 147,
+          "kind": "string",
+          "source": "\"ipf\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 33,
+          "start_byte": 723,
+          "end_byte": 730,
+          "kind": "string",
+          "source": "\"model\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 38,
+          "start_byte": 853,
+          "end_byte": 856,
+          "kind": "string",
+          "source": "\",\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 40,
+          "start_byte": 928,
+          "end_byte": 931,
+          "kind": "string",
+          "source": "\"=\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 41,
+          "start_byte": 973,
+          "end_byte": 1012,
+          "kind": "string",
+          "source": "\"Conditions must use name=value pairs.\"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 52,
+          "start_byte": 1294,
+          "end_byte": 1308,
+          "kind": "string",
+          "source": "\"Seed records\"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 53,
+          "start_byte": 1344,
+          "end_byte": 1361,
+          "kind": "string",
+          "source": "\"Control margins\"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 54,
+          "start_byte": 1400,
+          "end_byte": 1421,
+          "kind": "string",
+          "source": "\"Dimensions\"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 56,
+          "start_byte": 1490,
+          "end_byte": 1494,
+          "kind": "string",
+          "source": "\", \"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 56,
+          "start_byte": 1499,
+          "end_byte": 1504,
+          "kind": "string",
+          "source": "\"—\"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 58,
+          "start_byte": 1522,
+          "end_byte": 1543,
+          "kind": "string",
+          "source": "\"Compact output rows\"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 59,
+          "start_byte": 1583,
+          "end_byte": 1608,
+          "kind": "string",
+          "source": "\"Fitted population total\"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 60,
+          "start_byte": 1645,
+          "end_byte": 1670,
+          "kind": "string",
+          "source": "\"Estimated artifact size\"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 61,
+          "start_byte": 1716,
+          "end_byte": 1745,
+          "kind": "string",
+          "source": "\"Workspace capacity\"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 63,
+          "start_byte": 1778,
+          "end_byte": 1798,
+          "kind": "string",
+          "source": "\"Enough disk space\"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 63,
+          "start_byte": 1800,
+          "end_byte": 1825,
+          "kind": "string",
+          "source": "\"Insufficient disk space\"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 68,
+          "start_byte": 1933,
+          "end_byte": 1937,
+          "kind": "string",
+          "source": "\"ok\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 71,
+          "start_byte": 2053,
+          "end_byte": 2099,
+          "kind": "string",
+          "source": "\"A control cell has no matching seed support.\"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 80,
+          "start_byte": 2235,
+          "end_byte": 2244,
+          "kind": "string",
+          "source": "\"Package\"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 81,
+          "start_byte": 2264,
+          "end_byte": 2287,
+          "kind": "string",
+          "source": "\"Publishable candidate\"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 81,
+          "start_byte": 2327,
+          "end_byte": 2333,
+          "kind": "string",
+          "source": "\"Yes\"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 81,
+          "start_byte": 2335,
+          "end_byte": 2339,
+          "kind": "string",
+          "source": "\"No\"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 82,
+          "start_byte": 2347,
+          "end_byte": 2370,
+          "kind": "string",
+          "source": "\"Privacy review\"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 85,
+          "start_byte": 2444,
+          "end_byte": 2466,
+          "kind": "string",
+          "source": "\"Safe synthetic demo\"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 85,
+          "start_byte": 2468,
+          "end_byte": 2478,
+          "kind": "string",
+          "source": "\"Recorded\"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 87,
+          "start_byte": 2493,
+          "end_byte": 2515,
+          "kind": "string",
+          "source": "\"Supported conditions\"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 87,
+          "start_byte": 2539,
+          "end_byte": 2543,
+          "kind": "string",
+          "source": "\", \"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 87,
+          "start_byte": 2548,
+          "end_byte": 2554,
+          "kind": "string",
+          "source": "\"None\"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 88,
+          "start_byte": 2562,
+          "end_byte": 2584,
+          "kind": "string",
+          "source": "\"Requested households\"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 89,
+          "start_byte": 2623,
+          "end_byte": 2651,
+          "kind": "string",
+          "source": "\"Planning storage allowance\"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 90,
+          "start_byte": 2705,
+          "end_byte": 2729,
+          "kind": "string",
+          "source": "\"Storage estimate basis\"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 91,
+          "start_byte": 2771,
+          "end_byte": 2798,
+          "kind": "string",
+          "source": "\"Workspace capacity\"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 93,
+          "start_byte": 2839,
+          "end_byte": 2859,
+          "kind": "string",
+          "source": "\"Enough disk space\"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 93,
+          "start_byte": 2861,
+          "end_byte": 2886,
+          "kind": "string",
+          "source": "\"Insufficient disk space\"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 99,
+          "start_byte": 2963,
+          "end_byte": 2970,
+          "kind": "string",
+          "source": "\"model\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 101,
+          "start_byte": 2999,
+          "end_byte": 3087,
+          "kind": "string",
+          "source": "\"Linked household and person artifacts were generated and validated in Python.\"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 103,
+          "start_byte": 3111,
+          "end_byte": 3137,
+          "kind": "string",
+          "source": "\"Household output preview\"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 104,
+          "start_byte": 3170,
+          "end_byte": 3193,
+          "kind": "string",
+          "source": "\"Person output preview\"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 107,
+          "start_byte": 3259,
+          "end_byte": 3281,
+          "kind": "string",
+          "source": "\"Generated households\"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 108,
+          "start_byte": 3327,
+          "end_byte": 3346,
+          "kind": "string",
+          "source": "\"Generated persons\"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 109,
+          "start_byte": 3389,
+          "end_byte": 3419,
+          "kind": "string",
+          "source": "\"Linked validation\"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 111,
+          "start_byte": 3470,
+          "end_byte": 3479,
+          "kind": "string",
+          "source": "\"Passed\"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 111,
+          "start_byte": 3481,
+          "end_byte": 3489,
+          "kind": "string",
+          "source": "\"Failed\"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 113,
+          "start_byte": 3511,
+          "end_byte": 3520,
+          "kind": "string",
+          "source": "\"Package\"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 113,
+          "start_byte": 3551,
+          "end_byte": 3574,
+          "kind": "string",
+          "source": "\"Prepared linked model\"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 116,
+          "start_byte": 3613,
+          "end_byte": 3622,
+          "kind": "string",
+          "source": "\"primary\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 116,
+          "start_byte": 3624,
+          "end_byte": 3636,
+          "kind": "string",
+          "source": "\"households\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 117,
+          "start_byte": 3648,
+          "end_byte": 3659,
+          "kind": "string",
+          "source": "\"secondary\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 117,
+          "start_byte": 3661,
+          "end_byte": 3670,
+          "kind": "string",
+          "source": "\"persons\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 122,
+          "start_byte": 3737,
+          "end_byte": 3749,
+          "kind": "string",
+          "source": "\"small_area\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 124,
+          "start_byte": 3779,
+          "end_byte": 3851,
+          "kind": "string",
+          "source": "\"Linked candidates were generated, calibrated, and validated in Python.\"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 125,
+          "start_byte": 3875,
+          "end_byte": 3903,
+          "kind": "string",
+          "source": "\"Assigned household preview\"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 126,
+          "start_byte": 3936,
+          "end_byte": 3961,
+          "kind": "string",
+          "source": "\"Assigned person preview\"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 129,
+          "start_byte": 4027,
+          "end_byte": 4048,
+          "kind": "string",
+          "source": "\"Assigned households\"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 130,
+          "start_byte": 4093,
+          "end_byte": 4111,
+          "kind": "string",
+          "source": "\"Assigned persons\"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 131,
+          "start_byte": 4153,
+          "end_byte": 4173,
+          "kind": "string",
+          "source": "\"Target geographies\"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 132,
+          "start_byte": 4216,
+          "end_byte": 4243,
+          "kind": "string",
+          "source": "\"Non-converged geographies\"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 133,
+          "start_byte": 4288,
+          "end_byte": 4312,
+          "kind": "string",
+          "source": "\"Maximum absolute error\"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 134,
+          "start_byte": 4351,
+          "end_byte": 4369,
+          "kind": "string",
+          "source": "\"Largest residual\"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 135,
+          "start_byte": 4435,
+          "end_byte": 4470,
+          "kind": "string",
+          "source": "\"Realized maximum error\"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 137,
+          "start_byte": 4520,
+          "end_byte": 4534,
+          "kind": "string",
+          "source": "\"Not reported\"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 139,
+          "start_byte": 4556,
+          "end_byte": 4574,
+          "kind": "string",
+          "source": "\"Calibration mode\"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 142,
+          "start_byte": 4643,
+          "end_byte": 4652,
+          "kind": "string",
+          "source": "\"primary\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 142,
+          "start_byte": 4654,
+          "end_byte": 4666,
+          "kind": "string",
+          "source": "\"households\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 143,
+          "start_byte": 4678,
+          "end_byte": 4689,
+          "kind": "string",
+          "source": "\"secondary\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 143,
+          "start_byte": 4691,
+          "end_byte": 4700,
+          "kind": "string",
+          "source": "\"persons\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 147,
+          "start_byte": 4783,
+          "end_byte": 4918,
+          "kind": "template",
+          "source": "`${run.summary.non_converged_count} geographies did not converge. Review report.json and the largest residual before using the output.`",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 153,
+          "start_byte": 4996,
+          "end_byte": 5021,
+          "kind": "string",
+          "source": "\"Weighted output preview\"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 157,
+          "start_byte": 5117,
+          "end_byte": 5128,
+          "kind": "string",
+          "source": "\"Converged\"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 157,
+          "start_byte": 5154,
+          "end_byte": 5160,
+          "kind": "string",
+          "source": "\"Yes\"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 157,
+          "start_byte": 5162,
+          "end_byte": 5166,
+          "kind": "string",
+          "source": "\"No\"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 158,
+          "start_byte": 5176,
+          "end_byte": 5188,
+          "kind": "string",
+          "source": "\"Iterations\"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 159,
+          "start_byte": 5222,
+          "end_byte": 5246,
+          "kind": "string",
+          "source": "\"Maximum absolute error\"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 160,
+          "start_byte": 5283,
+          "end_byte": 5297,
+          "kind": "string",
+          "source": "\"Seed records\"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 162,
+          "start_byte": 5349,
+          "end_byte": 5358,
+          "kind": "string",
+          "source": "\"primary\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 162,
+          "start_byte": 5360,
+          "end_byte": 5369,
+          "kind": "string",
+          "source": "\"weights\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 168,
+          "start_byte": 5469,
+          "end_byte": 5491,
+          "kind": "string",
+          "source": "\"None above tolerance\"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 170,
+          "start_byte": 5583,
+          "end_byte": 5600,
+          "kind": "template",
+          "source": "`${key}=${value}`",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 171,
+          "start_byte": 5612,
+          "end_byte": 5616,
+          "kind": "string",
+          "source": "\", \"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 172,
+          "start_byte": 5628,
+          "end_byte": 5738,
+          "kind": "template",
+          "source": "`${residual.abs_error} in ${residual.geography} · ${residual.margin}${categories ? ` · ${categories}` : \"\"}`",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 172,
+          "start_byte": 5712,
+          "end_byte": 5732,
+          "kind": "template",
+          "source": "` · ${categories}`",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 172,
+          "start_byte": 5734,
+          "end_byte": 5736,
+          "kind": "string",
+          "source": "\"\"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 176,
+          "start_byte": 5804,
+          "end_byte": 5811,
+          "kind": "string",
+          "source": "\"model\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 176,
+          "start_byte": 5820,
+          "end_byte": 5852,
+          "kind": "string",
+          "source": "\"Generate from a prepared model\"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 177,
+          "start_byte": 5873,
+          "end_byte": 5885,
+          "kind": "string",
+          "source": "\"small_area\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 177,
+          "start_byte": 5894,
+          "end_byte": 5923,
+          "kind": "string",
+          "source": "\"Small-area linked synthesis\"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 178,
+          "start_byte": 5934,
+          "end_byte": 5958,
+          "kind": "string",
+          "source": "\"IPF from margin tables\"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 182,
+          "start_byte": 6013,
+          "end_byte": 6057,
+          "kind": "template",
+          "source": "`${file.name} · ${formatBytes(file.size)}`",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 182,
+          "start_byte": 6059,
+          "end_byte": 6076,
+          "kind": "string",
+          "source": "\"Choose one CSV.\"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 186,
+          "start_byte": 6145,
+          "end_byte": 6157,
+          "kind": "template",
+          "source": "`${bytes} B`",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 187,
+          "start_byte": 6168,
+          "end_byte": 6221,
+          "kind": "template",
+          "source": "`${(bytes / 1024).toFixed(bytes < 10240 ? 1 : 0)} KB`",
+          "role": "web-presentation-candidate"
+        }
+      ]
+    },
+    "src/synthpopcan/web/runs-workbench.mjs": {
+      "source_sha256": "2906b0c39cd0e6de76d2b5ca84b540a69dc076e60d669d09000e44fb6710d80b",
+      "entries": [
+        {
+          "line": 29,
+          "start_byte": 745,
+          "end_byte": 756,
+          "kind": "string",
+          "source": "\"succeeded\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 29,
+          "start_byte": 758,
+          "end_byte": 766,
+          "kind": "string",
+          "source": "\"failed\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 29,
+          "start_byte": 768,
+          "end_byte": 779,
+          "kind": "string",
+          "source": "\"cancelled\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 29,
+          "start_byte": 781,
+          "end_byte": 794,
+          "kind": "string",
+          "source": "\"interrupted\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 35,
+          "start_byte": 915,
+          "end_byte": 920,
+          "kind": "string",
+          "source": "\"ipf\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 42,
+          "start_byte": 1079,
+          "end_byte": 1100,
+          "kind": "string",
+          "source": "\"#workspace-location\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 43,
+          "start_byte": 1162,
+          "end_byte": 1172,
+          "kind": "string",
+          "source": "\"#new-run\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 43,
+          "start_byte": 1191,
+          "end_byte": 1198,
+          "kind": "string",
+          "source": "\"click\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 45,
+          "start_byte": 1254,
+          "end_byte": 1269,
+          "kind": "string",
+          "source": "\"#use-demo-ipf\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 46,
+          "start_byte": 1293,
+          "end_byte": 1300,
+          "kind": "string",
+          "source": "\"click\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 47,
+          "start_byte": 1355,
+          "end_byte": 1378,
+          "kind": "string",
+          "source": "\"#start-model-workflow\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 47,
+          "start_byte": 1397,
+          "end_byte": 1404,
+          "kind": "string",
+          "source": "\"click\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 49,
+          "start_byte": 1473,
+          "end_byte": 1480,
+          "kind": "string",
+          "source": "\"model\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 50,
+          "start_byte": 1495,
+          "end_byte": 1509,
+          "kind": "string",
+          "source": "\"model-inputs\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 51,
+          "start_byte": 1528,
+          "end_byte": 1530,
+          "kind": "string",
+          "source": "\"\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 51,
+          "start_byte": 1532,
+          "end_byte": 1534,
+          "kind": "string",
+          "source": "\"\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 54,
+          "start_byte": 1573,
+          "end_byte": 1589,
+          "kind": "string",
+          "source": "\"#ipf-seed-file\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 55,
+          "start_byte": 1613,
+          "end_byte": 1621,
+          "kind": "string",
+          "source": "\"change\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 57,
+          "start_byte": 1681,
+          "end_byte": 1701,
+          "kind": "string",
+          "source": "\"#ipf-controls-file\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 58,
+          "start_byte": 1725,
+          "end_byte": 1733,
+          "kind": "string",
+          "source": "\"change\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 60,
+          "start_byte": 1793,
+          "end_byte": 1809,
+          "kind": "string",
+          "source": "\"#upload-inputs\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 61,
+          "start_byte": 1833,
+          "end_byte": 1840,
+          "kind": "string",
+          "source": "\"click\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 63,
+          "start_byte": 1900,
+          "end_byte": 1918,
+          "kind": "string",
+          "source": "\"#check-preflight\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 64,
+          "start_byte": 1942,
+          "end_byte": 1949,
+          "kind": "string",
+          "source": "\"click\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 66,
+          "start_byte": 2011,
+          "end_byte": 2035,
+          "kind": "string",
+          "source": "\"#check-model-preflight\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 67,
+          "start_byte": 2059,
+          "end_byte": 2066,
+          "kind": "string",
+          "source": "\"click\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 68,
+          "start_byte": 2128,
+          "end_byte": 2147,
+          "kind": "string",
+          "source": "\"#run-model-select\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 68,
+          "start_byte": 2166,
+          "end_byte": 2174,
+          "kind": "string",
+          "source": "\"change\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 69,
+          "start_byte": 2216,
+          "end_byte": 2231,
+          "kind": "string",
+          "source": "\"model-install\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 74,
+          "start_byte": 2337,
+          "end_byte": 2354,
+          "kind": "string",
+          "source": "\"#run-model-file\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 75,
+          "start_byte": 2378,
+          "end_byte": 2386,
+          "kind": "string",
+          "source": "\"change\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 77,
+          "start_byte": 2453,
+          "end_byte": 2473,
+          "kind": "string",
+          "source": "\"#install-run-model\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 78,
+          "start_byte": 2497,
+          "end_byte": 2504,
+          "kind": "string",
+          "source": "\"click\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 78,
+          "start_byte": 2543,
+          "end_byte": 2552,
+          "kind": "string",
+          "source": "\"install\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 80,
+          "start_byte": 2586,
+          "end_byte": 2605,
+          "kind": "string",
+          "source": "\"#remove-run-model\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 81,
+          "start_byte": 2629,
+          "end_byte": 2636,
+          "kind": "string",
+          "source": "\"click\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 81,
+          "start_byte": 2675,
+          "end_byte": 2683,
+          "kind": "string",
+          "source": "\"remove\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 82,
+          "start_byte": 2712,
+          "end_byte": 2724,
+          "kind": "string",
+          "source": "\"#start-run\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 82,
+          "start_byte": 2743,
+          "end_byte": 2750,
+          "kind": "string",
+          "source": "\"click\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 84,
+          "start_byte": 2806,
+          "end_byte": 2819,
+          "kind": "string",
+          "source": "\"#cancel-run\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 85,
+          "start_byte": 2843,
+          "end_byte": 2850,
+          "kind": "string",
+          "source": "\"click\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 87,
+          "start_byte": 2911,
+          "end_byte": 2925,
+          "kind": "string",
+          "source": "\"#restart-run\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 88,
+          "start_byte": 2949,
+          "end_byte": 2956,
+          "kind": "string",
+          "source": "\"click\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 89,
+          "start_byte": 3016,
+          "end_byte": 3032,
+          "kind": "string",
+          "source": "\"[data-go-step]\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 90,
+          "start_byte": 3084,
+          "end_byte": 3091,
+          "kind": "string",
+          "source": "\"click\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 92,
+          "start_byte": 3165,
+          "end_byte": 3189,
+          "kind": "string",
+          "source": "\"#ipf-weight-field\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 93,
+          "start_byte": 3190,
+          "end_byte": 3216,
+          "kind": "string",
+          "source": "\"#ipf-max-iterations\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 94,
+          "start_byte": 3217,
+          "end_byte": 3238,
+          "kind": "string",
+          "source": "\"#ipf-tolerance\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 95,
+          "start_byte": 3239,
+          "end_byte": 3269,
+          "kind": "string",
+          "source": "\"#ipf-allow-nonconverged\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 96,
+          "start_byte": 3270,
+          "end_byte": 3298,
+          "kind": "string",
+          "source": "\"#run-model-households\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 97,
+          "start_byte": 3299,
+          "end_byte": 3327,
+          "kind": "string",
+          "source": "\"#run-model-conditions\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 98,
+          "start_byte": 3328,
+          "end_byte": 3357,
+          "kind": "string",
+          "source": "\"#run-model-random-seed\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 103,
+          "start_byte": 3434,
+          "end_byte": 3441,
+          "kind": "string",
+          "source": "\"input\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 106,
+          "start_byte": 3536,
+          "end_byte": 3561,
+          "kind": "string",
+          "source": "\"synthpopcan:run-created\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 120,
+          "start_byte": 3992,
+          "end_byte": 4013,
+          "kind": "string",
+          "source": "\"[data-workflow-tab]\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 121,
+          "start_byte": 4065,
+          "end_byte": 4072,
+          "kind": "string",
+          "source": "\"click\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 127,
+          "start_byte": 4296,
+          "end_byte": 4308,
+          "kind": "string",
+          "source": "\".workbench\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 128,
+          "start_byte": 4357,
+          "end_byte": 4380,
+          "kind": "string",
+          "source": "\"[data-workflow-panel]\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 130,
+          "start_byte": 4495,
+          "end_byte": 4503,
+          "kind": "string",
+          "source": "\"active\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 138,
+          "start_byte": 4674,
+          "end_byte": 4685,
+          "kind": "string",
+          "source": "\"runs-list\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 145,
+          "start_byte": 4892,
+          "end_byte": 4904,
+          "kind": "string",
+          "source": "\"#runs-list\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 153,
+          "start_byte": 5212,
+          "end_byte": 5219,
+          "kind": "string",
+          "source": "\"error\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 164,
+          "start_byte": 5450,
+          "end_byte": 5464,
+          "kind": "string",
+          "source": "\"#restart-run\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 165,
+          "start_byte": 5500,
+          "end_byte": 5505,
+          "kind": "string",
+          "source": "\"ipf\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 168,
+          "start_byte": 5577,
+          "end_byte": 5593,
+          "kind": "string",
+          "source": "\"#ipf-seed-file\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 168,
+          "start_byte": 5595,
+          "end_byte": 5615,
+          "kind": "string",
+          "source": "\"#ipf-controls-file\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 169,
+          "start_byte": 5657,
+          "end_byte": 5659,
+          "kind": "string",
+          "source": "\"\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 171,
+          "start_byte": 5700,
+          "end_byte": 5717,
+          "kind": "string",
+          "source": "\"New durable run\"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 171,
+          "start_byte": 5719,
+          "end_byte": 5743,
+          "kind": "string",
+          "source": "\"IPF from margin tables\"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 171,
+          "start_byte": 5745,
+          "end_byte": 5752,
+          "kind": "string",
+          "source": "\"Draft\"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 173,
+          "start_byte": 5787,
+          "end_byte": 5789,
+          "kind": "string",
+          "source": "\"\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 173,
+          "start_byte": 5791,
+          "end_byte": 5793,
+          "kind": "string",
+          "source": "\"\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 174,
+          "start_byte": 5807,
+          "end_byte": 5815,
+          "kind": "string",
+          "source": "\"inputs\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 175,
+          "start_byte": 5857,
+          "end_byte": 5869,
+          "kind": "string",
+          "source": "\"#runs-list\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 181,
+          "start_byte": 6008,
+          "end_byte": 6024,
+          "kind": "string",
+          "source": "\"runs-list\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 182,
+          "start_byte": 6025,
+          "end_byte": 6042,
+          "kind": "string",
+          "source": "\"follow-run\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 183,
+          "start_byte": 6043,
+          "end_byte": 6057,
+          "kind": "string",
+          "source": "\"results\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 184,
+          "start_byte": 6058,
+          "end_byte": 6075,
+          "kind": "string",
+          "source": "\"cancel-run\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 185,
+          "start_byte": 6076,
+          "end_byte": 6094,
+          "kind": "string",
+          "source": "\"restart-run\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 186,
+          "start_byte": 6095,
+          "end_byte": 6115,
+          "kind": "string",
+          "source": "\"model-install\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 195,
+          "start_byte": 6298,
+          "end_byte": 6326,
+          "kind": "string",
+          "source": "\"demo-age-sex-seed.csv\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 197,
+          "start_byte": 6340,
+          "end_byte": 6351,
+          "kind": "string",
+          "source": "\"text/csv\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 200,
+          "start_byte": 6433,
+          "end_byte": 6465,
+          "kind": "string",
+          "source": "\"demo-age-sex-controls.csv\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 202,
+          "start_byte": 6479,
+          "end_byte": 6490,
+          "kind": "string",
+          "source": "\"text/csv\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 204,
+          "start_byte": 6514,
+          "end_byte": 6530,
+          "kind": "string",
+          "source": "\"#ipf-seed-file\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 205,
+          "start_byte": 6557,
+          "end_byte": 6577,
+          "kind": "string",
+          "source": "\"#ipf-controls-file\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 207,
+          "start_byte": 6629,
+          "end_byte": 6662,
+          "kind": "string",
+          "source": "\"Demo files are ready to upload.\"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 207,
+          "start_byte": 6664,
+          "end_byte": 6673,
+          "kind": "string",
+          "source": "\"success\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 217,
+          "start_byte": 6937,
+          "end_byte": 6945,
+          "kind": "string",
+          "source": "\"upload\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 220,
+          "start_byte": 7031,
+          "end_byte": 7051,
+          "kind": "string",
+          "source": "\"#workbench-message\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 220,
+          "start_byte": 7071,
+          "end_byte": 7082,
+          "kind": "string",
+          "source": "\"uploading\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 221,
+          "start_byte": 7100,
+          "end_byte": 7153,
+          "kind": "string",
+          "source": "\"Files changed. Upload the current pair to continue.\"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 221,
+          "start_byte": 7155,
+          "end_byte": 7164,
+          "kind": "string",
+          "source": "\"warning\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 222,
+          "start_byte": 7205,
+          "end_byte": 7221,
+          "kind": "string",
+          "source": "\"#ipf-seed-file\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 223,
+          "start_byte": 7277,
+          "end_byte": 7297,
+          "kind": "string",
+          "source": "\"#ipf-controls-file\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 224,
+          "start_byte": 7336,
+          "end_byte": 7357,
+          "kind": "string",
+          "source": "\"#seed-upload-status\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 225,
+          "start_byte": 7415,
+          "end_byte": 7440,
+          "kind": "string",
+          "source": "\"#controls-upload-status\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 226,
+          "start_byte": 7502,
+          "end_byte": 7518,
+          "kind": "string",
+          "source": "\"#upload-inputs\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 230,
+          "start_byte": 7635,
+          "end_byte": 7643,
+          "kind": "string",
+          "source": "\"upload\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 231,
+          "start_byte": 7686,
+          "end_byte": 7702,
+          "kind": "string",
+          "source": "\"#upload-inputs\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 233,
+          "start_byte": 7745,
+          "end_byte": 7802,
+          "kind": "string",
+          "source": "\"Streaming the two CSV files into the local workspace…\"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 233,
+          "start_byte": 7804,
+          "end_byte": 7806,
+          "kind": "string",
+          "source": "\"\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 233,
+          "start_byte": 7808,
+          "end_byte": 7819,
+          "kind": "string",
+          "source": "\"uploading\"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 234,
+          "start_byte": 7864,
+          "end_byte": 7880,
+          "kind": "string",
+          "source": "\"#ipf-seed-file\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 235,
+          "start_byte": 7938,
+          "end_byte": 7958,
+          "kind": "string",
+          "source": "\"#ipf-controls-file\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 243,
+          "start_byte": 8189,
+          "end_byte": 8225,
+          "kind": "string",
+          "source": "\"Inputs uploaded and fingerprinted.\"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 243,
+          "start_byte": 8227,
+          "end_byte": 8236,
+          "kind": "string",
+          "source": "\"success\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 244,
+          "start_byte": 8252,
+          "end_byte": 8263,
+          "kind": "string",
+          "source": "\"configure\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 247,
+          "start_byte": 8357,
+          "end_byte": 8364,
+          "kind": "string",
+          "source": "\"error\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 253,
+          "start_byte": 8477,
+          "end_byte": 8485,
+          "kind": "string",
+          "source": "\"upload\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 259,
+          "start_byte": 8613,
+          "end_byte": 8624,
+          "kind": "string",
+          "source": "\"preflight\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 260,
+          "start_byte": 8657,
+          "end_byte": 8668,
+          "kind": "string",
+          "source": "\"start-run\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 262,
+          "start_byte": 8722,
+          "end_byte": 8734,
+          "kind": "string",
+          "source": "\"#start-run\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 263,
+          "start_byte": 8778,
+          "end_byte": 8802,
+          "kind": "string",
+          "source": "\"#check-model-preflight\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 264,
+          "start_byte": 8851,
+          "end_byte": 8871,
+          "kind": "string",
+          "source": "\"#workbench-message\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 264,
+          "start_byte": 8891,
+          "end_byte": 8902,
+          "kind": "string",
+          "source": "\"preflight\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 265,
+          "start_byte": 8920,
+          "end_byte": 8971,
+          "kind": "string",
+          "source": "\"Inputs changed. Check the current settings again.\"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 265,
+          "start_byte": 8973,
+          "end_byte": 8982,
+          "kind": "string",
+          "source": "\"warning\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 271,
+          "start_byte": 9115,
+          "end_byte": 9134,
+          "kind": "string",
+          "source": "\"#ipf-weight-field\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 272,
+          "start_byte": 9181,
+          "end_byte": 9202,
+          "kind": "string",
+          "source": "\"#ipf-max-iterations\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 273,
+          "start_byte": 9232,
+          "end_byte": 9248,
+          "kind": "string",
+          "source": "\"#ipf-tolerance\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 274,
+          "start_byte": 9297,
+          "end_byte": 9322,
+          "kind": "string",
+          "source": "\"#ipf-allow-nonconverged\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 279,
+          "start_byte": 9424,
+          "end_byte": 9435,
+          "kind": "string",
+          "source": "\"preflight\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 280,
+          "start_byte": 9452,
+          "end_byte": 9504,
+          "kind": "string",
+          "source": "\"Checking input structure and workspace capacity…\"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 280,
+          "start_byte": 9506,
+          "end_byte": 9508,
+          "kind": "string",
+          "source": "\"\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 280,
+          "start_byte": 9510,
+          "end_byte": 9521,
+          "kind": "string",
+          "source": "\"preflight\"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 287,
+          "start_byte": 9773,
+          "end_byte": 9785,
+          "kind": "string",
+          "source": "\"#start-run\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 288,
+          "start_byte": 9829,
+          "end_byte": 9840,
+          "kind": "string",
+          "source": "\"preflight\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 290,
+          "start_byte": 9888,
+          "end_byte": 9934,
+          "kind": "string",
+          "source": "\"Preflight passed. The run is ready to start.\"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 290,
+          "start_byte": 9936,
+          "end_byte": 9945,
+          "kind": "string",
+          "source": "\"success\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 292,
+          "start_byte": 10006,
+          "end_byte": 10053,
+          "kind": "string",
+          "source": "\"Preflight found a workspace capacity problem.\"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 292,
+          "start_byte": 10055,
+          "end_byte": 10062,
+          "kind": "string",
+          "source": "\"error\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 295,
+          "start_byte": 10149,
+          "end_byte": 10156,
+          "kind": "string",
+          "source": "\"error\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 300,
+          "start_byte": 10253,
+          "end_byte": 10264,
+          "kind": "string",
+          "source": "\"preflight\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 301,
+          "start_byte": 10281,
+          "end_byte": 10345,
+          "kind": "string",
+          "source": "\"Checking package provenance, privacy, and output scale…\"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 302,
+          "start_byte": 10346,
+          "end_byte": 10353,
+          "kind": "string",
+          "source": "\"\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 303,
+          "start_byte": 10354,
+          "end_byte": 10370,
+          "kind": "string",
+          "source": "\"preflight\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 306,
+          "start_byte": 10417,
+          "end_byte": 10441,
+          "kind": "string",
+          "source": "\"#check-model-preflight\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 321,
+          "start_byte": 10961,
+          "end_byte": 10968,
+          "kind": "string",
+          "source": "\"model\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 324,
+          "start_byte": 11067,
+          "end_byte": 11079,
+          "kind": "string",
+          "source": "\"#start-run\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 325,
+          "start_byte": 11123,
+          "end_byte": 11134,
+          "kind": "string",
+          "source": "\"preflight\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 328,
+          "start_byte": 11186,
+          "end_byte": 11257,
+          "kind": "string",
+          "source": "\"Model preflight passed. Provenance and privacy metadata are recorded.\"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 329,
+          "start_byte": 11268,
+          "end_byte": 11317,
+          "kind": "string",
+          "source": "\"Model preflight found a blocking scale problem.\"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 330,
+          "start_byte": 11343,
+          "end_byte": 11353,
+          "kind": "string",
+          "source": "\"success\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 330,
+          "start_byte": 11355,
+          "end_byte": 11362,
+          "kind": "string",
+          "source": "\"error\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 333,
+          "start_byte": 11449,
+          "end_byte": 11456,
+          "kind": "string",
+          "source": "\"error\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 340,
+          "start_byte": 11606,
+          "end_byte": 11623,
+          "kind": "string",
+          "source": "\"#run-model-file\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 341,
+          "start_byte": 11678,
+          "end_byte": 11697,
+          "kind": "string",
+          "source": "\"#run-model-select\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 342,
+          "start_byte": 11747,
+          "end_byte": 11790,
+          "kind": "string",
+          "source": "\"Choose a catalogue model or package JSON.\"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 347,
+          "start_byte": 11890,
+          "end_byte": 11913,
+          "kind": "string",
+          "source": "\"#run-model-households\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 348,
+          "start_byte": 11957,
+          "end_byte": 11980,
+          "kind": "string",
+          "source": "\"#run-model-conditions\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 349,
+          "start_byte": 12027,
+          "end_byte": 12051,
+          "kind": "string",
+          "source": "\"#run-model-random-seed\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 356,
+          "start_byte": 12161,
+          "end_byte": 12181,
+          "kind": "string",
+          "source": "\"#preflight-results\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 363,
+          "start_byte": 12368,
+          "end_byte": 12388,
+          "kind": "string",
+          "source": "\"#preflight-results\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 364,
+          "start_byte": 12448,
+          "end_byte": 12451,
+          "kind": "string",
+          "source": "\" \"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 364,
+          "start_byte": 12454,
+          "end_byte": 12461,
+          "kind": "string",
+          "source": "\"error\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 370,
+          "start_byte": 12603,
+          "end_byte": 12614,
+          "kind": "string",
+          "source": "\"start-run\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 372,
+          "start_byte": 12702,
+          "end_byte": 12714,
+          "kind": "string",
+          "source": "\"#start-run\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 373,
+          "start_byte": 12747,
+          "end_byte": 12776,
+          "kind": "string",
+          "source": "\"Creating the durable run…\"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 373,
+          "start_byte": 12778,
+          "end_byte": 12780,
+          "kind": "string",
+          "source": "\"\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 381,
+          "start_byte": 12966,
+          "end_byte": 13003,
+          "kind": "template",
+          "source": "`Run ${run.run_id.slice(-12)}`",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 386,
+          "start_byte": 13078,
+          "end_byte": 13083,
+          "kind": "string",
+          "source": "\"run\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 387,
+          "start_byte": 13102,
+          "end_byte": 13149,
+          "kind": "string",
+          "source": "\"Run queued. You can safely refresh this page.\"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 387,
+          "start_byte": 13151,
+          "end_byte": 13160,
+          "kind": "string",
+          "source": "\"success\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 393,
+          "start_byte": 13402,
+          "end_byte": 13409,
+          "kind": "string",
+          "source": "\"error\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 394,
+          "start_byte": 13439,
+          "end_byte": 13451,
+          "kind": "string",
+          "source": "\"#start-run\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 399,
+          "start_byte": 13556,
+          "end_byte": 13568,
+          "kind": "string",
+          "source": "\"follow-run\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 401,
+          "start_byte": 13635,
+          "end_byte": 13653,
+          "kind": "string",
+          "source": "\"#progress-events\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 410,
+          "start_byte": 14007,
+          "end_byte": 14022,
+          "kind": "string",
+          "source": "\"#run-progress\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 410,
+          "start_byte": 14040,
+          "end_byte": 14047,
+          "kind": "string",
+          "source": "\"value\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 424,
+          "start_byte": 14485,
+          "end_byte": 14489,
+          "kind": "string",
+          "source": "\"li\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 428,
+          "start_byte": 14626,
+          "end_byte": 14641,
+          "kind": "string",
+          "source": "\"#run-progress\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 436,
+          "start_byte": 14910,
+          "end_byte": 14922,
+          "kind": "string",
+          "source": "\"cancel-run\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 437,
+          "start_byte": 14950,
+          "end_byte": 14963,
+          "kind": "string",
+          "source": "\"#cancel-run\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 443,
+          "start_byte": 15184,
+          "end_byte": 15209,
+          "kind": "string",
+          "source": "\"Cancellation requested.\"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 443,
+          "start_byte": 15211,
+          "end_byte": 15220,
+          "kind": "string",
+          "source": "\"warning\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 446,
+          "start_byte": 15353,
+          "end_byte": 15360,
+          "kind": "string",
+          "source": "\"error\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 447,
+          "start_byte": 15390,
+          "end_byte": 15403,
+          "kind": "string",
+          "source": "\"#cancel-run\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 454,
+          "start_byte": 15588,
+          "end_byte": 15601,
+          "kind": "string",
+          "source": "\"restart-run\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 455,
+          "start_byte": 15644,
+          "end_byte": 15658,
+          "kind": "string",
+          "source": "\"#restart-run\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 465,
+          "start_byte": 16087,
+          "end_byte": 16094,
+          "kind": "string",
+          "source": "\"error\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 473,
+          "start_byte": 16290,
+          "end_byte": 16303,
+          "kind": "string",
+          "source": "\"restart-run\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 474,
+          "start_byte": 16336,
+          "end_byte": 16348,
+          "kind": "string",
+          "source": "\"follow-run\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 475,
+          "start_byte": 16381,
+          "end_byte": 16390,
+          "kind": "string",
+          "source": "\"results\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 483,
+          "start_byte": 16628,
+          "end_byte": 16642,
+          "kind": "string",
+          "source": "\"#restart-run\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 485,
+          "start_byte": 16707,
+          "end_byte": 16719,
+          "kind": "string",
+          "source": "\"#runs-list\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 491,
+          "start_byte": 16858,
+          "end_byte": 16895,
+          "kind": "template",
+          "source": "`Run ${run.run_id.slice(-12)}`",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 498,
+          "start_byte": 17066,
+          "end_byte": 17079,
+          "kind": "string",
+          "source": "\"#cancel-run\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 498,
+          "start_byte": 17107,
+          "end_byte": 17119,
+          "kind": "string",
+          "source": "\"cancelling\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 499,
+          "start_byte": 17136,
+          "end_byte": 17141,
+          "kind": "string",
+          "source": "\"run\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 500,
+          "start_byte": 17162,
+          "end_byte": 17195,
+          "kind": "string",
+          "source": "\"Reconnected to the durable run.\"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 500,
+          "start_byte": 17197,
+          "end_byte": 17206,
+          "kind": "string",
+          "source": "\"success\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 504,
+          "start_byte": 17343,
+          "end_byte": 17350,
+          "kind": "string",
+          "source": "\"error\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 509,
+          "start_byte": 17448,
+          "end_byte": 17457,
+          "kind": "string",
+          "source": "\"results\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 514,
+          "start_byte": 17638,
+          "end_byte": 17651,
+          "kind": "string",
+          "source": "\"#cancel-run\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 515,
+          "start_byte": 17691,
+          "end_byte": 17702,
+          "kind": "string",
+          "source": "\"succeeded\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 516,
+          "start_byte": 17719,
+          "end_byte": 17724,
+          "kind": "string",
+          "source": "\"run\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 517,
+          "start_byte": 17770,
+          "end_byte": 17784,
+          "kind": "string",
+          "source": "\"#restart-run\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 518,
+          "start_byte": 17823,
+          "end_byte": 17837,
+          "kind": "string",
+          "source": "\"interrupted\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 518,
+          "start_byte": 17857,
+          "end_byte": 17869,
+          "kind": "string",
+          "source": "\"small_area\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 520,
+          "start_byte": 17943,
+          "end_byte": 17963,
+          "kind": "template",
+          "source": "`Run ${run.status}.`",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 521,
+          "start_byte": 18005,
+          "end_byte": 18017,
+          "kind": "string",
+          "source": "\"cancelled\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 521,
+          "start_byte": 18019,
+          "end_byte": 18029,
+          "kind": "string",
+          "source": "\"warning\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 521,
+          "start_byte": 18031,
+          "end_byte": 18038,
+          "kind": "string",
+          "source": "\"error\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 524,
+          "start_byte": 18068,
+          "end_byte": 18077,
+          "kind": "string",
+          "source": "\"results\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 525,
+          "start_byte": 18094,
+          "end_byte": 18141,
+          "kind": "string",
+          "source": "\"Run completed and persisted in the workspace.\"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 525,
+          "start_byte": 18143,
+          "end_byte": 18152,
+          "kind": "string",
+          "source": "\"success\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 531,
+          "start_byte": 18331,
+          "end_byte": 18340,
+          "kind": "string",
+          "source": "\"warning\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 533,
+          "start_byte": 18399,
+          "end_byte": 18415,
+          "kind": "string",
+          "source": "\"#results-intro\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 535,
+          "start_byte": 18472,
+          "end_byte": 18490,
+          "kind": "string",
+          "source": "\"#preview-heading\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 537,
+          "start_byte": 18601,
+          "end_byte": 18629,
+          "kind": "string",
+          "source": "\"#secondary-preview-heading\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 540,
+          "start_byte": 18710,
+          "end_byte": 18736,
+          "kind": "string",
+          "source": "\"#secondary-preview-block\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 542,
+          "start_byte": 18822,
+          "end_byte": 18840,
+          "kind": "string",
+          "source": "\"#fit-diagnostics\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 544,
+          "start_byte": 18911,
+          "end_byte": 18934,
+          "kind": "string",
+          "source": "\"#reproduction-command\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 545,
+          "start_byte": 18981,
+          "end_byte": 18983,
+          "kind": "string",
+          "source": "\"\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 552,
+          "start_byte": 19304,
+          "end_byte": 19324,
+          "kind": "template",
+          "source": "`#${target}-preview`",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 557,
+          "start_byte": 19419,
+          "end_byte": 19435,
+          "kind": "string",
+          "source": "\"#run-artifacts\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 560,
+          "start_byte": 19551,
+          "end_byte": 19554,
+          "kind": "string",
+          "source": "\"a\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 561,
+          "start_byte": 19578,
+          "end_byte": 19593,
+          "kind": "string",
+          "source": "\"download-link\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 563,
+          "start_byte": 19681,
+          "end_byte": 19712,
+          "kind": "template",
+          "source": "`Download ${artifact.filename}`",
+          "role": "direct-presentation-candidate"
+        },
+        {
+          "line": 569,
+          "start_byte": 19831,
+          "end_byte": 19838,
+          "kind": "string",
+          "source": "\"table\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 570,
+          "start_byte": 19879,
+          "end_byte": 19886,
+          "kind": "string",
+          "source": "\"thead\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 571,
+          "start_byte": 19930,
+          "end_byte": 19934,
+          "kind": "string",
+          "source": "\"tr\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 573,
+          "start_byte": 20019,
+          "end_byte": 20023,
+          "kind": "string",
+          "source": "\"th\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 574,
+          "start_byte": 20043,
+          "end_byte": 20048,
+          "kind": "string",
+          "source": "\"col\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 579,
+          "start_byte": 20173,
+          "end_byte": 20180,
+          "kind": "string",
+          "source": "\"tbody\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 581,
+          "start_byte": 20257,
+          "end_byte": 20261,
+          "kind": "string",
+          "source": "\"tr\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 583,
+          "start_byte": 20350,
+          "end_byte": 20354,
+          "kind": "string",
+          "source": "\"td\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 584,
+          "start_byte": 20397,
+          "end_byte": 20399,
+          "kind": "string",
+          "source": "\"\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 596,
+          "start_byte": 20674,
+          "end_byte": 20679,
+          "kind": "string",
+          "source": "\"div\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 597,
+          "start_byte": 20722,
+          "end_byte": 20730,
+          "kind": "string",
+          "source": "\"strong\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 599,
+          "start_byte": 20805,
+          "end_byte": 20811,
+          "kind": "string",
+          "source": "\"span\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 600,
+          "start_byte": 20855,
+          "end_byte": 20860,
+          "kind": "string",
+          "source": "\"—\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 607,
+          "start_byte": 20981,
+          "end_byte": 20998,
+          "kind": "string",
+          "source": "\"[data-run-step]\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 609,
+          "start_byte": 21096,
+          "end_byte": 21104,
+          "kind": "string",
+          "source": "\"active\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 612,
+          "start_byte": 21176,
+          "end_byte": 21199,
+          "kind": "string",
+          "source": "\"[data-step-indicator]\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 613,
+          "start_byte": 21247,
+          "end_byte": 21255,
+          "kind": "string",
+          "source": "\"active\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 618,
+          "start_byte": 21377,
+          "end_byte": 21390,
+          "kind": "string",
+          "source": "\"#run-kicker\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 619,
+          "start_byte": 21439,
+          "end_byte": 21451,
+          "kind": "string",
+          "source": "\"#run-title\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 624,
+          "start_byte": 21574,
+          "end_byte": 21587,
+          "kind": "string",
+          "source": "\"#run-status\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 625,
+          "start_byte": 21612,
+          "end_byte": 21634,
+          "kind": "template",
+          "source": "`run-status ${status}`",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 629,
+          "start_byte": 21757,
+          "end_byte": 21759,
+          "kind": "string",
+          "source": "\"\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 630,
+          "start_byte": 21804,
+          "end_byte": 21824,
+          "kind": "string",
+          "source": "\"#workbench-message\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 631,
+          "start_byte": 21849,
+          "end_byte": 21869,
+          "kind": "template",
+          "source": "`result-box ${kind}`",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 637,
+          "start_byte": 21999,
+          "end_byte": 22024,
+          "kind": "string",
+          "source": "\"#preflight-results\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 638,
+          "start_byte": 22025,
+          "end_byte": 22048,
+          "kind": "string",
+          "source": "\"#fit-diagnostics\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 639,
+          "start_byte": 22049,
+          "end_byte": 22072,
+          "kind": "string",
+          "source": "\"#primary-preview\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 640,
+          "start_byte": 22073,
+          "end_byte": 22098,
+          "kind": "string",
+          "source": "\"#secondary-preview\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 641,
+          "start_byte": 22099,
+          "end_byte": 22120,
+          "kind": "string",
+          "source": "\"#run-artifacts\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 642,
+          "start_byte": 22121,
+          "end_byte": 22144,
+          "kind": "string",
+          "source": "\"#progress-events\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 646,
+          "start_byte": 22232,
+          "end_byte": 22255,
+          "kind": "string",
+          "source": "\"#reproduction-command\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 646,
+          "start_byte": 22271,
+          "end_byte": 22273,
+          "kind": "string",
+          "source": "\"\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 647,
+          "start_byte": 22300,
+          "end_byte": 22312,
+          "kind": "string",
+          "source": "\"#start-run\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 648,
+          "start_byte": 22356,
+          "end_byte": 22369,
+          "kind": "string",
+          "source": "\"#cancel-run\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 652,
+          "start_byte": 22478,
+          "end_byte": 22494,
+          "kind": "string",
+          "source": "\"catalogue-load\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 653,
+          "start_byte": 22537,
+          "end_byte": 22556,
+          "kind": "string",
+          "source": "\"#run-model-select\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 654,
+          "start_byte": 22608,
+          "end_byte": 22635,
+          "kind": "string",
+          "source": "\"#small-area-premade-model\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 656,
+          "start_byte": 22679,
+          "end_byte": 22692,
+          "kind": "string",
+          "source": "\"/api/models\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 657,
+          "start_byte": 22733,
+          "end_byte": 22762,
+          "kind": "string",
+          "source": "\"Model catalogue unavailable\"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 662,
+          "start_byte": 22971,
+          "end_byte": 22997,
+          "kind": "string",
+          "source": "\"Choose a catalogue model\"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 662,
+          "start_byte": 22999,
+          "end_byte": 23001,
+          "kind": "string",
+          "source": "\"\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 663,
+          "start_byte": 23046,
+          "end_byte": 23071,
+          "kind": "string",
+          "source": "\"Choose a prepared model\"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 663,
+          "start_byte": 23073,
+          "end_byte": 23075,
+          "kind": "string",
+          "source": "\"\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 665,
+          "start_byte": 23165,
+          "end_byte": 23173,
+          "kind": "string",
+          "source": "\"option\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 667,
+          "start_byte": 23234,
+          "end_byte": 23320,
+          "kind": "template",
+          "source": "`${model.name} · ${model.geography}${model.installed ? \"\" : \" · download required\"}`",
+          "role": "direct-presentation-candidate"
+        },
+        {
+          "line": 667,
+          "start_byte": 23290,
+          "end_byte": 23293,
+          "kind": "string",
+          "source": "\"\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 667,
+          "start_byte": 23295,
+          "end_byte": 23318,
+          "kind": "string",
+          "source": "\" · download required\"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 672,
+          "start_byte": 23521,
+          "end_byte": 23529,
+          "kind": "string",
+          "source": "\"option\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 674,
+          "start_byte": 23608,
+          "end_byte": 23645,
+          "kind": "template",
+          "source": "`${model.name} · ${model.geography}`",
+          "role": "direct-presentation-candidate"
+        },
+        {
+          "line": 695,
+          "start_byte": 24425,
+          "end_byte": 24452,
+          "kind": "string",
+          "source": "\"Choose a catalogue model\"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 695,
+          "start_byte": 24454,
+          "end_byte": 24479,
+          "kind": "string",
+          "source": "\"Choose a prepared model\"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 695,
+          "start_byte": 24480,
+          "end_byte": 24493,
+          "kind": "string",
+          "source": "\"\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 699,
+          "start_byte": 24559,
+          "end_byte": 24567,
+          "kind": "string",
+          "source": "\"option\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 701,
+          "start_byte": 24627,
+          "end_byte": 24655,
+          "kind": "string",
+          "source": "\"Premade models unavailable\"",
+          "role": "direct-presentation-candidate"
+        },
+        {
+          "line": 709,
+          "start_byte": 24815,
+          "end_byte": 24834,
+          "kind": "string",
+          "source": "\"#run-model-select\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 710,
+          "start_byte": 24912,
+          "end_byte": 24922,
+          "kind": "string",
+          "source": "\"download\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 711,
+          "start_byte": 24974,
+          "end_byte": 24980,
+          "kind": "string",
+          "source": "\"true\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 712,
+          "start_byte": 25007,
+          "end_byte": 25027,
+          "kind": "string",
+          "source": "\"#install-run-model\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 713,
+          "start_byte": 25093,
+          "end_byte": 25112,
+          "kind": "string",
+          "source": "\"#remove-run-model\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 717,
+          "start_byte": 25256,
+          "end_byte": 25271,
+          "kind": "string",
+          "source": "\"model-install\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 718,
+          "start_byte": 25314,
+          "end_byte": 25333,
+          "kind": "string",
+          "source": "\"#run-model-select\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 721,
+          "start_byte": 25457,
+          "end_byte": 25466,
+          "kind": "string",
+          "source": "\"install\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 722,
+          "start_byte": 25508,
+          "end_byte": 25537,
+          "kind": "string",
+          "source": "\"#run-model-catalogue-status\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 724,
+          "start_byte": 25587,
+          "end_byte": 25607,
+          "kind": "string",
+          "source": "\"#install-run-model\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 725,
+          "start_byte": 25637,
+          "end_byte": 25656,
+          "kind": "string",
+          "source": "\"#remove-run-model\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 730,
+          "start_byte": 25763,
+          "end_byte": 25800,
+          "kind": "string",
+          "source": "\"Downloading and verifying model…\"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 730,
+          "start_byte": 25802,
+          "end_byte": 25821,
+          "kind": "string",
+          "source": "\"Removing model…\"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 732,
+          "start_byte": 25864,
+          "end_byte": 25943,
+          "kind": "template",
+          "source": "`/api/models/${encodeURIComponent(modelId)}${install ? \"/install\" : \"\"}`",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 733,
+          "start_byte": 25926,
+          "end_byte": 25937,
+          "kind": "string",
+          "source": "\"/install\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 733,
+          "start_byte": 25939,
+          "end_byte": 25941,
+          "kind": "string",
+          "source": "\"\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 735,
+          "start_byte": 25979,
+          "end_byte": 25986,
+          "kind": "string",
+          "source": "\"POST\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 735,
+          "start_byte": 25988,
+          "end_byte": 25996,
+          "kind": "string",
+          "source": "\"DELETE\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 739,
+          "start_byte": 26112,
+          "end_byte": 26143,
+          "kind": "string",
+          "source": "\"Model catalogue update failed\"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 746,
+          "start_byte": 26355,
+          "end_byte": 26357,
+          "kind": "string",
+          "source": "\"\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 749,
+          "start_byte": 26435,
+          "end_byte": 26499,
+          "kind": "string",
+          "source": "\"Model downloaded, verified, and ready for durable Python runs.\"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 751,
+          "start_byte": 26534,
+          "end_byte": 26582,
+          "kind": "string",
+          "source": "\"Downloaded model removed from the local cache.\"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 752,
+          "start_byte": 26593,
+          "end_byte": 26640,
+          "kind": "string",
+          "source": "\"The model was not present in the local cache.\"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 761,
+          "start_byte": 26836,
+          "end_byte": 26848,
+          "kind": "string",
+          "source": "\".workbench\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 762,
+          "start_byte": 26894,
+          "end_byte": 26917,
+          "kind": "string",
+          "source": "\"[data-workflow-panel]\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 763,
+          "start_byte": 26967,
+          "end_byte": 26975,
+          "kind": "string",
+          "source": "\"active\"",
+          "role": "machine-data-or-protocol-preserve"
+        }
+      ]
+    },
+    "src/synthpopcan/web/small-area-request.mjs": {
+      "source_sha256": "c1468a9e64e7f819a848f15b94244e26608ccddb3263fca1d0c281b6556ca63b",
+      "entries": [
+        {
+          "line": 4,
+          "start_byte": 234,
+          "end_byte": 289,
+          "kind": "string",
+          "source": "\"Choose both candidate household and person CSV files.\"",
+          "role": "web-error-message-candidate"
+        },
+        {
+          "line": 8,
+          "start_byte": 422,
+          "end_byte": 478,
+          "kind": "string",
+          "source": "\"Choose one model/package or one linked candidate pair.\"",
+          "role": "web-error-message-candidate"
+        },
+        {
+          "line": 10,
+          "start_byte": 528,
+          "end_byte": 560,
+          "kind": "string",
+          "source": "\"Choose household controls CSV.\"",
+          "role": "web-error-message-candidate"
+        },
+        {
+          "line": 12,
+          "start_byte": 641,
+          "end_byte": 696,
+          "kind": "string",
+          "source": "\"Reviewed control packs require a person controls CSV.\"",
+          "role": "web-error-message-candidate"
+        },
+        {
+          "line": 15,
+          "start_byte": 804,
+          "end_byte": 884,
+          "kind": "string",
+          "source": "\"Choose both a reviewed control pack and its control-pack evidence JSON.\"",
+          "role": "web-error-message-candidate"
+        },
+        {
+          "line": 21,
+          "start_byte": 1028,
+          "end_byte": 1085,
+          "kind": "template",
+          "source": "`Choose both the ${item.label} pack and its source file.`",
+          "role": "web-error-message-candidate"
+        },
+        {
+          "line": 24,
+          "start_byte": 1192,
+          "end_byte": 1274,
+          "kind": "string",
+          "source": "\"Conditional controls require a reviewed broad pack and person controls.\"",
+          "role": "web-error-message-candidate"
+        },
+        {
+          "line": 61,
+          "start_byte": 2584,
+          "end_byte": 2605,
+          "kind": "template",
+          "source": "`${item.family}_pack`",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 62,
+          "start_byte": 2633,
+          "end_byte": 2674,
+          "kind": "template",
+          "source": "`${item.family}_${item.source}_upload_id`",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 69,
+          "start_byte": 2874,
+          "end_byte": 2886,
+          "kind": "string",
+          "source": "\"small_area\"",
+          "role": "machine-data-or-protocol-preserve"
+        }
+      ]
+    },
+    "src/synthpopcan/web/small-area-workflow.mjs": {
+      "source_sha256": "e89c1510f680194374f90a8c9976b743821b5d6c8343cb249b8da5f319bdfbad",
+      "entries": [
+        {
+          "line": 11,
+          "start_byte": 487,
+          "end_byte": 505,
+          "kind": "string",
+          "source": "\"#small-area-form\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 13,
+          "start_byte": 608,
+          "end_byte": 634,
+          "kind": "string",
+          "source": "\"#small-area-control-pack\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 14,
+          "start_byte": 690,
+          "end_byte": 735,
+          "kind": "string",
+          "source": "\"#small-area-control-pack-evidence-file\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 18,
+          "start_byte": 837,
+          "end_byte": 927,
+          "kind": "string",
+          "source": "\"Reviewed control packs are unavailable; raw normalized controls remain available.\"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 21,
+          "start_byte": 972,
+          "end_byte": 980,
+          "kind": "string",
+          "source": "\"change\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 26,
+          "start_byte": 1242,
+          "end_byte": 1269,
+          "kind": "string",
+          "source": "\"#small-area-geo-dimension\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 27,
+          "start_byte": 1316,
+          "end_byte": 1340,
+          "kind": "string",
+          "source": "\"#small-area-geo-column\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 33,
+          "start_byte": 1482,
+          "end_byte": 1489,
+          "kind": "string",
+          "source": "\"input\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 34,
+          "start_byte": 1562,
+          "end_byte": 1570,
+          "kind": "string",
+          "source": "\"change\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 35,
+          "start_byte": 1643,
+          "end_byte": 1651,
+          "kind": "string",
+          "source": "\"submit\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 37,
+          "start_byte": 1739,
+          "end_byte": 1748,
+          "kind": "string",
+          "source": "\"prepare\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 38,
+          "start_byte": 1796,
+          "end_byte": 1816,
+          "kind": "string",
+          "source": "\"#small-area-result\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 39,
+          "start_byte": 1845,
+          "end_byte": 1899,
+          "kind": "string",
+          "source": "\"Uploading and checking the planned small-area run...\"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 40,
+          "start_byte": 1940,
+          "end_byte": 1951,
+          "kind": "string",
+          "source": "\"preparing\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 51,
+          "start_byte": 2396,
+          "end_byte": 2398,
+          "kind": "string",
+          "source": "\"\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 57,
+          "start_byte": 2451,
+          "end_byte": 2478,
+          "kind": "string",
+          "source": "\"#small-area-premade-model\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 58,
+          "start_byte": 2502,
+          "end_byte": 2510,
+          "kind": "string",
+          "source": "\"change\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 60,
+          "start_byte": 2586,
+          "end_byte": 2610,
+          "kind": "string",
+          "source": "\"#small-area-model-file\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 60,
+          "start_byte": 2620,
+          "end_byte": 2622,
+          "kind": "string",
+          "source": "\"\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 63,
+          "start_byte": 2662,
+          "end_byte": 2686,
+          "kind": "string",
+          "source": "\"#small-area-model-file\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 64,
+          "start_byte": 2710,
+          "end_byte": 2718,
+          "kind": "string",
+          "source": "\"change\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 66,
+          "start_byte": 2802,
+          "end_byte": 2829,
+          "kind": "string",
+          "source": "\"#small-area-premade-model\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 66,
+          "start_byte": 2839,
+          "end_byte": 2841,
+          "kind": "string",
+          "source": "\"\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 69,
+          "start_byte": 2881,
+          "end_byte": 2908,
+          "kind": "string",
+          "source": "\"#small-area-geo-dimension\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 70,
+          "start_byte": 2932,
+          "end_byte": 2939,
+          "kind": "string",
+          "source": "\"input\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 71,
+          "start_byte": 2998,
+          "end_byte": 3022,
+          "kind": "string",
+          "source": "\"#small-area-geo-column\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 75,
+          "start_byte": 3132,
+          "end_byte": 3156,
+          "kind": "string",
+          "source": "\"#small-area-geo-column\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 76,
+          "start_byte": 3180,
+          "end_byte": 3187,
+          "kind": "string",
+          "source": "\"input\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 77,
+          "start_byte": 3238,
+          "end_byte": 3244,
+          "kind": "string",
+          "source": "\"true\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 82,
+          "start_byte": 3331,
+          "end_byte": 3340,
+          "kind": "string",
+          "source": "\"prepare\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 83,
+          "start_byte": 3367,
+          "end_byte": 3374,
+          "kind": "string",
+          "source": "\"start\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 84,
+          "start_byte": 3420,
+          "end_byte": 3440,
+          "kind": "string",
+          "source": "\"#small-area-result\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 85,
+          "start_byte": 3450,
+          "end_byte": 3461,
+          "kind": "string",
+          "source": "\"preparing\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 85,
+          "start_byte": 3463,
+          "end_byte": 3473,
+          "kind": "string",
+          "source": "\"prepared\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 85,
+          "start_byte": 3475,
+          "end_byte": 3485,
+          "kind": "string",
+          "source": "\"starting\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 86,
+          "start_byte": 3558,
+          "end_byte": 3615,
+          "kind": "string",
+          "source": "\"Inputs changed. Estimate the run again before starting.\"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 87,
+          "start_byte": 3656,
+          "end_byte": 3658,
+          "kind": "string",
+          "source": "\"\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 92,
+          "start_byte": 3739,
+          "end_byte": 3766,
+          "kind": "string",
+          "source": "\"#small-area-premade-model\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 93,
+          "start_byte": 3814,
+          "end_byte": 3838,
+          "kind": "string",
+          "source": "\"#small-area-model-file\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 94,
+          "start_byte": 3905,
+          "end_byte": 3949,
+          "kind": "string",
+          "source": "\"#small-area-candidate-households-file\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 97,
+          "start_byte": 4017,
+          "end_byte": 4053,
+          "kind": "string",
+          "source": "\"#small-area-candidate-persons-file\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 99,
+          "start_byte": 4118,
+          "end_byte": 4145,
+          "kind": "string",
+          "source": "\"#small-area-controls-file\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 100,
+          "start_byte": 4211,
+          "end_byte": 4245,
+          "kind": "string",
+          "source": "\"#small-area-person-controls-file\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 102,
+          "start_byte": 4311,
+          "end_byte": 4337,
+          "kind": "string",
+          "source": "\"#small-area-control-pack\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 103,
+          "start_byte": 4403,
+          "end_byte": 4448,
+          "kind": "string",
+          "source": "\"#small-area-control-pack-evidence-file\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 106,
+          "start_byte": 4514,
+          "end_byte": 4543,
+          "kind": "string",
+          "source": "\"#small-area-boundaries-file\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 109,
+          "start_byte": 4599,
+          "end_byte": 4615,
+          "kind": "string",
+          "source": "\"marital_status\"",
+          "role": "web-presentation-and-control-mixed-preserve"
+        },
+        {
+          "line": 109,
+          "start_byte": 4617,
+          "end_byte": 4633,
+          "kind": "string",
+          "source": "\"marital-status\"",
+          "role": "web-presentation-and-control-mixed-preserve"
+        },
+        {
+          "line": 109,
+          "start_byte": 4635,
+          "end_byte": 4645,
+          "kind": "string",
+          "source": "\"controls\"",
+          "role": "web-presentation-and-control-mixed-preserve"
+        },
+        {
+          "line": 109,
+          "start_byte": 4647,
+          "end_byte": 4663,
+          "kind": "string",
+          "source": "\"marital status\"",
+          "role": "web-presentation-and-control-mixed-preserve"
+        },
+        {
+          "line": 110,
+          "start_byte": 4671,
+          "end_byte": 4682,
+          "kind": "string",
+          "source": "\"education\"",
+          "role": "web-presentation-and-control-mixed-preserve"
+        },
+        {
+          "line": 110,
+          "start_byte": 4684,
+          "end_byte": 4695,
+          "kind": "string",
+          "source": "\"education\"",
+          "role": "web-presentation-and-control-mixed-preserve"
+        },
+        {
+          "line": 110,
+          "start_byte": 4697,
+          "end_byte": 4706,
+          "kind": "string",
+          "source": "\"profile\"",
+          "role": "web-presentation-and-control-mixed-preserve"
+        },
+        {
+          "line": 110,
+          "start_byte": 4708,
+          "end_byte": 4719,
+          "kind": "string",
+          "source": "\"education\"",
+          "role": "web-presentation-and-control-mixed-preserve"
+        },
+        {
+          "line": 111,
+          "start_byte": 4727,
+          "end_byte": 4741,
+          "kind": "string",
+          "source": "\"labour_force\"",
+          "role": "web-presentation-and-control-mixed-preserve"
+        },
+        {
+          "line": 111,
+          "start_byte": 4743,
+          "end_byte": 4757,
+          "kind": "string",
+          "source": "\"labour-force\"",
+          "role": "web-presentation-and-control-mixed-preserve"
+        },
+        {
+          "line": 111,
+          "start_byte": 4759,
+          "end_byte": 4768,
+          "kind": "string",
+          "source": "\"profile\"",
+          "role": "web-presentation-and-control-mixed-preserve"
+        },
+        {
+          "line": 111,
+          "start_byte": 4770,
+          "end_byte": 4784,
+          "kind": "string",
+          "source": "\"labour-force\"",
+          "role": "web-presentation-and-control-mixed-preserve"
+        },
+        {
+          "line": 112,
+          "start_byte": 4792,
+          "end_byte": 4807,
+          "kind": "string",
+          "source": "\"work_activity\"",
+          "role": "web-presentation-and-control-mixed-preserve"
+        },
+        {
+          "line": 112,
+          "start_byte": 4809,
+          "end_byte": 4824,
+          "kind": "string",
+          "source": "\"work-activity\"",
+          "role": "web-presentation-and-control-mixed-preserve"
+        },
+        {
+          "line": 112,
+          "start_byte": 4826,
+          "end_byte": 4835,
+          "kind": "string",
+          "source": "\"profile\"",
+          "role": "web-presentation-and-control-mixed-preserve"
+        },
+        {
+          "line": 112,
+          "start_byte": 4837,
+          "end_byte": 4852,
+          "kind": "string",
+          "source": "\"work activity\"",
+          "role": "web-presentation-and-control-mixed-preserve"
+        },
+        {
+          "line": 117,
+          "start_byte": 4967,
+          "end_byte": 4991,
+          "kind": "template",
+          "source": "`#small-area-${id}-pack`",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 118,
+          "start_byte": 5033,
+          "end_byte": 5067,
+          "kind": "template",
+          "source": "`#small-area-${id}-${source}-file`",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 135,
+          "start_byte": 5446,
+          "end_byte": 5480,
+          "kind": "string",
+          "source": "\"#small-area-candidate-households\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 137,
+          "start_byte": 5542,
+          "end_byte": 5569,
+          "kind": "string",
+          "source": "\"#small-area-geo-dimension\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 139,
+          "start_byte": 5641,
+          "end_byte": 5665,
+          "kind": "string",
+          "source": "\"#small-area-geo-column\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 141,
+          "start_byte": 5752,
+          "end_byte": 5781,
+          "kind": "string",
+          "source": "\"#small-area-average-persons\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 142,
+          "start_byte": 5823,
+          "end_byte": 5848,
+          "kind": "string",
+          "source": "\"#small-area-random-seed\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 143,
+          "start_byte": 5888,
+          "end_byte": 5911,
+          "kind": "string",
+          "source": "\"#small-area-pool-size\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 144,
+          "start_byte": 5948,
+          "end_byte": 5976,
+          "kind": "string",
+          "source": "\"#small-area-subsample-seed\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 146,
+          "start_byte": 6029,
+          "end_byte": 6037,
+          "kind": "string",
+          "source": "\"geo_id\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 147,
+          "start_byte": 6056,
+          "end_byte": 6078,
+          "kind": "string",
+          "source": "\"Synthetic Population\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 148,
+          "start_byte": 6125,
+          "end_byte": 6153,
+          "kind": "string",
+          "source": "\"#small-area-integerization\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 149,
+          "start_byte": 6205,
+          "end_byte": 6231,
+          "kind": "string",
+          "source": "\"#small-area-joint-solver\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 150,
+          "start_byte": 6289,
+          "end_byte": 6321,
+          "kind": "string",
+          "source": "\"#small-area-zero-target-policy\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 159,
+          "start_byte": 6511,
+          "end_byte": 6521,
+          "kind": "string",
+          "source": "\"prepared\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 160,
+          "start_byte": 6545,
+          "end_byte": 6600,
+          "kind": "template",
+          "source": "`result-box ${preflight.ready ? \"success\" : \"warning\"}`",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 160,
+          "start_byte": 6577,
+          "end_byte": 6587,
+          "kind": "string",
+          "source": "\"success\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 160,
+          "start_byte": 6589,
+          "end_byte": 6598,
+          "kind": "string",
+          "source": "\"warning\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 162,
+          "start_byte": 6648,
+          "end_byte": 6719,
+          "kind": "string",
+          "source": "\"Preflight complete. Review the scale before starting the durable run.\"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 163,
+          "start_byte": 6726,
+          "end_byte": 6776,
+          "kind": "string",
+          "source": "\"Preflight found insufficient workspace capacity.\"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 164,
+          "start_byte": 6819,
+          "end_byte": 6824,
+          "kind": "string",
+          "source": "\"div\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 165,
+          "start_byte": 6849,
+          "end_byte": 6882,
+          "kind": "string",
+          "source": "\"result-list compact-result-list\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 167,
+          "start_byte": 6917,
+          "end_byte": 6937,
+          "kind": "string",
+          "source": "\"Target geographies\"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 168,
+          "start_byte": 7001,
+          "end_byte": 7020,
+          "kind": "string",
+          "source": "\"Target households\"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 169,
+          "start_byte": 7083,
+          "end_byte": 7102,
+          "kind": "string",
+          "source": "\"Estimated persons\"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 170,
+          "start_byte": 7165,
+          "end_byte": 7188,
+          "kind": "string",
+          "source": "\"Candidate pool\"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 171,
+          "start_byte": 7189,
+          "end_byte": 7301,
+          "kind": "template",
+          "source": "`${estimate.calibration_pool_size.toLocaleString()} of ${estimate.candidate_households.toLocaleString()}`",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 174,
+          "start_byte": 7325,
+          "end_byte": 7352,
+          "kind": "string",
+          "source": "\"Workspace capacity\"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 176,
+          "start_byte": 7383,
+          "end_byte": 7403,
+          "kind": "string",
+          "source": "\"Enough disk space\"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 176,
+          "start_byte": 7405,
+          "end_byte": 7428,
+          "kind": "string",
+          "source": "\"Too little disk space\"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 181,
+          "start_byte": 7548,
+          "end_byte": 7562,
+          "kind": "string",
+          "source": "\"Control pack\"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 184,
+          "start_byte": 7654,
+          "end_byte": 7662,
+          "kind": "string",
+          "source": "\"button\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 185,
+          "start_byte": 7681,
+          "end_byte": 7689,
+          "kind": "string",
+          "source": "\"button\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 186,
+          "start_byte": 7712,
+          "end_byte": 7728,
+          "kind": "string",
+          "source": "\"primary-action\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 187,
+          "start_byte": 7753,
+          "end_byte": 7783,
+          "kind": "string",
+          "source": "\"Start durable small-area run\"",
+          "role": "direct-presentation-candidate"
+        },
+        {
+          "line": 189,
+          "start_byte": 7849,
+          "end_byte": 7856,
+          "kind": "string",
+          "source": "\"click\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 190,
+          "start_byte": 7911,
+          "end_byte": 7918,
+          "kind": "string",
+          "source": "\"start\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 193,
+          "start_byte": 8029,
+          "end_byte": 8069,
+          "kind": "string",
+          "source": "\"Starting the durable small-area run...\"",
+          "role": "web-presentation-candidate"
+        },
+        {
+          "line": 194,
+          "start_byte": 8108,
+          "end_byte": 8118,
+          "kind": "string",
+          "source": "\"starting\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 198,
+          "start_byte": 8228,
+          "end_byte": 8253,
+          "kind": "string",
+          "source": "\"synthpopcan:run-created\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 205,
+          "start_byte": 8468,
+          "end_byte": 8470,
+          "kind": "string",
+          "source": "\"\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 215,
+          "start_byte": 8710,
+          "end_byte": 8718,
+          "kind": "string",
+          "source": "\"option\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 218,
+          "start_byte": 8862,
+          "end_byte": 8963,
+          "kind": "template",
+          "source": "`${pack.census_vintage} ${String(\n      pack.geography_level,\n    ).toUpperCase()} — ${pack.label}`",
+          "role": "direct-presentation-candidate"
+        }
+      ]
+    },
+    "src/synthpopcan/web/starter-files.mjs": {
+      "source_sha256": "44262810ba6e9e604245825dbf62a2c228bb4bc4650fb0c708958e1c57698520",
+      "entries": [
+        {
+          "line": 3,
+          "start_byte": 61,
+          "end_byte": 64,
+          "kind": "string",
+          "source": "\"1\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 3,
+          "start_byte": 71,
+          "end_byte": 78,
+          "kind": "string",
+          "source": "\"young\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 3,
+          "start_byte": 85,
+          "end_byte": 89,
+          "kind": "string",
+          "source": "\"F\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 4,
+          "start_byte": 102,
+          "end_byte": 105,
+          "kind": "string",
+          "source": "\"2\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 4,
+          "start_byte": 112,
+          "end_byte": 119,
+          "kind": "string",
+          "source": "\"young\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 4,
+          "start_byte": 126,
+          "end_byte": 130,
+          "kind": "string",
+          "source": "\"M\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 5,
+          "start_byte": 143,
+          "end_byte": 146,
+          "kind": "string",
+          "source": "\"3\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 5,
+          "start_byte": 153,
+          "end_byte": 158,
+          "kind": "string",
+          "source": "\"old\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 5,
+          "start_byte": 165,
+          "end_byte": 169,
+          "kind": "string",
+          "source": "\"F\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 6,
+          "start_byte": 182,
+          "end_byte": 185,
+          "kind": "string",
+          "source": "\"4\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 6,
+          "start_byte": 192,
+          "end_byte": 197,
+          "kind": "string",
+          "source": "\"old\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 6,
+          "start_byte": 204,
+          "end_byte": 208,
+          "kind": "string",
+          "source": "\"M\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 12,
+          "start_byte": 287,
+          "end_byte": 292,
+          "kind": "string",
+          "source": "\"age\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 12,
+          "start_byte": 306,
+          "end_byte": 311,
+          "kind": "string",
+          "source": "\"age\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 12,
+          "start_byte": 318,
+          "end_byte": 325,
+          "kind": "string",
+          "source": "\"young\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 12,
+          "start_byte": 332,
+          "end_byte": 334,
+          "kind": "string",
+          "source": "\"\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 12,
+          "start_byte": 343,
+          "end_byte": 348,
+          "kind": "string",
+          "source": "\"60\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 13,
+          "start_byte": 365,
+          "end_byte": 370,
+          "kind": "string",
+          "source": "\"age\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 13,
+          "start_byte": 384,
+          "end_byte": 389,
+          "kind": "string",
+          "source": "\"age\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 13,
+          "start_byte": 396,
+          "end_byte": 401,
+          "kind": "string",
+          "source": "\"old\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 13,
+          "start_byte": 408,
+          "end_byte": 410,
+          "kind": "string",
+          "source": "\"\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 13,
+          "start_byte": 419,
+          "end_byte": 424,
+          "kind": "string",
+          "source": "\"40\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 14,
+          "start_byte": 441,
+          "end_byte": 446,
+          "kind": "string",
+          "source": "\"sex\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 14,
+          "start_byte": 460,
+          "end_byte": 465,
+          "kind": "string",
+          "source": "\"sex\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 14,
+          "start_byte": 472,
+          "end_byte": 474,
+          "kind": "string",
+          "source": "\"\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 14,
+          "start_byte": 481,
+          "end_byte": 484,
+          "kind": "string",
+          "source": "\"F\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 14,
+          "start_byte": 493,
+          "end_byte": 498,
+          "kind": "string",
+          "source": "\"50\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 15,
+          "start_byte": 515,
+          "end_byte": 520,
+          "kind": "string",
+          "source": "\"sex\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 15,
+          "start_byte": 534,
+          "end_byte": 539,
+          "kind": "string",
+          "source": "\"sex\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 15,
+          "start_byte": 546,
+          "end_byte": 548,
+          "kind": "string",
+          "source": "\"\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 15,
+          "start_byte": 555,
+          "end_byte": 558,
+          "kind": "string",
+          "source": "\"M\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 15,
+          "start_byte": 567,
+          "end_byte": 572,
+          "kind": "string",
+          "source": "\"50\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 22,
+          "start_byte": 678,
+          "end_byte": 682,
+          "kind": "string",
+          "source": "\"id\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 22,
+          "start_byte": 684,
+          "end_byte": 692,
+          "kind": "string",
+          "source": "\"seed-1\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 23,
+          "start_byte": 747,
+          "end_byte": 749,
+          "kind": "string",
+          "source": "\"\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 32,
+          "start_byte": 948,
+          "end_byte": 956,
+          "kind": "string",
+          "source": "\"margin\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 33,
+          "start_byte": 977,
+          "end_byte": 989,
+          "kind": "string",
+          "source": "\"dimensions\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 34,
+          "start_byte": 1045,
+          "end_byte": 1047,
+          "kind": "string",
+          "source": "\"\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 35,
+          "start_byte": 1058,
+          "end_byte": 1065,
+          "kind": "string",
+          "source": "\"count\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 35,
+          "start_byte": 1067,
+          "end_byte": 1069,
+          "kind": "string",
+          "source": "\"\"",
+          "role": "machine-data-or-protocol-preserve"
+        },
+        {
+          "line": 48,
+          "start_byte": 1368,
+          "end_byte": 1370,
+          "kind": "string",
+          "source": "\"\"",
+          "role": "machine-data-or-protocol-preserve"
+        }
+      ]
+    }
+  }
+}

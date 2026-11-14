@@ -170,6 +170,45 @@ test("a new draft preserves a delayed initial model catalogue", async ({ page })
   );
 });
 
+test("edited files invalidate an upload even if its displayed text changes", async ({
+  page,
+}) => {
+  let uploadStarted;
+  let releaseUpload;
+  const started = new Promise((resolve) => {
+    uploadStarted = resolve;
+  });
+  const release = new Promise((resolve) => {
+    releaseUpload = resolve;
+  });
+  await page.route("**/api/uploads", async (route) => {
+    uploadStarted();
+    await release;
+    await route.continue();
+  });
+  await openWorkbench(page);
+  await page.getByRole("button", { name: "New run" }).click();
+  await page.getByRole("button", { name: /Use demo age\/sex files/ }).click();
+  await page.getByRole("button", { name: "Upload and continue" }).click();
+  await started;
+  await page.locator("#workbench-message").evaluate((element) => {
+    element.textContent = "Téléversement en cours…";
+  });
+  await page.locator("#ipf-seed-file").setInputFiles({
+    name: "replacement.csv",
+    mimeType: "text/csv",
+    buffer: Buffer.from("age,sex\nyoung,F\n"),
+  });
+  await expect(page.locator("#workbench-message")).toContainText("Files changed");
+  releaseUpload();
+  await page.waitForTimeout(250);
+  await expect(page.locator("#workbench-message")).toContainText("Files changed");
+  await expect(
+    page.getByRole("heading", { name: "Choose the two IPF input files" }),
+  ).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Configure the fit" })).toBeHidden();
+});
+
 test("edited IPF settings win over a delayed preflight response", async ({ page }) => {
   let preflightStarted;
   let releasePreflight;
@@ -191,6 +230,9 @@ test("edited IPF settings win over a delayed preflight response", async ({ page 
   await page.getByText("Advanced IPF settings").click();
   await page.getByRole("button", { name: "Check inputs" }).click();
   await started;
+  await page.locator("#workbench-message").evaluate((element) => {
+    element.textContent = "Vérification en cours…";
+  });
   await page.locator("#ipf-weight-field").fill("WEIGHT");
   releasePreflight();
 
@@ -229,6 +271,9 @@ test("edited model settings win over a delayed preflight response", async ({
   await page.locator("#run-model-select").selectOption("demo-linked-household-person");
   await page.getByRole("button", { name: "Check model and scale" }).click();
   await started;
+  await page.locator("#workbench-message").evaluate((element) => {
+    element.textContent = "Vérification en cours…";
+  });
   await page.locator("#run-model-households").fill("11");
   releasePreflight();
 
@@ -430,6 +475,9 @@ test("SCN-WEB-003 runs durable linked small-area synthesis", async ({ page }) =>
   await page.locator("#small-area-subsample-seed").fill("7");
   await page.getByRole("button", { name: "Estimate and prepare" }).click();
   await preflightStarted;
+  await page.locator("#small-area-result").evaluate((element) => {
+    element.textContent = "Vérification en cours…";
+  });
   await page.locator("#small-area-candidate-households").fill("21");
   releaseFirstPreflight();
   await expect(page.locator("#small-area-result")).toContainText("Inputs changed");
@@ -440,6 +488,39 @@ test("SCN-WEB-003 runs durable linked small-area synthesis", async ({ page }) =>
   await page.getByRole("button", { name: "Estimate and prepare" }).click();
 
   const result = page.locator("#small-area-result");
+  await expect(result).toContainText("Target geographies2");
+  let startRequested;
+  let releaseStaleStart;
+  let staleStartCompleted;
+  const startPending = new Promise((resolve) => {
+    startRequested = resolve;
+  });
+  const startRelease = new Promise((resolve) => {
+    releaseStaleStart = resolve;
+  });
+  const startDone = new Promise((resolve) => {
+    staleStartCompleted = resolve;
+  });
+  const interceptStaleStart = async (route) => {
+    if (route.request().method() !== "POST") return route.continue();
+    startRequested();
+    await startRelease;
+    await route.fulfill({ json: { run_id: "fictional-stale-run" } });
+    staleStartCompleted();
+  };
+  await page.route("**/api/runs", interceptStaleStart);
+  await result.getByRole("button", { name: "Start durable small-area run" }).click();
+  await startPending;
+  await result.evaluate((element) => {
+    element.textContent = "Démarrage en cours…";
+  });
+  await page.locator("#small-area-candidate-households").fill("21");
+  await expect(result).toContainText("Inputs changed");
+  releaseStaleStart();
+  await startDone;
+  await page.unroute("**/api/runs", interceptStaleStart);
+  await page.locator("#small-area-candidate-households").fill("20");
+  await page.getByRole("button", { name: "Estimate and prepare" }).click();
   await expect(result).toContainText("Target geographies2");
   await result.getByRole("button", { name: "Start durable small-area run" }).click();
   await expect(page.getByRole("heading", { name: "Results" })).toBeVisible({

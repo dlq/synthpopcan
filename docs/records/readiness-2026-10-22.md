@@ -42,7 +42,7 @@ requires its independent vintage-specific source review. A family with a
 narrower or otherwise different universe cannot reuse this contract by merely
 renaming its denominator. Existing broad packs remain unchanged.
 
-## Localization Inventory (`I18N12-01`, in progress)
+## Localization Inventory (`I18N12-01`, web-client scope complete)
 
 [The generated inventory](readiness-2026-10-22/localization.json) covers the
 complete Click command tree, including groups, aliases and option help, static
@@ -53,12 +53,50 @@ or maintainer classification. The file policy distinguishes presentation,
 domain/workflow messages, machine contracts, user documentation and historical
 records. It preserves source labels pending provenance review.
 
-This is an extraction inventory, not a translation catalogue. Remaining work:
-review ambiguous literal roles; inventory individual HTML/JavaScript prose,
-accessibility labels, automation logs and verbatim third-party notices; and
-review the complete classification before closing `I18N12-01`. Canonical
+This is an extraction inventory, not a translation catalogue. The current
+generator also records individual HTML text, accessible labels, and source
+hashes; see the later snapshot in
+[localization-web-html-2026-11-14.json](localization-web-html-2026-11-14.json).
+A [JavaScript expression snapshot](localization-web-js-2026-11-14.json)
+adds parser-based byte ranges for 792 string and template candidates in 16
+modules. It marks direct presentation candidates, DOM structural values and
+mixed control/presentation text; source-hash-bound reviews cover all 15
+modules with inventoried expressions. One module has no inventoried string
+expressions. Refresh it with `npm ci` and
+`python scripts/audit_web_literals.py --output PATH`.
+
+The later [role review](localization-role-review-2026-11-14.md) records the
+shared output, durable-event, source-label and third-party notice boundaries.
+The [Python context snapshot](localization-python-roles-2026-11-14.json)
+includes source hashes and output-sink locations for the package and maintainer
+scripts. It distinguishes 362 direct Click help/prompt candidates from 923
+command-parameter literals and retains 12,696 unresolved occurrences across
+the package and maintainer scripts; these are not a count of user-facing
+strings, and CLI translation is deferred. The role review classifies
+web-reachable dynamic data and generated artifacts at their shared boundaries;
+it does not claim to classify every Python literal or future source response.
+Canonical
 locales remain `en-CA` and `fr-CA`, with English fallback. No French product
 coverage is claimed and no locale-dependent machine output is introduced.
+
+The 2026-11-14 generator run found 106 command paths, 20 web routes, and
+10,848 Python source-line locations still in the human-or-source review
+bucket. These locations are candidates, not a count of untranslated
+messages; a line may contain more than one literal. The largest candidate
+groups include `cli_geo.py`, `_control_pack_catalogue.py`, `cli_tree.py`,
+and `cli.py`. Rerun the command below to refresh the counts after changes.
+
+## Test Selection Runner
+
+The first runner increment selects changed individual test files and falls
+back to all tests for source files, shared files, unmapped files, empty changes,
+and Git errors. It includes committed, staged, unstaged, and untracked changes.
+The pull-request compatibility matrix uses the same runner; the coverage job
+and main continue to run the full suite. Reviewed source-to-test mappings and
+verification on an actual pull request remain before closing these slices. On
+the local Python 3.12 checkout, the `localization` named selection took 1.18
+seconds wall time; the preceding full coverage run took 214 seconds. These
+measure different checks and are not a speedup claim for identical coverage.
 
 ## Typing Baseline (`TYPE12-01`)
 

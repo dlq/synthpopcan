@@ -72,6 +72,8 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
 
       - name: Set up uv
         uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
@@ -96,11 +98,20 @@ jobs:
           --cov-fail-under=95
 
       - name: Run compatibility tests
-        if: matrix.python-version != '3.12'
+        if: matrix.python-version != '3.12' && github.event_name != 'pull_request'
         # Coverage-tool integration belongs to the 3.12 coverage job above.
         # Keep the full application behaviour suite on every supported Python.
         run: >-
           uv run --locked --extra performance pytest -m 'not coverage_gate'
+          --junitxml=correctness-report.xml
+
+      - name: Run affected compatibility tests
+        if: matrix.python-version != '3.12' && github.event_name == 'pull_request'
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: >-
+          uv run --locked --extra performance python scripts/test_runner.py affected
+          --base "$BASE_SHA" -- -m 'not coverage_gate'
           --junitxml=correctness-report.xml
 
       - name: Retain machine-readable correctness report

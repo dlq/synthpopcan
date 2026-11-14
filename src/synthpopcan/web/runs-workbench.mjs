@@ -217,7 +217,7 @@ function filesChanged(state) {
   state.operations.invalidate("upload");
   state.uploads = null;
   invalidatePreflight(state);
-  if (document.querySelector("#workbench-message").textContent.startsWith("Streaming"))
+  if (document.querySelector("#workbench-message").dataset.phase === "uploading")
     showMessage("Files changed. Upload the current pair to continue.", "warning");
   const seed = document.querySelector("#ipf-seed-file").files?.[0];
   const controls = document.querySelector("#ipf-controls-file").files?.[0];
@@ -230,7 +230,7 @@ async function uploadInputs(state) {
   const operation = state.operations.begin("upload");
   const button = document.querySelector("#upload-inputs");
   button.disabled = true;
-  showMessage("Streaming the two CSV files into the local workspace…", "");
+  showMessage("Streaming the two CSV files into the local workspace…", "", "uploading");
   const seedFile = document.querySelector("#ipf-seed-file").files[0];
   const controlsFile = document.querySelector("#ipf-controls-file").files[0];
   try {
@@ -261,7 +261,7 @@ function invalidatePreflight(state) {
   state.preflight = null;
   document.querySelector("#start-run").disabled = true;
   document.querySelector("#check-model-preflight").disabled = false;
-  if (document.querySelector("#workbench-message").textContent.startsWith("Checking"))
+  if (document.querySelector("#workbench-message").dataset.phase === "preflight")
     showMessage("Inputs changed. Check the current settings again.", "warning");
 }
 
@@ -277,7 +277,7 @@ function buildRequest(state) {
 
 async function checkPreflight(state) {
   const operation = state.operations.begin("preflight");
-  showMessage("Checking input structure and workspace capacity…", "");
+  showMessage("Checking input structure and workspace capacity…", "", "preflight");
   try {
     const request = buildRequest(state);
     const preflight = await preflightRun(request);
@@ -298,7 +298,11 @@ async function checkPreflight(state) {
 
 async function checkModelPreflight(state) {
   const operation = state.operations.begin("preflight");
-  showMessage("Checking package provenance, privacy, and output scale…", "");
+  showMessage(
+    "Checking package provenance, privacy, and output scale…",
+    "",
+    "preflight",
+  );
   const button = document.querySelector("#check-model-preflight");
   button.disabled = true;
   try {
@@ -622,9 +626,10 @@ function setRunStatus(status) {
   element.textContent = status.charAt(0).toUpperCase() + status.slice(1);
 }
 
-function showMessage(message, kind) {
+function showMessage(message, kind, phase = "") {
   const element = document.querySelector("#workbench-message");
   element.className = `result-box ${kind}`.trim();
+  element.dataset.phase = phase;
   element.textContent = message;
 }
 

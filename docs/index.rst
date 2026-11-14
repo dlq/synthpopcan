@@ -162,4 +162,5 @@ beginner generation workflows.
 
    small-area-reference
    records/readiness-2026-10-22
+   records/localization-role-review-2026-11-14
    records/correctness-refactor-2026-10-22
