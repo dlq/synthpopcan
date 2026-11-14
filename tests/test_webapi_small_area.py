@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import asyncio
+import csv
 import json
+import shlex
 from copy import deepcopy
 from pathlib import Path
 
@@ -16,6 +18,7 @@ from support.webapi_fixtures import (
     wait_for_terminal,
 )
 
+from synthpopcan.geography import statcan_geography_universe
 from synthpopcan.models import model_payload
 from synthpopcan.runs import RunStore
 from synthpopcan.webapi import (
@@ -24,6 +27,332 @@ from synthpopcan.webapi import (
 )
 from synthpopcan.webapp import get_webapp_root
 from synthpopcan.workflows.models import LOCAL_RUN_MAX_HOUSEHOLDS
+
+
+@pytest.mark.parametrize("year", [2016, 2021])
+def test_conditional_joint_durable_run_and_reproduction(tmp_path, monkeypatch, year):
+    tract = "4620053.00"
+    if year == 2016:
+        header = [
+            "CENSUS_YEAR",
+            "GEO_LEVEL",
+            "GEO_CODE (POR)",
+            "Member ID: Profile of Census Tracts (2247)",
+            "Dim: Sex (3): Member ID: [1]: Total - Sex",
+        ]
+        prefix = [year, 2, tract]
+        members = [
+            1135,
+            1683,
+            672,
+            1684,
+            1685,
+            1688,
+            1689,
+            1690,
+            1691,
+            1693,
+            1694,
+            1695,
+            1696,
+            1697,
+        ]
+    else:
+        header = [
+            "CENSUS_YEAR",
+            "GEO_LEVEL",
+            "ALT_GEO_CODE",
+            "DGUID",
+            "CHARACTERISTIC_ID",
+            "C1_COUNT_TOTAL",
+            "SYMBOL",
+        ]
+        prefix = [year, "Census tract", tract, f"2021S0507{tract}"]
+        members = [
+            1522,
+            1998,
+            126,
+            1999,
+            2000,
+            2004,
+            2005,
+            2006,
+            2007,
+            2009,
+            2010,
+            2011,
+            2012,
+            2013,
+        ]
+    from io import StringIO
+
+    buffer = StringIO(newline="")
+    writer = csv.writer(buffer)
+    writer.writerow(header)
+    for member, value in zip(
+        members, [20, 15, 15, 5, 0, 0, 0, 0, 0, 0, 0, 0, 5, 0], strict=True
+    ):
+        writer.writerow([*prefix, member, value, *([""] if year == 2021 else [])])
+    extra = (
+        {1865: 15, 1867: 5, 1868: 5, 1869: 0, 1873: 15, 1874: 5, 1876: 5, 1877: 0}
+        if year == 2016
+        else {2223: 15, 2225: 5, 2226: 5, 2227: 0, 2231: 15, 2232: 5, 2234: 5, 2235: 0}
+    )
+    for member, value in extra.items():
+        writer.writerow([*prefix, member, value, *([""] if year == 2021 else [])])
+    marital = StringIO(newline="")
+    marital_writer = csv.writer(marital)
+    marital_writer.writerow(["ct", "marital_status", "age_20", "value"])
+    observed = {(1, 1): 20, (1, 2): 5, (1, 3): 15, (3, 3): 5, (6, 3): 5}
+    for status in (1, 3, 4, 6, 7, 8, 9):
+        ages = (1, 2, 3, *range(6, 16)) if status == 1 else (3, *range(6, 16))
+        for age in ages:
+            marital_writer.writerow(
+                [tract, status, age, observed.get((status, age), 0)]
+            )
+    app = create_web_app(
+        static_root=get_webapp_root(),
+        workspace=tmp_path / "workspace",
+        session_secret="test-session",
+    )
+    store = app.state.run_store
+    education_source = buffer.getvalue().encode()
+    if year == 2021:
+        from io import BytesIO
+        from zipfile import ZipFile
+
+        archive = BytesIO()
+        with ZipFile(archive, "w") as zipped:
+            zipped.writestr("test_English_CSV_data.csv", education_source)
+        writer = store.begin_upload(
+            "profile.zip",
+            media_type="application/zip",
+            max_bytes=len(archive.getvalue()),
+        )
+        writer.write(archive.getvalue())
+        education_upload = writer.finish()["upload_id"]
+    else:
+        education_upload = store_upload(store, "profile.csv", education_source)
+    inputs = {
+        "candidate_households_upload_id": store_upload(
+            store, "hh.csv", b"synthetic_household_id,household_size\na,1\nb,1\nc,2\n"
+        ),
+        "candidate_persons_upload_id": store_upload(
+            store,
+            "pp.csv",
+            (
+                "synthetic_person_id,synthetic_household_id,AGEGRP,HDGREE,"
+                f"{'LFTAG' if year == 2016 else 'LFACT'},WRKACT,"
+                f"{'MarStH' if year == 2016 else 'MARSTH'},group\n"
+                "p1,a,3,1,1,2,1,all\np2,b,12,8,8,11,2,all\np3,c,3,1,1,2,1,all\np4,c,2,99,99,99,8,all\n"
+            ).encode(),
+        ),
+        "controls_upload_id": store_upload(
+            store,
+            "hc.csv",
+            f'margin,dimensions,ct,household_size,count\nsize,"ct,household_size",{tract},1,10\nsize,"ct,household_size",{tract},2,5\n'.encode(),
+        ),
+        "person_controls_upload_id": store_upload(
+            store,
+            "pc.csv",
+            f'margin,dimensions,ct,group,count\npeople,"ct,group",{tract},all,20\n'.encode(),
+        ),
+        "education_profile_upload_id": education_upload,
+        "education_pack": f"statcan-{year}-education-ct-v1",
+        "labour_force_profile_upload_id": store_upload(
+            store, "labour.csv", buffer.getvalue().encode()
+        ),
+        "labour_force_pack": f"statcan-{year}-labour-force-status-ct-v1",
+        "work_activity_profile_upload_id": store_upload(
+            store, "work.csv", buffer.getvalue().encode()
+        ),
+        "work_activity_pack": f"statcan-{year}-work-activity-ct-v1",
+        "marital_status_controls_upload_id": store_upload(
+            store, "marital.csv", marital.getvalue().encode()
+        ),
+        "marital_status_pack": f"statcan-{year}-marital-status-ct-v1",
+    }
+    request = {
+        "workflow": "small_area",
+        "inputs": inputs,
+        "options": {
+            "geography_dimension": "ct",
+            "geography_universe": statcan_geography_universe(
+                year, "ct", "ct"
+            ).as_dict(),
+            "integerization": "swap",
+        },
+    }
+    wrong_vintage = deepcopy(request)
+    wrong_vintage["inputs"]["education_pack"] = (
+        f"statcan-{2021 if year == 2016 else 2016}-education-ct-v1"
+    )
+    with pytest.raises(ValueError, match="matching Statistics Canada CT geography"):
+        _preflight_small_area_run(store, wrong_vintage)
+    assert store.get_upload(inputs["education_profile_upload_id"])["claimed_by"] is None
+    incomplete = deepcopy(request)
+    incomplete["inputs"].pop("education_profile_upload_id")
+    with pytest.raises(ValueError, match="requires its matching source upload"):
+        _preflight_small_area_run(store, incomplete)
+    invalid = deepcopy(request)
+    invalid["inputs"]["education_profile_upload_id"] = store_upload(
+        store, "invalid.csv", b"CENSUS_YEAR,GEO_LEVEL\n"
+    )
+    with pytest.raises(ValueError, match="Expected the .* Census Profile"):
+        _preflight_small_area_run(store, invalid)
+    assert (
+        store.get_upload(invalid["inputs"]["education_profile_upload_id"])["claimed_by"]
+        is None
+    )
+
+    async def exercise():
+        transport = httpx.ASGITransport(app=app)
+        async with httpx.AsyncClient(
+            transport=transport, base_url="http://127.0.0.1"
+        ) as client:
+            await client.get("/api/app")
+            if year == 2021:
+                uploaded = await client.post(
+                    "/api/uploads",
+                    content=archive.getvalue(),
+                    headers={
+                        "x-filename": "profile.zip",
+                        "content-type": "application/zip",
+                    },
+                )
+                assert uploaded.status_code == 201, uploaded.text
+            rejected = await client.post("/api/preflight", json=wrong_vintage)
+            assert rejected.status_code == 400
+            assert "matching Statistics Canada CT geography" in rejected.json()["error"]
+            preflight = await client.post("/api/preflight", json=request)
+            assert preflight.status_code == 200, preflight.text
+            assert (
+                preflight.json()["request"]["inputs"]["education_pack"]
+                == inputs["education_pack"]
+            )
+            original = store.create_small_area_run(preflight.json()["request"])
+            original_id = original["run_id"]
+            rejected = await client.post(f"/api/runs/{original_id}/restart")
+            assert rejected.status_code == 400
+            assert "Only interrupted" in rejected.json()["error"]
+            store.transition_run(original_id, "running")
+            partial = store.run_dir(original_id) / "work" / "partial-output.csv"
+            partial.write_text("incomplete\n")
+            published = store.run_dir(original_id) / "artifacts" / "households.csv"
+            published.write_text("published-before-crash\n")
+            store.transition_run(original_id, "interrupted")
+            saved_path = store.resolve_managed_path(original["inputs"][0]["path"])
+            saved_bytes = saved_path.read_bytes()
+            saved_path.write_bytes(b"tampered\n")
+            rejected = await client.post(f"/api/runs/{original_id}/restart")
+            assert rejected.status_code == 400
+            assert "changed" in rejected.json()["error"]
+            saved_path.write_bytes(saved_bytes)
+            from unittest.mock import patch
+
+            with patch.object(
+                app.state.job_manager,
+                "enqueue",
+                side_effect=OSError("queue unavailable"),
+            ):
+                rejected = await client.post(f"/api/runs/{original_id}/restart")
+            assert rejected.status_code == 400
+            failed = next(run for run in store.list_runs() if run["status"] == "failed")
+            assert failed["error"]["kind"] == "restart_queue_error"
+            assert store.load_run(original_id)["status"] == "interrupted"
+            response = await client.post(f"/api/runs/{original_id}/restart")
+            assert response.status_code == 202, response.text
+            restarted = await wait_for_terminal(client, response.json()["run_id"])
+            assert restarted["restarted_from"] == original_id
+            assert store.load_run(original_id)["status"] == "interrupted"
+            assert partial.read_text() == "incomplete\n"
+            assert published.read_text() == "published-before-crash\n"
+            return restarted
+
+    try:
+        manifest = asyncio.run(exercise())
+    finally:
+        app.state.job_manager.shutdown()
+    assert manifest["status"] == "succeeded", manifest
+    assert any(
+        item["logical_name"] == "education_profile" for item in manifest["inputs"]
+    )
+    assert {
+        "education_profile",
+        "labour_force_profile",
+        "work_activity_profile",
+        "marital_status_controls",
+    }.issubset({item["logical_name"] for item in manifest["inputs"]})
+    assert store.verify_assurance(str(manifest["run_id"])) == {
+        "passed": True,
+        "issues": [],
+    }
+    replay = shlex.split(manifest["reproduction"]["shell"])
+    assert replay[replay.index("--education-profile") + 1] == (
+        "inputs/education-profile.zip"
+        if year == 2021
+        else "inputs/education-profile.csv"
+    )
+    assert replay[replay.index("--integerization") + 1] == "swap"
+    monkeypatch.chdir(store.run_dir(str(manifest["run_id"])))
+    from synthpopcan.cli import main
+
+    assert main(replay[1:]) == 0
+
+    # Exercise the generated-candidate CLI adapter against the same source cells.
+    # The generator is replaced only to make its output the same deterministic
+    # linked pool as the durable run; calibration and validation remain real.
+    def generate_candidates(*args, households_path, persons_path, **kwargs):
+        households_path.write_bytes(Path("inputs/households.csv").read_bytes())
+        persons_path.write_bytes(Path("inputs/persons.csv").read_bytes())
+
+    monkeypatch.setattr(
+        "synthpopcan.tree.generate_linked_population_to_csv", generate_candidates
+    )
+    cli_args = replay[1:]
+    assert cli_args[:2] == ["geo", "calibrate"]
+    cli_args = [
+        "geo",
+        "synthesize",
+        "demo-linked-household-person",
+        "--households",
+        "3",
+    ] + cli_args[3:]
+    persons_index = cli_args.index("--persons")
+    del cli_args[persons_index : persons_index + 2]
+    out_index = cli_args.index("--out")
+    cli_args[out_index + 1] = "generated-replay"
+    assert main(cli_args) == 0
+
+
+def test_interrupted_conditional_run_preserves_claimed_source(tmp_path):
+    store = RunStore(tmp_path / "workspace")
+    inputs = {
+        "candidate_households_upload_id": store_upload(store, "hh.csv", b"id\nh1\n"),
+        "candidate_persons_upload_id": store_upload(store, "pp.csv", b"id\np1\n"),
+        "controls_upload_id": store_upload(store, "controls.csv", b"control\n1\n"),
+        "education_pack": "statcan-2021-education-ct-v1",
+        "education_profile_upload_id": store_upload(
+            store, "profile.csv", b"profile\n1\n"
+        ),
+    }
+    request = {"workflow": "small_area", "inputs": inputs, "options": {}}
+    run = store.create_small_area_run(request)
+    run_id = str(run["run_id"])
+    store.transition_run(run_id, "running")
+    recovered = RunStore(tmp_path / "workspace")
+    interrupted = recovered.load_run(run_id)
+    assert interrupted["status"] == "interrupted"
+    assert interrupted["error"]["kind"] == "interrupted"
+    profile = next(
+        i for i in interrupted["inputs"] if i["logical_name"] == "education_profile"
+    )
+    assert (
+        recovered.resolve_managed_path(profile["path"]).read_bytes() == b"profile\n1\n"
+    )
+    assert (
+        interrupted["request"]["inputs"]["education_pack"] == inputs["education_pack"]
+    )
 
 
 def test_small_area_api_runs_generation_and_calibration_durably(tmp_path: Path) -> None:

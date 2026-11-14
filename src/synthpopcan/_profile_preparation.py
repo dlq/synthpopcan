@@ -10,7 +10,7 @@ from contextlib import contextmanager
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from typing import Any, cast
-from zipfile import ZipFile
+from zipfile import ZipFile, is_zipfile
 
 from synthpopcan.control_packs import load_compatibility_registry, load_control_pack
 
@@ -31,7 +31,9 @@ def workflow_controls(geography_level="ct"):
 
 @contextmanager
 def _profile_reader(path: Path):
-    if path.suffix.lower() != ".zip":
+    if path.suffix.lower() != ".zip" and not (
+        path.suffix.lower() == ".bin" and is_zipfile(path)
+    ):
         with path.open(encoding="latin-1", newline="") as handle:
             yield csv.reader(handle)
         return

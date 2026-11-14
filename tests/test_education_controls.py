@@ -2,11 +2,14 @@
 
 import csv
 import json
+from unittest.mock import patch
 
 import pytest
 from click.testing import CliRunner
 
+from synthpopcan.api import LinkedPopulationFiles, calibrate_small_area
 from synthpopcan.cli import cli
+from synthpopcan.geography import GeographyUniverse
 
 
 @pytest.mark.parametrize("year", [2016, 2021])
@@ -134,6 +137,24 @@ def test_education_calibration(tmp_path, year, case):
         }
         assert expected[case] in result.output
         assert not (out / "persons.csv").exists()
+        with patch("synthpopcan.small_area_synthesis.fit_linked_by_geography") as fit:
+            with pytest.raises(ValueError, match=expected[case]):
+                calibrate_small_area(
+                    LinkedPopulationFiles(households=hh, persons=pp),
+                    hc,
+                    person_controls=pc,
+                    geography_dimension="ct",
+                    geography_universe=GeographyUniverse(
+                        census_vintage=year,
+                        geography_level="ct",
+                        identifier_namespace=f"statcan:census:{year}:ct",
+                        identifier_column="ct",
+                    ),
+                    education_pack=f"statcan-{year}-education-ct-v1",
+                    education_profile_path=profile,
+                    output_dir=tmp_path / "python-out",
+                )
+            fit.assert_not_called()
         return
     assert result.exit_code == 0, result.output
     report = json.loads((out / "report.json").read_text())
@@ -143,6 +164,27 @@ def test_education_calibration(tmp_path, year, case):
     assert evidence["eligible_targets"]["university_above_bachelor"] == 7
     assert evidence["eligible_targets"]["secondary"] == 0
     assert report["summary"]["realized_max_abs_error"] == 0
+
+    python_result = calibrate_small_area(
+        LinkedPopulationFiles(households=hh, persons=pp),
+        hc,
+        person_controls=pc,
+        geography_dimension="ct",
+        geography_universe=GeographyUniverse(
+            census_vintage=year,
+            geography_level="ct",
+            identifier_namespace=f"statcan:census:{year}:ct",
+            identifier_column="ct",
+        ),
+        education_pack=f"statcan-{year}-education-ct-v1",
+        education_profile_path=profile,
+        integerization="swap",
+        include_weights=True,
+        output_dir=tmp_path / "python-out",
+    )
+    python_report = json.loads(python_result.report_path.read_text())
+    assert python_report["education_controls"] == report["education_controls"]
+    assert python_report["summary"]["realized_max_abs_error"] == 0
 
 
 @pytest.mark.parametrize(

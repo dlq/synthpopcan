@@ -2723,6 +2723,55 @@ def _render_deferred_national_maps(
     help="Optional linked-person controls CSV for joint calibration.",
 )
 @click.option(
+    "--marital-status-controls",
+    "marital_status_controls_path",
+    type=_PATH,
+    help="Age-15+ targets JSON or source CSV for a marital-status pack.",
+)
+@click.option("--marital-status-pack", help="Built-in marital-status tract pack.")
+@click.option("--education-pack", help="Built-in education tract pack.")
+@click.option(
+    "--education-profile",
+    "education_profile_path",
+    type=_PATH,
+    help="Matching Census Profile tract ZIP or CSV.",
+)
+@click.option("--labour-force-pack", help="Built-in labour-force status tract pack.")
+@click.option(
+    "--labour-force-profile",
+    "labour_force_profile_path",
+    type=_PATH,
+    help="Matching Census Profile tract ZIP or CSV.",
+)
+@click.option("--work-activity-pack", help="Built-in work-activity tract pack.")
+@click.option(
+    "--work-activity-profile",
+    "work_activity_profile_path",
+    type=_PATH,
+    help="Matching Census Profile tract ZIP or CSV.",
+)
+@click.option(
+    "--integerization",
+    type=click.Choice(["midpoint", "swap"]),
+    default="midpoint",
+    show_default=True,
+    help="Whole-household realization method.",
+)
+@click.option(
+    "--joint-solver",
+    type=click.Choice(["ipu", "hybrid"]),
+    default="ipu",
+    show_default=True,
+    help="Joint calibration solver.",
+)
+@click.option(
+    "--zero-target-policy",
+    type=click.Choice(["structural", "observed"]),
+    default="structural",
+    show_default=True,
+    help="Treatment of zero targets.",
+)
+@click.option(
     "--control-pack",
     default=None,
     help="Built-in control-pack identifier or strict local manifest JSON.",
@@ -2851,6 +2900,17 @@ def synthesize_command(
     household_count: int,
     controls_path: Path,
     person_controls_path: Path | None,
+    marital_status_controls_path: Path | None,
+    marital_status_pack: str | None,
+    education_pack: str | None,
+    education_profile_path: Path | None,
+    labour_force_pack: str | None,
+    labour_force_profile_path: Path | None,
+    work_activity_pack: str | None,
+    work_activity_profile_path: Path | None,
+    integerization: str,
+    joint_solver: str,
+    zero_target_policy: str,
     control_pack: str | None,
     control_pack_evidence: Path | None,
     geo_dimension: str,
@@ -2887,6 +2947,7 @@ def synthesize_command(
         validate_prepared_model_publishable,
     )
 
+    _validate_zero_target_cli(controls_path, person_controls_path, zero_target_policy)
     output_dir.mkdir(parents=True, exist_ok=True)
     output_geo_column = geo_column or geo_dimension
     geography_universe = _optional_geography_universe(
@@ -2967,6 +3028,17 @@ def synthesize_command(
                     subsample_seed=subsample_seed,
                     max_iterations=max_iterations,
                     tolerance=tolerance,
+                    marital_status_controls_path=marital_status_controls_path,
+                    marital_status_pack=marital_status_pack,
+                    education_pack=education_pack,
+                    education_profile_path=education_profile_path,
+                    labour_force_pack=labour_force_pack,
+                    labour_force_profile_path=labour_force_profile_path,
+                    work_activity_pack=work_activity_pack,
+                    work_activity_profile_path=work_activity_profile_path,
+                    integerization=integerization,
+                    joint_solver=joint_solver,
+                    zero_target_policy=zero_target_policy,
                 )
             )
             summary = calibrated.details

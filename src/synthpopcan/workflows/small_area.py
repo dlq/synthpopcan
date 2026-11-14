@@ -143,6 +143,18 @@ class SmallAreaRequest:
     candidate_persons_reference: str | None = None
     boundaries_reference: str | None = None
     output_dir_reference: str | None = None
+    marital_status_controls_path: Path | None = None
+    marital_status_pack: str | None = None
+    education_pack: str | None = None
+    education_profile_path: Path | None = None
+    labour_force_pack: str | None = None
+    labour_force_profile_path: Path | None = None
+    work_activity_pack: str | None = None
+    work_activity_profile_path: Path | None = None
+    integerization: str = "midpoint"
+    joint_solver: str = "ipu"
+    zero_target_policy: str = "structural"
+    conditional_input_references: Mapping[str, str] | None = None
 
     def __post_init__(self) -> None:
         if (
@@ -235,6 +247,7 @@ class SmallAreaRequest:
             arguments.extend(
                 ("--control-pack-evidence", control_pack_evidence_reference)
             )
+        conditional, conditional_options = _conditional_reproduction(self, arguments)
         for column, value in sorted(self.conditions.items()):
             if reference is not None:
                 arguments.extend(("--condition", f"{column}={value}"))
@@ -249,7 +262,7 @@ class SmallAreaRequest:
             )
         if self.include_weights:
             arguments.append("--include-weights")
-        if self.max_iterations != 100:
+        if self.max_iterations != 16:
             arguments.extend(("--max-iterations", str(self.max_iterations)))
         if self.tolerance != 1e-6:
             arguments.extend(("--tolerance", str(self.tolerance)))
@@ -301,6 +314,7 @@ class SmallAreaRequest:
                     "person_controls": person_controls_reference,
                     "control_pack": control_pack_reference,
                     "control_pack_evidence": control_pack_evidence_reference,
+                    **conditional,
                 },
                 "options": {
                     "candidate_households": self.candidate_households,
@@ -316,6 +330,7 @@ class SmallAreaRequest:
                     "chunk_size": self.chunk_size,
                     "max_iterations": self.max_iterations,
                     "tolerance": self.tolerance,
+                    **conditional_options,
                 },
                 "outputs": {
                     "directory": output_dir_reference,
@@ -335,6 +350,37 @@ class SmallAreaRequest:
             command=commands[0],
             commands=tuple(commands),
         )
+
+
+def _conditional_reproduction(request: SmallAreaRequest, arguments: list[str]):
+    inputs = {
+        "marital_status_controls": request.marital_status_controls_path,
+        "marital_status_pack": request.marital_status_pack,
+        "education_pack": request.education_pack,
+        "education_profile": request.education_profile_path,
+        "labour_force_pack": request.labour_force_pack,
+        "labour_force_profile": request.labour_force_profile_path,
+        "work_activity_pack": request.work_activity_pack,
+        "work_activity_profile": request.work_activity_profile_path,
+    }
+    refs = request.conditional_input_references or {}
+    inputs = {
+        name: refs.get(name, str(value))
+        for name, value in inputs.items()
+        if value is not None
+    }
+    options = {
+        name: value
+        for name, value, default in (
+            ("integerization", request.integerization, "midpoint"),
+            ("joint_solver", request.joint_solver, "ipu"),
+            ("zero_target_policy", request.zero_target_policy, "structural"),
+        )
+        if value != default
+    }
+    for name, value in (*inputs.items(), *options.items()):
+        arguments.extend((f"--{name.replace('_', '-')}", value))
+    return inputs, options
 
 
 @dataclass(frozen=True)
@@ -560,6 +606,17 @@ def synthesize_small_area_files(
             subsample_seed=request.subsample_seed,
             max_iterations=request.max_iterations,
             tolerance=request.tolerance,
+            marital_status_controls_path=request.marital_status_controls_path,
+            marital_status_pack=request.marital_status_pack,
+            education_pack=request.education_pack,
+            education_profile_path=request.education_profile_path,
+            labour_force_pack=request.labour_force_pack,
+            labour_force_profile_path=request.labour_force_profile_path,
+            work_activity_pack=request.work_activity_pack,
+            work_activity_profile_path=request.work_activity_profile_path,
+            integerization=request.integerization,
+            joint_solver=request.joint_solver,
+            zero_target_policy=request.zero_target_policy,
         ),
         progress=progress,
     )

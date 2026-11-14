@@ -801,6 +801,17 @@ def calibrate_small_area(
     pool_size: int | None = None,
     subsample_seed: int = 42,
     include_weights: bool = False,
+    marital_status_controls_path: str | Path | None = None,
+    marital_status_pack: str | None = None,
+    education_pack: str | None = None,
+    education_profile_path: str | Path | None = None,
+    labour_force_pack: str | None = None,
+    labour_force_profile_path: str | Path | None = None,
+    work_activity_pack: str | None = None,
+    work_activity_profile_path: str | Path | None = None,
+    joint_solver: str = "ipu",
+    zero_target_policy: str = "structural",
+    integerization: str = "midpoint",
 ) -> SmallAreaResult:
     """Calibrate a linked population to small-area controls.
 
@@ -839,6 +850,16 @@ def calibrate_small_area(
         Optional reproducible candidate-pool subsampling settings.
     include_weights:
         Also write the usually large ``weights.csv`` diagnostic artifact.
+    marital_status_controls_path, marital_status_pack:
+        Reviewed marital-status targets and optional matching tract pack.
+    education_pack, education_profile_path:
+        Optional education tract pack and matching Census Profile CSV or ZIP.
+    labour_force_pack, labour_force_profile_path:
+        Optional labour-force tract pack and matching Census Profile CSV or ZIP.
+    work_activity_pack, work_activity_profile_path:
+        Optional work-activity tract pack and matching Census Profile CSV or ZIP.
+    joint_solver, zero_target_policy, integerization:
+        Joint calibration, observed-zero, and whole-household realization policies.
 
     Returns
     -------
@@ -896,6 +917,33 @@ def calibrate_small_area(
                 tolerance=tolerance,
                 pool_size=pool_size,
                 subsample_seed=subsample_seed,
+                marital_status_controls_path=(
+                    Path(marital_status_controls_path)
+                    if marital_status_controls_path is not None
+                    else None
+                ),
+                marital_status_pack=marital_status_pack,
+                education_pack=education_pack,
+                education_profile_path=(
+                    Path(education_profile_path)
+                    if education_profile_path is not None
+                    else None
+                ),
+                labour_force_pack=labour_force_pack,
+                labour_force_profile_path=(
+                    Path(labour_force_profile_path)
+                    if labour_force_profile_path is not None
+                    else None
+                ),
+                work_activity_pack=work_activity_pack,
+                work_activity_profile_path=(
+                    Path(work_activity_profile_path)
+                    if work_activity_profile_path is not None
+                    else None
+                ),
+                joint_solver=joint_solver,
+                zero_target_policy=zero_target_policy,
+                integerization=integerization,
             )
         )
         details = calibrated.details

@@ -4,7 +4,7 @@ Status: active feature implementation; `1.1.0` released and `1.2.0` committed\
 Created: 2026-08-01\
 Last updated: 2026-11-14\
 Target: `1.1.0` broad compatible packs; conditional person controls in `1.2.0`\
-Next action: complete public-interface adoption and release evidence for the accepted scope\
+Next action: complete installed-distribution and release evidence for the accepted scope\
 Roadmap: [PLANS.md](../PLANS.md) | [Plan index](README.md)
 
 Release sequencing and confidence are defined in the
@@ -65,9 +65,9 @@ runtime slice does not begin and the other families continue independently.
 | `SA12-10` | `done` | `SA12-01` | Shared conditional-person reconciliation and preflight path | The common implementation represents not-applicable states or explicit conditional constraints without silently manufacturing totals; adversarial cases fail closed |
 | `SA12-11` | `done` | `SA12-10` and at least one accepted family runtime slice | Separately versioned conditional-person pack tier | Manifests have stable identifiers, semantic checksums, inspectable contents, and fail-closed compatibility with the retained broad packs |
 | `SA12-12` | `done` | `SA12-11` | Joint bounded feasibility and calibration evidence | Reviewed 2016/2021 CT and CSD cases have direct-source joint evidence; non-tract proxy cases and missing 2016 ADA evidence are explicitly qualified or deferred below. Fractional and realized residuals are independently recomputed for the recorded fits |
-| `SA12-13` | `ready` | `SA12-12` | Python and CLI adoption through the shared workflow | Equivalent library and command requests normalize identically; public-interface and machine-output fixtures remain additive |
-| `SA12-14` | `ready` | `SA12-12` | Local-web and durable-run adoption through the shared workflow | HTTP normalization, progress events, run evidence, resume behavior, and browser scenarios match the accepted pack semantics |
-| `SA12-15` | `blocked` | `SA12-13`, `SA12-14` | Installed-distribution evidence and public documentation | Wheel and sdist smokes pass; documentation names admitted, deferred, approximate, validation-only, and uncontrolled families |
+| `SA12-13` | `done` | `SA12-12` | Python and CLI adoption through the shared workflow | Equivalent library and command requests normalize identically; public-interface and machine-output fixtures remain additive |
+| `SA12-14` | `done` | `SA12-12` | Local-web and durable-run adoption through the shared workflow | HTTP normalization, progress events, run evidence, interruption restart, and browser scenarios match the accepted pack semantics |
+| `SA12-15` | `ready` | `SA12-13`, `SA12-14` | Installed-distribution evidence and public documentation | Wheel and sdist smokes pass; documentation names admitted, deferred, approximate, validation-only, and uncontrolled families |
 
 The internal universe contract and rejection fixtures are recorded in the
 [2026-10-22 preparation record](../docs/records/readiness-2026-10-22.md).
@@ -1068,6 +1068,28 @@ release claim. The eight built-in conditional packs remain CT-only; the
 non-tract studies used explicit normalized controls. `SA12-03`, `SA12-05`,
 `SA12-07`, and `SA12-09` remain open for their individual implementation
 acceptance, and `SA12-13` through `SA12-15` remain necessary before release.
+
+#### Python, CLI, and local-web adoption in progress (2026-11-14)
+
+The beginner `calibrate_small_area` API and `geo synthesize` accept the
+conditional inputs already supported by `geo calibrate`. The local-web
+preflight validates the selected tract packs and source CSVs, retains them
+as checksummed durable inputs, and reports source and compatibility errors.
+The worker forwards selections and realization options and records a CLI
+reproduction command. Joint synthetic fixture tests exercise all four
+conditional families together for both vintages, audit saved inputs, and
+replay the command; source mismatches fail before fitting. The browser form
+requires the reviewed broad pack, evidence, and person controls.
+
+SA12-13 and SA12-14 use a fresh restart rather than resuming a partial fit.
+The app marks unfinished runs interrupted, verifies retained inputs and model
+identity, copies them into a new run, rechecks preflight, and publishes the
+new queued run atomically. The original run and partial artifacts remain
+unchanged. Failure and tampering tests cover rejection and cleanup; the new
+manifest records its parent. An unseeded generation can differ after restart.
+The web upload accepts marital-status CSVs and Profile CSVs or ZIPs within
+its 256 MiB limit; the CLI remains available for larger sources. Installed
+distribution and final release evidence remain in `SA12-15`.
 
 ## `1.1.0` Runtime Invariants
 

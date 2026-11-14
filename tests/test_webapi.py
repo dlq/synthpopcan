@@ -47,6 +47,7 @@ def test_web_app_factory_preserves_state_and_route_order(tmp_path: Path) -> None
             ("/api/runs", ("GET",), "list_runs"),
             ("/api/runs", ("POST",), "create_run"),
             ("/api/runs/{run_id}", ("GET",), "get_run"),
+            ("/api/runs/{run_id}/restart", ("POST",), "restart_run"),
             ("/api/runs/{run_id}/events", ("GET",), "get_run_events"),
             ("/api/runs/{run_id}/cancel", ("POST",), "cancel_run"),
             (

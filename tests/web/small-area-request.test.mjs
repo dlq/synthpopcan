@@ -132,3 +132,52 @@ test("validates small-area source and control combinations before uploading", ()
     /Choose both a reviewed control pack/,
   );
 });
+
+test("retains conditional packs and sources and rejects incomplete selections", async () => {
+  const draft = {
+    modelId: "demo-linked",
+    controlsFile: file("controls.csv"),
+    personControlsFile: file("persons.csv"),
+    controlPackId: "statcan-2021-broad-ct-v1",
+    controlPackEvidenceFile: file("evidence.json"),
+    conditionalControls: [
+      {
+        family: "education",
+        source: "profile",
+        label: "education",
+        pack: "statcan-2021-education-ct-v1",
+        file: file("profile.csv"),
+      },
+      {
+        family: "marital_status",
+        source: "controls",
+        label: "marital status",
+        pack: "statcan-2021-marital-status-ct-v1",
+        file: file("marital.csv"),
+      },
+    ],
+    options: { integerization: "swap" },
+  };
+  const request = await buildSmallAreaRequest(draft, upload);
+  assert.equal(request.inputs.education_pack, "statcan-2021-education-ct-v1");
+  assert.equal(request.inputs.education_profile_upload_id, "upload-profile.csv");
+  assert.equal(request.inputs.marital_status_controls_upload_id, "upload-marital.csv");
+  assert.equal(request.options.integerization, "swap");
+  assert.throws(
+    () =>
+      validateSmallAreaDraft({
+        ...draft,
+        conditionalControls: [{ ...draft.conditionalControls[0], file: null }],
+      }),
+    /both the education pack/,
+  );
+  assert.throws(
+    () =>
+      validateSmallAreaDraft({
+        ...draft,
+        controlPackId: "",
+        controlPackEvidenceFile: null,
+      }),
+    /require a reviewed broad pack/,
+  );
+});

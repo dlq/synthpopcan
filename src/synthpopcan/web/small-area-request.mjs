@@ -16,6 +16,16 @@ export function validateSmallAreaDraft(draft) {
       "Choose both a reviewed control pack and its control-pack evidence JSON.",
     );
   }
+  for (const item of draft.conditionalControls ?? []) {
+    if (Boolean(item.pack) !== Boolean(item.file)) {
+      throw new Error(`Choose both the ${item.label} pack and its source file.`);
+    }
+    if (item.pack && (!draft.controlPackId || !draft.personControlsFile)) {
+      throw new Error(
+        "Conditional controls require a reviewed broad pack and person controls.",
+      );
+    }
+  }
   return draft;
 }
 
@@ -44,6 +54,13 @@ export async function buildSmallAreaRequest(draft, upload) {
     const uploaded = await upload(draft.controlPackEvidenceFile);
     inputs.control_pack_id = draft.controlPackId;
     inputs.control_pack_evidence_upload_id = uploaded.upload_id;
+  }
+  for (const item of draft.conditionalControls ?? []) {
+    if (item.pack) {
+      const uploaded = await upload(item.file);
+      inputs[`${item.family}_pack`] = item.pack;
+      inputs[`${item.family}_${item.source}_upload_id`] = uploaded.upload_id;
+    }
   }
   if (draft.boundariesFile) {
     const uploaded = await upload(draft.boundariesFile);

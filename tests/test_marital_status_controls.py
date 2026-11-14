@@ -7,6 +7,7 @@ import pytest
 from click.testing import CliRunner
 
 from synthpopcan._marital_status_packs import prepare_pack_targets
+from synthpopcan.api import LinkedPopulationFiles, calibrate_small_area
 from synthpopcan.cli import cli
 from synthpopcan.geography import statcan_geography_identity, statcan_geography_universe
 
@@ -141,6 +142,19 @@ def test_marital_status_calibration(tmp_path, vintage, field, case):
     report = json.loads((output / "report.json").read_text())
     assert report["summary"]["converged_count"] == 1
     assert report["summary"]["realized_max_abs_error"] == 0
+    python_result = calibrate_small_area(
+        LinkedPopulationFiles(households=households, persons=persons),
+        household_controls,
+        person_controls=person_controls,
+        geography_dimension="ct",
+        geography_universe=statcan_geography_universe(vintage, "ct", "ct"),
+        marital_status_controls_path=marital_controls,
+        marital_status_pack=pack_args[1] if built_in else None,
+        output_dir=tmp_path / "python-output",
+    )
+    python_report = json.loads(python_result.report_path.read_text())
+    assert python_report["marital_status_controls"] == report["marital_status_controls"]
+    assert python_report["summary"]["realized_max_abs_error"] == 0
     if built_in:
         evidence = report["marital_status_controls"]
         assert evidence["pack"] == pack_args[1]

@@ -9,6 +9,7 @@ import {
   listRuns,
   preflightRun,
   previewArtifact,
+  restartRun,
   uploadCsv,
 } from "./run-api.mjs";
 import { followRunEvents } from "./run-events.mjs";
@@ -82,6 +83,9 @@ export function bindRunsWorkbench(bootstrap) {
   document
     .querySelector("#cancel-run")
     .addEventListener("click", () => requestCancel(state));
+  document
+    .querySelector("#restart-run")
+    .addEventListener("click", () => requestRestart(state));
   document.querySelectorAll("[data-go-step]").forEach((button) => {
     button.addEventListener("click", () => showStep(button.dataset.goStep));
   });
@@ -157,6 +161,7 @@ function newDraft(state) {
   state.stopEvents?.();
   state.stopEvents = null;
   state.selectedRun = null;
+  document.querySelector("#restart-run").hidden = true;
   state.workflow = "ipf";
   state.uploads = null;
   state.preflight = null;
@@ -178,6 +183,7 @@ function invalidateWorkbenchViewOperations(state) {
     "follow-run",
     "results",
     "cancel-run",
+    "restart-run",
     "model-install",
   ])
     state.operations.invalidate(name);
@@ -438,9 +444,29 @@ async function requestCancel(state) {
   }
 }
 
+async function requestRestart(state) {
+  if (!state.selectedRun) return;
+  const runId = state.selectedRun.run_id;
+  const operation = state.operations.begin("restart-run");
+  const button = document.querySelector("#restart-run");
+  button.disabled = true;
+  try {
+    const run = await restartRun(runId);
+    if (!operation.isCurrent() || state.selectedRun?.run_id !== runId) return;
+    await refreshRuns(state);
+    if (!operation.isCurrent() || state.selectedRun?.run_id !== runId) return;
+    await selectRun(state, run);
+  } catch (error) {
+    if (!operation.isCurrent() || state.selectedRun?.run_id !== runId) return;
+    showMessage(error.message, "error");
+    button.disabled = false;
+  }
+}
+
 async function selectRun(state, summary) {
   const viewRevision = state.viewRevision + 1;
   state.viewRevision = viewRevision;
+  state.operations.invalidate("restart-run");
   state.operations.invalidate("follow-run");
   state.operations.invalidate("results");
   state.stopEvents?.();
@@ -450,6 +476,7 @@ async function selectRun(state, summary) {
     const run = await getRun(summary.run_id);
     if (state.viewRevision !== viewRevision) return;
     state.selectedRun = run;
+    document.querySelector("#restart-run").hidden = true;
     renderRunList(
       document.querySelector("#runs-list"),
       state.runs,
@@ -464,6 +491,7 @@ async function selectRun(state, summary) {
     );
     if (TERMINAL.has(run.status)) await showTerminalRun(state, run);
     else {
+      document.querySelector("#cancel-run").disabled = run.status === "cancelling";
       showStep("run");
       showMessage("Reconnected to the durable run.", "success");
       followRun(state, run.run_id);
@@ -482,6 +510,9 @@ async function showTerminalRun(state, run) {
   document.querySelector("#cancel-run").disabled = true;
   if (run.status !== "succeeded") {
     showStep("run");
+    const restart = document.querySelector("#restart-run");
+    restart.hidden = run.status !== "interrupted" || run.workflow !== "small_area";
+    restart.disabled = false;
     const message = run.error?.message ?? `Run ${run.status}.`;
     showMessage(message, run.status === "cancelled" ? "warning" : "error");
     return;

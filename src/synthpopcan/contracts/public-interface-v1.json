@@ -5581,6 +5581,244 @@
           },
           {
             "count": false,
+            "default": {
+              "type": "Sentinel"
+            },
+            "flag_value": null,
+            "is_flag": false,
+            "kind": "option",
+            "multiple": false,
+            "name": "marital_status_controls_path",
+            "names": [
+              "--marital-status-controls"
+            ],
+            "nargs": 1,
+            "required": false,
+            "type": {
+              "dir_okay": true,
+              "exists": false,
+              "file_okay": true,
+              "name": "path",
+              "readable": true,
+              "writable": false
+            }
+          },
+          {
+            "count": false,
+            "default": {
+              "type": "Sentinel"
+            },
+            "flag_value": null,
+            "is_flag": false,
+            "kind": "option",
+            "multiple": false,
+            "name": "marital_status_pack",
+            "names": [
+              "--marital-status-pack"
+            ],
+            "nargs": 1,
+            "required": false,
+            "type": {
+              "name": "text"
+            }
+          },
+          {
+            "count": false,
+            "default": {
+              "type": "Sentinel"
+            },
+            "flag_value": null,
+            "is_flag": false,
+            "kind": "option",
+            "multiple": false,
+            "name": "education_pack",
+            "names": [
+              "--education-pack"
+            ],
+            "nargs": 1,
+            "required": false,
+            "type": {
+              "name": "text"
+            }
+          },
+          {
+            "count": false,
+            "default": {
+              "type": "Sentinel"
+            },
+            "flag_value": null,
+            "is_flag": false,
+            "kind": "option",
+            "multiple": false,
+            "name": "education_profile_path",
+            "names": [
+              "--education-profile"
+            ],
+            "nargs": 1,
+            "required": false,
+            "type": {
+              "dir_okay": true,
+              "exists": false,
+              "file_okay": true,
+              "name": "path",
+              "readable": true,
+              "writable": false
+            }
+          },
+          {
+            "count": false,
+            "default": {
+              "type": "Sentinel"
+            },
+            "flag_value": null,
+            "is_flag": false,
+            "kind": "option",
+            "multiple": false,
+            "name": "labour_force_pack",
+            "names": [
+              "--labour-force-pack"
+            ],
+            "nargs": 1,
+            "required": false,
+            "type": {
+              "name": "text"
+            }
+          },
+          {
+            "count": false,
+            "default": {
+              "type": "Sentinel"
+            },
+            "flag_value": null,
+            "is_flag": false,
+            "kind": "option",
+            "multiple": false,
+            "name": "labour_force_profile_path",
+            "names": [
+              "--labour-force-profile"
+            ],
+            "nargs": 1,
+            "required": false,
+            "type": {
+              "dir_okay": true,
+              "exists": false,
+              "file_okay": true,
+              "name": "path",
+              "readable": true,
+              "writable": false
+            }
+          },
+          {
+            "count": false,
+            "default": {
+              "type": "Sentinel"
+            },
+            "flag_value": null,
+            "is_flag": false,
+            "kind": "option",
+            "multiple": false,
+            "name": "work_activity_pack",
+            "names": [
+              "--work-activity-pack"
+            ],
+            "nargs": 1,
+            "required": false,
+            "type": {
+              "name": "text"
+            }
+          },
+          {
+            "count": false,
+            "default": {
+              "type": "Sentinel"
+            },
+            "flag_value": null,
+            "is_flag": false,
+            "kind": "option",
+            "multiple": false,
+            "name": "work_activity_profile_path",
+            "names": [
+              "--work-activity-profile"
+            ],
+            "nargs": 1,
+            "required": false,
+            "type": {
+              "dir_okay": true,
+              "exists": false,
+              "file_okay": true,
+              "name": "path",
+              "readable": true,
+              "writable": false
+            }
+          },
+          {
+            "count": false,
+            "default": "midpoint",
+            "flag_value": null,
+            "is_flag": false,
+            "kind": "option",
+            "multiple": false,
+            "name": "integerization",
+            "names": [
+              "--integerization"
+            ],
+            "nargs": 1,
+            "required": false,
+            "type": {
+              "case_sensitive": true,
+              "choices": [
+                "midpoint",
+                "swap"
+              ],
+              "name": "choice"
+            }
+          },
+          {
+            "count": false,
+            "default": "ipu",
+            "flag_value": null,
+            "is_flag": false,
+            "kind": "option",
+            "multiple": false,
+            "name": "joint_solver",
+            "names": [
+              "--joint-solver"
+            ],
+            "nargs": 1,
+            "required": false,
+            "type": {
+              "case_sensitive": true,
+              "choices": [
+                "ipu",
+                "hybrid"
+              ],
+              "name": "choice"
+            }
+          },
+          {
+            "count": false,
+            "default": "structural",
+            "flag_value": null,
+            "is_flag": false,
+            "kind": "option",
+            "multiple": false,
+            "name": "zero_target_policy",
+            "names": [
+              "--zero-target-policy"
+            ],
+            "nargs": 1,
+            "required": false,
+            "type": {
+              "case_sensitive": true,
+              "choices": [
+                "structural",
+                "observed"
+              ],
+              "name": "choice"
+            }
+          },
+          {
+            "count": false,
             "default": null,
             "flag_value": null,
             "is_flag": false,
@@ -17578,6 +17816,83 @@
             "default": false,
             "kind": "keyword_only",
             "name": "include_weights",
+            "required": false
+          },
+          {
+            "annotation": "str | Path | None",
+            "default": null,
+            "kind": "keyword_only",
+            "name": "marital_status_controls_path",
+            "required": false
+          },
+          {
+            "annotation": "str | None",
+            "default": null,
+            "kind": "keyword_only",
+            "name": "marital_status_pack",
+            "required": false
+          },
+          {
+            "annotation": "str | None",
+            "default": null,
+            "kind": "keyword_only",
+            "name": "education_pack",
+            "required": false
+          },
+          {
+            "annotation": "str | Path | None",
+            "default": null,
+            "kind": "keyword_only",
+            "name": "education_profile_path",
+            "required": false
+          },
+          {
+            "annotation": "str | None",
+            "default": null,
+            "kind": "keyword_only",
+            "name": "labour_force_pack",
+            "required": false
+          },
+          {
+            "annotation": "str | Path | None",
+            "default": null,
+            "kind": "keyword_only",
+            "name": "labour_force_profile_path",
+            "required": false
+          },
+          {
+            "annotation": "str | None",
+            "default": null,
+            "kind": "keyword_only",
+            "name": "work_activity_pack",
+            "required": false
+          },
+          {
+            "annotation": "str | Path | None",
+            "default": null,
+            "kind": "keyword_only",
+            "name": "work_activity_profile_path",
+            "required": false
+          },
+          {
+            "annotation": "str",
+            "default": "ipu",
+            "kind": "keyword_only",
+            "name": "joint_solver",
+            "required": false
+          },
+          {
+            "annotation": "str",
+            "default": "structural",
+            "kind": "keyword_only",
+            "name": "zero_target_policy",
+            "required": false
+          },
+          {
+            "annotation": "str",
+            "default": "midpoint",
+            "kind": "keyword_only",
+            "name": "integerization",
             "required": false
           }
         ],

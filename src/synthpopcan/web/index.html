@@ -184,6 +184,7 @@
             <ol id="progress-events" class="progress-events" aria-live="polite"></ol>
             <div class="step-actions">
               <button id="cancel-run" class="secondary-action danger-action" type="button">Cancel run</button>
+              <button id="restart-run" class="primary-action" type="button" hidden>Restart from saved inputs</button>
             </div>
           </section>
 
@@ -284,6 +285,31 @@
               >Control-pack evidence JSON</span>
               <input id="small-area-control-pack-evidence-file" type="file" accept=".json,application/json">
             </label>
+            <fieldset class="conditional-controls">
+              <legend>Conditional census tract controls</legend>
+              <p>Select a matching 2016 or 2021 broad tract pack and upload the source for each family you want to fit.</p>
+              <div class="form-grid">
+              <label>Marital status pack
+                <select id="small-area-marital-status-pack"><option value="">None</option><option value="statcan-2016-marital-status-ct-v1">2016</option><option value="statcan-2021-marital-status-ct-v1">2021</option></select>
+              </label>
+              <label>Marital status tract CSV <input id="small-area-marital-status-controls-file" type="file" accept=".csv,text/csv"></label>
+              <label>Education pack
+                <select id="small-area-education-pack"><option value="">None</option><option value="statcan-2016-education-ct-v1">2016</option><option value="statcan-2021-education-ct-v1">2021</option></select>
+              </label>
+              <label>Education Profile CSV or ZIP <input id="small-area-education-profile-file" type="file" accept=".csv,.zip,text/csv,application/zip"></label>
+              <label>Labour-force status pack
+                <select id="small-area-labour-force-pack"><option value="">None</option><option value="statcan-2016-labour-force-status-ct-v1">2016</option><option value="statcan-2021-labour-force-status-ct-v1">2021</option></select>
+              </label>
+              <label>Labour-force Profile CSV or ZIP <input id="small-area-labour-force-profile-file" type="file" accept=".csv,.zip,text/csv,application/zip"></label>
+              <label>Work activity pack
+                <select id="small-area-work-activity-pack"><option value="">None</option><option value="statcan-2016-work-activity-ct-v1">2016</option><option value="statcan-2021-work-activity-ct-v1">2021</option></select>
+              </label>
+              <label>Work activity Profile CSV or ZIP <input id="small-area-work-activity-profile-file" type="file" accept=".csv,.zip,text/csv,application/zip"></label>
+              <label>Whole-household realization <select id="small-area-integerization"><option value="midpoint">Midpoint rounding</option><option value="swap">Improve with swaps</option></select></label>
+              <label>Joint solver <select id="small-area-joint-solver"><option value="ipu">IPU</option><option value="hybrid">Hybrid</option></select></label>
+              <label>Zero targets <select id="small-area-zero-target-policy"><option value="structural">Treat as structural zeros</option><option value="observed">Allow residuals at observed zeros</option></select></label>
+              </div>
+            </fieldset>
             <label>
               <span
                 class="help-label"

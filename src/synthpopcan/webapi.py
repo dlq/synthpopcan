@@ -48,7 +48,7 @@ from synthpopcan.models import (
     model_payload,
     remove_cached_model,
 )
-from synthpopcan.runs import RunStore
+from synthpopcan.runs import RestartError, RunStore
 from synthpopcan.small_area_synthesis import estimate_small_area_run
 from synthpopcan.statcan import normalize_product_id
 from synthpopcan.web_wds import (
@@ -61,6 +61,10 @@ from synthpopcan.workflows.models import (
     LOCAL_RUN_MAX_HOUSEHOLDS,
     inspect_prepared_model,
     read_prepared_model_package,
+)
+from synthpopcan.workflows.preflight import (
+    ConditionalPreflightError,
+    preflight_small_area_run,
 )
 from synthpopcan.workflows.preflight import (
     _csv_category_support as _csv_category_support,
@@ -82,9 +86,6 @@ from synthpopcan.workflows.preflight import (
 )
 from synthpopcan.workflows.preflight import (
     _unsupported_control_categories as _unsupported_control_categories,
-)
-from synthpopcan.workflows.preflight import (
-    preflight_small_area_run,
 )
 
 _MAX_API_JSON_BYTES = 8 * 1024 * 1024
@@ -231,6 +232,7 @@ def _register_run_routes(app: FastAPI, context: _WebAppContext) -> None:
     _register_upload_routes(app, context)
     _register_preflight_routes(app, context)
     _register_run_manifest_routes(app, context)
+    _register_run_restart_routes(app, context)
     _register_run_event_routes(app, context)
     _register_run_cancellation_routes(app, context)
     _register_run_artifact_routes(app, context)
@@ -244,9 +246,10 @@ def _register_upload_routes(app: FastAPI, context: _WebAppContext) -> None:
     async def upload_file(request: Request) -> Response:
         display_name = request.headers.get("x-filename", "upload.csv")
         media_type = request.headers.get("content-type", "text/csv").split(";", 1)[0]
-        if media_type not in {"text/csv", "application/json"}:
+        if media_type not in {"text/csv", "application/json", "application/zip"}:
             return _error_response(
-                "upload Content-Type must be text/csv or application/json",
+                "upload Content-Type must be text/csv, application/json, "
+                "or application/zip",
                 HTTPStatus.UNSUPPORTED_MEDIA_TYPE,
             )
         declared_length = request.headers.get("content-length")
@@ -306,11 +309,8 @@ def _register_preflight_routes(app: FastAPI, context: _WebAppContext) -> None:
             payload = await _read_json_body(request)
             result = await run_in_threadpool(_preflight_run, run_store, payload)
             return JSONResponse(result)
-        except (KeyError, TypeError, ValueError):
-            return _error_response(
-                "preflight request is invalid",
-                HTTPStatus.BAD_REQUEST,
-            )
+        except (KeyError, TypeError, ValueError) as exc:
+            return _conditional_request_error(exc, "preflight request is invalid")
 
 
 def _register_run_manifest_routes(app: FastAPI, context: _WebAppContext) -> None:
@@ -345,8 +345,8 @@ def _register_run_manifest_routes(app: FastAPI, context: _WebAppContext) -> None
                 manifest = run_store.create_small_area_run(preflight["request"])
             job_manager.enqueue(str(manifest["run_id"]))
             return JSONResponse(manifest, status_code=HTTPStatus.ACCEPTED)
-        except (KeyError, TypeError, ValueError):
-            return _error_response("run request is invalid", HTTPStatus.BAD_REQUEST)
+        except (KeyError, TypeError, ValueError) as exc:
+            return _conditional_request_error(exc, "run request is invalid")
 
     @app.get("/api/runs/{run_id}")
     async def get_run(run_id: str) -> Response:
@@ -354,6 +354,72 @@ def _register_run_manifest_routes(app: FastAPI, context: _WebAppContext) -> None
             return JSONResponse(run_store.load_run(run_id))
         except (KeyError, ValueError):
             return _error_response("run not found", HTTPStatus.NOT_FOUND)
+
+
+def _conditional_request_error(exc: Exception, fallback: str) -> Response:
+    message = str(exc) if isinstance(exc, ConditionalPreflightError) else fallback
+    return _error_response(message, HTTPStatus.BAD_REQUEST)
+
+
+class _RestartWorkspace:
+    def __init__(self, root: Path, inputs: dict[str, Path]) -> None:
+        self.root = root
+        self.inputs = inputs
+
+    def upload_path(self, upload_id: str, *, require_unclaimed: bool = False) -> Path:
+        return self.inputs[upload_id]
+
+
+def _restart_preflight(
+    root: Path, inputs: dict[str, Path], request: dict[str, Any]
+) -> None:
+    try:
+        payload = SmallAreaRunRequest.model_validate(request)
+        result = preflight_small_area_run(_RestartWorkspace(root, inputs), payload)
+    except ConditionalPreflightError:
+        raise
+    except (KeyError, ValueError) as exc:
+        raise RestartError(
+            "Saved inputs no longer pass preflight; create a new run and "
+            "check the controls and candidate support."
+        ) from exc
+    if not result.ready:
+        raise RestartError("Not enough workspace capacity to restart this run.")
+
+
+def _register_run_restart_routes(app: FastAPI, context: _WebAppContext) -> None:
+    @app.post("/api/runs/{run_id}/restart")
+    async def restart_run(run_id: str) -> Response:
+        try:
+            manifest = await run_in_threadpool(
+                context.run_store.restart_interrupted_small_area,
+                run_id,
+                _restart_preflight,
+            )
+            try:
+                context.job_manager.enqueue(str(manifest["run_id"]))
+            except Exception:
+                context.run_store.transition_run(
+                    str(manifest["run_id"]),
+                    "failed",
+                    error={
+                        "kind": "restart_queue_error",
+                        "message": "Could not queue restarted run.",
+                    },
+                )
+                context.run_store.append_event(
+                    str(manifest["run_id"]), "failed", "Could not queue restarted run."
+                )
+                raise
+            return JSONResponse(manifest, status_code=HTTPStatus.ACCEPTED)
+        except (KeyError, ValueError, OSError) as exc:
+            if isinstance(exc, (ConditionalPreflightError, RestartError)):
+                return _error_response(str(exc), HTTPStatus.BAD_REQUEST)
+            return _error_response(
+                "Could not restart this run. Check its state and input integrity, "
+                "or create a new run.",
+                HTTPStatus.BAD_REQUEST,
+            )
 
 
 def _register_run_event_routes(app: FastAPI, context: _WebAppContext) -> None:

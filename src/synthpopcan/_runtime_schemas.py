@@ -60,6 +60,14 @@ class SmallAreaRunInputs(_BoundaryModel):
     control_pack_id: str | None = None
     control_pack_evidence_upload_id: str | None = None
     boundaries_upload_id: str | None = None
+    marital_status_pack: str | None = None
+    marital_status_controls_upload_id: str | None = None
+    education_pack: str | None = None
+    education_profile_upload_id: str | None = None
+    labour_force_pack: str | None = None
+    labour_force_profile_upload_id: str | None = None
+    work_activity_pack: str | None = None
+    work_activity_profile_upload_id: str | None = None
 
 
 class SmallAreaRunOptions(_BoundaryModel):
@@ -78,6 +86,9 @@ class SmallAreaRunOptions(_BoundaryModel):
     geography_id_field: str = "geo_id"
     map_title: str = "Synthetic Population"
     average_persons_per_household: float = 2.22
+    integerization: Literal["midpoint", "swap"] = "midpoint"
+    joint_solver: Literal["ipu", "hybrid"] = "ipu"
+    zero_target_policy: Literal["structural", "observed"] = "structural"
 
 
 class SmallAreaRunRequest(_BoundaryModel):
@@ -167,6 +178,7 @@ class RunManifest(_BoundaryModel):
     error: dict[str, Any] | None
     reproduction: dict[str, Any] | None
     assurance: dict[str, Any] | None
+    restarted_from: str | None = None
 
 
 class RunEvent(_BoundaryModel):

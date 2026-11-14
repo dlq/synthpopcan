@@ -244,6 +244,27 @@ def _model_worker(
         )
 
 
+def _verify_restarted_inputs(
+    root: Path, run_dir: Path, inputs: list[dict[str, Any]]
+) -> None:
+    from synthpopcan.statcan import file_integrity
+
+    expected_directory = (run_dir / "inputs").resolve()
+    if not expected_directory.is_relative_to(root.resolve()):
+        raise ValueError("Restart input directory is invalid; create a new run.")
+    for item in inputs:
+        path = (root / str(item["path"])).resolve()
+        if path.parent != expected_directory:
+            raise ValueError("Restart input path is invalid; create a new run.")
+        if file_integrity(path) != {
+            "sha256": item["sha256"],
+            "byte_size": item["byte_size"],
+        }:
+            raise ValueError(
+                "Restart input changed before execution; create a new run."
+            )
+
+
 def _small_area_worker(
     workspace: str,
     run_id: str,
@@ -255,6 +276,8 @@ def _small_area_worker(
     with _worker_session(Path(workspace), messages, cancel_event) as session:
         root = Path(workspace)
         run_dir = root / "runs" / run_id
+        if manifest.get("restarted_from"):
+            _verify_restarted_inputs(root, run_dir, manifest["inputs"])
         work_dir = run_dir / "work"
         artifact_dir = run_dir / "artifacts"
         request_inputs = manifest["request"]["inputs"]
@@ -290,6 +313,27 @@ def _small_area_worker(
                 if request_inputs.get("control_pack_id")
                 else None,
                 control_pack_evidence_path=input_paths.get("control_pack_evidence"),
+                marital_status_pack=request_inputs.get("marital_status_pack"),
+                marital_status_controls_path=input_paths.get("marital_status_controls"),
+                education_pack=request_inputs.get("education_pack"),
+                education_profile_path=input_paths.get("education_profile"),
+                labour_force_pack=request_inputs.get("labour_force_pack"),
+                labour_force_profile_path=input_paths.get("labour_force_profile"),
+                work_activity_pack=request_inputs.get("work_activity_pack"),
+                work_activity_profile_path=input_paths.get("work_activity_profile"),
+                integerization=str(options.get("integerization", "midpoint")),
+                joint_solver=str(options.get("joint_solver", "ipu")),
+                zero_target_policy=str(options.get("zero_target_policy", "structural")),
+                conditional_input_references={
+                    key: f"inputs/{key.replace('_', '-')}{input_paths[key].suffix}"
+                    for key in (
+                        "marital_status_controls",
+                        "education_profile",
+                        "labour_force_profile",
+                        "work_activity_profile",
+                    )
+                    if key in input_paths
+                },
                 candidates_dir=work_dir / "candidates",
                 output_dir=work_dir / "output",
                 candidate_households=int(options.get("candidate_households", 10000)),

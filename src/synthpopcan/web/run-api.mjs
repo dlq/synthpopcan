@@ -4,7 +4,9 @@ export async function uploadCsv(file) {
   const response = await fetch("/api/uploads", {
     method: "POST",
     headers: {
-      "Content-Type": file.type || "text/csv",
+      "Content-Type": file.name.toLowerCase().endsWith(".zip")
+        ? "application/zip"
+        : file.type || "text/csv",
       "X-Filename": file.name,
     },
     body: file,
@@ -38,6 +40,12 @@ export function createRun(request) {
 
 export function cancelRun(runId) {
   return fetchJson(`/api/runs/${encodeURIComponent(runId)}/cancel`, {
+    method: "POST",
+  });
+}
+
+export function restartRun(runId) {
+  return fetchJson(`/api/runs/${encodeURIComponent(runId)}/restart`, {
     method: "POST",
   });
 }

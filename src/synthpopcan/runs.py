@@ -32,6 +32,10 @@ _RUN_ID = re.compile(r"^[0-9]{8}T[0-9]{6}Z-[a-f0-9]{12}$")
 _TERMINAL_STATES = frozenset({"succeeded", "failed", "cancelled", "interrupted"})
 
 
+class RestartError(ValueError):
+    """A run cannot be safely restarted from its retained inputs."""
+
+
 @dataclass(frozen=True)
 class _UploadClaimSpec:
     metadata: dict[str, Any]
@@ -374,6 +378,7 @@ class RunStore:
                         "control-pack-evidence.json",
                     )
                 )
+            upload_specs.extend(self._conditional_uploads(inputs))
             boundaries_id = inputs.get("boundaries_upload_id")
             if boundaries_id:
                 upload_specs.append(
@@ -393,12 +398,195 @@ class RunStore:
                 random_seed=request.get("options", {}).get("random_seed"),
             )
 
+    def _conditional_uploads(self, inputs: dict[str, Any]) -> list[_UploadClaimSpec]:
+        specs = []
+        for family, source in (
+            ("marital_status", "controls"),
+            ("education", "profile"),
+            ("labour_force", "profile"),
+            ("work_activity", "profile"),
+        ):
+            pack = inputs.get(f"{family}_pack")
+            upload_id = inputs.get(f"{family}_{source}_upload_id")
+            if bool(pack) != bool(upload_id):
+                raise ValueError(f"{family} pack and source upload are both required")
+            if upload_id:
+                metadata = self.get_upload(str(upload_id), require_unclaimed=True)
+                extension = (
+                    "zip" if metadata["media_type"] == "application/zip" else "csv"
+                )
+                specs.append(
+                    _UploadClaimSpec(
+                        metadata,
+                        f"{family}_{source}",
+                        f"{family.replace('_', '-')}-{source}.{extension}",
+                    )
+                )
+        return specs
+
+    def restart_interrupted_small_area(
+        self,
+        run_id: str,
+        preflight: Callable[[Path, dict[str, Path], dict[str, Any]], None],
+    ) -> dict[str, Any]:
+        """Create a fresh run from verified inputs without modifying the old run."""
+        with self._lock:
+            original = self.load_run(run_id)
+            if (
+                original["workflow"] != "small_area"
+                or original["status"] != "interrupted"
+            ):
+                raise RestartError("Only interrupted small-area runs can be restarted.")
+            if original["synthpopcan_version"] != __version__:
+                raise RestartError(
+                    "The run used a different SynthPopCan version; create a new run."
+                )
+            assurance = self.verify_assurance(run_id)
+            if not assurance["passed"]:
+                raise RestartError(
+                    "Run evidence or inputs have changed; create a new run."
+                )
+            self._verify_restart_model(original)
+            new_id = _new_run_id()
+            destination = self.run_dir(new_id)
+            if destination.exists():
+                raise FileExistsError("Restart run identifier already exists")
+            staging = self.root / f".restart-{secrets.token_hex(16)}"
+            staging.mkdir(exist_ok=False)
+            try:
+                for name in ("inputs", "artifacts", "work"):
+                    (staging / name).mkdir()
+                copies, input_paths = self._copy_restart_inputs(
+                    original, staging, new_id
+                )
+                preflight(self.root, input_paths, original["request"])
+                for item in copies:
+                    digest = hashlib.sha256()
+                    size = 0
+                    with input_paths[item["upload_id"]].open("rb") as handle:
+                        while chunk := handle.read(1024 * 1024):
+                            digest.update(chunk)
+                            size += len(chunk)
+                    if (
+                        digest.hexdigest() != item["sha256"]
+                        or size != item["byte_size"]
+                    ):
+                        raise RestartError(
+                            "Restart inputs changed during preflight; create a new run."
+                        )
+                manifest = {
+                    **original,
+                    "run_id": new_id,
+                    "status": "queued",
+                    "created_at": _utc_now(),
+                    "started_at": None,
+                    "finished_at": None,
+                    "inputs": copies,
+                    "artifacts": [],
+                    "summary": {},
+                    "error": None,
+                    "reproduction": None,
+                    "assurance": None,
+                    "restarted_from": run_id,
+                }
+                manifest = RunManifest.model_validate(manifest).model_dump()
+                self._write_json_atomic(staging / "run.json", manifest)
+                (staging / "events.ndjson").write_text(
+                    json.dumps(
+                        {
+                            "id": 1,
+                            "timestamp": _utc_now(),
+                            "stage": "queued",
+                            "message": f"Restarted from {run_id}",
+                            "completed": None,
+                            "total": None,
+                        },
+                        separators=(",", ":"),
+                    )
+                    + "\n"
+                )
+                self._publish_restart(staging, destination)
+                return self.load_run(new_id)
+            except Exception:
+                shutil.rmtree(staging, ignore_errors=True)
+                raise
+
+    @staticmethod
+    def _publish_restart(staging: Path, destination: Path) -> None:
+        # Exclusive directory creation prevents collisions from replacing a run.
+        # The manifest is published last, after all inputs and events are in place.
+        destination.mkdir(exist_ok=False)
+        try:
+            for name in ("inputs", "artifacts", "work", "events.ndjson", "run.json"):
+                os.rename(staging / name, destination / name)
+        except Exception:
+            shutil.rmtree(destination, ignore_errors=True)
+            raise
+        finally:
+            shutil.rmtree(staging, ignore_errors=True)
+
+    def _verify_restart_model(self, original: dict[str, Any]) -> None:
+        model_id = original["request"].get("inputs", {}).get("model_id")
+        package_path = self.run_dir(str(original["run_id"])) / "work" / "package.json"
+        if not model_id:
+            return
+        if (
+            package_path.is_symlink()
+            or package_path.resolve().parent != package_path.parent
+        ):
+            raise RestartError("The prior model path is invalid; create a new run.")
+        if not package_path.exists():
+            return
+        from synthpopcan.models import model_payload
+
+        try:
+            previous = json.loads(package_path.read_text())
+            current = model_payload(str(model_id))
+        except (OSError, ValueError, KeyError) as exc:
+            raise RestartError(
+                "The prior model cannot be verified; create a new run."
+            ) from exc
+        if previous != current:
+            raise RestartError(
+                "The model has changed since the interrupted run; create a new run."
+            )
+
+    def _copy_restart_inputs(self, original, staging: Path, new_id: str):
+        copied = []
+        paths = {}
+        old_inputs = self.run_dir(str(original["run_id"])) / "inputs"
+        if old_inputs.is_symlink() or old_inputs.resolve().parent != old_inputs.parent:
+            raise RestartError("The run input directory is invalid; create a new run.")
+        for item in original["inputs"]:
+            source = self.resolve_managed_path(str(item["path"]))
+            if source.parent != old_inputs.resolve() or source.is_symlink():
+                raise RestartError("Run input path is invalid; create a new run.")
+            upload_id = str(item["upload_id"])
+            _validate_opaque_id(upload_id, "upload")
+            if upload_id in paths:
+                raise RestartError("Run has duplicate input identifiers.")
+            target = staging / "inputs" / source.name
+            digest = hashlib.sha256()
+            size = 0
+            with source.open("rb") as src, target.open("xb") as dst:
+                while chunk := src.read(1024 * 1024):
+                    dst.write(chunk)
+                    digest.update(chunk)
+                    size += len(chunk)
+                dst.flush()
+                os.fsync(dst.fileno())
+            if digest.hexdigest() != item["sha256"] or size != item["byte_size"]:
+                raise RestartError("Run inputs have changed; create a new run.")
+            copied.append({**item, "path": f"runs/{new_id}/inputs/{source.name}"})
+            paths[upload_id] = target
+        return copied, paths
+
     def list_runs(self) -> list[dict[str, Any]]:
         """Return newest runs first."""
         runs = [
             self.load_run(path.name)
             for path in self.runs_dir.iterdir()
-            if path.is_dir()
+            if path.is_dir() and (path / "run.json").is_file()
         ]
         return sorted(runs, key=lambda item: str(item["created_at"]), reverse=True)
 

@@ -191,6 +191,14 @@ select {
   gap: 18px;
 }
 
+.conditional-controls {
+  grid-column: 1 / -1;
+  min-width: 0;
+  border: 1px solid #d6d6d6;
+  border-radius: 4px;
+  padding: 14px 18px 18px;
+}
+
 .model-catalogue-actions {
   align-items: flex-start;
   display: flex;

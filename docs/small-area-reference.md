@@ -1159,6 +1159,29 @@ individual cells can trade off against one another. Check the realized
 residuals and fractional convergence separately. The default is
 `--integerization midpoint`.
 
+The Python `calibrate_small_area` entry point accepts the same conditional
+pack identifiers and source paths, as well as `integerization`, `joint_solver`,
+and `zero_target_policy`. The `geo synthesize` command accepts the same pack
+and source options when generating candidates before calibration.
+
+In the local web app, choose a matching broad census-tract pack and its bound
+evidence, then select each conditional family and upload its matching source:
+a tract CSV for marital status, or a Profile CSV or ZIP for the other families.
+Preflight checks source rows, census vintage, geography, denominators,
+and pack compatibility before the run is created. Candidate category support
+for generated populations is checked after generation and before fitting.
+The web upload limit is 256 MiB per source; use a source CSV containing the
+required selected tract rows, or use the CLI for larger files. The run
+retains the selected inputs, their checksums, the report, and a CLI reproduction
+command. An interrupted local-web small-area run offers **Restart from saved
+inputs**. Restart creates a new run from the beginning, reruns source and
+control preflight, checks input hashes before and after preflight and again
+before execution, and keeps the interrupted run and
+its partial output untouched. The new run records the original run ID. If
+candidate generation had no random seed, the restarted population may differ.
+Changed inputs, a different software version, or a changed model require a
+new run with reviewed inputs. Restart is not a continuation of a partial fit.
+
 The broad pack supplies the Census geography identity and validates its
 evidence before the conditional margin is appended. Joint calibration expects
 the matching hierarchical PUMF age codes and retains them in the output. Both

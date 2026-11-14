@@ -104,6 +104,18 @@ function snapshotDraft() {
   ).files?.[0];
   const boundariesFile = document.querySelector("#small-area-boundaries-file")
     .files?.[0];
+  const conditionalControls = [
+    ["marital_status", "marital-status", "controls", "marital status"],
+    ["education", "education", "profile", "education"],
+    ["labour_force", "labour-force", "profile", "labour-force"],
+    ["work_activity", "work-activity", "profile", "work activity"],
+  ].map(([family, id, source, label]) => ({
+    family,
+    source,
+    label,
+    pack: document.querySelector(`#small-area-${id}-pack`).value,
+    file: document.querySelector(`#small-area-${id}-${source}-file`).files?.[0],
+  }));
   const draft = validateSmallAreaDraft({
     modelId: modelSelect.value,
     packageFile,
@@ -114,6 +126,7 @@ function snapshotDraft() {
     controlPackId,
     controlPackEvidenceFile,
     boundariesFile,
+    conditionalControls,
   });
   return {
     ...draft,
@@ -131,6 +144,10 @@ function snapshotDraft() {
       chunk_size: 1000,
       geography_id_field: "geo_id",
       map_title: "Synthetic Population",
+      integerization: document.querySelector("#small-area-integerization").value,
+      joint_solver: document.querySelector("#small-area-joint-solver").value,
+      zero_target_policy: document.querySelector("#small-area-zero-target-policy")
+        .value,
     },
   };
 }

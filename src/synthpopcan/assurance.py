@@ -67,6 +67,11 @@ def build_run_assurance(
             "linked_population": linkage,
         },
         "warnings": warnings,
+        **(
+            {"restarted_from": manifest["restarted_from"]}
+            if manifest.get("restarted_from") is not None
+            else {}
+        ),
         "limitations": [
             "Evidence verifies recorded bytes and implemented numerical checks; "
             "it does not establish substantive fitness for every research use.",
@@ -90,6 +95,7 @@ def verify_run_assurance(
         issues.append("run schema version does not match the run manifest")
     if assurance.get("synthpopcan_version") != manifest.get("synthpopcan_version"):
         issues.append("SynthPopCan version does not match the run manifest")
+    issues.extend(_check_restart_provenance(assurance, manifest))
     status = str(manifest.get("status"))
     if status not in _TERMINAL_STATES:
         issues.append("run is not terminal")
@@ -176,6 +182,14 @@ def _file_evidence(metadata: dict[str, Any], path: Path) -> dict[str, Any]:
         "byte_size": byte_size,
         "row_count": row_count,
     }
+
+
+def _check_restart_provenance(
+    assurance: dict[str, Any], manifest: dict[str, Any]
+) -> list[str]:
+    if assurance.get("restarted_from") != manifest.get("restarted_from"):
+        return ["restart provenance does not match the run manifest"]
+    return []
 
 
 def _is_csv(metadata: dict[str, Any], path: Path) -> bool:

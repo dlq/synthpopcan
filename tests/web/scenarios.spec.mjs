@@ -496,6 +496,99 @@ test("reviewed control-pack selection requires bound evidence", async ({ page })
   expect(consoleErrors).toEqual([]);
 });
 
+test("conditional control selections explain missing sources", async ({ page }) => {
+  const consoleErrors = [];
+  page.on("console", (message) => {
+    if (message.type() === "error") consoleErrors.push(message.text());
+  });
+  await openWorkbench(page);
+  await page.getByText("Small-area workflow").click();
+  await page.getByRole("button", { name: /Prepare a small-area synthesis/ }).click();
+  await expect(
+    page.locator(
+      '#small-area-premade-model option[value="demo-linked-household-person"]',
+    ),
+  ).toHaveCount(1);
+  await page
+    .locator("#small-area-premade-model")
+    .selectOption("demo-linked-household-person");
+  await page.locator("#small-area-controls-file").setInputFiles({
+    name: "controls.csv",
+    mimeType: "text/csv",
+    buffer: Buffer.from('margin,dimensions,ct,group,count\nsize,"ct,group",1,a,1\n'),
+  });
+  await page
+    .locator("#small-area-education-pack")
+    .selectOption("statcan-2021-education-ct-v1");
+  await page.locator("#small-area-integerization").selectOption("swap");
+  await page.getByRole("button", { name: "Estimate and prepare" }).click();
+  await expect(page.locator("#small-area-result")).toContainText(
+    "Choose both the education pack",
+  );
+  await page
+    .locator("#small-area-form")
+    .screenshot({ path: "/tmp/synthpopcan-conditional-controls.png" });
+  expect(consoleErrors).toEqual([]);
+});
+
+test("an interrupted small-area run can start a fresh restart", async ({ page }) => {
+  const originalId = "20261114T000000Z-abcdefabcdef";
+  const newId = "20261114T000001Z-abcdef123456";
+  const original = {
+    run_id: originalId,
+    workflow: "small_area",
+    status: "interrupted",
+    created_at: "2026-11-14T00:00:00Z",
+    error: { message: "Run interrupted." },
+  };
+  const restarted = {
+    ...original,
+    run_id: newId,
+    status: "queued",
+    error: null,
+    restarted_from: originalId,
+  };
+  let posted = false;
+  const errors = [];
+  page.on("console", (message) => {
+    if (message.type() === "error") errors.push(message.text());
+  });
+  await page.route("**/api/runs", (route) =>
+    route.fulfill({ json: { runs: posted ? [restarted, original] : [original] } }),
+  );
+  await page.route(`**/api/runs/${originalId}/restart`, (route) => {
+    posted = route.request().method() === "POST";
+    return route.fulfill({ status: 202, json: restarted });
+  });
+  await page.route(`**/api/runs/${originalId}`, (route) =>
+    route.fulfill({ json: original }),
+  );
+  await page.route(`**/api/runs/${newId}`, (route) =>
+    route.fulfill({ json: restarted }),
+  );
+  await page.route(`**/api/runs/${newId}/events`, (route) =>
+    route.fulfill({ status: 200, contentType: "text/event-stream", body: "" }),
+  );
+  await openWorkbench(page);
+  await expect(page.locator("#run-status")).toHaveText("Interrupted");
+  await expect(
+    page.getByRole("button", { name: "Restart from saved inputs" }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Restart from saved inputs" }).click();
+  await expect(page.locator("#run-status")).toHaveText("Queued");
+  await expect(page.locator("#run-kicker")).toContainText("abcdef123456");
+  await expect(page.getByRole("button", { name: "Cancel run" })).toBeEnabled();
+  expect(posted).toBe(true);
+  expect(errors).toEqual([]);
+  await page.screenshot({ path: "/tmp/synthpopcan-restart-run.png" });
+  await page.locator(".run-list-item").filter({ hasText: "Interrupted" }).click();
+  await expect(
+    page.getByRole("button", { name: "Restart from saved inputs" }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "New run" }).click();
+  await expect(page.locator("#restart-run")).toHaveAttribute("hidden", "");
+});
+
 test("model catalogue failure leaves both workflows usable", async ({ page }) => {
   const consoleErrors = [];
   page.on("console", (message) => {

@@ -10,6 +10,7 @@ import {
   listRuns,
   preflightRun,
   previewArtifact,
+  restartRun,
   uploadCsv,
 } from "../../src/synthpopcan/web/run-api.mjs";
 
@@ -67,6 +68,7 @@ test("builds durable run API requests and artifact URLs", async () => {
     await preflightRun({ workflow: "ipf" });
     await createRun({ workflow: "ipf" });
     await cancelRun("run/id");
+    await restartRun("run/id");
     await previewArtifact("run/id", "artifact/id", 7);
   } finally {
     globalThis.fetch = originalFetch;
@@ -80,6 +82,7 @@ test("builds durable run API requests and artifact URLs", async () => {
       ["/api/preflight", "POST"],
       ["/api/runs", "POST"],
       ["/api/runs/run%2Fid/cancel", "POST"],
+      ["/api/runs/run%2Fid/restart", "POST"],
       ["/api/runs/run%2Fid/artifacts/artifact%2Fid/preview?rows=7", "GET"],
     ],
   );

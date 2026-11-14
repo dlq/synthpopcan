@@ -90,6 +90,10 @@ class SmallAreaPreflightResult:
         }
 
 
+class ConditionalPreflightError(ValueError):
+    """A conditional source or target cannot be used for this run."""
+
+
 def _csv_columns(path: Path) -> list[str]:
     with path.open(newline="", encoding="utf-8-sig") as handle:
         fieldnames = csv.DictReader(handle).fieldnames
@@ -309,6 +313,81 @@ def _load_controls(store: PreflightWorkspace, inputs: SmallAreaRunInputs) -> _Co
         control_pack_evidence,
         boundaries_id,
     )
+
+
+def _review_conditional_controls(store, inputs, source, loaded, universe, dimension):
+    """Validate selected conditional sources before the run claims uploads."""
+    from synthpopcan.small_area_synthesis import (
+        _validate_conditional_pack_selection,
+        _with_marital_status_controls,
+        _with_profile_controls,
+    )
+
+    specs = (
+        (
+            "marital_status",
+            inputs.marital_status_pack,
+            inputs.marital_status_controls_upload_id,
+        ),
+        ("education", inputs.education_pack, inputs.education_profile_upload_id),
+        (
+            "labour_force_status",
+            inputs.labour_force_pack,
+            inputs.labour_force_profile_upload_id,
+        ),
+        (
+            "work_activity",
+            inputs.work_activity_pack,
+            inputs.work_activity_profile_upload_id,
+        ),
+    )
+    if not any(pack or upload for _, pack, upload in specs):
+        return {}
+    if loaded.persons is None or universe is None:
+        raise ConditionalPreflightError(
+            "Conditional controls require person controls and an explicit "
+            "Census geography"
+        )
+    if any(not pack or not upload for _, pack, upload in specs if pack or upload):
+        raise ConditionalPreflightError(
+            "Each conditional pack requires its matching source upload"
+        )
+    try:
+        _validate_conditional_pack_selection(
+            loaded.pack, universe, [(family, pack) for family, pack, _ in specs]
+        )
+        paths = {
+            family: store.upload_path(upload, require_unclaimed=True)
+            for family, _, upload in specs
+            if upload
+        }
+        persons = _read_csv_rows(source.persons_path) if source.persons_path else []
+        persons, controls, _ = _with_marital_status_controls(
+            paths.get("marital_status"),
+            persons,
+            loaded.persons,
+            universe,
+            dimension,
+            loaded.pack,
+            inputs.marital_status_pack,
+        )
+        _with_profile_controls(
+            persons,
+            controls,
+            universe,
+            dimension,
+            [(family, pack, paths.get(family)) for family, pack, _ in specs[1:]],
+        )
+    except ValueError as exc:
+        raise ConditionalPreflightError(str(exc)) from exc
+    result = {}
+    for family, pack, upload in specs:
+        if pack and upload:
+            prefix = "labour_force" if family == "labour_force_status" else family
+            source_name = "controls" if family == "marital_status" else "profile"
+            result[f"{prefix}_pack"] = pack
+            result[f"{prefix}_{source_name}_upload_id"] = upload
+    return result
 
 
 def _check_support(
@@ -636,6 +715,11 @@ def preflight_small_area_run(
     geography_column, geography_universe, control_pack_plan = _review_geography(
         source, loaded, options, geography_dimension
     )
+    normalized_inputs.update(
+        _review_conditional_controls(
+            store, inputs, source, loaded, geography_universe, geography_dimension
+        )
+    )
     conditions = options.conditions
     max_household_size = options.max_household_size
     group_column = options.household_size_group_column
@@ -658,6 +742,14 @@ def preflight_small_area_run(
         "geography_id_field": options.geography_id_field,
         "map_title": options.map_title,
     }
+    for name, default in (
+        ("integerization", "midpoint"),
+        ("joint_solver", "ipu"),
+        ("zero_target_policy", "structural"),
+    ):
+        value = getattr(options, name)
+        if value != default:
+            normalized_options[name] = value
     return SmallAreaPreflightResult(
         **{
             "ready": enough_disk,

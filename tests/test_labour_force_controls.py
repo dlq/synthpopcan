@@ -7,7 +7,9 @@ from unittest.mock import patch
 import pytest
 from click.testing import CliRunner
 
+from synthpopcan.api import LinkedPopulationFiles, calibrate_small_area
 from synthpopcan.cli import cli
+from synthpopcan.geography import statcan_geography_universe
 
 
 @pytest.mark.parametrize("year", [2016, 2021])
@@ -196,3 +198,24 @@ def test_labour_profile_calibration(tmp_path, year, family, case):
     )
     assert evidence["eligible_targets"] == dict(zip(categories, (8, 7, 0), strict=True))
     assert report["summary"]["realized_max_abs_error"] == 0
+    kwargs = (
+        {"labour_force_pack": provenance["pack"], "labour_force_profile_path": profile}
+        if family == "labour-force"
+        else {
+            "work_activity_pack": provenance["pack"],
+            "work_activity_profile_path": profile,
+        }
+    )
+    python_result = calibrate_small_area(
+        LinkedPopulationFiles(households=hh, persons=pp),
+        hc,
+        person_controls=pc,
+        geography_dimension="ct",
+        geography_universe=statcan_geography_universe(year, "ct", "ct"),
+        output_dir=tmp_path / "python-out",
+        integerization="swap",
+        **kwargs,
+    )
+    python_report = json.loads(python_result.report_path.read_text())
+    assert python_report[f"{output_field}_controls"] == provenance
+    assert python_report["summary"]["realized_max_abs_error"] == 0
