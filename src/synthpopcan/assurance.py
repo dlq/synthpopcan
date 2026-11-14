@@ -11,39 +11,117 @@ __all__ = [
 import csv
 import hashlib
 import json
-from collections.abc import Callable
+from collections.abc import Callable, Mapping, Sequence
 from pathlib import Path
-from typing import Any
+from typing import NotRequired, TypedDict, cast
 
 from synthpopcan.models import model_payload
 from synthpopcan.tree import validate_linked_population_files
 
 ASSURANCE_SCHEMA_VERSION = "synthpopcan-assurance-v1"
+
+
+class FileEvidence(TypedDict):
+    logical_name: object
+    path: object
+    media_type: object
+    sha256: str
+    byte_size: int
+    row_count: int | None
+
+
+class AssuranceVerification(TypedDict):
+    passed: bool
+    issues: list[str]
+
+
+class AssuranceDiagnostics(TypedDict):
+    run_summary: object
+    report_summary: object
+    linked_population: object
+
+
+class _RestartFragment(TypedDict):
+    restarted_from: NotRequired[object]
+
+
+class AssuranceReport(TypedDict):
+    schema_version: str
+    run_schema_version: object
+    synthpopcan_version: object
+    run_id: object
+    workflow: object
+    terminal_status: str
+    successful: bool
+    normalized_request: object
+    model: dict[str, object] | None
+    random_seeds: dict[str, object]
+    settings: dict[str, object]
+    inputs: list[FileEvidence]
+    artifacts: list[FileEvidence]
+    diagnostics: AssuranceDiagnostics
+    warnings: list[str]
+    limitations: list[str]
+    restarted_from: NotRequired[object]
+
+
+def _object_map(value: object) -> dict[str, object] | None:
+    if not isinstance(value, dict):
+        return None
+    raw = cast(dict[object, object], value)
+    if any(not isinstance(key, str) for key in raw):
+        return None
+    return {key: item for key, item in raw.items() if isinstance(key, str)}
+
+
+def _object_list(value: object) -> list[object] | None:
+    return cast(list[object], value) if isinstance(value, list) else None
+
+
+def _required_file_metadata(value: object) -> list[dict[str, object]]:
+    items = _object_list(value)
+    if items is None:
+        raise ValueError("run file metadata must be a list")
+    result: list[dict[str, object]] = []
+    for item in items:
+        entry = _object_map(item)
+        if entry is None:
+            raise ValueError("run file metadata must contain objects")
+        result.append(entry)
+    return result
+
+
+def _restart_fragment(manifest: dict[str, object]) -> _RestartFragment:
+    if manifest.get("restarted_from") is not None:
+        return {"restarted_from": manifest["restarted_from"]}
+    return {}
+
+
 _TERMINAL_STATES = frozenset({"succeeded", "failed", "cancelled", "interrupted"})
 
 
 def build_run_assurance(
-    manifest: dict[str, Any],
+    manifest: dict[str, object],
     resolve_path: Callable[[str], Path],
-) -> dict[str, Any]:
+) -> AssuranceReport:
     """Build terminal-run evidence without embedding source data."""
     status = str(manifest["status"])
     if status not in _TERMINAL_STATES:
         raise ValueError("assurance evidence requires a terminal run")
     inputs = [
         _file_evidence(item, resolve_path(str(item["path"])))
-        for item in manifest.get("inputs", [])
+        for item in _required_file_metadata(manifest.get("inputs", []))
     ]
     artifacts = [
         _file_evidence(item, resolve_path(str(item["path"])))
-        for item in manifest.get("artifacts", [])
+        for item in _required_file_metadata(manifest.get("artifacts", []))
     ]
     request = manifest.get("request", {})
-    options = request.get("options", {}) if isinstance(request, dict) else {}
+    options = _object_map((_object_map(request) or {}).get("options")) or {}
     report_summary = _report_summary(artifacts, resolve_path)
     linkage = _linked_validation(artifacts, resolve_path)
     warnings = _collect_warnings(manifest.get("summary", {}), report_summary)
-    return {
+    result: AssuranceReport = {
         "schema_version": ASSURANCE_SCHEMA_VERSION,
         "run_schema_version": manifest.get("schema_version"),
         "synthpopcan_version": manifest.get("synthpopcan_version"),
@@ -67,27 +145,24 @@ def build_run_assurance(
             "linked_population": linkage,
         },
         "warnings": warnings,
-        **(
-            {"restarted_from": manifest["restarted_from"]}
-            if manifest.get("restarted_from") is not None
-            else {}
-        ),
+        **_restart_fragment(manifest),
         "limitations": [
             "Evidence verifies recorded bytes and implemented numerical checks; "
             "it does not establish substantive fitness for every research use.",
             "Input hashes provide provenance without redistributing input contents.",
         ],
     }
+    return result
 
 
 def verify_run_assurance(
-    manifest: dict[str, Any],
+    manifest: dict[str, object],
     resolve_path: Callable[[str], Path],
-) -> dict[str, Any]:
+) -> AssuranceVerification:
     """Recompute stored evidence and report any mismatch or lifecycle problem."""
-    assurance = manifest.get("assurance")
+    assurance = _object_map(manifest.get("assurance"))
     issues: list[str] = []
-    if not isinstance(assurance, dict):
+    if assurance is None:
         return {"passed": False, "issues": ["run has no assurance evidence"]}
     if assurance.get("schema_version") != ASSURANCE_SCHEMA_VERSION:
         issues.append("unsupported assurance schema")
@@ -106,7 +181,7 @@ def verify_run_assurance(
     if assurance.get("normalized_request") != manifest.get("request"):
         issues.append("normalized request does not match the run manifest")
     request = manifest.get("request")
-    options = request.get("options", {}) if isinstance(request, dict) else {}
+    options = _object_map((_object_map(request) or {}).get("options")) or {}
     if assurance.get("settings") != options:
         issues.append("settings do not match the normalized request")
     expected_seeds = {
@@ -115,58 +190,101 @@ def verify_run_assurance(
     if assurance.get("random_seeds") != expected_seeds:
         issues.append("random seeds do not match the normalized request")
 
-    observed_inputs: list[dict[str, Any]] = []
+    observed_inputs: list[FileEvidence] = []
     for collection in ("inputs", "artifacts"):
-        claimed = assurance.get(collection)
-        manifest_items = manifest.get(collection)
-        if not isinstance(claimed, list) or not isinstance(manifest_items, list):
-            issues.append(f"{collection} evidence is malformed")
-            continue
-        claimed_by_name = {
-            str(item.get("logical_name")): item
-            for item in claimed
-            if isinstance(item, dict)
-        }
-        for item in manifest_items:
-            logical_name = str(item.get("logical_name"))
-            evidence = claimed_by_name.get(logical_name)
-            if evidence is None:
-                issues.append(f"missing {collection} evidence for {logical_name}")
-                continue
-            try:
-                observed = _file_evidence(
-                    item,
-                    resolve_path(str(item["path"])),
-                )
-            except OSError as exc:
-                issues.append(f"cannot read {collection} file {logical_name}: {exc}")
-                continue
-            if collection == "inputs":
-                observed_inputs.append(observed)
-            for field in ("sha256", "byte_size", "row_count"):
-                if evidence.get(field) != observed.get(field):
-                    issues.append(f"{collection} {logical_name} {field} does not match")
+        observed = _verify_file_collection(
+            collection,
+            assurance.get(collection),
+            manifest.get(collection),
+            resolve_path,
+            issues,
+        )
+        if collection == "inputs":
+            observed_inputs.extend(observed)
     try:
         if assurance.get("model") != _model_identity(request, observed_inputs):
             issues.append("model identity or checksum does not match")
     except (KeyError, ValueError) as exc:
         issues.append(f"cannot recompute model evidence: {exc}")
 
-    artifacts = assurance.get("artifacts", [])
-    if isinstance(artifacts, list):
+    artifacts_value = assurance.get("artifacts", [])
+    if isinstance(artifacts_value, list):
+        diagnostics = _object_map(assurance.get("diagnostics"))
+        if diagnostics is None:
+            issues.append("assurance diagnostics are malformed")
+            diagnostics = {}
         try:
+            artifacts = _required_file_metadata(cast(list[object], artifacts_value))
             report_summary = _report_summary(artifacts, resolve_path)
-            if report_summary != assurance.get("diagnostics", {}).get("report_summary"):
+            if report_summary != diagnostics.get("report_summary"):
                 issues.append("report diagnostics do not match the report artifact")
             linkage = _linked_validation(artifacts, resolve_path)
-            if linkage != assurance.get("diagnostics", {}).get("linked_population"):
+            if linkage != diagnostics.get("linked_population"):
                 issues.append("linked-population findings do not match the artifacts")
         except (OSError, ValueError, KeyError, json.JSONDecodeError) as exc:
             issues.append(f"cannot recompute artifact diagnostics: {exc}")
     return {"passed": not issues, "issues": issues}
 
 
-def _file_evidence(metadata: dict[str, Any], path: Path) -> dict[str, Any]:
+def _claimed_files(
+    collection: str, claimed: list[object], issues: list[str]
+) -> dict[str, dict[str, object]]:
+    by_name: dict[str, dict[str, object]] = {}
+    for raw_entry in claimed:
+        entry = _object_map(raw_entry)
+        if entry is None or not isinstance(entry.get("logical_name"), str):
+            issues.append(f"{collection} evidence entry is malformed")
+            continue
+        name = str(entry["logical_name"])
+        if name in by_name:
+            issues.append(f"duplicate {collection} evidence for {name}")
+        by_name[name] = entry
+    return by_name
+
+
+def _verify_file_collection(
+    collection: str,
+    claimed: object,
+    manifest_items: object,
+    resolve_path: Callable[[str], Path],
+    issues: list[str],
+) -> list[FileEvidence]:
+    if not isinstance(claimed, list) or not isinstance(manifest_items, list):
+        issues.append(f"{collection} evidence is malformed")
+        return []
+    by_name = _claimed_files(collection, cast(list[object], claimed), issues)
+    observed_files: list[FileEvidence] = []
+    manifest_names: set[str] = set()
+    for raw_item in cast(list[object], manifest_items):
+        item = _object_map(raw_item)
+        if item is None or "path" not in item:
+            issues.append(f"{collection} manifest entry is malformed")
+            continue
+        name = str(item.get("logical_name"))
+        manifest_names.add(name)
+        evidence = by_name.get(name)
+        if evidence is None:
+            issues.append(f"missing {collection} evidence for {name}")
+            continue
+        try:
+            observed = _file_evidence(item, resolve_path(str(item["path"])))
+        except OSError as exc:
+            issues.append(f"cannot read {collection} file {name}: {exc}")
+            continue
+        observed_files.append(observed)
+        for field in ("sha256", "byte_size", "row_count"):
+            if evidence.get(field) != observed.get(field):
+                issues.append(f"{collection} {name} {field} does not match")
+    _reject_extra_evidence(collection, set(by_name) - manifest_names, issues)
+    return observed_files
+
+
+def _reject_extra_evidence(collection: str, names: set[str], issues: list[str]) -> None:
+    for name in sorted(names):
+        issues.append(f"unexpected {collection} evidence for {name}")
+
+
+def _file_evidence(metadata: dict[str, object], path: Path) -> FileEvidence:
     digest = hashlib.sha256()
     byte_size = 0
     with path.open("rb") as handle:
@@ -185,14 +303,14 @@ def _file_evidence(metadata: dict[str, Any], path: Path) -> dict[str, Any]:
 
 
 def _check_restart_provenance(
-    assurance: dict[str, Any], manifest: dict[str, Any]
+    assurance: dict[str, object], manifest: dict[str, object]
 ) -> list[str]:
     if assurance.get("restarted_from") != manifest.get("restarted_from"):
         return ["restart provenance does not match the run manifest"]
     return []
 
 
-def _is_csv(metadata: dict[str, Any], path: Path) -> bool:
+def _is_csv(metadata: dict[str, object], path: Path) -> bool:
     return metadata.get("media_type") == "text/csv" or path.suffix.lower() == ".csv"
 
 
@@ -204,7 +322,7 @@ def _csv_row_count(path: Path) -> int:
 
 
 def _report_summary(
-    artifacts: list[dict[str, Any]],
+    artifacts: Sequence[Mapping[str, object]],
     resolve_path: Callable[[str], Path],
 ) -> object | None:
     report = next(
@@ -219,8 +337,9 @@ def _report_summary(
     )
     if report is None:
         return None
-    payload = json.loads(resolve_path(str(report["path"])).read_text())
-    if isinstance(payload, dict):
+    payload: object = json.loads(resolve_path(str(report["path"])).read_text())
+    mapping = _object_map(payload)
+    if mapping is not None:
         diagnostic_keys = (
             "converged",
             "iterations",
@@ -235,19 +354,15 @@ def _report_summary(
             "impossible_cells",
             "support_repairs",
         )
-        return {key: payload[key] for key in diagnostic_keys if key in payload}
+        return {key: mapping[key] for key in diagnostic_keys if key in mapping}
     return payload
 
 
 def _linked_validation(
-    artifacts: list[dict[str, Any]],
+    artifacts: Sequence[Mapping[str, object]],
     resolve_path: Callable[[str], Path],
-) -> dict[str, Any] | None:
-    by_name = {
-        str(item.get("logical_name")): item
-        for item in artifacts
-        if isinstance(item, dict)
-    }
+) -> dict[str, object] | None:
+    by_name = {str(item.get("logical_name")): item for item in artifacts}
     households = by_name.get("households")
     persons = by_name.get("persons")
     if households is None or persons is None:
@@ -260,11 +375,11 @@ def _linked_validation(
 
 def _model_identity(
     request: object,
-    inputs: list[dict[str, Any]],
-) -> dict[str, Any] | None:
-    if not isinstance(request, dict) or not isinstance(request.get("inputs"), dict):
+    inputs: Sequence[Mapping[str, object]],
+) -> dict[str, object] | None:
+    request_inputs = _object_map((_object_map(request) or {}).get("inputs"))
+    if request_inputs is None:
         return None
-    request_inputs = request["inputs"]
     model_id = request_inputs.get("model_id")
     if model_id:
         payload = json.dumps(
@@ -293,15 +408,23 @@ def _model_identity(
 def _collect_warnings(run_summary: object, report_summary: object) -> list[str]:
     warnings: list[str] = []
     for candidate in (run_summary, report_summary):
-        if not isinstance(candidate, dict):
+        mapping = _object_map(candidate)
+        if mapping is None:
             continue
-        candidates = [candidate]
-        nested_summary = candidate.get("summary")
-        if isinstance(nested_summary, dict):
+        candidates = [mapping]
+        nested_summary = _object_map(mapping.get("summary"))
+        if nested_summary is not None:
             candidates.append(nested_summary)
         for diagnostics in candidates:
-            if int(diagnostics.get("non_converged_count", 0) or 0):
+            if _non_converged(diagnostics):
                 warnings.append("one or more geography fits did not converge")
             if diagnostics.get("converged") is False:
                 warnings.append("the fit did not converge")
     return sorted(set(warnings))
+
+
+def _non_converged(diagnostics: dict[str, object]) -> bool:
+    count = diagnostics.get("non_converged_count", 0) or 0
+    if not isinstance(count, (int, float, str, bytes, bytearray)):
+        raise ValueError("invalid non-converged count")
+    return bool(int(count))

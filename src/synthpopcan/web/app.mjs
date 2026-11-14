@@ -1,11 +1,15 @@
 import { fetchJson } from "./http.mjs";
+import { initializeLocalization } from "./localization-ui.mjs";
 import { bindRunsWorkbench } from "./runs-workbench.mjs";
 import { bindSmallAreaWorkflow } from "./small-area-workflow.mjs";
 
 async function startApp() {
-  const bootstrap = await fetchJson("/api/app");
+  const [bootstrap, localization] = await Promise.all([
+    fetchJson("/api/app"),
+    initializeLocalization(),
+  ]);
   prepareHelpLabels();
-  bindRunsWorkbench(bootstrap);
+  bindRunsWorkbench(bootstrap, localization);
   bindSmallAreaWorkflow();
 }
 

@@ -5,9 +5,9 @@ from __future__ import annotations
 import csv
 import json
 import sys
-from collections.abc import Callable
+from collections.abc import Callable, Iterable, Mapping
 from pathlib import Path
-from typing import Any
+from typing import TypeVar, cast
 
 import click
 from rich.table import Table
@@ -51,7 +51,28 @@ __all__ = [
 ]
 
 
-def format_licence_label(licence: dict[str, Any]) -> str:
+def _display_mapping(value: object) -> Mapping[object, object] | None:
+    if not isinstance(value, dict):
+        return None
+    return cast(dict[object, object], value)
+
+
+def _display_values(value: object) -> list[object]:
+    if isinstance(value, list):
+        return cast(list[object], value)
+    if not isinstance(value, Iterable):
+        raise TypeError("Report value must be iterable")
+    return list(cast(Iterable[object], value))
+
+
+def _string_keyed(value: object, error: str) -> dict[str, object]:
+    mapping = _display_mapping(value)
+    if mapping is None or not all(isinstance(key, str) for key in mapping):
+        raise ValueError(error)
+    return {str(key): item for key, item in mapping.items()}
+
+
+def format_licence_label(licence: Mapping[str, object]) -> str:
     """Format one prepared-model or source licence for terminal output."""
 
     name = str(licence.get("name") or "")
@@ -61,7 +82,7 @@ def format_licence_label(licence: dict[str, Any]) -> str:
     return f"{identity}: {url}" if identity and url else identity or url
 
 
-def format_policy_decision_label(policy: dict[str, Any]) -> str:
+def format_policy_decision_label(policy: Mapping[str, object]) -> str:
     """Format one licensing-policy decision for terminal output."""
 
     authority = ", ".join(
@@ -95,22 +116,20 @@ def parse_columns(value: str) -> tuple[str, ...]:
     return columns
 
 
-def read_json_object(path: Path, label: str) -> dict[str, Any]:
+def read_json_object(path: Path, label: str) -> dict[str, object]:
     """Read a JSON object from *path* with a label-specific validation error."""
 
     try:
         payload = json.loads(path.read_text())
     except json.JSONDecodeError as exc:
         raise ValueError(f"{path} is not valid JSON") from exc
-    if not isinstance(payload, dict):
-        raise ValueError(f"{label} must be a JSON object")
-    return payload
+    return _string_keyed(payload, f"{label} must be a JSON object")
 
 
-def write_json_object(path: Path, payload: dict[str, Any]) -> None:
+def write_json_object(path: Path, payload: Mapping[str, object]) -> None:
     """Write a JSON object with stable formatting and a trailing newline."""
 
-    path.write_text(_format_json(payload) + "\n")
+    path.write_text(_format_json(dict(payload)) + "\n")
 
 
 def write_output(
@@ -122,15 +141,23 @@ def write_output(
         print(_format_json(payload))
         return
     if isinstance(payload, dict):
-        print_summary_table(payload, title=title)
+        print_summary_table(
+            _string_keyed(
+                cast(object, payload), "table output must have string field names"
+            ),
+            title=title,
+        )
         return
     print(payload)
 
 
+_Report = TypeVar("_Report")
+
+
 def write_report(
-    payload: Any,
+    payload: _Report,
     output_format: str,
-    table_renderer: Callable[[Any], None],
+    table_renderer: Callable[[_Report], None],
 ) -> None:
     """Write a report as JSON or hand it to a table renderer."""
 
@@ -191,7 +218,7 @@ def _write_wds_search_table(rows: list[dict[str, str]]) -> None:
     print_table(table)
 
 
-def print_wds_metadata_explanation_table(summary: dict[str, Any]) -> None:
+def print_wds_metadata_explanation_table(summary: Mapping[str, object]) -> None:
     """Render a WDS product summary with dimension previews and next commands."""
 
     print_summary_table(
@@ -199,7 +226,7 @@ def print_wds_metadata_explanation_table(summary: dict[str, Any]) -> None:
             "product_id": summary.get("product_id", ""),
             "date_range": summary.get("date_range", ""),
             "dimensions": ", ".join(
-                str(value) for value in summary.get("dimensions", [])
+                str(value) for value in _display_values(summary.get("dimensions", []))
             ),
             "suitability": _wds_suitability_label(summary.get("ipf_suitability", {})),
             "ipf_hint": summary.get("ipf_hint", ""),
@@ -212,7 +239,9 @@ def print_wds_metadata_explanation_table(summary: dict[str, Any]) -> None:
     table = make_table(title="Next Commands")
     table.add_column("Step", justify="right", no_wrap=True)
     table.add_column("Command")
-    for index, command in enumerate(summary.get("next_commands", []), start=1):
+    for index, command in enumerate(
+        _display_values(summary.get("next_commands", [])), start=1
+    ):
         table.add_row(str(index), str(command))
     print_table(table)
 
@@ -220,9 +249,10 @@ def print_wds_metadata_explanation_table(summary: dict[str, Any]) -> None:
 def _wds_suitability_label(value: object) -> str:
     """Convert a WDS suitability status object into a short user-facing label."""
 
-    if not isinstance(value, dict):
+    mapping = _display_mapping(value)
+    if mapping is None:
         return ""
-    status = value.get("status")
+    status = mapping.get("status")
     if status == "likely_age_sex_controls":
         return "Likely age/sex controls"
     if status == "possible_totals_only":
@@ -243,13 +273,16 @@ def _print_wds_dimension_preview_table(previews: object) -> None:
     table.add_column("Members")
     table.add_column("Total", justify="right", no_wrap=True)
 
-    for preview in previews:
-        if not isinstance(preview, dict):
+    for preview in _display_values(cast(object, previews)):
+        preview = _display_mapping(preview)
+        if preview is None:
             continue
         members = preview.get("members", [])
         member_text = ""
         if isinstance(members, list):
-            member_text = ", ".join(str(member) for member in members)
+            member_text = ", ".join(
+                str(member) for member in _display_values(cast(object, members))
+            )
         if preview.get("truncated"):
             member_text = f"{member_text}, ..." if member_text else "..."
         table.add_row(
@@ -277,16 +310,17 @@ def print_census_profile_characteristics_table(rows: list[dict[str, str]]) -> No
     print_table(table)
 
 
-def print_wds_inspection_table(report: dict[str, Any]) -> None:
+def print_wds_inspection_table(report: Mapping[str, object]) -> None:
     """Render local WDS ZIP inspection results and starter normalization hints."""
 
     print_summary_table(
         {
             "csv_member": report.get("csv_member", ""),
             "rows": report.get("row_count", ""),
-            "columns": len(report.get("columns", [])),
+            "columns": len(_display_values(report.get("columns", []))),
             "count_candidates": ", ".join(
-                str(value) for value in report.get("count_column_candidates", [])
+                str(value)
+                for value in _display_values(report.get("count_column_candidates", []))
             ),
         },
         title="WDS Table Inspection",
@@ -297,13 +331,16 @@ def print_wds_inspection_table(report: dict[str, Any]) -> None:
     table.add_column("Value")
     table.add_row(
         "Dimensions",
-        ", ".join(str(value) for value in report.get("dimension_candidates", [])),
+        ", ".join(
+            str(value)
+            for value in _display_values(report.get("dimension_candidates", []))
+        ),
     )
     table.add_row("Command", str(report.get("suggested_command", "")))
     print_table(table)
 
 
-def print_tree_column_suggestions_table(report: dict[str, Any]) -> None:
+def print_tree_column_suggestions_table(report: Mapping[str, object]) -> None:
     """Render suggested household/person column blocks for tree workflows."""
 
     table = make_table(title="Tree Column Suggestions")
@@ -313,38 +350,50 @@ def print_tree_column_suggestions_table(report: dict[str, Any]) -> None:
     table.add_column("Conditioning")
     table.add_column("Missing")
 
-    for block in report.get("blocks", []):
-        if not isinstance(block, dict):
+    for block in _display_values(report.get("blocks", [])):
+        block = _display_mapping(block)
+        if block is None:
             continue
         table.add_row(
             str(block.get("name", "")),
             str(block.get("level", "")),
-            ", ".join(str(value) for value in block.get("target_columns", [])),
-            ", ".join(str(value) for value in block.get("conditioning_columns", [])),
-            ", ".join(str(value) for value in block.get("missing_target_columns", [])),
+            ", ".join(
+                str(value) for value in _display_values(block.get("target_columns", []))
+            ),
+            ", ".join(
+                str(value)
+                for value in _display_values(block.get("conditioning_columns", []))
+            ),
+            ", ".join(
+                str(value)
+                for value in _display_values(block.get("missing_target_columns", []))
+            ),
         )
 
     print_summary_table(
         {
             "source_format": report.get("source_format", ""),
             "geography_columns": ", ".join(
-                str(value) for value in report.get("geography_columns", [])
+                str(value)
+                for value in _display_values(report.get("geography_columns", []))
             ),
-            "excluded_columns": len(report.get("excluded_columns", [])),
+            "excluded_columns": len(
+                _display_values(report.get("excluded_columns", []))
+            ),
         },
         title="Column Suggestion Summary",
     )
     print_table(table)
 
 
-def print_tree_geography_feasibility_table(report: dict[str, Any]) -> None:
+def print_tree_geography_feasibility_table(report: Mapping[str, object]) -> None:
     """Render geography-level model-design feasibility advice."""
 
     print_summary_table(
         {
             "source_format": report.get("source_format", ""),
             "geography_column": report.get("geography_column", ""),
-            "regions": len(report.get("regions", [])),
+            "regions": len(_display_values(report.get("regions", []))),
         },
         title="Tree Geography Feasibility Summary",
     )
@@ -359,12 +408,11 @@ def print_tree_geography_feasibility_table(report: dict[str, Any]) -> None:
     table.add_column("First Move")
     table.add_column("Aggregation Hint")
 
-    for region in report.get("regions", []):
-        if not isinstance(region, dict):
+    for region in _display_values(report.get("regions", [])):
+        region = _display_mapping(region)
+        if region is None:
             continue
-        model_design = region.get("model_design", {})
-        if not isinstance(model_design, dict):
-            model_design = {}
+        model_design = _display_mapping(region.get("model_design")) or {}
         table.add_row(
             str(region.get("geography", "")),
             str(region.get("tier", "")),
@@ -379,7 +427,7 @@ def print_tree_geography_feasibility_table(report: dict[str, Any]) -> None:
     print_table(table)
 
 
-def _first_model_design_move(model_design: dict[str, Any]) -> str:
+def _first_model_design_move(model_design: Mapping[object, object]) -> str:
     """Return the first actionable model-design move from an advisor payload."""
 
     strategy = str(model_design.get("block_strategy", ""))
@@ -393,7 +441,7 @@ def _first_model_design_move(model_design: dict[str, Any]) -> str:
 
 
 def _margin_summary_table(
-    margin_summaries: Any,
+    margin_summaries: object,
     *,
     title: str,
     actual_label: str,
@@ -410,12 +458,15 @@ def _margin_summary_table(
     table.add_column("Max Error", justify="right")
     table.add_column("Max Rel. Error", justify="right")
 
-    for row in margin_summaries:
-        if not isinstance(row, dict):
+    for row in _display_values(margin_summaries):
+        row = _display_mapping(row)
+        if row is None:
             continue
         table.add_row(
             str(row.get("name", "")),
-            ", ".join(str(value) for value in row.get("dimensions", [])),
+            ", ".join(
+                str(value) for value in _display_values(row.get("dimensions", []))
+            ),
             format_report_number(row.get("cells")),
             format_report_number(row.get("target_total")),
             format_report_number(row.get(actual_key)),
@@ -425,7 +476,7 @@ def _margin_summary_table(
     return table
 
 
-def print_ipf_report_table(report: dict[str, Any]) -> None:
+def print_ipf_report_table(report: Mapping[str, object]) -> None:
     """Render an IPF fit report with summary, issues, next steps, and margins."""
 
     table = _margin_summary_table(
@@ -449,7 +500,7 @@ def print_ipf_report_table(report: dict[str, Any]) -> None:
     print_table(table)
 
 
-def print_ipf_input_check_table(report: dict[str, Any]) -> None:
+def print_ipf_input_check_table(report: Mapping[str, object]) -> None:
     """Render seed/control compatibility checks before fitting IPF."""
 
     print_summary_table(
@@ -457,7 +508,9 @@ def print_ipf_input_check_table(report: dict[str, Any]) -> None:
             "status": "Passed" if report.get("passed") else "Needs attention",
             "seed_records": report.get("seed_records", ""),
             "control_margins": report.get("control_margins", ""),
-            "unsupported_cells": len(report.get("unsupported_cells", [])),
+            "unsupported_cells": len(
+                _display_values(report.get("unsupported_cells", []))
+            ),
         },
         title="IPF Input Summary",
     )
@@ -469,8 +522,9 @@ def print_ipf_input_check_table(report: dict[str, Any]) -> None:
     table.add_column("Missing")
     table.add_column("Unused")
     table.add_column("Detail", no_wrap=True)
-    for row in report.get("dimensions", []):
-        if not isinstance(row, dict):
+    for row in _display_values(report.get("dimensions", [])):
+        row = _display_mapping(row)
+        if row is None:
             continue
         status = "OK" if row.get("status") == "ok" else "Problem"
         if row.get("seed_column") == "missing":
@@ -481,24 +535,31 @@ def print_ipf_input_check_table(report: dict[str, Any]) -> None:
             str(row.get("dimension", "")),
             status,
             seed_column,
-            ", ".join(str(value) for value in row.get("missing_categories", [])),
-            ", ".join(str(value) for value in row.get("unused_seed_categories", [])),
+            ", ".join(
+                str(value)
+                for value in _display_values(row.get("missing_categories", []))
+            ),
+            ", ".join(
+                str(value)
+                for value in _display_values(row.get("unused_seed_categories", []))
+            ),
             str(row.get("detail", "")),
         )
     print_table(table)
     _print_next_steps_table(report.get("suggested_next_steps", []))
 
 
-def print_ipf_control_suggestions_table(report: dict[str, Any]) -> None:
+def print_ipf_control_suggestions_table(report: Mapping[str, object]) -> None:
     """Render suggested StatCan control directions for generated or seed rows."""
 
     print_summary_table(
         {
             "unit": report.get("unit", ""),
             "seed_records": report.get("seed_records", ""),
-            "columns": len(report.get("available_columns", [])),
+            "columns": len(_display_values(report.get("available_columns", []))),
             "geography_columns": ", ".join(
-                str(value) for value in report.get("geography_columns", [])
+                str(value)
+                for value in _display_values(report.get("geography_columns", []))
             ),
         },
         title="IPF Control Suggestion Summary",
@@ -509,8 +570,9 @@ def print_ipf_control_suggestions_table(report: dict[str, Any]) -> None:
     table.add_column("Decision", no_wrap=True)
     table.add_column("Search Terms")
     table.add_column("Why It Matters")
-    for row in report.get("usable_controls", []):
-        if not isinstance(row, dict):
+    for row in _display_values(report.get("usable_controls", [])):
+        row = _display_mapping(row)
+        if row is None:
             continue
         table.add_row(
             str(row.get("column", "")),
@@ -518,8 +580,9 @@ def print_ipf_control_suggestions_table(report: dict[str, Any]) -> None:
             str(row.get("statcan_search", "")),
             _control_suggestion_note(row, "Review categories before IPF."),
         )
-    for row in report.get("validation_only_controls", []):
-        if not isinstance(row, dict):
+    for row in _display_values(report.get("validation_only_controls", [])):
+        row = _display_mapping(row)
+        if row is None:
             continue
         table.add_row(
             str(row.get("column", "")),
@@ -530,8 +593,9 @@ def print_ipf_control_suggestions_table(report: dict[str, Any]) -> None:
                 "Use this with rows at the matching unit, or as an output check.",
             ),
         )
-    for row in report.get("enrichment_candidates", []):
-        if not isinstance(row, dict):
+    for row in _display_values(report.get("enrichment_candidates", [])):
+        row = _display_mapping(row)
+        if row is None:
             continue
         table.add_row(
             str(row.get("column", "")),
@@ -543,7 +607,9 @@ def print_ipf_control_suggestions_table(report: dict[str, Any]) -> None:
     _print_next_steps_table(report.get("next_commands", []))
 
 
-def _control_suggestion_note(row: dict[str, Any], default_next_step: str) -> str:
+def _control_suggestion_note(
+    row: Mapping[object, object], default_next_step: str
+) -> str:
     """Combine the role and reason into one readable control-suggestion note."""
 
     role = str(row.get("role", "")).strip()
@@ -555,7 +621,7 @@ def _control_suggestion_note(row: dict[str, Any], default_next_step: str) -> str
     return default_next_step
 
 
-def print_validation_report_table(report: dict[str, Any]) -> None:
+def print_validation_report_table(report: Mapping[str, object]) -> None:
     """Render control-validation results for weighted or expanded populations."""
 
     table = _margin_summary_table(
@@ -579,7 +645,7 @@ def print_validation_report_table(report: dict[str, Any]) -> None:
     print_table(table)
 
 
-def print_tree_output_validation_report_table(report: dict[str, Any]) -> None:
+def print_tree_output_validation_report_table(report: Mapping[str, object]) -> None:
     """Render generated tree-output distribution checks against training rows."""
 
     table = make_table(title="Tree Output Distribution Check")
@@ -589,12 +655,15 @@ def print_tree_output_validation_report_table(report: dict[str, Any]) -> None:
     table.add_column("Generated", justify="right")
     table.add_column("Max Delta", justify="right")
 
-    for row in report.get("comparisons", []):
-        if not isinstance(row, dict):
+    for row in _display_values(report.get("comparisons", [])):
+        row = _display_mapping(row)
+        if row is None:
             continue
         table.add_row(
-            ", ".join(str(value) for value in row.get("dimensions", [])),
-            format_report_number(len(row.get("cells", []))),
+            ", ".join(
+                str(value) for value in _display_values(row.get("dimensions", []))
+            ),
+            format_report_number(len(_display_values(row.get("cells", [])))),
             format_report_number(row.get("training_total")),
             format_report_number(row.get("generated_total")),
             format_report_percent(row.get("max_abs_proportion_delta")),
@@ -615,7 +684,7 @@ def print_tree_output_validation_report_table(report: dict[str, Any]) -> None:
     print_table(table)
 
 
-def print_seed_check_table(report: dict[str, Any]) -> None:
+def print_seed_check_table(report: Mapping[str, object]) -> None:
     """Render microdata seed-column checks for household-level exports."""
 
     print_summary_table(
@@ -634,8 +703,9 @@ def print_seed_check_table(report: dict[str, Any]) -> None:
     table.add_column("Role", no_wrap=True)
     table.add_column("Status", no_wrap=True)
     table.add_column("Detail")
-    for row in report.get("checks", []):
-        if not isinstance(row, dict):
+    for row in _display_values(report.get("checks", [])):
+        row = _display_mapping(row)
+        if row is None:
             continue
         status = "OK" if row.get("status") == "ok" else "Problem"
         role = str(row.get("role", ""))
@@ -660,8 +730,9 @@ def _print_issues_table(issues: object, *, title: str) -> None:
     table.add_column("Margin")
     table.add_column("Problem")
     table.add_column("Tip")
-    for issue in issues:
-        if not isinstance(issue, dict):
+    for issue in _display_values(cast(object, issues)):
+        issue = _display_mapping(issue)
+        if issue is None:
             continue
         table.add_row(
             str(issue.get("severity", "")),
@@ -679,12 +750,12 @@ def _print_next_steps_table(steps: object) -> None:
         return
     table = make_table(title="Next Steps")
     table.add_column("Step")
-    for step in steps:
+    for step in _display_values(cast(object, steps)):
         table.add_row(str(step))
     print_table(table)
 
 
-def format_nonconvergence_message(report: dict[str, Any]) -> str:
+def format_nonconvergence_message(report: Mapping[str, object]) -> str:
     """Build the terminal error shown when IPF stops before convergence."""
 
     message = (
@@ -698,14 +769,14 @@ def format_nonconvergence_message(report: dict[str, Any]) -> str:
     return f"{message} Use --allow-nonconverged to write the fitted weights anyway."
 
 
-def _first_report_issue(report: dict[str, Any]) -> dict[str, Any] | None:
+def _first_report_issue(report: Mapping[str, object]) -> Mapping[object, object] | None:
     """Return the first structured issue from a report, if one exists."""
 
     issues = report.get("issues", [])
     if not isinstance(issues, list) or not issues:
         return None
-    issue = issues[0]
-    return issue if isinstance(issue, dict) else None
+    issue = _display_values(cast(object, issues))[0]
+    return _display_mapping(issue)
 
 
 def format_fit_value_error(exc: ValueError) -> str:

@@ -11,6 +11,7 @@ from typing import Any
 
 import click
 
+from synthpopcan._national_batch_contract import batch_manifest_path
 from synthpopcan.cli_errors import FriendlyGroup
 from synthpopcan.cli_output import (
     click_file_access_error,
@@ -2644,7 +2645,7 @@ def _render_deferred_national_maps(
         manifest_value = record.get("manifest")
         if not isinstance(manifest_value, str):
             continue
-        batch_path = plan_path.parent / manifest_value
+        batch_path = batch_manifest_path(plan_path.parent, record)
         batch = json.loads(batch_path.read_text())
         if not isinstance(batch, dict) or batch.get("status") != "completed":
             continue

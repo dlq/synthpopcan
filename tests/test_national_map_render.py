@@ -111,6 +111,23 @@ def test_render_geography_summary_point_map_rejects_empty_or_unmatched_data(
         )
 
 
+@pytest.mark.parametrize(
+    "render", [render_geography_summary_point_map, render_geography_summary_polygon_map]
+)
+def test_geography_maps_reject_malformed_features(tmp_path: Path, render) -> None:
+    summary = tmp_path / "summary.csv"
+    summary.write_text("DAUID,households,persons\n1001,1,2\n")
+    boundaries = tmp_path / "boundaries.geojson"
+    boundaries.write_text(json.dumps({"type": "FeatureCollection", "features": [None]}))
+    with pytest.raises(ValueError, match="GeoJSON feature"):
+        render(
+            summary_path=summary,
+            boundaries_path=boundaries,
+            geography_column="DAUID",
+            out_path=tmp_path / "map.html",
+        )
+
+
 def test_render_geography_summary_polygon_map_quantizes_display_boundaries(
     tmp_path: Path,
 ) -> None:

@@ -4,8 +4,8 @@ Status: active maintenance\
 Created: 2026-08-26\
 Last updated: 2026-11-04\
 Target: initial bounded tranche in `1.2.0`, then an ongoing `1.x` ratchet\
-Next action: complete `RB12-06` documentation and `RB12-07` archive-state
-review slices; the preflight and national workflow extractions are complete\
+Next action: maintain the supported-symbol documentation ratchet and revisit
+the deferred archive extraction as a separately reviewed change\
 Roadmap: [PLANS.md](../PLANS.md) | [Plan index](README.md) |
 [Release train](2026-08-19-post-1-0-release-train.md)
 
@@ -50,10 +50,10 @@ dictionary is itself a supported versioned artifact.
 | `RB12-03` | `done` | `RB12-04`; active `1.2.0` feature pressure | One selected `cli_geo` or `control_packs` responsibility extraction | The selected adapter becomes thinner, its supported façade remains compatible, and focused behavior plus forbidden-import tests pass |
 | `RB12-04` | `done` | Current source tree | Reproducible function-complexity and module-concentration baseline | The command, inputs, exclusions, and result are recorded; changed functions cannot silently raise the baseline |
 | `RB12-05` | `done` | Current coverage configuration | Exact two-decimal coverage comparison and candidate headroom | A result below `95.00%` fails without integer rounding; the release candidate reaches `95.25%` or the release remains blocked |
-| `RB12-06` | `ready` | Supported beginner/advanced surface inventories | Beginner-export documentation and changed-symbol docstring ratchet ([#52](https://github.com/dlq/synthpopcan/issues/52)) | Every beginner export is documented; changed supported symbols have docstrings; the measured undocumented count does not increase |
-| `RB12-07` | `ready` | Existing archive fault and recovery fixtures | Archive state/action matrix and proceed-or-defer decision | Every current transition, refusal, recovery state, and effect boundary is characterized; the decision either admits `RB12-08` or marks `RB12-08` and `RB12-09` deferred for `1.2.0` |
-| `RB12-08` | `blocked` | `RB12-07` proceed decision | Pure archive transition component | Given validated manifest, checkpoint, and remote state, the component selects the next permitted action without HTTP, prompts, or checkpoint effects |
-| `RB12-09` | `blocked` | `RB12-08` | Existing executor integration and fault/recovery verification | Fail-closed identity, authorization, recovery, checksum, remote verification, and no-overwrite behavior remain unchanged; no new archive operation enlarges the executor |
+| `RB12-06` | `done` | Supported beginner/advanced surface inventories | Beginner-export documentation and changed-symbol docstring ratchet ([#52](https://github.com/dlq/synthpopcan/issues/52)) | Every beginner export is documented; the complete supported callable/class inventory must retain docstrings, with zero currently missing |
+| `RB12-07` | `done` | Existing archive fault and recovery fixtures | Archive state/action matrix and proceed-or-defer decision | The [transition review](../docs/records/archive-transition-review-2026-11-14.md) records the guards, recovery, evidence, and decision |
+| `RB12-08` | `deferred` | `RB12-07` proceed decision | Pure archive transition component | Deferred for a separately reviewed change; see the transition review |
+| `RB12-09` | `deferred` | `RB12-08` | Existing executor integration and fault/recovery verification | Deferred with the pure transition component; existing fail-closed tests remain in force |
 
 The [2026-10-22 preparation record](../docs/records/readiness-2026-10-22.md)
 binds the current complexity baseline and enforced ratchet. Two-decimal

@@ -1,6 +1,8 @@
+import { clearWebError, renderWebError } from "./localization-ui.mjs";
 import { previewCsv } from "./preview.mjs";
 
 export function showStatus(element, message) {
+  clearWebError(element);
   revokeDownloads(element);
   element.className = "result-box";
   element.textContent = message;
@@ -9,10 +11,11 @@ export function showStatus(element, message) {
 export function showError(element, error) {
   revokeDownloads(element);
   element.className = "result-box error";
-  element.textContent = error instanceof Error ? error.message : String(error);
+  renderWebError(element, error);
 }
 
 export function showDownloads(element, { message, downloads, validation = null }) {
+  clearWebError(element);
   revokeDownloads(element);
   element.className = "result-box success";
   const messageElement = document.createElement("p");

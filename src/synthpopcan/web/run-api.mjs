@@ -1,4 +1,4 @@
-import { fetchJson } from "./http.mjs";
+import { ApiError, fetchJson } from "./http.mjs";
 
 export async function uploadCsv(file) {
   const response = await fetch("/api/uploads", {
@@ -13,7 +13,11 @@ export async function uploadCsv(file) {
   });
   if (!response.ok) {
     const payload = await response.json().catch(() => ({}));
-    throw new Error(payload.error ?? `Upload returned HTTP ${response.status}`);
+    throw new ApiError(payload.error ?? `Upload returned HTTP ${response.status}`, {
+      endpoint: "/api/uploads",
+      method: "POST",
+      status: response.status,
+    });
   }
   return response.json();
 }

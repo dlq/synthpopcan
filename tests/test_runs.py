@@ -7,8 +7,70 @@ from pathlib import Path
 import pytest
 
 import synthpopcan.runs as runs_module
-from synthpopcan.assurance import verify_run_assurance
+from synthpopcan.assurance import build_run_assurance, verify_run_assurance
 from synthpopcan.runs import RUN_SCHEMA_VERSION, RunStore, publish_artifact
+
+
+@pytest.mark.parametrize(
+    ("method", "label"),
+    [
+        ("create_ipf_run", "IPF"),
+        ("create_model_run", "model"),
+        ("create_small_area_run", "small-area"),
+    ],
+)
+def test_run_creation_rejects_non_string_input_keys(tmp_path, method, label):
+    store = RunStore(tmp_path)
+    with pytest.raises(ValueError, match=f"{label} run inputs must be an object"):
+        getattr(store, method)({"inputs": {1: "unexpected"}})
+    assert store.list_runs() == []
+
+
+def test_assurance_record_retains_machine_contract_for_failed_run(tmp_path):
+    manifest = {
+        "status": "failed",
+        "schema_version": "synthpopcan-run-v1",
+        "synthpopcan_version": "example",
+        "run_id": "example-run",
+        "workflow": "ipf",
+        "request": {"inputs": {}, "options": {"random_seed": 42}},
+        "inputs": [],
+        "artifacts": [],
+        "summary": {},
+    }
+    result = build_run_assurance(manifest, lambda path: tmp_path / path)
+    assert result == {
+        "schema_version": "synthpopcan-assurance-v1",
+        "run_schema_version": "synthpopcan-run-v1",
+        "synthpopcan_version": "example",
+        "run_id": "example-run",
+        "workflow": "ipf",
+        "terminal_status": "failed",
+        "successful": False,
+        "normalized_request": manifest["request"],
+        "model": None,
+        "random_seeds": {"random_seed": 42},
+        "settings": {"random_seed": 42},
+        "inputs": [],
+        "artifacts": [],
+        "diagnostics": {
+            "run_summary": {},
+            "report_summary": None,
+            "linked_population": None,
+        },
+        "warnings": [],
+        "limitations": [
+            "Evidence verifies recorded bytes and implemented numerical checks; "
+            "it does not establish substantive fitness for every research use.",
+            "Input hashes provide provenance without redistributing input contents.",
+        ],
+    }
+    assert verify_run_assurance(
+        {**manifest, "assurance": result}, lambda p: tmp_path / p
+    ) == {
+        "passed": True,
+        "issues": [],
+    }
 
 
 def test_run_store_streams_claims_and_records_uploads(tmp_path: Path) -> None:
@@ -375,6 +437,30 @@ def test_assurance_verifier_reports_contract_mismatches(tmp_path: Path) -> None:
         "artifacts evidence is malformed",
         "model identity or checksum does not match",
     }
+
+    malformed = deepcopy(terminal)
+    malformed["assurance"]["inputs"].append(malformed["assurance"]["inputs"][0])
+    malformed["assurance"]["inputs"].append({"logical_name": "unexpected"})
+    malformed["assurance"]["artifacts"] = ["not an artifact"]
+    malformed["assurance"]["diagnostics"] = "not diagnostics"
+    verification = verify_run_assurance(malformed, store.resolve_managed_path)
+    assert verification["passed"] is False
+    assert any("duplicate inputs evidence" in issue for issue in verification["issues"])
+    assert "unexpected inputs evidence for unexpected" in verification["issues"]
+    assert "assurance diagnostics are malformed" in verification["issues"]
+    assert any("artifact diagnostics" in issue for issue in verification["issues"])
+
+    malformed = deepcopy(terminal)
+    malformed["inputs"] = [None, {"logical_name": "missing-path"}]
+    verification = verify_run_assurance(malformed, store.resolve_managed_path)
+    assert "inputs manifest entry is malformed" in verification["issues"]
+    with pytest.raises(ValueError, match="file metadata must contain objects"):
+        build_run_assurance(malformed, store.resolve_managed_path)
+
+    malformed = deepcopy(terminal)
+    malformed["summary"] = {"non_converged_count": {"unexpected": True}}
+    with pytest.raises(ValueError, match="invalid non-converged count"):
+        build_run_assurance(malformed, store.resolve_managed_path)
 
 
 def test_run_creation_rolls_back_partially_claimed_uploads(

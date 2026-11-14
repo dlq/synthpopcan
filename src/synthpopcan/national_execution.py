@@ -23,6 +23,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from synthpopcan._national_batch_contract import batch_manifest_path
 from synthpopcan.geography import statcan_geography_universe
 from synthpopcan.small_area_controls import write_recoded_candidates
 from synthpopcan.small_area_synthesis import calibrate_linked_household_csvs
@@ -345,7 +346,7 @@ def reset_nonconverged_national_batches(
         manifest_value = record.get("manifest")
         if not isinstance(manifest_value, str):
             continue
-        batch_path = plan_path.parent / manifest_value
+        batch_path = batch_manifest_path(plan_path.parent, record)
         batch = _read_json(batch_path)
         if batch.get("status") != "completed":
             continue
@@ -568,7 +569,7 @@ def build_national_geography_summary(plan_path: Path) -> dict[str, object]:
         manifest_value = record.get("manifest")
         if not isinstance(manifest_value, str):
             continue
-        batch = _read_json(plan_path.parent / manifest_value)
+        batch = _read_json(batch_manifest_path(plan_path.parent, record))
         if batch.get("status") != "completed":
             continue
         result = batch.get("result")
@@ -792,7 +793,7 @@ def _targets_by_condition(
         manifest_value = record.get("manifest")
         if not isinstance(manifest_value, str):
             raise ValueError("national small-area plan batch manifest is invalid")
-        batch = _read_json(plan_path.parent / manifest_value)
+        batch = _read_json(batch_manifest_path(plan_path.parent, record))
         jurisdiction = batch.get("jurisdiction")
         target = batch.get("target_households")
         if not isinstance(jurisdiction, Mapping) or not isinstance(target, int):

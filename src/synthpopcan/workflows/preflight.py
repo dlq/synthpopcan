@@ -7,7 +7,7 @@ import json
 import shutil
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Protocol
+from typing import Any, Protocol, cast
 
 from synthpopcan._runtime_schemas import (
     SmallAreaRunInputs,
@@ -130,13 +130,19 @@ def _inspection_string_list(
     key: str,
 ) -> list[str]:
     value = inspection.get(key)
-    if not isinstance(value, list) or not all(isinstance(item, str) for item in value):
+    if not isinstance(value, list):
         raise ValueError(f"model inspection {key} must be a list of strings")
-    return value
+    items = cast(list[object], value)  # isinstance above validates the container.
+    result: list[str] = []
+    for item in items:
+        if not isinstance(item, str):
+            raise ValueError(f"model inspection {key} must be a list of strings")
+        result.append(item)
+    return result
 
 
 def _csv_category_support(path: Path, dimensions: set[str]) -> dict[str, set[str]]:
-    support = {dimension: set() for dimension in dimensions}
+    support: dict[str, set[str]] = {dimension: set() for dimension in dimensions}
     if not dimensions:
         return support
     with path.open(newline="", encoding="utf-8-sig") as handle:
@@ -155,40 +161,51 @@ def _csv_category_support(path: Path, dimensions: set[str]) -> dict[str, set[str
 def _model_category_support(
     package: dict[str, Any], level: str, dimensions: set[str]
 ) -> dict[str, set[str]]:
-    support = {dimension: set() for dimension in dimensions}
-    models = package.get("models")
-    model = models.get(level) if isinstance(models, dict) else None
+    support: dict[str, set[str]] = {dimension: set() for dimension in dimensions}
+    models: object = package.get("models")
+    model: object = None
+    if isinstance(models, dict):
+        model_mapping = cast(dict[object, object], models)
+        model = model_mapping.get(level)
     if not isinstance(model, dict):
         return support
 
     def collect(value: object) -> None:
         if isinstance(value, dict):
-            for key, child in value.items():
-                if key in support:
-                    values = child if isinstance(child, list) else [child]
+            mapping = cast(dict[object, object], value)
+            for key, child in mapping.items():
+                if isinstance(key, str) and key in support:
+                    values = (
+                        cast(list[object], child)
+                        if isinstance(child, list)
+                        else [child]
+                    )
                     support[key].update(
                         str(item)
                         for item in values
                         if isinstance(item, str | int | float)
                     )
-                collect(child)
+                collect(cast(object, child))
         elif isinstance(value, list):
-            for child in value:
+            children = cast(list[object], value)
+            for child in children:
                 collect(child)
 
-    collect(model)
+    collect(cast(dict[object, object], model))
     return support
 
 
 def _unsupported_control_categories(
-    controls: Any,
+    controls: ControlTable,
     support: dict[str, set[str]],
     *,
     ignored_dimensions: set[str],
 ) -> list[str]:
-    problems = []
+    problems: list[str] = []
     for dimension in sorted(set(support) - ignored_dimensions):
-        requested = controls._positive_categories_for(dimension)
+        requested = controls._positive_categories_for(  # pyright: ignore[reportPrivateUsage]
+            dimension
+        )
         missing = sorted(requested - support[dimension])
         if missing:
             problems.append(f"{dimension}: {', '.join(missing)}")
@@ -297,11 +314,11 @@ def _load_controls(store: PreflightWorkspace, inputs: SmallAreaRunInputs) -> _Co
     boundaries_id = inputs.boundaries_upload_id
     if boundaries_id:
         boundaries_path = store.upload_path(str(boundaries_id), require_unclaimed=True)
-        boundaries = json.loads(boundaries_path.read_text())
-        if (
-            not isinstance(boundaries, dict)
-            or boundaries.get("type") != "FeatureCollection"
-        ):
+        boundaries: object = json.loads(boundaries_path.read_text())
+        if not isinstance(boundaries, dict):
+            raise ValueError("boundaries must be a GeoJSON FeatureCollection")
+        boundary_fields = cast(dict[object, object], boundaries)
+        if boundary_fields.get("type") != "FeatureCollection":
             raise ValueError("boundaries must be a GeoJSON FeatureCollection")
         normalized_inputs["boundaries_upload_id"] = str(boundaries_id)
 
@@ -315,12 +332,19 @@ def _load_controls(store: PreflightWorkspace, inputs: SmallAreaRunInputs) -> _Co
     )
 
 
-def _review_conditional_controls(store, inputs, source, loaded, universe, dimension):
+def _review_conditional_controls(
+    store: PreflightWorkspace,
+    inputs: SmallAreaRunInputs,
+    source: _Source,
+    loaded: _Controls,
+    universe: GeographyUniverse | None,
+    dimension: str,
+) -> dict[str, str]:
     """Validate selected conditional sources before the run claims uploads."""
     from synthpopcan.small_area_synthesis import (
-        _validate_conditional_pack_selection,
-        _with_marital_status_controls,
-        _with_profile_controls,
+        _validate_conditional_pack_selection,  # pyright: ignore[reportPrivateUsage]
+        _with_marital_status_controls,  # pyright: ignore[reportPrivateUsage]
+        _with_profile_controls,  # pyright: ignore[reportPrivateUsage]
     )
 
     specs = (
@@ -380,7 +404,7 @@ def _review_conditional_controls(store, inputs, source, loaded, universe, dimens
         )
     except ValueError as exc:
         raise ConditionalPreflightError(str(exc)) from exc
-    result = {}
+    result: dict[str, str] = {}
     for family, pack, upload in specs:
         if pack and upload:
             prefix = "labour_force" if family == "labour_force_status" else family
@@ -452,7 +476,7 @@ def _check_support(
         for dimension in margin.dimensions
         if dimension != geography_dimension
     }
-    derived_household_dimensions = (
+    derived_household_dimensions: set[str] = (
         _pack_derived_dimensions(control_pack, "household")
         if control_pack is not None
         else set()
@@ -472,7 +496,7 @@ def _check_support(
         controls,
         household_support,
         ignored_dimensions=(
-            ({group_column} if max_household_size is not None else set())
+            ({group_column} if max_household_size is not None else set[str]())
             | (derived_household_dimensions)
         ),
     )
@@ -529,7 +553,7 @@ def _check_person_support(
         for dimension in margin.dimensions
         if dimension != geography_dimension
     }
-    derived_person_dimensions = (
+    derived_person_dimensions: set[str] = (
         _pack_derived_dimensions(control_pack, "person")
         if control_pack is not None
         else set()
@@ -577,8 +601,6 @@ def _review_geography(
     geography_column = options.geography_column or geography_dimension
     geography_payload = options.geography_universe
     if geography_payload is not None:
-        if not isinstance(geography_payload, dict):
-            raise ValueError("geography_universe must be an object")
         geography_universe = GeographyUniverse.from_dict(geography_payload)
         if geography_universe.identifier_column != geography_column:
             raise ValueError(
@@ -751,27 +773,25 @@ def preflight_small_area_run(
         if value != default:
             normalized_options[name] = value
     return SmallAreaPreflightResult(
-        **{
-            "ready": enough_disk,
-            "request": {
-                "workflow": "small_area",
-                "inputs": normalized_inputs,
-                "options": normalized_options,
-            },
-            "model_diagnostics": inspection,
-            "estimate": {
-                **estimate,
-                "output_bytes": estimated_bytes,
-                "disk_free_bytes": disk_free,
-                "enough_disk": enough_disk,
-            },
-            "control_pack_plan": control_pack_plan,
-            "expected_artifacts": [
-                "households",
-                "persons",
-                "linked_population_manifest",
-                "small_area_report",
-                *(["map"] if boundaries_id else []),
-            ],
-        }
+        ready=enough_disk,
+        request={
+            "workflow": "small_area",
+            "inputs": normalized_inputs,
+            "options": normalized_options,
+        },
+        model_diagnostics=inspection,
+        estimate={
+            **estimate,
+            "output_bytes": estimated_bytes,
+            "disk_free_bytes": disk_free,
+            "enough_disk": enough_disk,
+        },
+        control_pack_plan=control_pack_plan,
+        expected_artifacts=[
+            "households",
+            "persons",
+            "linked_population_manifest",
+            "small_area_report",
+            *(["map"] if boundaries_id else []),
+        ],
     )

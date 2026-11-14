@@ -89,7 +89,7 @@ jobs:
       - name: Run tests with enforced coverage
         if: matrix.python-version == '3.12'
         run: >-
-          uv run --locked --extra performance pytest
+          uv run --locked --extra performance python scripts/test_runner.py full --
           --junitxml=correctness-report.xml
           --cov=src/synthpopcan
           --cov-branch
@@ -102,7 +102,8 @@ jobs:
         # Coverage-tool integration belongs to the 3.12 coverage job above.
         # Keep the full application behaviour suite on every supported Python.
         run: >-
-          uv run --locked --extra performance pytest -m 'not coverage_gate'
+          uv run --locked --extra performance python scripts/test_runner.py full --
+          -m 'not coverage_gate'
           --junitxml=correctness-report.xml
 
       - name: Run affected compatibility tests
@@ -240,6 +241,9 @@ jobs:
 
       - name: Check web assets
         run: npm run check:web
+
+      - name: Check web localization catalogue and literal guard
+        run: uv run --locked python scripts/check_web_localization.py
 
       - name: Run web unit tests with coverage guardrails
         run: npm run test:web:coverage

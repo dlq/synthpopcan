@@ -2277,6 +2277,39 @@ def test_resume_rejects_tampered_static_operation_before_remote_mutation(
     assert not any(method in {"PUT", "DELETE", "POST"} for method, _ in fake.calls)
 
 
+@pytest.mark.parametrize("state", [None, "unexpected", "completed", []])
+def test_resume_rejects_unknown_checkpoint_state_without_mutation(
+    monkeypatch, state
+) -> None:
+    deposition = _new_version_deposition()
+    fake = _FakeZenodo(deposition, new_version=True)
+    operation_id = MODULE._operation_identity(deposition)
+    synthpopcan = deposition["synthpopcan"]
+    resume = {
+        "operation_id": operation_id,
+        "deposit_operation": "create-new-version",
+        "model_id": synthpopcan["model_id"],
+        "package_version": deposition["metadata"]["version"],
+        "asset_sha256": synthpopcan["sha256"],
+        "metadata_sha256": operation_id.rsplit(":", 1)[-1],
+        "source_record_id": synthpopcan["existing_record_id"],
+        "state": state,
+        "uploaded_bytes": 0,
+    }
+    monkeypatch.setattr(MODULE, "_request", fake.request)
+    monkeypatch.setattr(MODULE, "_asset_bytes", lambda item: _payload(item)[0])
+    monkeypatch.setattr(MODULE, "_verify_remote_download", lambda *args, **kwargs: None)
+    with pytest.raises(MODULE.ZenodoError, match="unrecognized state"):
+        MODULE.deposit_one(
+            deposition,
+            api=MODULE.SANDBOX_API,
+            token="t",
+            publish=False,
+            resume=resume,
+        )
+    assert not any(method in {"PUT", "DELETE", "POST"} for method, _ in fake.calls)
+
+
 def test_owned_resume_rebinds_parent_before_file_mutation(monkeypatch) -> None:
     deposition = _new_version_deposition()
     fake = _FakeZenodo(deposition, new_version=True)

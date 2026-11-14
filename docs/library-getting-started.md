@@ -186,6 +186,18 @@ If `converged` is false, do not treat the output as finished. Go back to the
 non-convergence before deciding whether to change the seed, controls, or
 tolerance.
 
+For this fictional example, both control margins total 200 people. The result
+contains one fitted weight per seed row; check the convergence flag and the
+total before writing it:
+
+```python
+assert fit.converged
+assert abs(sum(fit.weights) - 200) < 0.01
+```
+
+Passing this check confirms the example's total. For research data, also
+inspect each margin's residuals and the source and universe of the controls.
+
 Write the fitted weights once the fit is acceptable:
 
 ```python

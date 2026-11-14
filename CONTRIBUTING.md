@@ -101,8 +101,9 @@ uv run --locked --extra performance python scripts/test_runner.py affected --bas
 ```
 
 The affected selection includes committed, staged, unstaged, and untracked
-changes. It currently selects individual changed test files only; shared,
-source, deleted, unmapped, or empty changes run the full suite. The dry run
+changes. It selects individual changed test files and explicitly reviewed
+source-to-test mappings; shared, deleted, unmapped, or empty changes run the
+full suite. The initial source mapping covers the isolated tree benchmark. The dry run
 explains the choice. Pull requests use this selection for non-coverage Python
 jobs; main and the coverage job still run the full suite. Pass pytest arguments
 after `--`, for example `-- -q`. Partial runs do not enforce coverage.

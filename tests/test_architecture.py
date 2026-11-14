@@ -49,8 +49,10 @@ MODULE_LAYERS = {
         {
             "_archive_correction",
             "_conditional_universe",
+            "_geojson_contract",
             "_census_profile",
             "_interface",
+            "_national_batch_contract",
             "_version",
             "contracts.__init__",
             "linked_schema",
@@ -300,6 +302,10 @@ def test_ci_exposes_a_stable_required_check_for_the_python_matrix() -> None:
     assert "scripts" not in pyright_config["exclude"]
     assert 'test "$QUALITY_RESULT" = "success"' in workflow
     assert 'test "$PYTHON_MATRIX_RESULT" = "success"' in workflow
+    assert "python scripts/test_runner.py full --" in workflow
+    assert "python scripts/test_runner.py affected" in workflow
+    assert "github.event_name == 'pull_request'" in workflow
+    assert "github.event_name != 'pull_request'" in workflow
 
 
 def test_ci_browser_install_is_bounded_and_headless_only() -> None:

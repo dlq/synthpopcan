@@ -5,6 +5,50 @@ async function openWorkbench(page) {
   await expect(page.locator("#workspace-location")).toHaveText(/\S/);
 }
 
+test("locale selection persists without changing server data", async ({ page }) => {
+  await openWorkbench(page);
+  const original = await page.evaluate(() => fetch("/api/app").then((r) => r.text()));
+  await page.locator("#web-locale").selectOption("fr-CA");
+  await expect(page.locator("#web-locale-label")).toHaveText("Langue");
+  await expect(page.locator("html")).toHaveAttribute("lang", "fr-CA");
+  expect(await page.evaluate(() => fetch("/api/app").then((r) => r.text()))).toBe(
+    original,
+  );
+  await page.reload();
+  await expect(page.locator("#web-locale")).toHaveValue("fr-CA");
+  await expect(page.locator("#web-locale-label")).toHaveText("Langue");
+});
+
+test("a missing French catalogue falls back to a usable English interface", async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    localStorage.setItem("synthpopcan.web.locale.v1", "fr-CA");
+  });
+  await page.route("**/messages.fr-CA.json", (route) => route.fulfill({ status: 404 }));
+  await openWorkbench(page);
+  await expect(page.locator("#web-locale")).toHaveValue("en-CA");
+  await expect(page.locator("#web-locale-label")).toHaveText("Language");
+});
+
+test("a displayed server error updates with locale while its response stays unchanged", async ({
+  page,
+}) => {
+  const body = JSON.stringify({ error: "upload is invalid" });
+  await page.route("**/api/uploads", (route) =>
+    route.fulfill({ status: 400, contentType: "application/json", body }),
+  );
+  await openWorkbench(page);
+  await page.getByRole("button", { name: /Use demo age\/sex files/ }).click();
+  await page.getByRole("button", { name: "Upload and continue" }).click();
+  await expect(page.locator("#workbench-message")).toContainText("Upload is invalid.");
+  await page.locator("#web-locale").selectOption("fr-CA");
+  await expect(page.locator("#workbench-message")).toContainText(
+    "Le fichier téléversé est invalide.",
+  );
+  expect(JSON.parse(body)).toEqual({ error: "upload is invalid" });
+});
+
 async function readHorizontalLayout(page) {
   return page.evaluate(() => {
     const elements = [
@@ -68,6 +112,13 @@ test("SCN-WEB-001 runs durable demo IPF and recovers results after refresh", asy
     timeout: 15_000,
   });
   await expect(page.locator("#fit-diagnostics")).toContainText("Converged");
+  await expect(page.locator("#progress-events")).toContainText(
+    "Reading seed records and controls",
+  );
+  await page.locator("#web-locale").selectOption("fr-CA");
+  await expect(page.locator("#progress-events")).toContainText(
+    "Lecture des enregistrements initiaux et des contrôles",
+  );
   await expect(page.locator("#primary-preview")).toContainText("weight");
   await expect(page.locator("#primary-preview tbody tr")).toHaveCount(4);
   await expect(page.getByRole("link", { name: "Download weights.csv" })).toBeVisible();

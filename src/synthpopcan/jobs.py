@@ -9,15 +9,14 @@ import multiprocessing
 import queue
 import threading
 import time
-from collections.abc import Callable, Iterator
+from collections.abc import Callable, Generator
 from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Protocol
+from typing import Any, Protocol, cast
 
 from synthpopcan._runtime_schemas import (
     WORKER_MESSAGE_ADAPTER,
-    WorkerCancelledMessage,
     WorkerFailedMessage,
     WorkerProgressMessage,
     WorkerSucceededMessage,
@@ -44,6 +43,15 @@ class _WorkerCancelledError(RuntimeError):
 
 
 _WorkerCancelled = _WorkerCancelledError
+
+
+def _geography_from_option(value: object) -> GeographyUniverse | None:
+    if not isinstance(value, dict):
+        return None
+    fields = cast(dict[object, object], value)
+    return GeographyUniverse.from_dict(
+        {key: item for key, item in fields.items() if isinstance(key, str)}
+    )
 
 
 class _MessageQueue(Protocol):
@@ -298,12 +306,7 @@ def _small_area_worker(
         else:
             package_reference = None
             package_path = None
-        geography_payload = options.get("geography_universe")
-        geography_universe = (
-            GeographyUniverse.from_dict(geography_payload)
-            if isinstance(geography_payload, dict)
-            else None
-        )
+        geography_universe = _geography_from_option(options.get("geography_universe"))
         result = synthesize_small_area_files(
             SmallAreaRequest(
                 package_path=package_path,
@@ -507,7 +510,7 @@ class _WorkerSession:
 @contextmanager
 def _worker_session(
     root: Path, messages: _MessageQueue, cancel_event: _CancelEvent
-) -> Iterator[_WorkerSession]:
+) -> Generator[_WorkerSession]:
     try:
         yield _WorkerSession(root, messages, cancel_event)
     except _WorkerCancelledError:
@@ -756,7 +759,7 @@ class JobManager:
                     message.error.message,
                 )
                 terminal = True
-            elif isinstance(message, WorkerCancelledMessage):
+            else:
                 self._finish_cancelled(run_id)
                 terminal = True
 

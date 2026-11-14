@@ -15,12 +15,13 @@ uv run --locked cffconvert --validate
 git ls-files -z -- '*.md' | \
   xargs -0 uv run --locked --group docs mdformat --check
 uv run --locked --group docs doc8 docs
-uv run --locked --extra performance pytest \
+uv run --locked --extra performance python scripts/test_runner.py full -- \
   --cov=src/synthpopcan \
   --cov-branch \
   --cov-report=term-missing:skip-covered \
   --cov-fail-under=95
 uv run --locked --group docs sphinx-build -E -W -b html docs docs/_build/html
 npm run check:web
+uv run --locked python scripts/check_web_localization.py
 npm run test:web:coverage
 npm run test:web:e2e

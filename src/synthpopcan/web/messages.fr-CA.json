@@ -1,0 +1,67 @@
+{
+  "schema_version": "synthpopcan-web-messages-v1",
+  "locale": "fr-CA",
+  "revision": "runtime-preview-1",
+  "messages": {
+    "web.language.label": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Langue",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.language.label",
+        "review": "draft"
+      }
+    },
+    "web.language.coverage": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Aperçu linguistique : la majeure partie du contenu demeure en anglais.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.language.coverage",
+        "review": "draft"
+      }
+    },
+    "web.fallback.error": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Erreur",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.fallback.error",
+        "review": "draft"
+      }
+    },
+    "web.fallback.progress": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Progression",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.fallback.progress",
+        "review": "draft"
+      }
+    },
+    "web.ipf.reading": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Lecture des enregistrements initiaux et des contrôles",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipf.reading",
+        "review": "draft"
+      }
+    },
+    "web.upload.invalid": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Le fichier téléversé est invalide.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.upload.invalid",
+        "review": "draft"
+      }
+    }
+  }
+}

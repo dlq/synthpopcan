@@ -22,6 +22,8 @@ from html import escape as html_escape
 from pathlib import Path
 from typing import Any
 
+from synthpopcan._geojson_contract import feature_or_none
+
 # Retain existing helper import paths while the implementation has its own owner.
 from synthpopcan._map_boundaries import (
     _classify_polygon_rings as _classify_polygon_rings,
@@ -633,12 +635,11 @@ def render_geography_summary_point_map(
     extent = [math.inf, math.inf, -math.inf, -math.inf]
     matched: set[str] = set()
     for feature in _iter_geojson_features_for_partition(boundaries_path):
-        if not isinstance(feature, Mapping):
-            continue
-        properties = feature.get("properties")
-        geometry = feature.get("geometry")
-        if not isinstance(properties, Mapping) or not isinstance(geometry, Mapping):
-            continue
+        parsed = feature_or_none(feature)
+        if parsed is None:
+            raise ValueError("GeoJSON feature must have properties and geometry")
+        properties = parsed["properties"]
+        geometry = parsed["geometry"]
         identifier = str(properties.get(geography_id_field, "")).strip()
         if identifier not in summaries:
             continue
@@ -723,12 +724,11 @@ def render_geography_summary_polygon_map(
     collapsed_rings = 0
     for boundary_path in boundary_paths:
         for feature in _iter_geojson_features_for_partition(boundary_path):
-            if not isinstance(feature, Mapping):
-                continue
-            properties = feature.get("properties")
-            geometry = feature.get("geometry")
-            if not isinstance(properties, Mapping) or not isinstance(geometry, Mapping):
-                continue
+            parsed = feature_or_none(feature)
+            if parsed is None:
+                raise ValueError("GeoJSON feature must have properties and geometry")
+            properties = parsed["properties"]
+            geometry = parsed["geometry"]
             identifier = str(properties.get(geography_id_field, "")).strip()
             if identifier not in summaries:
                 continue

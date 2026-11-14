@@ -1,5 +1,6 @@
 import { stringifyCsv } from "./csv.mjs";
 import { numberValue, optionalNumberValue } from "./form-utils.mjs";
+import { clearWebError, renderWebError } from "./localization-ui.mjs";
 import { createOperationSequencer } from "./operation-sequencer.mjs";
 import {
   artifactUrl,
@@ -28,7 +29,7 @@ import { buildAgeSexControlRows, buildAgeSexSeedRows } from "./starter-files.mjs
 
 const TERMINAL = new Set(["succeeded", "failed", "cancelled", "interrupted"]);
 
-export function bindRunsWorkbench(bootstrap) {
+export function bindRunsWorkbench(bootstrap, localization) {
   const state = {
     runs: [],
     selectedRun: null,
@@ -38,7 +39,14 @@ export function bindRunsWorkbench(bootstrap) {
     stopEvents: null,
     viewRevision: 0,
     operations: createOperationSequencer(),
+    eventViews: [],
+    localization,
   };
+  localization.subscribe(() => {
+    for (const view of state.eventViews) {
+      view.element.textContent = localization.presentEvent(view.context);
+    }
+  });
   document.querySelector("#workspace-location").textContent = bootstrap.workspace;
   document.querySelector("#new-run").addEventListener("click", () => newDraft(state));
   document
@@ -150,7 +158,7 @@ async function refreshRuns(state, selectNewest = false) {
     if (selectNewest && state.runs.length > 0 && state.viewRevision === viewRevision)
       await selectRun(state, state.runs[0]);
   } catch (error) {
-    if (operation.isCurrent()) showMessage(error.message, "error");
+    if (operation.isCurrent()) showErrorMessage(error);
   }
 }
 
@@ -161,6 +169,7 @@ function newDraft(state) {
   state.stopEvents?.();
   state.stopEvents = null;
   state.selectedRun = null;
+  state.eventViews = [];
   document.querySelector("#restart-run").hidden = true;
   state.workflow = "ipf";
   state.uploads = null;
@@ -244,7 +253,7 @@ async function uploadInputs(state) {
     showStep("configure");
   } catch (error) {
     if (!operation.isCurrent()) return;
-    showMessage(error.message, "error");
+    showErrorMessage(error);
     button.disabled = false;
   }
 }
@@ -292,7 +301,7 @@ async function checkPreflight(state) {
       showMessage("Preflight found a workspace capacity problem.", "error");
     }
   } catch (error) {
-    if (operation.isCurrent()) showMessage(error.message, "error");
+    if (operation.isCurrent()) showErrorMessage(error);
   }
 }
 
@@ -330,7 +339,7 @@ async function checkModelPreflight(state) {
       preflight.ready ? "success" : "error",
     );
   } catch (error) {
-    if (operation.isCurrent()) showMessage(error.message, "error");
+    if (operation.isCurrent()) showErrorMessage(error);
   } finally {
     if (operation.isCurrent()) button.disabled = false;
   }
@@ -390,7 +399,7 @@ async function startRun(state) {
     followRun(state, run.run_id);
   } catch (error) {
     if (!operation.isCurrent()) return;
-    showMessage(error.message, "error");
+    showErrorMessage(error);
     document.querySelector("#start-run").disabled = false;
   }
 }
@@ -400,10 +409,11 @@ function followRun(state, runId) {
   state.stopEvents?.();
   const events = document.querySelector("#progress-events");
   events.replaceChildren();
+  state.eventViews = [];
   state.stopEvents = followRunEvents(runId, {
     onEvent: (event) => {
       if (operation.isCurrent() && state.selectedRun?.run_id === runId)
-        appendProgressEvent(events, event);
+        appendProgressEvent(events, event, state, state.localization);
     },
     onReconnect: () => {
       if (operation.isCurrent() && state.selectedRun?.run_id === runId)
@@ -420,9 +430,15 @@ function followRun(state, runId) {
   });
 }
 
-function appendProgressEvent(list, event) {
+function appendProgressEvent(list, event, state, localization) {
   const item = document.createElement("li");
-  item.textContent = event.message;
+  const context = {
+    workflow: state.selectedRun?.workflow,
+    stage: event.stage,
+    message: event.message,
+  };
+  item.textContent = localization.presentEvent(context);
+  state.eventViews.push({ element: item, context });
   item.dataset.eventId = event.id;
   list.append(item);
   const progress = document.querySelector("#run-progress");
@@ -443,7 +459,7 @@ async function requestCancel(state) {
     showMessage("Cancellation requested.", "warning");
   } catch (error) {
     if (!operation.isCurrent() || state.selectedRun?.run_id !== runId) return;
-    showMessage(error.message, "error");
+    showErrorMessage(error);
     document.querySelector("#cancel-run").disabled = false;
   }
 }
@@ -462,7 +478,7 @@ async function requestRestart(state) {
     await selectRun(state, run);
   } catch (error) {
     if (!operation.isCurrent() || state.selectedRun?.run_id !== runId) return;
-    showMessage(error.message, "error");
+    showErrorMessage(error);
     button.disabled = false;
   }
 }
@@ -501,7 +517,7 @@ async function selectRun(state, summary) {
       followRun(state, run.run_id);
     }
   } catch (error) {
-    if (state.viewRevision === viewRevision) showMessage(error.message, "error");
+    if (state.viewRevision === viewRevision) showErrorMessage(error);
   }
 }
 
@@ -518,7 +534,10 @@ async function showTerminalRun(state, run) {
     restart.hidden = run.status !== "interrupted" || run.workflow !== "small_area";
     restart.disabled = false;
     const message = run.error?.message ?? `Run ${run.status}.`;
-    showMessage(message, run.status === "cancelled" ? "warning" : "error");
+    showErrorMessage(
+      new Error(message),
+      run.status === "cancelled" ? "warning" : "error",
+    );
     return;
   }
   showStep("results");
@@ -628,9 +647,15 @@ function setRunStatus(status) {
 
 function showMessage(message, kind, phase = "") {
   const element = document.querySelector("#workbench-message");
+  clearWebError(element);
   element.className = `result-box ${kind}`.trim();
   element.dataset.phase = phase;
   element.textContent = message;
+}
+
+function showErrorMessage(error, kind = "error") {
+  showMessage("", kind);
+  renderWebError(document.querySelector("#workbench-message"), error);
 }
 
 function clearResults() {
@@ -727,6 +752,7 @@ async function changeModelInstallation(state, action) {
   buttons.forEach((button) => {
     button.disabled = true;
   });
+  clearWebError(status);
   status.textContent = install ? "Downloading and verifying model…" : "Removing model…";
   try {
     const response = await fetch(
@@ -752,7 +778,7 @@ async function changeModelInstallation(state, action) {
         : "The model was not present in the local cache.";
   } catch (error) {
     if (!operation.isCurrent()) return;
-    status.textContent = error.message;
+    renderWebError(status, error);
     updateModelCatalogueActions();
   }
 }

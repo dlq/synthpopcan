@@ -33,6 +33,14 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from synthpopcan._national_batch_contract import (
+    BATCH_SCHEMA,
+    batch_manifest_path,
+    validate_batch_identity,
+)
+from synthpopcan._national_batch_contract import (
+    decode_worker_result as _decode_worker_result,
+)
 from synthpopcan.geography import statcan_geography_universe
 from synthpopcan.map_render import partition_boundaries_geojson
 from synthpopcan.small_area_controls import (
@@ -43,7 +51,7 @@ from synthpopcan.small_area_controls import (
 from synthpopcan.statcan import file_integrity
 
 _PLAN_SCHEMA = "synthpopcan-canada-small-area-plan-v1"
-_BATCH_SCHEMA = "synthpopcan-canada-small-area-batch-v1"
+_BATCH_SCHEMA = BATCH_SCHEMA
 _ESTIMATED_PERSISTENT_BYTES_PER_HOUSEHOLD = 500
 _ESTIMATED_WORKING_BYTES_PER_HOUSEHOLD = 1_500
 _RECOMMENDED_FREE_SPACE_RESERVE_BYTES = 5 * 1024**3
@@ -591,10 +599,8 @@ def estimate_national_da_storage(
 def _verify_completed_batch_artifacts(root, records):
     """Check cached-pool results before resuming or rebuilding plan summaries."""
     for record in records:
-        manifest = record.get("manifest") if isinstance(record, Mapping) else None
-        if not isinstance(manifest, str):
-            continue
-        batch = _read_json(root / manifest)
+        batch = _read_json(batch_manifest_path(root, record))
+        validate_batch_identity(batch)
         result = batch.get("result")
         # Generic callbacks can supply their own result format. The built-in
         # worker identifies its artifact contract with the candidate pool record.
@@ -644,10 +650,11 @@ def _pending_batches(root, records, jurisdiction_pruids):
             and record.get("jurisdiction_pruid") not in jurisdiction_pruids
         ):
             continue
-        batch_path = root / record["manifest"]
+        batch_path = batch_manifest_path(root, record)
         batch = _read_json(batch_path)
         if batch.get("schema_version") != _BATCH_SCHEMA:
             raise ValueError(f"unsupported batch schema in {batch_path}")
+        validate_batch_identity(batch)
         if batch.get("status") != "completed":
             yield batch_path, batch
 
@@ -841,7 +848,8 @@ def _execute_canada_small_area_plan_parallel(
                     )
                 continue
 
-            status, batch_id, *payload = message
+            decoded = _decode_worker_result(message)
+            status, batch_id = decoded[:2]
             active_entry = active.pop(str(batch_id), None)
             if active_entry is None:
                 continue
@@ -849,9 +857,11 @@ def _execute_canada_small_area_plan_parallel(
             process.join()
             if status == "ok":
                 batch["status"] = "completed"
-                batch["result"] = dict(payload[0])
+                assert decoded[0] == "ok"
+                batch["result"] = decoded[2]
             else:
-                error_type, error_message, worker_traceback = payload
+                assert decoded[0] == "error"
+                _, _, error_type, error_message, worker_traceback = decoded
                 batch["status"] = "failed"
                 batch["error"] = f"{error_type}: {error_message}"
                 batch["worker_traceback"] = worker_traceback
@@ -863,7 +873,7 @@ def _execute_canada_small_area_plan_parallel(
             _save_plan(plan_path, plan)
             while len(active) < workers and start_next():
                 pass
-    except KeyboardInterrupt:
+    except BaseException:
         for process, _, _ in active.values():
             if process.is_alive():
                 process.terminate()
@@ -1018,7 +1028,9 @@ def _refresh_plan_status(
             record.get("manifest"), str
         ):
             raise ValueError("national small-area plan batch record is invalid")
-        status = _read_json(root / record["manifest"]).get("status")
+        batch = _read_json(batch_manifest_path(root, record))
+        validate_batch_identity(batch)
+        status = batch.get("status")
         label = status if isinstance(status, str) else "unknown"
         counts[label] = counts.get(label, 0) + 1
     if counts.get("completed") == len(records):

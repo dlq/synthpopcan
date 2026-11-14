@@ -25,7 +25,15 @@
             <p>Local synthetic population workspace</p>
           </div>
         </div>
-        <div class="status-pill">Local</div>
+        <div class="locale-controls">
+          <span class="status-pill">Local</span>
+          <label id="web-locale-label" for="web-locale">Language</label>
+          <select id="web-locale" aria-describedby="web-locale-notice">
+            <option value="en-CA">English (Canada)</option>
+            <option value="fr-CA">Français (Canada)</option>
+          </select>
+          <small id="web-locale-notice">Language preview: most content remains in English.</small>
+        </div>
       </header>
 
       <section class="workbench" aria-label="Runs workbench">

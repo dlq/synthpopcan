@@ -45,6 +45,13 @@ result = fit_ipf(
 assert result.converged
 assert result.weights == [6.0, 4.0]
 assert files("synthpopcan").joinpath("web/index.html").is_file()
+for name in (
+    "localization.mjs",
+    "localization-ui.mjs",
+    "messages.en-CA.json",
+    "messages.fr-CA.json",
+):
+    assert files("synthpopcan").joinpath("web", name).is_file(), name
 assert files("synthpopcan").joinpath("contracts/public-interface-v1.json").is_file()
 assert (
     files("synthpopcan")

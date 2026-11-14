@@ -2964,6 +2964,20 @@ def _verify_and_checkpoint_deposit(context, result, checkpoint):
     _checkpoint_result(checkpoint, result)
 
 
+def _validate_checkpoint_state(result: dict[str, Any]) -> None:
+    """Reject unknown states before any remote action can use a checkpoint."""
+    if not isinstance(result.get("state"), str) or result["state"] not in {
+        "action-intent",
+        "created",
+        "editing",
+        "uploaded",
+        "draft",
+        "published",
+        _TERMINAL_STATE,
+    }:
+        raise ZenodoError("checkpoint has an unrecognized state")
+
+
 def _resume_deposit_checkpoint(context, resume, checkpoint):
     """Reconcile durable identity and finish already published checkpoints."""
     result = {
@@ -2997,6 +3011,7 @@ def _resume_deposit_checkpoint(context, resume, checkpoint):
             if resume.get(field, missing) != expected_static.get(field, missing):
                 raise ZenodoError(f"checkpoint {field} does not match this operation")
         result = resume.copy()
+        _validate_checkpoint_state(result)
         if (
             context.operation_id == _LEGACY_STRIPPED_MARKER_RECOVERY_OPERATION_ID
             and result.get("state") == "action-intent"

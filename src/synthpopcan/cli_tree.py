@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from typing import Any
 
 __all__ = [
@@ -1458,6 +1459,20 @@ def read_source_provenance(path: Path) -> dict[str, Any]:
     payload = read_json_object(path, "source provenance")
     if payload.get("schema_version") != "synthpopcan-source-provenance-v1":
         raise ValueError("unsupported source provenance schema")
+    fields = _required_provenance_fields(payload)
+    provenance = {
+        "path": str(path),
+        "schema_version": payload["schema_version"],
+        **fields,
+    }
+    for optional_field in ("url", "license", "local_path", "checksum"):
+        value = payload.get(optional_field)
+        if isinstance(value, str) and value.strip():
+            provenance[optional_field] = value.strip()
+    return provenance
+
+
+def _required_provenance_fields(payload: Mapping[str, object]) -> dict[str, str]:
     required_fields = (
         "title",
         "provider",
@@ -1465,29 +1480,19 @@ def read_source_provenance(path: Path) -> dict[str, Any]:
         "citation",
         "redistribution_note",
     )
-    missing = [
-        field
-        for field in required_fields
-        if not isinstance(payload.get(field), str) or not payload[field].strip()
-    ]
+    fields: dict[str, str] = {}
+    missing: list[str] = []
+    for field in required_fields:
+        value = payload.get(field)
+        if not isinstance(value, str) or not value.strip():
+            missing.append(field)
+        else:
+            fields[field] = value.strip()
     if missing:
         raise ValueError(
             "source provenance missing required fields: " + ", ".join(missing)
         )
-    provenance = {
-        "path": str(path),
-        "schema_version": payload["schema_version"],
-        "title": payload["title"].strip(),
-        "provider": payload["provider"].strip(),
-        "access_class": payload["access_class"].strip(),
-        "citation": payload["citation"].strip(),
-        "redistribution_note": payload["redistribution_note"].strip(),
-    }
-    for optional_field in ("url", "license", "local_path", "checksum"):
-        value = payload.get(optional_field)
-        if isinstance(value, str) and value.strip():
-            provenance[optional_field] = value.strip()
-    return provenance
+    return fields
 
 
 def read_linked_model_package(path: Path) -> dict[str, Any]:

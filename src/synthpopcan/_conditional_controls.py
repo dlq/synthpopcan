@@ -219,8 +219,13 @@ def load_marital_status_controls(
 
 
 def apply_builtin_marital_status_pack(
-    path, persons, controls, geography, dimension, pack
-):
+    path: Path,
+    persons: Sequence[Mapping[str, str]],
+    controls: ControlTable,
+    geography: GeographyUniverse,
+    dimension: str,
+    pack: str,
+) -> tuple[list[dict[str, str]], ControlTable, dict[str, object]]:
     from synthpopcan._marital_status_packs import (
         AGE_ELIGIBILITY,
         CROSSWALK,
@@ -246,8 +251,14 @@ def apply_builtin_marital_status_pack(
 
 
 def apply_builtin_profile_pack(
-    path, persons, controls, geography, dimension, pack, family
-):
+    path: Path,
+    persons: Sequence[Mapping[str, str]],
+    controls: ControlTable,
+    geography: GeographyUniverse,
+    dimension: str,
+    pack: str,
+    family: str,
+) -> tuple[list[dict[str, str]], ControlTable, dict[str, object]]:
     from synthpopcan._conditional_pack_catalogue import PROFILE_FAMILIES
     from synthpopcan._marital_status_packs import AGE_ELIGIBILITY
     from synthpopcan.small_area_synthesis import controls_by_geography
@@ -273,17 +284,17 @@ def apply_builtin_profile_pack(
 
 
 def _apply_builtin_person_targets(
-    persons,
-    controls,
-    geography,
-    dimension,
-    targets,
-    evidence,
-    family,
-    source_field,
-    crosswalk,
-    age_eligibility,
-):
+    persons: Sequence[Mapping[str, str]],
+    controls: ControlTable,
+    geography: GeographyUniverse,
+    dimension: str,
+    targets: Mapping[str, ConditionalPersonTargets],
+    evidence: dict[str, object],
+    family: str,
+    source_field: str,
+    crosswalk: Mapping[str, str],
+    age_eligibility: Mapping[str, bool],
+) -> tuple[list[dict[str, str]], ControlTable, dict[str, object]]:
     field = f"{family}_15_plus"
     categories = frozenset(crosswalk.values())
     controls = reconcile_conditional_person_margin(
@@ -305,7 +316,10 @@ def _apply_builtin_person_targets(
     )
     from synthpopcan._conditional_pack_catalogue import describe_conditional_pack
 
-    definition = describe_conditional_pack(evidence["pack"])
+    pack = evidence.get("pack")
+    if not isinstance(pack, str):
+        raise ValueError("conditional control evidence requires a pack identifier")
+    definition = describe_conditional_pack(pack)
     return (
         persons,
         controls,

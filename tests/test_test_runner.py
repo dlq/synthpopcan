@@ -56,6 +56,8 @@ def test_reviewed_source_mapping_runs_its_tests_and_missing_targets_fall_back(
     tests = tmp_path / "tests"
     tests.mkdir()
     (tests / "test_leaf.py").touch()
+    (tmp_path / "src").mkdir()
+    (tmp_path / "src/leaf.py").touch()
     monkeypatch.setattr(runner, "ROOT", tmp_path)
     monkeypatch.setattr(
         runner, "MODULE_TESTS", {"src/leaf.py": ("tests/test_leaf.py",)}
@@ -63,6 +65,15 @@ def test_reviewed_source_mapping_runs_its_tests_and_missing_targets_fall_back(
     assert runner.select_affected(["src/leaf.py"])[0] == ("tests/test_leaf.py",)
     (tests / "test_leaf.py").unlink()
     assert runner.select_affected(["src/leaf.py"])[0] == ("tests",)
+    (tests / "test_leaf.py").touch()
+    (tmp_path / "src/leaf.py").unlink()
+    assert runner.select_affected(["src/leaf.py"])[0] == ("tests",)
+
+
+def test_reviewed_benchmark_source_mapping_has_direct_and_boundary_tests():
+    selected, reason = runner.select_affected(["src/synthpopcan/tree_benchmark.py"])
+    assert selected == ("tests/test_architecture.py", "tests/test_tree_benchmark.py")
+    assert "reviewed" in reason
 
 
 def test_dry_run_explains_named_selection():

@@ -1,0 +1,25 @@
+{
+  "revision": "runtime-preview-1",
+  "guarded_literal_module": "src/synthpopcan/web/localization-ui.mjs",
+  "covered_ids": [],
+  "draft_ids": [
+    "web.fallback.error",
+    "web.fallback.progress",
+    "web.ipf.reading",
+    "web.language.coverage",
+    "web.language.label",
+    "web.upload.invalid"
+  ],
+  "counts": {
+    "covered_messages": 0,
+    "draft_messages": 6,
+    "untranslated_surface_groups": 4
+  },
+  "untranslated_surfaces": [
+    "web HTML outside the language selector",
+    "other web JavaScript",
+    "unknown and parameterized server messages",
+    "generated reports and maps"
+  ],
+  "note": "Draft translations are a preview and are not reviewed coverage."
+}

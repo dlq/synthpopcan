@@ -58,9 +58,9 @@ generator also records individual HTML text, accessible labels, and source
 hashes; see the later snapshot in
 [localization-web-html-2026-11-14.json](localization-web-html-2026-11-14.json).
 A [JavaScript expression snapshot](localization-web-js-2026-11-14.json)
-adds parser-based byte ranges for 792 string and template candidates in 16
+adds parser-based byte ranges for string and template candidates in the web
 modules. It marks direct presentation candidates, DOM structural values and
-mixed control/presentation text; source-hash-bound reviews cover all 15
+mixed control/presentation text; source-hash-bound reviews cover the
 modules with inventoried expressions. One module has no inventoried string
 expressions. Refresh it with `npm ci` and
 `python scripts/audit_web_literals.py --output PATH`.
@@ -88,14 +88,17 @@ and `cli.py`. Rerun the command below to refresh the counts after changes.
 
 ## Test Selection Runner
 
-The first runner increment selects changed individual test files and falls
-back to all tests for source files, shared files, unmapped files, empty changes,
-and Git errors. It includes committed, staged, unstaged, and untracked changes.
-The pull-request compatibility matrix uses the same runner; the coverage job
-and main continue to run the full suite. Reviewed source-to-test mappings and
-verification on an actual pull request remain before closing these slices. On
-the local Python 3.12 checkout, the `localization` named selection took 1.18
-seconds wall time; the preceding full coverage run took 214 seconds. These
+The runner selects changed individual test files and explicitly reviewed
+source mappings, and falls back to all tests for shared, deleted, unmapped or
+empty changes and Git errors. It includes committed, staged, unstaged and
+untracked changes. Pull-request compatibility jobs use the affected selection;
+the coverage job and main run the full suite. In
+[PR #57](https://github.com/dlq/synthpopcan/pull/57), the Python 3.11 job
+correctly selected the full suite because the change included shared CI
+configuration; 2,764 tests passed, seven were skipped and five coverage-gate
+tests were deselected. The Python 3.12 full-coverage job passed 2,769 tests
+with 95.37% coverage. Locally, the `localization` selection took 1.27 seconds
+wall time, while the full local coverage run took about 216 seconds. These
 measure different checks and are not a speedup claim for identical coverage.
 
 ## Typing Baseline (`TYPE12-01`)

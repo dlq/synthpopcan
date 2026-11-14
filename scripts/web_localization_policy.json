@@ -1,0 +1,23 @@
+{
+  "covered_ids": [],
+  "approved_adapter_literals": {
+    "\"#web-locale\"": 1,
+    "\"#web-locale-label\"": 1,
+    "\"#web-locale-notice\"": 1,
+    "\"/api/uploads\"": 1,
+    "\"Message unavailable.\"": 2,
+    "\"POST\"": 1,
+    "\"Reading seed records and controls\"": 1,
+    "\"change\"": 1,
+    "\"en-CA\"": 1,
+    "\"fr-CA\"": 1,
+    "\"ipf\"": 1,
+    "\"reading-inputs\"": 1,
+    "\"upload is invalid\"": 1,
+    "\"web.ipf.reading\"": 1,
+    "\"web.language.coverage\"": 2,
+    "\"web.language.label\"": 2,
+    "\"web.upload.invalid\"": 1,
+    "`./messages.${locale}.json`": 1
+  }
+}

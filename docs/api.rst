@@ -55,6 +55,10 @@ Autodoc therefore displays signatures such as
 ``synthpopcan.api.fit_ipf(...)`` below. Calling ``spc.fit_ipf(...)`` uses that
 same supported function; it is the shorter form taught in the beginner guide.
 
+The top-level ``__version__`` string identifies the installed package version.
+``PopulationRows`` describes a list of string-keyed rows with string values;
+it is a type alias for tabular population records.
+
 .. automodule:: synthpopcan
 
 Beginner API Members
