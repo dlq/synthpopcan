@@ -73,7 +73,7 @@ when its bounded artifact and decision gate are stated explicitly.
 
 | Plan | Target release | Current next action |
 | --- | --- | --- |
-| [Expanded small-area controls](2026-08-01-expanded-small-area-controls.md) | `1.2.0` conditional person controls | Extend five-family joint acceptance beyond the tested census tracts. |
+| [Expanded small-area controls](2026-08-01-expanded-small-area-controls.md) | `1.2.0` conditional person controls | Extend non-tract joint acceptance after the first 2021 Québec ADA pilot. |
 | [English/French internationalization and localization](2026-08-19-bilingual-localization.md) | `1.2.0` infrastructure, `1.3.0` core product, provisional `1.4.0` completion | Finish web-prose and ambiguous-role review of the initial `I18N12-01` inventory, then select the catalogue boundary. |
 
 ## Conditional Research

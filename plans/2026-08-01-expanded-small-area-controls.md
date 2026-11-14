@@ -2,9 +2,9 @@
 
 Status: active feature implementation; `1.1.0` released and `1.2.0` committed\
 Created: 2026-08-01\
-Last updated: 2026-11-13\
+Last updated: 2026-11-14\
 Target: `1.1.0` broad compatible packs; conditional person controls in `1.2.0`\
-Next action: extend versioned conditional-pack integration and joint acceptance\
+Next action: extend non-tract acceptance to CSD and DA sources and the 2016 vintage\
 Roadmap: [PLANS.md](../PLANS.md) | [Plan index](README.md)
 
 Release sequencing and confidence are defined in the
@@ -63,8 +63,8 @@ runtime slice does not begin and the other families continue independently.
 | `SA12-08` | `done` | Pinned 2016 and 2021 Profile definitions | Work-activity source decision and crosswalk | Full/part-year and full/part-time categories, applicability, suppression, and fixture totals reproduce independently |
 | `SA12-09` | `in progress` | `SA12-01`, accepted `SA12-08`, `SA12-10` | Work-activity preparer, registry entry, and pack component | Normalized controls validate and round-trip; mutually exclusive states and denominators are enforced |
 | `SA12-10` | `done` | `SA12-01` | Shared conditional-person reconciliation and preflight path | The common implementation represents not-applicable states or explicit conditional constraints without silently manufacturing totals; adversarial cases fail closed |
-| `SA12-11` | `in progress` | `SA12-10` and at least one accepted family runtime slice | Separately versioned conditional-person pack tier | Manifests have stable identifiers, semantic checksums, inspectable contents, and fail-closed compatibility with the retained broad packs |
-| `SA12-12` | `blocked` | `SA12-11` | Joint bounded feasibility and calibration evidence | Accepted families run jointly with broad packs on reviewed 2016/2021 CSD, CT, ADA, and DA cases; fractional and realized residuals are independently recomputed |
+| `SA12-11` | `done` | `SA12-10` and at least one accepted family runtime slice | Separately versioned conditional-person pack tier | Manifests have stable identifiers, semantic checksums, inspectable contents, and fail-closed compatibility with the retained broad packs |
+| `SA12-12` | `in progress` | `SA12-11` | Joint bounded feasibility and calibration evidence | Accepted families run jointly with broad packs on reviewed 2016/2021 CSD, CT, ADA, and DA cases; fractional and realized residuals are independently recomputed |
 | `SA12-13` | `blocked` | `SA12-12` | Python and CLI adoption through the shared workflow | Equivalent library and command requests normalize identically; public-interface and machine-output fixtures remain additive |
 | `SA12-14` | `blocked` | `SA12-12` | Local-web and durable-run adoption through the shared workflow | HTTP normalization, progress events, run evidence, resume behavior, and browser scenarios match the accepted pack semantics |
 | `SA12-15` | `blocked` | `SA12-13`, `SA12-14` | Installed-distribution evidence and public documentation | Wheel and sdist smokes pass; documentation names admitted, deferred, approximate, validation-only, and uncontrolled families |
@@ -763,6 +763,46 @@ were excluded before fitting.
 
 Reproduction commands, full residuals, and screening evidence are in
 the local run directory `runs/joint-five-extension-2026-11-13/`.
+
+#### Conditional pack verification and first ADA pilot (2026-11-14)
+
+The eight built-in tract definitions have pinned semantic hashes. Tests
+verify CLI display and export, canonical hash recomputation, and compatibility
+with the matching broad CT definition for each vintage. All eight reject ADA
+geography and the same-vintage core CT pack. The CLI preflight tests also
+reject invalid targets before calling the fitter.
+
+The first non-tract pilot screened 135 Québec ADAs with existing broad
+private-household targets from the zero-collective cohort. Twenty-one
+had observed education, labour-force status, and work-activity counts
+with matching all-ages and under-15 targets. The pilot used the published
+ADA Profile archive and applied the reviewed 2021 Profile category
+mappings and rounding checks to its ADA rows.
+[Statistics Canada ADA Profile](https://www150.statcan.gc.ca/n1/en/catalogue/98-401-X2021012)
+
+The first three compatible ADAs by identifier passed the zero-slack
+feasibility screen with whole linked household candidates and structural
+zeros. They were fit together using explicit normalized controls with
+14 broad and three conditional margins, the hybrid solver at tolerance
+0.01, and whole-household swaps. The audit independently recalculated
+fractional and realized residuals and matched exported integer weights
+to household multiplicities. The maximum fractional residual was
+0.00002412 or less, all three fits converged, and linkage validation passed.
+
+| 2021 Québec ADA | Broad | Education | Labour-force status | Work activity |
+| --- | --- | --- | --- | --- |
+| 24100003 | 19 | 1 | 1 | 1 |
+| 24230011 | 5 | 0 | 0 | 0 |
+| 24250012 | 2 | 1 | 1 | 1 |
+
+Each value is the largest absolute count error for that family after
+swaps. The ADA pilot uses explicit normalized targets. The built-in
+conditional pack definitions have CT geography. The reviewed marital-status
+source covers CT, so the ADA pilot has no marital-status margin. The
+remaining acceptance work includes reviewing non-tract marital-status
+sources and extending the cases to 2016 and to CSD and DA. The local
+run directory `runs/nontract-acceptance-2026-11-14/` records the inputs,
+screening, CLI invocation, and audit.
 
 ## `1.1.0` Runtime Invariants
 

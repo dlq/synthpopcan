@@ -122,11 +122,54 @@ def test_cli_lists_and_shows_control_packs(tmp_path: Path, capsys) -> None:
         main(["geo", "control-packs", "show", "not-a-pack"])
 
 
-@pytest.mark.parametrize("year", [2016, 2021])
 @pytest.mark.parametrize(
-    "family", ["marital-status", "education", "labour-force-status", "work-activity"]
+    ("year", "family", "expected_sha256"),
+    [
+        (
+            2016,
+            "marital-status",
+            "3dcae991649aadcea59c27e6506c588bfd8792f9af18b8a0326517e7805c29ab",
+        ),
+        (
+            2016,
+            "education",
+            "d4249e864064e8e8313ee61f9948315089663ac1ca9446e14f3fa89842df9fbb",
+        ),
+        (
+            2016,
+            "labour-force-status",
+            "e6af73cc5bd4d27a8430621de8a77a51b0835209d07c5482b1e76ab31be08f01",
+        ),
+        (
+            2016,
+            "work-activity",
+            "ad3a446bbe42ce501d21f5fec5da09d1d52ba38f65fa4a423d53d351b1342423",
+        ),
+        (
+            2021,
+            "marital-status",
+            "7488af4b2dea2c92ac35d6cf98fbcdf87566493e1c72aca29e71e98ca1fb7327",
+        ),
+        (
+            2021,
+            "education",
+            "07edd25e04cdd14b51631843edbfb4acf8a2c5930b6516e637543b2d4568690a",
+        ),
+        (
+            2021,
+            "labour-force-status",
+            "3173b0755336bae7f7c3caf9bac81796d96701b84e83941b7ff4ba5f8f69b5e2",
+        ),
+        (
+            2021,
+            "work-activity",
+            "2869422bd35d8e70bc5fa7d255f89922f8f0ce9e6f627e7fc8348332f4d740af",
+        ),
+    ],
 )
-def test_cli_shows_versioned_conditional_packs(tmp_path, capsys, year, family):
+def test_cli_shows_versioned_conditional_packs(
+    tmp_path, capsys, year, family, expected_sha256
+):
     import hashlib
 
     from synthpopcan.control_packs import load_control_pack
@@ -150,7 +193,24 @@ def test_cli_shows_versioned_conditional_packs(tmp_path, capsys, year, family):
     canonical = json.dumps(
         definition, ensure_ascii=False, separators=(",", ":"), sort_keys=True
     ).encode()
-    assert checksum == hashlib.sha256(canonical).hexdigest()
+    assert checksum == expected_sha256 == hashlib.sha256(canonical).hexdigest()
+
+    from synthpopcan.geography import statcan_geography_universe
+    from synthpopcan.small_area_synthesis import _validate_conditional_pack_selection
+
+    selection = ((definition["family"], identifier),)
+    tract = statcan_geography_universe(year, "ct", "ct")
+    _validate_conditional_pack_selection(broad, tract, selection)
+    with pytest.raises(ValueError, match="matching Statistics Canada CT geography"):
+        _validate_conditional_pack_selection(
+            None, statcan_geography_universe(year, "ada", "ada"), selection
+        )
+    with pytest.raises(ValueError, match="requires broad pack"):
+        _validate_conditional_pack_selection(
+            load_control_pack(f"statcan-{year}-core-private-household-ct-v1"),
+            tract,
+            selection,
+        )
 
 
 _CONTROL_PACK_ID = "statcan-2021-core-private-household-da-v1"
