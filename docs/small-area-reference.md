@@ -1204,6 +1204,24 @@ counts alone does not establish that condition. See the
 [2016 CT table](https://www150.statcan.gc.ca/n1/en/catalogue/98-400-X2016036)
 and [2021 reference guide](https://www12.statcan.gc.ca/census-recensement/2021/ref/98-500/002/98-500-x2021002-eng.pdf).
 
+**DA and ADA limitation:** The built-in marital-status packs are for census
+tracts, for both 2016 and 2021. A public source for the complete, directly
+sourced private-household marital-status distribution at DA and ADA level
+has not yet been verified for either vintage. The standard all-resident rows
+are not a substitute for a verified private-household distribution.
+
+Some research fits used an explicitly approximate alternative: 2016 DAs
+24180079 and 24370090; 2021 DA 24210077; and 2021 ADAs 24230011,
+24250012, and 24580034. They screened published population totals and
+reconciled the all-resident marital-status categories to the 25% sample's
+private-household adult total. Published counts are rounded, and neither
+equal rounded totals nor this reconciliation establish the private-household
+marital-status distribution. The resulting residuals measure agreement with
+the approximate targets, not with directly observed private-household
+marital-status counts. These experiments do not provide a built-in DA or ADA
+marital-status pack. Details, screening criteria, and results are in the
+[non-tract acceptance notes](https://github.com/dlq/synthpopcan/blob/main/plans/2026-08-01-expanded-small-area-controls.md#non-tract-marital-status-source-review-2026-11-14).
+
 ### Education controls for census tracts
 
 List the education packs with `synthpopcan geo control-packs education`.

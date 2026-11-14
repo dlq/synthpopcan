@@ -4,7 +4,7 @@ Status: active feature implementation; `1.1.0` released and `1.2.0` committed\
 Created: 2026-08-01\
 Last updated: 2026-11-14\
 Target: `1.1.0` broad compatible packs; conditional person controls in `1.2.0`\
-Next action: review non-tract marital-status sources and cross-vintage acceptance\
+Next action: extend cross-vintage acceptance with clearly qualified non-tract evidence\
 Roadmap: [PLANS.md](../PLANS.md) | [Plan index](README.md)
 
 Release sequencing and confidence are defined in the
@@ -999,6 +999,43 @@ These CSD reruns supersede the earlier proxy fits for these four CSDs.
 The sources reviewed here do not supply the earlier DA or ADA cases.
 Those cases retain their approximate proxy evidence pending a directly
 sourced private-household distribution at those geographies.
+
+The project retains support for both 2016 and 2021. The unverified DA and
+ADA marital-status distribution is a geography- and control-specific gap in
+both vintages, not a reason to remove 2016 support. The 2016 DA cases
+24180079 and 24370090, 2021 DA 24210077, and 2021 ADAs 24230011,
+24250012, and 24580034 use the approximate all-resident proxy described
+above. Their reported residuals are against those derived proxy targets;
+they do not establish fit to directly observed private-household marital
+counts. No 2016 ADA marital-status fit is claimed here. The directly
+sourced CSD reruns above supersede their earlier proxy results; the built-in
+marital-status packs remain tract-only.
+
+#### DA and ADA private-household source search (2026-11-14)
+
+The Community Data Program (CDP) lists a Statistics Canada
+[2021 target-group profile of people in owner and renter households](https://communitydata.ca/data/target-group-profile-population-living-owner-and-renter-households-census-2021).
+Its catalogue identifies marital status and both DA and ADA geography;
+the profile uses the 25% sample. This is a promising direct source,
+but the catalogue does not establish the actual category crosswalk,
+coverage, suppression, or whether the owner and renter selections also
+provide a private-household total. These must be checked in the file.
+CDP says that [downloading requires an activated member account](https://communitydata.ca/content/welcome-community-data-program-0).
+The file was not available for this review, so it was not used in a fit.
+
+CDP also lists a [2016 age-group target profile](https://www.donneescommunautaires.ca/data/target-group-profile-population-age-groups-census-2016)
+with an all-ages selection and ADA geography. It is a candidate for
+investigation, not yet a verified marital-status source: its catalogue
+does not identify the actual marital-status rows, DA coverage, or the
+universe and suppression of the needed cells. The 2016 household and
+family profile for owner and renter households is not evidence of
+person-level marital-status counts.
+
+Before rerunning either vintage, inspect the licensed files and their
+terms, verify geography identifiers, the private-household adult universe,
+marital categories and suppressed values, then reconcile independently
+rounded totals and run feasibility checks. The existing DA and ADA
+proxy results remain unchanged; no new direct-source fits are claimed.
 
 ## `1.1.0` Runtime Invariants
 
