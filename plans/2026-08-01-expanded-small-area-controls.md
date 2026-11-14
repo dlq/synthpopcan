@@ -4,7 +4,7 @@ Status: active feature implementation; `1.1.0` released and `1.2.0` committed\
 Created: 2026-08-01\
 Last updated: 2026-11-14\
 Target: `1.1.0` broad compatible packs; conditional person controls in `1.2.0`\
-Next action: extend cross-vintage acceptance with clearly qualified non-tract evidence\
+Next action: complete public-interface adoption and release evidence for the accepted scope\
 Roadmap: [PLANS.md](../PLANS.md) | [Plan index](README.md)
 
 Release sequencing and confidence are defined in the
@@ -64,9 +64,9 @@ runtime slice does not begin and the other families continue independently.
 | `SA12-09` | `in progress` | `SA12-01`, accepted `SA12-08`, `SA12-10` | Work-activity preparer, registry entry, and pack component | Normalized controls validate and round-trip; mutually exclusive states and denominators are enforced |
 | `SA12-10` | `done` | `SA12-01` | Shared conditional-person reconciliation and preflight path | The common implementation represents not-applicable states or explicit conditional constraints without silently manufacturing totals; adversarial cases fail closed |
 | `SA12-11` | `done` | `SA12-10` and at least one accepted family runtime slice | Separately versioned conditional-person pack tier | Manifests have stable identifiers, semantic checksums, inspectable contents, and fail-closed compatibility with the retained broad packs |
-| `SA12-12` | `in progress` | `SA12-11` | Joint bounded feasibility and calibration evidence | Accepted families run jointly with broad packs on reviewed 2016/2021 CSD, CT, ADA, and DA cases; fractional and realized residuals are independently recomputed |
-| `SA12-13` | `blocked` | `SA12-12` | Python and CLI adoption through the shared workflow | Equivalent library and command requests normalize identically; public-interface and machine-output fixtures remain additive |
-| `SA12-14` | `blocked` | `SA12-12` | Local-web and durable-run adoption through the shared workflow | HTTP normalization, progress events, run evidence, resume behavior, and browser scenarios match the accepted pack semantics |
+| `SA12-12` | `done` | `SA12-11` | Joint bounded feasibility and calibration evidence | Reviewed 2016/2021 CT and CSD cases have direct-source joint evidence; non-tract proxy cases and missing 2016 ADA evidence are explicitly qualified or deferred below. Fractional and realized residuals are independently recomputed for the recorded fits |
+| `SA12-13` | `ready` | `SA12-12` | Python and CLI adoption through the shared workflow | Equivalent library and command requests normalize identically; public-interface and machine-output fixtures remain additive |
+| `SA12-14` | `ready` | `SA12-12` | Local-web and durable-run adoption through the shared workflow | HTTP normalization, progress events, run evidence, resume behavior, and browser scenarios match the accepted pack semantics |
 | `SA12-15` | `blocked` | `SA12-13`, `SA12-14` | Installed-distribution evidence and public documentation | Wheel and sdist smokes pass; documentation names admitted, deferred, approximate, validation-only, and uncontrolled families |
 
 The internal universe contract and rejection fixtures are recorded in the
@@ -249,8 +249,8 @@ normalization evidence, CLI invocations, reports, and audit.
 
 The empirical CT pass now covers both vintages. The exact denominator
 checks govern admission, while the residuals show the separate limits of
-whole-household realization. The wider `SA12-12` acceptance remains open
-for its additional geographies and control families.
+whole-household realization. Subsequent joint acceptance and its bounded
+non-tract decisions are recorded below.
 
 #### Whole-household integerization experiment
 
@@ -799,8 +799,8 @@ Each value is the largest absolute count error for that family after
 swaps. The ADA pilot uses explicit normalized targets. The built-in
 conditional pack definitions have CT geography. The reviewed marital-status
 source covers CT, so the ADA pilot has no marital-status margin. The
-remaining acceptance work includes reviewing non-tract marital-status
-sources and extending the cases to 2016 and to CSD and DA. The local
+subsequent acceptance work reviewed non-tract marital-status sources and
+extended the cases to 2016 and to CSD and DA. The local
 run directory `runs/nontract-acceptance-2026-11-14/` records the inputs,
 screening, CLI invocation, and audit.
 
@@ -1036,6 +1036,38 @@ terms, verify geography identifiers, the private-household adult universe,
 marital categories and suppressed values, then reconcile independently
 rounded totals and run feasibility checks. The existing DA and ADA
 proxy results remain unchanged; no new direct-source fits are claimed.
+
+#### SA12-12 bounded joint-evidence decision (2026-11-14)
+
+SA12-12 is complete as a bounded evidence review. The original goal of
+direct five-family evidence at every CT, CSD, DA, and ADA level in both
+vintages is narrowed explicitly: unsupported geography/control combinations
+are deferred, rather than being treated as accepted or preventing the
+remaining interface work. Both Census vintages remain supported.
+
+| Vintage and geography | Decision | Evidence and limit |
+| --- | --- | --- |
+| 2016 and 2021 CT | Accepted for the reviewed five-family cases | 16 of the 23-tract cohort passed the source and feasibility screens and converged with all 18 margins. Seven were excluded: five for incompatible adult denominators and two for joint infeasibility. The audited realized residuals and fractional errors are recorded above. |
+| 2016 CSD | Accepted for the reviewed direct-source case | CSD 3514014 converged with all 18 margins and directly sourced, reconciled private-household marital categories; audit and residuals are recorded above. |
+| 2021 CSD | Accepted for the reviewed direct-source cases | CSDs 2457030, 2467055, and 2471075 converged with all 18 margins and directly sourced, reconciled private-household marital categories. These reruns supersede their proxy fits. |
+| 2016 and 2021 DA | Approximate research evidence only | DAs 24180079 and 24370090 in 2016 and 24210077 in 2021 converged against all 18 targets, but their marital targets are derived from all-resident rows. Residuals measure fit to those proxies. Direct private-household marital evidence is deferred. |
+| 2021 ADA | Accepted for the reviewed three-conditional-family pilot; five-family evidence is approximate | ADAs 24100003, 24230011, and 24250012 used direct Profile controls for education, labour-force status, and work activity without marital status. ADAs 24230011, 24250012, and 24580034 additionally have five-family proxy fits, whose marital residuals are against approximate targets. |
+| 2016 ADA | Deferred | No five-family ADA fit or directly verified DA/ADA private-household marital distribution is recorded for this vintage. |
+
+The accepted entries cover only the named cases and methods, not every
+geography or candidate pool. All selected fits recorded above passed the
+stated feasibility screen, converged fractionally at the stated tolerance,
+and had independently checked realized margins and linkage. Fractional
+convergence and realized whole-household errors are separate claims. Raw
+published cells, reconciliation, exclusions, pool choice, and residuals
+remain part of each run's evidence. No targets are changed to make an
+excluded case appear feasible.
+
+This decision accepts statistical evidence, not a universal runtime or
+release claim. The eight built-in conditional packs remain CT-only; the
+non-tract studies used explicit normalized controls. `SA12-03`, `SA12-05`,
+`SA12-07`, and `SA12-09` remain open for their individual implementation
+acceptance, and `SA12-13` through `SA12-15` remain necessary before release.
 
 ## `1.1.0` Runtime Invariants
 
