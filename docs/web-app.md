@@ -44,6 +44,11 @@ Prepared-model generation is another **New run** path. **Small-area workflow**
 opens the linked generation/calibration setup; its resulting job appears in the
 same durable Runs history.
 
+The current client is English-only. A planned English/French catalogue and its
+machine-output boundaries are described in the
+{doc}`web-localization-contract`; locale selection and translations are not yet
+implemented.
+
 The current workbench does not expose national DA/ADA orchestration,
 prepared-geodata retrieval, or external-data enrichment interfaces. Use the
 command line or Python library for those workflows.
