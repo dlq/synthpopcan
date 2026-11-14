@@ -67,9 +67,9 @@ review into independent slices.
 | --- | --- | --- | --- | --- |
 | `I18N12-01` | `done` | Frozen `1.x` interface and supported-surface inventory | Classified inventory of web-client, shared machine-stable, historical, and verbatim-source strings | Every supported web route is covered; shared CLI/machine keys, identifiers, logs, and source labels are separately protected |
 | `I18N12-02` | `done` | `I18N12-01` | Message-catalogue contract and implementation decision | A reviewed contract defines message IDs, `en-CA`/`fr-CA`, aliases, fallback, provenance, placeholders, plurals, and the boundary between domain results and presentation text |
-| `I18N12-03` | `ready` | `I18N12-02` | Web-client locale resolution, interpolation, pluralization, and human-formatting runtime | Unit tests prove canonicalization and deterministic fallback; unsupported locales and missing entries never alter machine output or expose message IDs |
-| `I18N12-04` | `blocked` | `I18N12-03` | Packaged English/French catalogue skeleton and compatibility tests | Wheel and sdist contain the catalogues; completeness, placeholder parity, plural forms, fallback, pseudo-localization, and cross-locale machine fixtures pass |
-| `I18N12-05` | `blocked` | `I18N12-01`, `I18N12-02`, `I18N12-04` | Static guard and machine-readable coverage report for covered modules | New hard-coded user-facing strings fail the guard; declared untranslated surfaces are counted and safely fall back to English |
+| `I18N12-03` | `done` | `I18N12-02` | Web-client locale resolution, interpolation, pluralization, and human-formatting runtime | Unit and browser tests exercise the draft preview, canonicalization, deterministic fallback, and unchanged machine data |
+| `I18N12-04` | `done` | `I18N12-03` | Packaged English/French catalogue skeleton and compatibility tests | Wheel and sdist include the catalogues; duplicate keys, placeholder parity, plural forms, provenance, fallback and pseudo-localization are checked |
+| `I18N12-05` | `done` | `I18N12-01`, `I18N12-02`, `I18N12-04` | Static guard and machine-readable coverage report for covered modules | The pilot adapter rejects unreviewed literal changes; the report records six draft messages, zero reviewed messages and the uncovered surface groups |
 
 The [inventory and role review](../docs/records/localization-role-review-2026-11-14.md)
 cover the web client and its dynamic data boundaries. CLI localization and
@@ -80,6 +80,8 @@ prefixes. Those checks now use language-neutral state; browser scenarios cover
 the affected paths. The [web message-catalogue contract](../docs/web-localization-contract.md)
 defines exact-match presentation for reviewed static server messages and safe
 fallback for unknown, parameterized, and historical messages.
+The [coverage report](../docs/records/web-localization-coverage.json) makes the
+current preview explicit: no French message has yet been approved as covered.
 
 ## `1.2.0` — Internationalization Foundation
 

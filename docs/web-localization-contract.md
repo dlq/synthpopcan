@@ -1,8 +1,8 @@
 # Web Localization Contract for 1.2.0
 
-Status: design decision for `I18N12-02`; implementation is scheduled in
-`I18N12-03` through `I18N12-05`. This document describes the intended contract,
-not functionality already shipped.
+Status: the browser presentation runtime, draft catalogue skeleton, distribution
+checks, and scoped literal guard are implemented. No French message is yet
+declared reviewed; most web text remains English.
 
 The scope is the local-web client. CLI and public-documentation localization
 are deferred. The [role review](records/localization-role-review-2026-11-14.md)
@@ -178,6 +178,14 @@ wheel and sdist contents, declared coverage, placeholder/type/form parity,
 review provenance, pseudo-localization, and English fallback for declared gaps.
 `I18N12-05` adds a scoped static guard and a machine-readable coverage report;
 uncovered modules remain explicitly listed rather than being claimed as covered.
+
+Run `uv run python scripts/check_web_localization.py` after `npm ci` to check
+the catalogues, guarded pilot adapter, and
+[coverage report](records/web-localization-coverage.json). The guard detects
+changes to literal expressions in `localization-ui.mjs`; it does not claim to
+guard the rest of the web interface. Use `--write-report` to regenerate the
+report after reviewing a policy or catalogue change. Draft project translations
+must not be marked covered without a reviewer and review date.
 
 The implementation must demonstrate all of the following:
 

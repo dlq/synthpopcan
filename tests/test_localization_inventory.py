@@ -288,17 +288,17 @@ def test_javascript_module_reviews_are_bound_to_exact_source_hashes():
     workbench_digest = hashlib.sha256(workbench.read_bytes()).hexdigest()
     assert (
         module.reviewed_module_role(
-            workbench.name, workbench_digest, 220, '"uploading"'
+            workbench.name, workbench_digest, 229, '"uploading"'
         )
         == "machine-data-or-protocol-preserve"
     )
     assert (
-        module.reviewed_module_role(workbench.name, workbench_digest, 207, '"success"')
+        module.reviewed_module_role(workbench.name, workbench_digest, 216, '"success"')
         == "machine-data-or-protocol-preserve"
     )
     assert (
         module.reviewed_module_role(
-            workbench.name, workbench_digest, 207, '"Demo files are ready to upload."'
+            workbench.name, workbench_digest, 216, '"Demo files are ready to upload."'
         )
         == "web-presentation-candidate"
     )
@@ -306,12 +306,12 @@ def test_javascript_module_reviews_are_bound_to_exact_source_hashes():
         module.reviewed_module_role(
             workbench.name,
             workbench_digest,
-            301,
+            311,
             '"Checking package provenance, privacy, and output scale…"',
         )
         == "web-presentation-candidate"
     )
-    assert module.reviewed_module_role(workbench.name, workbench_digest, 302, '""') == (
+    assert module.reviewed_module_role(workbench.name, workbench_digest, 312, '""') == (
         "machine-data-or-protocol-preserve"
     )
 

@@ -58,9 +58,9 @@ generator also records individual HTML text, accessible labels, and source
 hashes; see the later snapshot in
 [localization-web-html-2026-11-14.json](localization-web-html-2026-11-14.json).
 A [JavaScript expression snapshot](localization-web-js-2026-11-14.json)
-adds parser-based byte ranges for 792 string and template candidates in 16
+adds parser-based byte ranges for string and template candidates in the web
 modules. It marks direct presentation candidates, DOM structural values and
-mixed control/presentation text; source-hash-bound reviews cover all 15
+mixed control/presentation text; source-hash-bound reviews cover the
 modules with inventoried expressions. One module has no inventoried string
 expressions. Refresh it with `npm ci` and
 `python scripts/audit_web_literals.py --output PATH`.

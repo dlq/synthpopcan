@@ -71,6 +71,109 @@ def test_read_geojson_file_multipolygon(tmp_path: Path) -> None:
     assert bbox[0] < -73.9
 
 
+@pytest.mark.parametrize(
+    "payload",
+    [
+        [],
+        {"type": "FeatureCollection", "features": "invalid"},
+        {"type": "FeatureCollection", "features": [None]},
+        {"type": "FeatureCollection", "features": [{"type": "Feature"}]},
+        {
+            "type": "FeatureCollection",
+            "features": [{"type": "Feature", "properties": {}, "geometry": None}],
+        },
+        {
+            "type": "FeatureCollection",
+            "features": [
+                {
+                    "type": "Feature",
+                    "properties": {"geo_id": "A"},
+                    "geometry": {"type": "Unknown", "coordinates": []},
+                }
+            ],
+        },
+        {
+            "type": "FeatureCollection",
+            "features": [
+                {
+                    "type": "Feature",
+                    "properties": {"geo_id": "A"},
+                    "geometry": {"type": "MultiPolygon", "coordinates": ["bad"]},
+                }
+            ],
+        },
+        {
+            "type": "FeatureCollection",
+            "features": [
+                {
+                    "type": "Feature",
+                    "properties": {"geo_id": "A"},
+                    "geometry": {"type": "Polygon", "coordinates": ["bad"]},
+                }
+            ],
+        },
+        {
+            "type": "FeatureCollection",
+            "features": [
+                {
+                    "type": "Feature",
+                    "properties": {"geo_id": "A"},
+                    "geometry": {"type": "Polygon", "coordinates": [["bad"]]},
+                }
+            ],
+        },
+        {
+            "type": "FeatureCollection",
+            "features": [
+                {
+                    "type": "Feature",
+                    "properties": {"geo_id": "A"},
+                    "geometry": {"type": "Polygon", "coordinates": [[[True, 2]]]},
+                }
+            ],
+        },
+        {
+            "type": "FeatureCollection",
+            "features": [
+                {
+                    "type": "Feature",
+                    "properties": {"geo_id": "A"},
+                    "geometry": {"type": "Polygon", "coordinates": "invalid"},
+                }
+            ],
+        },
+        {
+            "type": "FeatureCollection",
+            "features": [
+                {
+                    "type": "Feature",
+                    "properties": {"geo_id": "A"},
+                    "geometry": {
+                        "type": "Polygon",
+                        "coordinates": [[[float("nan"), 1], [float("inf"), 2]]],
+                    },
+                }
+            ],
+        },
+        {
+            "type": "FeatureCollection",
+            "features": [
+                {
+                    "type": "Feature",
+                    "properties": {"geo_id": "A"},
+                    "geometry": {"type": "Polygon", "coordinates": []},
+                }
+            ],
+        },
+    ],
+)
+def test_geojson_boundaries_reject_malformed_shapes(tmp_path: Path, payload) -> None:
+    path = tmp_path / "malformed.geojson"
+    path.write_text(json.dumps(payload))
+    with pytest.raises(ValueError, match="GeoJSON"):
+        _read_geojson_file(path, {"A"})
+
+
 def test_filter_boundaries_geojson_streams_reviewed_subset(tmp_path: Path) -> None:
     source = tmp_path / "national.geojson"
     source.write_text(

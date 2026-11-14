@@ -507,6 +507,8 @@ def test_small_area_worker_contract_is_covered_in_process(tmp_path: Path) -> Non
             },
         }
     )
+    # Historic run manifests may contain options no longer used by the worker.
+    run["request"]["options"]["legacy_option"] = "retained"
     messages: queue.SimpleQueue = queue.SimpleQueue()
 
     _small_area_worker(

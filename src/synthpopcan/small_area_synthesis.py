@@ -2066,7 +2066,11 @@ def _broad_pack_persons(persons):
     ]
 
 
-def _validate_conditional_pack_selection(broad_pack, geography, selections):
+def _validate_conditional_pack_selection(
+    broad_pack: synthpopcan.control_packs.ControlPackManifest | None,
+    geography: GeographyUniverse | None,
+    selections: Sequence[tuple[str, str | None]],
+) -> None:
     from synthpopcan._conditional_pack_catalogue import describe_conditional_pack
 
     for family, identifier in selections:
@@ -2098,10 +2102,16 @@ def _validate_conditional_pack_selection(broad_pack, geography, selections):
             )
 
 
-def _with_profile_controls(persons, controls, geography, dimension, selections):
+def _with_profile_controls(
+    persons: list[dict[str, str]],
+    controls: ControlTable | None,
+    geography: GeographyUniverse | None,
+    dimension: str,
+    selections: Sequence[tuple[str, str | None, Path | None]],
+) -> tuple[list[dict[str, str]], ControlTable | None, dict[str, object]]:
     from synthpopcan._conditional_controls import apply_builtin_profile_pack
 
-    provenance = {}
+    provenance: dict[str, object] = {}
     for family, pack, path in selections:
         if path is None and pack is None:
             continue
@@ -2132,8 +2142,14 @@ def _split_marital_status_pack(pack, evidence, marital_pack):
 
 
 def _with_marital_status_controls(
-    path, persons, controls, geography, dimension, pack, marital_pack
-):
+    path: Path | None,
+    persons: list[dict[str, str]],
+    controls: ControlTable | None,
+    geography: GeographyUniverse | None,
+    dimension: str,
+    pack: object,
+    marital_pack: str | None,
+) -> tuple[list[dict[str, str]], ControlTable | None, dict[str, object]]:
     if path is None and marital_pack is None:
         return persons, controls, {}
     if (

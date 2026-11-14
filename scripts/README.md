@@ -12,6 +12,8 @@ promise command-line compatibility across releases.
 | `check.sh` | Main local source, test, typing, formatting, documentation, and web gate |
 | `check-correctness.sh` | Extended correctness and methodological evidence gate |
 | `check-wheel.sh` | Verify an already-built wheel and sdist through isolated installation smokes; run `uv build` first |
+| `test_runner.py` | Offline named and conservatively affected pytest selections shared by local and CI checks; does not write external state |
+| `check_web_localization.py` | Offline catalogue and scoped literal guard; `--write-report` updates local coverage evidence only |
 | `wheel_smoke.py` | Installed-package interface and bundled-resource checks |
 | `performance_smoke.py` | Installed optional Numba/Polars backend execution and parity checks |
 | `model_build_smoke.py` | Installed model-building smoke check |

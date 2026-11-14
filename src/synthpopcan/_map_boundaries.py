@@ -11,6 +11,13 @@ from typing import Any
 
 import numpy as np
 
+from synthpopcan._geojson_contract import (
+    Feature,
+    collection_features,
+    feature_or_none,
+    polygon_positions,
+)
+
 
 def _lcc_to_wgs84(x: np.ndarray, y: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
     """Inverse Lambert Conformal Conic for StatCan 2016 census boundaries."""
@@ -564,28 +571,18 @@ def _read_geojson_file(
 
     Returns (geojson_dict, (west, south, east, north)) bounding box.
     """
-    raw = json.loads(geojson_path.read_text())
-    features = [
-        f
-        for f in raw.get("features", [])
-        if str(f.get("properties", {}).get("geo_id", "")).strip() in keep_ids
-    ]
+    raw: object = json.loads(geojson_path.read_text())
+    features = _matching_geojson_features(raw, keep_ids)
 
     bbox = [math.inf, math.inf, -math.inf, -math.inf]
     for feature in features:
-        geom = feature.get("geometry") or {}
-        coords_iter: list[Any] = []
-        if geom.get("type") == "Polygon":
-            coords_iter = [pt for ring in geom["coordinates"] for pt in ring]
-        elif geom.get("type") == "MultiPolygon":
-            coords_iter = [
-                pt for poly in geom["coordinates"] for ring in poly for pt in ring
-            ]
-        for lon, lat in coords_iter:
-            bbox[0] = min(bbox[0], lon)
-            bbox[1] = min(bbox[1], lat)
-            bbox[2] = max(bbox[2], lon)
-            bbox[3] = max(bbox[3], lat)
+        geometry = feature["geometry"]
+        if geometry["type"] in {"Polygon", "MultiPolygon"}:
+            for longitude, latitude in polygon_positions(geometry):
+                bbox[0] = min(bbox[0], longitude)
+                bbox[1] = min(bbox[1], latitude)
+                bbox[2] = max(bbox[2], longitude)
+                bbox[3] = max(bbox[3], latitude)
 
     if bbox[0] == math.inf:
         bbox = [-180.0, -90.0, 180.0, 90.0]
@@ -594,6 +591,17 @@ def _read_geojson_file(
         {"type": "FeatureCollection", "features": features},
         (bbox[0], bbox[1], bbox[2], bbox[3]),
     )
+
+
+def _matching_geojson_features(raw: object, keep_ids: set[str]) -> list[Feature]:
+    features: list[Feature] = []
+    for entry in collection_features(raw):
+        feature = feature_or_none(entry)
+        if feature is None:
+            raise ValueError("GeoJSON feature must have properties and geometry")
+        if str(feature["properties"].get("geo_id", "")).strip() in keep_ids:
+            features.append(feature)
+    return features
 
 
 def _simplify_ring(
@@ -874,7 +882,7 @@ def _geometry_coordinate_bounds(
     ):
         x = float(value[0])
         y = float(value[1])
-        return x, y, x, y
+        return _finite_coordinate_bounds(x, y)
     if not isinstance(value, list):
         return None
     children = [
@@ -890,3 +898,11 @@ def _geometry_coordinate_bounds(
         max(bounds[2] for bounds in children),
         max(bounds[3] for bounds in children),
     )
+
+
+def _finite_coordinate_bounds(
+    x: float, y: float
+) -> tuple[float, float, float, float] | None:
+    if not math.isfinite(x) or not math.isfinite(y):
+        return None
+    return x, y, x, y

@@ -42,6 +42,21 @@ select {
   border-bottom: 1px solid #d6d6d6;
 }
 
+.locale-controls {
+  display: grid;
+  gap: 5px;
+  max-width: 250px;
+  font-size: 0.875rem;
+}
+
+.locale-controls select {
+  max-width: 100%;
+}
+
+.locale-controls small {
+  color: #555555;
+}
+
 .brand-lockup {
   display: flex;
   align-items: center;

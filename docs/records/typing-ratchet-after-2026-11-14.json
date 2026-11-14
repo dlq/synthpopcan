@@ -1,0 +1,550 @@
+{
+  "command": "uv run --locked pyright --project pyrightconfig.strict.json --outputjson",
+  "pyright_version": "1.1.414",
+  "files_analyzed": 124,
+  "errors": 5504,
+  "files_with_diagnostics_by_scope": {
+    "scripts": 17,
+    "src": 64
+  },
+  "diagnostics_by_rule": {
+    "reportArgumentType": 4,
+    "reportAttributeAccessIssue": 2,
+    "reportCallIssue": 1,
+    "reportConstantRedefinition": 7,
+    "reportIndexIssue": 2,
+    "reportMissingParameterType": 651,
+    "reportMissingTypeArgument": 13,
+    "reportMissingTypeStubs": 8,
+    "reportOperatorIssue": 1,
+    "reportPrivateUsage": 86,
+    "reportReturnType": 9,
+    "reportUnknownArgumentType": 1528,
+    "reportUnknownLambdaType": 16,
+    "reportUnknownMemberType": 1247,
+    "reportUnknownParameterType": 723,
+    "reportUnknownVariableType": 1162,
+    "reportUnnecessaryComparison": 7,
+    "reportUnnecessaryIsInstance": 18,
+    "reportUnusedFunction": 16,
+    "reportUnusedVariable": 3
+  },
+  "diagnostics_by_file": {
+    "scripts/audit_localization_roles.py": {
+      "reportUnknownLambdaType": 4,
+      "reportUnknownMemberType": 4
+    },
+    "scripts/audit_small_area_control_coverage.py": {
+      "reportUnknownArgumentType": 2,
+      "reportUnknownVariableType": 3
+    },
+    "scripts/audit_web_literals.py": {
+      "reportUnknownMemberType": 3,
+      "reportUnknownVariableType": 3
+    },
+    "scripts/benchmark_national_candidate_pools.py": {
+      "reportPrivateUsage": 1
+    },
+    "scripts/benchmarks.py": {
+      "reportMissingParameterType": 47,
+      "reportReturnType": 8,
+      "reportUnknownArgumentType": 114,
+      "reportUnknownMemberType": 141,
+      "reportUnknownParameterType": 52,
+      "reportUnknownVariableType": 70
+    },
+    "scripts/build_all_model_packages.py": {
+      "reportMissingParameterType": 2,
+      "reportMissingTypeArgument": 4,
+      "reportUnknownArgumentType": 13,
+      "reportUnknownMemberType": 8,
+      "reportUnknownParameterType": 5,
+      "reportUnknownVariableType": 28
+    },
+    "scripts/build_corrected_model_assets.py": {
+      "reportUnknownArgumentType": 3,
+      "reportUnknownVariableType": 7
+    },
+    "scripts/build_external_canadian_comparison.py": {
+      "reportUnknownVariableType": 4
+    },
+    "scripts/build_field_eligibility_inventory.py": {
+      "reportUnknownArgumentType": 8,
+      "reportUnknownLambdaType": 1,
+      "reportUnknownVariableType": 7
+    },
+    "scripts/build_multiscale_validation_evidence.py": {
+      "reportUnknownVariableType": 4
+    },
+    "scripts/build_public_interface.py": {
+      "reportUnknownArgumentType": 1,
+      "reportUnknownMemberType": 1
+    },
+    "scripts/build_release_evidence.py": {
+      "reportUnknownMemberType": 3,
+      "reportUnknownVariableType": 3
+    },
+    "scripts/build_zenodo_depositions.py": {
+      "reportUnknownArgumentType": 10,
+      "reportUnknownMemberType": 4,
+      "reportUnknownVariableType": 1
+    },
+    "scripts/check_web_localization.py": {
+      "reportMissingTypeArgument": 6,
+      "reportUnknownArgumentType": 20,
+      "reportUnknownMemberType": 20,
+      "reportUnknownParameterType": 6,
+      "reportUnknownVariableType": 20,
+      "reportUnnecessaryIsInstance": 1
+    },
+    "scripts/deposit_zenodo_records.py": {
+      "reportMissingParameterType": 32,
+      "reportUnknownArgumentType": 259,
+      "reportUnknownLambdaType": 1,
+      "reportUnknownMemberType": 284,
+      "reportUnknownParameterType": 35,
+      "reportUnknownVariableType": 87
+    },
+    "scripts/extract_marital_status_tracts.py": {
+      "reportUnknownArgumentType": 7,
+      "reportUnknownMemberType": 6,
+      "reportUnknownVariableType": 7
+    },
+    "scripts/performance_smoke.py": {
+      "reportPrivateUsage": 1,
+      "reportUnknownVariableType": 3
+    },
+    "src/synthpopcan/_archive_correction.py": {
+      "reportUnknownArgumentType": 2,
+      "reportUnknownVariableType": 2
+    },
+    "src/synthpopcan/_candidate_preparation.py": {
+      "reportArgumentType": 2,
+      "reportMissingParameterType": 60,
+      "reportMissingTypeStubs": 2,
+      "reportPrivateUsage": 2,
+      "reportUnknownArgumentType": 73,
+      "reportUnknownMemberType": 40,
+      "reportUnknownParameterType": 61,
+      "reportUnknownVariableType": 46
+    },
+    "src/synthpopcan/_census_profile.py": {
+      "reportUnknownArgumentType": 1,
+      "reportUnknownVariableType": 1
+    },
+    "src/synthpopcan/_columnar_csv.py": {
+      "reportMissingParameterType": 5,
+      "reportUnknownArgumentType": 7,
+      "reportUnknownParameterType": 4,
+      "reportUnknownVariableType": 4
+    },
+    "src/synthpopcan/_conditional_controls.py": {
+      "reportMissingParameterType": 8,
+      "reportUnknownArgumentType": 20,
+      "reportUnknownMemberType": 21,
+      "reportUnknownParameterType": 9,
+      "reportUnknownVariableType": 18,
+      "reportUnnecessaryComparison": 1
+    },
+    "src/synthpopcan/_conditional_pack_catalogue.py": {
+      "reportMissingParameterType": 2,
+      "reportPrivateUsage": 2,
+      "reportUnknownArgumentType": 4,
+      "reportUnknownMemberType": 1,
+      "reportUnknownParameterType": 3,
+      "reportUnknownVariableType": 5
+    },
+    "src/synthpopcan/_conditional_profile.py": {
+      "reportMissingParameterType": 21,
+      "reportPrivateUsage": 1,
+      "reportUnknownArgumentType": 38,
+      "reportUnknownMemberType": 9,
+      "reportUnknownParameterType": 23,
+      "reportUnknownVariableType": 25
+    },
+    "src/synthpopcan/_control_pack_catalogue.py": {
+      "reportMissingParameterType": 1,
+      "reportUnknownArgumentType": 1,
+      "reportUnknownMemberType": 1,
+      "reportUnknownParameterType": 1,
+      "reportUnknownVariableType": 1,
+      "reportUnusedFunction": 3
+    },
+    "src/synthpopcan/_education_packs.py": {
+      "reportMissingParameterType": 3,
+      "reportUnknownArgumentType": 3,
+      "reportUnknownParameterType": 4,
+      "reportUnknownVariableType": 2
+    },
+    "src/synthpopcan/_http.py": {
+      "reportUnnecessaryComparison": 1
+    },
+    "src/synthpopcan/_joint_calibration.py": {
+      "reportMissingParameterType": 14,
+      "reportUnknownArgumentType": 32,
+      "reportUnknownMemberType": 7,
+      "reportUnknownParameterType": 16,
+      "reportUnknownVariableType": 26
+    },
+    "src/synthpopcan/_labour_force_packs.py": {
+      "reportMissingParameterType": 4,
+      "reportUnknownArgumentType": 4,
+      "reportUnknownParameterType": 5,
+      "reportUnknownVariableType": 2
+    },
+    "src/synthpopcan/_linked_validation.py": {
+      "reportMissingParameterType": 31,
+      "reportUnknownArgumentType": 41,
+      "reportUnknownMemberType": 14,
+      "reportUnknownParameterType": 33,
+      "reportUnknownVariableType": 30,
+      "reportUnusedFunction": 1
+    },
+    "src/synthpopcan/_map_boundaries.py": {
+      "reportMissingParameterType": 1,
+      "reportMissingTypeStubs": 1,
+      "reportUnknownArgumentType": 22,
+      "reportUnknownMemberType": 12,
+      "reportUnknownParameterType": 1,
+      "reportUnknownVariableType": 20,
+      "reportUnusedFunction": 4
+    },
+    "src/synthpopcan/_map_statistics.py": {
+      "reportMissingParameterType": 15,
+      "reportMissingTypeStubs": 2,
+      "reportPrivateUsage": 5,
+      "reportUnknownArgumentType": 20,
+      "reportUnknownMemberType": 19,
+      "reportUnknownParameterType": 16,
+      "reportUnknownVariableType": 17
+    },
+    "src/synthpopcan/_marital_status_packs.py": {
+      "reportUnknownVariableType": 1,
+      "reportUnnecessaryComparison": 1
+    },
+    "src/synthpopcan/_national_map_statistics.py": {
+      "reportMissingParameterType": 1,
+      "reportUnknownArgumentType": 4,
+      "reportUnknownMemberType": 20,
+      "reportUnknownParameterType": 1,
+      "reportUnknownVariableType": 12,
+      "reportUnusedFunction": 1
+    },
+    "src/synthpopcan/_numba_ipu.py": {
+      "reportConstantRedefinition": 7,
+      "reportMissingParameterType": 46,
+      "reportUnknownArgumentType": 73,
+      "reportUnknownMemberType": 29,
+      "reportUnknownParameterType": 52,
+      "reportUnknownVariableType": 33
+    },
+    "src/synthpopcan/_observed_calibration.py": {
+      "reportMissingParameterType": 45,
+      "reportUnknownArgumentType": 63,
+      "reportUnknownMemberType": 22,
+      "reportUnknownParameterType": 51,
+      "reportUnknownVariableType": 39
+    },
+    "src/synthpopcan/_person_map_statistics.py": {
+      "reportMissingParameterType": 5,
+      "reportMissingTypeStubs": 1,
+      "reportUnknownArgumentType": 7,
+      "reportUnknownLambdaType": 2,
+      "reportUnknownMemberType": 14,
+      "reportUnknownParameterType": 5,
+      "reportUnknownVariableType": 7
+    },
+    "src/synthpopcan/_polars_audit.py": {
+      "reportMissingParameterType": 13,
+      "reportUnknownArgumentType": 25,
+      "reportUnknownMemberType": 33,
+      "reportUnknownParameterType": 17,
+      "reportUnknownVariableType": 35
+    },
+    "src/synthpopcan/_polars_map_statistics.py": {
+      "reportMissingParameterType": 2,
+      "reportPrivateUsage": 6,
+      "reportUnknownArgumentType": 3,
+      "reportUnknownMemberType": 7,
+      "reportUnknownParameterType": 1,
+      "reportUnknownVariableType": 3
+    },
+    "src/synthpopcan/_population_preparation.py": {
+      "reportMissingParameterType": 50,
+      "reportMissingTypeArgument": 2,
+      "reportUnknownArgumentType": 80,
+      "reportUnknownLambdaType": 2,
+      "reportUnknownMemberType": 76,
+      "reportUnknownParameterType": 55,
+      "reportUnknownVariableType": 71
+    },
+    "src/synthpopcan/_profile_preparation.py": {
+      "reportArgumentType": 2,
+      "reportAttributeAccessIssue": 2,
+      "reportCallIssue": 1,
+      "reportIndexIssue": 2,
+      "reportMissingParameterType": 51,
+      "reportUnknownArgumentType": 112,
+      "reportUnknownMemberType": 43,
+      "reportUnknownParameterType": 57,
+      "reportUnknownVariableType": 67
+    },
+    "src/synthpopcan/_work_activity_packs.py": {
+      "reportMissingParameterType": 4,
+      "reportUnknownArgumentType": 4,
+      "reportUnknownParameterType": 5,
+      "reportUnknownVariableType": 2
+    },
+    "src/synthpopcan/api.py": {
+      "reportUnknownMemberType": 3,
+      "reportUnknownVariableType": 3,
+      "reportUnnecessaryIsInstance": 1
+    },
+    "src/synthpopcan/canfed.py": {
+      "reportUnknownArgumentType": 5,
+      "reportUnknownVariableType": 2
+    },
+    "src/synthpopcan/cli.py": {
+      "reportPrivateUsage": 1,
+      "reportUnknownArgumentType": 7,
+      "reportUnknownMemberType": 11,
+      "reportUnknownVariableType": 15
+    },
+    "src/synthpopcan/cli_enrichment.py": {
+      "reportUnknownMemberType": 1,
+      "reportUnknownVariableType": 2,
+      "reportUnnecessaryComparison": 2
+    },
+    "src/synthpopcan/cli_errors.py": {
+      "reportUnnecessaryComparison": 1
+    },
+    "src/synthpopcan/cli_geo.py": {
+      "reportMissingParameterType": 18,
+      "reportPrivateUsage": 2,
+      "reportUnknownArgumentType": 24,
+      "reportUnknownMemberType": 41,
+      "reportUnknownParameterType": 18,
+      "reportUnknownVariableType": 43
+    },
+    "src/synthpopcan/cli_geo_prepare.py": {
+      "reportMissingParameterType": 36,
+      "reportMissingTypeArgument": 1,
+      "reportUnknownArgumentType": 43,
+      "reportUnknownLambdaType": 4,
+      "reportUnknownMemberType": 8,
+      "reportUnknownParameterType": 37,
+      "reportUnknownVariableType": 10
+    },
+    "src/synthpopcan/cli_tree.py": {
+      "reportUnknownArgumentType": 3,
+      "reportUnknownMemberType": 5,
+      "reportUnknownVariableType": 5,
+      "reportUnusedFunction": 1
+    },
+    "src/synthpopcan/control_packs.py": {
+      "reportMissingParameterType": 1,
+      "reportPrivateUsage": 19,
+      "reportUnknownArgumentType": 6,
+      "reportUnknownMemberType": 3,
+      "reportUnknownParameterType": 2,
+      "reportUnknownVariableType": 13,
+      "reportUnusedFunction": 1
+    },
+    "src/synthpopcan/control_suggestions.py": {
+      "reportUnknownArgumentType": 1,
+      "reportUnknownVariableType": 1
+    },
+    "src/synthpopcan/controls.py": {
+      "reportUnknownArgumentType": 5,
+      "reportUnknownMemberType": 6,
+      "reportUnknownVariableType": 27,
+      "reportUnusedVariable": 2
+    },
+    "src/synthpopcan/da_proof.py": {
+      "reportUnknownArgumentType": 3,
+      "reportUnknownMemberType": 12,
+      "reportUnknownVariableType": 17
+    },
+    "src/synthpopcan/diagnostics.py": {
+      "reportPrivateUsage": 1,
+      "reportUnknownVariableType": 1
+    },
+    "src/synthpopcan/enrichment.py": {
+      "reportUnknownArgumentType": 8,
+      "reportUnknownMemberType": 2,
+      "reportUnknownVariableType": 8,
+      "reportUnnecessaryIsInstance": 10
+    },
+    "src/synthpopcan/exchange.py": {
+      "reportUnknownArgumentType": 10,
+      "reportUnknownMemberType": 9,
+      "reportUnknownVariableType": 14,
+      "reportUnnecessaryIsInstance": 3
+    },
+    "src/synthpopcan/external_comparison.py": {
+      "reportUnknownArgumentType": 12,
+      "reportUnknownMemberType": 14,
+      "reportUnknownVariableType": 6
+    },
+    "src/synthpopcan/geodata.py": {
+      "reportUnknownArgumentType": 1,
+      "reportUnknownMemberType": 9,
+      "reportUnknownVariableType": 6
+    },
+    "src/synthpopcan/geography.py": {
+      "reportUnknownVariableType": 1,
+      "reportUnnecessaryIsInstance": 2
+    },
+    "src/synthpopcan/linked_schema.py": {
+      "reportUnknownArgumentType": 5,
+      "reportUnknownMemberType": 1,
+      "reportUnknownVariableType": 4
+    },
+    "src/synthpopcan/localdata.py": {
+      "reportUnknownArgumentType": 2,
+      "reportUnknownMemberType": 2,
+      "reportUnknownVariableType": 2
+    },
+    "src/synthpopcan/map_render.py": {
+      "reportMissingParameterType": 4,
+      "reportPrivateUsage": 23,
+      "reportUnknownArgumentType": 9,
+      "reportUnknownMemberType": 5,
+      "reportUnknownParameterType": 4,
+      "reportUnknownVariableType": 6,
+      "reportUnusedFunction": 2
+    },
+    "src/synthpopcan/methodological_validation.py": {
+      "reportMissingParameterType": 1,
+      "reportUnknownArgumentType": 11,
+      "reportUnknownParameterType": 1,
+      "reportUnknownVariableType": 1,
+      "reportUnnecessaryIsInstance": 1
+    },
+    "src/synthpopcan/methodology.py": {
+      "reportPrivateUsage": 1
+    },
+    "src/synthpopcan/microdata.py": {
+      "reportUnknownArgumentType": 1,
+      "reportUnknownMemberType": 2,
+      "reportUnknownVariableType": 5
+    },
+    "src/synthpopcan/model_licensing.py": {
+      "reportOperatorIssue": 1,
+      "reportUnknownArgumentType": 3,
+      "reportUnknownMemberType": 12,
+      "reportUnknownVariableType": 13
+    },
+    "src/synthpopcan/models/__init__.py": {
+      "reportUnknownArgumentType": 1,
+      "reportUnknownMemberType": 5
+    },
+    "src/synthpopcan/national_execution.py": {
+      "reportUnknownArgumentType": 19,
+      "reportUnknownMemberType": 38,
+      "reportUnknownVariableType": 26
+    },
+    "src/synthpopcan/national_small_area.py": {
+      "reportMissingParameterType": 21,
+      "reportUnknownArgumentType": 23,
+      "reportUnknownMemberType": 18,
+      "reportUnknownParameterType": 21,
+      "reportUnknownVariableType": 9
+    },
+    "src/synthpopcan/odef.py": {
+      "reportUnnecessaryComparison": 1
+    },
+    "src/synthpopcan/small_area_synthesis.py": {
+      "reportMissingParameterType": 54,
+      "reportMissingTypeStubs": 1,
+      "reportPrivateUsage": 2,
+      "reportReturnType": 1,
+      "reportUnknownArgumentType": 87,
+      "reportUnknownMemberType": 69,
+      "reportUnknownParameterType": 61,
+      "reportUnknownVariableType": 75
+    },
+    "src/synthpopcan/sources.py": {
+      "reportUnknownArgumentType": 1,
+      "reportUnknownMemberType": 1,
+      "reportUnusedFunction": 1
+    },
+    "src/synthpopcan/statcan.py": {
+      "reportUnknownMemberType": 4,
+      "reportUnknownVariableType": 4
+    },
+    "src/synthpopcan/tree.py": {
+      "reportMissingParameterType": 5,
+      "reportMissingTypeStubs": 1,
+      "reportPrivateUsage": 11,
+      "reportUnknownArgumentType": 32,
+      "reportUnknownMemberType": 33,
+      "reportUnknownParameterType": 6,
+      "reportUnknownVariableType": 32
+    },
+    "src/synthpopcan/web_wds.py": {
+      "reportUnknownArgumentType": 1,
+      "reportUnknownVariableType": 1
+    },
+    "src/synthpopcan/webapi.py": {
+      "reportMissingParameterType": 8,
+      "reportPrivateUsage": 7,
+      "reportUnknownArgumentType": 26,
+      "reportUnknownMemberType": 17,
+      "reportUnknownParameterType": 8,
+      "reportUnknownVariableType": 9,
+      "reportUnusedFunction": 2
+    },
+    "src/synthpopcan/workflows/enrichment.py": {
+      "reportUnusedVariable": 1
+    },
+    "src/synthpopcan/workflows/models.py": {
+      "reportUnknownArgumentType": 5,
+      "reportUnknownMemberType": 4,
+      "reportUnknownVariableType": 2
+    },
+    "src/synthpopcan/workflows/national.py": {
+      "reportUnknownMemberType": 6,
+      "reportUnknownVariableType": 6
+    },
+    "src/synthpopcan/workflows/prepared_calibration.py": {
+      "reportMissingParameterType": 40,
+      "reportPrivateUsage": 1,
+      "reportUnknownArgumentType": 98,
+      "reportUnknownLambdaType": 2,
+      "reportUnknownMemberType": 64,
+      "reportUnknownParameterType": 47,
+      "reportUnknownVariableType": 77
+    }
+  },
+  "blocking_strict_paths": [
+    "scripts/audit_release_readiness.py",
+    "src/synthpopcan/__init__.py",
+    "src/synthpopcan/_conditional_universe.py",
+    "src/synthpopcan/_geojson_contract.py",
+    "src/synthpopcan/_interface.py",
+    "src/synthpopcan/_national_batch_contract.py",
+    "src/synthpopcan/_runtime_schemas.py",
+    "src/synthpopcan/assurance.py",
+    "src/synthpopcan/benchmarks.py",
+    "src/synthpopcan/cli_exchange.py",
+    "src/synthpopcan/cli_microdata.py",
+    "src/synthpopcan/cli_output.py",
+    "src/synthpopcan/console.py",
+    "src/synthpopcan/contracts/__init__.py",
+    "src/synthpopcan/ipf.py",
+    "src/synthpopcan/jobs.py",
+    "src/synthpopcan/national_da.py",
+    "src/synthpopcan/runs.py",
+    "src/synthpopcan/tabular.py",
+    "src/synthpopcan/tree_benchmark.py",
+    "src/synthpopcan/validation.py",
+    "src/synthpopcan/web/__init__.py",
+    "src/synthpopcan/webapp.py",
+    "src/synthpopcan/workflows/__init__.py",
+    "src/synthpopcan/workflows/ipf.py",
+    "src/synthpopcan/workflows/preflight.py",
+    "src/synthpopcan/workflows/small_area.py",
+    "src/synthpopcan/workflows/types.py"
+  ]
+}

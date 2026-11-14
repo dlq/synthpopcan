@@ -11,7 +11,14 @@ ROOT = Path(__file__).resolve().parents[1]
 
 # Only modules whose direct and downstream tests have been reviewed belong here.
 # Everything else, including shared test helpers and configuration, runs all tests.
-MODULE_TESTS: dict[str, tuple[str, ...]] = {}
+MODULE_TESTS: dict[str, tuple[str, ...]] = {
+    # This benchmark-only module is used by the maintainer benchmark script;
+    # its direct behavior and dependency boundaries have dedicated tests.
+    "src/synthpopcan/tree_benchmark.py": (
+        "tests/test_tree_benchmark.py",
+        "tests/test_architecture.py",
+    ),
+}
 SELECTIONS = {
     "full": ("tests",),
     "correctness": (
@@ -20,7 +27,10 @@ SELECTIONS = {
         "tests/test_small_area_correctness.py",
         "tests/test_reference_correctness.py",
     ),
-    "localization": ("tests/test_localization_inventory.py",),
+    "localization": (
+        "tests/test_localization_inventory.py",
+        "tests/test_web_localization_contract.py",
+    ),
     "control-packs": (
         "tests/test_control_packs.py",
         "tests/test_conditional_pack_registry.py",
@@ -38,7 +48,7 @@ def select_affected(paths: list[str]) -> tuple[tuple[str, ...], str]:
         return SELECTIONS["full"], "no changed files; using full suite"
     selected: set[str] = set()
     for path in paths:
-        if path in MODULE_TESTS:
+        if path in MODULE_TESTS and (ROOT / path).is_file():
             selected.update(MODULE_TESTS[path])
         elif (
             path.startswith("tests/test_")

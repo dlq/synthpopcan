@@ -13,6 +13,7 @@ from urllib.parse import unquote
 import click
 
 import synthpopcan
+from synthpopcan._interface import load_public_interface_contract
 from synthpopcan.cli import cli
 from synthpopcan.enrichment import SourceProfile
 
@@ -276,6 +277,23 @@ def test_api_reference_members_exist_and_have_docstrings() -> None:
             assert len(docstring.split()) >= 8, (
                 f"{module_name}.{member_name} docstring is too thin"
             )
+
+
+def test_every_supported_export_retains_documentation() -> None:
+    """Ratchet the full supported surface, including new or changed exports."""
+    contract = load_public_interface_contract()["python"]
+    reference = Path("docs/api.rst").read_text()
+    api = importlib.import_module("synthpopcan.api")
+    assert set(synthpopcan.__all__) == set(api.__all__) | {"__version__"}
+    assert ".. automodule:: synthpopcan.api\n   :members:" in reference
+    for special in ("__version__", "PopulationRows"):
+        assert f"``{special}``" in reference
+    for item in contract["top_level"]:
+        if item["name"] not in {"__version__", "PopulationRows"}:
+            assert inspect.getdoc(getattr(synthpopcan, item["name"])), item["name"]
+    for item in contract["advanced"]:
+        member = getattr(importlib.import_module(item["module"]), item["name"])
+        assert inspect.getdoc(member), item["import_path"]
 
 
 def parse_api_reference_members(path: Path) -> dict[str, list[str]]:

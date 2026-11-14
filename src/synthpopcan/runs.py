@@ -20,7 +20,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, BinaryIO
+from typing import Any, BinaryIO, TypedDict, cast
 
 from synthpopcan._runtime_schemas import RunEvent, RunManifest, UploadMetadata
 from synthpopcan._version import __version__
@@ -41,6 +41,25 @@ class _UploadClaimSpec:
     metadata: dict[str, Any]
     logical_name: str
     filename: str
+
+
+class _RestartInput(TypedDict):
+    logical_name: str
+    upload_id: str
+    display_name: str
+    path: str
+    media_type: str
+    byte_size: int
+    sha256: str
+
+
+def _request_inputs(value: object, label: str) -> dict[str, object]:
+    if not isinstance(value, dict):
+        raise ValueError(f"{label} run inputs must be an object")
+    entries = cast(dict[object, object], value)
+    if not all(isinstance(key, str) for key in entries):
+        raise ValueError(f"{label} run inputs must be an object")
+    return {key: item for key, item in entries.items() if isinstance(key, str)}
 
 
 def _utc_now() -> str:
@@ -104,7 +123,7 @@ class UploadWriter:
             claimed_by=None,
             path=str(self._final_path.relative_to(self._store.root)),
         ).model_dump()
-        self._store._write_json_atomic(  # noqa: SLF001
+        self._store._write_json_atomic(  # noqa: SLF001 # pyright: ignore[reportPrivateUsage]
             self._store.uploads_dir / f"{self.upload_id}.json", metadata
         )
         self._finished = True
@@ -199,7 +218,7 @@ class RunStore:
         try:
             for directory in (inputs_dir, run_dir / "artifacts", run_dir / "work"):
                 directory.mkdir(exist_ok=False)
-            claimed_inputs = []
+            claimed_inputs: list[dict[str, object]] = []
             for spec in upload_specs:
                 claimed_inputs.append(
                     self._claim_upload(
@@ -242,9 +261,7 @@ class RunStore:
     def create_ipf_run(self, request: dict[str, Any]) -> dict[str, Any]:
         """Create an IPF run and atomically claim its two input uploads."""
         with self._lock:
-            inputs = request.get("inputs")
-            if not isinstance(inputs, dict):
-                raise ValueError("IPF run inputs must be an object")
+            inputs = _request_inputs(request.get("inputs"), "IPF")
             seed_id = str(inputs.get("seed_upload_id", ""))
             controls_id = str(inputs.get("controls_upload_id", ""))
             if seed_id == controls_id:
@@ -264,9 +281,7 @@ class RunStore:
     def create_model_run(self, request: dict[str, Any]) -> dict[str, Any]:
         """Create a prepared-model run from a catalogue ID or package upload."""
         with self._lock:
-            inputs = request.get("inputs")
-            if not isinstance(inputs, dict):
-                raise ValueError("model run inputs must be an object")
+            inputs = _request_inputs(request.get("inputs"), "model")
             model_id = inputs.get("model_id")
             package_upload_id = inputs.get("package_upload_id")
             if bool(model_id) == bool(package_upload_id):
@@ -292,9 +307,7 @@ class RunStore:
     def create_small_area_run(self, request: dict[str, Any]) -> dict[str, Any]:
         """Create a small-area run and claim its package/control uploads."""
         with self._lock:
-            inputs = request.get("inputs")
-            if not isinstance(inputs, dict):
-                raise ValueError("small-area run inputs must be an object")
+            inputs = _request_inputs(request.get("inputs"), "small-area")
             model_id = inputs.get("model_id")
             package_id = inputs.get("package_upload_id")
             candidate_households_id = inputs.get("candidate_households_upload_id")
@@ -399,7 +412,7 @@ class RunStore:
             )
 
     def _conditional_uploads(self, inputs: dict[str, Any]) -> list[_UploadClaimSpec]:
-        specs = []
+        specs: list[_UploadClaimSpec] = []
         for family, source in (
             ("marital_status", "controls"),
             ("education", "profile"),
@@ -474,7 +487,7 @@ class RunStore:
                         raise RestartError(
                             "Restart inputs changed during preflight; create a new run."
                         )
-                manifest = {
+                manifest: dict[str, object] = {
                     **original,
                     "run_id": new_id,
                     "status": "queued",
@@ -551,17 +564,20 @@ class RunStore:
                 "The model has changed since the interrupted run; create a new run."
             )
 
-    def _copy_restart_inputs(self, original, staging: Path, new_id: str):
-        copied = []
-        paths = {}
-        old_inputs = self.run_dir(str(original["run_id"])) / "inputs"
+    def _copy_restart_inputs(
+        self, original: dict[str, Any], staging: Path, new_id: str
+    ) -> tuple[list[_RestartInput], dict[str, Path]]:
+        validated = RunManifest.model_validate(original)
+        copied: list[_RestartInput] = []
+        paths: dict[str, Path] = {}
+        old_inputs = self.run_dir(validated.run_id) / "inputs"
         if old_inputs.is_symlink() or old_inputs.resolve().parent != old_inputs.parent:
             raise RestartError("The run input directory is invalid; create a new run.")
-        for item in original["inputs"]:
-            source = self.resolve_managed_path(str(item["path"]))
+        for item in validated.inputs:
+            source = self.resolve_managed_path(item.path)
             if source.parent != old_inputs.resolve() or source.is_symlink():
                 raise RestartError("Run input path is invalid; create a new run.")
-            upload_id = str(item["upload_id"])
+            upload_id = item.upload_id
             _validate_opaque_id(upload_id, "upload")
             if upload_id in paths:
                 raise RestartError("Run has duplicate input identifiers.")
@@ -575,9 +591,19 @@ class RunStore:
                     size += len(chunk)
                 dst.flush()
                 os.fsync(dst.fileno())
-            if digest.hexdigest() != item["sha256"] or size != item["byte_size"]:
+            if digest.hexdigest() != item.sha256 or size != item.byte_size:
                 raise RestartError("Run inputs have changed; create a new run.")
-            copied.append({**item, "path": f"runs/{new_id}/inputs/{source.name}"})
+            copied.append(
+                {
+                    "logical_name": item.logical_name,
+                    "upload_id": item.upload_id,
+                    "display_name": item.display_name,
+                    "path": f"runs/{new_id}/inputs/{source.name}",
+                    "media_type": item.media_type,
+                    "byte_size": item.byte_size,
+                    "sha256": item.sha256,
+                }
+            )
             paths[upload_id] = target
         return copied, paths
 
@@ -645,9 +671,11 @@ class RunStore:
 
     def verify_assurance(self, run_id: str) -> dict[str, Any]:
         """Independently recompute and compare one terminal run's evidence."""
-        return verify_run_assurance(
-            self.load_run(run_id),
-            self.resolve_managed_path,
+        return dict(
+            verify_run_assurance(
+                self.load_run(run_id),
+                self.resolve_managed_path,
+            )
         )
 
     def append_event(

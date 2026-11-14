@@ -2861,3 +2861,141 @@ def test_national_workflow_preserves_batch_map_before_summary_order(
     )
     assert result.plan["status"] == "completed"
     assert events == ["execute", "maps", "summary"]
+
+
+@pytest.mark.parametrize(
+    "message",
+    [
+        None,
+        (),
+        ("ok", "batch"),
+        ("ok", "batch", []),
+        ("ok", "batch", {1: "invalid"}),
+        ("other", "batch", {}),
+        ("error", "batch", "Kind", 5, "trace"),
+    ],
+)
+def test_national_worker_message_rejects_malformed_values(message):
+    with pytest.raises(ValueError, match="malformed result"):
+        national_small_area_module._decode_worker_result(message)
+
+
+def test_national_worker_message_preserves_valid_evidence():
+    decode = national_small_area_module._decode_worker_result
+    assert decode(("ok", "batch", {"rows": 3})) == ("ok", "batch", {"rows": 3})
+    assert decode(("error", "batch", "Kind", "message", "trace")) == (
+        "error",
+        "batch",
+        "Kind",
+        "message",
+        "trace",
+    )
+
+
+def test_malformed_parallel_message_leaves_batch_restartable(tmp_path, monkeypatch):
+    plan_path, _ = _prepare(tmp_path)
+
+    class FakeQueue:
+        def get(self, timeout):
+            return ("unexpected", "batch", {})
+
+        def close(self):
+            pass
+
+        def join_thread(self):
+            pass
+
+    class FakeProcess:
+        exitcode = None
+
+        def __init__(self, **kwargs):
+            self.alive = True
+
+        def start(self):
+            pass
+
+        def is_alive(self):
+            return self.alive
+
+        def terminate(self):
+            self.alive = False
+
+        def join(self):
+            pass
+
+    class FakeContext:
+        Queue = FakeQueue
+        Process = FakeProcess
+
+    monkeypatch.setattr(
+        national_small_area_module.multiprocessing,
+        "get_context",
+        lambda _: FakeContext(),
+    )
+    with pytest.raises(ValueError, match="malformed result"):
+        execute_canada_small_area_plan(
+            plan_path, _parallel_test_batch, limit=1, workers=2
+        )
+    plan = json.loads(plan_path.read_text())
+    batch = json.loads((plan_path.parent / plan["batches"][0]["manifest"]).read_text())
+    assert batch["status"] == "planned"
+    assert batch["interrupted_attempt"] == 1
+
+
+@pytest.mark.parametrize("manifest", ["../outside.json", "/tmp/outside.json", ""])
+def test_national_plan_rejects_unsafe_batch_manifest_paths(tmp_path, manifest):
+    plan_path, _ = _prepare(tmp_path)
+    plan = json.loads(plan_path.read_text())
+    plan["batches"][0]["manifest"] = manifest
+    plan_path.write_text(json.dumps(plan))
+    with pytest.raises(
+        ValueError, match="batch record is invalid|inside the plan directory"
+    ):
+        execute_canada_small_area_plan(plan_path, _parallel_test_batch, limit=1)
+    with pytest.raises(
+        ValueError, match="batch record is invalid|inside the plan directory"
+    ):
+        reset_nonconverged_national_batches(plan_path)
+    with pytest.raises(
+        ValueError, match="batch record is invalid|inside the plan directory"
+    ):
+        build_national_geography_summary(plan_path)
+
+
+def test_national_plan_rejects_symlinked_batch_manifest_escape(tmp_path):
+    plan_path, _ = _prepare(tmp_path)
+    outside = tmp_path / "outside.json"
+    outside.write_text("{}")
+    (plan_path.parent / "escape.json").symlink_to(outside)
+    plan = json.loads(plan_path.read_text())
+    plan["batches"][0]["manifest"] = "escape.json"
+    plan_path.write_text(json.dumps(plan))
+    with pytest.raises(ValueError, match="inside the plan directory"):
+        execute_canada_small_area_plan(plan_path, _parallel_test_batch, limit=1)
+
+
+def test_deferred_map_rejects_escaping_batch_manifest(tmp_path):
+    with pytest.raises(ValueError, match="inside the plan directory"):
+        _render_deferred_national_maps(
+            tmp_path / "plan.json",
+            {"batches": [{"manifest": "../outside.json"}]},
+            jurisdiction_pruids=None,
+            geography_level="da",
+            identifier_column="DAUID",
+        )
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [("batch_id", ""), ("status", "unexpected"), ("attempts", -1), ("attempts", True)],
+)
+def test_national_plan_rejects_invalid_batch_identity(tmp_path, field, value):
+    plan_path, _ = _prepare(tmp_path)
+    plan = json.loads(plan_path.read_text())
+    batch_path = plan_path.parent / plan["batches"][0]["manifest"]
+    batch = json.loads(batch_path.read_text())
+    batch[field] = value
+    batch_path.write_text(json.dumps(batch))
+    with pytest.raises(ValueError, match="national batch .* invalid"):
+        execute_canada_small_area_plan(plan_path, _parallel_test_batch, limit=1)
+    assert json.loads(batch_path.read_text()) == batch

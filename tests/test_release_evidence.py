@@ -341,7 +341,11 @@ def test_local_release_check_matches_locked_ci_and_web_gates() -> None:
         assert markdown_check_fragment in ci
     assert "uv run --locked --group docs doc8 docs" in local_check
     assert "uv run --locked pyright src scripts" in local_check
-    assert "uv run --locked --extra performance pytest" in local_check
+    runner = "uv run --locked --extra performance python scripts/test_runner.py full --"
+    assert runner in local_check
+    assert runner in ci
+    assert "python scripts/check_web_localization.py" in local_check
+    assert "python scripts/check_web_localization.py" in ci
     assert "npm run test:web:coverage" in local_check
     assert "\nnpm run test:web\n" not in local_check
 

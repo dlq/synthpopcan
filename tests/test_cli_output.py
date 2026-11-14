@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import json
 
+import pytest
+
 from synthpopcan import cli_output
 
 
@@ -24,6 +26,19 @@ def test_write_output_formats_json_dict_and_plain_text(
 
     cli_output.write_output(["not", "a", "dict"], "table")
     assert "['not', 'a', 'dict']" in capsys.readouterr().out
+
+
+def test_cli_output_rejects_malformed_report_shapes(tmp_path) -> None:
+    with pytest.raises(ValueError, match="string field names"):
+        cli_output.write_output({1: "invalid"}, "table")
+    with pytest.raises(TypeError, match="Report value must be iterable"):
+        cli_output.print_tree_output_validation_report_table(
+            {"comparisons": [{"dimensions": 4}]}
+        )
+    path = tmp_path / "not-object.json"
+    path.write_text("[]")
+    with pytest.raises(ValueError, match="must be a JSON object"):
+        cli_output.read_json_object(path, "example")
 
 
 def test_wds_search_output_formats_json_tsv_and_table(capsys, monkeypatch) -> None:

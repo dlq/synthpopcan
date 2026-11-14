@@ -8,6 +8,7 @@ import pytest
 from synthpopcan._conditional_controls import (
     UNDER_15,
     ConditionalPersonTargets,
+    _apply_builtin_person_targets,
     classify_conditional_person_field,
     load_marital_status_controls,
     reconcile_conditional_person_margin,
@@ -50,6 +51,23 @@ def reconcile(
         eligible_categories=categories,
         targets={identifier: target} if targets is None else targets,
     )
+
+
+def test_builtin_targets_require_pack_identity_before_claiming_provenance(source):
+    geography, identifier, target, table = source
+    with pytest.raises(ValueError, match="requires a pack identifier"):
+        _apply_builtin_person_targets(
+            [],
+            table,
+            geography,
+            "ct",
+            {identifier: target},
+            {},
+            "marital_status",
+            "MARSTH",
+            {"m": "married", "s": "single"},
+            {"adult": True},
+        )
 
 
 @pytest.mark.parametrize(

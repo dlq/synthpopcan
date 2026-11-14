@@ -4,9 +4,20 @@ All notable public changes to SynthPopCan are tracked here.
 
 ## Unreleased
 
-- Add 2016 and 2021 census tract controls for marital status, education, and
-  labour-force status in linked normalized CSV calibration. Compatible
-  families can be fitted together alongside the broad control pack.
+- Add conditional controls for marital status, education, labour-force status,
+  and work activity alongside compatible broad packs. The directly sourced
+  joint-fit evidence covers selected 2016 and 2021 tracts and census subdivisions;
+  the documentation identifies non-tract approximations and deferred coverage.
+
+- Add an early web language-selection and message-catalogue preview. Its French
+  messages are drafts and most of the interface remains English; CLI and
+  machine-readable output are unchanged.
+
+- Reject unrecognized archive checkpoint states before any remote mutation.
+
+- Reject malformed national worker results and out-of-workspace batch
+  references, leaving interrupted batches restartable. Validate run-assurance
+  evidence and map boundary shapes before using them.
 
 - Add opt-in `geo calibrate --integerization swap` to reduce realized control
   residuals while keeping household counts fixed. Midpoint remains the default.

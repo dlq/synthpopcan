@@ -63,13 +63,13 @@ unchecked casts does not satisfy acceptance.
 | ID | Status | Depends on | Deliverable | Acceptance |
 | --- | --- | --- | --- | --- |
 | `TYPE12-01` | `done` | Current source tree and strict configuration | Reproducible current strict diagnostic baseline by module and rule | The command, date, source denominator, strict-clean paths, and diagnostic counts are recorded without weakening `standard` or exclusions |
-| `TYPE12-02` | `ready` | `TYPE12-01`, `RB12-02` | Typed small-area preflight request/result boundary | The selected modules are strict-clean or have only named framework exceptions; malformed runtime data still fails validation |
-| `TYPE12-03` | `ready` | `TYPE12-01` | Typed assurance report structures | Persisted and computed assurance fields narrow at one boundary; malformed evidence still fails validation and compatibility fixtures pass |
-| `TYPE12-04` | `ready` | `TYPE12-01` | Typed CLI output and presentation structures | CLI output helpers avoid unknown dictionaries, retain byte-stable machine fixtures, and pass focused CLI plus strict checks |
-| `TYPE12-05` | `ready` | `TYPE12-01` | Typed national-execution manifest and worker-message structures | Persisted/worker inputs validate at the boundary; resume and failure fixtures plus strict checks pass |
-| `TYPE12-06` | `ready` | `TYPE12-01` | Typed durable-run artifact and evidence structures | Run-store read/write, collision, rollback, and schema fixtures pass without unchecked persisted JSON |
-| `TYPE12-07` | `ready` | `TYPE12-01` | Typed GeoJSON and map-render adapter boundary | External shapes narrow once at the adapter; malformed geometries still fail clearly; map fixtures and strict checks pass |
-| `TYPE12-08` | `blocked` | Completed applicable `TYPE12-02`–`TYPE12-07` slices | Strict-clean path-list ratchet and updated audit record | Every newly clean module is blocking in CI; the full diagnostic count is no higher; exceptions are narrow and documented |
+| `TYPE12-02` | `done` | `TYPE12-01`, `RB12-02` | Typed small-area preflight request/result boundary | The preflight module and durable worker are strict-checked; malformed runtime data still fails validation. Four narrow private-helper exceptions preserve the existing internal boundary |
+| `TYPE12-03` | `done` | `TYPE12-01` | Typed assurance report structures | Strict-checked evidence, report and verification shapes retain the existing format; malformed and duplicate evidence fails verification |
+| `TYPE12-04` | `done` | `TYPE12-01` | Typed CLI output and presentation structures | CLI output helpers are strict-checked with narrowed mappings and iterable values; focused CLI, Geo and machine-output fixtures pass |
+| `TYPE12-05` | `done` | `TYPE12-01` | Typed national-execution manifest and worker-message structures | A strict-checked boundary validates batch identity, lifecycle state, manifest paths and worker results; callback-specific payloads remain validated by their consumers |
+| `TYPE12-06` | `done` | `TYPE12-01` | Typed durable-run artifact and evidence structures | The run store is strict-checked; restart inputs pass through the existing manifest validator and have explicit typed fields, with collision, rollback and schema tests retained |
+| `TYPE12-07` | `done` | `TYPE12-01` | Typed GeoJSON and map-render adapter boundary | A strict-checked adapter validates collection, feature, properties and geometry shapes before the renderers consume them; malformed boundaries fail clearly |
+| `TYPE12-08` | `done` | Completed applicable `TYPE12-02`–`TYPE12-07` slices | Strict-clean path-list ratchet and updated audit record | All five newly clean modules and both new contract modules are blocking; the comparable `src`/`scripts` diagnostic count fell from 6,042 to 5,504, with narrow exceptions documented in the [audit](../docs/records/typing-ratchet-2026-11-14.md) |
 
 The [2026-10-22 preparation record](../docs/records/readiness-2026-10-22.md)
 contains the reproducible current baseline, separated by package and maintainer
