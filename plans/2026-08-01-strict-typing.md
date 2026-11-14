@@ -4,8 +4,8 @@ Status: active maintenance\
 Created: 2026-08-01\
 Last updated: 2026-10-22\
 Target: incremental; not a numbered-release gate\
-Next action: use the refreshed `TYPE12-01` baseline for the independent
-boundary slices below; `TYPE12-02` can now use the extracted preflight workflow\
+Next action: maintain the expanded blocking path list and continue the
+remaining package-wide migration incrementally\
 Roadmap: [PLANS.md](../PLANS.md) | [Plan index](README.md)
 
 ## Purpose And Boundary
