@@ -2816,7 +2816,7 @@
       ]
     },
     "src/synthpopcan/web/run-events.mjs": {
-      "source_sha256": "2a8d10560cd88dc5e61106da9774cdfa1bb0295b9dfd2e42582cc5b03d72827b",
+      "source_sha256": "a5d3f7d0e893951cb37416c5c1e791d1a196a70fa94724e56984daf32b7d1d01",
       "entries": [
         {
           "line": 1,
@@ -2851,41 +2851,41 @@
           "role": "machine-data-or-protocol-preserve"
         },
         {
-          "line": 4,
-          "start_byte": 192,
-          "end_byte": 239,
+          "line": 5,
+          "start_byte": 231,
+          "end_byte": 278,
           "kind": "template",
           "source": "`/api/runs/${encodeURIComponent(runId)}/events`",
           "role": "machine-data-or-protocol-preserve"
         },
         {
-          "line": 6,
-          "start_byte": 290,
-          "end_byte": 300,
+          "line": 10,
+          "start_byte": 411,
+          "end_byte": 421,
           "kind": "string",
           "source": "\"progress\"",
           "role": "machine-data-or-protocol-preserve"
         },
         {
-          "line": 9,
-          "start_byte": 388,
-          "end_byte": 394,
+          "line": 19,
+          "start_byte": 695,
+          "end_byte": 701,
           "kind": "string",
           "source": "\"open\"",
           "role": "machine-data-or-protocol-preserve"
         },
         {
-          "line": 10,
-          "start_byte": 446,
-          "end_byte": 453,
+          "line": 20,
+          "start_byte": 753,
+          "end_byte": 760,
           "kind": "string",
           "source": "\"error\"",
           "role": "machine-data-or-protocol-preserve"
         },
         {
-          "line": 16,
-          "start_byte": 597,
-          "end_byte": 637,
+          "line": 27,
+          "start_byte": 943,
+          "end_byte": 983,
           "kind": "template",
           "source": "`/api/runs/${encodeURIComponent(runId)}`",
           "role": "machine-data-or-protocol-preserve"

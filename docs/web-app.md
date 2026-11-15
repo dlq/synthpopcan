@@ -170,6 +170,11 @@ same work reproducibly at larger scale.
    Optionally upload prepared boundary GeoJSON to receive a standalone map
    artifact and a following `geo map` reproduction step.
 
+Conditional-control preflight and restart errors show reviewed recovery guidance
+in the browser. They do not return raw exception details or local paths. For
+additional input diagnostics, reproduce the workflow with the CLI using your
+original source files and inspect its output locally.
+
 Generation and calibration execute in Python; complete populations are not
 serialized into the browser. Building appropriate controls and interpreting
 residuals are covered in [Small-Area Linked Synthesis](small-area.md).

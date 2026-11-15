@@ -140,3 +140,89 @@ def test_preflight_blocks_run_when_workspace_disk_is_insufficient(
     assert preflight.json()["ready"] is False
     assert preflight.json()["estimate"]["enough_disk"] is False
     assert blocked.status_code == 400
+
+
+@pytest.mark.parametrize("route", ["/api/preflight", "/api/runs"])
+@pytest.mark.parametrize(
+    ("detail", "expected"),
+    [
+        (
+            "secret /private/secret.csv requires its matching "
+            "Statistics Canada CT geography",
+            "matching Statistics Canada CT geography",
+        ),
+        (
+            "sensitive internal exception: /private/secret.csv",
+            "Conditional controls could not be validated",
+        ),
+    ],
+)
+def test_conditional_errors_return_reviewed_guidance_without_exception_details(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    route: str,
+    detail: str,
+    expected: str,
+) -> None:
+    from synthpopcan.workflows.preflight import ConditionalPreflightError
+
+    app = create_web_app(
+        static_root=get_webapp_root(), workspace=tmp_path, session_secret="test-session"
+    )
+
+    def fail(*_args: object) -> None:
+        raise ConditionalPreflightError(detail)
+
+    monkeypatch.setattr("synthpopcan.webapi._preflight_run", fail)
+
+    async def exercise() -> httpx.Response:
+        transport = httpx.ASGITransport(app=app)
+        async with httpx.AsyncClient(
+            transport=transport, base_url="http://127.0.0.1"
+        ) as client:
+            await client.get("/api/app")
+            return await client.post(route, json={})
+
+    try:
+        response = asyncio.run(exercise())
+    finally:
+        app.state.job_manager.shutdown()
+    assert response.status_code == 400
+    assert expected in response.json()["error"]
+    assert "/private/secret.csv" not in response.text
+    assert "sensitive internal exception" not in response.text
+
+
+@pytest.mark.parametrize("error_type", ["restart", "conditional"])
+def test_restart_errors_do_not_return_unreviewed_exception_details(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, error_type: str
+) -> None:
+    from synthpopcan.runs import RestartError
+    from synthpopcan.workflows.preflight import ConditionalPreflightError
+
+    app = create_web_app(
+        static_root=get_webapp_root(), workspace=tmp_path, session_secret="test-session"
+    )
+    error = RestartError if error_type == "restart" else ConditionalPreflightError
+
+    def fail(*_args: object) -> None:
+        raise error("private exception /private/secret.csv")
+
+    monkeypatch.setattr(app.state.run_store, "restart_interrupted_small_area", fail)
+
+    async def exercise() -> httpx.Response:
+        transport = httpx.ASGITransport(app=app)
+        async with httpx.AsyncClient(
+            transport=transport, base_url="http://127.0.0.1"
+        ) as client:
+            await client.get("/api/app")
+            return await client.post("/api/runs/any/restart")
+
+    try:
+        response = asyncio.run(exercise())
+    finally:
+        app.state.job_manager.shutdown()
+    assert response.status_code == 400
+    assert "check" in response.json()["error"].lower()
+    assert "/private/secret.csv" not in response.text
+    assert "private exception" not in response.text

@@ -4,6 +4,12 @@ All notable public changes to SynthPopCan are tracked here.
 
 ## Unreleased
 
+- Keep actionable web preflight and restart guidance while preventing raw
+  validation exceptions and local paths from appearing in API responses.
+
+- Keep the web progress stream open long enough to receive terminal events when
+  the run finishes before its progress messages reach the browser.
+
 ## 1.2.0 - 2026-11-14
 
 - Add conditional controls for marital status, education, labour-force status,
