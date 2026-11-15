@@ -4,6 +4,9 @@ All notable public changes to SynthPopCan are tracked here.
 
 ## Unreleased
 
+- Keep actionable web preflight and restart guidance while preventing raw
+  validation exceptions and local paths from appearing in API responses.
+
 ## 1.2.0 - 2026-11-14
 
 - Add conditional controls for marital status, education, labour-force status,

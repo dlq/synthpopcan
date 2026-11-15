@@ -22,6 +22,7 @@ MODULE_LAYERS = {
             "cli_output",
             "cli_tree",
             "console",
+            "_web_error_messages",
             "web.__init__",
             "web_wds",
             "webapi",

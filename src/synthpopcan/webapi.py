@@ -33,6 +33,7 @@ from synthpopcan._runtime_schemas import (
     WDSSeedControlsRequest,
 )
 from synthpopcan._version import __version__
+from synthpopcan._web_error_messages import conditional_message, restart_message
 from synthpopcan.control_packs import (
     list_builtin_control_packs,
     validate_control_pack_evidence_binding,
@@ -357,7 +358,11 @@ def _register_run_manifest_routes(app: FastAPI, context: _WebAppContext) -> None
 
 
 def _conditional_request_error(exc: Exception, fallback: str) -> Response:
-    message = str(exc) if isinstance(exc, ConditionalPreflightError) else fallback
+    message = (
+        conditional_message(exc)
+        if isinstance(exc, ConditionalPreflightError)
+        else fallback
+    )
     return _error_response(message, HTTPStatus.BAD_REQUEST)
 
 
@@ -413,8 +418,10 @@ def _register_run_restart_routes(app: FastAPI, context: _WebAppContext) -> None:
                 raise
             return JSONResponse(manifest, status_code=HTTPStatus.ACCEPTED)
         except (KeyError, ValueError, OSError) as exc:
-            if isinstance(exc, (ConditionalPreflightError, RestartError)):
-                return _error_response(str(exc), HTTPStatus.BAD_REQUEST)
+            if isinstance(exc, ConditionalPreflightError):
+                return _error_response(conditional_message(exc), HTTPStatus.BAD_REQUEST)
+            if isinstance(exc, RestartError):
+                return _error_response(restart_message(exc), HTTPStatus.BAD_REQUEST)
             return _error_response(
                 "Could not restart this run. Check its state and input integrity, "
                 "or create a new run.",
