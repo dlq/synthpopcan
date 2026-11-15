@@ -4,6 +4,8 @@ All notable public changes to SynthPopCan are tracked here.
 
 ## Unreleased
 
+## 1.2.0 - 2026-11-14
+
 - Add conditional controls for marital status, education, labour-force status,
   and work activity alongside compatible broad packs. The directly sourced
   joint-fit evidence covers selected 2016 and 2021 tracts and census subdivisions;
