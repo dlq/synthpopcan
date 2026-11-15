@@ -1,8 +1,8 @@
 # SynthPopCan Roadmap
 
 Status: `1.x` maintenance roadmap\
-Last updated: 2026-11-13\
-Current software version: `1.1.4`
+Last updated: 2026-11-14\
+Current software version: `1.2.0`
 
 ## How To Use This Roadmap
 
@@ -35,13 +35,12 @@ when later evidence changes the interpretation.
 
 ## Current Priorities
 
-The bounded `1.1.0` small-area control expansion is released and preserved.
-`1.2.0` is now the committed next release: a conditional-person tranche with a
-parallel localization foundation. `1.3.0` remains an evidence-dependent
-forecast, and `1.4.0` is a provisional bilingual-completion target whose
-feasibility must be demonstrated by the earlier localization tranches. The
-project keeps only one committed next release; later entries are progressively
-less certain and are revisited after every minor release.
+The bounded `1.1.0` small-area control expansion and `1.2.0` conditional-person
+tranche with its web localization foundation are released. `1.3.0` remains an
+evidence-dependent forecast, and `1.4.0` is a provisional web localization
+completion target whose feasibility must be demonstrated by earlier work. No
+subsequent feature release is committed yet; forecasts are revisited after every
+minor release.
 
 | Priority | Current commitment | Detailed owner |
 | --- | --- | --- |
@@ -61,9 +60,9 @@ Current foundation evidence and remaining acceptance work are recorded in the
 | Release | Confidence | Target window | Planned outcome |
 | --- | --- | --- | --- |
 | `1.1.0` | Released | August 2026 | 24 reviewed control packs and 14 compatible control families, including broad packs that jointly apply nine household and five person margins with explicit fail-closed runtime invariants. |
-| `1.2.0` | Committed next release | November–December 2026 | Conditional age-15+ marital-status, education, labour-force, and work-activity controls that pass explicit universe and residual gates; the locale-safe message-catalogue foundation; and a bounded maintainability ratchet for exact coverage, orchestration complexity, public documentation, and archive-state boundaries. |
+| `1.2.0` | Released | November–December 2026 | Conditional age-15+ marital-status, education, labour-force, and work-activity controls that pass explicit universe and residual gates; the locale-safe message-catalogue foundation; and a bounded maintainability ratchet for exact coverage, orchestration complexity, public documentation, and archive-state boundaries. |
 | `1.3.0` | Forecast, not committed | First half of 2027 | Evidence-qualified language, immigrant place-of-birth, and income-band controls plus core English/French web-client localization; approximate mortgage/subsidy only as an opt-in tier. |
-| `1.4.0` | Provisional follow-on | Second half of 2027 | Complete English/French coverage of supported CLI, local-web, and public-documentation surfaces after the `1.2.0` locale foundation proves sustainable. |
+| `1.4.0` | Provisional follow-on | Second half of 2027 | Complete English/French coverage of the supported local-web surface after the `1.2.0` locale foundation proves sustainable; CLI and documentation translation remain deferred. |
 
 Patch releases remain demand-driven. Family entities, collective populations,
 richer model profiles, and breaking changes have prerequisites rather than
@@ -72,23 +71,10 @@ dates. The detailed scope and movement rules live in the
 separate [bilingual localization plan](plans/2026-08-19-bilingual-localization.md)
 owns the cross-cutting `1.2.0`–`1.4.0` language work.
 
-### Next patch candidate
-
-The runtime invariant and batch recovery fixes are candidates for `1.1.5`,
-along with the shared runs directory and shell setup documentation. Cut the patch when a packaged
-release is needed for a study or user workflow before `1.2.0` is ready. If
-`1.2.0` is ready first, carry the fixes into that release.
-
-For a patch, run the checks in [RELEASING.md](RELEASING.md) against the release
-commit. Include an installed-package smoke test for prepared calibration, with
-one valid control directory and one that fails preflight. After CI passes, push
-the annotated tag, publish the GitHub release and PyPI package, and verify the
-published package and stable documentation.
-
 ## Conditional Research Tracks
 
 These plans own research beyond the released `1.1.0` baseline. A family assigned
-to committed `1.2.0` or forecast `1.3.0` still returns here if its source,
+to released `1.2.0` or forecast `1.3.0` still returns here if its source,
 universe, privacy, or validation gate fails.
 
 | Track | Trigger for implementation | Plan |

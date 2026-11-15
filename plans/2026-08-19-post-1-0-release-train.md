@@ -1,10 +1,10 @@
 # Post-1.0 Release Train
 
-Status: active maintenance; `1.1.0` released and `1.2.0` committed next\
+Status: active maintenance; `1.2.0` released\
 Created: 2026-08-19\
-Last updated: 2026-10-22\
+Last updated: 2026-11-14\
 Target: bounded `1.x` feature releases with patch releases as needed\
-Next action: prepare and verify the exact-commit `1.2.0` release candidate\
+Next action: revisit the evidence-dependent `1.3.0` forecast\
 Roadmap: [PLANS.md](../PLANS.md) | [Plan index](README.md)
 
 ## Planning Horizon
@@ -38,7 +38,7 @@ weakening that gate.
 | `REL12-01` | `done` | Terminal `done` or `deferred` status for [`SA12-01`–`SA12-15`](2026-08-01-expanded-small-area-controls.md#pr-sized-work) | Admit the individually accepted conditional-person control families to `1.2.0` | All four families are accepted within the directly sourced and explicitly qualified scope in the `SA12-12` decision |
 | `REL12-02` | `done` | Completed [`I18N12-01`–`I18N12-05`](2026-08-19-bilingual-localization.md#pr-sized-work) | Ship the locale-safe message-catalogue foundation | The draft catalogue, locale rules, compatibility fixtures and scoped literal guard pass without a full-localization claim |
 | `REL12-03` | `done` | Terminal status for [`RB12-01`–`RB12-09`](2026-08-26-responsibility-boundaries.md#pr-sized-work), completed [`ASSURE12-01`–`ASSURE12-02`](2026-07-12-correctness-assurance.md#pr-sized-work), and completed applicable [`TYPE12-01`–`TYPE12-08`](2026-08-01-strict-typing.md#pr-sized-work) slices | Complete the bounded maintainability ratchet | The bounded slices and CI acceptance passed; the separately reviewed archive extraction is deferred |
-| `REL12-04` | `ready` | `REL12-01`, `REL12-02`, `REL12-03` | Prepare and verify the `1.2.0` release candidate | The release acceptance gate below and the exact-commit procedure in `RELEASING.md` pass |
+| `REL12-04` | `done` | `REL12-01`, `REL12-02`, `REL12-03` | Prepare and verify the `1.2.0` release candidate | The release acceptance gate below and the exact-commit procedure in `RELEASING.md` pass |
 
 ## `1.1.0` — Broad Compatible Small-Area Controls
 
@@ -103,7 +103,7 @@ populations.
 ## `1.2.0` — Conditional Person Controls
 
 Target window: November–December 2026\
-Confidence: committed next release
+Confidence: released
 
 In parallel, establish the locale and message-catalogue infrastructure defined
 by the bilingual localization plan. This foundation must preserve

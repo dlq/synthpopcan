@@ -73,14 +73,14 @@ Core workflows:
 Generating from portable frequency or CART models works with the base
 installation. To train CART models, install `synthpopcan[model-build]`.
 
-Version `1.1.4` preserves the stable, explicitly bounded interface established by
+Version `1.2.0` preserves the stable, explicitly bounded interface established by
 `1.0.0`. Its packaged
 [1.x compatibility contract](https://synthpopcan.readthedocs.io/en/latest/compatibility.html)
 freezes the documented CLI, curated Python API, callable signatures, and
-supported persisted schemas while permitting additive extension. This maintenance
-release adds CLI-only Census control preparation and linked small-area
-workflows, household/person maps, optional native acceleration, clearer coverage
-and convergence reporting, and shared internal responsibility boundaries. It retains
+supported persisted schemas while permitting additive extension. This feature
+release adds conditional person controls for marital status, education, labour-force
+status, and work activity, plus an early web localization foundation. The French
+catalogue is a draft and most of the interface remains English. It retains
 24 reviewed 2016/2021 small-area control packs: eight stable core packs,
 eight expanded-housing packs, and eight broad packs that can apply nine
 household and five person margins together with explicit runtime invariants.
@@ -230,6 +230,7 @@ matches what your work actually depended on.
 | You used | Cite | DOI |
 | --- | --- | --- |
 | SynthPopCan generally | The concept DOI, which always resolves to the newest release | [10.5281/zenodo.21461463](https://doi.org/10.5281/zenodo.21461463) |
+| SynthPopCan 1.2.0 | The archived 1.2.0 version DOI | [10.5281/zenodo.24237008](https://doi.org/10.5281/zenodo.24237008) |
 | SynthPopCan 1.1.4 | The archived 1.1.4 version DOI | [10.5281/zenodo.23970428](https://doi.org/10.5281/zenodo.23970428) |
 | SynthPopCan 1.1.3 | The archived 1.1.3 version DOI | [10.5281/zenodo.23868905](https://doi.org/10.5281/zenodo.23868905) |
 | SynthPopCan 1.1.2 | The archived 1.1.2 version DOI | [10.5281/zenodo.23573231](https://doi.org/10.5281/zenodo.23573231) |
