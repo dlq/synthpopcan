@@ -52,7 +52,7 @@ _REVIEWED_MODULES = {
         frozenset({16}),
     ),
     "run-events.mjs": (
-        "2a8d10560cd88dc5e61106da9774cdfa1bb0295b9dfd2e42582cc5b03d72827b",
+        "a5d3f7d0e893951cb37416c5c1e791d1a196a70fa94724e56984daf32b7d1d01",
         "machine-data-or-protocol-preserve",
         frozenset(),
     ),
