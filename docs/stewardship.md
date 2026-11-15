@@ -93,7 +93,12 @@ Python package; Read the Docs publishes maintained guidance; and Zenodo is the
 canonical citable archive for released software and prepared models. Software
 Heritage independently preserves the source history.
 
-The `v1.2.0` source release is archived under
+The `v1.2.1` source release is archived under
+[version DOI `10.5281/zenodo.24249560`](https://doi.org/10.5281/zenodo.24249560).
+The [1.2.1 archive record](records/zenodo-1.2.1-2026-11-15.md) binds its DOI,
+annotated tag, source commit, and verified ZIP checksums.
+
+The `v1.2.0` source release remains archived under
 [version DOI `10.5281/zenodo.24237008`](https://doi.org/10.5281/zenodo.24237008).
 The [2026-11-15 archive record](records/zenodo-2026-11-15.md) binds its DOI,
 annotated tag, source commit, and verified ZIP checksums.
@@ -164,6 +169,7 @@ records/zenodo-2026-10-22
 records/zenodo-2026-11-01
 records/zenodo-2026-11-05
 records/zenodo-2026-11-15
+records/zenodo-1.2.1-2026-11-15
 records/prepared-model-licensing-review-2026-08-15
 records/prepared-model-archive-correction-2026-08-16
 ```
