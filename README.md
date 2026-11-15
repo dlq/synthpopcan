@@ -73,12 +73,12 @@ Core workflows:
 Generating from portable frequency or CART models works with the base
 installation. To train CART models, install `synthpopcan[model-build]`.
 
-Version `1.2.0` preserves the stable, explicitly bounded interface established by
+Version `1.2.1` preserves the stable, explicitly bounded interface established by
 `1.0.0`. Its packaged
 [1.x compatibility contract](https://synthpopcan.readthedocs.io/en/latest/compatibility.html)
 freezes the documented CLI, curated Python API, callable signatures, and
-supported persisted schemas while permitting additive extension. This feature
-release adds conditional person controls for marital status, education, labour-force
+supported persisted schemas while permitting additive extension. The 1.2
+release line adds conditional person controls for marital status, education, labour-force
 status, and work activity, plus an early web localization foundation. The French
 catalogue is a draft and most of the interface remains English. It retains
 24 reviewed 2016/2021 small-area control packs: eight stable core packs,

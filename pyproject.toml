@@ -1,6 +1,6 @@
 [project]
 name = "synthpopcan"
-version = "1.2.0"
+version = "1.2.1"
 description = "Build, inspect, and validate modelled Canadian households and people for reproducible research."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -88,10 +88,11 @@ requires = ["hatchling==1.33.0"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build]
-# Local editor state is intentionally ignored by Git and must never be copied
-# into a source distribution assembled from a developer checkout.
+# Local editor state and generated images must not enter source distributions
+# assembled from a developer checkout.
 exclude = [
   "/.vscode/**",
+  "/generated_images/**",
 ]
 
 [tool.pytest.ini_options]

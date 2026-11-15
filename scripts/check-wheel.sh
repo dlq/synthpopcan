@@ -35,6 +35,11 @@ case ${sdist##*/} in
     ;;
 esac
 
+if tar -tzf "$sdist" | grep -Eq '^[^/]+/generated_images(/|$)'; then
+  echo "Source distribution must not contain local generated images." >&2
+  exit 1
+fi
+
 smoke_dir=$(mktemp -d "${TMPDIR:-/tmp}/synthpopcan-wheel-smoke.XXXXXX")
 sdist_smoke_dir=$(mktemp -d "${TMPDIR:-/tmp}/synthpopcan-sdist-smoke.XXXXXX")
 model_smoke_dir=$(mktemp -d "${TMPDIR:-/tmp}/synthpopcan-model-build-smoke.XXXXXX")

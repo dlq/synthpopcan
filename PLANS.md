@@ -1,8 +1,8 @@
 # SynthPopCan Roadmap
 
 Status: `1.x` maintenance roadmap\
-Last updated: 2026-11-14\
-Current software version: `1.2.0`
+Last updated: 2026-11-15\
+Current software version: `1.2.1`
 
 ## How To Use This Roadmap
 

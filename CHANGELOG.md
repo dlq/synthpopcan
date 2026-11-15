@@ -4,6 +4,10 @@ All notable public changes to SynthPopCan are tracked here.
 
 ## Unreleased
 
+## 1.2.1 - 2026-11-15
+
+- Exclude local generated images from source distributions.
+
 - Keep actionable web preflight and restart guidance while preventing raw
   validation exceptions and local paths from appearing in API responses.
 
