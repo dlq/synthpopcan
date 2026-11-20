@@ -2,12 +2,11 @@
 
 Status: active maintenance\
 Created: 2026-07-12\
-Last updated: 2026-10-22\
+Last updated: 2026-11-20\
 Target: ongoing correctness and release evidence\
 Next action: preserve the frozen `1.x` interface and exact-commit assurance
-gates; implement the shared local/CI test selections for `1.2.0`, and reassess
-Python 3.15 support after its final release and ecosystem-wheel availability
-in November 2026\
+gates; evaluate the Python 3.15 lock refresh and Linux CI before changing the
+supported matrix\
 Roadmap: [PLANS.md](../PLANS.md) | [Plan index](README.md)
 
 ## Current Contract
@@ -83,22 +82,15 @@ installed-distribution checks remain available as explicit selections and
 mandatory release gates. Prefer a small explicit mapping with safe fallback
 over a new test framework or an opaque dependency-discovery service.
 
-## Scheduled Runtime Review
+## Python 3.15 Runtime Review
 
-Keep Python 3.11 through 3.14 as the supported, blocking CI matrix for now. In
-November 2026, after Python 3.15 final has had time to reach downstream binary
-packages, test the complete locked dependency graph and full project gate on
-3.15. Add it to the supported matrix only when runtime and `model-build`
-dependencies install without ad hoc system build requirements and the full
-suite passes.
-
-An initial local check on Python 3.15.0rc1 found no core SynthPopCan failure:
-the locked runtime installed from source, package imports and version metadata
-worked, and a bounded API/IPF/schema slice passed 100 tests. The optional
-`model-build` environment was not ready on macOS ARM64 because SciPy lacked a
-matching wheel and its source build required a separately installed OpenBLAS.
-This is useful prerelease evidence, not a support claim or a reason to expand
-the current CI matrix.
+Keep Python 3.11–3.14 as the supported blocking CI matrix. Python 3.15.2
+passed the local full suite and published-distribution smokes with a temporary
+NumPy and SciPy refresh, but the committed lock lacks 3.15 wheels and clean
+Linux CI has not yet verified it. Add 3.15 only after the locked runtime and
+model-build dependencies install without ad hoc system build requirements and
+the complete gate passes. The [review record](../docs/records/python-3.15-review-2026-11-20.md)
+contains the measured results, prerelease baseline and remaining work.
 
 ## Conditional Extensions
 

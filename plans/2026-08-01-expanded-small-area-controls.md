@@ -1,10 +1,10 @@
 # Expanded Small-Area Controls Plan
 
-Status: active feature implementation; `1.1.0` released and `1.2.0` committed\
+Status: active maintenance; `1.1.0` broad and `1.2.0` conditional controls released\
 Created: 2026-08-01\
-Last updated: 2026-11-14\
-Target: `1.1.0` broad compatible packs; conditional person controls in `1.2.0`\
-Next action: resolve the individual conditional-family gates and remaining release-train work\
+Last updated: 2026-11-20\
+Target: preserve released packs; evaluate evidence-qualified later control families\
+Next action: select a forecast `1.3.0` family for source and universe review\
 Roadmap: [PLANS.md](../PLANS.md) | [Plan index](README.md)
 
 Release sequencing and confidence are defined in the

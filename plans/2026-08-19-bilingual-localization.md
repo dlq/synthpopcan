@@ -1,12 +1,12 @@
 # English/French Internationalization And Localization Plan
 
-Status: active feature implementation\
+Status: active maintenance; `1.3.0` core-web scope is forecast\
 Created: 2026-08-19\
-Last updated: 2026-10-22\
+Last updated: 2026-11-20\
 Target: web-client infrastructure in `1.2.0`, core web localization in
 `1.3.0`, and complete supported web-client coverage in `1.4.0`\
-Next action: implement locale resolution and the browser presentation runtime
-defined by the `I18N12-02` catalogue contract\
+Next action: baseline and implement the scoped `1.3.0` core web workflows,
+starting with shared navigation and the existing keyboard-only test issue\
 Roadmap: [PLANS.md](../PLANS.md) | [Plan index](README.md) |
 [Release train](2026-08-19-post-1-0-release-train.md)
 
@@ -58,10 +58,10 @@ CI rather than leaking message IDs to users.
 
 ## PR-Sized Work
 
-Only the committed `1.2.0` foundation is executable here. Before `1.3.0` or
-`1.4.0` is promoted to the committed next release, replace its release-level
-surface list with a new table that divides web workflows and human translation
-review into independent slices.
+The `1.2.0` foundation is complete. The `1.3.0` slices below scope the
+forecast web-client work; they do not by themselves commit the release or
+require a statistical control family. `1.4.0` remains provisional and will
+need its own implementation slices when promoted.
 
 | ID | Status | Depends on | Deliverable | Acceptance |
 | --- | --- | --- | --- | --- |
@@ -70,6 +70,32 @@ review into independent slices.
 | `I18N12-03` | `done` | `I18N12-02` | Web-client locale resolution, interpolation, pluralization, and human-formatting runtime | Unit and browser tests exercise the draft preview, canonicalization, deterministic fallback, and unchanged machine data |
 | `I18N12-04` | `done` | `I18N12-03` | Packaged English/French catalogue skeleton and compatibility tests | Wheel and sdist include the catalogues; duplicate keys, placeholder parity, plural forms, provenance, fallback and pseudo-localization are checked |
 | `I18N12-05` | `done` | `I18N12-01`, `I18N12-02`, `I18N12-04` | Static guard and machine-readable coverage report for covered modules | The pilot adapter rejects unreviewed literal changes; the report records six draft messages, zero reviewed messages and the uncovered surface groups |
+
+### Scoped `1.3.0` core web-client slices
+
+These slices cover the supported local browser workbench, not the CLI, public
+manual, generated standalone maps, or exported reports. Preserve JSON responses,
+SSE event records, status codes, filenames, reproduction commands, source data,
+and existing persisted run/evidence bytes. Treat user-supplied and third-party
+labels as data; translate only independently attributed presentation.
+
+| ID | Status | Depends on | Deliverable | Acceptance |
+| --- | --- | --- | --- | --- |
+| `I18N13-01` | `ready` | `I18N12-05` | Baseline core surfaces, messages and terminology | Enumerate the visible and accessible text, dynamic states and message IDs for the three workflows below; classify source notices and opaque data, record fallback and the current revision, and create a reviewable terminology list using authoritative bilingual sources where available. No draft is marked reviewed. |
+| `I18N13-02` | `blocked` | `I18N13-01` | Shared navigation, run list, language selector and accessibility labels | Catalogue static shell and common states in both locales; switching language rerenders existing presentation; keyboard-only selection is covered by [#58](https://github.com/dlq/synthpopcan/issues/58), including focus, persistence and long French labels. |
+| `I18N13-03` | `blocked` | `I18N13-01`, `I18N13-02` | Core IPF workbench | Localize demo and upload, configuration, preflight, start/cancel, progress, results and downloads; installed-wheel scenarios complete the demo in each locale, compare equivalent requests and seeded results while accounting for run-specific IDs/timestamps, and verify locale changes do not mutate a run’s events, artifacts or reproduction command. |
+| `I18N13-04` | `blocked` | `I18N13-01`, `I18N13-02` | Model discovery and generation | Localize catalogue navigation, provenance and limitation framing, installation/failure, configuration, progress and results; preserve model IDs, supplied titles, notices and package metadata. Test a fictional bundled model in both locales. |
+| `I18N13-05` | `blocked` | `I18N13-01`, `I18N13-02` | Small-area configuration and durable runs | Localize uploads, broad/conditional-pack selection, evidence and compatibility guidance, estimates, preflight, run, cancellation, interruption/restart and result summaries. Cover a bounded fictional workflow and failures in both locales without a live Census dependency. |
+| `I18N13-06` | `blocked` | `I18N13-01` | Dynamic error and progress presentation | Map reviewed stable messages or explicitly versioned presentation metadata to catalogue IDs at the client boundary; define safe fallback for unknown, parameterized and historical events. Verify that API responses, event replay, diagnostic data and artifact bytes remain unchanged across locale switches. |
+| `I18N13-07` | `blocked` | `I18N13-01` and each covered slice | Human terminology and translation review | Record a real reviewer and date for every claimed French message; review limitations, errors, privacy, source attribution and accessibility wording. Draft or machine-translated text is not accepted as reviewed. |
+| `I18N13-08` | `blocked` | `I18N13-02`–`I18N13-07` | Core-coverage and distribution acceptance | Bind the declared core paths and covered IDs to the catalogue revision; fail on missing/unreviewed core translations or placeholder/plural mismatch. Test wheel and sdist packaging, keyboard and representative long-string layouts, locale changes/fallback, and machine-data parity; publish coverage and remaining untranslated surfaces. |
+
+The current report contains six draft IDs and zero reviewed covered IDs. A
+covered core path must not silently fall back for its declared messages;
+unknown historical or external text retains the documented safe fallback and
+must be reported as outside that claim. Translation review is an explicit human
+gate, not something inferred from passing automated tests. Add or split slices
+as evidence requires, without weakening these boundaries.
 
 The [inventory and role review](../docs/records/localization-role-review-2026-11-14.md)
 cover the web client and its dynamic data boundaries. CLI localization and

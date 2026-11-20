@@ -63,18 +63,18 @@ when its bounded artifact and decision gate are stated explicitly.
 
 | Plan | Ongoing responsibility | Current next action |
 | --- | --- | --- |
-| [Correctness assurance](2026-07-12-correctness-assurance.md) | Compatibility, exact-commit CI, coverage, correctness, release evidence, assurance, and reproduction gates | Implement shared local/CI test selections (`ASSURE12-01`–`ASSURE12-02`) for `1.2.0`; retain full main/release gates and reassess Python 3.15 in November. |
-| [Research-software stewardship](2026-07-19-research-software-stewardship.md) | Citation, preservation, licensing, support boundaries, publication evidence, and future scholarly-readiness gates | Preserve the verified `1.1.3` DOI, `1.1.0` Software Heritage identifiers, earlier records, and exact-commit publication process. |
-| [Strict typing](2026-08-01-strict-typing.md) | Package-wide Pyright `standard` and an incremental strict-clean ratchet | Use the refreshed `TYPE12-01` baseline to type each shared dynamic-data boundary independently. |
-| [Post-1.0 release train](2026-08-19-post-1-0-release-train.md) | Bounded minor-release scope, confidence, sequencing, acceptance gates, and the cross-cutting maintainability ratchet | Prepare the exact-commit `1.2.0` release candidate; keep `1.3.0` explicitly forecast. |
-| [Responsibility boundaries](2026-08-26-responsibility-boundaries.md) | Dependency direction, orchestration extraction, supported-surface documentation, and complexity ownership | Complete `RB12-06` documentation and `RB12-07` archive-state review; preflight and national workflows are now extracted. Queue the later full dependency review (`DEP-01`–`DEP-02`), keeping SciPy optional for now. |
+| [Correctness assurance](2026-07-12-correctness-assurance.md) | Compatibility, exact-commit CI, coverage, correctness, release evidence, assurance, and reproduction gates | Maintain shared local/CI test selections and full release gates; assess the lock refresh and clean Linux CI identified by the Python 3.15 review. |
+| [Research-software stewardship](2026-07-19-research-software-stewardship.md) | Citation, preservation, licensing, support boundaries, publication evidence, and future scholarly-readiness gates | Preserve the verified `1.2.1` DOI, `1.1.0` Software Heritage identifiers, earlier records, and exact-commit publication process. |
+| [Strict typing](2026-08-01-strict-typing.md) | Package-wide Pyright `standard` and an incremental strict-clean ratchet | Maintain the expanded strict-clean path list and continue package-wide typing incrementally. |
+| [Post-1.0 release train](2026-08-19-post-1-0-release-train.md) | Bounded minor-release scope, confidence, sequencing, acceptance gates, and the cross-cutting maintainability ratchet | Maintain released `1.2.1`; assess the scoped `1.3.0` web work and evidence-dependent control families. |
+| [Responsibility boundaries](2026-08-26-responsibility-boundaries.md) | Dependency direction, orchestration extraction, supported-surface documentation, and complexity ownership | Maintain completed documentation and boundary ratchets; revisit the deferred archive extraction and full dependency review (`DEP-01`–`DEP-02`), keeping SciPy optional for now. |
+| [Expanded small-area controls](2026-08-01-expanded-small-area-controls.md) | Released broad and conditional controls; research on later families | Select a forecast family for source, universe, compatibility and feasibility review. |
+| [English/French internationalization and localization](2026-08-19-bilingual-localization.md) | Released web foundation and forecast core-web slices | Baseline the scoped core workflows, then implement and review their translations; CLI and documentation localization remain deferred. |
 
 ## Active Feature Implementation
 
-| Plan | Target release | Current next action |
-| --- | --- | --- |
-| [Expanded small-area controls](2026-08-01-expanded-small-area-controls.md) | `1.2.0` conditional person controls | Extend non-tract joint acceptance after the first 2021 Québec ADA pilot. |
-| [English/French internationalization and localization](2026-08-19-bilingual-localization.md) | `1.2.0` web-client infrastructure, `1.3.0` core web workflows, provisional `1.4.0` web-client completion | Maintain the scoped catalogue guard; later work will review translations and expand web coverage. CLI localization is deferred. |
+No feature release is currently committed; the `1.3.0` slices remain scoped
+forecasts until the release train is promoted.
 
 ## Conditional Research
 

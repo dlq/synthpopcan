@@ -1,7 +1,7 @@
 # SynthPopCan Roadmap
 
 Status: `1.x` maintenance roadmap\
-Last updated: 2026-11-15\
+Last updated: 2026-11-20\
 Current software version: `1.2.1`
 
 ## How To Use This Roadmap
@@ -36,8 +36,8 @@ when later evidence changes the interpretation.
 ## Current Priorities
 
 The bounded `1.1.0` small-area control expansion and `1.2.0` conditional-person
-tranche with its web localization foundation are released. `1.3.0` remains an
-evidence-dependent forecast, and `1.4.0` is a provisional web localization
+tranche with its web localization foundation are released. `1.3.0` has scoped
+core-web slices and remains an evidence-dependent forecast, and `1.4.0` is a provisional web localization
 completion target whose feasibility must be demonstrated by earlier work. No
 subsequent feature release is committed yet; forecasts are revisited after every
 minor release.
@@ -46,7 +46,7 @@ minor release.
 | --- | --- | --- |
 | `1.x` compatibility | Preserve the frozen documented CLI, curated Python API, and supported persisted schemas. Use additive interfaces or separately versioned contracts for new work. | [Compatibility policy](docs/compatibility.md), [ADR-0010](adr/0010-pre-1-0-compatibility-evolution.md) |
 | Correctness and release evidence | Keep exact-commit CI, coverage, correctness, installed-distribution, release-evidence, and reproduction gates blocking later releases. | [Correctness assurance plan](plans/2026-07-12-correctness-assurance.md) |
-| Stewardship and publication | Preserve the verified `1.1.1` DOI, the `1.1.0` Software Heritage identifiers, and earlier records; retain scoped licensing, non-overwriting archives, support boundaries, and exact release provenance. | [Stewardship plan](plans/2026-07-19-research-software-stewardship.md), [ADR-0014](adr/0014-separate-prepared-model-and-source-licensing.md) |
+| Stewardship and publication | Preserve the verified `1.2.1` DOI, the `1.1.0` Software Heritage identifiers, and earlier records; retain scoped licensing, non-overwriting archives, support boundaries, and exact release provenance. | [Stewardship plan](plans/2026-07-19-research-software-stewardship.md), [ADR-0014](adr/0014-separate-prepared-model-and-source-licensing.md) |
 | Type-safety maintenance | Keep package-wide Pyright `standard` blocking and expand the strict-clean module set without weakening dynamic-data validation. | [Strict typing plan](plans/2026-08-01-strict-typing.md) |
 | Maintainability and approachability | Make coverage enforcement exact, reduce high-complexity orchestration incrementally, ratchet supported-surface documentation, and keep localization and archive state machinery behind explicit boundaries. | [Responsibility-boundaries plan](plans/2026-08-26-responsibility-boundaries.md), [post-1.0 release train](plans/2026-08-19-post-1-0-release-train.md), [contributor guide](CONTRIBUTING.md) |
 | Release train | Preserve the additive `1.1.0` control expansion and admit later families only through their stated universe and evidence gates. | [Post-1.0 release train](plans/2026-08-19-post-1-0-release-train.md) |

@@ -2,9 +2,9 @@
 
 Status: active maintenance; `1.2.0` released\
 Created: 2026-08-19\
-Last updated: 2026-11-14\
+Last updated: 2026-11-20\
 Target: bounded `1.x` feature releases with patch releases as needed\
-Next action: revisit the evidence-dependent `1.3.0` forecast\
+Next action: assess the scoped core-web slices and select an evidence-qualified statistical family\
 Roadmap: [PLANS.md](../PLANS.md) | [Plan index](README.md)
 
 ## Planning Horizon

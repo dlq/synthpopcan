@@ -167,3 +167,4 @@ beginner generation workflows.
    records/typing-ratchet-2026-11-14
    web-localization-contract
    records/correctness-refactor-2026-10-22
+   records/python-3.15-review-2026-11-20
