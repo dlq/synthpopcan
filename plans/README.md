@@ -63,7 +63,7 @@ when its bounded artifact and decision gate are stated explicitly.
 
 | Plan | Ongoing responsibility | Current next action |
 | --- | --- | --- |
-| [Correctness assurance](2026-07-12-correctness-assurance.md) | Compatibility, exact-commit CI, coverage, correctness, release evidence, assurance, and reproduction gates | Maintain shared local/CI test selections and full release gates; assess the lock refresh and clean Linux CI identified by the Python 3.15 review. |
+| [Correctness assurance](2026-07-12-correctness-assurance.md) | Compatibility, exact-commit CI, coverage, correctness, release evidence, assurance, and reproduction gates | Maintain the release gates; run the staged full Python 3.15 validation (`ASSURE315-01`–`ASSURE315-03`). |
 | [Research-software stewardship](2026-07-19-research-software-stewardship.md) | Citation, preservation, licensing, support boundaries, publication evidence, and future scholarly-readiness gates | Preserve the verified `1.2.1` DOI, `1.1.0` Software Heritage identifiers, earlier records, and exact-commit publication process. |
 | [Strict typing](2026-08-01-strict-typing.md) | Package-wide Pyright `standard` and an incremental strict-clean ratchet | Maintain the expanded strict-clean path list and continue package-wide typing incrementally. |
 | [Post-1.0 release train](2026-08-19-post-1-0-release-train.md) | Bounded minor-release scope, confidence, sequencing, acceptance gates, and the cross-cutting maintainability ratchet | Maintain released `1.2.1`; assess the scoped `1.3.0` web work and evidence-dependent control families. |
