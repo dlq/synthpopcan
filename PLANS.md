@@ -38,9 +38,10 @@ when later evidence changes the interpretation.
 The bounded `1.1.0` small-area control expansion and `1.2.0` conditional-person
 tranche with its web localization foundation are released. `1.3.0` has scoped
 core-web slices and remains an evidence-dependent forecast, and `1.4.0` is a provisional web localization
-completion target whose feasibility must be demonstrated by earlier work. No
-subsequent feature release is committed yet; forecasts are revisited after every
-minor release.
+completion target whose feasibility must be demonstrated by earlier work.
+`1.5.0` and `1.6.0` are tentative scenarios for further controls and bounded
+model evaluation. No subsequent feature release is committed; forecasts and
+ordering are revisited after every minor release.
 
 | Priority | Current commitment | Detailed owner |
 | --- | --- | --- |
@@ -63,10 +64,14 @@ Current foundation evidence and remaining acceptance work are recorded in the
 | `1.2.0` | Released | November–December 2026 | Conditional age-15+ marital-status, education, labour-force, and work-activity controls that pass explicit universe and residual gates; the locale-safe message-catalogue foundation; and a bounded maintainability ratchet for exact coverage, orchestration complexity, public documentation, and archive-state boundaries. |
 | `1.3.0` | Forecast, not committed | First half of 2027 | Evidence-qualified language, immigrant place-of-birth, and income-band controls plus core English/French web-client localization; approximate mortgage/subsidy only as an opt-in tier. |
 | `1.4.0` | Provisional follow-on | Second half of 2027 | Complete English/French coverage of the supported local-web surface after the `1.2.0` locale foundation proves sustainable; CLI and documentation translation remain deferred. |
+| `1.5.0` | Tentative scenario | Not scheduled | One additional evidence-qualified control family, or a closely related pair if evidence supports a bounded scope. |
+| `1.6.0` | Tentative scenario | Not scheduled | A named, reproducible model evaluation and, if justified, a bounded multiple-realization study. |
 
 Patch releases remain demand-driven. Family entities, collective populations,
 richer model profiles, and breaking changes have prerequisites rather than
-dates. The detailed scope and movement rules live in the
+dates. The release train also records priorities, dependencies, acceptance gates, and
+cross-cutting Python 3.15 and dependency-review work. The detailed scope and
+movement rules live in the
 [post-1.0 release train](plans/2026-08-19-post-1-0-release-train.md), while the
 separate [bilingual localization plan](plans/2026-08-19-bilingual-localization.md)
 owns the cross-cutting `1.2.0`–`1.4.0` language work.
