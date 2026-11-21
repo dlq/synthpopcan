@@ -163,8 +163,10 @@ beginner generation workflows.
    small-area-reference
    records/readiness-2026-10-22
    records/localization-role-review-2026-11-14
+   records/core-web-localization-baseline-2026-11-21
    records/archive-transition-review-2026-11-14
    records/typing-ratchet-2026-11-14
    web-localization-contract
    records/correctness-refactor-2026-10-22
    records/python-3.15-review-2026-11-20
+   records/python-3.15-lock-review-2026-11-21

@@ -2,9 +2,9 @@
 
 Status: active maintenance; `1.2.0` released\
 Created: 2026-08-19\
-Last updated: 2026-11-20\
+Last updated: 2026-11-21\
 Target: bounded `1.x` feature releases with patch releases as needed\
-Next action: baseline core-web localization and select one statistical family for source review; run Python 3.15 and dependency reviews independently\
+Next action: implement shared web navigation from the localization baseline and select one statistical family for source review; run Python 3.15 and dependency reviews independently\
 Roadmap: [PLANS.md](../PLANS.md) | [Plan index](README.md)
 
 ## Planning Horizon
@@ -246,8 +246,8 @@ Patch releases continue independently when warranted.
 
 | Priority | Work | Sequencing and dependency | Decision or acceptance |
 | --- | --- | --- | --- |
-| 1 | Core web localization (`1.3.0`) | Start with `I18N13-01`; the shared shell precedes the core workflows, dynamic-message work, review, and distribution acceptance | Ship only reviewed `en-CA`/`fr-CA` coverage; keep machine output and persisted evidence stable. Human French review is a release dependency. |
-| 1 | Python 3.15 validation | `ASSURE315-01` lock review → `ASSURE315-02` clean Linux full gate → `ASSURE315-03` support decision | Work independently of a minor release. Promote support only after the full gate and platform review pass; otherwise document the blocker. |
+| 1 | Core web localization (`1.3.0`) | `I18N13-01` baseline complete; the shared shell precedes the core workflows, dynamic-message work, review, and distribution acceptance | Ship only reviewed `en-CA`/`fr-CA` coverage; keep machine output and persisted evidence stable. Human French review is a release dependency. |
+| 1 | Python 3.15 validation | `ASSURE315-01` review complete → `ASSURE315-01B` reviewed lock refresh → `ASSURE315-02` clean Linux full gate → `ASSURE315-03` support decision | Work independently of a minor release. Promote support only after the full gate and platform review pass; otherwise document the blocker. |
 | 2 | Next control family | Select **one** `1.3.0` candidate for source and universe review; implementation depends on denominators, crosswalks, suppression and feasible joint fits | Admit only after the full evidence gate; defer without blocking localization if evidence is insufficient. Other candidates remain research until individually reviewed. |
 | 2 | Remaining web localization (`1.4.0`) | Review `1.3.0` coverage and maintenance evidence; inventory remaining supported surfaces and define PR-sized slices | Complete the explicitly inventoried, human-reviewed web scope. Generated maps, reports, CLI, and public documentation are not included by implication. |
 | 2 | Dependency rationalization | `DEP-01` inventories and measures dependencies, including SciPy with and without support augmentation; `DEP-02` applies separately reviewed changes | Work independently when capacity permits; retain current dependencies unless evidence supports a change. Do not block a release solely for this review. |
