@@ -1,5 +1,5 @@
 {
-  "revision": "runtime-preview-1",
+  "revision": "runtime-preview-2",
   "guarded_literal_module": "src/synthpopcan/web/localization-ui.mjs",
   "covered_ids": [],
   "draft_ids": [
@@ -8,16 +8,38 @@
     "web.ipf.reading",
     "web.language.coverage",
     "web.language.label",
-    "web.upload.invalid"
+    "web.runs.empty",
+    "web.shell.history",
+    "web.shell.loading",
+    "web.shell.local",
+    "web.shell.newrun",
+    "web.shell.preparesmallarea",
+    "web.shell.runs",
+    "web.shell.smallarea",
+    "web.shell.smallareadescription",
+    "web.shell.subtitle",
+    "web.shell.workbench",
+    "web.status.cancelled",
+    "web.status.cancelling",
+    "web.status.draft",
+    "web.status.failed",
+    "web.status.interrupted",
+    "web.status.queued",
+    "web.status.running",
+    "web.status.succeeded",
+    "web.upload.invalid",
+    "web.workflow.ipf",
+    "web.workflow.model",
+    "web.workflow.smallarea"
   ],
   "counts": {
     "covered_messages": 0,
-    "draft_messages": 6,
+    "draft_messages": 28,
     "untranslated_surface_groups": 4
   },
   "untranslated_surfaces": [
-    "web HTML outside the language selector",
-    "other web JavaScript",
+    "web HTML outside the shared shell and language selector",
+    "web workflows outside the shared run list",
     "unknown and parameterized server messages",
     "generated reports and maps"
   ],

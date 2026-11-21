@@ -1,7 +1,7 @@
 {
   "schema_version": "synthpopcan-web-messages-v1",
   "locale": "fr-CA",
-  "revision": "runtime-preview-1",
+  "revision": "runtime-preview-2",
   "messages": {
     "web.language.label": {
       "kind": "text",
@@ -60,6 +60,226 @@
       "provenance": {
         "kind": "project",
         "source_id": "web.upload.invalid",
+        "review": "draft"
+      }
+    },
+    "web.shell.subtitle": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Espace de travail local pour les populations synthétiques",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.shell.subtitle",
+        "review": "draft"
+      }
+    },
+    "web.shell.local": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Local",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.shell.local",
+        "review": "draft"
+      }
+    },
+    "web.shell.workbench": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Espace de travail des exécutions",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.shell.workbench",
+        "review": "draft"
+      }
+    },
+    "web.shell.history": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Historique de l’espace de travail",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.shell.history",
+        "review": "draft"
+      }
+    },
+    "web.shell.runs": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Exécutions",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.shell.runs",
+        "review": "draft"
+      }
+    },
+    "web.shell.newrun": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Nouvelle exécution",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.shell.newrun",
+        "review": "draft"
+      }
+    },
+    "web.shell.loading": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Chargement des exécutions de l’espace de travail…",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.shell.loading",
+        "review": "draft"
+      }
+    },
+    "web.shell.smallarea": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Flux de travail pour les petites régions",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.shell.smallarea",
+        "review": "draft"
+      }
+    },
+    "web.shell.smallareadescription": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Générez des candidats liés et calibrez-les dans une exécution Python persistante.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.shell.smallareadescription",
+        "review": "draft"
+      }
+    },
+    "web.shell.preparesmallarea": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Préparer une synthèse pour les petites régions",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.shell.preparesmallarea",
+        "review": "draft"
+      }
+    },
+    "web.runs.empty": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Aucune exécution pour le moment. Utilisez la démonstration ou vos fichiers CSV.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.runs.empty",
+        "review": "draft"
+      }
+    },
+    "web.workflow.ipf": {
+      "kind": "text",
+      "parameters": {},
+      "value": "IPF",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.workflow.ipf",
+        "review": "draft"
+      }
+    },
+    "web.workflow.model": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Modèle",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.workflow.model",
+        "review": "draft"
+      }
+    },
+    "web.workflow.smallarea": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Petite région",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.workflow.smallarea",
+        "review": "draft"
+      }
+    },
+    "web.status.queued": {
+      "kind": "text",
+      "parameters": {},
+      "value": "En attente",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.status.queued",
+        "review": "draft"
+      }
+    },
+    "web.status.running": {
+      "kind": "text",
+      "parameters": {},
+      "value": "En cours",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.status.running",
+        "review": "draft"
+      }
+    },
+    "web.status.cancelling": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Annulation en cours",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.status.cancelling",
+        "review": "draft"
+      }
+    },
+    "web.status.succeeded": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Réussie",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.status.succeeded",
+        "review": "draft"
+      }
+    },
+    "web.status.failed": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Échouée",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.status.failed",
+        "review": "draft"
+      }
+    },
+    "web.status.cancelled": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Annulée",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.status.cancelled",
+        "review": "draft"
+      }
+    },
+    "web.status.interrupted": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Interrompue",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.status.interrupted",
+        "review": "draft"
+      }
+    },
+    "web.status.draft": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Brouillon",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.status.draft",
         "review": "draft"
       }
     }

@@ -5,7 +5,7 @@ Created: 2026-08-19\
 Last updated: 2026-11-21\
 Target: web-client infrastructure in `1.2.0`, core web localization in
 `1.3.0`, and complete supported web-client coverage in `1.4.0`\
-Next action: implement shared navigation and the language selector from the core-web baseline, including the keyboard-only test issue\
+Next action: localize the core IPF workbench and arrange human French review of the draft shared navigation\
 Roadmap: [PLANS.md](../PLANS.md) | [Plan index](README.md) |
 [Release train](2026-08-19-post-1-0-release-train.md)
 
@@ -68,7 +68,7 @@ need its own implementation slices when promoted.
 | `I18N12-02` | `done` | `I18N12-01` | Message-catalogue contract and implementation decision | A reviewed contract defines message IDs, `en-CA`/`fr-CA`, aliases, fallback, provenance, placeholders, plurals, and the boundary between domain results and presentation text |
 | `I18N12-03` | `done` | `I18N12-02` | Web-client locale resolution, interpolation, pluralization, and human-formatting runtime | Unit and browser tests exercise the draft preview, canonicalization, deterministic fallback, and unchanged machine data |
 | `I18N12-04` | `done` | `I18N12-03` | Packaged English/French catalogue skeleton and compatibility tests | Wheel and sdist include the catalogues; duplicate keys, placeholder parity, plural forms, provenance, fallback and pseudo-localization are checked |
-| `I18N12-05` | `done` | `I18N12-01`, `I18N12-02`, `I18N12-04` | Static guard and machine-readable coverage report for covered modules | The pilot adapter rejects unreviewed literal changes; the report records six draft messages, zero reviewed messages and the uncovered surface groups |
+| `I18N12-05` | `done` | `I18N12-01`, `I18N12-02`, `I18N12-04` | Static guard and machine-readable coverage report for covered modules | The pilot adapter rejects unreviewed literal changes; the initial report recorded six draft messages, zero reviewed messages and the uncovered surface groups |
 
 ### Scoped `1.3.0` core web-client slices
 
@@ -81,18 +81,20 @@ labels as data; translate only independently attributed presentation.
 | ID | Status | Depends on | Deliverable | Acceptance |
 | --- | --- | --- | --- | --- |
 | `I18N13-01` | `done` | `I18N12-05` | Baseline core surfaces, messages and terminology | Enumerate the visible and accessible text, dynamic states and message IDs for the three workflows below; classify source notices and opaque data, record fallback and the current revision, and create a reviewable terminology list using authoritative bilingual sources where available. No draft is marked reviewed. |
-| `I18N13-02` | `ready` | `I18N13-01` | Shared navigation, run list, language selector and accessibility labels | Catalogue static shell and common states in both locales; switching language rerenders existing presentation; keyboard-only selection is covered by [#58](https://github.com/dlq/synthpopcan/issues/58), including focus, persistence and long French labels. |
-| `I18N13-03` | `blocked` | `I18N13-01`, `I18N13-02` | Core IPF workbench | Localize demo and upload, configuration, preflight, start/cancel, progress, results and downloads; installed-wheel scenarios complete the demo in each locale, compare equivalent requests and seeded results while accounting for run-specific IDs/timestamps, and verify locale changes do not mutate a run’s events, artifacts or reproduction command. |
-| `I18N13-04` | `blocked` | `I18N13-01`, `I18N13-02` | Model discovery and generation | Localize catalogue navigation, provenance and limitation framing, installation/failure, configuration, progress and results; preserve model IDs, supplied titles, notices and package metadata. Test a fictional bundled model in both locales. |
-| `I18N13-05` | `blocked` | `I18N13-01`, `I18N13-02` | Small-area configuration and durable runs | Localize uploads, broad/conditional-pack selection, evidence and compatibility guidance, estimates, preflight, run, cancellation, interruption/restart and result summaries. Cover a bounded fictional workflow and failures in both locales without a live Census dependency. |
-| `I18N13-06` | `blocked` | `I18N13-01` | Dynamic error and progress presentation | Map reviewed stable messages or explicitly versioned presentation metadata to catalogue IDs at the client boundary; define safe fallback for unknown, parameterized and historical events. Verify that API responses, event replay, diagnostic data and artifact bytes remain unchanged across locale switches. |
+| `I18N13-02` | `done` | `I18N13-01` | Shared navigation, run list, language selector and accessibility labels | Catalogue static shell and common states in both locales; switching language rerenders existing presentation; keyboard-only selection is covered by [#58](https://github.com/dlq/synthpopcan/issues/58), including focus, persistence and long French labels. |
+| `I18N13-03` | `ready` | `I18N13-01`, `I18N13-02` | Core IPF workbench | Localize demo and upload, configuration, preflight, start/cancel, progress, results and downloads; installed-wheel scenarios complete the demo in each locale, compare equivalent requests and seeded results while accounting for run-specific IDs/timestamps, and verify locale changes do not mutate a run’s events, artifacts or reproduction command. |
+| `I18N13-04` | `ready` | `I18N13-01`, `I18N13-02` | Model discovery and generation | Localize catalogue navigation, provenance and limitation framing, installation/failure, configuration, progress and results; preserve model IDs, supplied titles, notices and package metadata. Test a fictional bundled model in both locales. |
+| `I18N13-05` | `ready` | `I18N13-01`, `I18N13-02` | Small-area configuration and durable runs | Localize uploads, broad/conditional-pack selection, evidence and compatibility guidance, estimates, preflight, run, cancellation, interruption/restart and result summaries. Cover a bounded fictional workflow and failures in both locales without a live Census dependency. |
+| `I18N13-06` | `ready` | `I18N13-01` | Dynamic error and progress presentation | Map reviewed stable messages or explicitly versioned presentation metadata to catalogue IDs at the client boundary; define safe fallback for unknown, parameterized and historical events. Verify that API responses, event replay, diagnostic data and artifact bytes remain unchanged across locale switches. |
 | `I18N13-07` | `blocked` | `I18N13-01` and each covered slice | Human terminology and translation review | Record a real reviewer and date for every claimed French message; review limitations, errors, privacy, source attribution and accessibility wording. Draft or machine-translated text is not accepted as reviewed. |
 | `I18N13-08` | `blocked` | `I18N13-02`–`I18N13-07` | Core-coverage and distribution acceptance | Bind the declared core paths and covered IDs to the catalogue revision; fail on missing/unreviewed core translations or placeholder/plural mismatch. Test wheel and sdist packaging, keyboard and representative long-string layouts, locale changes/fallback, and machine-data parity; publish coverage and remaining untranslated surfaces. |
 
 The [core-web baseline](../docs/records/core-web-localization-baseline-2026-11-21.md)
 connects the source-hashed inventories, dynamic-state boundaries and draft
-terminology to the `1.3.0` slices. The current report contains six draft IDs
-and zero reviewed covered IDs. A
+terminology to the `1.3.0` slices. The current report records the draft IDs and zero reviewed covered IDs.
+Shared navigation, run-list labels, status and the selector now use the draft
+catalogue; keyboard, focus, persistence and narrow-layout checks cover the
+shared shell. Human translation review remains a separate gate. A
 covered core path must not silently fall back for its declared messages;
 unknown historical or external text retains the documented safe fallback and
 must be reported as outside that claim. Translation review is an explicit human

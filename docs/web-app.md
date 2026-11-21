@@ -45,8 +45,9 @@ opens the linked generation/calibration setup; its resulting job appears in the
 same durable Runs history.
 
 The language selector offers an early English/French presentation preview.
-Only a few messages have draft French wording; most of the interface and
-unrecognized server details remain in English. The selection is stored in the
+The shared navigation, run history and run status have draft French wording;
+most workflow screens and unrecognized server details remain in English. The
+French wording has not yet had human translation review. The selection is stored in the
 browser and does not change API data, saved runs, or generated outputs. The
 {doc}`web-localization-contract` describes the remaining review and coverage
 work. CLI localization is deferred.

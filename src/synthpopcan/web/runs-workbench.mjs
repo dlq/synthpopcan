@@ -14,7 +14,7 @@ import {
   uploadCsv,
 } from "./run-api.mjs";
 import { followRunEvents } from "./run-events.mjs";
-import { renderRunList } from "./run-list.mjs";
+import { localizedStatus, renderRunList } from "./run-list.mjs";
 import {
   buildIpfRequest,
   buildModelOptions,
@@ -43,10 +43,13 @@ export function bindRunsWorkbench(bootstrap, localization) {
     localization,
   };
   localization.subscribe(() => {
+    const status = document.querySelector("#run-status").dataset.status;
+    if (status) setRunStatus(status);
     for (const view of state.eventViews) {
       view.element.textContent = localization.presentEvent(view.context);
     }
   });
+  setRunStatus(document.querySelector("#run-status").dataset.status);
   document.querySelector("#workspace-location").textContent = bootstrap.workspace;
   document.querySelector("#new-run").addEventListener("click", () => newDraft(state));
   document
@@ -642,7 +645,8 @@ function setRunHeading(kicker, title, status) {
 function setRunStatus(status) {
   const element = document.querySelector("#run-status");
   element.className = `run-status ${status}`;
-  element.textContent = status.charAt(0).toUpperCase() + status.slice(1);
+  element.dataset.status = status;
+  element.textContent = localizedStatus(status);
 }
 
 function showMessage(message, kind, phase = "") {

@@ -22,37 +22,37 @@
           >
           <div>
             <h1>SynthPopCan</h1>
-            <p>Local synthetic population workspace</p>
+            <p data-i18n="web.shell.subtitle">Local synthetic population workspace</p>
           </div>
         </div>
         <div class="locale-controls">
-          <span class="status-pill">Local</span>
-          <label id="web-locale-label" for="web-locale">Language</label>
+          <span class="status-pill" data-i18n="web.shell.local">Local</span>
+          <label id="web-locale-label" for="web-locale" data-i18n="web.language.label">Language</label>
           <select id="web-locale" aria-describedby="web-locale-notice">
             <option value="en-CA">English (Canada)</option>
             <option value="fr-CA">Français (Canada)</option>
           </select>
-          <small id="web-locale-notice">Language preview: most content remains in English.</small>
+          <small id="web-locale-notice" data-i18n="web.language.coverage">Language preview: most content remains in English.</small>
         </div>
       </header>
 
-      <section class="workbench" aria-label="Runs workbench">
+      <section class="workbench" aria-label="Runs workbench" data-i18n-aria-label="web.shell.workbench">
         <aside class="runs-panel panel">
           <div class="panel-heading">
             <div>
-              <p class="eyebrow">Workspace history</p>
-              <h2>Runs</h2>
+              <p class="eyebrow" data-i18n="web.shell.history">Workspace history</p>
+              <h2 data-i18n="web.shell.runs">Runs</h2>
             </div>
-            <button id="new-run" class="primary-action" type="button">New run</button>
+            <button id="new-run" class="primary-action" type="button" data-i18n="web.shell.newrun">New run</button>
           </div>
           <p id="workspace-location" class="workspace-location"></p>
           <div id="runs-list" class="runs-list" aria-live="polite">
-            <p class="empty-state">Loading workspace runs…</p>
+            <p class="empty-state" data-i18n="web.shell.loading">Loading workspace runs…</p>
           </div>
           <details class="legacy-tools">
-            <summary>Small-area workflow</summary>
-            <p>Generate linked candidates and calibrate them in one durable Python run.</p>
-            <button class="text-action" type="button" data-workflow-tab="small-area">
+            <summary data-i18n="web.shell.smallarea">Small-area workflow</summary>
+            <p data-i18n="web.shell.smallareadescription">Generate linked candidates and calibrate them in one durable Python run.</p>
+            <button class="text-action" type="button" data-workflow-tab="small-area" data-i18n="web.shell.preparesmallarea">
               Prepare a small-area synthesis
             </button>
           </details>
@@ -65,7 +65,7 @@
               <h2 id="run-title">IPF from margin tables</h2>
               <p id="run-subtitle">Fit compact weights from seed records and normalized controls.</p>
             </div>
-            <span id="run-status" class="run-status draft">Draft</span>
+            <span id="run-status" class="run-status draft" data-status="draft">Draft</span>
           </div>
 
           <ol class="step-list" aria-label="IPF run steps">

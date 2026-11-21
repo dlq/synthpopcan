@@ -173,8 +173,8 @@ def main() -> None:
             "untranslated_surface_groups": 4,
         },
         "untranslated_surfaces": [
-            "web HTML outside the language selector",
-            "other web JavaScript",
+            "web HTML outside the shared shell and language selector",
+            "web workflows outside the shared run list",
             "unknown and parameterized server messages",
             "generated reports and maps",
         ],

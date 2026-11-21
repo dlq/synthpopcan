@@ -6,6 +6,7 @@ import copy
 import importlib.util
 import json
 import sys
+from html.parser import HTMLParser
 from pathlib import Path
 
 import pytest
@@ -33,6 +34,27 @@ def test_preview_is_valid_but_cannot_claim_unreviewed_coverage(catalogues):
     check.validate_catalogues(catalogues, [])
     with pytest.raises(ValueError, match="unreviewed covered"):
         check.validate_catalogues(catalogues, ["web.language.label"])
+
+
+def test_shared_shell_bindings_have_matching_catalogue_entries(catalogues):
+    class Bindings(HTMLParser):
+        def __init__(self):
+            super().__init__()
+            self.ids = []
+
+        def handle_starttag(self, tag, attrs):
+            del tag
+            self.ids.extend(
+                value
+                for key, value in attrs
+                if key in {"data-i18n", "data-i18n-aria-label"}
+            )
+
+    parser = Bindings()
+    parser.feed((ROOT / "src/synthpopcan/web/index.html").read_text())
+    assert parser.ids
+    for catalogue in catalogues.values():
+        assert set(parser.ids) <= catalogue["messages"].keys()
 
 
 def test_duplicate_json_keys_are_rejected():

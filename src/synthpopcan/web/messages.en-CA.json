@@ -1,7 +1,7 @@
 {
   "schema_version": "synthpopcan-web-messages-v1",
   "locale": "en-CA",
-  "revision": "runtime-preview-1",
+  "revision": "runtime-preview-2",
   "messages": {
     "web.language.label": {
       "kind": "text",
@@ -60,6 +60,226 @@
       "provenance": {
         "kind": "project",
         "source_id": "web.upload.invalid",
+        "review": "draft"
+      }
+    },
+    "web.shell.subtitle": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Local synthetic population workspace",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.shell.subtitle",
+        "review": "draft"
+      }
+    },
+    "web.shell.local": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Local",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.shell.local",
+        "review": "draft"
+      }
+    },
+    "web.shell.workbench": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Runs workbench",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.shell.workbench",
+        "review": "draft"
+      }
+    },
+    "web.shell.history": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Workspace history",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.shell.history",
+        "review": "draft"
+      }
+    },
+    "web.shell.runs": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Runs",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.shell.runs",
+        "review": "draft"
+      }
+    },
+    "web.shell.newrun": {
+      "kind": "text",
+      "parameters": {},
+      "value": "New run",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.shell.newrun",
+        "review": "draft"
+      }
+    },
+    "web.shell.loading": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Loading workspace runs…",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.shell.loading",
+        "review": "draft"
+      }
+    },
+    "web.shell.smallarea": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Small-area workflow",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.shell.smallarea",
+        "review": "draft"
+      }
+    },
+    "web.shell.smallareadescription": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Generate linked candidates and calibrate them in one durable Python run.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.shell.smallareadescription",
+        "review": "draft"
+      }
+    },
+    "web.shell.preparesmallarea": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Prepare a small-area synthesis",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.shell.preparesmallarea",
+        "review": "draft"
+      }
+    },
+    "web.runs.empty": {
+      "kind": "text",
+      "parameters": {},
+      "value": "No runs yet. Start with the demo or your own CSV files.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.runs.empty",
+        "review": "draft"
+      }
+    },
+    "web.workflow.ipf": {
+      "kind": "text",
+      "parameters": {},
+      "value": "IPF",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.workflow.ipf",
+        "review": "draft"
+      }
+    },
+    "web.workflow.model": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Model",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.workflow.model",
+        "review": "draft"
+      }
+    },
+    "web.workflow.smallarea": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Small area",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.workflow.smallarea",
+        "review": "draft"
+      }
+    },
+    "web.status.queued": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Queued",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.status.queued",
+        "review": "draft"
+      }
+    },
+    "web.status.running": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Running",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.status.running",
+        "review": "draft"
+      }
+    },
+    "web.status.cancelling": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Cancelling",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.status.cancelling",
+        "review": "draft"
+      }
+    },
+    "web.status.succeeded": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Succeeded",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.status.succeeded",
+        "review": "draft"
+      }
+    },
+    "web.status.failed": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Failed",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.status.failed",
+        "review": "draft"
+      }
+    },
+    "web.status.cancelled": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Cancelled",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.status.cancelled",
+        "review": "draft"
+      }
+    },
+    "web.status.interrupted": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Interrupted",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.status.interrupted",
+        "review": "draft"
+      }
+    },
+    "web.status.draft": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Draft",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.status.draft",
         "review": "draft"
       }
     }

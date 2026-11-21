@@ -6,6 +6,10 @@ export const PRESENTATION_REGISTRY_VERSION = 1;
 let activeRuntime = null;
 const errorViews = new Map();
 
+export function getLocalizationRuntime() {
+  return activeRuntime;
+}
+
 export function presentWebError(error) {
   const message = error instanceof Error ? error.message : String(error);
   if (!activeRuntime) return message;
@@ -69,14 +73,28 @@ export async function initializeLocalization() {
     }
   });
   const select = document.querySelector("#web-locale");
-  const label = document.querySelector("#web-locale-label");
-  const notice = document.querySelector("#web-locale-notice");
-  // Keep the built-in English labels usable if a catalogue cannot be loaded.
-  if (runtime.translate("web.language.label") !== "Message unavailable.") {
-    runtime.renderText(label, "web.language.label");
+  // Preserve the original English content if a catalogue is unavailable.
+  for (const element of document.querySelectorAll("[data-i18n]")) {
+    const original = element.textContent;
+    const render = () => {
+      const translated = runtime.translate(element.dataset.i18n);
+      element.textContent =
+        translated === "Message unavailable." ? original : translated;
+    };
+    render();
+    runtime.subscribe(render);
   }
-  if (runtime.translate("web.language.coverage") !== "Message unavailable.") {
-    runtime.renderText(notice, "web.language.coverage");
+  for (const element of document.querySelectorAll("[data-i18n-aria-label]")) {
+    const original = element.getAttribute("aria-label");
+    const render = () => {
+      const translated = runtime.translate(element.dataset.i18nAriaLabel);
+      element.setAttribute(
+        "aria-label",
+        translated === "Message unavailable." ? original : translated,
+      );
+    };
+    render();
+    runtime.subscribe(render);
   }
   select.value = runtime.locale;
   document.documentElement.lang = runtime.locale;

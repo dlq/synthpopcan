@@ -2,9 +2,9 @@
 
 Status: active maintenance; `1.1.0` broad and `1.2.0` conditional controls released\
 Created: 2026-08-01\
-Last updated: 2026-11-20\
+Last updated: 2026-11-21\
 Target: preserve released packs; evaluate evidence-qualified later control families\
-Next action: select a forecast `1.3.0` family for source and universe review\
+Next action: review bilingual Profile input evidence and select a forecast `1.3.0` family for source and universe review\
 Roadmap: [PLANS.md](../PLANS.md) | [Plan index](README.md)
 
 Release sequencing and confidence are defined in the
@@ -72,6 +72,26 @@ runtime slice does not begin and the other families continue independently.
 The internal universe contract and rejection fixtures are recorded in the
 [2026-10-22 preparation record](../docs/records/readiness-2026-10-22.md).
 No conditional family or pack is admitted by that contract alone.
+
+## Bilingual Census Profile Input Follow-Up
+
+The current Profile preparers expect English headers, geography labels, and in
+some cases an English ZIP member. Supporting French source files is distinct
+from translating the web interface. Treat it as a forecast candidate for the
+next available minor release, not as a claim that French files already work.
+
+| ID | Status | Depends on | Deliverable | Acceptance |
+| --- | --- | --- | --- | --- |
+| `SOURCEFR-01` | `ready` | Known 2016 and 2021 Profile products; obtain authoritative samples | Verify French and English Census Profile file layouts and stable characteristic and geography identifiers | Record official URLs, vintages, encodings, ZIP members, headers, geography labels, suppression symbols and provenance; compare real paired rows and counts. An HTTP 403 or a missing sample remains an explicit evidence gap, not permission to guess. |
+| `SOURCEFR-02` | `blocked` | Reviewed `SOURCEFR-01` evidence for the applicable vintage and geography | Add bilingual ingestion for the verified Profile formats | English and French equivalents produce identical controls and diagnostics for broad and applicable conditional packs; independently sourced fixtures test 2016/2021, geography filtering, suppression, encoding, ZIP ambiguity, and provenance. Unknown, mixed or unverified layouts fail clearly before fitting. Preserve existing English and machine-readable contracts. |
+
+The [official 2021 French Profile download](https://www12.statcan.gc.ca/census-recensement/2021/dp-pd/prof/details/download-telecharger/comp/GetFile.cfm?Lang=F&FILETYPE=CSV&GEONO=001)
+returned HTTP 403 on 2026-11-21,
+so an accessible official source is still needed. A ZIP containing multiple
+candidate data files must not be silently resolved by an arbitrary filename.
+Record the source language as provenance separately from the user's selected
+web presentation locale. Unverified vintages and geographies remain explicitly
+unsupported until their evidence and acceptance checks pass.
 
 ## Current Baseline
 

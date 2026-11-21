@@ -19,6 +19,33 @@ test("locale selection persists without changing server data", async ({ page }) 
   await expect(page.locator("#web-locale-label")).toHaveText("Langue");
 });
 
+test("language selector works with the keyboard and updates shared accessibility", async ({
+  page,
+}) => {
+  await openWorkbench(page);
+  await page.keyboard.press("Tab");
+  await expect(page.locator("#web-locale")).toBeFocused();
+  await page.keyboard.press("f");
+  await expect(page.locator("#web-locale")).toHaveValue("fr-CA");
+  await expect(page.locator("#web-locale")).toBeFocused();
+  await expect(page.getByRole("heading", { name: "Exécutions" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Nouvelle exécution" })).toBeVisible();
+  await expect(
+    page.getByRole("region", { name: "Espace de travail des exécutions" }),
+  ).toBeVisible();
+  await expect(page.locator("#run-status")).toHaveText("Brouillon");
+  await page.keyboard.press("Tab");
+  await expect(page.locator("#new-run")).toBeFocused();
+  await page.reload();
+  await expect(page.locator("#web-locale")).toHaveValue("fr-CA");
+  await expect(page.locator("#run-status")).toHaveText("Brouillon");
+  await page.setViewportSize({ width: 375, height: 812 });
+  const layout = await readHorizontalLayout(page);
+  expect(layout.documentScrollWidth, JSON.stringify(layout)).toBeLessThanOrEqual(
+    layout.viewportWidth,
+  );
+});
+
 test("a missing French catalogue falls back to a usable English interface", async ({
   page,
 }) => {
@@ -29,6 +56,15 @@ test("a missing French catalogue falls back to a usable English interface", asyn
   await openWorkbench(page);
   await expect(page.locator("#web-locale")).toHaveValue("en-CA");
   await expect(page.locator("#web-locale-label")).toHaveText("Language");
+});
+
+test("missing catalogues preserve the English shared navigation", async ({ page }) => {
+  await page.route("**/messages.*.json", (route) => route.fulfill({ status: 404 }));
+  await openWorkbench(page);
+  await expect(page.getByRole("heading", { name: "Runs" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "New run" })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Runs workbench" })).toBeVisible();
+  await expect(page.locator("#run-status")).toHaveText("Draft");
 });
 
 test("a displayed server error updates with locale while its response stays unchanged", async ({
@@ -115,10 +151,24 @@ test("SCN-WEB-001 runs durable demo IPF and recovers results after refresh", asy
   await expect(page.locator("#progress-events")).toContainText(
     "Reading seed records and controls",
   );
-  await page.locator("#web-locale").selectOption("fr-CA");
+  const originalRuns = await page.evaluate(() =>
+    fetch("/api/runs").then((r) => r.text()),
+  );
+  await page.locator(".run-list-item").focus();
+  await page.evaluate(() => {
+    const select = document.querySelector("#web-locale");
+    select.value = "fr-CA";
+    select.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await expect(page.locator(".run-list-item")).toBeFocused();
+  expect(await page.evaluate(() => fetch("/api/runs").then((r) => r.text()))).toBe(
+    originalRuns,
+  );
   await expect(page.locator("#progress-events")).toContainText(
     "Lecture des enregistrements initiaux et des contrôles",
   );
+  await expect(page.locator(".run-list-item")).toContainText("Réussie");
+  await expect(page.locator("#run-status")).toHaveText("Réussie");
   await expect(page.locator("#primary-preview")).toContainText("weight");
   await expect(page.locator("#primary-preview tbody tr")).toHaveCount(4);
   await expect(page.getByRole("link", { name: "Download weights.csv" })).toBeVisible();

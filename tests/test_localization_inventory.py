@@ -267,10 +267,10 @@ def test_javascript_module_reviews_are_bound_to_exact_source_hashes():
     assert module.reviewed_module_role(path.name, "0" * 64, 82) is None
     run_list = ROOT / "src/synthpopcan/web/run-list.mjs"
     run_digest = hashlib.sha256(run_list.read_bytes()).hexdigest()
-    assert module.reviewed_module_role(run_list.name, run_digest, 32, '"model"') == (
-        "machine-data-or-protocol-preserve"
-    )
-    assert module.reviewed_module_role(run_list.name, run_digest, 32, '"Model"') == (
+    assert module.reviewed_module_role(
+        run_list.name, run_digest, 7, '"web.workflow.model"'
+    ) == ("machine-data-or-protocol-preserve")
+    assert module.reviewed_module_role(run_list.name, run_digest, 7, '"Model"') == (
         "web-presentation-candidate"
     )
     model = ROOT / "src/synthpopcan/web/run-workbench-model.mjs"
@@ -288,17 +288,17 @@ def test_javascript_module_reviews_are_bound_to_exact_source_hashes():
     workbench_digest = hashlib.sha256(workbench.read_bytes()).hexdigest()
     assert (
         module.reviewed_module_role(
-            workbench.name, workbench_digest, 229, '"uploading"'
+            workbench.name, workbench_digest, 232, '"uploading"'
         )
         == "machine-data-or-protocol-preserve"
     )
     assert (
-        module.reviewed_module_role(workbench.name, workbench_digest, 216, '"success"')
+        module.reviewed_module_role(workbench.name, workbench_digest, 219, '"success"')
         == "machine-data-or-protocol-preserve"
     )
     assert (
         module.reviewed_module_role(
-            workbench.name, workbench_digest, 216, '"Demo files are ready to upload."'
+            workbench.name, workbench_digest, 219, '"Demo files are ready to upload."'
         )
         == "web-presentation-candidate"
     )
@@ -306,19 +306,19 @@ def test_javascript_module_reviews_are_bound_to_exact_source_hashes():
         module.reviewed_module_role(
             workbench.name,
             workbench_digest,
-            311,
+            314,
             '"Checking package provenance, privacy, and output scale…"',
         )
         == "web-presentation-candidate"
     )
-    assert module.reviewed_module_role(workbench.name, workbench_digest, 312, '""') == (
+    assert module.reviewed_module_role(workbench.name, workbench_digest, 315, '""') == (
         "machine-data-or-protocol-preserve"
     )
 
 
 def test_reviewed_javascript_snapshot_covers_current_web_modules():
     snapshot = json.loads(
-        (ROOT / "docs/records/localization-web-js-2026-11-14.json").read_text()
+        (ROOT / "docs/records/localization-web-js-2026-11-21.json").read_text()
     )["files"]
     paths = {
         path.relative_to(ROOT).as_posix()
