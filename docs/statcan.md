@@ -79,6 +79,12 @@ the command. If throttling persists after the requested wait, check the
 provider's service status or contact its support. Existing downloaded files
 remain intact when a replacement download fails.
 
+WDS API requests and their Statistics Canada table downloads identify the
+client as `SynthPopCan/<version>` with the project URL. If Statistics Canada
+still returns HTTP 403, the request was refused; retry later or contact
+Statistics Canada with the endpoint and time. A 403 does not by itself show
+whether the service is down for other clients or networks.
+
 ## Getting Started
 
 **Network required.** These commands query or download from Statistics Canada's
