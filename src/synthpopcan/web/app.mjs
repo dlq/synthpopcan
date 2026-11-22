@@ -8,19 +8,17 @@ async function startApp() {
     fetchJson("/api/app"),
     initializeLocalization(),
   ]);
-  prepareHelpLabels();
+  prepareHelpLabels(localization);
   bindRunsWorkbench(bootstrap, localization);
-  bindSmallAreaWorkflow();
+  bindSmallAreaWorkflow(localization);
 }
 
-function prepareHelpLabels() {
+function prepareHelpLabels(localization) {
   document.querySelectorAll(".help-label[data-help]").forEach((label) => {
-    const name = label.textContent.trim();
     label.tabIndex = 0;
     label.setAttribute("role", "note");
-    label.setAttribute("aria-label", `${name}. ${label.dataset.help}`);
     const field = label.parentElement.querySelector("input, select");
-    if (field) field.setAttribute("aria-label", name);
+    const originalName = label.textContent.trim();
     const marker = document.createElement("span");
     marker.className = "help-marker";
     marker.setAttribute("aria-hidden", "true");
@@ -29,8 +27,21 @@ function prepareHelpLabels() {
     const tooltip = document.createElement("span");
     tooltip.className = "help-popup";
     tooltip.setAttribute("aria-hidden", "true");
-    tooltip.textContent = label.dataset.help;
     label.append(tooltip);
+    const render = () => {
+      const name =
+        label.querySelector("[data-i18n]")?.textContent?.trim() || originalName;
+      const translated = label.dataset.i18nHelp
+        ? localization.translate(label.dataset.i18nHelp)
+        : "Message unavailable.";
+      const help =
+        translated === "Message unavailable." ? label.dataset.help : translated;
+      label.setAttribute("aria-label", `${name}. ${help}`);
+      if (field) field.setAttribute("aria-label", name);
+      tooltip.textContent = help;
+    };
+    render();
+    localization.subscribe(render);
   });
 }
 

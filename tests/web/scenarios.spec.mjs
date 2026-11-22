@@ -866,6 +866,219 @@ test("model download failures switch language without changing the response", as
   expect(JSON.parse(body)).toEqual({ error: "model download failed" });
 });
 
+test("small-area estimate and durable run switch languages without altering evidence", async ({
+  page,
+}) => {
+  await openWorkbench(page);
+  await page.locator("#web-locale").selectOption("fr-CA");
+  await page.locator(".legacy-tools summary").click();
+  await page.locator('[data-workflow-tab="small-area"]').click();
+  await expect(page.locator(".workbench")).toBeHidden();
+  await expect(page.locator("#small-area-back")).toHaveText("Retour aux exécutions");
+  await page.locator("#small-area-back").click();
+  await expect(page.locator(".workbench")).toBeVisible();
+  await page.locator('[data-workflow-tab="small-area"]').click();
+  await page.setViewportSize({ width: 375, height: 812 });
+  const layout = await readHorizontalLayout(page);
+  expect(layout.documentScrollWidth, JSON.stringify(layout)).toBeLessThanOrEqual(
+    layout.viewportWidth,
+  );
+  const model = page.locator("#small-area-premade-model");
+  await expect(
+    model.locator('option[value="demo-linked-household-person"]'),
+  ).toHaveCount(1);
+  await model.selectOption("demo-linked-household-person");
+  const selected = await model.locator("option:checked").textContent();
+  await expect(page.locator("#small-area-geo-dimension")).toHaveAttribute(
+    "aria-label",
+    "Dimension géographique",
+  );
+  await expect(
+    page.locator(".help-label[data-i18n-help] .help-popup").first(),
+  ).toContainText("modèle publié");
+  await page.locator("#small-area-controls-file").setInputFiles({
+    name: "fictional-controls.csv",
+    mimeType: "text/csv",
+    buffer: Buffer.from(
+      'margin,dimensions,tract,tenure,count\ntenure,"tract,tenure",001,owner,2\ntenure,"tract,tenure",001,renter,1\ntenure,"tract,tenure",002,owner,2\ntenure,"tract,tenure",002,renter,1\n',
+    ),
+  });
+  await page.locator("#small-area-geo-dimension").fill("tract");
+  await page.locator("#small-area-candidate-households").fill("20");
+  await page.locator("#small-area-pool-size").fill("20");
+  await page.locator("#small-area-subsample-seed").fill("7");
+  const response = page.waitForResponse(
+    (item) =>
+      item.url().endsWith("/api/preflight") && item.request().method() === "POST",
+  );
+  await page.locator('#small-area-form button[type="submit"]').click();
+  const preflight = await (await response).json();
+  const result = page.locator("#small-area-result");
+  await expect(result).toContainText("Régions cibles2");
+  await expect(result).toContainText("Ménages cibles6");
+  await page.locator("#web-locale").selectOption("en-CA");
+  await expect(result).toContainText("Target geographies2");
+  await expect(model.locator("option:checked")).toHaveText(selected);
+  expect(preflight.request.options.geography_dimension).toBe("tract");
+  await page.locator("#web-locale").selectOption("fr-CA");
+  await result.locator("button").click();
+  await expect(page.locator("#results-heading")).toBeVisible({ timeout: 20000 });
+  await expect(page.locator("#fit-diagnostics")).toContainText("Ménages attribués");
+  await expect(page.locator("#preview-heading")).toHaveText(
+    "Aperçu des ménages attribués",
+  );
+  const command = await page.locator("#reproduction-command").textContent();
+  const links = await page
+    .locator("#run-artifacts a")
+    .evaluateAll((items) => items.map((item) => item.getAttribute("href")));
+  const runPath = links[0].split("/artifacts/")[0];
+  const evidence = () =>
+    page.evaluate(
+      async ({ path, urls }) =>
+        Promise.all(
+          [path, `${path}/events`, ...urls].map((url) =>
+            fetch(url).then((r) => r.text()),
+          ),
+        ),
+      { path: runPath, urls: links },
+    );
+  const before = await evidence();
+  await page.locator("#web-locale").selectOption("en-CA");
+  await expect(page.locator("#fit-diagnostics")).toContainText("Assigned households");
+  expect(await evidence()).toEqual(before);
+  expect(await page.locator("#reproduction-command").textContent()).toBe(command);
+});
+
+test("small-area conditional input errors update with language", async ({ page }) => {
+  await openWorkbench(page);
+  await page.locator("#web-locale").selectOption("fr-CA");
+  await page.locator(".legacy-tools summary").click();
+  await page.locator('[data-workflow-tab="small-area"]').click();
+  await page
+    .locator("#small-area-premade-model")
+    .selectOption("demo-linked-household-person");
+  await page.locator("#small-area-controls-file").setInputFiles({
+    name: "c.csv",
+    mimeType: "text/csv",
+    buffer: Buffer.from("margin,dimensions,age,count\nage,age,young,1\n"),
+  });
+  await page
+    .locator("#small-area-education-pack")
+    .selectOption("statcan-2021-education-ct-v1");
+  await page.locator('#small-area-form button[type="submit"]').click();
+  await expect(page.locator("#small-area-result")).toContainText(
+    "ensemble sur la scolarité et son fichier source",
+  );
+  await page.locator("#web-locale").selectOption("en-CA");
+  await expect(page.locator("#small-area-result")).toContainText(
+    "education pack and its source file",
+  );
+});
+
+test("small-area server diagnostics preserve the response across locale changes", async ({
+  page,
+}) => {
+  const original =
+    "A required conditional source count is suppressed or unavailable. Choose an area with published controls or omit the affected pack.";
+  const body = JSON.stringify({ error: original });
+  await page.route("**/api/preflight", (route) =>
+    route.fulfill({ status: 400, contentType: "application/json", body }),
+  );
+  await openWorkbench(page);
+  await page.locator(".legacy-tools summary").click();
+  await page.locator('[data-workflow-tab="small-area"]').click();
+  await page
+    .locator("#small-area-premade-model")
+    .selectOption("demo-linked-household-person");
+  await page.locator("#small-area-controls-file").setInputFiles({
+    name: "controls.csv",
+    mimeType: "text/csv",
+    buffer: Buffer.from("margin,dimensions,age,count\nage,age,young,1\n"),
+  });
+  await page.locator('#small-area-form button[type="submit"]').click();
+  await expect(page.locator("#small-area-result")).toContainText(
+    "suppressed or unavailable",
+  );
+  await page.locator("#web-locale").selectOption("fr-CA");
+  await expect(page.locator("#small-area-result")).toContainText(
+    "supprimé ou indisponible",
+  );
+  expect(JSON.parse(body)).toEqual({ error: original });
+});
+
+test("small-area run creation reports server compatibility failures in both languages", async ({
+  page,
+}) => {
+  const original =
+    "A required conditional source count is suppressed or unavailable. Choose an area with published controls or omit the affected pack.";
+  await page.route("**/api/runs", (route) =>
+    route.request().method() === "POST"
+      ? route.fulfill({ status: 400, json: { error: original } })
+      : route.continue(),
+  );
+  await openWorkbench(page);
+  await page.locator(".legacy-tools summary").click();
+  await page.locator('[data-workflow-tab="small-area"]').click();
+  await page
+    .locator("#small-area-premade-model")
+    .selectOption("demo-linked-household-person");
+  await page.locator("#small-area-controls-file").setInputFiles({
+    name: "controls.csv",
+    mimeType: "text/csv",
+    buffer: Buffer.from(
+      'margin,dimensions,tract,tenure,count\ntenure,"tract,tenure",001,owner,2\ntenure,"tract,tenure",001,renter,1\n',
+    ),
+  });
+  await page.locator("#small-area-geo-dimension").fill("tract");
+  await page.locator("#small-area-candidate-households").fill("20");
+  await page.locator('#small-area-form button[type="submit"]').click();
+  await page.locator("#small-area-result button").click();
+  await expect(page.locator("#small-area-result")).toContainText(
+    "suppressed or unavailable",
+  );
+  await page.locator("#web-locale").selectOption("fr-CA");
+  await expect(page.locator("#small-area-result")).toContainText(
+    "supprimé ou indisponible",
+  );
+});
+
+test("small-area non-convergence warnings rerender without changing summary data", async ({
+  page,
+}) => {
+  const id = "20261114T000000Z-abcdefabcdef";
+  const run = {
+    run_id: id,
+    workflow: "small_area",
+    status: "succeeded",
+    created_at: "2026-11-14T00:00:00Z",
+    summary: {
+      assigned_households: 6,
+      assigned_persons: 12,
+      total_geographies: 2,
+      non_converged_count: 2,
+      max_abs_error: 1,
+      largest_residuals: [],
+      calibration_mode: "ipu",
+    },
+    artifacts: [],
+    reproduction: { shell: "synthpopcan geo synthesize" },
+  };
+  await page.route("**/api/runs", (route) => route.fulfill({ json: { runs: [run] } }));
+  await page.route(`**/api/runs/${id}`, (route) => route.fulfill({ json: run }));
+  await openWorkbench(page);
+  await expect(page.locator("#workbench-message")).toContainText(
+    "2 geographies did not converge",
+  );
+  await page.locator("#web-locale").selectOption("fr-CA");
+  await expect(page.locator("#workbench-message")).toContainText(
+    "2 régions n’ont pas convergé",
+  );
+  await expect(page.locator("#fit-diagnostics")).toContainText(
+    "Régions sans convergence",
+  );
+  expect(run.summary.non_converged_count).toBe(2);
+});
+
 test("SCN-WEB-003 runs durable linked small-area synthesis", async ({ page }) => {
   const consoleErrors = [];
   page.on("console", (message) => {
@@ -1053,6 +1266,44 @@ test("conditional control selections explain missing sources", async ({ page }) 
   expect(consoleErrors).toEqual([]);
 });
 
+test("small-area interruption and restart failures switch languages", async ({
+  page,
+}) => {
+  const id = "20261114T000000Z-abcdefabcdef";
+  const run = {
+    run_id: id,
+    workflow: "small_area",
+    status: "interrupted",
+    created_at: "2026-11-14T00:00:00Z",
+    error: { message: "Run interrupted." },
+  };
+  const body = JSON.stringify({
+    error: "Not enough workspace capacity to restart this run.",
+  });
+  await page.route("**/api/runs", (route) => route.fulfill({ json: { runs: [run] } }));
+  await page.route(`**/api/runs/${id}`, (route) => route.fulfill({ json: run }));
+  await page.route(`**/api/runs/${id}/restart`, (route) =>
+    route.fulfill({ status: 400, contentType: "application/json", body }),
+  );
+  await openWorkbench(page);
+  await expect(page.locator("#restart-run")).toBeVisible();
+  await page.locator("#web-locale").selectOption("fr-CA");
+  await expect(page.locator("#workbench-message")).toContainText(
+    "Exécution interrompue",
+  );
+  await page.locator("#restart-run").click();
+  await expect(page.locator("#workbench-message")).toContainText(
+    "capacité de l’espace de travail est insuffisante",
+  );
+  await page.locator("#web-locale").selectOption("en-CA");
+  await expect(page.locator("#workbench-message")).toContainText(
+    "Not enough workspace capacity",
+  );
+  expect(JSON.parse(body)).toEqual({
+    error: "Not enough workspace capacity to restart this run.",
+  });
+});
+
 test("an interrupted small-area run can start a fresh restart", async ({ page }) => {
   const originalId = "20261114T000000Z-abcdefabcdef";
   const newId = "20261114T000001Z-abcdef123456";
@@ -1096,9 +1347,11 @@ test("an interrupted small-area run can start a fresh restart", async ({ page })
   await expect(
     page.getByRole("button", { name: "Restart from saved inputs" }),
   ).toBeVisible();
-  await page.getByRole("button", { name: "Restart from saved inputs" }).click();
-  await expect(page.locator("#run-status")).toHaveText("Queued");
+  await page.locator("#web-locale").selectOption("fr-CA");
+  await page.locator("#restart-run").click();
+  await expect(page.locator("#run-status")).toHaveText("En attente");
   await expect(page.locator("#run-kicker")).toContainText("abcdef123456");
+  await page.locator("#web-locale").selectOption("en-CA");
   await expect(page.getByRole("button", { name: "Cancel run" })).toBeEnabled();
   expect(posted).toBe(true);
   expect(errors).toEqual([]);

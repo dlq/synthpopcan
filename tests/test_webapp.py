@@ -115,10 +115,11 @@ def test_small_area_panel_starts_hidden_and_help_is_prepared_for_keyboard() -> N
     assert 'data-workflow-panel="small-area" hidden' in html
     assert 'id="small-area-control-pack"' in html
     assert 'id="small-area-control-pack-evidence-file"' in html
-    assert "prepareHelpLabels();" in app_source
+    assert "prepareHelpLabels(localization);" in app_source
     assert "label.tabIndex = 0" in app_source
     assert 'label.setAttribute("aria-label"' in app_source
     assert 'field.setAttribute("aria-label", name)' in app_source
+    assert "localization.subscribe(render);" in app_source
 
 
 def test_webapp_url_uses_loopback_for_wildcard_host() -> None:

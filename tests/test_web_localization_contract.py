@@ -11,6 +11,12 @@ from pathlib import Path
 
 import pytest
 
+from synthpopcan._web_error_messages import (
+    _RESTART_MESSAGES,
+    conditional_message,
+    restart_message,
+)
+
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 spec = importlib.util.spec_from_file_location(
@@ -28,6 +34,37 @@ def catalogues():
         locale: json.loads((web / f"messages.{locale}.json").read_text())
         for locale in ("en-CA", "fr-CA")
     }
+
+
+def test_small_area_fixed_server_errors_have_exact_presentation_mappings():
+    adapter = (ROOT / "src/synthpopcan/web/localization-ui.mjs").read_text()
+    markers = (
+        "matching Statistics Canada CT geography",
+        "requires broad pack",
+        "requires its matching source upload",
+        "require person controls and an explicit Census geography",
+        "Census Profile tract CSV or ZIP",
+        "private-household denominators",
+        "rounding envelope",
+        "suppressed",
+        "duplicate",
+        "missing",
+        "unavailable or invalid",
+        "not base-five",
+        "Unknown ",
+        "conditional and person geographies differ",
+        "under-15",
+        "eligible category targets must sum",
+        "unsupported eligible",
+        "unknown age eligibility",
+        "unrecognized internal problem",
+    )
+    conditional = {conditional_message(ValueError(marker)) for marker in markers}
+    for message in conditional:
+        # Preflight, durable-run creation and restart use distinct endpoint keys.
+        assert adapter.count(json.dumps(message, ensure_ascii=False)) == 3
+    for message in (*_RESTART_MESSAGES, restart_message(ValueError("unknown"))):
+        assert json.dumps(message, ensure_ascii=False) in adapter
 
 
 def test_preview_is_valid_but_cannot_claim_unreviewed_coverage(catalogues):

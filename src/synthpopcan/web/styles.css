@@ -934,6 +934,10 @@ a:focus-visible {
   align-items: start;
 }
 
+.workbench[hidden] {
+  display: none;
+}
+
 .runs-panel {
   position: sticky;
   top: 16px;

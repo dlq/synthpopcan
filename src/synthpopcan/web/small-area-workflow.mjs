@@ -2,12 +2,76 @@ import { numberValue, optionalNumberValue } from "./form-utils.mjs";
 import { createOperationSequencer } from "./operation-sequencer.mjs";
 import { resultItem, revokeDownloads, showError, showStatus } from "./result-ui.mjs";
 import { createRun, listControlPacks, preflightRun, uploadCsv } from "./run-api.mjs";
+import { SMALL_AREA_MESSAGE_IDS } from "./small-area-messages.mjs";
 import {
   buildSmallAreaRequest,
+  SmallAreaValidationError,
   validateSmallAreaDraft,
 } from "./small-area-request.mjs";
 
-export function bindSmallAreaWorkflow() {
+let localizationRuntime = null;
+const localizedViews = new Map();
+
+function bindView(element, render) {
+  localizedViews.set(element, render);
+  render();
+}
+
+function message(id, fallback, params = {}) {
+  const translated = localizationRuntime?.translate(id, params);
+  return translated && translated !== "Message unavailable." ? translated : fallback;
+}
+
+function setOwnedText(element, text) {
+  const id = SMALL_AREA_MESSAGE_IDS[text];
+  if (!Object.hasOwn(SMALL_AREA_MESSAGE_IDS, text)) {
+    localizedViews.delete(element);
+    element.textContent = text;
+    return;
+  }
+  bindView(element, () => {
+    element.textContent = message(id, text);
+  });
+}
+
+function showOwnedStatus(element, text) {
+  showStatus(element, "");
+  setOwnedText(element, text);
+}
+
+function showSmallAreaError(element, error) {
+  localizedViews.delete(element);
+  if (!(error instanceof SmallAreaValidationError)) {
+    showError(element, error);
+    return;
+  }
+  showStatus(element, "");
+  element.className = "result-box error";
+  const families = {
+    marital_status: "web.smallarea.family.marital",
+    education: "web.smallarea.family.education",
+    labour_force: "web.smallarea.family.labour",
+    work_activity: "web.smallarea.family.work",
+  };
+  bindView(element, () => {
+    const id = `web.smallarea.error.${error.code}`;
+    const familyId = families[error.family];
+    const params =
+      error.code === "family" && familyId
+        ? { family: message(familyId, error.family) }
+        : {};
+    element.textContent = message(id, error.message, params);
+  });
+}
+
+export function bindSmallAreaWorkflow(localization) {
+  localizationRuntime = localization;
+  localization.subscribe(() => {
+    for (const [element, render] of localizedViews) {
+      if (!element.isConnected) localizedViews.delete(element);
+      else render();
+    }
+  });
   const form = document.querySelector("#small-area-form");
   const operations = createOperationSequencer();
   const controlPackSelect = document.querySelector("#small-area-control-pack");
@@ -15,8 +79,11 @@ export function bindSmallAreaWorkflow() {
     "#small-area-control-pack-evidence-file",
   );
   void populateControlPackSelect(controlPackSelect).catch(() => {
-    controlPackSelect.title =
+    const original =
       "Reviewed control packs are unavailable; raw normalized controls remain available.";
+    bindView(controlPackSelect, () => {
+      controlPackSelect.title = message(SMALL_AREA_MESSAGE_IDS[original], original);
+    });
   });
   controlPackSelect.addEventListener("change", () => {
     const selected = controlPackSelect.selectedOptions[0];
@@ -36,7 +103,7 @@ export function bindSmallAreaWorkflow() {
     event.preventDefault();
     const operation = operations.begin("prepare");
     const resultBox = document.querySelector("#small-area-result");
-    showStatus(resultBox, "Uploading and checking the planned small-area run...");
+    showOwnedStatus(resultBox, "Uploading and checking the planned small-area run...");
     resultBox.dataset.workflowState = "preparing";
     try {
       const draft = snapshotDraft();
@@ -47,7 +114,7 @@ export function bindSmallAreaWorkflow() {
       showEstimate(resultBox, preflight, operations);
     } catch (error) {
       if (operation.isCurrent()) {
-        showError(resultBox, error);
+        showSmallAreaError(resultBox, error);
         resultBox.dataset.workflowState = "";
       }
     }
@@ -83,7 +150,10 @@ function invalidatePreparedEstimate(operations) {
   operations.invalidate("start");
   const resultBox = document.querySelector("#small-area-result");
   if (["preparing", "prepared", "starting"].includes(resultBox.dataset.workflowState)) {
-    showStatus(resultBox, "Inputs changed. Estimate the run again before starting.");
+    showOwnedStatus(
+      resultBox,
+      "Inputs changed. Estimate the run again before starting.",
+    );
     resultBox.dataset.workflowState = "";
   }
 }
@@ -158,39 +228,64 @@ function showEstimate(element, preflight, operations) {
   revokeDownloads(element);
   element.dataset.workflowState = "prepared";
   element.className = `result-box ${preflight.ready ? "success" : "warning"}`;
-  element.textContent = preflight.ready
-    ? "Preflight complete. Review the scale before starting the durable run."
-    : "Preflight found insufficient workspace capacity.";
+  localizedViews.delete(element);
+  element.replaceChildren();
+  const heading = document.createElement("p");
+  setOwnedText(
+    heading,
+    preflight.ready
+      ? "Preflight complete. Review the scale before starting the durable run."
+      : "Preflight found insufficient workspace capacity.",
+  );
+  element.append(heading);
   const summary = document.createElement("div");
   summary.className = "result-list compact-result-list";
-  summary.append(
-    resultItem("Target geographies", estimate.target_geographies.toLocaleString()),
-    resultItem("Target households", estimate.target_households.toLocaleString()),
-    resultItem("Estimated persons", estimate.estimated_persons.toLocaleString()),
-    resultItem(
-      "Candidate pool",
-      `${estimate.calibration_pool_size.toLocaleString()} of ${estimate.candidate_households.toLocaleString()}`,
+  const addItem = (label, renderValue) => {
+    const item = resultItem(label, "");
+    setOwnedText(item.querySelector("strong"), label);
+    bindView(item.querySelector("span"), () => {
+      item.querySelector("span").textContent = renderValue();
+    });
+    summary.append(item);
+  };
+  const number = (value) =>
+    new Intl.NumberFormat(localizationRuntime.locale).format(value);
+  addItem("Target geographies", () => number(estimate.target_geographies));
+  addItem("Target households", () => number(estimate.target_households));
+  addItem("Estimated persons", () => number(estimate.estimated_persons));
+  addItem("Candidate pool", () =>
+    message(
+      "web.smallarea.pool",
+      `${number(estimate.calibration_pool_size)} of ${number(estimate.candidate_households)}`,
+      {
+        selected: estimate.calibration_pool_size,
+        total: estimate.candidate_households,
+      },
     ),
-    resultItem(
-      "Workspace capacity",
-      estimate.enough_disk ? "Enough disk space" : "Too little disk space",
-    ),
+  );
+  addItem("Workspace capacity", () =>
+    estimate.enough_disk
+      ? message("web.ipfui.m061", "Enough disk space")
+      : message(
+          SMALL_AREA_MESSAGE_IDS["Too little disk space"],
+          "Too little disk space",
+        ),
   );
   const pack = preflight.control_pack_plan?.pack;
   if (pack?.identifier) {
-    summary.append(resultItem("Control pack", pack.identifier));
+    addItem("Control pack", () => pack.identifier);
   }
   element.append(summary);
   const button = document.createElement("button");
   button.type = "button";
   button.className = "primary-action";
-  button.textContent = "Start durable small-area run";
+  setOwnedText(button, "Start durable small-area run");
   button.disabled = !preflight.ready;
   button.addEventListener("click", async () => {
     const operation = operations.begin("start");
     const request = structuredClone(preflight.request);
     button.disabled = true;
-    showStatus(element, "Starting the durable small-area run...");
+    showOwnedStatus(element, "Starting the durable small-area run...");
     element.dataset.workflowState = "starting";
     try {
       const run = await createRun(request);
@@ -201,7 +296,7 @@ function showEstimate(element, preflight, operations) {
       );
     } catch (error) {
       if (operation.isCurrent()) {
-        showError(element, error);
+        showSmallAreaError(element, error);
         element.dataset.workflowState = "";
       }
     }

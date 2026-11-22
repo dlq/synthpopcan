@@ -1,27 +1,51 @@
+export class SmallAreaValidationError extends Error {
+  constructor(code, message, family = null) {
+    super(message);
+    this.code = code;
+    this.family = family;
+  }
+}
+
 export function validateSmallAreaDraft(draft) {
   const candidatePair = Boolean(draft.candidateHouseholds && draft.candidatePersons);
   if (Boolean(draft.candidateHouseholds) !== Boolean(draft.candidatePersons)) {
-    throw new Error("Choose both candidate household and person CSV files.");
+    throw new SmallAreaValidationError(
+      "candidates",
+      "Choose both candidate household and person CSV files.",
+    );
   }
   const modelSource = Boolean(draft.packageFile || draft.modelId);
   if (modelSource === candidatePair) {
-    throw new Error("Choose one model/package or one linked candidate pair.");
+    throw new SmallAreaValidationError(
+      "source",
+      "Choose one model/package or one linked candidate pair.",
+    );
   }
-  if (!draft.controlsFile) throw new Error("Choose household controls CSV.");
+  if (!draft.controlsFile)
+    throw new SmallAreaValidationError("controls", "Choose household controls CSV.");
   if (draft.controlPackId && !draft.personControlsFile) {
-    throw new Error("Reviewed control packs require a person controls CSV.");
+    throw new SmallAreaValidationError(
+      "person",
+      "Reviewed control packs require a person controls CSV.",
+    );
   }
   if (Boolean(draft.controlPackId) !== Boolean(draft.controlPackEvidenceFile)) {
-    throw new Error(
+    throw new SmallAreaValidationError(
+      "evidence",
       "Choose both a reviewed control pack and its control-pack evidence JSON.",
     );
   }
   for (const item of draft.conditionalControls ?? []) {
     if (Boolean(item.pack) !== Boolean(item.file)) {
-      throw new Error(`Choose both the ${item.label} pack and its source file.`);
+      throw new SmallAreaValidationError(
+        "family",
+        `Choose both the ${item.label} pack and its source file.`,
+        item.family,
+      );
     }
     if (item.pack && (!draft.controlPackId || !draft.personControlsFile)) {
-      throw new Error(
+      throw new SmallAreaValidationError(
+        "conditional",
         "Conditional controls require a reviewed broad pack and person controls.",
       );
     }

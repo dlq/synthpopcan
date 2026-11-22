@@ -30,6 +30,7 @@ import {
   runResultView,
   workflowTitle,
 } from "./run-workbench-model.mjs";
+import { SMALL_AREA_MESSAGE_IDS } from "./small-area-messages.mjs";
 import { buildAgeSexControlRows, buildAgeSexSeedRows } from "./starter-files.mjs";
 
 const TERMINAL = new Set(["succeeded", "failed", "cancelled", "interrupted"]);
@@ -43,11 +44,13 @@ function translateOwned(id, fallback, params = {}) {
 }
 
 function setOwnedText(element, text) {
-  const id = Object.hasOwn(MODEL_MESSAGE_IDS, text)
-    ? MODEL_MESSAGE_IDS[text]
-    : Object.hasOwn(IPF_MESSAGE_IDS, text)
-      ? IPF_MESSAGE_IDS[text]
-      : null;
+  const id = Object.hasOwn(SMALL_AREA_MESSAGE_IDS, text)
+    ? SMALL_AREA_MESSAGE_IDS[text]
+    : Object.hasOwn(MODEL_MESSAGE_IDS, text)
+      ? MODEL_MESSAGE_IDS[text]
+      : Object.hasOwn(IPF_MESSAGE_IDS, text)
+        ? IPF_MESSAGE_IDS[text]
+        : null;
   if (id) localizedViews.set(element, { id, text });
   else localizedViews.delete(element);
   element.textContent = id ? translateOwned(id, text) : text;
@@ -179,6 +182,7 @@ export function bindRunsWorkbench(bootstrap, localization) {
 }
 
 function bindLegacyTools(state) {
+  document.querySelector("#small-area-back").addEventListener("click", showWorkbench);
   document.querySelectorAll("[data-workflow-tab]").forEach((button) => {
     button.addEventListener("click", () => {
       invalidateWorkbenchViewOperations(state);
@@ -573,6 +577,9 @@ async function requestRestart(state) {
     await selectRun(state, run);
   } catch (error) {
     if (!operation.isCurrent() || state.selectedRun?.run_id !== runId) return;
+    if (error instanceof ApiError && error.presentationContext) {
+      error.presentationContext.endpoint = "/api/runs/:id/restart";
+    }
     showErrorMessage(error);
     button.disabled = false;
   }
@@ -631,10 +638,15 @@ async function showTerminalRun(state, run) {
     restart.hidden = run.status !== "interrupted" || run.workflow !== "small_area";
     restart.disabled = false;
     const message = run.error?.message ?? `Run ${run.status}.`;
-    showErrorMessage(
-      new Error(message),
-      run.status === "cancelled" ? "warning" : "error",
-    );
+    const terminalError = new Error(message);
+    if (run.workflow === "small_area" && run.status === "interrupted") {
+      terminalError.presentationContext = {
+        endpoint: "run:small_area",
+        method: "EVENT",
+        status: 409,
+      };
+    }
+    showErrorMessage(terminalError, run.status === "cancelled" ? "warning" : "error");
     return;
   }
   showStep("results");
@@ -644,7 +656,21 @@ async function showTerminalRun(state, run) {
 
 async function showSucceededRun(run, isCurrent) {
   const view = runResultView(run);
-  if (view.warning) showMessage(view.warning, "warning");
+  if (view.warning) {
+    showMessage("", "warning");
+    const element = document.querySelector("#workbench-message");
+    const presentation = {
+      id: "web.smallarea.warning",
+      text: view.warning,
+      params: { count: run.summary.non_converged_count },
+    };
+    localizedViews.set(element, presentation);
+    element.textContent = translateOwned(
+      presentation.id,
+      presentation.text,
+      presentation.params,
+    );
+  }
   setOwnedText(
     document.querySelector("#results-intro"),
     view.intro ??
@@ -729,6 +755,8 @@ function renderDiagnostics(element, items) {
         "Converged",
         "Publishable candidate",
         "Linked validation",
+        "Realized maximum error",
+        "Largest residual",
       ].includes(label)
     ) {
       setOwnedText(detail, displayValue);
@@ -767,18 +795,32 @@ function setRunHeading(kicker, title, status, workflow = "ipf", runId = null) {
   setOwnedText(document.querySelector("#run-title"), title);
   const steps = document.querySelector("#run-steps");
   const modelSteps = workflow === "model";
-  steps.dataset.i18nAriaLabel = modelSteps ? "web.modelui.steps" : "web.ipfui.steps";
+  const smallAreaSteps = workflow === "small_area";
+  steps.dataset.i18nAriaLabel = smallAreaSteps
+    ? "web.smallarea.steps"
+    : modelSteps
+      ? "web.modelui.steps"
+      : "web.ipfui.steps";
   steps.setAttribute(
     "aria-label",
     translateOwned(
       steps.dataset.i18nAriaLabel,
-      modelSteps ? "Model run steps" : "IPF run steps",
+      smallAreaSteps
+        ? "Small-area run steps"
+        : modelSteps
+          ? "Model run steps"
+          : "IPF run steps",
     ),
   );
   if (workflow === "model") {
     setOwnedText(
       document.querySelector("#run-subtitle"),
       "Generate linked households and people from a prepared model.",
+    );
+  } else if (workflow === "small_area") {
+    setOwnedText(
+      document.querySelector("#run-subtitle"),
+      "Generate and calibrate linked households and people for small areas.",
     );
   } else if (workflow === "ipf") {
     setOwnedText(
@@ -839,6 +881,7 @@ async function loadModelCatalogue(state) {
     const runOptions = [new Option("Choose a catalogue model", "")];
     runOptions[0].dataset.modelPlaceholder = "true";
     const smallAreaOptions = [new Option("Choose a prepared model", "")];
+    setOwnedText(smallAreaOptions[0], "Choose a prepared model");
     for (const model of payload.models) {
       const option = document.createElement("option");
       option.value = model.id;
@@ -876,6 +919,8 @@ async function loadModelCatalogue(state) {
           "",
         ),
       );
+      if (target === smallAreaSelect)
+        setOwnedText(target.options[0], "Choose a prepared model");
       if (target === select) {
         target.options[0].dataset.modelPlaceholder = "true";
         renderModelOptions();
@@ -883,7 +928,7 @@ async function loadModelCatalogue(state) {
       const option = document.createElement("option");
       option.disabled = true;
       option.textContent = "Premade models unavailable";
-      if (target === select) setOwnedText(option, "Premade models unavailable");
+      setOwnedText(option, "Premade models unavailable");
       target.append(option);
     }
     updateModelCatalogueActions();

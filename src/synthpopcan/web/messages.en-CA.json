@@ -1,7 +1,7 @@
 {
   "schema_version": "synthpopcan-web-messages-v1",
   "locale": "en-CA",
-  "revision": "model-preview-1",
+  "revision": "small-area-preview-1",
   "messages": {
     "web.language.label": {
       "kind": "text",
@@ -1710,6 +1710,1497 @@
       "provenance": {
         "kind": "project",
         "source_id": "web.run.identifier",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.ui001": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Prepare a small-area synthesis",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.ui001",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.ui002": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Python-backed preflight",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.ui002",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.ui003": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Choose a linked model and normalized geographic controls. Preflight checks compatibility, scale, and disk before the durable run starts.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.ui003",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.ui004": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Premade linked model",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.ui004",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.ui005": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Or candidate households CSV",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.ui005",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.ui006": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Candidate persons CSV",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.ui006",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.ui007": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Household controls CSV",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.ui007",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.ui008": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Person controls CSV",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.ui008",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.ui009": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Reviewed control pack",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.ui009",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.ui010": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Raw normalized controls",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.ui010",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.ui011": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Control-pack evidence JSON",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.ui011",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.ui012": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Conditional census tract controls",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.ui012",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.ui013": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Select a matching 2016 or 2021 broad tract pack and upload the source for each family you want to fit.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.ui013",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.ui014": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Marital status pack",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.ui014",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.ui015": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Marital status tract CSV",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.ui015",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.ui016": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Education pack",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.ui016",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.ui017": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Education Profile CSV or ZIP",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.ui017",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.ui018": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Labour-force status pack",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.ui018",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.ui019": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Labour-force Profile CSV or ZIP",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.ui019",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.ui020": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Work activity pack",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.ui020",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.ui021": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Work activity Profile CSV or ZIP",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.ui021",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.ui022": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Whole-household realization",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.ui022",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.ui023": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Midpoint rounding",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.ui023",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.ui024": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Improve with swaps",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.ui024",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.ui025": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Joint solver",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.ui025",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.ui026": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Hybrid",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.ui026",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.ui027": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Zero targets",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.ui027",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.ui028": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Treat as structural zeros",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.ui028",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.ui029": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Allow residuals at observed zeros",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.ui029",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.ui030": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Boundary GeoJSON for map",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.ui030",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.ui031": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Geography dimension",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.ui031",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.ui032": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Output geography column",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.ui032",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.ui033": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Candidate households",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.ui033",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.ui034": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Calibration pool size",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.ui034",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.ui035": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Use all candidates",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.ui035",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.ui036": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Average persons per household",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.ui036",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.ui037": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Generation seed",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.ui037",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.ui038": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Subsample seed",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.ui038",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.ui039": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Estimate and prepare",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.ui039",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.ui040": {
+      "kind": "text",
+      "parameters": {},
+      "value": "None",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.ui040",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.ui041": {
+      "kind": "text",
+      "parameters": {},
+      "value": "A published linked household/person model. Downloadable models are fetched by the generated CLI commands when needed.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.ui041",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.ui042": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Use a local linked package JSON instead of a premade model ID.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.ui042",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.ui043": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Use an existing validated household CSV instead of generating candidates from a model. A person CSV is also required.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.ui043",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.ui044": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Linked person candidates accompanying the candidate household CSV.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.ui044",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.ui045": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Normalized household controls containing one target geography dimension and household-level margins.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.ui045",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.ui046": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Optional person-level controls used for joint linked calibration. They are included in the CLI command but not needed for the scale estimate.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.ui046",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.ui047": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Optional reviewed 2016 or 2021 household/person control contract. Raw normalized controls remain available when no pack is selected.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.ui047",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.ui048": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Required with a reviewed pack. This strict JSON binds the pack, source revision, universe, geography, and exact household/person control tables.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.ui048",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.ui049": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Optional prepared WGS-84 GeoJSON whose features use a geo_id property matching the output geography values.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.ui049",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.ui050": {
+      "kind": "text",
+      "parameters": {},
+      "value": "The geography dimension in the controls, such as ct or ada.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.ui050",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.ui051": {
+      "kind": "text",
+      "parameters": {},
+      "value": "The column written to generated household and person rows. Usually this matches the geography dimension.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.ui051",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.ui052": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Number of candidate households generated from the model before calibration. This is not the final population count.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.ui052",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.ui053": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Optional candidate subset fitted for each target geography. Smaller pools make exploratory runs faster.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.ui053",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.ui054": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Used only to estimate person rows in the final linked output.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.ui054",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.ui055": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Makes candidate generation reproducible without changing which generated candidates are selected for calibration.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.ui055",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.ui056": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Controls the calibration-pool subsample independently from candidate generation. Vary it to test sensitivity.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.ui056",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.pool": {
+      "kind": "text",
+      "parameters": {
+        "selected": "number",
+        "total": "number"
+      },
+      "value": "{selected} of {total}",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.pool",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.warning": {
+      "kind": "plural",
+      "parameters": {
+        "count": "number"
+      },
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.warning",
+        "review": "draft"
+      },
+      "count_parameter": "count",
+      "forms": {
+        "one": "{count} geography did not converge. Review report.json and the largest residual before using the output.",
+        "other": "{count} geographies did not converge. Review report.json and the largest residual before using the output."
+      }
+    },
+    "web.smallarea.steps": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Small-area run steps",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.steps",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.error.candidates": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Choose both candidate household and person CSV files.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.error.candidates",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.error.source": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Choose one model/package or one linked candidate pair.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.error.source",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.error.controls": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Choose household controls CSV.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.error.controls",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.error.person": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Reviewed control packs require a person controls CSV.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.error.person",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.error.evidence": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Choose both a reviewed control pack and its control-pack evidence JSON.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.error.evidence",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.error.conditional": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Conditional controls require a reviewed broad pack and person controls.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.error.conditional",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.error.family": {
+      "kind": "text",
+      "parameters": {
+        "family": "text"
+      },
+      "value": "Choose both the {family} pack and its source file.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.error.family",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.family.marital": {
+      "kind": "text",
+      "parameters": {},
+      "value": "marital status",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.family.marital",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.family.education": {
+      "kind": "text",
+      "parameters": {},
+      "value": "education",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.family.education",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.family.labour": {
+      "kind": "text",
+      "parameters": {},
+      "value": "labour-force",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.family.labour",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.family.work": {
+      "kind": "text",
+      "parameters": {},
+      "value": "work activity",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.family.work",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.dynamic001": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Uploading and checking the planned small-area run...",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.dynamic001",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.dynamic002": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Inputs changed. Estimate the run again before starting.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.dynamic002",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.dynamic003": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Preflight complete. Review the scale before starting the durable run.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.dynamic003",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.dynamic004": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Preflight found insufficient workspace capacity.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.dynamic004",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.dynamic005": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Target geographies",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.dynamic005",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.dynamic006": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Target households",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.dynamic006",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.dynamic007": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Estimated persons",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.dynamic007",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.dynamic008": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Candidate pool",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.dynamic008",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.dynamic009": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Too little disk space",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.dynamic009",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.dynamic010": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Control pack",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.dynamic010",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.dynamic011": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Start durable small-area run",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.dynamic011",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.dynamic012": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Starting the durable small-area run...",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.dynamic012",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.dynamic013": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Choose a prepared model",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.dynamic013",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.dynamic014": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Premade models unavailable",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.dynamic014",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.dynamic015": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Reviewed control packs are unavailable; raw normalized controls remain available.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.dynamic015",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.dynamic016": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Small-area linked synthesis",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.dynamic016",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.dynamic017": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Generate and calibrate linked households and people for small areas.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.dynamic017",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.dynamic018": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Linked candidates were generated, calibrated, and validated in Python.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.dynamic018",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.dynamic019": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Assigned household preview",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.dynamic019",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.dynamic020": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Assigned person preview",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.dynamic020",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.dynamic021": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Assigned households",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.dynamic021",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.dynamic022": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Assigned persons",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.dynamic022",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.dynamic023": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Non-converged geographies",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.dynamic023",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.dynamic024": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Largest residual",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.dynamic024",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.dynamic025": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Realized maximum error",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.dynamic025",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.dynamic026": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Calibration mode",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.dynamic026",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.dynamic027": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Not reported",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.dynamic027",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.dynamic028": {
+      "kind": "text",
+      "parameters": {},
+      "value": "None above tolerance",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.dynamic028",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.extra001": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Workspace capacity",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.extra001",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.extra002": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Choose a prepared model",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.extra002",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.extra003": {
+      "kind": "text",
+      "parameters": {},
+      "value": "No premade model selected",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.extra003",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.event01": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Validating uploaded linked candidates",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.event01",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.event02": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Grouping candidate household sizes",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.event02",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.event03": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Fitting candidates to small-area controls",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.event03",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.event04": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Rendering the standalone small-area map",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.event04",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.event05": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Small-area synthesis completed",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.event05",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.event06": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Screening the linked candidate pool for the full control set",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.event06",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.event07": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Calibrating the prepared geography batch",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.event07",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.event08": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Combining assigned rows and validating household/person linkage",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.event08",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.event09": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Independently auditing every realized control cell",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.event09",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.event10": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Run interrupted by application restart",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.event10",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.event11": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Job manager shut down",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.event11",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.restart01": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Only interrupted small-area runs can be restarted.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.restart01",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.restart02": {
+      "kind": "text",
+      "parameters": {},
+      "value": "The run used a different SynthPopCan version; create a new run.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.restart02",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.restart03": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Run evidence or inputs have changed; create a new run.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.restart03",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.restart04": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Saved inputs no longer pass preflight; create a new run and check the controls and candidate support.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.restart04",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.restart05": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Not enough workspace capacity to restart this run.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.restart05",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.restart06": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Could not restart this run. Check its state and input integrity, or create a new run.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.restart06",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.conditional01": {
+      "kind": "text",
+      "parameters": {},
+      "value": "The selected conditional pack requires its matching Statistics Canada CT geography. Select the same Census vintage and geography as the pack.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.conditional01",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.conditional02": {
+      "kind": "text",
+      "parameters": {},
+      "value": "The selected conditional pack requires its matching built-in broad pack. Choose compatible packs for the same Census vintage and geography.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.conditional02",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.conditional03": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Each conditional pack requires its matching source upload. Upload the source for every selected pack.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.conditional03",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.conditional04": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Conditional controls require person controls and an explicit Census geography. Supply both before continuing.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.conditional04",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.conditional05": {
+      "kind": "text",
+      "parameters": {},
+      "value": "The selected source is not the expected Census Profile tract CSV or ZIP. Upload the source for the selected Census vintage and pack.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.conditional05",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.conditional06": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Conditional and person controls have incompatible private-household denominators. Check their source, geography, and Census vintage.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.conditional06",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.conditional07": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Conditional source counts exceed the permitted Census rounding envelope. Check the source counts and selected geography.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.conditional07",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.conditional08": {
+      "kind": "text",
+      "parameters": {},
+      "value": "A required conditional source count is suppressed or unavailable. Choose an area with published controls or omit the affected pack.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.conditional08",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.conditional09": {
+      "kind": "text",
+      "parameters": {},
+      "value": "The conditional source contains duplicate rows or cells. Check the uploaded source for the selected geography.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.conditional09",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.conditional10": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Required conditional source rows or fields are missing. Check the uploaded source and selected geography.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.conditional10",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.conditional11": {
+      "kind": "text",
+      "parameters": {},
+      "value": "A required Census Profile row is unavailable or invalid. Check the source counts and choose an area with published controls.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.conditional11",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.conditional12": {
+      "kind": "text",
+      "parameters": {},
+      "value": "A Census Profile count is not rounded to base five. Check that the uploaded source contains the expected published counts.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.conditional12",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.conditional13": {
+      "kind": "text",
+      "parameters": {},
+      "value": "The selected conditional pack is not recognized. Choose a listed pack for the desired Census vintage and geography.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.conditional13",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.conditional14": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Conditional and person control geographies differ. Supply controls covering the same geographies.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.conditional14",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.conditional15": {
+      "kind": "text",
+      "parameters": {},
+      "value": "The under-15 conditional target is incompatible with the person controls. Check their age totals and source evidence.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.conditional15",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.conditional16": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Eligible category targets must sum to the age-15+ denominator. Check the conditional control counts and source evidence.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.conditional16",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.conditional17": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Candidate people contain an unsupported eligible category. Check the candidate fields and the pack crosswalk.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.conditional17",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.conditional18": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Candidate people contain an unknown age category. Check the age field and the pack crosswalk.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.conditional18",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.conditional19": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Conditional controls could not be validated. Check the selected packs, source data, geography, and candidate support; use the CLI for detailed diagnostics.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.conditional19",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.interrupted": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Run interrupted. You can restart from saved inputs.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.interrupted",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.restart07": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Restart inputs changed during preflight; create a new run.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.restart07",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.restart08": {
+      "kind": "text",
+      "parameters": {},
+      "value": "The prior model path is invalid; create a new run.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.restart08",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.restart09": {
+      "kind": "text",
+      "parameters": {},
+      "value": "The prior model cannot be verified; create a new run.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.restart09",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.restart10": {
+      "kind": "text",
+      "parameters": {},
+      "value": "The model has changed since the interrupted run; create a new run.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.restart10",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.restart11": {
+      "kind": "text",
+      "parameters": {},
+      "value": "The run input directory is invalid; create a new run.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.restart11",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.restart12": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Run input path is invalid; create a new run.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.restart12",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.restart13": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Run has duplicate input identifiers.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.restart13",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.restart14": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Run inputs have changed; create a new run.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.restart14",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.back": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Back to runs",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.back",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.runblocked": {
+      "kind": "text",
+      "parameters": {},
+      "value": "The run cannot start because preflight found blocking problems. Review the diagnostics and check the inputs again.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.runblocked",
         "review": "draft"
       }
     }

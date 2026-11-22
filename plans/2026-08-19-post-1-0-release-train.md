@@ -4,8 +4,8 @@ Status: active maintenance; `1.2.0` released\
 Created: 2026-08-19\
 Last updated: 2026-11-22\
 Target: bounded `1.x` feature releases with patch releases as needed\
-Next action: localize the small-area workflow and select one statistical family
-for source review; decide Python 3.15 support and review dependencies independently\
+Next action: complete the dynamic-message review and select one statistical
+family for source review; decide Python 3.15 support and review dependencies independently\
 Roadmap: [PLANS.md](../PLANS.md) | [Plan index](README.md)
 
 ## Planning Horizon

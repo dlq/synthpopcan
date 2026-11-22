@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import test from "node:test";
 import {
   canonicalLocale,
@@ -8,6 +9,30 @@ import {
 } from "../../src/synthpopcan/web/localization.mjs";
 
 const entry = (value, parameters = {}) => ({ kind: "text", parameters, value });
+
+test("small-area convergence warnings use the correct French number form", () => {
+  const catalogues = Object.fromEntries(
+    ["en-CA", "fr-CA"].map((locale) => [
+      locale,
+      JSON.parse(
+        readFileSync(
+          new URL(`../../src/synthpopcan/web/messages.${locale}.json`, import.meta.url),
+          "utf8",
+        ),
+      ),
+    ]),
+  );
+  const runtime = createLocalizationRuntime({ catalogues });
+  runtime.setLocale("fr-CA");
+  assert.match(
+    runtime.translate("web.smallarea.warning", { count: 1 }),
+    /1 région n’a pas convergé/,
+  );
+  assert.match(
+    runtime.translate("web.smallarea.warning", { count: 2 }),
+    /2 régions n’ont pas convergé/,
+  );
+});
 const plural = (one, other, extra = {}) => ({
   kind: "plural",
   count_parameter: "count",

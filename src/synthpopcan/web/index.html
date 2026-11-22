@@ -224,157 +224,158 @@
 
       <section class="workflow-panel" data-workflow-panel="small-area" hidden>
         <div class="panel-heading">
-          <h2>Prepare a small-area synthesis</h2>
-          <span>Python-backed preflight</span>
+          <h2><span data-i18n="web.smallarea.ui001">Prepare a small-area synthesis</span></h2>
+          <span><span data-i18n="web.smallarea.ui002">Python-backed preflight</span></span>
+          <button id="small-area-back" class="secondary-action" type="button" data-i18n="web.smallarea.back">Back to runs</button>
         </div>
-        <section class="model-setup" aria-label="Prepare a small-area synthesis">
+        <section class="model-setup" aria-label="Prepare a small-area synthesis" data-i18n-aria-label="web.smallarea.ui001">
           <p class="panel-intro">
-            Choose a linked model and normalized geographic controls. Preflight
-            checks compatibility, scale, and disk before the durable run starts.
+            <span data-i18n="web.smallarea.ui003">Choose a linked model and normalized geographic controls. Preflight
+            checks compatibility, scale, and disk before the durable run starts.</span>
           </p>
           <form id="small-area-form" class="form-grid">
             <label>
               <span
                 class="help-label"
-                data-help="A published linked household/person model. Downloadable models are fetched by the generated CLI commands when needed."
-              >Premade linked model</span>
+                data-help="A published linked household/person model. Downloadable models are fetched by the generated CLI commands when needed." data-i18n-help="web.smallarea.ui041"
+              ><span data-i18n="web.smallarea.ui004">Premade linked model</span></span>
               <select id="small-area-premade-model">
-                <option value="">No premade model selected</option>
+                <option value="" data-i18n="web.smallarea.extra003">No premade model selected</option>
               </select>
             </label>
             <label>
               <span
                 class="help-label"
-                data-help="Use a local linked package JSON instead of a premade model ID."
+                data-help="Use a local linked package JSON instead of a premade model ID." data-i18n-help="web.smallarea.ui042"
               ><span data-i18n="web.modelui.m007">Or package JSON</span></span>
               <input id="small-area-model-file" type="file" accept=".json,application/json">
             </label>
             <label>
               <span
                 class="help-label"
-                data-help="Use an existing validated household CSV instead of generating candidates from a model. A person CSV is also required."
-              >Or candidate households CSV</span>
+                data-help="Use an existing validated household CSV instead of generating candidates from a model. A person CSV is also required." data-i18n-help="web.smallarea.ui043"
+              ><span data-i18n="web.smallarea.ui005">Or candidate households CSV</span></span>
               <input id="small-area-candidate-households-file" type="file" accept=".csv,text/csv">
             </label>
             <label>
               <span
                 class="help-label"
-                data-help="Linked person candidates accompanying the candidate household CSV."
-              >Candidate persons CSV</span>
+                data-help="Linked person candidates accompanying the candidate household CSV." data-i18n-help="web.smallarea.ui044"
+              ><span data-i18n="web.smallarea.ui006">Candidate persons CSV</span></span>
               <input id="small-area-candidate-persons-file" type="file" accept=".csv,text/csv">
             </label>
             <label>
               <span
                 class="help-label"
-                data-help="Normalized household controls containing one target geography dimension and household-level margins."
-              >Household controls CSV</span>
+                data-help="Normalized household controls containing one target geography dimension and household-level margins." data-i18n-help="web.smallarea.ui045"
+              ><span data-i18n="web.smallarea.ui007">Household controls CSV</span></span>
               <input id="small-area-controls-file" class="ipf-file-input" type="file" accept=".csv,text/csv" required>
             </label>
             <label>
               <span
                 class="help-label"
-                data-help="Optional person-level controls used for joint linked calibration. They are included in the CLI command but not needed for the scale estimate."
-              >Person controls CSV</span>
+                data-help="Optional person-level controls used for joint linked calibration. They are included in the CLI command but not needed for the scale estimate." data-i18n-help="web.smallarea.ui046"
+              ><span data-i18n="web.smallarea.ui008">Person controls CSV</span></span>
               <input id="small-area-person-controls-file" class="ipf-file-input" type="file" accept=".csv,text/csv">
             </label>
             <label>
               <span
                 class="help-label"
-                data-help="Optional reviewed 2016 or 2021 household/person control contract. Raw normalized controls remain available when no pack is selected."
-              >Reviewed control pack</span>
+                data-help="Optional reviewed 2016 or 2021 household/person control contract. Raw normalized controls remain available when no pack is selected." data-i18n-help="web.smallarea.ui047"
+              ><span data-i18n="web.smallarea.ui009">Reviewed control pack</span></span>
               <select id="small-area-control-pack">
-                <option value="">Raw normalized controls</option>
+                <option value="" data-i18n="web.smallarea.ui010">Raw normalized controls</option>
               </select>
             </label>
             <label>
               <span
                 class="help-label"
-                data-help="Required with a reviewed pack. This strict JSON binds the pack, source revision, universe, geography, and exact household/person control tables."
-              >Control-pack evidence JSON</span>
+                data-help="Required with a reviewed pack. This strict JSON binds the pack, source revision, universe, geography, and exact household/person control tables." data-i18n-help="web.smallarea.ui048"
+              ><span data-i18n="web.smallarea.ui011">Control-pack evidence JSON</span></span>
               <input id="small-area-control-pack-evidence-file" type="file" accept=".json,application/json">
             </label>
             <fieldset class="conditional-controls">
-              <legend>Conditional census tract controls</legend>
-              <p>Select a matching 2016 or 2021 broad tract pack and upload the source for each family you want to fit.</p>
+              <legend><span data-i18n="web.smallarea.ui012">Conditional census tract controls</span></legend>
+              <p><span data-i18n="web.smallarea.ui013">Select a matching 2016 or 2021 broad tract pack and upload the source for each family you want to fit.</span></p>
               <div class="form-grid">
-              <label>Marital status pack
-                <select id="small-area-marital-status-pack"><option value="">None</option><option value="statcan-2016-marital-status-ct-v1">2016</option><option value="statcan-2021-marital-status-ct-v1">2021</option></select>
+              <label><span data-i18n="web.smallarea.ui014">Marital status pack</span>
+                <select id="small-area-marital-status-pack"><option value="" data-i18n="web.smallarea.ui040">None</option><option value="statcan-2016-marital-status-ct-v1">2016</option><option value="statcan-2021-marital-status-ct-v1">2021</option></select>
               </label>
-              <label>Marital status tract CSV <input id="small-area-marital-status-controls-file" type="file" accept=".csv,text/csv"></label>
-              <label>Education pack
-                <select id="small-area-education-pack"><option value="">None</option><option value="statcan-2016-education-ct-v1">2016</option><option value="statcan-2021-education-ct-v1">2021</option></select>
+              <label><span data-i18n="web.smallarea.ui015">Marital status tract CSV</span> <input id="small-area-marital-status-controls-file" type="file" accept=".csv,text/csv"></label>
+              <label><span data-i18n="web.smallarea.ui016">Education pack</span>
+                <select id="small-area-education-pack"><option value="" data-i18n="web.smallarea.ui040">None</option><option value="statcan-2016-education-ct-v1">2016</option><option value="statcan-2021-education-ct-v1">2021</option></select>
               </label>
-              <label>Education Profile CSV or ZIP <input id="small-area-education-profile-file" type="file" accept=".csv,.zip,text/csv,application/zip"></label>
-              <label>Labour-force status pack
-                <select id="small-area-labour-force-pack"><option value="">None</option><option value="statcan-2016-labour-force-status-ct-v1">2016</option><option value="statcan-2021-labour-force-status-ct-v1">2021</option></select>
+              <label><span data-i18n="web.smallarea.ui017">Education Profile CSV or ZIP</span> <input id="small-area-education-profile-file" type="file" accept=".csv,.zip,text/csv,application/zip"></label>
+              <label><span data-i18n="web.smallarea.ui018">Labour-force status pack</span>
+                <select id="small-area-labour-force-pack"><option value="" data-i18n="web.smallarea.ui040">None</option><option value="statcan-2016-labour-force-status-ct-v1">2016</option><option value="statcan-2021-labour-force-status-ct-v1">2021</option></select>
               </label>
-              <label>Labour-force Profile CSV or ZIP <input id="small-area-labour-force-profile-file" type="file" accept=".csv,.zip,text/csv,application/zip"></label>
-              <label>Work activity pack
-                <select id="small-area-work-activity-pack"><option value="">None</option><option value="statcan-2016-work-activity-ct-v1">2016</option><option value="statcan-2021-work-activity-ct-v1">2021</option></select>
+              <label><span data-i18n="web.smallarea.ui019">Labour-force Profile CSV or ZIP</span> <input id="small-area-labour-force-profile-file" type="file" accept=".csv,.zip,text/csv,application/zip"></label>
+              <label><span data-i18n="web.smallarea.ui020">Work activity pack</span>
+                <select id="small-area-work-activity-pack"><option value="" data-i18n="web.smallarea.ui040">None</option><option value="statcan-2016-work-activity-ct-v1">2016</option><option value="statcan-2021-work-activity-ct-v1">2021</option></select>
               </label>
-              <label>Work activity Profile CSV or ZIP <input id="small-area-work-activity-profile-file" type="file" accept=".csv,.zip,text/csv,application/zip"></label>
-              <label>Whole-household realization <select id="small-area-integerization"><option value="midpoint">Midpoint rounding</option><option value="swap">Improve with swaps</option></select></label>
-              <label>Joint solver <select id="small-area-joint-solver"><option value="ipu">IPU</option><option value="hybrid">Hybrid</option></select></label>
-              <label>Zero targets <select id="small-area-zero-target-policy"><option value="structural">Treat as structural zeros</option><option value="observed">Allow residuals at observed zeros</option></select></label>
+              <label><span data-i18n="web.smallarea.ui021">Work activity Profile CSV or ZIP</span> <input id="small-area-work-activity-profile-file" type="file" accept=".csv,.zip,text/csv,application/zip"></label>
+              <label><span data-i18n="web.smallarea.ui022">Whole-household realization</span> <select id="small-area-integerization"><option value="midpoint" data-i18n="web.smallarea.ui023">Midpoint rounding</option><option value="swap" data-i18n="web.smallarea.ui024">Improve with swaps</option></select></label>
+              <label><span data-i18n="web.smallarea.ui025">Joint solver</span> <select id="small-area-joint-solver"><option value="ipu">IPU</option><option value="hybrid" data-i18n="web.smallarea.ui026">Hybrid</option></select></label>
+              <label><span data-i18n="web.smallarea.ui027">Zero targets</span> <select id="small-area-zero-target-policy"><option value="structural" data-i18n="web.smallarea.ui028">Treat as structural zeros</option><option value="observed" data-i18n="web.smallarea.ui029">Allow residuals at observed zeros</option></select></label>
               </div>
             </fieldset>
             <label>
               <span
                 class="help-label"
-                data-help="Optional prepared WGS-84 GeoJSON whose features use a geo_id property matching the output geography values."
-              >Boundary GeoJSON for map</span>
+                data-help="Optional prepared WGS-84 GeoJSON whose features use a geo_id property matching the output geography values." data-i18n-help="web.smallarea.ui049"
+              ><span data-i18n="web.smallarea.ui030">Boundary GeoJSON for map</span></span>
               <input id="small-area-boundaries-file" type="file" accept=".geojson,.json,application/json">
             </label>
             <label>
               <span
                 class="help-label"
-                data-help="The geography dimension in the controls, such as ct or ada."
-              >Geography dimension</span>
+                data-help="The geography dimension in the controls, such as ct or ada." data-i18n-help="web.smallarea.ui050"
+              ><span data-i18n="web.smallarea.ui031">Geography dimension</span></span>
               <input id="small-area-geo-dimension" value="ct" required>
             </label>
             <label>
               <span
                 class="help-label"
-                data-help="The column written to generated household and person rows. Usually this matches the geography dimension."
-              >Output geography column</span>
+                data-help="The column written to generated household and person rows. Usually this matches the geography dimension." data-i18n-help="web.smallarea.ui051"
+              ><span data-i18n="web.smallarea.ui032">Output geography column</span></span>
               <input id="small-area-geo-column" value="ct" required>
             </label>
             <label>
               <span
                 class="help-label"
-                data-help="Number of candidate households generated from the model before calibration. This is not the final population count."
-              >Candidate households</span>
+                data-help="Number of candidate households generated from the model before calibration. This is not the final population count." data-i18n-help="web.smallarea.ui052"
+              ><span data-i18n="web.smallarea.ui033">Candidate households</span></span>
               <input id="small-area-candidate-households" type="number" min="1" max="250000" value="10000" required>
             </label>
             <label>
               <span
                 class="help-label"
-                data-help="Optional candidate subset fitted for each target geography. Smaller pools make exploratory runs faster."
-              >Calibration pool size</span>
-              <input id="small-area-pool-size" type="number" min="1" placeholder="Use all candidates">
+                data-help="Optional candidate subset fitted for each target geography. Smaller pools make exploratory runs faster." data-i18n-help="web.smallarea.ui053"
+              ><span data-i18n="web.smallarea.ui034">Calibration pool size</span></span>
+              <input id="small-area-pool-size" type="number" min="1" placeholder="Use all candidates" data-i18n-placeholder="web.smallarea.ui035">
             </label>
             <label>
               <span
                 class="help-label"
-                data-help="Used only to estimate person rows in the final linked output."
-              >Average persons per household</span>
+                data-help="Used only to estimate person rows in the final linked output." data-i18n-help="web.smallarea.ui054"
+              ><span data-i18n="web.smallarea.ui036">Average persons per household</span></span>
               <input id="small-area-average-persons" type="number" min="0" step="0.01" value="2.22">
             </label>
             <label>
               <span
                 class="help-label"
-                data-help="Makes candidate generation reproducible without changing which generated candidates are selected for calibration."
-              >Generation seed</span>
+                data-help="Makes candidate generation reproducible without changing which generated candidates are selected for calibration." data-i18n-help="web.smallarea.ui055"
+              ><span data-i18n="web.smallarea.ui037">Generation seed</span></span>
               <input id="small-area-random-seed" type="number" value="13">
             </label>
             <label>
               <span
                 class="help-label"
-                data-help="Controls the calibration-pool subsample independently from candidate generation. Vary it to test sensitivity."
-              >Subsample seed</span>
+                data-help="Controls the calibration-pool subsample independently from candidate generation. Vary it to test sensitivity." data-i18n-help="web.smallarea.ui056"
+              ><span data-i18n="web.smallarea.ui038">Subsample seed</span></span>
               <input id="small-area-subsample-seed" type="number" value="42">
             </label>
-            <button class="primary-action" type="submit">Estimate and prepare</button>
+            <button class="primary-action" type="submit"><span data-i18n="web.smallarea.ui039">Estimate and prepare</span></button>
           </form>
           <div id="small-area-result" class="result-box" aria-live="polite"></div>
         </section>

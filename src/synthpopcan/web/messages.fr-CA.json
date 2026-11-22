@@ -1,7 +1,7 @@
 {
   "schema_version": "synthpopcan-web-messages-v1",
   "locale": "fr-CA",
-  "revision": "model-preview-1",
+  "revision": "small-area-preview-1",
   "messages": {
     "web.language.label": {
       "kind": "text",
@@ -1710,6 +1710,1498 @@
       "provenance": {
         "kind": "project",
         "source_id": "web.run.identifier",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.ui001": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Préparer une synthèse pour petites régions",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.ui001",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.ui002": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Vérification préalable avec Python",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.ui002",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.ui003": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Choisissez un modèle lié et des contrôles géographiques normalisés. La vérification examine la compatibilité, la taille et l’espace disque avant le démarrage de l’exécution enregistrée.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.ui003",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.ui004": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Modèle lié préparé",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.ui004",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.ui005": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Ou CSV des ménages candidats",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.ui005",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.ui006": {
+      "kind": "text",
+      "parameters": {},
+      "value": "CSV des personnes candidates",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.ui006",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.ui007": {
+      "kind": "text",
+      "parameters": {},
+      "value": "CSV des contrôles des ménages",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.ui007",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.ui008": {
+      "kind": "text",
+      "parameters": {},
+      "value": "CSV des contrôles des personnes",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.ui008",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.ui009": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Ensemble de contrôles examiné",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.ui009",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.ui010": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Contrôles normalisés bruts",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.ui010",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.ui011": {
+      "kind": "text",
+      "parameters": {},
+      "value": "JSON des preuves de l’ensemble de contrôles",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.ui011",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.ui012": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Contrôles conditionnels des secteurs de recensement",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.ui012",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.ui013": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Choisissez un ensemble général de secteurs de 2016 ou 2021 correspondant et téléversez la source de chaque famille à ajuster.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.ui013",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.ui014": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Ensemble sur l’état matrimonial",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.ui014",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.ui015": {
+      "kind": "text",
+      "parameters": {},
+      "value": "CSV des secteurs sur l’état matrimonial",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.ui015",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.ui016": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Ensemble sur la scolarité",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.ui016",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.ui017": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Profil de scolarité CSV ou ZIP",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.ui017",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.ui018": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Ensemble sur l’activité sur le marché du travail",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.ui018",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.ui019": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Profil de la population active CSV ou ZIP",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.ui019",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.ui020": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Ensemble sur l’activité de travail",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.ui020",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.ui021": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Profil de l’activité de travail CSV ou ZIP",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.ui021",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.ui022": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Réalisation par ménages entiers",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.ui022",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.ui023": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Arrondi au point médian",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.ui023",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.ui024": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Améliorer par échanges",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.ui024",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.ui025": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Solveur conjoint",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.ui025",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.ui026": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Hybride",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.ui026",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.ui027": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Cibles nulles",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.ui027",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.ui028": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Traiter comme des zéros structurels",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.ui028",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.ui029": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Permettre des résidus aux zéros observés",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.ui029",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.ui030": {
+      "kind": "text",
+      "parameters": {},
+      "value": "GeoJSON des limites pour la carte",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.ui030",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.ui031": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Dimension géographique",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.ui031",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.ui032": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Colonne géographique de sortie",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.ui032",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.ui033": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Ménages candidats",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.ui033",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.ui034": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Taille du bassin de calage",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.ui034",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.ui035": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Utiliser tous les candidats",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.ui035",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.ui036": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Nombre moyen de personnes par ménage",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.ui036",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.ui037": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Graine de génération",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.ui037",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.ui038": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Graine de sous-échantillonnage",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.ui038",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.ui039": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Estimer et préparer",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.ui039",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.ui040": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Aucun",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.ui040",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.ui041": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Un modèle publié liant ménages et personnes. Les modèles téléchargeables sont récupérés au besoin par les commandes générées.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.ui041",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.ui042": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Utilisez un paquet JSON lié local plutôt qu’un identifiant de modèle préparé.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.ui042",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.ui043": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Utilisez un CSV de ménages validé existant plutôt que de générer des candidats à partir d’un modèle. Un CSV des personnes est également requis.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.ui043",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.ui044": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Personnes candidates liées accompagnant le CSV des ménages candidats.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.ui044",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.ui045": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Contrôles normalisés des ménages comportant une dimension géographique cible et des marges au niveau des ménages.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.ui045",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.ui046": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Contrôles facultatifs au niveau des personnes pour le calage conjoint lié. Ils figurent dans la commande, mais ne sont pas nécessaires à l’estimation de la taille.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.ui046",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.ui047": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Contrat de contrôles ménages-personnes examiné pour 2016 ou 2021, facultatif. Les contrôles normalisés bruts restent disponibles sans ensemble sélectionné.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.ui047",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.ui048": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Requis avec un ensemble examiné. Ce JSON strict lie l’ensemble, la révision de la source, l’univers, la géographie et les tableaux exacts de contrôles.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.ui048",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.ui049": {
+      "kind": "text",
+      "parameters": {},
+      "value": "GeoJSON WGS-84 préparé facultatif dont les entités ont une propriété geo_id correspondant aux valeurs géographiques de sortie.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.ui049",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.ui050": {
+      "kind": "text",
+      "parameters": {},
+      "value": "La dimension géographique dans les contrôles, par exemple ct ou ada.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.ui050",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.ui051": {
+      "kind": "text",
+      "parameters": {},
+      "value": "La colonne écrite dans les lignes de ménages et de personnes générées. Elle correspond généralement à la dimension géographique.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.ui051",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.ui052": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Nombre de ménages candidats générés à partir du modèle avant le calage. Ce nombre ne représente pas la population finale.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.ui052",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.ui053": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Sous-ensemble facultatif de candidats ajustés pour chaque région cible. Les petits bassins accélèrent les explorations.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.ui053",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.ui054": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Utilisé uniquement pour estimer les lignes de personnes dans le résultat lié final.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.ui054",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.ui055": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Rend la génération des candidats reproductible sans modifier les candidats sélectionnés pour le calage.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.ui055",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.ui056": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Contrôle le sous-échantillon du bassin de calage indépendamment de la génération. Faites-la varier pour tester la sensibilité.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.ui056",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.pool": {
+      "kind": "text",
+      "parameters": {
+        "selected": "number",
+        "total": "number"
+      },
+      "value": "{selected} sur {total}",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.pool",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.warning": {
+      "kind": "plural",
+      "parameters": {
+        "count": "number"
+      },
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.warning",
+        "review": "draft"
+      },
+      "count_parameter": "count",
+      "forms": {
+        "one": "{count} région n’a pas convergé. Examinez report.json et le résidu le plus élevé avant d’utiliser les résultats.",
+        "other": "{count} régions n’ont pas convergé. Examinez report.json et le résidu le plus élevé avant d’utiliser les résultats.",
+        "many": "{count} régions n’ont pas convergé. Examinez report.json et le résidu le plus élevé avant d’utiliser les résultats."
+      }
+    },
+    "web.smallarea.steps": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Étapes de l’exécution pour petites régions",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.steps",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.error.candidates": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Choisissez à la fois les fichiers CSV des ménages et des personnes candidats.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.error.candidates",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.error.source": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Choisissez un modèle ou paquet, ou une paire de fichiers de candidats liés.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.error.source",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.error.controls": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Choisissez le CSV des contrôles des ménages.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.error.controls",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.error.person": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Les ensembles de contrôles examinés exigent un CSV des contrôles des personnes.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.error.person",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.error.evidence": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Choisissez à la fois un ensemble de contrôles examiné et son JSON de preuves.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.error.evidence",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.error.conditional": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Les contrôles conditionnels exigent un ensemble général examiné et des contrôles des personnes.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.error.conditional",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.error.family": {
+      "kind": "text",
+      "parameters": {
+        "family": "text"
+      },
+      "value": "Choisissez à la fois l’ensemble {family} et son fichier source.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.error.family",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.family.marital": {
+      "kind": "text",
+      "parameters": {},
+      "value": "sur l’état matrimonial",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.family.marital",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.family.education": {
+      "kind": "text",
+      "parameters": {},
+      "value": "sur la scolarité",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.family.education",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.family.labour": {
+      "kind": "text",
+      "parameters": {},
+      "value": "sur la population active",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.family.labour",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.family.work": {
+      "kind": "text",
+      "parameters": {},
+      "value": "sur l’activité de travail",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.family.work",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.dynamic001": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Téléversement et vérification de l’exécution prévue pour petites régions…",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.dynamic001",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.dynamic002": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Les entrées ont changé. Estimez de nouveau l’exécution avant de la démarrer.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.dynamic002",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.dynamic003": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Vérification préalable terminée. Examinez la taille avant de démarrer l’exécution enregistrée.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.dynamic003",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.dynamic004": {
+      "kind": "text",
+      "parameters": {},
+      "value": "La vérification a détecté une capacité insuffisante dans l’espace de travail.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.dynamic004",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.dynamic005": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Régions cibles",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.dynamic005",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.dynamic006": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Ménages cibles",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.dynamic006",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.dynamic007": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Personnes estimées",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.dynamic007",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.dynamic008": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Bassin de candidats",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.dynamic008",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.dynamic009": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Espace disque insuffisant",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.dynamic009",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.dynamic010": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Ensemble de contrôles",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.dynamic010",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.dynamic011": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Démarrer l’exécution enregistrée pour petites régions",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.dynamic011",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.dynamic012": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Démarrage de l’exécution enregistrée pour petites régions…",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.dynamic012",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.dynamic013": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Choisir un modèle préparé",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.dynamic013",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.dynamic014": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Modèles préparés indisponibles",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.dynamic014",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.dynamic015": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Les ensembles de contrôles examinés sont indisponibles; les contrôles normalisés bruts restent disponibles.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.dynamic015",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.dynamic016": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Synthèse liée pour petites régions",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.dynamic016",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.dynamic017": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Générez et calez des ménages et des personnes liés pour de petites régions.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.dynamic017",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.dynamic018": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Les candidats liés ont été générés, calés et validés en Python.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.dynamic018",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.dynamic019": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Aperçu des ménages attribués",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.dynamic019",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.dynamic020": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Aperçu des personnes attribuées",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.dynamic020",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.dynamic021": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Ménages attribués",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.dynamic021",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.dynamic022": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Personnes attribuées",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.dynamic022",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.dynamic023": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Régions sans convergence",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.dynamic023",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.dynamic024": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Résidu le plus élevé",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.dynamic024",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.dynamic025": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Erreur maximale réalisée",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.dynamic025",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.dynamic026": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Mode de calage",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.dynamic026",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.dynamic027": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Non indiqué",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.dynamic027",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.dynamic028": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Aucun au-dessus de la tolérance",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.dynamic028",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.extra001": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Capacité de l’espace de travail",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.extra001",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.extra002": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Choisir un modèle préparé",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.extra002",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.extra003": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Aucun modèle préparé sélectionné",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.extra003",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.event01": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Validation des candidats liés téléversés",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.event01",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.event02": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Regroupement des tailles des ménages candidats",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.event02",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.event03": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Ajustement des candidats aux contrôles des petites régions",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.event03",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.event04": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Création de la carte autonome des petites régions",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.event04",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.event05": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Synthèse pour petites régions terminée",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.event05",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.event06": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Vérification du bassin de candidats liés pour l’ensemble des contrôles",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.event06",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.event07": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Calage du lot géographique préparé",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.event07",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.event08": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Combinaison des lignes attribuées et validation des liens entre ménages et personnes",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.event08",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.event09": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Vérification indépendante de chaque cellule de contrôle réalisée",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.event09",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.event10": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Exécution interrompue par le redémarrage de l’application",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.event10",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.event11": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Le gestionnaire de tâches s’est arrêté",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.event11",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.restart01": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Seules les exécutions interrompues pour petites régions peuvent être redémarrées.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.restart01",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.restart02": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Cette exécution utilisait une autre version de SynthPopCan; créez une nouvelle exécution.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.restart02",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.restart03": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Les preuves ou les entrées ont changé; créez une nouvelle exécution.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.restart03",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.restart04": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Les entrées enregistrées ne passent plus la vérification; créez une nouvelle exécution et vérifiez les contrôles et le bassin de candidats.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.restart04",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.restart05": {
+      "kind": "text",
+      "parameters": {},
+      "value": "La capacité de l’espace de travail est insuffisante pour redémarrer cette exécution.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.restart05",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.restart06": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Impossible de redémarrer cette exécution. Vérifiez son état et l’intégrité des entrées, ou créez une nouvelle exécution.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.restart06",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.conditional01": {
+      "kind": "text",
+      "parameters": {},
+      "value": "L’ensemble conditionnel sélectionné exige sa géographie de secteur de recensement de Statistique Canada correspondante. Choisissez la même année de recensement et la même géographie.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.conditional01",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.conditional02": {
+      "kind": "text",
+      "parameters": {},
+      "value": "L’ensemble conditionnel sélectionné exige son ensemble général intégré correspondant. Choisissez des ensembles compatibles pour la même année de recensement et la même géographie.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.conditional02",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.conditional03": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Chaque ensemble conditionnel exige sa source correspondante. Téléversez la source de chaque ensemble sélectionné.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.conditional03",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.conditional04": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Les contrôles conditionnels exigent des contrôles des personnes et une géographie de recensement explicite. Fournissez les deux avant de continuer.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.conditional04",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.conditional05": {
+      "kind": "text",
+      "parameters": {},
+      "value": "La source sélectionnée n’est pas le CSV ou ZIP attendu du Profil des secteurs. Téléversez la source correspondant à l’année et à l’ensemble sélectionnés.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.conditional05",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.conditional06": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Les contrôles conditionnels et des personnes ont des dénominateurs de ménages privés incompatibles. Vérifiez leur source, leur géographie et leur année de recensement.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.conditional06",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.conditional07": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Les comptes de la source conditionnelle dépassent la marge d’arrondi permise du recensement. Vérifiez les comptes et la géographie sélectionnée.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.conditional07",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.conditional08": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Un compte requis de la source conditionnelle est supprimé ou indisponible. Choisissez une région avec des contrôles publiés ou omettez l’ensemble concerné.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.conditional08",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.conditional09": {
+      "kind": "text",
+      "parameters": {},
+      "value": "La source conditionnelle contient des lignes ou cellules en double. Vérifiez la source téléversée pour la géographie sélectionnée.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.conditional09",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.conditional10": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Des lignes ou champs requis de la source conditionnelle sont absents. Vérifiez la source téléversée et la géographie sélectionnée.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.conditional10",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.conditional11": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Une ligne requise du Profil du recensement est indisponible ou invalide. Vérifiez les comptes et choisissez une région avec des contrôles publiés.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.conditional11",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.conditional12": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Un compte du Profil du recensement n’est pas arrondi à la base cinq. Vérifiez que la source téléversée contient les comptes publiés attendus.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.conditional12",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.conditional13": {
+      "kind": "text",
+      "parameters": {},
+      "value": "L’ensemble conditionnel sélectionné n’est pas reconnu. Choisissez un ensemble proposé pour l’année et la géographie souhaitées.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.conditional13",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.conditional14": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Les géographies des contrôles conditionnels et des personnes diffèrent. Fournissez des contrôles couvrant les mêmes géographies.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.conditional14",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.conditional15": {
+      "kind": "text",
+      "parameters": {},
+      "value": "La cible conditionnelle des moins de 15 ans est incompatible avec les contrôles des personnes. Vérifiez les totaux par âge et les preuves de la source.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.conditional15",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.conditional16": {
+      "kind": "text",
+      "parameters": {},
+      "value": "La somme des cibles des catégories admissibles doit correspondre au dénominateur des personnes de 15 ans et plus. Vérifiez les comptes et les preuves de la source.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.conditional16",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.conditional17": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Les personnes candidates comprennent une catégorie admissible non prise en charge. Vérifiez les champs des candidats et la table de correspondance de l’ensemble.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.conditional17",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.conditional18": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Les personnes candidates comprennent une catégorie d’âge inconnue. Vérifiez le champ d’âge et la table de correspondance de l’ensemble.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.conditional18",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.conditional19": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Les contrôles conditionnels n’ont pas pu être validés. Vérifiez les ensembles, les données sources, la géographie et les candidats; utilisez la ligne de commande pour des diagnostics détaillés.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.conditional19",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.interrupted": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Exécution interrompue. Vous pouvez la redémarrer à partir des entrées enregistrées.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.interrupted",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.restart07": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Les entrées ont changé pendant la vérification du redémarrage; créez une nouvelle exécution.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.restart07",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.restart08": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Le chemin du modèle précédent est invalide; créez une nouvelle exécution.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.restart08",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.restart09": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Le modèle précédent ne peut pas être vérifié; créez une nouvelle exécution.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.restart09",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.restart10": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Le modèle a changé depuis l’interruption; créez une nouvelle exécution.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.restart10",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.restart11": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Le dossier des entrées est invalide; créez une nouvelle exécution.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.restart11",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.restart12": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Le chemin des entrées est invalide; créez une nouvelle exécution.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.restart12",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.restart13": {
+      "kind": "text",
+      "parameters": {},
+      "value": "L’exécution comporte des identifiants d’entrée en double.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.restart13",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.restart14": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Les entrées de l’exécution ont changé; créez une nouvelle exécution.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.restart14",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.back": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Retour aux exécutions",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.back",
+        "review": "draft"
+      }
+    },
+    "web.smallarea.runblocked": {
+      "kind": "text",
+      "parameters": {},
+      "value": "L’exécution ne peut pas démarrer parce que la vérification a relevé des problèmes bloquants. Examinez les diagnostics et vérifiez de nouveau les entrées.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.smallarea.runblocked",
         "review": "draft"
       }
     }
