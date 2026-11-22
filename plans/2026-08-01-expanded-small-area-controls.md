@@ -78,7 +78,7 @@ No conditional family or pack is admitted by that contract alone.
 The current Profile preparers expect English headers, geography labels, and in
 some cases an English ZIP member. Supporting French source files is distinct
 from translating the web interface. Treat it as a forecast candidate for the
-next available minor release, not as a claim that French files already work.
+next available minor release. Bilingual ingestion is implemented for the verified 2016 and 2021 tract formats; other geographies and revisions require separate evidence.
 
 | ID | Status | Depends on | Deliverable | Acceptance |
 | --- | --- | --- | --- | --- |

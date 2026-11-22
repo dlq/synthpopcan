@@ -1,7 +1,7 @@
 {
   "schema_version": "synthpopcan-web-messages-v1",
   "locale": "en-CA",
-  "revision": "runtime-preview-2",
+  "revision": "ipf-preview-1",
   "messages": {
     "web.language.label": {
       "kind": "text",
@@ -280,6 +280,748 @@
       "provenance": {
         "kind": "project",
         "source_id": "web.status.draft",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m001": {
+      "kind": "text",
+      "parameters": {},
+      "value": "New durable run",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m001",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m002": {
+      "kind": "text",
+      "parameters": {},
+      "value": "IPF from margin tables",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m002",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m003": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Fit compact weights from seed records and normalized controls.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m003",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m004": {
+      "kind": "text",
+      "parameters": {},
+      "value": "1. Inputs",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m004",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m005": {
+      "kind": "text",
+      "parameters": {},
+      "value": "2. Configure",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m005",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m006": {
+      "kind": "text",
+      "parameters": {},
+      "value": "3. Preflight",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m006",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m007": {
+      "kind": "text",
+      "parameters": {},
+      "value": "4. Run",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m007",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m008": {
+      "kind": "text",
+      "parameters": {},
+      "value": "5. Results",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m008",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m009": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Choose the two IPF input files",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m009",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m010": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Files stream directly into this local workspace. They are not loaded into browser memory for fitting.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m010",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m011": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Use demo age/sex files",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m011",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m012": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Generate from a prepared model",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m012",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m013": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Seed CSV",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m013",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m014": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Normalized margin/control CSV",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m014",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m015": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Choose one CSV.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m015",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m016": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Upload and continue",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m016",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m017": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Configure the fit",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m017",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m018": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Compact fitted weights are the durable output. Expansion remains a separate, explicit workflow.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m018",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m019": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Output",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m019",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m020": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Compact fitted weights — one row per seed profile.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m020",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m021": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Advanced IPF settings",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m021",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m022": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Weight column",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m022",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m023": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Maximum iterations",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m023",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m024": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Tolerance",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m024",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m025": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Keep a result when IPF reaches the iteration limit",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m025",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m026": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Back",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m026",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m027": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Check inputs",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m027",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m028": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Preflight",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m028",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m029": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Review parsed records, control margins, expected output, and workspace capacity before starting.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m029",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m030": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Change settings",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m030",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m031": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Start run",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m031",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m032": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Run progress",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m032",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m033": {
+      "kind": "text",
+      "parameters": {},
+      "value": "This work continues in an isolated local process. You can refresh and reconnect from the Runs list.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m033",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m034": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Cancel run",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m034",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m035": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Restart from saved inputs",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m035",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m036": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Results",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m036",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m037": {
+      "kind": "text",
+      "parameters": {},
+      "value": "The completed run and its artifacts are stored in the local workspace.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m037",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m038": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Weighted output preview",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m038",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m039": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Artifacts",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m039",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m040": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Reproduce from the command line",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m040",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m041": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Demo files are ready to upload.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m041",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m042": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Files changed. Upload the current pair to continue.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m042",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m043": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Streaming the two CSV files into the local workspace…",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m043",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m044": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Inputs uploaded and fingerprinted.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m044",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m045": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Inputs changed. Check the current settings again.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m045",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m046": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Checking input structure and workspace capacity…",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m046",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m047": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Preflight passed. The run is ready to start.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m047",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m048": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Preflight found a workspace capacity problem.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m048",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m049": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Creating the durable run…",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m049",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m050": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Run queued. You can safely refresh this page.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m050",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m051": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Cancellation requested.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m051",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m052": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Reconnected to the durable run.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m052",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m053": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Run completed and persisted in the workspace.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m053",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m054": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Seed records",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m054",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m055": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Control margins",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m055",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m056": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Dimensions",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m056",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m057": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Compact output rows",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m057",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m058": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Fitted population total",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m058",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m059": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Estimated artifact size",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m059",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m060": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Workspace capacity",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m060",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m061": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Enough disk space",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m061",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m062": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Insufficient disk space",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m062",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m063": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Converged",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m063",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m064": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Yes",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m064",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m065": {
+      "kind": "text",
+      "parameters": {},
+      "value": "No",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m065",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m066": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Iterations",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m066",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m067": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Maximum absolute error",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m067",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.steps": {
+      "kind": "text",
+      "parameters": {},
+      "value": "IPF run steps",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.steps",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.optional": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Optional",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.optional",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.download": {
+      "kind": "text",
+      "parameters": {
+        "filename": "text"
+      },
+      "value": "Download {filename}",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.download",
+        "review": "draft"
+      }
+    },
+    "web.ipf.fitting": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Fitting seed weights to control margins",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipf.fitting",
+        "review": "draft"
+      }
+    },
+    "web.ipf.report": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Writing IPF fit diagnostics",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipf.report",
+        "review": "draft"
+      }
+    },
+    "web.ipf.writing": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Writing compact fitted weights",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipf.writing",
+        "review": "draft"
+      }
+    },
+    "web.ipf.completed": {
+      "kind": "text",
+      "parameters": {},
+      "value": "IPF fitting completed",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipf.completed",
         "review": "draft"
       }
     }

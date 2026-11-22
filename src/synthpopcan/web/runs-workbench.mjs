@@ -1,5 +1,6 @@
 import { stringifyCsv } from "./csv.mjs";
 import { numberValue, optionalNumberValue } from "./form-utils.mjs";
+import { IPF_MESSAGE_IDS } from "./ipf-messages.mjs";
 import { clearWebError, renderWebError } from "./localization-ui.mjs";
 import { createOperationSequencer } from "./operation-sequencer.mjs";
 import {
@@ -28,8 +29,23 @@ import {
 import { buildAgeSexControlRows, buildAgeSexSeedRows } from "./starter-files.mjs";
 
 const TERMINAL = new Set(["succeeded", "failed", "cancelled", "interrupted"]);
+let presentationRuntime = null;
+const localizedViews = new Map();
+
+function translateOwned(id, fallback, params = {}) {
+  const result = presentationRuntime?.translate(id, params);
+  return !result || result === "Message unavailable." ? fallback : result;
+}
+
+function setOwnedText(element, text) {
+  const id = Object.hasOwn(IPF_MESSAGE_IDS, text) ? IPF_MESSAGE_IDS[text] : null;
+  if (id) localizedViews.set(element, { id, text });
+  else localizedViews.delete(element);
+  element.textContent = id ? translateOwned(id, text) : text;
+}
 
 export function bindRunsWorkbench(bootstrap, localization) {
+  presentationRuntime = localization;
   const state = {
     runs: [],
     selectedRun: null,
@@ -43,10 +59,20 @@ export function bindRunsWorkbench(bootstrap, localization) {
     localization,
   };
   localization.subscribe(() => {
+    for (const [element, view] of localizedViews) {
+      if (!element.isConnected) localizedViews.delete(element);
+      else element.textContent = translateOwned(view.id, view.text);
+    }
     const status = document.querySelector("#run-status").dataset.status;
     if (status) setRunStatus(status);
     for (const view of state.eventViews) {
       view.element.textContent = localization.presentEvent(view.context);
+    }
+    for (const link of document.querySelectorAll("[data-artifact-filename]")) {
+      const filename = link.dataset.artifactFilename;
+      link.textContent = translateOwned("web.ipfui.download", `Download ${filename}`, {
+        filename,
+      });
     }
   });
   setRunStatus(document.querySelector("#run-status").dataset.status);
@@ -233,8 +259,8 @@ function filesChanged(state) {
     showMessage("Files changed. Upload the current pair to continue.", "warning");
   const seed = document.querySelector("#ipf-seed-file").files?.[0];
   const controls = document.querySelector("#ipf-controls-file").files?.[0];
-  document.querySelector("#seed-upload-status").textContent = fileLabel(seed);
-  document.querySelector("#controls-upload-status").textContent = fileLabel(controls);
+  setOwnedText(document.querySelector("#seed-upload-status"), fileLabel(seed));
+  setOwnedText(document.querySelector("#controls-upload-status"), fileLabel(controls));
   document.querySelector("#upload-inputs").disabled = !(seed && controls);
 }
 
@@ -552,9 +578,9 @@ async function showSucceededRun(run, isCurrent) {
   const view = runResultView(run);
   if (view.warning) showMessage(view.warning, "warning");
   if (view.intro !== null) {
-    document.querySelector("#results-intro").textContent = view.intro;
+    setOwnedText(document.querySelector("#results-intro"), view.intro);
   }
-  document.querySelector("#preview-heading").textContent = view.previewHeading;
+  setOwnedText(document.querySelector("#preview-heading"), view.previewHeading);
   if (view.secondaryPreviewHeading !== null) {
     document.querySelector("#secondary-preview-heading").textContent =
       view.secondaryPreviewHeading;
@@ -582,7 +608,12 @@ function renderArtifacts(run) {
     const link = document.createElement("a");
     link.className = "download-link";
     link.href = artifactUrl(run.run_id, artifact.artifact_id);
-    link.textContent = `Download ${artifact.filename}`;
+    link.dataset.artifactFilename = artifact.filename;
+    link.textContent = translateOwned(
+      "web.ipfui.download",
+      `Download ${artifact.filename}`,
+      { filename: artifact.filename },
+    );
     artifacts.append(link);
   }
 }
@@ -617,9 +648,14 @@ function renderDiagnostics(element, items) {
   for (const [label, value] of items) {
     const card = document.createElement("div");
     const term = document.createElement("strong");
-    term.textContent = label;
+    setOwnedText(term, label);
     const detail = document.createElement("span");
-    detail.textContent = String(value ?? "—");
+    const displayValue = String(value ?? "—");
+    if (["Workspace capacity", "Converged"].includes(label)) {
+      setOwnedText(detail, displayValue);
+    } else {
+      detail.textContent = displayValue;
+    }
     card.append(term, detail);
     element.append(card);
   }
@@ -637,8 +673,8 @@ function showStep(name) {
 }
 
 function setRunHeading(kicker, title, status) {
-  document.querySelector("#run-kicker").textContent = kicker;
-  document.querySelector("#run-title").textContent = title;
+  setOwnedText(document.querySelector("#run-kicker"), kicker);
+  setOwnedText(document.querySelector("#run-title"), title);
   setRunStatus(status);
 }
 
@@ -654,7 +690,7 @@ function showMessage(message, kind, phase = "") {
   clearWebError(element);
   element.className = `result-box ${kind}`.trim();
   element.dataset.phase = phase;
-  element.textContent = message;
+  setOwnedText(element, message);
 }
 
 function showErrorMessage(error, kind = "error") {

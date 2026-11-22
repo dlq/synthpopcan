@@ -65,6 +65,12 @@ test("missing catalogues preserve the English shared navigation", async ({ page 
   await expect(page.getByRole("button", { name: "New run" })).toBeVisible();
   await expect(page.getByRole("region", { name: "Runs workbench" })).toBeVisible();
   await expect(page.locator("#run-status")).toHaveText("Draft");
+  await page.locator("#new-run").click();
+  await page.locator("#use-demo-ipf").click();
+  await expect(page.locator("#run-title")).toHaveText("IPF from margin tables");
+  await expect(page.locator("#workbench-message")).toHaveText(
+    "Demo files are ready to upload.",
+  );
 });
 
 test("a displayed server error updates with locale while its response stays unchanged", async ({
@@ -111,6 +117,87 @@ async function readHorizontalLayout(page) {
   });
 }
 
+test("IPF presentation switches languages without changing the completed run", async ({
+  page,
+}) => {
+  await openWorkbench(page);
+  await page.locator("#new-run").click();
+  await page.locator("#web-locale").selectOption("fr-CA");
+  await expect(page.locator("#inputs-heading")).toHaveText(
+    "Choisissez les deux fichiers d’entrée IPF",
+  );
+  await page.locator("#use-demo-ipf").click();
+  await expect(page.locator("#workbench-message")).toContainText("démonstration");
+  await page.locator("#upload-inputs").click();
+  await expect(page.locator("#configure-heading")).toHaveText(
+    "Configurer l’ajustement",
+  );
+  await page.locator("#check-preflight").click();
+  await expect(page.locator("#preflight-results")).toContainText("Marges de contrôle");
+  await page.locator("#web-locale").selectOption("en-CA");
+  await expect(page.locator("#preflight-results")).toContainText("Control margins");
+  await page.locator("#start-run").click();
+  await expect(page.locator("#results-heading")).toBeVisible({ timeout: 15000 });
+  const before = await page.evaluate(() => fetch("/api/runs").then((r) => r.text()));
+  const command = await page.locator("#reproduction-command").textContent();
+  const artifactBytes = () =>
+    page.locator("#run-artifacts a").evaluateAll(async (links) =>
+      Promise.all(
+        links.map(async (link) => ({
+          href: link.getAttribute("href"),
+          bytes: Array.from(
+            new Uint8Array(await (await fetch(link.href)).arrayBuffer()),
+          ),
+        })),
+      ),
+    );
+  const artifactsBefore = await artifactBytes();
+  expect(artifactsBefore.length).toBeGreaterThan(0);
+  const runPath = artifactsBefore[0].href.split("/artifacts/")[0];
+  const runEvidence = () =>
+    page.evaluate(async (path) => {
+      const [run, events] = await Promise.all([
+        fetch(path).then((response) => response.text()),
+        fetch(`${path}/events`).then((response) => response.text()),
+      ]);
+      return { run, events };
+    }, runPath);
+  const evidenceBefore = await runEvidence();
+  await page.locator("#web-locale").selectOption("fr-CA");
+  await expect(page.locator("#fit-diagnostics")).toContainText("Convergence atteinte");
+  await expect(page.locator("#run-artifacts a").first()).toContainText("Télécharger");
+  expect(await page.locator("#reproduction-command").textContent()).toBe(command);
+  expect(await artifactBytes()).toEqual(artifactsBefore);
+  expect(await runEvidence()).toEqual(evidenceBefore);
+  expect(await page.evaluate(() => fetch("/api/runs").then((r) => r.text()))).toBe(
+    before,
+  );
+});
+
+test("the IPF demo produces equivalent weights in both locales", async ({ page }) => {
+  await openWorkbench(page);
+  const results = [];
+  for (const locale of ["en-CA", "fr-CA"]) {
+    await page.locator("#new-run").click();
+    await page.locator("#web-locale").selectOption(locale);
+    await page.locator("#use-demo-ipf").click();
+    await page.locator("#upload-inputs").click();
+    await expect(page.locator("#configure-heading")).toBeVisible();
+    await page.locator("#check-preflight").click();
+    await expect(page.locator("#start-run")).toBeEnabled();
+    const request = page.waitForRequest(
+      (item) =>
+        item.method() === "POST" && new URL(item.url()).pathname === "/api/runs",
+    );
+    await page.locator("#start-run").click();
+    const payload = (await request).postDataJSON();
+    await expect(page.locator("#results-heading")).toBeVisible({ timeout: 15000 });
+    const rows = await page.locator("#primary-preview tbody").textContent();
+    results.push({ workflow: payload.workflow, options: payload.options, rows });
+  }
+  expect(results[1]).toEqual(results[0]);
+});
+
 test("SCN-WEB-001 runs durable demo IPF and recovers results after refresh", async ({
   page,
 }) => {
@@ -129,6 +216,7 @@ test("SCN-WEB-001 runs durable demo IPF and recovers results after refresh", asy
   await expect(page).toHaveTitle("SynthPopCan");
   await expect(page.getByRole("heading", { name: "Runs" })).toBeVisible();
   await expect(page.getByRole("button", { name: "New run" })).toHaveCount(1);
+  await page.getByRole("button", { name: "New run" }).click();
   await page.getByRole("button", { name: /Use demo age\/sex files/ }).click();
   await expect(page.locator("#seed-upload-status")).toContainText(
     "demo-age-sex-seed.csv",
@@ -154,35 +242,39 @@ test("SCN-WEB-001 runs durable demo IPF and recovers results after refresh", asy
   const originalRuns = await page.evaluate(() =>
     fetch("/api/runs").then((r) => r.text()),
   );
-  await page.locator(".run-list-item").focus();
+  await page.locator(".run-list-item").first().focus();
   await page.evaluate(() => {
     const select = document.querySelector("#web-locale");
     select.value = "fr-CA";
     select.dispatchEvent(new Event("change", { bubbles: true }));
   });
-  await expect(page.locator(".run-list-item")).toBeFocused();
+  await expect(page.locator(".run-list-item").first()).toBeFocused();
   expect(await page.evaluate(() => fetch("/api/runs").then((r) => r.text()))).toBe(
     originalRuns,
   );
   await expect(page.locator("#progress-events")).toContainText(
     "Lecture des enregistrements initiaux et des contrôles",
   );
-  await expect(page.locator(".run-list-item")).toContainText("Réussie");
+  await expect(page.locator(".run-list-item").first()).toContainText("Réussie");
   await expect(page.locator("#run-status")).toHaveText("Réussie");
   await expect(page.locator("#primary-preview")).toContainText("weight");
   await expect(page.locator("#primary-preview tbody tr")).toHaveCount(4);
-  await expect(page.getByRole("link", { name: "Download weights.csv" })).toBeVisible();
   await expect(
-    page.getByRole("link", { name: "Download fit-report.json" }),
+    page.getByRole("link", { name: "Télécharger weights.csv" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: "Télécharger fit-report.json" }),
   ).toBeVisible();
   await expect(page.locator("#reproduction-command")).toContainText(
     "synthpopcan ipf fit",
   );
-  await expect(page.locator(".run-list-item")).toHaveCount(1);
+  await expect(page.locator(".run-list-item").first()).toBeVisible();
 
   await page.setViewportSize({ width: 375, height: 812 });
   await page.reload();
-  await expect(page.getByRole("heading", { name: "Results" })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Résultats", exact: true }),
+  ).toBeVisible();
   await expect(page.locator("#primary-preview tbody tr")).toHaveCount(4);
   const layout = await readHorizontalLayout(page);
   expect(layout.documentScrollWidth, JSON.stringify(layout)).toBeLessThanOrEqual(

@@ -82,7 +82,7 @@ labels as data; translate only independently attributed presentation.
 | --- | --- | --- | --- | --- |
 | `I18N13-01` | `done` | `I18N12-05` | Baseline core surfaces, messages and terminology | Enumerate the visible and accessible text, dynamic states and message IDs for the three workflows below; classify source notices and opaque data, record fallback and the current revision, and create a reviewable terminology list using authoritative bilingual sources where available. No draft is marked reviewed. |
 | `I18N13-02` | `done` | `I18N13-01` | Shared navigation, run list, language selector and accessibility labels | Catalogue static shell and common states in both locales; switching language rerenders existing presentation; keyboard-only selection is covered by [#58](https://github.com/dlq/synthpopcan/issues/58), including focus, persistence and long French labels. |
-| `I18N13-03` | `ready` | `I18N13-01`, `I18N13-02` | Core IPF workbench | Localize demo and upload, configuration, preflight, start/cancel, progress, results and downloads; installed-wheel scenarios complete the demo in each locale, compare equivalent requests and seeded results while accounting for run-specific IDs/timestamps, and verify locale changes do not mutate a run’s events, artifacts or reproduction command. |
+| `I18N13-03` | `in progress` | `I18N13-01`, `I18N13-02` | Core IPF workbench | Localize demo and upload, configuration, preflight, start/cancel, progress, results and downloads; installed-wheel scenarios complete the demo in each locale, compare equivalent requests and seeded results while accounting for run-specific IDs/timestamps, and verify locale changes do not mutate a run’s events, artifacts or reproduction command. |
 | `I18N13-04` | `ready` | `I18N13-01`, `I18N13-02` | Model discovery and generation | Localize catalogue navigation, provenance and limitation framing, installation/failure, configuration, progress and results; preserve model IDs, supplied titles, notices and package metadata. Test a fictional bundled model in both locales. |
 | `I18N13-05` | `ready` | `I18N13-01`, `I18N13-02` | Small-area configuration and durable runs | Localize uploads, broad/conditional-pack selection, evidence and compatibility guidance, estimates, preflight, run, cancellation, interruption/restart and result summaries. Cover a bounded fictional workflow and failures in both locales without a live Census dependency. |
 | `I18N13-06` | `ready` | `I18N13-01` | Dynamic error and progress presentation | Map reviewed stable messages or explicitly versioned presentation metadata to catalogue IDs at the client boundary; define safe fallback for unknown, parameterized and historical events. Verify that API responses, event replay, diagnostic data and artifact bytes remain unchanged across locale switches. |
@@ -92,6 +92,12 @@ labels as data; translate only independently attributed presentation.
 The [core-web baseline](../docs/records/core-web-localization-baseline-2026-11-21.md)
 connects the source-hashed inventories, dynamic-state boundaries and draft
 terminology to the `1.3.0` slices. The current report records the draft IDs and zero reviewed covered IDs.
+The IPF demo, configuration, preflight, run and result presentation now have
+draft French messages, with installed-wheel scenarios comparing both locales
+and checking saved run evidence across a language switch. Server-originated
+diagnostic details and general dynamic-message coverage remain work for
+`I18N13-06`; the IPF slice remains open pending its complete acceptance and
+human review.
 Shared navigation, run-list labels, status and the selector now use the draft
 catalogue; keyboard, focus, persistence and narrow-layout checks cover the
 shared shell. Human translation review remains a separate gate. A

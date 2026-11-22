@@ -63,7 +63,7 @@ when its bounded artifact and decision gate are stated explicitly.
 
 | Plan | Ongoing responsibility | Current next action |
 | --- | --- | --- |
-| [Correctness assurance](2026-07-12-correctness-assurance.md) | Compatibility, exact-commit CI, coverage, correctness, release evidence, assurance, and reproduction gates | Maintain the release gates; apply the reviewed Python 3.15 lock refresh (`ASSURE315-01B`), then run the staged Linux gate and support decision. |
+| [Correctness assurance](2026-07-12-correctness-assurance.md) | Compatibility, exact-commit CI, coverage, correctness, release evidence, assurance, and reproduction gates | Maintain the release gates; verify the applied Python 3.15 lock refresh (`ASSURE315-01B`), then run the staged Linux gate and support decision. |
 | [Research-software stewardship](2026-07-19-research-software-stewardship.md) | Citation, preservation, licensing, support boundaries, publication evidence, and future scholarly-readiness gates | Preserve the verified `1.2.1` DOI, `1.1.0` Software Heritage identifiers, earlier records, and exact-commit publication process. |
 | [Strict typing](2026-08-01-strict-typing.md) | Package-wide Pyright `standard` and an incremental strict-clean ratchet | Maintain the expanded strict-clean path list and continue package-wide typing incrementally. |
 | [Post-1.0 release train](2026-08-19-post-1-0-release-train.md) | Bounded minor-release scope, confidence, sequencing, acceptance gates, and the cross-cutting maintainability ratchet | Maintain released `1.2.1`; localize the core IPF workflow and select one evidence-dependent control family. `1.5.0` and `1.6.0` are tentative scenarios. |

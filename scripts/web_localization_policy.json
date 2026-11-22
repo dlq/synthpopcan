@@ -3,7 +3,7 @@
   "approved_adapter_literals": {
     "\"#web-locale\"": 1,
     "\"/api/uploads\"": 1,
-    "\"Message unavailable.\"": 2,
+    "\"Message unavailable.\"": 3,
     "\"POST\"": 1,
     "\"Reading seed records and controls\"": 1,
     "\"[data-i18n-aria-label]\"": 1,
@@ -12,11 +12,25 @@
     "\"change\"": 1,
     "\"en-CA\"": 1,
     "\"fr-CA\"": 1,
-    "\"ipf\"": 1,
+    "\"ipf\"": 5,
     "\"reading-inputs\"": 1,
     "\"upload is invalid\"": 1,
     "\"web.ipf.reading\"": 1,
     "\"web.upload.invalid\"": 1,
-    "`./messages.${locale}.json`": 1
+    "`./messages.${locale}.json`": 1,
+    "\"[data-i18n-placeholder]\"": 1,
+    "\"placeholder\"": 2,
+    "\"web.ipf.fitting\"": 1,
+    "\"Fitting seed weights to control margins\"": 1,
+    "\"web.ipf.report\"": 1,
+    "\"Writing IPF fit diagnostics\"": 1,
+    "\"web.ipf.writing\"": 1,
+    "\"Writing compact fitted weights\"": 1,
+    "\"web.ipf.completed\"": 1,
+    "\"IPF fitting completed\"": 1,
+    "\"fitting\"": 1,
+    "\"writing-report\"": 1,
+    "\"writing-artifacts\"": 1,
+    "\"completed\"": 1
   }
 }

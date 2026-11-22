@@ -1,7 +1,7 @@
 {
   "schema_version": "synthpopcan-web-messages-v1",
   "locale": "fr-CA",
-  "revision": "runtime-preview-2",
+  "revision": "ipf-preview-1",
   "messages": {
     "web.language.label": {
       "kind": "text",
@@ -280,6 +280,748 @@
       "provenance": {
         "kind": "project",
         "source_id": "web.status.draft",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m001": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Nouvelle exécution enregistrée",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m001",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m002": {
+      "kind": "text",
+      "parameters": {},
+      "value": "IPF à partir de tableaux de marges",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m002",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m003": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Ajustez des poids compacts à partir des enregistrements initiaux et des contrôles normalisés.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m003",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m004": {
+      "kind": "text",
+      "parameters": {},
+      "value": "1. Entrées",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m004",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m005": {
+      "kind": "text",
+      "parameters": {},
+      "value": "2. Configuration",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m005",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m006": {
+      "kind": "text",
+      "parameters": {},
+      "value": "3. Vérification",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m006",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m007": {
+      "kind": "text",
+      "parameters": {},
+      "value": "4. Exécution",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m007",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m008": {
+      "kind": "text",
+      "parameters": {},
+      "value": "5. Résultats",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m008",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m009": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Choisissez les deux fichiers d’entrée IPF",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m009",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m010": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Les fichiers sont transmis directement à cet espace de travail local. Ils ne sont pas chargés dans la mémoire du navigateur pour l’ajustement.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m010",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m011": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Utiliser les fichiers de démonstration âge-sexe",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m011",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m012": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Générer à partir d’un modèle préparé",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m012",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m013": {
+      "kind": "text",
+      "parameters": {},
+      "value": "CSV des données initiales",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m013",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m014": {
+      "kind": "text",
+      "parameters": {},
+      "value": "CSV des marges ou contrôles normalisés",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m014",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m015": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Choisissez un fichier CSV.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m015",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m016": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Téléverser et continuer",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m016",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m017": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Configurer l’ajustement",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m017",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m018": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Les poids ajustés compacts constituent le résultat enregistré. L’expansion demeure une étape distincte et explicite.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m018",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m019": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Résultat",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m019",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m020": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Poids ajustés compacts — une ligne par profil initial.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m020",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m021": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Paramètres IPF avancés",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m021",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m022": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Colonne de poids",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m022",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m023": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Nombre maximal d’itérations",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m023",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m024": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Tolérance",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m024",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m025": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Conserver un résultat lorsque l’IPF atteint la limite d’itérations",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m025",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m026": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Retour",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m026",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m027": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Vérifier les entrées",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m027",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m028": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Vérification préalable",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m028",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m029": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Avant de commencer, examinez les enregistrements lus, les marges de contrôle, le résultat attendu et la capacité de l’espace de travail.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m029",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m030": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Modifier les paramètres",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m030",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m031": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Démarrer l’exécution",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m031",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m032": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Progression de l’exécution",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m032",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m033": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Le travail se poursuit dans un processus local isolé. Vous pouvez actualiser la page et reprendre depuis la liste des exécutions.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m033",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m034": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Annuler l’exécution",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m034",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m035": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Recommencer à partir des entrées enregistrées",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m035",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m036": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Résultats",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m036",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m037": {
+      "kind": "text",
+      "parameters": {},
+      "value": "L’exécution terminée et ses fichiers sont enregistrés dans l’espace de travail local.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m037",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m038": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Aperçu des résultats pondérés",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m038",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m039": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Fichiers produits",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m039",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m040": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Reproduire en ligne de commande",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m040",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m041": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Les fichiers de démonstration sont prêts à être téléversés.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m041",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m042": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Les fichiers ont changé. Téléversez la paire actuelle pour continuer.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m042",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m043": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Transfert des deux fichiers CSV vers l’espace de travail local…",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m043",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m044": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Les entrées ont été téléversées et leurs empreintes calculées.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m044",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m045": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Les entrées ont changé. Vérifiez de nouveau les paramètres actuels.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m045",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m046": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Vérification de la structure des entrées et de la capacité de l’espace de travail…",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m046",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m047": {
+      "kind": "text",
+      "parameters": {},
+      "value": "La vérification préalable a réussi. L’exécution peut démarrer.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m047",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m048": {
+      "kind": "text",
+      "parameters": {},
+      "value": "La vérification a détecté un problème de capacité de l’espace de travail.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m048",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m049": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Création de l’exécution enregistrée…",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m049",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m050": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Exécution en attente. Vous pouvez actualiser cette page.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m050",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m051": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Annulation demandée.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m051",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m052": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Reconnexion à l’exécution enregistrée.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m052",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m053": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Exécution terminée et enregistrée dans l’espace de travail.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m053",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m054": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Enregistrements initiaux",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m054",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m055": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Marges de contrôle",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m055",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m056": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Dimensions",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m056",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m057": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Lignes de résultats compacts",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m057",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m058": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Population totale ajustée",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m058",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m059": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Taille estimée des fichiers",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m059",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m060": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Capacité de l’espace de travail",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m060",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m061": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Espace disque suffisant",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m061",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m062": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Espace disque insuffisant",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m062",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m063": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Convergence atteinte",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m063",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m064": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Oui",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m064",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m065": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Non",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m065",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m066": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Itérations",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m066",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.m067": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Erreur absolue maximale",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.m067",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.steps": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Étapes de l’exécution IPF",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.steps",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.optional": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Facultatif",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.optional",
+        "review": "draft"
+      }
+    },
+    "web.ipfui.download": {
+      "kind": "text",
+      "parameters": {
+        "filename": "text"
+      },
+      "value": "Télécharger {filename}",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipfui.download",
+        "review": "draft"
+      }
+    },
+    "web.ipf.fitting": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Ajustement des poids initiaux aux marges de contrôle",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipf.fitting",
+        "review": "draft"
+      }
+    },
+    "web.ipf.report": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Enregistrement des diagnostics de l’ajustement IPF",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipf.report",
+        "review": "draft"
+      }
+    },
+    "web.ipf.writing": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Enregistrement des poids ajustés compacts",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipf.writing",
+        "review": "draft"
+      }
+    },
+    "web.ipf.completed": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Ajustement IPF terminé",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipf.completed",
         "review": "draft"
       }
     }

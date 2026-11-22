@@ -1,10 +1,21 @@
 # Python 3.15 Lockfile Review — 2026-11-21
 
-**Decision:** retain the repository lock and supported Python 3.11–3.14 matrix
-for now. A targeted numerical refresh is a viable candidate for a separate
-reviewed change, but clean Linux Python 3.15 acceptance and a support decision
-remain outstanding. This record does not promote Python 3.15 or claim Linux
-execution based on a cross-platform resolver check.
+## Follow-up — 2026-11-22
+
+The numerical-only refresh has now been applied to the repository lock. The
+resolver changed the Python 3.12+ NumPy branch from 2.5.0 to 2.5.5 and the
+SciPy branch from 1.18.0 to 1.18.1; their Python 3.11 branches remain at
+2.4.6 and 1.17.1, respectively. No PyYAML, MarkupSafe, docopt, or other
+dependency version was deliberately upgraded. The macOS matrix below tested
+the same numerical candidate; the repository's supported-version CI and
+package checks still need to validate the current change. Clean Linux Python
+3.15 acceptance and the support decision remain separate gates.
+
+**Original decision:** retain the then-current repository lock and supported
+Python 3.11–3.14 matrix pending a separate review of the targeted refresh.
+Clean Linux Python 3.15 acceptance and a support decision remain outstanding.
+This record does not promote Python 3.15 or claim Linux execution based on a
+cross-platform resolver check.
 
 ## Isolated Resolutions
 

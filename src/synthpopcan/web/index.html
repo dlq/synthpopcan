@@ -61,50 +61,50 @@
         <section id="run-workspace" class="run-workspace panel" aria-labelledby="run-title">
           <div class="run-heading">
             <div>
-              <p id="run-kicker" class="eyebrow">New durable run</p>
-              <h2 id="run-title">IPF from margin tables</h2>
-              <p id="run-subtitle">Fit compact weights from seed records and normalized controls.</p>
+              <p id="run-kicker" class="eyebrow"><span data-i18n="web.ipfui.m001">New durable run</span></p>
+              <h2 id="run-title"><span data-i18n="web.ipfui.m002">IPF from margin tables</span></h2>
+              <p id="run-subtitle"><span data-i18n="web.ipfui.m003">Fit compact weights from seed records and normalized controls.</span></p>
             </div>
             <span id="run-status" class="run-status draft" data-status="draft">Draft</span>
           </div>
 
-          <ol class="step-list" aria-label="IPF run steps">
-            <li data-step-indicator="inputs" class="active">1. Inputs</li>
-            <li data-step-indicator="configure">2. Configure</li>
-            <li data-step-indicator="preflight">3. Preflight</li>
-            <li data-step-indicator="run">4. Run</li>
-            <li data-step-indicator="results">5. Results</li>
+          <ol class="step-list" aria-label="IPF run steps" data-i18n-aria-label="web.ipfui.steps">
+            <li data-step-indicator="inputs" class="active"><span data-i18n="web.ipfui.m004">1. Inputs</span></li>
+            <li data-step-indicator="configure"><span data-i18n="web.ipfui.m005">2. Configure</span></li>
+            <li data-step-indicator="preflight"><span data-i18n="web.ipfui.m006">3. Preflight</span></li>
+            <li data-step-indicator="run"><span data-i18n="web.ipfui.m007">4. Run</span></li>
+            <li data-step-indicator="results"><span data-i18n="web.ipfui.m008">5. Results</span></li>
           </ol>
 
           <div id="workbench-message" class="result-box" role="status" aria-live="polite"></div>
 
           <section class="run-step active" data-run-step="inputs" aria-labelledby="inputs-heading">
             <div class="setup-heading">
-              <h3 id="inputs-heading">Choose the two IPF input files</h3>
-              <p>Files stream directly into this local workspace. They are not loaded into browser memory for fitting.</p>
+              <h3 id="inputs-heading"><span data-i18n="web.ipfui.m009">Choose the two IPF input files</span></h3>
+              <p><span data-i18n="web.ipfui.m010">Files stream directly into this local workspace. They are not loaded into browser memory for fitting.</span></p>
             </div>
             <div class="starter-actions">
-              <button id="use-demo-ipf" class="secondary-action" type="button">Use demo age/sex files</button>
-              <button id="start-model-workflow" class="secondary-action" type="button">Generate from a prepared model</button>
+              <button id="use-demo-ipf" class="secondary-action" type="button"><span data-i18n="web.ipfui.m011">Use demo age/sex files</span></button>
+              <button id="start-model-workflow" class="secondary-action" type="button"><span data-i18n="web.ipfui.m012">Generate from a prepared model</span></button>
             </div>
             <div class="form-grid">
-              <label>Seed CSV
+              <label><span data-i18n="web.ipfui.m013">Seed CSV</span>
                 <input id="ipf-seed-file" type="file" accept=".csv,text/csv" required>
-                <small id="seed-upload-status" class="field-hint">Choose one CSV.</small>
+                <small id="seed-upload-status" class="field-hint"><span data-i18n="web.ipfui.m015">Choose one CSV.</span></small>
               </label>
-              <label>Normalized margin/control CSV
+              <label><span data-i18n="web.ipfui.m014">Normalized margin/control CSV</span>
                 <input id="ipf-controls-file" type="file" accept=".csv,text/csv" required>
-                <small id="controls-upload-status" class="field-hint">Choose one CSV.</small>
+                <small id="controls-upload-status" class="field-hint"><span data-i18n="web.ipfui.m015">Choose one CSV.</span></small>
               </label>
             </div>
             <div class="step-actions">
-              <button id="upload-inputs" class="primary-action" type="button" disabled>Upload and continue</button>
+              <button id="upload-inputs" class="primary-action" type="button" disabled><span data-i18n="web.ipfui.m016">Upload and continue</span></button>
             </div>
           </section>
 
           <section class="run-step" data-run-step="model-inputs" aria-labelledby="model-inputs-heading" hidden>
             <div class="setup-heading">
-              <h3 id="model-inputs-heading">Generate from a prepared model</h3>
+              <h3 id="model-inputs-heading"><span data-i18n="web.ipfui.m012">Generate from a prepared model</span></h3>
               <p>Choose a reviewed catalogue package or upload a linked package JSON. Generation and validation run in Python.</p>
             </div>
             <div class="form-grid">
@@ -133,77 +133,77 @@
               </label>
             </div>
             <div class="step-actions">
-              <button class="secondary-action" type="button" data-go-step="inputs">Back</button>
+              <button class="secondary-action" type="button" data-go-step="inputs"><span data-i18n="web.ipfui.m026">Back</span></button>
               <button id="check-model-preflight" class="primary-action" type="button">Check model and scale</button>
             </div>
           </section>
 
           <section class="run-step" data-run-step="configure" aria-labelledby="configure-heading" hidden>
             <div class="setup-heading">
-              <h3 id="configure-heading">Configure the fit</h3>
-              <p>Compact fitted weights are the durable output. Expansion remains a separate, explicit workflow.</p>
+              <h3 id="configure-heading"><span data-i18n="web.ipfui.m017">Configure the fit</span></h3>
+              <p><span data-i18n="web.ipfui.m018">Compact fitted weights are the durable output. Expansion remains a separate, explicit workflow.</span></p>
             </div>
             <div class="output-default">
-              <strong>Output</strong>
-              <span>Compact fitted weights — one row per seed profile.</span>
+              <strong><span data-i18n="web.ipfui.m019">Output</span></strong>
+              <span><span data-i18n="web.ipfui.m020">Compact fitted weights — one row per seed profile.</span></span>
             </div>
             <details class="advanced-options">
-              <summary>Advanced IPF settings</summary>
+              <summary><span data-i18n="web.ipfui.m021">Advanced IPF settings</span></summary>
               <div class="form-grid advanced-options-body">
-                <label>Weight column
-                  <input id="ipf-weight-field" placeholder="Optional">
+                <label><span data-i18n="web.ipfui.m022">Weight column</span>
+                  <input id="ipf-weight-field" placeholder="Optional" data-i18n-placeholder="web.ipfui.optional">
                 </label>
-                <label>Maximum iterations
+                <label><span data-i18n="web.ipfui.m023">Maximum iterations</span>
                   <input id="ipf-max-iterations" type="number" min="1" value="100">
                 </label>
-                <label>Tolerance
+                <label><span data-i18n="web.ipfui.m024">Tolerance</span>
                   <input id="ipf-tolerance" type="number" min="0" step="0.000001" value="0.000001">
                 </label>
                 <label class="checkbox-field">
                   <input id="ipf-allow-nonconverged" type="checkbox">
-                  Keep a result when IPF reaches the iteration limit
+                  <span data-i18n="web.ipfui.m025">Keep a result when IPF reaches the iteration limit</span>
                 </label>
               </div>
             </details>
             <div class="step-actions">
-              <button class="secondary-action" type="button" data-go-step="inputs">Back</button>
-              <button id="check-preflight" class="primary-action" type="button">Check inputs</button>
+              <button class="secondary-action" type="button" data-go-step="inputs"><span data-i18n="web.ipfui.m026">Back</span></button>
+              <button id="check-preflight" class="primary-action" type="button"><span data-i18n="web.ipfui.m027">Check inputs</span></button>
             </div>
           </section>
 
           <section class="run-step" data-run-step="preflight" aria-labelledby="preflight-heading" hidden>
             <div class="setup-heading">
-              <h3 id="preflight-heading">Preflight</h3>
-              <p>Review parsed records, control margins, expected output, and workspace capacity before starting.</p>
+              <h3 id="preflight-heading"><span data-i18n="web.ipfui.m028">Preflight</span></h3>
+              <p><span data-i18n="web.ipfui.m029">Review parsed records, control margins, expected output, and workspace capacity before starting.</span></p>
             </div>
             <div id="preflight-results" class="diagnostic-grid"></div>
             <div class="step-actions">
-              <button class="secondary-action" type="button" data-go-step="configure">Change settings</button>
-              <button id="start-run" class="primary-action" type="button" disabled>Start run</button>
+              <button class="secondary-action" type="button" data-go-step="configure"><span data-i18n="web.ipfui.m030">Change settings</span></button>
+              <button id="start-run" class="primary-action" type="button" disabled><span data-i18n="web.ipfui.m031">Start run</span></button>
             </div>
           </section>
 
           <section class="run-step" data-run-step="run" aria-labelledby="progress-heading" hidden>
             <div class="setup-heading">
-              <h3 id="progress-heading">Run progress</h3>
-              <p>This work continues in an isolated local process. You can refresh and reconnect from the Runs list.</p>
+              <h3 id="progress-heading"><span data-i18n="web.ipfui.m032">Run progress</span></h3>
+              <p><span data-i18n="web.ipfui.m033">This work continues in an isolated local process. You can refresh and reconnect from the Runs list.</span></p>
             </div>
             <progress id="run-progress" max="100"></progress>
             <ol id="progress-events" class="progress-events" aria-live="polite"></ol>
             <div class="step-actions">
-              <button id="cancel-run" class="secondary-action danger-action" type="button">Cancel run</button>
-              <button id="restart-run" class="primary-action" type="button" hidden>Restart from saved inputs</button>
+              <button id="cancel-run" class="secondary-action danger-action" type="button"><span data-i18n="web.ipfui.m034">Cancel run</span></button>
+              <button id="restart-run" class="primary-action" type="button" hidden><span data-i18n="web.ipfui.m035">Restart from saved inputs</span></button>
             </div>
           </section>
 
           <section class="run-step" data-run-step="results" aria-labelledby="results-heading" hidden>
             <div class="setup-heading">
-              <h3 id="results-heading">Results</h3>
-              <p id="results-intro">The completed run and its artifacts are stored in the local workspace.</p>
+              <h3 id="results-heading"><span data-i18n="web.ipfui.m036">Results</span></h3>
+              <p id="results-intro"><span data-i18n="web.ipfui.m037">The completed run and its artifacts are stored in the local workspace.</span></p>
             </div>
             <div id="fit-diagnostics" class="diagnostic-grid"></div>
             <section class="preview-section" aria-labelledby="preview-heading">
-              <h4 id="preview-heading">Weighted output preview</h4>
+              <h4 id="preview-heading"><span data-i18n="web.ipfui.m038">Weighted output preview</span></h4>
               <div id="primary-preview" class="table-scroll"></div>
               <div id="secondary-preview-block" hidden>
                 <h4 id="secondary-preview-heading">Person output preview</h4>
@@ -211,11 +211,11 @@
               </div>
             </section>
             <section class="artifacts-section" aria-labelledby="artifacts-heading">
-              <h4 id="artifacts-heading">Artifacts</h4>
+              <h4 id="artifacts-heading"><span data-i18n="web.ipfui.m039">Artifacts</span></h4>
               <div id="run-artifacts" class="download-list"></div>
             </section>
             <section class="reproduction-section" aria-labelledby="reproduction-heading">
-              <h4 id="reproduction-heading">Reproduce from the command line</h4>
+              <h4 id="reproduction-heading" data-i18n="web.ipfui.m040">Reproduce from the command line</h4>
               <pre id="reproduction-command"></pre>
             </section>
           </section>

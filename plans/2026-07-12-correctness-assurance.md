@@ -76,7 +76,7 @@ maintenance work, independent of a committed feature release.
 | `ASSURE12-01` | `done` | Current pytest organization and release gates | One lightweight runner with named test selections and conservative selection from changed files ([#54](https://github.com/dlq/synthpopcan/issues/54)) | Local and CI invocations share named selections; dry runs explain choices, and regression tests cover mappings, missing files and full-suite fallback |
 | `ASSURE12-02` | `done` | `ASSURE12-01` | GitHub CI integration and contributor guidance | [PR #57](https://github.com/dlq/synthpopcan/pull/57) verified the safe full-suite fallback in the affected compatibility jobs, while the full coverage job, matrix summary, web and distribution checks passed; contributor commands and timings are documented |
 | `ASSURE315-01` | `done` | [Python 3.15 review](../docs/records/python-3.15-review-2026-11-20.md) | Review a targeted lockfile refresh and development-tool build requirements | Check NumPy/SciPy and other 3.15 wheel availability, resolve the locked base and both optional extras without ad hoc system builds, and run the existing Python 3.11–3.14 matrix; record any remaining tooling constraints. |
-| `ASSURE315-01B` | `ready` | `ASSURE315-01` and [lock review](../docs/records/python-3.15-lock-review-2026-11-21.md) | Apply and review the targeted numerical lock refresh | Review lock diff and dev-tool build choices; run the existing locked Python 3.11–3.14 CI matrix and affected package checks without changing the support claim. Record or separately review any additional dependency updates. |
+| `ASSURE315-01B` | `in progress` | `ASSURE315-01` and [lock review](../docs/records/python-3.15-lock-review-2026-11-21.md) | Apply and review the targeted numerical lock refresh | NumPy and SciPy have been refreshed as reviewed; run the existing locked Python 3.11–3.14 CI matrix and affected package checks without changing the support claim. Record or separately review any additional dependency updates. |
 | `ASSURE315-02` | `blocked` | `ASSURE315-01B` | Run the full Python 3.15 acceptance gate on clean Linux CI | Test the refreshed locked environment with the full Python suite and coverage, extended correctness, documentation and web/browser checks, and clean wheel and sdist installation including `performance` and `model-build` extras; record versions, platform, results and skips. A non-blocking experimental job may gather evidence before support is promoted. |
 | `ASSURE315-03` | `blocked` | `ASSURE315-02` and reviewed platform policy | Decide whether to promote Python 3.15 to supported blocking CI | Only after the full gate passes, review supported-platform limits and update the blocking matrix, Python classifier and public support documentation together; otherwise record the blockers and retain the current matrix. |
 
@@ -97,7 +97,9 @@ the complete gate passes. The [review record](../docs/records/python-3.15-review
 contains the measured results, prerelease baseline and remaining work. The
 [lock review](../docs/records/python-3.15-lock-review-2026-11-21.md) adds a
 local supported-Python matrix and isolates development-tool build requirements.
-The repository lock remains unchanged pending `ASSURE315-01B`.
+The targeted numerical refresh is applied for `ASSURE315-01B`; the existing
+supported-Python CI matrix and affected package checks remain its acceptance
+gate. The refresh does not itself add Python 3.15 support.
 
 ## Conditional Extensions
 

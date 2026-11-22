@@ -54,6 +54,30 @@ export async function initializeLocalization() {
         message: "Reading seed records and controls",
         id: "web.ipf.reading",
       },
+      {
+        workflow: "ipf",
+        stage: "fitting",
+        message: "Fitting seed weights to control margins",
+        id: "web.ipf.fitting",
+      },
+      {
+        workflow: "ipf",
+        stage: "writing-report",
+        message: "Writing IPF fit diagnostics",
+        id: "web.ipf.report",
+      },
+      {
+        workflow: "ipf",
+        stage: "writing-artifacts",
+        message: "Writing compact fitted weights",
+        id: "web.ipf.writing",
+      },
+      {
+        workflow: "ipf",
+        stage: "completed",
+        message: "IPF fitting completed",
+        id: "web.ipf.completed",
+      },
     ],
     errorMappings: [
       {
@@ -90,6 +114,18 @@ export async function initializeLocalization() {
       const translated = runtime.translate(element.dataset.i18nAriaLabel);
       element.setAttribute(
         "aria-label",
+        translated === "Message unavailable." ? original : translated,
+      );
+    };
+    render();
+    runtime.subscribe(render);
+  }
+  for (const element of document.querySelectorAll("[data-i18n-placeholder]")) {
+    const original = element.getAttribute("placeholder");
+    const render = () => {
+      const translated = runtime.translate(element.dataset.i18nPlaceholder);
+      element.setAttribute(
+        "placeholder",
         translated === "Message unavailable." ? original : translated,
       );
     };
