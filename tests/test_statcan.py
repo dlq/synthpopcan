@@ -841,6 +841,33 @@ def test_low_level_download_helpers_use_urlopen(tmp_path: Path, monkeypatch) -> 
     assert calls[1].data == b'[{"productId": 1}]'
 
 
+def test_wds_requests_identify_synthpopcan_and_keep_methods(tmp_path, monkeypatch):
+    from synthpopcan._version import __version__
+    from synthpopcan.statcan import wds_metadata_url
+
+    requests = []
+
+    def opener(request, *, timeout):
+        requests.append(request)
+        return BytesIO(b'{"status":"SUCCESS"}')
+
+    monkeypatch.setattr("synthpopcan.statcan.urlopen", opener)
+    fetch_json(wds_download_url("98100001"))
+    post_json(wds_metadata_url(), [{"productId": 98100001}])
+    download_url(
+        "https://www150.statcan.gc.ca/n1/tbl/csv/98100001-eng.zip",
+        tmp_path / "table.zip",
+    )
+    assert [request.get_method() for request in requests] == ["GET", "POST", "GET"]
+    assert all(
+        request.get_header("User-agent")
+        == f"SynthPopCan/{__version__} (+https://github.com/dlq/synthpopcan)"
+        for request in requests
+    )
+    assert requests[1].get_header("Content-type") == "application/json"
+    assert requests[1].data == b'[{"productId": 98100001}]'
+
+
 def test_download_url_is_bounded_atomic_and_preserves_cached_file_on_failure(
     tmp_path: Path, monkeypatch
 ) -> None:

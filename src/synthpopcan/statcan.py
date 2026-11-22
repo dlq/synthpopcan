@@ -10,10 +10,12 @@ from collections.abc import Iterator
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlsplit
 from urllib.request import Request, urlopen
 from zipfile import BadZipFile, ZipFile
 
 from synthpopcan._http import open_with_rate_limit_retry
+from synthpopcan._version import __version__
 
 _WDS_BASE_URL = "https://www150.statcan.gc.ca/t1/wds/rest"
 _CENSUS_PROFILE_2016_BASE_URL = (
@@ -1004,20 +1006,34 @@ def _census_profile_csv_members(names: list[str]) -> list[str]:
     return []
 
 
+def _statcan_request(url: str, *, data: bytes | None = None) -> str | Request:
+    """Identify our client on the documented WDS and table-download endpoints."""
+    parsed = urlsplit(url)
+    headers = {"Content-Type": "application/json"} if data is not None else {}
+    if (
+        parsed.scheme == "https"
+        and parsed.hostname == "www150.statcan.gc.ca"
+        and parsed.path.startswith(("/t1/wds/rest/", "/n1/tbl/csv/"))
+    ):
+        headers["User-Agent"] = (
+            f"SynthPopCan/{__version__} (+https://github.com/dlq/synthpopcan)"
+        )
+    if not headers:
+        return url
+    return Request(
+        url, data=data, headers=headers, method="POST" if data is not None else "GET"
+    )
+
+
 def fetch_json(url: str) -> Any:
     with open_with_rate_limit_retry(
-        urlopen, url, timeout=_STATCAN_TIMEOUT_SECONDS
+        urlopen, _statcan_request(url), timeout=_STATCAN_TIMEOUT_SECONDS
     ) as response:
         return _decode_wds_json(response.read())
 
 
 def post_json(url: str, payload: Any) -> Any:
-    request = Request(
-        url,
-        data=json.dumps(payload).encode("utf-8"),
-        headers={"Content-Type": "application/json"},
-        method="POST",
-    )
+    request = _statcan_request(url, data=json.dumps(payload).encode("utf-8"))
     with open_with_rate_limit_retry(
         urlopen,
         request,
@@ -1064,7 +1080,9 @@ def download_url(
     destination.parent.mkdir(parents=True, exist_ok=True)
     temporary = _temporary_sibling(destination, ".download")
     try:
-        with open_with_rate_limit_retry(urlopen, url, timeout=timeout) as response:
+        with open_with_rate_limit_retry(
+            urlopen, _statcan_request(url), timeout=timeout
+        ) as response:
             headers = getattr(response, "headers", {})
             content_length = (
                 headers.get("Content-Length") if hasattr(headers, "get") else None
