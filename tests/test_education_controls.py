@@ -13,8 +13,9 @@ from synthpopcan.geography import GeographyUniverse
 
 
 @pytest.mark.parametrize("year", [2016, 2021])
+@pytest.mark.parametrize("language", ["en", "fr"])
 @pytest.mark.parametrize("case", ["valid", "suppressed", "companion", "duplicate"])
-def test_education_calibration(tmp_path, year, case):
+def test_education_calibration(tmp_path, year, case, language):
     tract = "4620053.00"
     profile = tmp_path / "profile.csv"
     if year == 2016:
@@ -69,6 +70,28 @@ def test_education_calibration(tmp_path, year, case):
             2012,
             2013,
         ]
+    if language == "fr":
+        translations = {
+            "CENSUS_YEAR": "ANNÉE_DE_RECENSEMENT"
+            if year == 2021
+            else "ANNEE_DE_RECENSEMENT",
+            "GEO_LEVEL": "NIVEAU_GÉO",
+            "GEO_CODE (POR)": "CODE_GÉO (LDR)",
+            "Member ID: Profile of Census Tracts (2247)": (
+                "Membre ID: Profil des secteurs de recensement (2247)"
+            ),
+            "Dim: Sex (3): Member ID: [1]: Total - Sex": (
+                "Dim: Sexe (3): Membre ID: [1]: Total - Sexe"
+            ),
+            "ALT_GEO_CODE": "CODE_GÉO_ALT",
+            "DGUID": "IDUGD",
+            "CHARACTERISTIC_ID": "ID_CARACTÉRISTIQUE",
+            "C1_COUNT_TOTAL": "C1_CHIFFRE_TOTAL",
+            "SYMBOL": "SYMBOLE",
+        }
+        header = [translations.get(column, column) for column in header]
+        if year == 2021:
+            prefix[1] = "Secteur de recensement"
     values = [20, 15, 5 if case == "companion" else 15, 5, 0, 0, 0, 0, 0, 0, 0, 0, 5, 0]
     rows = [
         [*prefix, member, value, "x" if case == "suppressed" and i == 4 else ""]

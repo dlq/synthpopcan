@@ -190,9 +190,9 @@ def test_province_extract_retains_each_duplicate_symbol_cell(tmp_path, profiles)
     ]
     assert retained[1:] == expected
     assert retained[1][6::2] == ["..", "x", "..."]
-    assert observed_count(cells, "24", "5") == 9
-    assert observed_count(cells, "24010001", "5") == 4
-    assert observed_count(cells, "24010002", "5") == 5
+    for geo in ("24", "24010001", "24010002"):
+        with pytest.raises(ValueError, match="suppressed or invalid"):
+            observed_count(cells, geo, "5")
 
 
 def test_overwide_selected_province_rows_are_rejected(tmp_path, profiles):

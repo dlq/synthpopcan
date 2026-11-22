@@ -30,6 +30,13 @@ GEO_LEVELS_2021: dict[str, str] = {
     "cd": "Census division",
     "da": "Dissemination area",
 }
+GEO_LEVELS_2021_FR: dict[str, str] = {
+    "ada": "Aire de diffusion agrégée",
+    "ct": "Secteur de recensement",
+    "csd": "Subdivision de recensement",
+    "cd": "Division de recensement",
+    "da": "Aire de diffusion",
+}
 
 
 def find_column(fields: Sequence[str], fragment: str) -> str:
@@ -59,28 +66,9 @@ class CensusProfileLayout:
     def statcan_bulk(cls, fields: Sequence[str]) -> CensusProfileLayout:
         """Detect the supported 2016 or 2021 StatCan bulk-profile layout."""
 
-        if "CHARACTERISTIC_ID" in fields:
-            return cls(
-                geography_column="ALT_GEO_CODE",
-                characteristic_column="CHARACTERISTIC_ID",
-                count_column="C1_COUNT_TOTAL",
-                geography_level_column="GEO_LEVEL",
-                census_vintage=2021,
-                geography_levels=GEO_LEVELS_2021,
-            )
-        # Keep the historic discovery order because the first missing-column
-        # error is part of the command-line diagnostic contract.
-        characteristic_column = find_column(fields, "Member ID: Profile")
-        count_column = find_column(fields, "[1]: Total")
-        geography_column = find_column(fields, "GEO_CODE")
-        return cls(
-            geography_column=geography_column,
-            characteristic_column=characteristic_column,
-            count_column=count_column,
-            geography_level_column="GEO_LEVEL",
-            census_vintage=2016,
-            geography_levels=GEO_LEVELS_2016,
-        )
+        if set(fields).intersection({"ID_CARACTÉRISTIQUE", "NIVEAU_GÉO"}):
+            return _french_profile_layout(fields)
+        return _english_profile_layout(fields)
 
     @property
     def required_columns(self) -> tuple[str, ...]:
@@ -92,6 +80,54 @@ class CensusProfileLayout:
             self.count_column,
         )
         return tuple(column for column in columns if column is not None)
+
+
+def _english_profile_layout(fields: Sequence[str]) -> CensusProfileLayout:
+    if "CHARACTERISTIC_ID" in fields:
+        return CensusProfileLayout(
+            geography_column="ALT_GEO_CODE",
+            characteristic_column="CHARACTERISTIC_ID",
+            count_column="C1_COUNT_TOTAL",
+            geography_level_column="GEO_LEVEL",
+            census_vintage=2021,
+            geography_levels=GEO_LEVELS_2021,
+        )
+    # Preserve the historic discovery order and associated diagnostics.
+    characteristic_column = find_column(fields, "Member ID: Profile")
+    count_column = find_column(fields, "[1]: Total")
+    geography_column = find_column(fields, "GEO_CODE")
+    return CensusProfileLayout(
+        geography_column=geography_column,
+        characteristic_column=characteristic_column,
+        count_column=count_column,
+        geography_level_column="GEO_LEVEL",
+        census_vintage=2016,
+        geography_levels=GEO_LEVELS_2016,
+    )
+
+
+def _french_profile_layout(fields: Sequence[str]) -> CensusProfileLayout:
+    if "CHARACTERISTIC_ID" in fields or any(
+        "Member ID: Profile" in column for column in fields
+    ):
+        raise ValueError("Census Profile mixes French and English columns")
+    if "ID_CARACTÉRISTIQUE" in fields:
+        return CensusProfileLayout(
+            geography_column="CODE_GÉO_ALT",
+            characteristic_column="ID_CARACTÉRISTIQUE",
+            count_column="C1_CHIFFRE_TOTAL",
+            geography_level_column="NIVEAU_GÉO",
+            census_vintage=2021,
+            geography_levels=GEO_LEVELS_2021_FR,
+        )
+    return CensusProfileLayout(
+        geography_column=find_column(fields, "CODE_GÉO (LDR)"),
+        characteristic_column=find_column(fields, "Membre ID: Profil"),
+        count_column=find_column(fields, "[1]: Total - Sexe"),
+        geography_level_column="NIVEAU_GÉO",
+        census_vintage=2016,
+        geography_levels=GEO_LEVELS_2016,
+    )
 
 
 @dataclass(frozen=True)
@@ -159,14 +195,16 @@ def open_census_profile_rows(
     to avoid materializing dictionaries for multi-gigabyte unselected rows.
     """
 
-    with path.open(newline="", encoding=encoding) as handle:
+    with path.open("rb") as binary:
+        bom = binary.read(3) == b"\xef\xbb\xbf"
+    with path.open(newline="", encoding="utf-8-sig" if bom else encoding) as handle:
         header_line = handle.readline()
         fields = next(csv.reader([header_line]), [])
         resolved = layout or CensusProfileLayout.statcan_bulk(fields)
         lines = handle
         if (
             resolved.census_vintage == 2021
-            and resolved.geography_column == "ALT_GEO_CODE"
+            and resolved.geography_column in {"ALT_GEO_CODE", "CODE_GÉO_ALT"}
             and selected_geography_ids is not None
         ):
             # Official 2021 files start with three fixed, comma-free fields:
@@ -178,24 +216,29 @@ def open_census_profile_rows(
                 if len(parts := line.split(",", 3)) >= 3
                 and parts[2].strip().strip('"') in selected_geography_ids
             )
-        reader = csv.DictReader(chain((header_line,), lines))
+        reader = csv.reader(chain((header_line,), lines))
+        next(reader, None)
         yield (
             resolved,
             _project_rows(
                 reader,
                 resolved,
+                fields=fields,
                 validate_required_columns=validate_required_columns,
             ),
         )
 
 
 def _project_rows(
-    reader: csv.DictReader[str],
+    reader: Iterator[list[str]],
     layout: CensusProfileLayout,
     *,
+    fields: Sequence[str],
     validate_required_columns: bool,
 ) -> Iterator[CensusProfileRow]:
-    for row_number, row in enumerate(reader, start=2):
+    positions = {column: index for index, column in enumerate(fields)}
+    for row_number, values in enumerate(reader, start=2):
+        row = dict(zip(fields, values, strict=False))
         missing = [column for column in layout.required_columns if column not in row]
         if missing and validate_required_columns:
             raise ValueError(
@@ -212,10 +255,24 @@ def _project_rows(
             if layout.geography_level_column is None
             else row.get(layout.geography_level_column, "")
         )
+        count = _profile_count(row, values, fields, positions, layout)
         yield CensusProfileRow(
             row_number=row_number,
             geography=geography,
             characteristic=cast(str, row[layout.characteristic_column]),
-            count=cast(str, row[layout.count_column]),
+            count=count,
             geography_level=cast(str | None, geography_level),
         )
+
+
+def _profile_count(row, values, fields, positions, layout):
+    count = cast(str, row[layout.count_column])
+    index = positions.get(layout.count_column, -1) + 1
+    if (
+        layout.census_vintage == 2021
+        and 0 < index < min(len(fields), len(values))
+        and fields[index] in {"SYMBOL", "SYMBOLE"}
+        and values[index].strip()
+    ):
+        return ""
+    return count

@@ -1250,7 +1250,12 @@ marital-status pack. Details, screening criteria, and results are in the
 List the education packs with `synthpopcan geo control-packs education`.
 For normalized linked CSV calibration, add `--education-pack` and
 `--education-profile`. The profile can be the matching Statistics Canada
-tract ZIP or its extracted English CSV. For example:
+tract ZIP or its extracted English or French CSV. Verified 2016 and 2021
+archives use different encodings and translated headers; these are detected
+from the file, independently of the web interface language. A ZIP must contain
+exactly one supported data member. Required counts with a suppression or other
+nonempty status symbol are rejected rather than silently treated as zero.
+The same source handling applies to labour-force and work-activity packs. For example:
 
 ```bash
 synthpopcan geo calibrate candidate-households.csv --persons candidate-persons.csv \

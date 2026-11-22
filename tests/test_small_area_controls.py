@@ -619,8 +619,8 @@ def test_extract_controls_skips_non_numeric_values(tmp_path: Path) -> None:
 
     raw = extract_controls_from_profile(profile, "ada")
 
-    assert "1" not in raw["G1"]["hhsize"]  # member 52 → cat "1" was skipped
-    assert "2" in raw["G1"]["hhsize"]
+    # An incomplete margin must not be silently rescaled as if it were complete.
+    assert raw["G1"]["hhsize"] == {}
 
 
 # ---------------------------------------------------------------------------

@@ -1,0 +1,115 @@
+{
+  "scope": "Québec CMA and 181 tract geographies; 2016 Profile totals and sex components",
+  "comparison": "IVT value minus English CSV value",
+  "geographies": 182,
+  "row_1925_summary": {
+    "comparable": 182,
+    "any_mismatch": 119,
+    "ivt_total_equals_sum": 53,
+    "total_mismatch": 47,
+    "sex_equal": 22,
+    "csv_total_equals_sum": 64,
+    "all_equal": 63
+  },
+  "row_1925_example": {
+    "geo": "4210001.01",
+    "csv": [
+      1470.0,
+      740.0,
+      735.0
+    ],
+    "ivt": [
+      1475.0,
+      740.0,
+      735.0
+    ],
+    "ivt_minus_csv": [
+      5,
+      0,
+      0
+    ]
+  },
+  "sample_characteristics": {
+    "1": {
+      "equal": 182,
+      "unavailable": 364
+    },
+    "51": {
+      "equal": 182,
+      "unavailable": 364
+    },
+    "1683": {
+      "equal": 546
+    },
+    "1922": {
+      "equal": 546
+    },
+    "1923": {
+      "equal": 546
+    },
+    "1924": {
+      "equal": 546
+    },
+    "1925": {
+      "equal": 385,
+      "different": 161,
+      "delta_-5": 85,
+      "delta_5": 76
+    },
+    "1926": {
+      "different": 277,
+      "delta_-75": 1,
+      "delta_-100": 1,
+      "delta_30": 1,
+      "equal": 269,
+      "delta_5": 95,
+      "delta_-15": 3,
+      "delta_-10": 21,
+      "delta_-5": 126,
+      "delta_15": 2,
+      "delta_10": 25,
+      "delta_-25": 1,
+      "delta_-20": 1
+    },
+    "1927": {
+      "different": 157,
+      "delta_25": 1,
+      "delta_15": 1,
+      "delta_10": 12,
+      "equal": 389,
+      "delta_-10": 18,
+      "delta_-5": 57,
+      "delta_5": 68
+    },
+    "1928": {
+      "different": 270,
+      "delta_35": 1,
+      "delta_90": 1,
+      "delta_-50": 1,
+      "equal": 276,
+      "delta_5": 113,
+      "delta_15": 3,
+      "delta_10": 24,
+      "delta_-5": 98,
+      "delta_-10": 25,
+      "delta_-25": 1,
+      "delta_20": 1,
+      "delta_-15": 2
+    },
+    "1929": {
+      "different": 102,
+      "delta_15": 2,
+      "equal": 444,
+      "delta_10": 50,
+      "delta_5": 10,
+      "delta_-5": 8,
+      "delta_-10": 32
+    },
+    "1930": {
+      "equal": 546
+    }
+  },
+  "source_csv_sha256": "c0113c58902368a77218fe7ae96ca477311cd8a6379a8eb9a257739839a9e8d6",
+  "source_ivt_sha256": "3683ae54ca64ae8c08dbdc8c8f98a4329fb88aadc17f5384291896df9b6a5969",
+  "decoder": "pyivt 0.0.11; independent decoder not checked"
+}

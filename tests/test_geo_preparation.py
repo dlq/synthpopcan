@@ -892,9 +892,9 @@ def test_profile_selection_preserves_csv_record_semantics(tmp_path, archive):
     assert cells["4620001.00"]["50"]["SYMBOL"] is None
     assert cells["4620001.00"]["50"]["NOTE"] is None
     expected = io.StringIO(newline="")
-    expected_writer = csv.DictWriter(expected, fieldnames=columns)
-    expected_writer.writeheader()
-    expected_writer.writerows([cells["462"]["50"], cells["4620001.00"]["50"]])
+    expected_writer = csv.writer(expected)
+    expected_writer.writerow(columns)
+    expected_writer.writerows([cma, [*tract, "", ""]])
     assert output.read_bytes() == expected.getvalue().encode("latin-1")
 
 

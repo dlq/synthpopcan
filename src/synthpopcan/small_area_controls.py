@@ -99,6 +99,7 @@ def extract_controls_from_profile(
     controls_by_geography: dict[str, dict[str, dict[str, float]]] = defaultdict(
         lambda: {"hhsize": {}, "tenure": {}}
     )
+    unavailable: set[tuple[str, str]] = set()
 
     # StatCan profile ZIPs use a legacy single-byte encoding in both vintages;
     # 2021 geography names can contain bytes that are not valid UTF-8.
@@ -133,22 +134,42 @@ def extract_controls_from_profile(
                 continue
             geography_id = row.normalized_geography
             characteristic_id = row.normalized_characteristic
-            try:
-                count = float(row.normalized_count)
-            except ValueError:
-                continue
-            if characteristic_id in hhsize_members:
-                controls_by_geography[geography_id]["hhsize"][
-                    hhsize_members[characteristic_id]
-                ] = count
-            elif characteristic_id in tenure_members:
-                category = tenure_members[characteristic_id]
-                controls_by_geography[geography_id]["tenure"][category] = (
-                    controls_by_geography[geography_id]["tenure"].get(category, 0.0)
-                    + count
-                )
+            _store_default_profile_count(
+                controls_by_geography,
+                unavailable,
+                geography_id,
+                characteristic_id,
+                row.normalized_count,
+                hhsize_members,
+                tenure_members,
+            )
 
+    for geography_id, dimension in unavailable:
+        controls_by_geography[geography_id][dimension].clear()
     return dict(controls_by_geography)
+
+
+def _store_default_profile_count(
+    controls, unavailable, geography, member, text, hhsize_members, tenure_members
+):
+    if member in hhsize_members:
+        dimension, category = "hhsize", hhsize_members[member]
+    elif member in tenure_members:
+        dimension, category = "tenure", tenure_members[member]
+    else:
+        return
+    try:
+        count = float(text)
+        if not math.isfinite(count) or count < 0:
+            raise ValueError
+    except ValueError:
+        controls[geography]
+        unavailable.add((geography, dimension))
+        return
+    values = controls[geography][dimension]
+    values[category] = (
+        count if dimension == "hhsize" else values.get(category, 0) + count
+    )
 
 
 def extract_household_controls_for_pack(

@@ -1,0 +1,176 @@
+{
+  "caveat": "Internet Archive URL capture and third-party derivative, not independently authenticated by Statistics Canada; dated capture timestamps are upper bounds on availability, not proven source revision dates.",
+  "files": {
+    "2016": {
+      "zip_sha256": "f824d281aa727d3edd3ad627ceaaba6da49c86d0d3aee6402ad9014aac711dbb",
+      "members": [
+        "98-401-X2016041_Francais_CSV_data.csv",
+        "98-401-X2016041_Francais_meta.txt",
+        "Geo_debut_rangee_CSV.csv",
+        "LISEZ-MOI_meta.txt"
+      ],
+      "header": [
+        "ANNEE_DE_RECENSEMENT",
+        "CODE_GÉO (LDR)",
+        "NIVEAU_GÉO",
+        "NOM_GÉO",
+        "TGN",
+        "TGN_FL",
+        "INDICATEUR_QUALITÉ_DONNÉES",
+        "CODE_GÉO_ALT",
+        "DIM: Profil des régions métropolitaines de recensement/agglomérations de recensement (2247)",
+        "Membre ID: Profil des régions métropolitaines de recensement/agglomérations de recensement (2247)",
+        "Notes: Profil des régions métropolitaines de recensement/agglomérations de recensement (2247)",
+        "Dim: Sexe (3): Membre ID: [1]: Total - Sexe",
+        "Dim: Sexe (3): Membre ID: [2]: Sexe masculin",
+        "Dim: Sexe (3): Membre ID: [3]: Sexe féminin"
+      ],
+      "example": [
+        [
+          "2016",
+          "421",
+          "2",
+          "Québec",
+          "4.0",
+          "4.3",
+          "00000",
+          "24421",
+          "Total - Destination du trajet domicile-travail pour la population active occupée âgée de 15 ans et plus dans les ménages privés ayant un lieu habituel de travail - Données-échantillon (25 %)",
+          "1925",
+          "",
+          "359810",
+          "176245",
+          "183570"
+        ]
+      ]
+    },
+    "2021": {
+      "zip_sha256": "a014687c44606eaf805327104bd9a8c8cb5d5093309aa2a91a18bea366f0a57b",
+      "members": [
+        "98-401-X2021001_Francais_CSV_data.csv",
+        "98-401-X2021001_Francais_meta.txt",
+        "98-401-X2021001_Geo_debut_rangee.CSV",
+        "LISEZ-MOI_meta.txt"
+      ],
+      "header": [
+        "ANNÉE_DE_RECENSEMENT",
+        "IDUGD",
+        "CODE_GÉO_ALT",
+        "NIVEAU_GÉO",
+        "NOM_GÉO",
+        "NRT_QA",
+        "NRT_QD",
+        "INDICATEUR_QUALITÉ_DONNÉES",
+        "ID_CARACTÉRISTIQUE",
+        "NOM_CARACTÉRISTIQUE",
+        "NOTE_CARACTÉRISTIQUE",
+        "C1_CHIFFRE_TOTAL",
+        "SYMBOLE",
+        "C2_CHIFFRE_HOMMES+",
+        "SYMBOLE",
+        "C3_CHIFFRE_FEMMES+",
+        "SYMBOLE",
+        "C10_TAUX_TOTAL",
+        "SYMBOLE",
+        "C11_TAUX_HOMMES+",
+        "SYMBOLE",
+        "C12_TAUX_FEMMES+",
+        "SYMBOLE"
+      ],
+      "example": [
+        [
+          "2021",
+          "2021A000011124",
+          "01",
+          "Pays",
+          "Canada",
+          "3.1",
+          "4.3",
+          "20000",
+          "2624",
+          "Total - Admissibilité à l’instruction dans la langue officielle minoritaire pour la population dans les ménages privés née en 2003 ou après - Données intégrales (100 %)",
+          "203",
+          "7335800",
+          "",
+          "3768210",
+          "",
+          "3567595",
+          "",
+          "100",
+          "",
+          "100",
+          "",
+          "100",
+          ""
+        ]
+      ]
+    }
+  },
+  "bilingual_comparison": {
+    "2016": {
+      "rows": 359520,
+      "matching_keys": 359520,
+      "differing_keys": 0,
+      "matching_values": 1078560,
+      "differing_values": 0,
+      "examples": []
+    },
+    "2021": {
+      "rows": 36834,
+      "matching_keys": 36834,
+      "differing_keys": 0,
+      "matching_values": 442008,
+      "differing_values": 0,
+      "examples": []
+    }
+  },
+  "partial_2019_comparison": {
+    "rows": 170,
+    "cells_equal": 510,
+    "cells_different": 0,
+    "skipped_nonnumeric": 0
+  },
+  "github_2020": {
+    "commit": "f9f48077e4973e840be4d32fd8fc17cba342b928",
+    "file_sha256": "57c29dda1696b060d41403dde5d4645a41fd822cab4db66de1977fde1b4e9770",
+    "git_blob_sha1": "4e10dc8be91889ede86a717b330f050f492c3bd1",
+    "different_1925_cells": 161,
+    "matching_english": 161,
+    "matching_ivt": 0
+  },
+  "partial_2016_tract": {
+    "member": "98-401-X2016043_Francais_CSV_data.csv",
+    "partial_rows": 2247,
+    "reference_rows": 2247,
+    "matching_count_rows": 2247,
+    "differing_count_rows": 0
+  },
+  "tract_pairs": {
+    "2016": {
+      "rows": 2247,
+      "matching_rows": 2247,
+      "different_rows": 0,
+      "differences": [],
+      "french_sha256": "cb4897be4b767e9a6e7e8ef80080cad920fc799825533dece1b351a4581cb738",
+      "french_members": [
+        "98-401-X2016043_Francais_CSV_data.csv",
+        "98-401-X2016043_Francais_meta.txt",
+        "Geo_debut_rangee_CSV.csv",
+        "LISEZ-MOI_meta.txt"
+      ]
+    },
+    "2021": {
+      "rows": 2631,
+      "matching_rows": 2631,
+      "different_rows": 0,
+      "differences": [],
+      "french_sha256": "27b3ee4ee070f92571fe51605219b29b521658ae3573eeba49484fc9a5be2f2b",
+      "french_members": [
+        "98-401-X2021007_Francais_CSV_data.csv",
+        "98-401-X2021007_Francais_meta.txt",
+        "98-401-X2021007_Geo_debut_rangee.CSV",
+        "LISEZ-MOI_meta.txt"
+      ]
+    }
+  }
+}

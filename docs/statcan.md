@@ -207,6 +207,13 @@ year. The Census Profile contains several hundred demographic characteristics
 every geographic unit at the chosen level. It is the primary source for
 census-tract-level controls in small-area synthesis.
 
+`fetch` currently requests the English source. If you already have an official
+French tract Profile archive or extracted CSV, the 2016 and 2021 small-area
+Profile preparation workflows also accept the reviewed French layouts. Source
+language is independent of the web interface language; see the
+[source review](records/bilingual-profile-source-review-2026-11-21.md) for
+provenance, encodings, and suppression handling.
+
 Supported Census Profile downloads depend on `--year`. The broader 2016
 registry includes the keys below. These names identify **bulk download
 products**, so some use `-all` even though the geography itself is normally

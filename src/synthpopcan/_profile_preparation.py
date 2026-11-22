@@ -34,20 +34,94 @@ def _profile_reader(path: Path):
     if path.suffix.lower() != ".zip" and not (
         path.suffix.lower() == ".bin" and is_zipfile(path)
     ):
-        with path.open(encoding="latin-1", newline="") as handle:
-            yield csv.reader(handle)
+        with path.open("rb") as raw:
+            yield from _normalized_profile_reader(raw)
         return
     with ZipFile(path) as archive:
-        members = [n for n in archive.namelist() if n.endswith("English_CSV_data.csv")]
+        members = [
+            n
+            for n in archive.namelist()
+            if n.endswith(("English_CSV_data.csv", "Francais_CSV_data.csv"))
+        ]
         if len(members) != 1:
             raise ValueError(
-                "Profile ZIP must contain exactly one English_CSV_data.csv member."
+                "Profile ZIP must contain exactly one English_CSV_data.csv or "
+                "Francais_CSV_data.csv member."
             )
-        with (
-            archive.open(members[0]) as raw,
-            io.TextIOWrapper(raw, encoding="latin-1", newline="") as handle,
-        ):
-            yield csv.reader(handle)
+        with archive.open(members[0]) as raw:
+            yield from _normalized_profile_reader(raw)
+
+
+_FRENCH_PROFILE_COLUMNS = {
+    "ANNÉE_DE_RECENSEMENT": "CENSUS_YEAR",
+    "ANNEE_DE_RECENSEMENT": "CENSUS_YEAR",
+    "CODE_GÉO (LDR)": "GEO_CODE (POR)",
+    "NIVEAU_GÉO": "GEO_LEVEL",
+    "CODE_GÉO_ALT": "ALT_GEO_CODE",
+    "IDUGD": "DGUID",
+    "ID_CARACTÉRISTIQUE": "CHARACTERISTIC_ID",
+    "C1_CHIFFRE_TOTAL": "C1_COUNT_TOTAL",
+    "C2_CHIFFRE_HOMMES+": "C2_COUNT_MEN+",
+    "C3_CHIFFRE_FEMMES+": "C3_COUNT_WOMEN+",
+    "SYMBOLE": "SYMBOL",
+    "Membre ID: Profil des secteurs de recensement (2247)": (
+        "Member ID: Profile of Census Tracts (2247)"
+    ),
+    "Dim: Sexe (3): Membre ID: [1]: Total - Sexe": (
+        "Dim: Sex (3): Member ID: [1]: Total - Sex"
+    ),
+}
+
+_FRENCH_PROFILE_LEVELS = {
+    "Secteur de recensement": "Census tract",
+    "Région métropolitaine de recensement": "Census metropolitan area",
+    "Agglomération de recensement": "Census agglomeration",
+    "Aire de diffusion agrégée": "Aggregate dissemination area",
+    "Aire de diffusion": "Dissemination area",
+    "Subdivision de recensement": "Census subdivision",
+    "Division de recensement": "Census division",
+    "Pays": "Country",
+    "Province ou territoire": "Province or territory",
+    "Territoire": "Territory",
+}
+
+
+def _normalized_profile_reader(raw):
+    """Decode observed bulk layouts and map French structural fields to English."""
+    buffered = io.BufferedReader(raw)
+    encoding = (
+        "utf-8-sig" if buffered.peek(3).startswith(b"\xef\xbb\xbf") else "latin-1"
+    )
+    with io.TextIOWrapper(buffered, encoding=encoding, newline="") as handle:
+        reader = csv.reader(handle)
+        original = next(reader, [])
+        french = "NIVEAU_GÉO" in original
+        english_structural = {
+            "CENSUS_YEAR",
+            "GEO_LEVEL",
+            "GEO_CODE (POR)",
+            "ALT_GEO_CODE",
+            "DGUID",
+            "CHARACTERISTIC_ID",
+            "C1_COUNT_TOTAL",
+            "Member ID: Profile of Census Tracts (2247)",
+        }
+        if french and english_structural.intersection(original):
+            raise ValueError("Profile CSV mixes French and English structural columns")
+        columns = [_FRENCH_PROFILE_COLUMNS.get(c, c) for c in original]
+        level_index = columns.index("GEO_LEVEL") if "GEO_LEVEL" in columns else -1
+        yield itertools.chain(
+            [columns],
+            (_normalize_profile_level(row, level_index) for row in reader)
+            if french
+            else reader,
+        )
+
+
+def _normalize_profile_level(row, index):
+    if 0 <= index < len(row):
+        row[index] = _FRENCH_PROFILE_LEVELS.get(row[index], row[index])
+    return row
 
 
 def _needed_characteristics() -> set[str]:
@@ -95,8 +169,8 @@ def select_profile(
         member_index = positions["CHARACTERISTIC_ID"]
         level_index = positions["GEO_LEVEL"]
         width = len(columns)
-        writer = csv.DictWriter(output, fieldnames=columns)
-        writer.writeheader()
+        writer = csv.writer(output)
+        writer.writerow(columns)
         for values in reader:
             if not values:  # DictReader skips empty CSV records.
                 continue
@@ -112,9 +186,12 @@ def select_profile(
                 # missing/extra-field behavior and DictWriter's canonical output.
                 row: dict[Any, Any] = dict(zip(columns, values, strict=False))
                 if len(values) > width:
-                    row[None] = values[width:]
-                _store_profile_row(cells, row, geo, member)
-                writer.writerow(row)
+                    raise ValueError(
+                        f"Selected Profile row has extra fields: geography {geo}, "
+                        f"characteristic {member}."
+                    )
+                _store_profile_row(cells, row, geo, member, values, columns)
+                writer.writerow(values)
     if cma not in cells or not any(geo != cma for geo in cells):
         raise ValueError(
             f"Profile must contain CMA {cma} and its Census tracts; "
@@ -123,18 +200,37 @@ def select_profile(
     return cells
 
 
-def _store_profile_row(cells, row, geo, member) -> None:
+class _ProfileRow(dict):
+    """Keep positional symbols without altering the public row mapping."""
+
+    count_symbols: dict[str, str | None]
+
+
+def _store_profile_row(cells, row, geo, member, values=None, columns=None) -> None:
     if row["CENSUS_YEAR"].strip() != "2021":
         raise ValueError(f"Profile geography {geo} is not Census 2021.")
     if member in cells.setdefault(geo, {}):
         raise ValueError(
             f"Duplicate Profile cell: geography {geo}, characteristic {member}."
         )
-    cells[geo][member] = row
+    stored = _ProfileRow(row)
+    stored.count_symbols = {}
+    if values is not None and columns is not None:
+        stored.count_symbols = {
+            name: values[index + 1]
+            for index, name in enumerate(columns[:-1])
+            if name in {"C1_COUNT_TOTAL", "C2_COUNT_MEN+", "C3_COUNT_WOMEN+"}
+            and columns[index + 1] == "SYMBOL"
+            and index + 1 < len(values)
+        }
+    cells[geo][member] = stored
 
 
 def observed_count(cells, geo: str, member: str, column: str = "C1_COUNT_TOTAL") -> int:
     try:
+        symbols = getattr(cells[geo][member], "count_symbols", {})
+        if (symbols.get(column) or "").strip():
+            raise ValueError
         text = cells[geo][member][column].strip().replace(",", "")
         # Decimal text is accepted only when its value is an integer.
         value = Decimal(text)
@@ -474,7 +570,7 @@ def _store_province_rows(reader, columns, province, cells, writer, include_areas
             )
         row: dict[Any, Any] = dict(zip(columns, values, strict=True))
         _validate_province_identity(row, geo, province)
-        _store_profile_row(cells, row, geo, member)
+        _store_profile_row(cells, row, geo, member, values, columns)
         # Repeated SYMBOL headers describe different count columns. Preserve
         # every positional source cell rather than repeat the final SYMBOL.
         writer.writerow(values)

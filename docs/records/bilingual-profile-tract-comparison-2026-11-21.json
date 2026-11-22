@@ -1,0 +1,48 @@
+{
+  "2016": {
+    "csv_rows": 2247,
+    "ivt_members": 2247,
+    "common": 2247,
+    "numeric_equal": 2246,
+    "both_unavailable": 0,
+    "unavailable_csv_symbols": {},
+    "mismatch_count": 1,
+    "mismatch_sample": [
+      {
+        "id": "1925",
+        "csv": "1470",
+        "symbol": "",
+        "ivt": 1475.0
+      }
+    ],
+    "csv_only_count": 0,
+    "csv_only_sample": [],
+    "ivt_only_count": 0,
+    "ivt_only_sample": []
+  },
+  "2021": {
+    "csv_rows": 2631,
+    "ivt_members": 2623,
+    "common": 2623,
+    "numeric_equal": 2620,
+    "both_unavailable": 3,
+    "unavailable_csv_symbols": {
+      "...": 3
+    },
+    "mismatch_count": 0,
+    "mismatch_sample": [],
+    "csv_only_count": 8,
+    "csv_only_sample": [
+      "2624",
+      "2625",
+      "2626",
+      "2627",
+      "2628",
+      "2629",
+      "2630",
+      "2631"
+    ],
+    "ivt_only_count": 0,
+    "ivt_only_sample": []
+  }
+}

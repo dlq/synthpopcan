@@ -1,0 +1,2 @@
+# Preserve the exact Statistics Canada source bytes used for bilingual tests.
+tests/fixtures/census/profile-*-quebec.csv -text whitespace=cr-at-eol

@@ -1,0 +1,182 @@
+{
+  "2016": {
+    "archive": "runs/education-source-review-2026-11-13/98-401-X2016043_eng_CSV.zip",
+    "archive_sha256": "c0113c58902368a77218fe7ae96ca477311cd8a6379a8eb9a257739839a9e8d6",
+    "archive_member": "98-401-X2016043_English_CSV_data.csv",
+    "ivt_file": "ulaval-2016-quebec-ct.ivt",
+    "geography": "4210001.01",
+    "ivt_geography_position": 2,
+    "rows": [
+      {
+        "id": "1",
+        "en": "Population, 2016",
+        "fr": "Population, 2016",
+        "ivt_value": 4927.0,
+        "ivt_member_position": 1,
+        "csv_value": "4927",
+        "matches": true,
+        "english_label_matches": true
+      },
+      {
+        "id": "4",
+        "en": "Total private dwellings",
+        "fr": "Total des logements privés",
+        "ivt_value": 3071.0,
+        "ivt_member_position": 4,
+        "csv_value": "3071",
+        "matches": true,
+        "english_label_matches": true
+      },
+      {
+        "id": "5",
+        "en": "Private dwellings occupied by usual residents",
+        "fr": "Logements privés occupés par des résidents habituels",
+        "ivt_value": 2838.0,
+        "ivt_member_position": 5,
+        "csv_value": "2838",
+        "matches": true,
+        "english_label_matches": true
+      },
+      {
+        "id": "51",
+        "en": "Total - Private households by household size - 100% data",
+        "fr": "Total - Ménages privés selon la taille du ménage - Données intégrales (100 %)",
+        "ivt_value": 2840.0,
+        "ivt_member_position": 51,
+        "csv_value": "2840",
+        "matches": true,
+        "english_label_matches": true
+      },
+      {
+        "id": "52",
+        "en": "  1 person",
+        "fr": "  1 personne",
+        "ivt_value": 1795.0,
+        "ivt_member_position": 52,
+        "csv_value": "1795",
+        "matches": true,
+        "english_label_matches": true
+      },
+      {
+        "id": "1683",
+        "en": "Total - Highest certificate, diploma or degree for the population aged 15 years and over in private households - 25% sample data",
+        "fr": "Total - Plus haut certificat, diplôme ou grade pour la population âgée de 15 ans et plus, dans les ménages privés - Données-échantillon (25 %)",
+        "ivt_value": 4005.0,
+        "ivt_member_position": 1683,
+        "csv_value": "4005",
+        "matches": true,
+        "english_label_matches": true
+      },
+      {
+        "id": "1684",
+        "en": "  No certificate, diploma or degree",
+        "fr": "  Aucun certificat, diplôme ou grade",
+        "ivt_value": 350.0,
+        "ivt_member_position": 1684,
+        "csv_value": "350",
+        "matches": true,
+        "english_label_matches": true
+      },
+      {
+        "id": "1685",
+        "en": "  Secondary (high) school diploma or equivalency certificate",
+        "fr": "  Diplôme d'études secondaires ou attestation d'équivalence",
+        "ivt_value": 660.0,
+        "ivt_member_position": 1685,
+        "csv_value": "660",
+        "matches": true,
+        "english_label_matches": true
+      }
+    ]
+  },
+  "2021": {
+    "archive": "runs/montreal-cma-2021-2026-11-02/inputs/official-98-401-X2021007_eng_CSV.zip",
+    "archive_sha256": "5d29811e5c3171cb16c9564bfbce0a08da45d1584810be2bd74764cbd2329ffc",
+    "archive_member": "98-401-X2021007_English_CSV_data.csv",
+    "ivt_file": "ulaval-2021-quebec-ct.ivt",
+    "geography": "4210001.01",
+    "ivt_geography_position": 2,
+    "rows": [
+      {
+        "id": "1",
+        "en": "Population, 2021",
+        "fr": "Population, 2021",
+        "ivt_value": 5058.0,
+        "ivt_member_position": 1,
+        "csv_value": "5058",
+        "matches": true,
+        "english_label_matches": true
+      },
+      {
+        "id": "4",
+        "en": "Total private dwellings",
+        "fr": "Total des logements privés",
+        "ivt_value": 3041.0,
+        "ivt_member_position": 4,
+        "csv_value": "3041",
+        "matches": true,
+        "english_label_matches": true
+      },
+      {
+        "id": "5",
+        "en": "Private dwellings occupied by usual residents",
+        "fr": "Logements privés occupés par des résidents habituels",
+        "ivt_value": 2761.0,
+        "ivt_member_position": 5,
+        "csv_value": "2761",
+        "matches": true,
+        "english_label_matches": true
+      },
+      {
+        "id": "50",
+        "en": "Total - Private households by household size - 100% data",
+        "fr": "Total - Ménages privés selon la taille du ménage - Données intégrales (100 %)",
+        "ivt_value": 2760.0,
+        "ivt_member_position": 50,
+        "csv_value": "2760",
+        "matches": true,
+        "english_label_matches": true
+      },
+      {
+        "id": "51",
+        "en": "  1 person",
+        "fr": "  1 personne",
+        "ivt_value": 1635.0,
+        "ivt_member_position": 51,
+        "csv_value": "1635",
+        "matches": true,
+        "english_label_matches": true
+      },
+      {
+        "id": "1998",
+        "en": "Total - Highest certificate, diploma or degree for the population aged 15 years and over in private households - 25% sample data",
+        "fr": "Total - Plus haut certificat, diplôme ou grade pour la population âgée de 15 ans et plus, dans les ménages privés - Données-échantillon (25 %)",
+        "ivt_value": 4025.0,
+        "ivt_member_position": 1998,
+        "csv_value": "4025",
+        "matches": true,
+        "english_label_matches": true
+      },
+      {
+        "id": "1999",
+        "en": "  No certificate, diploma or degree",
+        "fr": "  Aucun certificat, diplôme ou grade",
+        "ivt_value": 310.0,
+        "ivt_member_position": 1999,
+        "csv_value": "310",
+        "matches": true,
+        "english_label_matches": true
+      },
+      {
+        "id": "2000",
+        "en": "  High (secondary) school diploma or equivalency certificate",
+        "fr": "  Diplôme d'études secondaires ou attestation d'équivalence",
+        "ivt_value": 680.0,
+        "ivt_member_position": 2000,
+        "csv_value": "680",
+        "matches": true,
+        "english_label_matches": true
+      }
+    ]
+  }
+}

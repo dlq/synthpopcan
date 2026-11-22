@@ -82,8 +82,20 @@ next available minor release, not as a claim that French files already work.
 
 | ID | Status | Depends on | Deliverable | Acceptance |
 | --- | --- | --- | --- | --- |
-| `SOURCEFR-01` | `ready` | Known 2016 and 2021 Profile products; obtain authoritative samples | Verify French and English Census Profile file layouts and stable characteristic and geography identifiers | Record official URLs, vintages, encodings, ZIP members, headers, geography labels, suppression symbols and provenance; compare real paired rows and counts. An HTTP 403 or a missing sample remains an explicit evidence gap, not permission to guess. |
-| `SOURCEFR-02` | `blocked` | Reviewed `SOURCEFR-01` evidence for the applicable vintage and geography | Add bilingual ingestion for the verified Profile formats | English and French equivalents produce identical controls and diagnostics for broad and applicable conditional packs; independently sourced fixtures test 2016/2021, geography filtering, suppression, encoding, ZIP ambiguity, and provenance. Unknown, mixed or unverified layouts fail clearly before fitting. Preserve existing English and machine-readable contracts. |
+| `SOURCEFR-01` | `done` for tracts | Known 2016 and 2021 Profile products | Verify French and English Census Profile tract layouts and stable characteristic and geography identifiers | Record archived official URLs, vintages, encodings, ZIP members, headers, geography labels, suppression symbols and provenance; compare real paired rows and counts. Other geographies and revisions remain separately scoped. |
+| `SOURCEFR-02` | `done` for reviewed tract formats | Reviewed `SOURCEFR-01` evidence | Add bilingual ingestion for the verified Profile formats | English and French equivalents produce identical controls and diagnostics for broad and applicable conditional packs; independently sourced fixtures test 2016/2021, geography filtering, suppression, encoding, ZIP ambiguity, and provenance. Preserve existing English and machine-readable contracts. |
+
+The [initial bilingual source review](../docs/records/bilingual-profile-source-review-2026-11-21.md)
+found accessible English bulk files and bilingual Québec tract IVT extracts for
+both vintages. Follow-up found complete original French CMA/CA 2016 and
+province/territory 2021 ZIPs and complete 2016 and 2021 tract ZIPs in the
+Internet Archive. Equivalent English and French archives at the broader
+geographies match on all observed value and symbol fields; for both tract
+vintages, every value field matches in one Québec tract. A separate 2020
+tract derivative matches all 161 disputed commuting-total cells in the English
+tract CSV; a partial October 2020 archive capture independently dates the
+matching selected-tract values. The exact revision remains unverified. Eight 2021 characteristics
+were missing from the earlier IVT extract but are present in the French tract ZIP.
 
 The [official 2021 French Profile download](https://www12.statcan.gc.ca/census-recensement/2021/dp-pd/prof/details/download-telecharger/comp/GetFile.cfm?Lang=F&FILETYPE=CSV&GEONO=001)
 returned HTTP 403 on 2026-11-21,
