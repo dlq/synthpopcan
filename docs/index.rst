@@ -164,6 +164,7 @@ beginner generation workflows.
    records/readiness-2026-10-22
    records/localization-role-review-2026-11-14
    records/core-web-localization-baseline-2026-11-21
+   records/web-dynamic-message-review-2026-11-22
    records/bilingual-profile-source-review-2026-11-21
    records/archive-transition-review-2026-11-14
    records/typing-ratchet-2026-11-14

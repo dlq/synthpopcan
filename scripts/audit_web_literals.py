@@ -122,7 +122,7 @@ _REVIEWED_MODULES = {
         frozenset(),
     ),
     "localization-ui.mjs": (
-        "86263725aeed8113c10d0c0edd692c566de78f0fe0467d895e484bc64f610eb1",
+        "49f2095863c15a663bf9c19f3efc4c1bcec73eaa2d6130fdb076d3c423c466a0",
         "machine-data-or-protocol-preserve",
         frozenset(),
     ),

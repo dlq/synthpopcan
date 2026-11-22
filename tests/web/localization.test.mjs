@@ -7,8 +7,60 @@ import {
   LOCALE_STORAGE_KEY,
   parseTemplate,
 } from "../../src/synthpopcan/web/localization.mjs";
+import { initializeLocalization } from "../../src/synthpopcan/web/localization-ui.mjs";
 
 const entry = (value, parameters = {}) => ({ kind: "text", parameters, value });
+
+test("durable interruption events replay in either language without changing evidence", async (t) => {
+  const original = {
+    fetch: globalThis.fetch,
+    window: globalThis.window,
+    document: globalThis.document,
+  };
+  t.after(() => Object.assign(globalThis, original));
+  globalThis.fetch = async (url) => ({
+    ok: true,
+    json: async () =>
+      JSON.parse(
+        readFileSync(
+          new URL(`../../src/synthpopcan/web/${url.slice(2)}`, import.meta.url),
+          "utf8",
+        ),
+      ),
+  });
+  globalThis.window = { localStorage: null };
+  globalThis.document = {
+    querySelector: () => ({ addEventListener() {} }),
+    querySelectorAll: () => [],
+    documentElement: {},
+  };
+  const runtime = await initializeLocalization();
+  const events = ["ipf", "model", "small_area"].flatMap((workflow) =>
+    ["Run interrupted by application restart", "Job manager shut down"].map((message) =>
+      Object.freeze({ workflow, stage: "interrupted", message }),
+    ),
+  );
+  const saved = JSON.stringify(events);
+  runtime.setLocale("fr-CA");
+  for (const event of events) {
+    assert.equal(
+      runtime.presentEvent(event),
+      runtime.translate(
+        event.message.startsWith("Run ")
+          ? "web.smallarea.event10"
+          : "web.smallarea.event11",
+      ),
+    );
+    assert.equal(
+      runtime.presentEvent({ ...event, message: `${event.message} (legacy)` }),
+      `Progression: ${event.message} (legacy)`,
+    );
+  }
+  runtime.setLocale("en-CA");
+  for (const event of events)
+    assert.notEqual(runtime.presentEvent(event), "Message unavailable.");
+  assert.equal(JSON.stringify(events), saved);
+});
 
 test("small-area convergence warnings use the correct French number form", () => {
   const catalogues = Object.fromEntries(

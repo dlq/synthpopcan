@@ -133,10 +133,10 @@ present a project translation as an official source label. Missing French source
 text falls back to the available original, rather than fabricating a label.
 
 This describes the boundary, not a claim that current metadata helpers expose
-both languages: existing dimension/member extraction prefers English, and the
-current Census Profile ZIP preparation expects an English data member. Enabling
-French source ingestion or bilingual metadata extraction requires its own
-compatibility review and tests; it is not implied by localizing the web shell.
+both languages: existing dimension/member extraction prefers English. Verified
+French and English 2016 and 2021 tract Profile formats are supported as input;
+other geographies and revisions require separate review. Selecting the web
+language does not translate source data or select an input language.
 The [bilingual Profile input follow-up](https://github.com/dlq/synthpopcan/blob/main/plans/2026-08-01-expanded-small-area-controls.md#bilingual-census-profile-input-follow-up)
 tracks the source review and the intended ingestion work.
 

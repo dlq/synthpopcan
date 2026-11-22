@@ -5,8 +5,8 @@ Created: 2026-08-19\
 Last updated: 2026-11-22\
 Target: web-client infrastructure in `1.2.0`, core web localization in
 `1.3.0`, and complete supported web-client coverage in `1.4.0`\
-Next action: complete the remaining dynamic-message review and arrange human
-French review of the draft core web messages\
+Next action: arrange human French review of the draft core web messages and
+complete the remaining distribution acceptance gates\
 Roadmap: [PLANS.md](../PLANS.md) | [Plan index](README.md) |
 [Release train](2026-08-19-post-1-0-release-train.md)
 
@@ -86,7 +86,7 @@ labels as data; translate only independently attributed presentation.
 | `I18N13-03` | `done` | `I18N13-01`, `I18N13-02` | Core IPF workbench | Localize demo and upload, configuration, preflight, start/cancel, progress, results and downloads; installed-wheel scenarios complete the demo in each locale, compare equivalent requests and seeded results while accounting for run-specific IDs/timestamps, and verify locale changes do not mutate a run’s events, artifacts or reproduction command. French human review remains `I18N13-07`. |
 | `I18N13-04` | `done` | `I18N13-01`, `I18N13-02` | Model discovery and generation | Localize catalogue navigation, provenance and limitation framing, installation/failure, configuration, progress and results; preserve model IDs, supplied titles, notices and package metadata. Test a fictional bundled model in both locales. Human French review remains `I18N13-07`. |
 | `I18N13-05` | `done` | `I18N13-01`, `I18N13-02` | Small-area configuration and durable runs | Localize uploads, broad/conditional-pack selection, evidence and compatibility guidance, estimates, preflight, run, cancellation, interruption/restart and result summaries. Cover a bounded fictional workflow and failures in both locales without a live Census dependency. Human French review remains `I18N13-07`. |
-| `I18N13-06` | `ready` | `I18N13-01` | Dynamic error and progress presentation | Map reviewed stable messages or explicitly versioned presentation metadata to catalogue IDs at the client boundary; define safe fallback for unknown, parameterized and historical events. Verify that API responses, event replay, diagnostic data and artifact bytes remain unchanged across locale switches. |
+| `I18N13-06` | `done` | `I18N13-01` | Dynamic error and progress presentation | Map reviewed stable messages or explicitly versioned presentation metadata to catalogue IDs at the client boundary; define safe fallback for unknown, parameterized and historical events. Verify that API responses, event replay, diagnostic data and artifact bytes remain unchanged across locale switches. |
 | `I18N13-07` | `blocked` | `I18N13-01` and each covered slice | Human terminology and translation review | Record a real reviewer and date for every claimed French message; review limitations, errors, privacy, source attribution and accessibility wording. Draft or machine-translated text is not accepted as reviewed. |
 | `I18N13-08` | `blocked` | `I18N13-02`–`I18N13-07` | Core-coverage and distribution acceptance | Bind the declared core paths and covered IDs to the catalogue revision; fail on missing/unreviewed core translations or placeholder/plural mismatch. Test wheel and sdist packaging, keyboard and representative long-string layouts, locale changes/fallback, and machine-data parity; publish coverage and remaining untranslated surfaces. |
 
@@ -98,12 +98,12 @@ draft French messages, with installed-wheel scenarios comparing both locales
 and checking saved run evidence across a language switch. Known IPF input
 diagnostics are presented from structured fields and known fixed HTTP errors
 are mapped by complete context; unrecognized details retain the documented
-safe fallback. General dynamic-message coverage remains work for `I18N13-06`,
-and French human review remains the separate `I18N13-07` release gate.
+safe fallback. The [dynamic-message review](../docs/records/web-dynamic-message-review-2026-11-22.md)
+records the mapping boundaries and outstanding human review.
 The model workflow similarly has draft presentation for selection, installation,
 preflight, known errors and events, generation and results. Source-provided
 model names and metadata remain unchanged; unknown and parameterized progress
-retains the safe fallback pending broader dynamic-message work.
+retains the safe fallback.
 The small-area form, accessible help, estimates, known control errors, durable
 run summaries and restart guidance have draft translations. Tests cover a
 fictional linked run, non-convergence and failure paths in both locales while

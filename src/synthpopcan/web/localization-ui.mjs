@@ -1,7 +1,7 @@
 import { createLocalizationRuntime } from "./localization.mjs";
 
 // Increment when the identity or meaning of a registered presentation changes.
-export const PRESENTATION_REGISTRY_VERSION = 4;
+export const PRESENTATION_REGISTRY_VERSION = 5;
 
 let activeRuntime = null;
 const errorViews = new Map();
@@ -171,6 +171,18 @@ export async function initializeLocalization() {
       },
       {
         workflow: "model",
+        stage: "interrupted",
+        message: "Run interrupted by application restart",
+        id: "web.smallarea.event10",
+      },
+      {
+        workflow: "model",
+        stage: "interrupted",
+        message: "Job manager shut down",
+        id: "web.smallarea.event11",
+      },
+      {
+        workflow: "model",
         stage: "validating",
         message: "Validating household and person linkage",
         id: "web.model.event.validating",
@@ -234,6 +246,18 @@ export async function initializeLocalization() {
         stage: "reading-inputs",
         message: "Reading seed records and controls",
         id: "web.ipf.reading",
+      },
+      {
+        workflow: "ipf",
+        stage: "interrupted",
+        message: "Run interrupted by application restart",
+        id: "web.smallarea.event10",
+      },
+      {
+        workflow: "ipf",
+        stage: "interrupted",
+        message: "Job manager shut down",
+        id: "web.smallarea.event11",
       },
       {
         workflow: "ipf",
