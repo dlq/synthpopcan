@@ -1,0 +1,48 @@
+export const MODEL_MESSAGE_IDS = {
+  "Choose a reviewed catalogue package or upload a linked package JSON. Generation and validation run in Python.":
+    "web.modelui.m001",
+  "Prepared model": "web.modelui.m002",
+  "Choose a catalogue model": "web.modelui.m003",
+  "Download selected model": "web.modelui.m004",
+  "Remove downloaded model": "web.modelui.m005",
+  "Downloadable models stay in the local SynthPopCan cache.": "web.modelui.m006",
+  "Or package JSON": "web.modelui.m007",
+  Households: "web.modelui.m008",
+  Conditions: "web.modelui.m009",
+  "Comma-separated name=value pairs supported by the package.": "web.modelui.m010",
+  "Random seed": "web.modelui.m011",
+  "Check model and scale": "web.modelui.m012",
+  "Checking package provenance, privacy, and output scale…": "web.modelui.m013",
+  "Model preflight passed. Provenance and privacy metadata are recorded.":
+    "web.modelui.m014",
+  "Model preflight found a blocking scale problem.": "web.modelui.m015",
+  Package: "web.modelui.m016",
+  "Publishable candidate": "web.modelui.m017",
+  "Privacy review": "web.modelui.m018",
+  "Supported conditions": "web.modelui.m019",
+  "Requested households": "web.modelui.m020",
+  "Planning storage allowance": "web.modelui.m021",
+  "Storage estimate basis": "web.modelui.m022",
+  "Linked household and person artifacts were generated and validated in Python.":
+    "web.modelui.m023",
+  "Household output preview": "web.modelui.m024",
+  "Person output preview": "web.modelui.m025",
+  "Generated households": "web.modelui.m026",
+  "Generated persons": "web.modelui.m027",
+  "Linked validation": "web.modelui.m028",
+  Passed: "web.modelui.m029",
+  Failed: "web.modelui.m030",
+  "Prepared linked model": "web.modelui.m031",
+  "Premade models unavailable": "web.modelui.m032",
+  "Downloading and verifying model…": "web.modelui.m033",
+  "Removing model…": "web.modelui.m034",
+  "Model downloaded, verified, and ready for durable Python runs.": "web.modelui.m035",
+  "Downloaded model removed from the local cache.": "web.modelui.m036",
+  "The model was not present in the local cache.": "web.modelui.m037",
+  "Review parsed records, control margins, expected output, and workspace capacity before starting.":
+    "web.modelui.m038",
+  "Review model provenance, privacy, supported conditions, and workspace capacity before starting.":
+    "web.modelui.m039",
+  "Generate linked households and people from a prepared model.":
+    "web.modelui.subtitle",
+};

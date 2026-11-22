@@ -484,9 +484,7 @@ test("edited model settings win over a delayed preflight response", async ({
 
   await expect(page.locator("#workbench-message")).toContainText("Inputs changed");
   await page.waitForTimeout(250);
-  await expect(
-    page.getByRole("heading", { name: "Generate from a prepared model" }),
-  ).toBeVisible();
+  await expect(page.locator("#model-inputs-heading")).toBeVisible();
   await expect(page.getByRole("heading", { name: "Preflight" })).toBeHidden();
   await expect(page.locator("#start-run")).toBeDisabled();
   await expect(
@@ -644,6 +642,93 @@ test("active durable IPF run can be cancelled", async ({ page }) => {
   });
 });
 
+test("model generation switches locale while preserving model data and results", async ({
+  page,
+}) => {
+  await openWorkbench(page);
+  await page.locator("#new-run").click();
+  await page.locator("#web-locale").selectOption("fr-CA");
+  await page.locator("#start-model-workflow").click();
+  await expect(page.locator("#run-subtitle")).toContainText(
+    "ménages et des personnes liés",
+  );
+  await expect(page.locator("#check-model-preflight")).toContainText(
+    "Vérifier le modèle",
+  );
+  await page.locator("#check-model-preflight").click();
+  await expect(page.locator("#workbench-message")).toContainText(
+    "Choisissez un modèle du catalogue",
+  );
+  await page.locator("#run-model-select").selectOption("demo-linked-household-person");
+  const selectedName = await page
+    .locator("#run-model-select option:checked")
+    .textContent();
+  await page.locator("#run-model-households").fill("4");
+  await page.locator("#run-model-conditions").fill("invalid");
+  await page.locator("#check-model-preflight").click();
+  await expect(page.locator("#workbench-message")).toContainText("paires nom=valeur");
+  await page.locator("#run-model-conditions").fill("geo=Demo North");
+  await page.locator("#check-model-preflight").click();
+  await expect(page.locator("#preflight-results")).toContainText("Candidat publiable");
+  await page.locator('[data-go-step="configure"]').click();
+  await expect(page.locator("#run-model-select")).toBeVisible();
+  await expect(page.locator("#run-model-select option:checked")).toHaveText(
+    selectedName,
+  );
+  await page.locator("#check-model-preflight").click();
+  await page.locator("#start-run").click();
+  await expect(page.locator("#results-heading")).toBeVisible({ timeout: 15000 });
+  await expect(page.locator("#fit-diagnostics")).toContainText("Ménages générés");
+  await expect(page.locator("#run-kicker")).toContainText("Exécution ");
+  await expect(page.locator("#preview-heading")).toHaveText("Aperçu des ménages");
+  await expect(page.locator("#secondary-preview-heading")).toHaveText(
+    "Aperçu des personnes",
+  );
+  const before = await page.evaluate(() => fetch("/api/runs").then((r) => r.text()));
+  const command = await page.locator("#reproduction-command").textContent();
+  const modelArtifacts = async () =>
+    page
+      .locator("#run-artifacts a")
+      .evaluateAll(async (links) =>
+        Promise.all(
+          links
+            .filter((link) =>
+              ["households.csv", "persons.csv"].includes(link.dataset.artifactFilename),
+            )
+            .map((link) => fetch(link.href).then((response) => response.text())),
+        ),
+      );
+  const firstArtifacts = await modelArtifacts();
+  expect(firstArtifacts).toHaveLength(2);
+  await page.locator("#web-locale").selectOption("en-CA");
+  await expect(page.locator("#fit-diagnostics")).toContainText("Generated households");
+  await expect(page.locator("#run-kicker")).toContainText("Run ");
+  expect(await page.locator("#reproduction-command").textContent()).toBe(command);
+  expect(await page.evaluate(() => fetch("/api/runs").then((r) => r.text()))).toBe(
+    before,
+  );
+  await page.locator("#new-run").click();
+  await page.locator("#start-model-workflow").click();
+  await page.locator("#run-model-select").selectOption("demo-linked-household-person");
+  await page.locator("#run-model-households").fill("4");
+  await page.locator("#run-model-conditions").fill("geo=Demo North");
+  await page.locator("#check-model-preflight").click();
+  await page.locator("#start-run").click();
+  await expect(page.locator("#primary-preview tbody tr")).toHaveCount(4, {
+    timeout: 15000,
+  });
+  expect(await modelArtifacts()).toEqual(firstArtifacts);
+  await page.locator("#new-run").click();
+  await page.locator("#use-demo-ipf").click();
+  await page.locator("#upload-inputs").click();
+  await page.locator("#check-preflight").click();
+  await page.locator("#start-run").click();
+  await expect(page.locator("#results-intro")).toHaveText(
+    "The completed run and its artifacts are stored in the local workspace.",
+    { timeout: 15000 },
+  );
+});
+
 test("SCN-WEB-002 inspects and generates from a linked model package", async ({
   page,
 }) => {
@@ -718,6 +803,14 @@ test("downloadable catalogue models install without returning their payload", as
     .getByRole("button", { name: "Generate from a prepared model", exact: true })
     .click();
   await page.locator("#run-model-select").selectOption("large-model");
+  await page.locator("#web-locale").selectOption("fr-CA");
+  await expect(page.locator("#run-model-select option:checked")).toHaveText(
+    "Large model · Canada · téléchargement requis",
+  );
+  await expect(page.locator("#install-run-model")).toHaveText(
+    "Télécharger le modèle sélectionné",
+  );
+  await page.locator("#web-locale").selectOption("en-CA");
   await expect(
     page.getByRole("button", { name: "Download selected model" }),
   ).toBeEnabled();
@@ -729,6 +822,48 @@ test("downloadable catalogue models install without returning their payload", as
   await expect(
     page.getByRole("button", { name: "Remove downloaded model" }),
   ).toBeEnabled();
+});
+
+test("model download failures switch language without changing the response", async ({
+  page,
+}) => {
+  const body = JSON.stringify({ error: "model download failed" });
+  await page.route("**/api/models", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        models: [
+          {
+            id: "fictional",
+            name: "Source name",
+            geography: "Source geography",
+            distribution: "download",
+            installed: false,
+          },
+        ],
+      }),
+    }),
+  );
+  await page.route("**/api/models/fictional/install", (route) =>
+    route.fulfill({ status: 502, contentType: "application/json", body }),
+  );
+  await openWorkbench(page);
+  await page.locator("#new-run").click();
+  await page.locator("#start-model-workflow").click();
+  await page.locator("#run-model-select").selectOption("fictional");
+  await page.locator("#install-run-model").click();
+  await expect(page.locator("#run-model-catalogue-status")).toContainText(
+    "Check your connection",
+  );
+  await page.locator("#web-locale").selectOption("fr-CA");
+  await expect(page.locator("#run-model-catalogue-status")).toContainText(
+    "Vérifiez votre connexion",
+  );
+  await expect(page.locator("#run-model-select option:checked")).toContainText(
+    "Source name · Source geography",
+  );
+  expect(JSON.parse(body)).toEqual({ error: "model download failed" });
 });
 
 test("SCN-WEB-003 runs durable linked small-area synthesis", async ({ page }) => {

@@ -33,12 +33,15 @@ export function buildModelRequest(inputs, options) {
   return { workflow: "model", inputs, options };
 }
 
+export class ModelConditionError extends Error {}
+
 export function parseConditions(value) {
   const conditions = {};
   for (const item of value.split(",")) {
     if (!item.trim()) continue;
     const separator = item.indexOf("=");
-    if (separator < 1) throw new Error("Conditions must use name=value pairs.");
+    if (separator < 1)
+      throw new ModelConditionError("Conditions must use name=value pairs.");
     conditions[item.slice(0, separator).trim()] = item.slice(separator + 1).trim();
   }
   return conditions;

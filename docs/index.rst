@@ -171,3 +171,4 @@ beginner generation workflows.
    records/correctness-refactor-2026-10-22
    records/python-3.15-review-2026-11-20
    records/python-3.15-lock-review-2026-11-21
+   records/python-3.15-linux-acceptance-2026-11-22

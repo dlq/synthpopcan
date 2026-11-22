@@ -68,7 +68,7 @@
             <span id="run-status" class="run-status draft" data-status="draft">Draft</span>
           </div>
 
-          <ol class="step-list" aria-label="IPF run steps" data-i18n-aria-label="web.ipfui.steps">
+          <ol id="run-steps" class="step-list" aria-label="IPF run steps" data-i18n-aria-label="web.ipfui.steps">
             <li data-step-indicator="inputs" class="active"><span data-i18n="web.ipfui.m004">1. Inputs</span></li>
             <li data-step-indicator="configure"><span data-i18n="web.ipfui.m005">2. Configure</span></li>
             <li data-step-indicator="preflight"><span data-i18n="web.ipfui.m006">3. Preflight</span></li>
@@ -105,36 +105,36 @@
           <section class="run-step" data-run-step="model-inputs" aria-labelledby="model-inputs-heading" hidden>
             <div class="setup-heading">
               <h3 id="model-inputs-heading"><span data-i18n="web.ipfui.m012">Generate from a prepared model</span></h3>
-              <p>Choose a reviewed catalogue package or upload a linked package JSON. Generation and validation run in Python.</p>
+              <p><span data-i18n="web.modelui.m001">Choose a reviewed catalogue package or upload a linked package JSON. Generation and validation run in Python.</span></p>
             </div>
             <div class="form-grid">
-              <label>Prepared model
+              <label><span data-i18n="web.modelui.m002">Prepared model</span>
                 <select id="run-model-select">
                   <option value="">Choose a catalogue model</option>
                 </select>
               </label>
               <div class="model-catalogue-actions">
-                <button id="install-run-model" class="secondary-action" type="button" disabled>Download selected model</button>
-                <button id="remove-run-model" class="secondary-action" type="button" disabled>Remove downloaded model</button>
-                <small id="run-model-catalogue-status" class="field-hint">Downloadable models stay in the local SynthPopCan cache.</small>
+                <button id="install-run-model" class="secondary-action" type="button" disabled><span data-i18n="web.modelui.m004">Download selected model</span></button>
+                <button id="remove-run-model" class="secondary-action" type="button" disabled><span data-i18n="web.modelui.m005">Remove downloaded model</span></button>
+                <small id="run-model-catalogue-status" class="field-hint"><span data-i18n="web.modelui.m006">Downloadable models stay in the local SynthPopCan cache.</span></small>
               </div>
-              <label>Or package JSON
+              <label><span data-i18n="web.modelui.m007">Or package JSON</span>
                 <input id="run-model-file" type="file" accept=".json,application/json">
               </label>
-              <label>Households
+              <label><span data-i18n="web.modelui.m008">Households</span>
                 <input id="run-model-households" type="number" min="1" max="250000" value="10">
               </label>
-              <label>Conditions
+              <label><span data-i18n="web.modelui.m009">Conditions</span>
                 <input id="run-model-conditions" placeholder="geo=Demo North">
-                <small class="field-hint">Comma-separated name=value pairs supported by the package.</small>
+                <small class="field-hint"><span data-i18n="web.modelui.m010">Comma-separated name=value pairs supported by the package.</span></small>
               </label>
-              <label>Random seed
+              <label><span data-i18n="web.modelui.m011">Random seed</span>
                 <input id="run-model-random-seed" type="number" value="13">
               </label>
             </div>
             <div class="step-actions">
               <button class="secondary-action" type="button" data-go-step="inputs"><span data-i18n="web.ipfui.m026">Back</span></button>
-              <button id="check-model-preflight" class="primary-action" type="button">Check model and scale</button>
+              <button id="check-model-preflight" class="primary-action" type="button"><span data-i18n="web.modelui.m012">Check model and scale</span></button>
             </div>
           </section>
 
@@ -174,7 +174,7 @@
           <section class="run-step" data-run-step="preflight" aria-labelledby="preflight-heading" hidden>
             <div class="setup-heading">
               <h3 id="preflight-heading"><span data-i18n="web.ipfui.m028">Preflight</span></h3>
-              <p><span data-i18n="web.ipfui.m029">Review parsed records, control margins, expected output, and workspace capacity before starting.</span></p>
+              <p id="preflight-intro"><span data-i18n="web.ipfui.m029">Review parsed records, control margins, expected output, and workspace capacity before starting.</span></p>
             </div>
             <div id="preflight-results" class="diagnostic-grid"></div>
             <div class="step-actions">
@@ -246,7 +246,7 @@
               <span
                 class="help-label"
                 data-help="Use a local linked package JSON instead of a premade model ID."
-              >Or package JSON</span>
+              ><span data-i18n="web.modelui.m007">Or package JSON</span></span>
               <input id="small-area-model-file" type="file" accept=".json,application/json">
             </label>
             <label>

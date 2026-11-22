@@ -275,12 +275,12 @@ def test_javascript_module_reviews_are_bound_to_exact_source_hashes():
     )
     model = ROOT / "src/synthpopcan/web/run-workbench-model.mjs"
     model_digest = hashlib.sha256(model.read_bytes()).hexdigest()
-    assert module.reviewed_module_role(model.name, model_digest, 255, '"model"') == (
+    assert module.reviewed_module_role(model.name, model_digest, 258, '"model"') == (
         "machine-data-or-protocol-preserve"
     )
     assert (
         module.reviewed_module_role(
-            model.name, model_digest, 255, '"Generate from a prepared model"'
+            model.name, model_digest, 258, '"Generate from a prepared model"'
         )
         == "web-presentation-candidate"
     )
@@ -288,17 +288,17 @@ def test_javascript_module_reviews_are_bound_to_exact_source_hashes():
     workbench_digest = hashlib.sha256(workbench.read_bytes()).hexdigest()
     assert (
         module.reviewed_module_role(
-            workbench.name, workbench_digest, 261, '"uploading"'
+            workbench.name, workbench_digest, 283, '"uploading"'
         )
         == "machine-data-or-protocol-preserve"
     )
     assert (
-        module.reviewed_module_role(workbench.name, workbench_digest, 248, '"success"')
+        module.reviewed_module_role(workbench.name, workbench_digest, 270, '"success"')
         == "machine-data-or-protocol-preserve"
     )
     assert (
         module.reviewed_module_role(
-            workbench.name, workbench_digest, 248, '"Demo files are ready to upload."'
+            workbench.name, workbench_digest, 270, '"Demo files are ready to upload."'
         )
         == "web-presentation-candidate"
     )
@@ -306,12 +306,12 @@ def test_javascript_module_reviews_are_bound_to_exact_source_hashes():
         module.reviewed_module_role(
             workbench.name,
             workbench_digest,
-            346,
+            368,
             '"Checking package provenance, privacy, and output scale…"',
         )
         == "web-presentation-candidate"
     )
-    assert module.reviewed_module_role(workbench.name, workbench_digest, 347, '""') == (
+    assert module.reviewed_module_role(workbench.name, workbench_digest, 369, '""') == (
         "machine-data-or-protocol-preserve"
     )
 

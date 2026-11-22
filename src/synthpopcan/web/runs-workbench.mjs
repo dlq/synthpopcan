@@ -1,7 +1,9 @@
 import { stringifyCsv } from "./csv.mjs";
 import { numberValue, optionalNumberValue } from "./form-utils.mjs";
+import { ApiError } from "./http.mjs";
 import { IPF_MESSAGE_IDS } from "./ipf-messages.mjs";
 import { clearWebError, renderWebError } from "./localization-ui.mjs";
+import { MODEL_MESSAGE_IDS } from "./model-messages.mjs";
 import { createOperationSequencer } from "./operation-sequencer.mjs";
 import {
   artifactUrl,
@@ -22,6 +24,7 @@ import {
   buildModelRequest,
   fileLabel,
   ipfPreflightView,
+  ModelConditionError,
   modelPreflightItems,
   presentIpfProblems,
   runResultView,
@@ -40,7 +43,11 @@ function translateOwned(id, fallback, params = {}) {
 }
 
 function setOwnedText(element, text) {
-  const id = Object.hasOwn(IPF_MESSAGE_IDS, text) ? IPF_MESSAGE_IDS[text] : null;
+  const id = Object.hasOwn(MODEL_MESSAGE_IDS, text)
+    ? MODEL_MESSAGE_IDS[text]
+    : Object.hasOwn(IPF_MESSAGE_IDS, text)
+      ? IPF_MESSAGE_IDS[text]
+      : null;
   if (id) localizedViews.set(element, { id, text });
   else localizedViews.delete(element);
   element.textContent = id ? translateOwned(id, text) : text;
@@ -64,7 +71,7 @@ export function bindRunsWorkbench(bootstrap, localization) {
     ipfDiagnosticRenderer?.();
     for (const [element, view] of localizedViews) {
       if (!element.isConnected) localizedViews.delete(element);
-      else element.textContent = translateOwned(view.id, view.text);
+      else element.textContent = translateOwned(view.id, view.text, view.params);
     }
     const status = document.querySelector("#run-status").dataset.status;
     if (status) setRunStatus(status);
@@ -77,6 +84,7 @@ export function bindRunsWorkbench(bootstrap, localization) {
         filename,
       });
     }
+    renderModelOptions();
   });
   setRunStatus(document.querySelector("#run-status").dataset.status);
   document.querySelector("#workspace-location").textContent = bootstrap.workspace;
@@ -87,6 +95,12 @@ export function bindRunsWorkbench(bootstrap, localization) {
   document.querySelector("#start-model-workflow").addEventListener("click", () => {
     invalidateDraftOperations(state);
     state.workflow = "model";
+    setRunHeading(
+      "New durable run",
+      "Generate from a prepared model",
+      "draft",
+      "model",
+    );
     showStep("model-inputs");
     showMessage("", "");
   });
@@ -127,7 +141,15 @@ export function bindRunsWorkbench(bootstrap, localization) {
     .querySelector("#restart-run")
     .addEventListener("click", () => requestRestart(state));
   document.querySelectorAll("[data-go-step]").forEach((button) => {
-    button.addEventListener("click", () => showStep(button.dataset.goStep));
+    button.addEventListener("click", () => {
+      let step = button.dataset.goStep;
+      if (step === "configure" && state.workflow === "model") step = "model-inputs";
+      if (step === "inputs" && state.workflow === "model") {
+        state.workflow = "ipf";
+        setRunHeading("New durable run", "IPF from margin tables", "draft");
+      }
+      showStep(step);
+    });
   });
   for (const selector of [
     "#ipf-weight-field",
@@ -374,16 +396,31 @@ async function checkModelPreflight(state) {
       preflight.ready ? "success" : "error",
     );
   } catch (error) {
-    if (operation.isCurrent()) showErrorMessage(error);
+    if (operation.isCurrent()) {
+      if (
+        error instanceof ModelConditionError ||
+        error instanceof ModelSelectionError
+      ) {
+        error.presentationContext = {
+          endpoint: "client:model",
+          method: "VALIDATE",
+          status: 400,
+        };
+      }
+      showErrorMessage(error);
+    }
   } finally {
     if (operation.isCurrent()) button.disabled = false;
   }
 }
 
+class ModelSelectionError extends Error {}
+
 function snapshotModelDraft() {
   const file = document.querySelector("#run-model-file").files?.[0];
   const modelId = document.querySelector("#run-model-select").value;
-  if (!file && !modelId) throw new Error("Choose a catalogue model or package JSON.");
+  if (!file && !modelId)
+    throw new ModelSelectionError("Choose a catalogue model or package JSON.");
   return {
     file,
     modelId,
@@ -396,6 +433,10 @@ function snapshotModelDraft() {
 }
 
 function renderModelPreflight(preflight) {
+  setOwnedText(
+    document.querySelector("#preflight-intro"),
+    "Review model provenance, privacy, supported conditions, and workspace capacity before starting.",
+  );
   renderDiagnostics(
     document.querySelector("#preflight-results"),
     modelPreflightItems(preflight),
@@ -403,6 +444,10 @@ function renderModelPreflight(preflight) {
 }
 
 function renderPreflight(preflight) {
+  setOwnedText(
+    document.querySelector("#preflight-intro"),
+    "Review parsed records, control margins, expected output, and workspace capacity before starting.",
+  );
   const { items, problems } = ipfPreflightView(preflight);
   renderDiagnostics(document.querySelector("#preflight-results"), items);
   if (problems.length) {
@@ -436,9 +481,11 @@ async function startRun(state) {
     }
     state.selectedRun = run;
     setRunHeading(
-      `Run ${run.run_id.slice(-12)}`,
+      "",
       workflowTitle(run.workflow),
       run.status,
+      run.workflow,
+      run.run_id.slice(-12),
     );
     showStep("run");
     showMessage("Run queued. You can safely refresh this page.", "success");
@@ -553,9 +600,11 @@ async function selectRun(state, summary) {
     );
     state.workflow = run.workflow;
     setRunHeading(
-      `Run ${run.run_id.slice(-12)}`,
+      "",
       workflowTitle(run.workflow),
       run.status,
+      run.workflow,
+      run.run_id.slice(-12),
     );
     if (TERMINAL.has(run.status)) await showTerminalRun(state, run);
     else {
@@ -596,13 +645,17 @@ async function showTerminalRun(state, run) {
 async function showSucceededRun(run, isCurrent) {
   const view = runResultView(run);
   if (view.warning) showMessage(view.warning, "warning");
-  if (view.intro !== null) {
-    setOwnedText(document.querySelector("#results-intro"), view.intro);
-  }
+  setOwnedText(
+    document.querySelector("#results-intro"),
+    view.intro ??
+      "The completed run and its artifacts are stored in the local workspace.",
+  );
   setOwnedText(document.querySelector("#preview-heading"), view.previewHeading);
   if (view.secondaryPreviewHeading !== null) {
-    document.querySelector("#secondary-preview-heading").textContent =
-      view.secondaryPreviewHeading;
+    setOwnedText(
+      document.querySelector("#secondary-preview-heading"),
+      view.secondaryPreviewHeading,
+    );
   }
   document.querySelector("#secondary-preview-block").hidden =
     !view.showSecondaryPreview;
@@ -670,7 +723,14 @@ function renderDiagnostics(element, items) {
     setOwnedText(term, label);
     const detail = document.createElement("span");
     const displayValue = String(value ?? "—");
-    if (["Workspace capacity", "Converged"].includes(label)) {
+    if (
+      [
+        "Workspace capacity",
+        "Converged",
+        "Publishable candidate",
+        "Linked validation",
+      ].includes(label)
+    ) {
       setOwnedText(detail, displayValue);
     } else {
       detail.textContent = displayValue;
@@ -691,9 +751,41 @@ function showStep(name) {
   });
 }
 
-function setRunHeading(kicker, title, status) {
-  setOwnedText(document.querySelector("#run-kicker"), kicker);
+function setRunHeading(kicker, title, status, workflow = "ipf", runId = null) {
+  const kickerElement = document.querySelector("#run-kicker");
+  if (runId === null) {
+    setOwnedText(kickerElement, kicker);
+  } else {
+    const view = {
+      id: "web.run.identifier",
+      text: `Run ${runId}`,
+      params: { id: runId },
+    };
+    localizedViews.set(kickerElement, view);
+    kickerElement.textContent = translateOwned(view.id, view.text, view.params);
+  }
   setOwnedText(document.querySelector("#run-title"), title);
+  const steps = document.querySelector("#run-steps");
+  const modelSteps = workflow === "model";
+  steps.dataset.i18nAriaLabel = modelSteps ? "web.modelui.steps" : "web.ipfui.steps";
+  steps.setAttribute(
+    "aria-label",
+    translateOwned(
+      steps.dataset.i18nAriaLabel,
+      modelSteps ? "Model run steps" : "IPF run steps",
+    ),
+  );
+  if (workflow === "model") {
+    setOwnedText(
+      document.querySelector("#run-subtitle"),
+      "Generate linked households and people from a prepared model.",
+    );
+  } else if (workflow === "ipf") {
+    setOwnedText(
+      document.querySelector("#run-subtitle"),
+      "Fit compact weights from seed records and normalized controls.",
+    );
+  }
   setRunStatus(status);
 }
 
@@ -745,11 +837,13 @@ async function loadModelCatalogue(state) {
     const selected = select.value;
     const smallAreaSelected = smallAreaSelect.value;
     const runOptions = [new Option("Choose a catalogue model", "")];
+    runOptions[0].dataset.modelPlaceholder = "true";
     const smallAreaOptions = [new Option("Choose a prepared model", "")];
     for (const model of payload.models) {
       const option = document.createElement("option");
       option.value = model.id;
-      option.textContent = `${model.name} · ${model.geography}${model.installed ? "" : " · download required"}`;
+      option.dataset.modelName = model.name;
+      option.dataset.modelGeography = model.geography;
       option.dataset.installed = String(model.installed);
       option.dataset.distribution = model.distribution;
       runOptions.push(option);
@@ -762,6 +856,7 @@ async function loadModelCatalogue(state) {
       smallAreaOptions.push(smallAreaOption);
     }
     select.replaceChildren(...runOptions);
+    renderModelOptions();
     smallAreaSelect.replaceChildren(...smallAreaOptions);
     if ([...select.options].some((option) => option.value === selected)) {
       select.value = selected;
@@ -781,9 +876,14 @@ async function loadModelCatalogue(state) {
           "",
         ),
       );
+      if (target === select) {
+        target.options[0].dataset.modelPlaceholder = "true";
+        renderModelOptions();
+      }
       const option = document.createElement("option");
       option.disabled = true;
       option.textContent = "Premade models unavailable";
+      if (target === select) setOwnedText(option, "Premade models unavailable");
       target.append(option);
     }
     updateModelCatalogueActions();
@@ -813,7 +913,10 @@ async function changeModelInstallation(state, action) {
     button.disabled = true;
   });
   clearWebError(status);
-  status.textContent = install ? "Downloading and verifying model…" : "Removing model…";
+  setOwnedText(
+    status,
+    install ? "Downloading and verifying model…" : "Removing model…",
+  );
   try {
     const response = await fetch(
       `/api/models/${encodeURIComponent(modelId)}${install ? "/install" : ""}`,
@@ -822,7 +925,13 @@ async function changeModelInstallation(state, action) {
       },
     );
     const payload = await response.json();
-    if (!response.ok) throw new Error(payload.error || "Model catalogue update failed");
+    if (!response.ok) {
+      throw new ApiError(payload.error || "Model catalogue update failed", {
+        endpoint: install ? "/api/models/:id/install" : "/api/models/:id",
+        method: install ? "POST" : "DELETE",
+        status: response.status,
+      });
+    }
     if (!operation.isCurrent()) {
       await loadModelCatalogue(state);
       return;
@@ -831,15 +940,39 @@ async function changeModelInstallation(state, action) {
     if (!operation.isCurrent()) return;
     select.value = install ? modelId : "";
     updateModelCatalogueActions();
-    status.textContent = install
-      ? "Model downloaded, verified, and ready for durable Python runs."
-      : payload.removed
-        ? "Downloaded model removed from the local cache."
-        : "The model was not present in the local cache.";
+    setOwnedText(
+      status,
+      install
+        ? "Model downloaded, verified, and ready for durable Python runs."
+        : payload.removed
+          ? "Downloaded model removed from the local cache."
+          : "The model was not present in the local cache.",
+    );
   } catch (error) {
     if (!operation.isCurrent()) return;
+    localizedViews.delete(status);
     renderWebError(status, error);
     updateModelCatalogueActions();
+  }
+}
+
+function renderModelOptions() {
+  const select = document.querySelector("#run-model-select");
+  for (const option of select.options) {
+    if (option.dataset.modelPlaceholder === "true") {
+      setOwnedText(option, "Choose a catalogue model");
+    } else if (option.dataset.modelName !== undefined) {
+      const name = option.dataset.modelName;
+      const geography = option.dataset.modelGeography;
+      option.textContent =
+        option.dataset.installed === "true"
+          ? `${name} · ${geography}`
+          : translateOwned(
+              "web.modelui.option",
+              `${name} · ${geography} · download required`,
+              { name, geography },
+            );
+    }
   }
 }
 

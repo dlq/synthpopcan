@@ -1,7 +1,7 @@
 {
   "schema_version": "synthpopcan-web-messages-v1",
   "locale": "fr-CA",
-  "revision": "ipf-diagnostics-preview-2",
+  "revision": "model-preview-1",
   "messages": {
     "web.language.label": {
       "kind": "text",
@@ -1195,6 +1195,521 @@
       "provenance": {
         "kind": "project",
         "source_id": "web.ipf.event.exited",
+        "review": "draft"
+      }
+    },
+    "web.modelui.m001": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Choisissez un paquet du catalogue examiné ou téléversez un paquet lié en JSON. La génération et la validation s’exécutent en Python.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.modelui.m001",
+        "review": "draft"
+      }
+    },
+    "web.modelui.m002": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Modèle préparé",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.modelui.m002",
+        "review": "draft"
+      }
+    },
+    "web.modelui.m003": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Choisir un modèle du catalogue",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.modelui.m003",
+        "review": "draft"
+      }
+    },
+    "web.modelui.m004": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Télécharger le modèle sélectionné",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.modelui.m004",
+        "review": "draft"
+      }
+    },
+    "web.modelui.m005": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Supprimer le modèle téléchargé",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.modelui.m005",
+        "review": "draft"
+      }
+    },
+    "web.modelui.m006": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Les modèles téléchargeables restent dans le cache local de SynthPopCan.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.modelui.m006",
+        "review": "draft"
+      }
+    },
+    "web.modelui.m007": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Ou paquet JSON",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.modelui.m007",
+        "review": "draft"
+      }
+    },
+    "web.modelui.m008": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Ménages",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.modelui.m008",
+        "review": "draft"
+      }
+    },
+    "web.modelui.m009": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Conditions",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.modelui.m009",
+        "review": "draft"
+      }
+    },
+    "web.modelui.m010": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Paires nom=valeur séparées par des virgules et prises en charge par le paquet.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.modelui.m010",
+        "review": "draft"
+      }
+    },
+    "web.modelui.m011": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Graine aléatoire",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.modelui.m011",
+        "review": "draft"
+      }
+    },
+    "web.modelui.m012": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Vérifier le modèle et la taille",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.modelui.m012",
+        "review": "draft"
+      }
+    },
+    "web.modelui.m013": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Vérification de la provenance du paquet, de la protection des renseignements et de la taille des résultats…",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.modelui.m013",
+        "review": "draft"
+      }
+    },
+    "web.modelui.m014": {
+      "kind": "text",
+      "parameters": {},
+      "value": "La vérification du modèle a réussi. Les métadonnées de provenance et de confidentialité sont enregistrées.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.modelui.m014",
+        "review": "draft"
+      }
+    },
+    "web.modelui.m015": {
+      "kind": "text",
+      "parameters": {},
+      "value": "La vérification du modèle a relevé un problème de taille bloquant.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.modelui.m015",
+        "review": "draft"
+      }
+    },
+    "web.modelui.m016": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Paquet",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.modelui.m016",
+        "review": "draft"
+      }
+    },
+    "web.modelui.m017": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Candidat publiable",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.modelui.m017",
+        "review": "draft"
+      }
+    },
+    "web.modelui.m018": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Examen de confidentialité",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.modelui.m018",
+        "review": "draft"
+      }
+    },
+    "web.modelui.m019": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Conditions prises en charge",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.modelui.m019",
+        "review": "draft"
+      }
+    },
+    "web.modelui.m020": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Ménages demandés",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.modelui.m020",
+        "review": "draft"
+      }
+    },
+    "web.modelui.m021": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Espace de stockage prévu",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.modelui.m021",
+        "review": "draft"
+      }
+    },
+    "web.modelui.m022": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Base de l’estimation du stockage",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.modelui.m022",
+        "review": "draft"
+      }
+    },
+    "web.modelui.m023": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Les fichiers liés des ménages et des personnes ont été générés et validés en Python.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.modelui.m023",
+        "review": "draft"
+      }
+    },
+    "web.modelui.m024": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Aperçu des ménages",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.modelui.m024",
+        "review": "draft"
+      }
+    },
+    "web.modelui.m025": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Aperçu des personnes",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.modelui.m025",
+        "review": "draft"
+      }
+    },
+    "web.modelui.m026": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Ménages générés",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.modelui.m026",
+        "review": "draft"
+      }
+    },
+    "web.modelui.m027": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Personnes générées",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.modelui.m027",
+        "review": "draft"
+      }
+    },
+    "web.modelui.m028": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Validation des liens",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.modelui.m028",
+        "review": "draft"
+      }
+    },
+    "web.modelui.m029": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Réussie",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.modelui.m029",
+        "review": "draft"
+      }
+    },
+    "web.modelui.m030": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Échouée",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.modelui.m030",
+        "review": "draft"
+      }
+    },
+    "web.modelui.m031": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Modèle lié préparé",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.modelui.m031",
+        "review": "draft"
+      }
+    },
+    "web.modelui.m032": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Modèles préparés indisponibles",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.modelui.m032",
+        "review": "draft"
+      }
+    },
+    "web.modelui.m033": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Téléchargement et vérification du modèle…",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.modelui.m033",
+        "review": "draft"
+      }
+    },
+    "web.modelui.m034": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Suppression du modèle…",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.modelui.m034",
+        "review": "draft"
+      }
+    },
+    "web.modelui.m035": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Modèle téléchargé, vérifié et prêt pour les exécutions Python enregistrées.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.modelui.m035",
+        "review": "draft"
+      }
+    },
+    "web.modelui.m036": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Modèle téléchargé supprimé du cache local.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.modelui.m036",
+        "review": "draft"
+      }
+    },
+    "web.modelui.m037": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Le modèle n’était pas présent dans le cache local.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.modelui.m037",
+        "review": "draft"
+      }
+    },
+    "web.modelui.m038": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Avant de commencer, examinez les enregistrements lus, les marges de contrôle, le résultat attendu et la capacité de l’espace de travail.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.modelui.m038",
+        "review": "draft"
+      }
+    },
+    "web.modelui.m039": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Avant de commencer, examinez la provenance du modèle, la confidentialité, les conditions prises en charge et la capacité de l’espace de travail.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.modelui.m039",
+        "review": "draft"
+      }
+    },
+    "web.modelui.option": {
+      "kind": "text",
+      "parameters": {
+        "name": "text",
+        "geography": "text"
+      },
+      "value": "{name} · {geography} · téléchargement requis",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.modelui.option",
+        "review": "draft"
+      }
+    },
+    "web.modelui.subtitle": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Générez des ménages et des personnes liés à partir d’un modèle préparé.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.modelui.subtitle",
+        "review": "draft"
+      }
+    },
+    "web.model.event.checking": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Vérification de la provenance et de la confidentialité du paquet",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.model.event.checking",
+        "review": "draft"
+      }
+    },
+    "web.model.event.validating": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Validation des liens entre ménages et personnes",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.model.event.validating",
+        "review": "draft"
+      }
+    },
+    "web.model.event.completed": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Génération à partir du modèle préparé terminée",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.model.event.completed",
+        "review": "draft"
+      }
+    },
+    "web.model.error.selection": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Choisissez un modèle du catalogue ou un paquet JSON.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.model.error.selection",
+        "review": "draft"
+      }
+    },
+    "web.model.error.conditions": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Les conditions doivent utiliser des paires nom=valeur.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.model.error.conditions",
+        "review": "draft"
+      }
+    },
+    "web.modelui.steps": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Étapes de l’exécution du modèle",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.modelui.steps",
+        "review": "draft"
+      }
+    },
+    "web.model.error.download": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Le téléchargement du modèle a échoué. Vérifiez votre connexion et réessayez.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.model.error.download",
+        "review": "draft"
+      }
+    },
+    "web.model.error.validation": {
+      "kind": "text",
+      "parameters": {},
+      "value": "La validation du paquet a échoué. Téléchargez-le de nouveau ou choisissez un autre modèle.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.model.error.validation",
+        "review": "draft"
+      }
+    },
+    "web.model.error.unknown": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Le modèle sélectionné est indisponible. Actualisez le catalogue et choisissez un modèle.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.model.error.unknown",
+        "review": "draft"
+      }
+    },
+    "web.run.identifier": {
+      "kind": "text",
+      "parameters": {
+        "id": "text"
+      },
+      "value": "Exécution {id}",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.run.identifier",
         "review": "draft"
       }
     }

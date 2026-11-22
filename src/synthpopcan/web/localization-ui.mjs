@@ -1,7 +1,7 @@
 import { createLocalizationRuntime } from "./localization.mjs";
 
 // Increment when the identity or meaning of a registered presentation changes.
-export const PRESENTATION_REGISTRY_VERSION = 2;
+export const PRESENTATION_REGISTRY_VERSION = 3;
 
 let activeRuntime = null;
 const errorViews = new Map();
@@ -48,6 +48,72 @@ export async function initializeLocalization() {
     catalogues,
     storage,
     eventMappings: [
+      {
+        workflow: "model",
+        stage: "checking-model",
+        message: "Checking package provenance and privacy",
+        id: "web.model.event.checking",
+      },
+      {
+        workflow: "model",
+        stage: "validating",
+        message: "Validating household and person linkage",
+        id: "web.model.event.validating",
+      },
+      {
+        workflow: "model",
+        stage: "completed",
+        message: "Prepared-model generation completed",
+        id: "web.model.event.completed",
+      },
+      {
+        workflow: "model",
+        stage: "queued",
+        message: "Run queued",
+        id: "web.ipf.event.queued",
+      },
+      {
+        workflow: "model",
+        stage: "running",
+        message: "Worker process started",
+        id: "web.ipf.event.started",
+      },
+      {
+        workflow: "model",
+        stage: "cancelling",
+        message: "Cancellation requested",
+        id: "web.ipf.event.cancelling",
+      },
+      {
+        workflow: "model",
+        stage: "cancelled",
+        message: "Queued run cancelled",
+        id: "web.ipf.event.cancelledqueued",
+      },
+      {
+        workflow: "model",
+        stage: "cancelled",
+        message: "Run cancelled",
+        id: "web.ipf.event.cancelled",
+      },
+      {
+        workflow: "model",
+        stage: "succeeded",
+        message: "Run completed",
+        id: "web.ipf.event.succeeded",
+      },
+      {
+        workflow: "model",
+        stage: "failed",
+        message: "Worker timed out",
+        id: "web.ipf.event.timedout",
+      },
+      {
+        workflow: "model",
+        stage: "failed",
+        message: "Worker exited unexpectedly",
+        id: "web.ipf.event.exited",
+      },
       {
         workflow: "ipf",
         stage: "reading-inputs",
@@ -128,6 +194,48 @@ export async function initializeLocalization() {
       },
     ],
     errorMappings: [
+      {
+        endpoint: "/api/models/:id/install",
+        method: "POST",
+        status: 502,
+        message: "model download failed",
+        id: "web.model.error.download",
+      },
+      {
+        endpoint: "/api/models/:id/install",
+        method: "POST",
+        status: 502,
+        message: "model package failed validation",
+        id: "web.model.error.validation",
+      },
+      {
+        endpoint: "/api/models/:id/install",
+        method: "POST",
+        status: 404,
+        message: "Unknown model",
+        id: "web.model.error.unknown",
+      },
+      {
+        endpoint: "/api/models/:id",
+        method: "DELETE",
+        status: 404,
+        message: "Unknown model",
+        id: "web.model.error.unknown",
+      },
+      {
+        endpoint: "client:model",
+        method: "VALIDATE",
+        status: 400,
+        message: "Choose a catalogue model or package JSON.",
+        id: "web.model.error.selection",
+      },
+      {
+        endpoint: "client:model",
+        method: "VALIDATE",
+        status: 400,
+        message: "Conditions must use name=value pairs.",
+        id: "web.model.error.conditions",
+      },
       {
         endpoint: "/api/uploads",
         method: "POST",

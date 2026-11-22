@@ -1,7 +1,7 @@
 {
   "schema_version": "synthpopcan-web-messages-v1",
   "locale": "en-CA",
-  "revision": "ipf-diagnostics-preview-2",
+  "revision": "model-preview-1",
   "messages": {
     "web.language.label": {
       "kind": "text",
@@ -1195,6 +1195,521 @@
       "provenance": {
         "kind": "project",
         "source_id": "web.ipf.event.exited",
+        "review": "draft"
+      }
+    },
+    "web.modelui.m001": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Choose a reviewed catalogue package or upload a linked package JSON. Generation and validation run in Python.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.modelui.m001",
+        "review": "draft"
+      }
+    },
+    "web.modelui.m002": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Prepared model",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.modelui.m002",
+        "review": "draft"
+      }
+    },
+    "web.modelui.m003": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Choose a catalogue model",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.modelui.m003",
+        "review": "draft"
+      }
+    },
+    "web.modelui.m004": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Download selected model",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.modelui.m004",
+        "review": "draft"
+      }
+    },
+    "web.modelui.m005": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Remove downloaded model",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.modelui.m005",
+        "review": "draft"
+      }
+    },
+    "web.modelui.m006": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Downloadable models stay in the local SynthPopCan cache.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.modelui.m006",
+        "review": "draft"
+      }
+    },
+    "web.modelui.m007": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Or package JSON",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.modelui.m007",
+        "review": "draft"
+      }
+    },
+    "web.modelui.m008": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Households",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.modelui.m008",
+        "review": "draft"
+      }
+    },
+    "web.modelui.m009": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Conditions",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.modelui.m009",
+        "review": "draft"
+      }
+    },
+    "web.modelui.m010": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Comma-separated name=value pairs supported by the package.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.modelui.m010",
+        "review": "draft"
+      }
+    },
+    "web.modelui.m011": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Random seed",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.modelui.m011",
+        "review": "draft"
+      }
+    },
+    "web.modelui.m012": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Check model and scale",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.modelui.m012",
+        "review": "draft"
+      }
+    },
+    "web.modelui.m013": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Checking package provenance, privacy, and output scale…",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.modelui.m013",
+        "review": "draft"
+      }
+    },
+    "web.modelui.m014": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Model preflight passed. Provenance and privacy metadata are recorded.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.modelui.m014",
+        "review": "draft"
+      }
+    },
+    "web.modelui.m015": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Model preflight found a blocking scale problem.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.modelui.m015",
+        "review": "draft"
+      }
+    },
+    "web.modelui.m016": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Package",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.modelui.m016",
+        "review": "draft"
+      }
+    },
+    "web.modelui.m017": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Publishable candidate",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.modelui.m017",
+        "review": "draft"
+      }
+    },
+    "web.modelui.m018": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Privacy review",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.modelui.m018",
+        "review": "draft"
+      }
+    },
+    "web.modelui.m019": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Supported conditions",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.modelui.m019",
+        "review": "draft"
+      }
+    },
+    "web.modelui.m020": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Requested households",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.modelui.m020",
+        "review": "draft"
+      }
+    },
+    "web.modelui.m021": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Planning storage allowance",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.modelui.m021",
+        "review": "draft"
+      }
+    },
+    "web.modelui.m022": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Storage estimate basis",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.modelui.m022",
+        "review": "draft"
+      }
+    },
+    "web.modelui.m023": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Linked household and person artifacts were generated and validated in Python.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.modelui.m023",
+        "review": "draft"
+      }
+    },
+    "web.modelui.m024": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Household output preview",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.modelui.m024",
+        "review": "draft"
+      }
+    },
+    "web.modelui.m025": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Person output preview",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.modelui.m025",
+        "review": "draft"
+      }
+    },
+    "web.modelui.m026": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Generated households",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.modelui.m026",
+        "review": "draft"
+      }
+    },
+    "web.modelui.m027": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Generated persons",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.modelui.m027",
+        "review": "draft"
+      }
+    },
+    "web.modelui.m028": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Linked validation",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.modelui.m028",
+        "review": "draft"
+      }
+    },
+    "web.modelui.m029": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Passed",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.modelui.m029",
+        "review": "draft"
+      }
+    },
+    "web.modelui.m030": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Failed",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.modelui.m030",
+        "review": "draft"
+      }
+    },
+    "web.modelui.m031": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Prepared linked model",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.modelui.m031",
+        "review": "draft"
+      }
+    },
+    "web.modelui.m032": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Premade models unavailable",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.modelui.m032",
+        "review": "draft"
+      }
+    },
+    "web.modelui.m033": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Downloading and verifying model…",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.modelui.m033",
+        "review": "draft"
+      }
+    },
+    "web.modelui.m034": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Removing model…",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.modelui.m034",
+        "review": "draft"
+      }
+    },
+    "web.modelui.m035": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Model downloaded, verified, and ready for durable Python runs.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.modelui.m035",
+        "review": "draft"
+      }
+    },
+    "web.modelui.m036": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Downloaded model removed from the local cache.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.modelui.m036",
+        "review": "draft"
+      }
+    },
+    "web.modelui.m037": {
+      "kind": "text",
+      "parameters": {},
+      "value": "The model was not present in the local cache.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.modelui.m037",
+        "review": "draft"
+      }
+    },
+    "web.modelui.m038": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Review parsed records, control margins, expected output, and workspace capacity before starting.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.modelui.m038",
+        "review": "draft"
+      }
+    },
+    "web.modelui.m039": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Review model provenance, privacy, supported conditions, and workspace capacity before starting.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.modelui.m039",
+        "review": "draft"
+      }
+    },
+    "web.modelui.option": {
+      "kind": "text",
+      "parameters": {
+        "name": "text",
+        "geography": "text"
+      },
+      "value": "{name} · {geography} · download required",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.modelui.option",
+        "review": "draft"
+      }
+    },
+    "web.modelui.subtitle": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Generate linked households and people from a prepared model.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.modelui.subtitle",
+        "review": "draft"
+      }
+    },
+    "web.model.event.checking": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Checking package provenance and privacy",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.model.event.checking",
+        "review": "draft"
+      }
+    },
+    "web.model.event.validating": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Validating household and person linkage",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.model.event.validating",
+        "review": "draft"
+      }
+    },
+    "web.model.event.completed": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Prepared-model generation completed",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.model.event.completed",
+        "review": "draft"
+      }
+    },
+    "web.model.error.selection": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Choose a catalogue model or package JSON.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.model.error.selection",
+        "review": "draft"
+      }
+    },
+    "web.model.error.conditions": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Conditions must use name=value pairs.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.model.error.conditions",
+        "review": "draft"
+      }
+    },
+    "web.modelui.steps": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Model run steps",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.modelui.steps",
+        "review": "draft"
+      }
+    },
+    "web.model.error.download": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Model download failed. Check your connection and try again.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.model.error.download",
+        "review": "draft"
+      }
+    },
+    "web.model.error.validation": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Model package failed validation. Download it again or choose another model.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.model.error.validation",
+        "review": "draft"
+      }
+    },
+    "web.model.error.unknown": {
+      "kind": "text",
+      "parameters": {},
+      "value": "The selected model is unavailable. Refresh the catalogue and choose a model.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.model.error.unknown",
+        "review": "draft"
+      }
+    },
+    "web.run.identifier": {
+      "kind": "text",
+      "parameters": {
+        "id": "text"
+      },
+      "value": "Run {id}",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.run.identifier",
         "review": "draft"
       }
     }

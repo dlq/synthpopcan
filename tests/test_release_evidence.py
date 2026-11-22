@@ -472,6 +472,7 @@ def test_release_workflow_actions_are_pinned_to_full_commits() -> None:
 
 def test_scheduled_correctness_workflow_uses_the_committed_lock() -> None:
     workflow = Path(".github/workflows/correctness.yml").read_text()
-    assert workflow.count("uv sync --locked --group dev") == 2
-    assert 'UV_LOCKED: "1"' in workflow
-    assert "uv run --locked pytest tests/test_statcan_live.py" in workflow
+    scheduled = workflow.split("  python-315:", maxsplit=1)[0]
+    assert scheduled.count("uv sync --locked --group dev") == 2
+    assert 'UV_LOCKED: "1"' in scheduled
+    assert "uv run --locked pytest tests/test_statcan_live.py" in scheduled
