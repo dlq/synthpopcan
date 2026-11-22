@@ -74,6 +74,85 @@ export function ipfPreflightView(preflight) {
   };
 }
 
+/** Present known structured IPF checks without interpreting source labels as text. */
+export function presentIpfProblems(diagnostics, translate) {
+  const messages = [];
+  for (const check of diagnostics.dimensions) {
+    if (check.status === "ok") continue;
+    const dimension = check.dimension;
+    if (
+      check.status === "problem" &&
+      typeof dimension === "string" &&
+      check.seed_column === "missing"
+    ) {
+      messages.push(translate("web.ipf.diagnostic.column", { dimension }));
+      continue;
+    }
+    if (
+      check.status === "problem" &&
+      typeof dimension === "string" &&
+      check.seed_column === "found" &&
+      Array.isArray(check.missing_categories) &&
+      Array.isArray(check.unused_seed_categories) &&
+      check.missing_categories.every((item) => typeof item === "string") &&
+      check.unused_seed_categories.every((item) => typeof item === "string")
+    ) {
+      if (check.missing_categories.length)
+        messages.push(
+          translate("web.ipf.diagnostic.missing", {
+            dimension,
+            categories: check.missing_categories.join(", "),
+          }),
+        );
+      if (check.unused_seed_categories.length)
+        messages.push(
+          translate("web.ipf.diagnostic.unused", {
+            dimension,
+            categories: check.unused_seed_categories.join(", "),
+          }),
+        );
+      if (check.missing_categories.length || check.unused_seed_categories.length)
+        continue;
+    }
+    messages.push(
+      translate("web.ipf.diagnostic.unknown", { detail: String(check.detail ?? "") }),
+    );
+  }
+  for (const cell of diagnostics.unsupported_cells) {
+    const categories = cell.categories;
+    if (
+      typeof cell.margin === "string" &&
+      Array.isArray(cell.dimensions) &&
+      cell.dimensions.every((dimension) => typeof dimension === "string") &&
+      typeof cell.target === "number" &&
+      Number.isFinite(cell.target) &&
+      cell.target > 0 &&
+      categories &&
+      typeof categories === "object" &&
+      !Array.isArray(categories) &&
+      Object.values(categories).every((value) => typeof value === "string") &&
+      cell.dimensions.length === Object.keys(categories).length &&
+      cell.dimensions.every((dimension) => Object.hasOwn(categories, dimension))
+    ) {
+      messages.push(
+        translate("web.ipf.diagnostic.cell", {
+          margin: cell.margin,
+          categories: Object.entries(categories)
+            .map(([key, value]) => `${key}=${value}`)
+            .join(", "),
+        }),
+      );
+    } else {
+      messages.push(
+        translate("web.ipf.diagnostic.unknown", {
+          detail: String(cell.detail ?? "A control cell has no matching seed support."),
+        }),
+      );
+    }
+  }
+  return messages;
+}
+
 export function modelPreflightItems(preflight) {
   const model = preflight.model_diagnostics;
   return [

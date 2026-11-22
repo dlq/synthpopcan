@@ -1,7 +1,7 @@
 {
   "schema_version": "synthpopcan-web-messages-v1",
   "locale": "en-CA",
-  "revision": "ipf-preview-1",
+  "revision": "ipf-diagnostics-preview-2",
   "messages": {
     "web.language.label": {
       "kind": "text",
@@ -1022,6 +1022,179 @@
       "provenance": {
         "kind": "project",
         "source_id": "web.ipf.completed",
+        "review": "draft"
+      }
+    },
+    "web.ipf.diagnostic.column": {
+      "kind": "text",
+      "parameters": {
+        "dimension": "text"
+      },
+      "value": "The seed column for dimension {dimension} is missing. Add it to the seed or choose compatible controls.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipf.diagnostic.column",
+        "review": "draft"
+      }
+    },
+    "web.ipf.diagnostic.missing": {
+      "kind": "text",
+      "parameters": {
+        "dimension": "text",
+        "categories": "text"
+      },
+      "value": "Dimension {dimension}: missing control categories: {categories}. Add matching seed records or revise the controls.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipf.diagnostic.missing",
+        "review": "draft"
+      }
+    },
+    "web.ipf.diagnostic.unused": {
+      "kind": "text",
+      "parameters": {
+        "dimension": "text",
+        "categories": "text"
+      },
+      "value": "Dimension {dimension}: unused seed categories: {categories}. Check the category labels and controls.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipf.diagnostic.unused",
+        "review": "draft"
+      }
+    },
+    "web.ipf.diagnostic.cell": {
+      "kind": "text",
+      "parameters": {
+        "margin": "text",
+        "categories": "text"
+      },
+      "value": "Control margin {margin} has no matching seed support for {categories}. Add a matching seed record or revise this control.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipf.diagnostic.cell",
+        "review": "draft"
+      }
+    },
+    "web.ipf.diagnostic.unknown": {
+      "kind": "text",
+      "parameters": {
+        "detail": "text"
+      },
+      "value": "Input diagnostic: {detail}",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipf.diagnostic.unknown",
+        "review": "draft"
+      }
+    },
+    "web.ipf.error.preflight": {
+      "kind": "text",
+      "parameters": {},
+      "value": "The preflight request is invalid. Check the input files and settings, then try again.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipf.error.preflight",
+        "review": "draft"
+      }
+    },
+    "web.ipf.error.blocked": {
+      "kind": "text",
+      "parameters": {},
+      "value": "The run cannot start because preflight found blocking input problems. Review the diagnostics and check the inputs again.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipf.error.blocked",
+        "review": "draft"
+      }
+    },
+    "web.ipf.error.run": {
+      "kind": "text",
+      "parameters": {},
+      "value": "The run request is invalid. Check the inputs and settings, then try again.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipf.error.run",
+        "review": "draft"
+      }
+    },
+    "web.ipf.event.queued": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Run queued",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipf.event.queued",
+        "review": "draft"
+      }
+    },
+    "web.ipf.event.started": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Worker process started",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipf.event.started",
+        "review": "draft"
+      }
+    },
+    "web.ipf.event.cancelling": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Cancellation requested",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipf.event.cancelling",
+        "review": "draft"
+      }
+    },
+    "web.ipf.event.cancelledqueued": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Queued run cancelled",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipf.event.cancelledqueued",
+        "review": "draft"
+      }
+    },
+    "web.ipf.event.cancelled": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Run cancelled",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipf.event.cancelled",
+        "review": "draft"
+      }
+    },
+    "web.ipf.event.succeeded": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Run completed",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipf.event.succeeded",
+        "review": "draft"
+      }
+    },
+    "web.ipf.event.timedout": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Worker timed out",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipf.event.timedout",
+        "review": "draft"
+      }
+    },
+    "web.ipf.event.exited": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Worker exited unexpectedly",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipf.event.exited",
         "review": "draft"
       }
     }

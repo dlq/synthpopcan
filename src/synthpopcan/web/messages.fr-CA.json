@@ -1,7 +1,7 @@
 {
   "schema_version": "synthpopcan-web-messages-v1",
   "locale": "fr-CA",
-  "revision": "ipf-preview-1",
+  "revision": "ipf-diagnostics-preview-2",
   "messages": {
     "web.language.label": {
       "kind": "text",
@@ -1022,6 +1022,179 @@
       "provenance": {
         "kind": "project",
         "source_id": "web.ipf.completed",
+        "review": "draft"
+      }
+    },
+    "web.ipf.diagnostic.column": {
+      "kind": "text",
+      "parameters": {
+        "dimension": "text"
+      },
+      "value": "La colonne initiale pour la dimension {dimension} est absente. Ajoutez-la aux données initiales ou choisissez des contrôles compatibles.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipf.diagnostic.column",
+        "review": "draft"
+      }
+    },
+    "web.ipf.diagnostic.missing": {
+      "kind": "text",
+      "parameters": {
+        "dimension": "text",
+        "categories": "text"
+      },
+      "value": "Dimension {dimension} : catégories de contrôle absentes : {categories}. Ajoutez des enregistrements initiaux correspondants ou modifiez les contrôles.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipf.diagnostic.missing",
+        "review": "draft"
+      }
+    },
+    "web.ipf.diagnostic.unused": {
+      "kind": "text",
+      "parameters": {
+        "dimension": "text",
+        "categories": "text"
+      },
+      "value": "Dimension {dimension} : catégories initiales inutilisées : {categories}. Vérifiez les libellés des catégories et les contrôles.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipf.diagnostic.unused",
+        "review": "draft"
+      }
+    },
+    "web.ipf.diagnostic.cell": {
+      "kind": "text",
+      "parameters": {
+        "margin": "text",
+        "categories": "text"
+      },
+      "value": "La marge de contrôle {margin} ne possède aucun enregistrement initial correspondant à {categories}. Ajoutez-en un ou modifiez ce contrôle.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipf.diagnostic.cell",
+        "review": "draft"
+      }
+    },
+    "web.ipf.diagnostic.unknown": {
+      "kind": "text",
+      "parameters": {
+        "detail": "text"
+      },
+      "value": "Diagnostic des entrées : {detail}",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipf.diagnostic.unknown",
+        "review": "draft"
+      }
+    },
+    "web.ipf.error.preflight": {
+      "kind": "text",
+      "parameters": {},
+      "value": "La demande de vérification préalable est invalide. Vérifiez les fichiers et les paramètres, puis réessayez.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipf.error.preflight",
+        "review": "draft"
+      }
+    },
+    "web.ipf.error.blocked": {
+      "kind": "text",
+      "parameters": {},
+      "value": "L’exécution ne peut pas démarrer parce que la vérification a relevé des problèmes bloquants. Examinez les diagnostics et vérifiez de nouveau les entrées.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipf.error.blocked",
+        "review": "draft"
+      }
+    },
+    "web.ipf.error.run": {
+      "kind": "text",
+      "parameters": {},
+      "value": "La demande d’exécution est invalide. Vérifiez les entrées et les paramètres, puis réessayez.",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipf.error.run",
+        "review": "draft"
+      }
+    },
+    "web.ipf.event.queued": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Exécution en attente",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipf.event.queued",
+        "review": "draft"
+      }
+    },
+    "web.ipf.event.started": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Processus de travail démarré",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipf.event.started",
+        "review": "draft"
+      }
+    },
+    "web.ipf.event.cancelling": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Annulation demandée",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipf.event.cancelling",
+        "review": "draft"
+      }
+    },
+    "web.ipf.event.cancelledqueued": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Exécution en attente annulée",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipf.event.cancelledqueued",
+        "review": "draft"
+      }
+    },
+    "web.ipf.event.cancelled": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Exécution annulée",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipf.event.cancelled",
+        "review": "draft"
+      }
+    },
+    "web.ipf.event.succeeded": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Exécution terminée",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipf.event.succeeded",
+        "review": "draft"
+      }
+    },
+    "web.ipf.event.timedout": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Le processus de travail a dépassé le délai",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipf.event.timedout",
+        "review": "draft"
+      }
+    },
+    "web.ipf.event.exited": {
+      "kind": "text",
+      "parameters": {},
+      "value": "Le processus de travail s’est terminé de façon inattendue",
+      "provenance": {
+        "kind": "project",
+        "source_id": "web.ipf.event.exited",
         "review": "draft"
       }
     }

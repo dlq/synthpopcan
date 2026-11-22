@@ -1,7 +1,7 @@
 import { createLocalizationRuntime } from "./localization.mjs";
 
 // Increment when the identity or meaning of a registered presentation changes.
-export const PRESENTATION_REGISTRY_VERSION = 1;
+export const PRESENTATION_REGISTRY_VERSION = 2;
 
 let activeRuntime = null;
 const errorViews = new Map();
@@ -78,6 +78,54 @@ export async function initializeLocalization() {
         message: "IPF fitting completed",
         id: "web.ipf.completed",
       },
+      {
+        workflow: "ipf",
+        stage: "queued",
+        message: "Run queued",
+        id: "web.ipf.event.queued",
+      },
+      {
+        workflow: "ipf",
+        stage: "running",
+        message: "Worker process started",
+        id: "web.ipf.event.started",
+      },
+      {
+        workflow: "ipf",
+        stage: "cancelling",
+        message: "Cancellation requested",
+        id: "web.ipf.event.cancelling",
+      },
+      {
+        workflow: "ipf",
+        stage: "cancelled",
+        message: "Queued run cancelled",
+        id: "web.ipf.event.cancelledqueued",
+      },
+      {
+        workflow: "ipf",
+        stage: "cancelled",
+        message: "Run cancelled",
+        id: "web.ipf.event.cancelled",
+      },
+      {
+        workflow: "ipf",
+        stage: "succeeded",
+        message: "Run completed",
+        id: "web.ipf.event.succeeded",
+      },
+      {
+        workflow: "ipf",
+        stage: "failed",
+        message: "Worker timed out",
+        id: "web.ipf.event.timedout",
+      },
+      {
+        workflow: "ipf",
+        stage: "failed",
+        message: "Worker exited unexpectedly",
+        id: "web.ipf.event.exited",
+      },
     ],
     errorMappings: [
       {
@@ -86,6 +134,27 @@ export async function initializeLocalization() {
         status: 400,
         message: "upload is invalid",
         id: "web.upload.invalid",
+      },
+      {
+        endpoint: "/api/preflight",
+        method: "POST",
+        status: 400,
+        message: "preflight request is invalid",
+        id: "web.ipf.error.preflight",
+      },
+      {
+        endpoint: "/api/runs",
+        method: "POST",
+        status: 400,
+        message: "IPF preflight has blocking input diagnostics",
+        id: "web.ipf.error.blocked",
+      },
+      {
+        endpoint: "/api/runs",
+        method: "POST",
+        status: 400,
+        message: "run request is invalid",
+        id: "web.ipf.error.run",
       },
     ],
   });

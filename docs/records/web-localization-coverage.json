@@ -1,11 +1,27 @@
 {
-  "revision": "ipf-preview-1",
+  "revision": "ipf-diagnostics-preview-2",
   "guarded_literal_module": "src/synthpopcan/web/localization-ui.mjs",
   "covered_ids": [],
   "draft_ids": [
     "web.fallback.error",
     "web.fallback.progress",
     "web.ipf.completed",
+    "web.ipf.diagnostic.cell",
+    "web.ipf.diagnostic.column",
+    "web.ipf.diagnostic.missing",
+    "web.ipf.diagnostic.unknown",
+    "web.ipf.diagnostic.unused",
+    "web.ipf.error.blocked",
+    "web.ipf.error.preflight",
+    "web.ipf.error.run",
+    "web.ipf.event.cancelled",
+    "web.ipf.event.cancelledqueued",
+    "web.ipf.event.cancelling",
+    "web.ipf.event.exited",
+    "web.ipf.event.queued",
+    "web.ipf.event.started",
+    "web.ipf.event.succeeded",
+    "web.ipf.event.timedout",
     "web.ipf.fitting",
     "web.ipf.reading",
     "web.ipf.report",
@@ -108,7 +124,7 @@
   ],
   "counts": {
     "covered_messages": 0,
-    "draft_messages": 102,
+    "draft_messages": 118,
     "untranslated_surface_groups": 4
   },
   "untranslated_surfaces": [

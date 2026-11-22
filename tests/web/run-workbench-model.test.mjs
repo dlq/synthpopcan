@@ -11,9 +11,51 @@ import {
   ipfPreflightView,
   modelPreflightItems,
   parseConditions,
+  presentIpfProblems,
   runResultView,
   workflowTitle,
 } from "../../src/synthpopcan/web/run-workbench-model.mjs";
+
+test("IPF diagnostics use structured data and retain unknown details", () => {
+  const calls = [];
+  const translate = (id, params) => {
+    calls.push([id, params]);
+    return id;
+  };
+  const diagnostic = {
+    dimensions: [
+      { dimension: "âge", status: "problem", seed_column: "missing" },
+      {
+        dimension: "<sex>",
+        status: "problem",
+        seed_column: "found",
+        missing_categories: ["<old>"],
+        unused_seed_categories: ["young"],
+      },
+      { dimension: "future", status: "new-status", detail: "unknown detail" },
+    ],
+    unsupported_cells: [
+      {
+        margin: "age & sex",
+        dimensions: ["âge"],
+        categories: { âge: "old" },
+        target: 3,
+      },
+      { detail: "historical detail" },
+    ],
+  };
+  const original = structuredClone(diagnostic);
+  presentIpfProblems(diagnostic, translate);
+  assert.deepEqual(calls, [
+    ["web.ipf.diagnostic.column", { dimension: "âge" }],
+    ["web.ipf.diagnostic.missing", { dimension: "<sex>", categories: "<old>" }],
+    ["web.ipf.diagnostic.unused", { dimension: "<sex>", categories: "young" }],
+    ["web.ipf.diagnostic.unknown", { detail: "unknown detail" }],
+    ["web.ipf.diagnostic.cell", { margin: "age & sex", categories: "âge=old" }],
+    ["web.ipf.diagnostic.unknown", { detail: "historical detail" }],
+  ]);
+  assert.deepEqual(diagnostic, original);
+});
 
 test("builds IPF and model workbench requests", () => {
   assert.deepEqual(

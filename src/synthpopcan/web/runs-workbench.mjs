@@ -23,6 +23,7 @@ import {
   fileLabel,
   ipfPreflightView,
   modelPreflightItems,
+  presentIpfProblems,
   runResultView,
   workflowTitle,
 } from "./run-workbench-model.mjs";
@@ -31,6 +32,7 @@ import { buildAgeSexControlRows, buildAgeSexSeedRows } from "./starter-files.mjs
 const TERMINAL = new Set(["succeeded", "failed", "cancelled", "interrupted"]);
 let presentationRuntime = null;
 const localizedViews = new Map();
+let ipfDiagnosticRenderer = null;
 
 function translateOwned(id, fallback, params = {}) {
   const result = presentationRuntime?.translate(id, params);
@@ -59,6 +61,7 @@ export function bindRunsWorkbench(bootstrap, localization) {
     localization,
   };
   localization.subscribe(() => {
+    ipfDiagnosticRenderer?.();
     for (const [element, view] of localizedViews) {
       if (!element.isConnected) localizedViews.delete(element);
       else element.textContent = translateOwned(view.id, view.text);
@@ -299,7 +302,10 @@ function invalidatePreflight(state) {
   state.preflight = null;
   document.querySelector("#start-run").disabled = true;
   document.querySelector("#check-model-preflight").disabled = false;
-  if (document.querySelector("#workbench-message").dataset.phase === "preflight")
+  if (
+    ipfDiagnosticRenderer ||
+    document.querySelector("#workbench-message").dataset.phase === "preflight"
+  )
     showMessage("Inputs changed. Check the current settings again.", "warning");
 }
 
@@ -399,7 +405,20 @@ function renderModelPreflight(preflight) {
 function renderPreflight(preflight) {
   const { items, problems } = ipfPreflightView(preflight);
   renderDiagnostics(document.querySelector("#preflight-results"), items);
-  if (problems.length) showMessage(problems.join(" "), "error");
+  if (problems.length) {
+    showMessage("", "error");
+    const element = document.querySelector("#workbench-message");
+    ipfDiagnosticRenderer = () => {
+      const localized = presentIpfProblems(
+        preflight.input_diagnostics,
+        (id, parameters) => presentationRuntime.translate(id, parameters),
+      );
+      element.textContent = localized.includes("Message unavailable.")
+        ? problems.join(" ")
+        : localized.join(" ");
+    };
+    ipfDiagnosticRenderer();
+  }
   return problems;
 }
 
@@ -686,6 +705,7 @@ function setRunStatus(status) {
 }
 
 function showMessage(message, kind, phase = "") {
+  ipfDiagnosticRenderer = null;
   const element = document.querySelector("#workbench-message");
   clearWebError(element);
   element.className = `result-box ${kind}`.trim();

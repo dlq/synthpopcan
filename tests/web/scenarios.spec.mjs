@@ -165,6 +165,10 @@ test("IPF presentation switches languages without changing the completed run", a
   const evidenceBefore = await runEvidence();
   await page.locator("#web-locale").selectOption("fr-CA");
   await expect(page.locator("#fit-diagnostics")).toContainText("Convergence atteinte");
+  await expect(page.locator("#progress-events")).toContainText(
+    "Processus de travail démarré",
+  );
+  await expect(page.locator("#progress-events")).toContainText("Exécution terminée");
   await expect(page.locator("#run-artifacts a").first()).toContainText("Télécharger");
   expect(await page.locator("#reproduction-command").textContent()).toBe(command);
   expect(await artifactBytes()).toEqual(artifactsBefore);
@@ -193,7 +197,15 @@ test("the IPF demo produces equivalent weights in both locales", async ({ page }
     const payload = (await request).postDataJSON();
     await expect(page.locator("#results-heading")).toBeVisible({ timeout: 15000 });
     const rows = await page.locator("#primary-preview tbody").textContent();
-    results.push({ workflow: payload.workflow, options: payload.options, rows });
+    const weights = await page
+      .locator('#run-artifacts a[data-artifact-filename="weights.csv"]')
+      .evaluate((link) => fetch(link.href).then((response) => response.text()));
+    results.push({
+      workflow: payload.workflow,
+      options: payload.options,
+      rows,
+      weights,
+    });
   }
   expect(results[1]).toEqual(results[0]);
 });
@@ -503,11 +515,112 @@ test("durable IPF preflight blocks incompatible inputs", async ({ page }) => {
     buffer: Buffer.from("margin,dimensions,age,count\nage,age,old,1\n"),
   });
   await page.getByRole("button", { name: "Upload and continue" }).click();
+  const response = page.waitForResponse(
+    (item) =>
+      item.request().method() === "POST" && item.url().endsWith("/api/preflight"),
+  );
   await page.getByRole("button", { name: "Check inputs" }).click();
+  const serverReport = await (await response).json();
   await expect(page.locator("#workbench-message")).toContainText(
     "missing control categories",
   );
   await expect(page.getByRole("button", { name: "Start run" })).toBeDisabled();
+  await page.locator("#web-locale").selectOption("fr-CA");
+  await expect(page.locator("#workbench-message")).toContainText(
+    "catégories de contrôle absentes : old",
+  );
+  await expect(page.locator("#workbench-message")).toContainText(
+    "catégories initiales inutilisées : young",
+  );
+  await expect(page.locator("#workbench-message")).toContainText(
+    "aucun enregistrement initial correspondant à age=old",
+  );
+  expect(serverReport.input_diagnostics.dimensions[0].detail).toContain(
+    "missing control categories: old",
+  );
+  await page.locator("#web-locale").selectOption("en-CA");
+  await expect(page.locator("#workbench-message")).toContainText(
+    "missing control categories",
+  );
+});
+
+test("IPF preflight server errors switch languages without changing the response", async ({
+  page,
+}) => {
+  const body = JSON.stringify({ error: "preflight request is invalid" });
+  await page.route("**/api/preflight", (route) =>
+    route.fulfill({ status: 400, contentType: "application/json", body }),
+  );
+  await openWorkbench(page);
+  await page.locator("#new-run").click();
+  await page.locator("#use-demo-ipf").click();
+  await page.locator("#upload-inputs").click();
+  await page.locator("#check-preflight").click();
+  await expect(page.locator("#workbench-message")).toContainText(
+    "preflight request is invalid",
+  );
+  await page.locator("#web-locale").selectOption("fr-CA");
+  await expect(page.locator("#workbench-message")).toContainText(
+    "demande de vérification préalable est invalide",
+  );
+  expect(JSON.parse(body)).toEqual({ error: "preflight request is invalid" });
+});
+
+test("IPF diagnostics retain their original details when catalogues are unavailable", async ({
+  page,
+}) => {
+  await page.route("**/messages.*.json", (route) => route.fulfill({ status: 404 }));
+  await openWorkbench(page);
+  await page.locator("#new-run").click();
+  await page.locator("#ipf-seed-file").setInputFiles({
+    name: "seed.csv",
+    mimeType: "text/csv",
+    buffer: Buffer.from("id,age\n1,young\n"),
+  });
+  await page.locator("#ipf-controls-file").setInputFiles({
+    name: "controls.csv",
+    mimeType: "text/csv",
+    buffer: Buffer.from("margin,dimensions,age,count\nage,age,old,1\n"),
+  });
+  await page.locator("#upload-inputs").click();
+  await page.locator("#check-preflight").click();
+  await expect(page.locator("#workbench-message")).toContainText(
+    "missing control categories: old",
+  );
+  await expect(page.locator("#workbench-message")).not.toContainText(
+    "Message unavailable.",
+  );
+});
+
+test("missing seed columns are explained without interpreting source labels as HTML", async ({
+  page,
+}) => {
+  await openWorkbench(page);
+  await page.locator("#new-run").click();
+  await page.locator("#web-locale").selectOption("fr-CA");
+  await page.locator("#ipf-seed-file").setInputFiles({
+    name: "seed.csv",
+    mimeType: "text/csv",
+    buffer: Buffer.from("id,age\n1,young\n"),
+  });
+  await page.locator("#ipf-controls-file").setInputFiles({
+    name: "controls.csv",
+    mimeType: "text/csv",
+    buffer: Buffer.from('margin,dimensions,<img>,count\n"<test>",<img>,x,1\n'),
+  });
+  await page.locator("#upload-inputs").click();
+  await page.locator("#check-preflight").click();
+  await expect(page.locator("#workbench-message")).toContainText(
+    "colonne initiale pour la dimension <img> est absente",
+  );
+  await expect(page.locator("#workbench-message img")).toHaveCount(0);
+  await expect(page.locator("#start-run")).toBeDisabled();
+  await page.locator('[data-go-step="configure"]').click();
+  await page.locator(".advanced-options summary").click();
+  await page.locator("#ipf-max-iterations").fill("99");
+  await expect(page.locator("#workbench-message")).toContainText("entrées ont changé");
+  await page.locator("#web-locale").selectOption("en-CA");
+  await expect(page.locator("#workbench-message")).toContainText("Inputs changed");
 });
 
 test("active durable IPF run can be cancelled", async ({ page }) => {
