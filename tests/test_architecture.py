@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import ast
 import json
+import tomllib
 from collections.abc import Iterable
 from pathlib import Path
 
@@ -307,6 +308,24 @@ def test_ci_exposes_a_stable_required_check_for_the_python_matrix() -> None:
     assert "python scripts/test_runner.py affected" in workflow
     assert "github.event_name == 'pull_request'" in workflow
     assert "github.event_name != 'pull_request'" in workflow
+
+
+def test_supported_python_classifiers_match_ci_matrix() -> None:
+    workflow = Path(".github/workflows/ci.yml").read_text()
+    matrix_line = next(
+        line
+        for line in workflow.splitlines()
+        if line.strip().startswith("python-version: [")
+    )
+    versions = set(json.loads(matrix_line.split(":", maxsplit=1)[1]))
+    metadata = tomllib.loads(Path("pyproject.toml").read_text())
+    prefix = "Programming Language :: Python :: 3."
+    classifiers = {
+        "3." + classifier.removeprefix(prefix)
+        for classifier in metadata["project"]["classifiers"]
+        if classifier.startswith(prefix)
+    }
+    assert versions == classifiers
 
 
 def test_ci_browser_install_is_bounded_and_headless_only() -> None:

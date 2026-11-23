@@ -31,7 +31,7 @@ sudo apt install python3 python3-pip python3-venv
 python3 --version
 ```
 
-The final command should report a supported Python version, currently 3.11–3.14.
+The final command should report a supported Python version, currently 3.11–3.15.
 Continue through this page inside the Ubuntu terminal. For help locating Windows files from WSL, see
 Microsoft's [WSL development-environment
 guide](https://learn.microsoft.com/en-us/windows/wsl/setup/environment).
@@ -53,7 +53,7 @@ planned for the next release; use `stable` for the latest tagged version.
 
 ## Requirements
 
-- Python 3.11–3.14 in the macOS, Linux, or WSL environment where we will run
+- Python 3.11–3.15 in the macOS, Linux, or WSL environment where we will run
   SynthPopCan. These versions are in the current automated release
   matrix. The package declares Python 3.11 as its minimum; newer versions have
   not yet received that release coverage. Download from

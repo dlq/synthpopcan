@@ -82,7 +82,7 @@ cover reference fallback. The standard gate installs the extra; no timing
 thresholds or large Census downloads are part of deterministic tests.
 
 CI runs the coverage-tool integration cases once in its Python 3.12 coverage
-job. Application behaviour tests still run on Python 3.11–3.14. The
+job. Application behaviour tests still run on Python 3.11–3.15. The
 `coverage_gate` marker is only for testing the coverage tool itself; it does
 not exclude application tests or reduce the enforced coverage requirement.
 

@@ -5,7 +5,7 @@ Created: 2026-08-19\
 Last updated: 2026-11-22\
 Target: bounded `1.x` feature releases with patch releases as needed\
 Next action: arrange human French review and select one statistical family for
-source review; decide Python 3.15 support and review dependencies independently\
+source review; review dependencies independently\
 Roadmap: [PLANS.md](../PLANS.md) | [Plan index](README.md)
 
 ## Planning Horizon
@@ -248,7 +248,7 @@ Patch releases continue independently when warranted.
 | Priority | Work | Sequencing and dependency | Decision or acceptance |
 | --- | --- | --- | --- |
 | 1 | Core web localization (`1.3.0`) | `I18N13-01`–`I18N13-06` complete; human French review and distribution acceptance follow | Ship only reviewed `en-CA`/`fr-CA` coverage; keep machine output and persisted evidence stable. Human French review is a release dependency. |
-| 1 | Python 3.15 validation | `ASSURE315-01`–`ASSURE315-02` complete → `ASSURE315-03` platform-support decision | Work independently of a minor release. Promote support only after platform review; the clean Linux gate passed without changing the support claim. |
+| 1 | Python 3.15 validation | `ASSURE315-01`–`ASSURE315-03` complete | The platform review adds 3.15 to the blocking matrix; keep monitoring platform-specific reports independently of a minor release. |
 | 2 | French and English Profile inputs | `SOURCEFR-01` and `SOURCEFR-02` complete for the verified 2016 and 2021 tract formats; review additional geographies and revisions separately | Require equivalent controls, suppression and geography checks, and source-language provenance; do not guess when a source is unavailable. |
 | 2 | Next control family | Select **one** `1.3.0` candidate for source and universe review; implementation depends on denominators, crosswalks, suppression and feasible joint fits | Admit only after the full evidence gate; defer without blocking localization if evidence is insufficient. Other candidates remain research until individually reviewed. |
 | 2 | Remaining web localization (`1.4.0`) | Review `1.3.0` coverage and maintenance evidence; inventory remaining supported surfaces and define PR-sized slices | Complete the explicitly inventoried, human-reviewed web scope. Generated maps, reports, CLI, and public documentation are not included by implication. |

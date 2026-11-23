@@ -56,7 +56,7 @@ jobs:
           path: statcan-drift-report.xml
 
   python-315:
-    name: Python 3.15 experimental acceptance
+    name: Python 3.15 extended acceptance
     if: ${{ github.event_name == 'workflow_dispatch' && startsWith(github.ref_name, 'ci/python315-') }}
     runs-on: ubuntu-latest
     env:

@@ -55,7 +55,7 @@ downstream summaries or presentation semantics.
 
 - The [normal CI workflow](https://github.com/dlq/synthpopcan/actions/workflows/ci.yml)
   runs deterministic correctness tests on every pull request and push to
-  `main`, across the supported Python 3.11 through 3.14 versions. It retains a
+  `main`, across the supported Python 3.11 through 3.15 versions. It retains a
   machine-readable JUnit report for each version and commit.
 - The [extended correctness workflow](https://github.com/dlq/synthpopcan/actions/workflows/correctness.yml)
   runs larger generated-case and multi-seed suites each week and on demand. It

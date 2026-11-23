@@ -41,9 +41,8 @@ changes or to run the complete local check suite.
 
 ## Development Setup
 
-Use a supported Python version (3.11–3.14), `uv`, and Node.js 24. Python 3.12
-matches the quality and coverage jobs; newer Python versions await the runtime
-review described in the correctness-assurance plan. Then install the Python
+Use a supported Python version (3.11–3.15), `uv`, and Node.js 24. Python 3.12
+matches the quality and coverage jobs. Then install the Python
 and documentation dependencies:
 
 ```bash
@@ -59,7 +58,7 @@ npm ci
 The optional `performance` extra exercises the compiled fitting and bounded
 columnar readers. Ordinary installations keep the reference paths; the clean
 wheel smoke checks that these dependencies remain optional. CI exercises the
-extra in the existing Python 3.11–3.14 jobs.
+extra in the Python 3.11–3.15 jobs.
 
 The coverage tool's `test-exclude` dependencies currently use scoped npm
 `overrides` for patched `glob` and `minimatch` versions. These address

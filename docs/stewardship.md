@@ -10,8 +10,8 @@ study.
 
 | Environment | Release status | Evidence and boundary |
 | --- | --- | --- |
-| CPython 3.11–3.14 on the current GitHub Actions Ubuntu runner | Tested | Behavioral tests run on every change across the declared Python matrix. Python 3.12 separately runs coverage and the shared version, lint, formatting, type, CFF, and documentation quality checks; another Python 3.12 job tests the installed wheel. |
-| Current macOS with CPython 3.11–3.14 | Best-effort supported | The maintainer uses the project on macOS and the installation path is documented, but macOS is not an automated release matrix. Report platform-specific failures. |
+| CPython 3.11–3.15 on the current GitHub Actions Ubuntu runner | Tested | Behavioral tests run across the declared Python matrix. Python 3.12 separately runs coverage and the shared version, lint, formatting, type, CFF, and documentation quality checks; another Python 3.12 job tests the installed wheel. |
+| Current macOS with CPython 3.11–3.15 | Best-effort supported | The maintainer uses the project on macOS and the installation path is documented, but macOS is not an automated release matrix. Report platform-specific failures. |
 | Windows Subsystem for Linux (Ubuntu) | Best-effort supported | The documented Windows path is WSL. It follows the Unix commands, but is not an automated release matrix. |
 | Native Windows Python and PowerShell | Not a supported 1.x environment | Shell scripts and path-sensitive workflows are not release-tested natively. Use WSL or contribute a tested native-Windows path. |
 | Local browser workbench in current Chromium/Chrome | Tested on Chromium | Playwright exercises Chromium on Ubuntu. Other current standards-based browsers may work but are best effort. |
@@ -20,7 +20,8 @@ study.
 not mean every source dataset, population size, optional external service, or
 research workflow has been tested there. Package metadata defines the minimum
 Python version; the release matrix records the currently tested versions and
-operating-system evidence.
+operating-system evidence. Standard CPython builds are the supported baseline;
+free-threaded builds are not included in the tested matrix.
 
 ## Maintenance and Help
 
